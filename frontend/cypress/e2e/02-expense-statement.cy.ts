@@ -1,56 +1,56 @@
 import {
-  MOIS,
-  ajouterFrais,
-  ajouterLoyer,
-  attendreFichierSelectionne,
-  attendreMontant,
-  attendreValeur,
-  creerQuittance,
-  deposerJustificatif,
-  desactiverLlm,
-  normaliser,
-  teledechargerEtLirePdf,
+  MONTHS,
+  addExpense,
+  addRent,
+  waitForSelectedFile,
+  waitForAmount,
+  waitForValue,
+  createRentReceipt,
+  uploadReceipt,
+  disableLlm,
+  normalize,
+  downloadAndReadPdf,
 } from '../support/helpers';
 
-function verifierApercu(total: string): void {
-  cy.get('[data-cy="total-retenu"]').invoke('text').then((texte) => {
-    const totalAffiche = normaliser(texte);
-    teledechargerEtLirePdf(
+function verifyPreview(total: string): void {
+  cy.get('[data-cy="total-retenu"]').invoke('text').then((text) => {
+    const displayedTotal = normalize(text);
+    downloadAndReadPdf(
       '[data-cy="btn-telecharger-apercu"]',
       'note_frais_apercu.pdf',
       (pdf) => {
         expect(pdf).to.contain('APERÇU');
-        expect(pdf).to.contain(totalAffiche);
+        expect(pdf).to.contain(displayedTotal);
         expect(pdf).to.contain(`${total} €`);
       },
     );
   });
 }
 
-describe('Note de frais — saisie et aperçu', () => {
-  it('conserve les frais ajoutés en passant par la quittance et en revenant', () => {
-    desactiverLlm();
-    creerQuittance();
+describe('Expense statement — entry and preview', () => {
+  it('keeps expenses added via the receipt after switching back', () => {
+    disableLlm();
+    createRentReceipt();
     cy.visit('/generer/note-frais');
-    cy.choisirMois(MOIS);
+    cy.chooseMonth(MONTHS);
 
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled');
-    ajouterLoyer();
-    ajouterFrais({ type: 'gaz', fixture: 'facture-gaz.txt', montant: '120.00' });
-    attendreMontant('[data-cy="total-retenu"]', '992,85');
+    addRent();
+    addExpense({ type: 'gaz', fixture: 'facture-gaz.txt', montant: '120.00' });
+    waitForAmount('[data-cy="total-retenu"]', '992,85');
 
     cy.get('[data-cy="tab-quittance"]').click();
     cy.get('[data-cy="tab-note-frais"]').click();
 
     cy.get('[data-cy="ligne-frais-loyer"]').should('exist');
     cy.get('[data-cy="ligne-frais-gaz"]').should('exist');
-    attendreMontant('[data-cy="total-retenu"]', '992,85');
+    waitForAmount('[data-cy="total-retenu"]', '992,85');
   });
 
-  it('bloque le loyer sans quittance puis le verrouille sur la quittance active', () => {
-    desactiverLlm();
+  it('blocks rent without a receipt then locks it to the active receipt', () => {
+    disableLlm();
     cy.visit('/generer/note-frais');
-    cy.choisirMois(MOIS);
+    cy.chooseMonth(MONTHS);
 
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled').select('loyer');
     cy.get('[data-cy="alerte-quittance-manquante"]').should('be.visible');
@@ -58,45 +58,45 @@ describe('Note de frais — saisie et aperçu', () => {
     cy.get('[data-cy="dropzone-fichier"]').should('not.exist');
     cy.get('[data-cy="btn-ajouter-frais"]').should('be.disabled');
 
-    creerQuittance();
+    createRentReceipt();
     cy.reload();
 
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled').select('loyer');
-    attendreValeur('[data-cy="input-montant-ttc"]', '950.00');
+    waitForValue('[data-cy="input-montant-ttc"]', '950.00');
     cy.get('[data-cy="input-montant-ttc"]').should('have.prop', 'readOnly', true);
     cy.get('[data-cy="dropzone-fichier"]').should('not.exist');
     cy.get('[data-cy="btn-ajouter-frais"]').should('not.be.disabled').click();
 
     cy.get('[data-cy="ligne-frais-loyer"]').should('exist');
-    attendreMontant('[data-cy="total-retenu"]', '950,00');
+    waitForAmount('[data-cy="total-retenu"]', '950,00');
   });
 
-  it('accepte les prorata 35,71 % et 35.71, refuse 120 et abc', () => {
-    desactiverLlm();
-    creerQuittance();
+  it('accepts pro-rata 35,71 % and 35.71, rejects 120 and abc', () => {
+    disableLlm();
+    createRentReceipt();
     cy.visit('/generer/note-frais');
-    cy.choisirMois(MOIS);
+    cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled');
 
-    ajouterFrais({
+    addExpense({
       type: 'gaz',
       fixture: 'facture-gaz.txt',
       montant: '130.00',
       prorata: '35,71 %',
     });
-    attendreMontant('[data-cy="ligne-frais-gaz"]', '46,42');
+    waitForAmount('[data-cy="ligne-frais-gaz"]', '46,42');
 
-    ajouterFrais({
+    addExpense({
       type: 'electricite',
       fixture: 'facture-electricite.txt',
       montant: '88.20',
       prorata: '35.71',
     });
-    attendreMontant('[data-cy="ligne-frais-electricite"]', '31,50');
+    waitForAmount('[data-cy="ligne-frais-electricite"]', '31,50');
 
     cy.get('[data-cy="select-type-frais"]').select('fibre');
-    deposerJustificatif('facture-fibre.txt');
-    attendreFichierSelectionne('facture-fibre.txt');
+    uploadReceipt('facture-fibre.txt');
+    waitForSelectedFile('facture-fibre.txt');
     cy.get('[data-cy="input-montant-ttc"]').clear().type('39.99');
 
     cy.get('[data-cy="input-prorata"]').clear().type('120');
@@ -108,10 +108,10 @@ describe('Note de frais — saisie et aperçu', () => {
     cy.get('[data-cy="btn-ajouter-frais"]').should('be.disabled');
   });
 
-  it('refuse un fichier .exe sans créer de frais', () => {
-    desactiverLlm();
+  it('rejects a .exe file without creating an expense', () => {
+    disableLlm();
     cy.visit('/generer/note-frais');
-    cy.choisirMois(MOIS);
+    cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled').select('gaz');
 
     cy.get('[data-cy="dropzone-fichier"]').selectFile('cypress/fixtures/fichier-interdit.exe', {
@@ -125,10 +125,10 @@ describe('Note de frais — saisie et aperçu', () => {
     cy.get('[data-cy="ligne-frais-gaz"]').should('not.exist');
   });
 
-  it('refuse un faux .docx dont le contenu ne correspond pas', () => {
-    desactiverLlm();
+  it('rejects a fake .docx whose content does not match', () => {
+    disableLlm();
     cy.visit('/generer/note-frais');
-    cy.choisirMois(MOIS);
+    cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled').select('gaz');
 
     cy.get('[data-cy="dropzone-fichier"]').selectFile('cypress/fixtures/facture-piegee.docx', {
@@ -144,14 +144,14 @@ describe('Note de frais — saisie et aperçu', () => {
     cy.get('[data-cy="ligne-frais-gaz"]').should('not.exist');
   });
 
-  it('refuse un fichier de plus de 10 Mo', () => {
-    desactiverLlm();
+  it('rejects a file over 10 MB', () => {
+    disableLlm();
     cy.visit('/generer/note-frais');
-    cy.choisirMois(MOIS);
+    cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled').select('gaz');
 
-    cy.task<string>('creerFichierGeant', 'cypress/fixtures/fichier-geant.pdf').then((chemin) => {
-      cy.get('[data-cy="dropzone-fichier"]').selectFile(chemin, { force: true });
+    cy.task<string>('createLargeFile', 'cypress/fixtures/fichier-geant.pdf').then((filePath) => {
+      cy.get('[data-cy="dropzone-fichier"]').selectFile(filePath, { force: true });
     });
     cy.contains('Fichier trop volumineux (10 Mo maximum).', { timeout: 15_000 }).should(
       'be.visible',
@@ -162,25 +162,25 @@ describe('Note de frais — saisie et aperçu', () => {
     cy.get('[data-cy="ligne-frais-gaz"]').should('not.exist');
   });
 
-  it('pré-remplit les champs avec l’IA et permet de corriger le montant', () => {
-    creerQuittance();
+  it('pre-fills fields with AI and allows correcting the amount', () => {
+    createRentReceipt();
     cy.visit('/generer/note-frais');
-    cy.choisirMois(MOIS);
+    cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled');
-    ajouterLoyer();
+    addRent();
 
-    deposerJustificatif('facture-gaz.txt');
+    uploadReceipt('facture-gaz.txt');
     cy.get('[data-cy="analyse-statut"]', { timeout: 35_000 }).should(
       'contain.text',
       'Analyse terminée',
     );
-    attendreFichierSelectionne('facture-gaz.txt');
+    waitForSelectedFile('facture-gaz.txt');
 
-    attendreValeur('[data-cy="select-type-frais"]', 'gaz');
-    attendreValeur('[data-cy="input-montant-ttc"]', '120.00');
-    attendreValeur('[data-cy="input-prorata"]', '35.71');
-    attendreValeur('[data-cy="input-periode-debut"]', '2026-01-01');
-    attendreValeur('[data-cy="input-periode-fin"]', '2026-01-31');
+    waitForValue('[data-cy="select-type-frais"]', 'gaz');
+    waitForValue('[data-cy="input-montant-ttc"]', '120.00');
+    waitForValue('[data-cy="input-prorata"]', '35.71');
+    waitForValue('[data-cy="input-periode-debut"]', '2026-01-01');
+    waitForValue('[data-cy="input-periode-fin"]', '2026-01-31');
     cy.contains('Fournisseur détecté : EDF').should('be.visible');
     cy.get('[data-cy="badge-ia-detecte"]').should(($badges) => {
       expect($badges.length).to.be.at.least(2);
@@ -189,39 +189,39 @@ describe('Note de frais — saisie et aperçu', () => {
     cy.get('[data-cy="input-montant-ttc"]').clear().type('125.50');
     cy.get('[data-cy="btn-ajouter-frais"]').should('not.be.disabled').click();
 
-    attendreMontant('[data-cy="ligne-frais-gaz"]', '44,82');
-    attendreMontant('[data-cy="total-retenu"]', '994,82');
+    waitForAmount('[data-cy="ligne-frais-gaz"]', '44,82');
+    waitForAmount('[data-cy="total-retenu"]', '994,82');
   });
 
-  it('reste utilisable quand l’analyse échoue', () => {
-    creerQuittance();
+  it('stays usable when analysis fails', () => {
+    createRentReceipt();
     cy.visit('/generer/note-frais');
-    cy.choisirMois(MOIS);
+    cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled');
-    ajouterLoyer();
+    addRent();
 
-    deposerJustificatif('facture-illisible.txt');
+    uploadReceipt('facture-illisible.txt');
     cy.get('[data-cy="analyse-statut"]', { timeout: 40_000 }).should(
       'contain.text',
       'saisie manuelle',
     );
-    attendreFichierSelectionne('facture-illisible.txt');
+    waitForSelectedFile('facture-illisible.txt');
 
     cy.get('[data-cy="select-type-frais"]').select('electricite');
     cy.get('[data-cy="input-montant-ttc"]').clear().type('88.20');
     cy.get('[data-cy="btn-ajouter-frais"]').should('not.be.disabled').click();
 
-    attendreMontant('[data-cy="ligne-frais-electricite"]', '31,50');
-    attendreMontant('[data-cy="total-retenu"]', '981,50');
+    waitForAmount('[data-cy="ligne-frais-electricite"]', '31,50');
+    waitForAmount('[data-cy="total-retenu"]', '981,50');
   });
 
-  it('annule une analyse en cours et permet la saisie manuelle', () => {
-    creerQuittance();
+  it('cancels a running analysis and allows manual entry', () => {
+    createRentReceipt();
     cy.visit('/generer/note-frais');
-    cy.choisirMois(MOIS);
+    cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled');
 
-    deposerJustificatif('facture-lente.txt');
+    uploadReceipt('facture-lente.txt');
     cy.get('[data-cy="analyse-statut"]', { timeout: 20_000 }).should(
       'contain.text',
       'Analyse IA en cours',
@@ -232,53 +232,53 @@ describe('Note de frais — saisie et aperçu', () => {
       'contain.text',
       'Analyse annulée.',
     );
-    attendreFichierSelectionne('facture-lente.txt');
+    waitForSelectedFile('facture-lente.txt');
 
     cy.get('[data-cy="select-type-frais"]').select('telephone');
     cy.get('[data-cy="input-montant-ttc"]').clear().type('29.99');
     cy.get('[data-cy="btn-ajouter-frais"]').should('not.be.disabled').click();
 
-    attendreMontant('[data-cy="ligne-frais-telephone"]', '10,71');
+    waitForAmount('[data-cy="ligne-frais-telephone"]', '10,71');
   });
 
-  it('met à jour l’aperçu à chaque ajout, modification de prorata et suppression', () => {
-    desactiverLlm();
-    creerQuittance();
+  it('updates the preview on each add, pro-rata change and removal', () => {
+    disableLlm();
+    createRentReceipt();
     cy.intercept('POST', '/api/notes-frais/apercu').as('apercu');
 
     cy.visit('/generer/note-frais');
-    cy.choisirMois(MOIS);
+    cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled');
 
-    ajouterLoyer();
+    addRent();
     cy.wait('@apercu', { timeout: 30_000 });
-    cy.attendreApercu();
-    attendreMontant('[data-cy="total-retenu"]', '950,00');
-    verifierApercu('950,00');
+    cy.waitForPreview();
+    waitForAmount('[data-cy="total-retenu"]', '950,00');
+    verifyPreview('950,00');
 
-    ajouterFrais({ type: 'gaz', fixture: 'facture-gaz.txt', montant: '120.00' });
+    addExpense({ type: 'gaz', fixture: 'facture-gaz.txt', montant: '120.00' });
     cy.wait('@apercu', { timeout: 30_000 });
-    cy.attendreApercu();
-    attendreMontant('[data-cy="total-retenu"]', '992,85');
-    verifierApercu('992,85');
+    cy.waitForPreview();
+    waitForAmount('[data-cy="total-retenu"]', '992,85');
+    verifyPreview('992,85');
 
     cy.get('[aria-label="Prorata de Gaz"]').clear().type('50');
     cy.wait('@apercu', { timeout: 30_000 });
-    cy.attendreApercu();
-    attendreMontant('[data-cy="total-retenu"]', '1 010,00');
-    verifierApercu('1 010,00');
+    cy.waitForPreview();
+    waitForAmount('[data-cy="total-retenu"]', '1 010,00');
+    verifyPreview('1 010,00');
 
     cy.get('[data-cy="btn-supprimer-gaz"]').click();
     cy.get('[data-cy="dialogue-suppression-frais"]').should('be.visible');
     cy.get('[data-cy="dialogue-confirmer"]').click();
     cy.get('[data-cy="ligne-frais-gaz"]').should('not.exist');
     cy.wait('@apercu', { timeout: 30_000 });
-    cy.attendreApercu();
-    attendreMontant('[data-cy="total-retenu"]', '950,00');
-    verifierApercu('950,00');
+    cy.waitForPreview();
+    waitForAmount('[data-cy="total-retenu"]', '950,00');
+    verifyPreview('950,00');
   });
 
   afterEach(() => {
-    cy.task('supprimerFichier', 'cypress/fixtures/fichier-geant.pdf');
+    cy.task('deleteFile', 'cypress/fixtures/fichier-geant.pdf');
   });
 });

@@ -4,64 +4,64 @@ import { CalendarDays, Download, ExternalLink, FileCheck2, LoaderCircle, Receipt
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { messageErreur } from '@/api/client';
+import { errorMessage } from '@/api/client';
 import { api } from '@/api/endpoints';
-import { useParametres, useQuittanceActive, useTemplates } from '@/api/queries';
-import type { QuittanceDto, QuittanceRequest } from '@/api/types';
-import { Bouton } from '@/components/Bouton';
-import { DialogueConfirmation } from '@/components/DialogueConfirmation';
-import { EtatErreur } from '@/components/Etats';
-import { GroupeChamp } from '@/components/GroupeChamp';
+import { useSettings, useActiveRentReceipt, useTemplates } from '@/api/queries';
+import type { RentReceiptDto, RentReceiptRequest } from '@/api/types';
+import { Button } from '@/components/Button';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { ErrorState } from '@/components/States';
+import { FieldGroup } from '@/components/FieldGroup';
 import { PageHeader } from '@/components/PageHeader';
 import { PdfViewer } from '@/components/PdfViewer';
-import { telechargerBlob } from '@/api/client';
-import { useApercuPdf } from '@/hooks/useApercuPdf';
+import { downloadBlob } from '@/api/client';
+import { usePdfPreview } from '@/hooks/usePdfPreview';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { periodeDuMois } from '@/lib/dates';
-import { formatEUR, formatMois, parseMontant } from '@/lib/format';
+import { periodOfMonth } from '@/lib/dates';
+import { formatEUR, formatMonth, parseAmount } from '@/lib/format';
 import { cn } from '@/lib/cn';
-import { useQuittanceDraft } from '@/state/quittanceDraft';
-import { useNoteDraft } from '@/state/noteDraft';
+import { useRentReceiptDraft } from '@/state/rentReceiptDraft';
+import { useStatementDraft } from '@/state/statementDraft';
 import { toast } from '@/state/toasts';
-import { quittanceSchema, type QuittanceFormValues } from '@/lib/validation';
+import { rentReceiptSchema, type RentReceiptFormValues } from '@/lib/validation';
 
-function requeteDepuisValeurs(
-  valeurs: QuittanceFormValues,
+function requestFromValues(
+  values: RentReceiptFormValues,
   templateId: number | null,
-): QuittanceRequest {
-  const requete: QuittanceRequest = {
-    mois: valeurs.mois,
-    periodeDebut: valeurs.periodeDebut,
-    periodeFin: valeurs.periodeFin,
-    loyerHc: parseMontant(valeurs.loyerHc) ?? '',
-    charges: parseMontant(valeurs.charges) ?? '',
+): RentReceiptRequest {
+  const request: RentReceiptRequest = {
+    mois: values.mois,
+    periodeDebut: values.periodeDebut,
+    periodeFin: values.periodeFin,
+    loyerHc: parseAmount(values.loyerHc) ?? '',
+    charges: parseAmount(values.charges) ?? '',
   };
-  if (valeurs.datePaiement) {
-    requete.datePaiement = valeurs.datePaiement;
+  if (values.datePaiement) {
+    request.datePaiement = values.datePaiement;
   }
-  if (valeurs.dateEmission) {
-    requete.dateEmission = valeurs.dateEmission;
+  if (values.dateEmission) {
+    request.dateEmission = values.dateEmission;
   }
   if (templateId !== null) {
-    requete.templateId = templateId;
+    request.templateId = templateId;
   }
-  return requete;
+  return request;
 }
 
-export function GenererQuittancePage() {
+export function GenerateRentReceiptPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const brouillon = useQuittanceDraft();
+  const draft = useRentReceiptDraft();
   const mobile = useMediaQuery('(max-width: 1023px)');
-  const [voletMobile, setVoletMobile] = useState<'saisie' | 'apercu'>('saisie');
-  const [dialogueRegeneration, setDialogueRegeneration] = useState(false);
-  const [generationEnCours, setGenerationEnCours] = useState(false);
-  const [resultat, setResultat] = useState<QuittanceDto | null>(null);
-  const valeursEnAttente = useRef<QuittanceFormValues | null>(null);
+  const [mobilePanel, setMobilePanel] = useState<'saisie' | 'apercu'>('saisie');
+  const [regenerationDialog, setRegenerationDialog] = useState(false);
+  const [generationInProgress, setGenerationInProgress] = useState(false);
+  const [result, setResult] = useState<RentReceiptDto | null>(null);
+  const pendingValues = useRef<RentReceiptFormValues | null>(null);
 
-  const parametres = useParametres();
+  const settings = useSettings();
   const templates = useTemplates('QUITTANCE');
-  const quittanceActive = useQuittanceActive(brouillon.mois);
+  const activeRentReceipt = useActiveRentReceipt(draft.mois);
 
   const {
     register,
@@ -70,141 +70,141 @@ export function GenererQuittancePage() {
     setValue,
     getValues,
     formState: { errors, isValid },
-  } = useForm<QuittanceFormValues>({
-    resolver: zodResolver(quittanceSchema),
+  } = useForm<RentReceiptFormValues>({
+    resolver: zodResolver(rentReceiptSchema),
     mode: 'onChange',
     defaultValues: {
-      mois: brouillon.mois,
-      periodeDebut: brouillon.periodeDebut,
-      periodeFin: brouillon.periodeFin,
-      loyerHc: brouillon.loyerHc,
-      charges: brouillon.charges,
-      datePaiement: brouillon.datePaiement,
-      dateEmission: brouillon.dateEmission,
+      mois: draft.mois,
+      periodeDebut: draft.periodeDebut,
+      periodeFin: draft.periodeFin,
+      loyerHc: draft.loyerHc,
+      charges: draft.charges,
+      datePaiement: draft.datePaiement,
+      dateEmission: draft.dateEmission,
     },
   });
 
-  const valeurs = watch();
-  const validation = quittanceSchema.safeParse(valeurs);
+  const values = watch();
+  const validation = rentReceiptSchema.safeParse(values);
 
-  const modeles = templates.data ?? [];
-  const modeleActif = modeles.find((modele) => modele.actif) ?? null;
-  const modeleSelectionne = brouillon.templateId ?? modeleActif?.id ?? null;
-  const requete = validation.success
-    ? requeteDepuisValeurs(validation.data, modeleSelectionne)
+  const models = templates.data ?? [];
+  const activeModel = models.find((model) => model.actif) ?? null;
+  const selectedModel = draft.templateId ?? activeModel?.id ?? null;
+  const request = validation.success
+    ? requestFromValues(validation.data, selectedModel)
     : null;
-  const signature = JSON.stringify(requete ?? valeurs);
+  const signature = JSON.stringify(request ?? values);
 
-  const apercu = useApercuPdf(
+  const preview = usePdfPreview(
     (signal) =>
-      requete
-        ? api.quittances.apercu(requete, signal)
+      request
+        ? api.quittances.apercu(request, signal)
         : Promise.reject(new DOMException('Formulaire incomplet', 'AbortError')),
     signature,
     { actif: validation.success, debounceMs: 400 },
   );
 
   useEffect(() => {
-    if (!parametres.data) {
+    if (!settings.data) {
       return;
     }
-    const initialiseAvant = useQuittanceDraft.getState().initialise;
-    brouillon.initialiserDepuisParametres(parametres.data);
-    if (!initialiseAvant) {
-      const etat = useQuittanceDraft.getState();
+    const initializedBefore = useRentReceiptDraft.getState().initialise;
+    draft.initialiserDepuisParametres(settings.data);
+    if (!initializedBefore) {
+      const phase = useRentReceiptDraft.getState();
       if (!getValues('loyerHc')) {
-        setValue('loyerHc', etat.loyerHc, { shouldValidate: true });
+        setValue('loyerHc', phase.loyerHc, { shouldValidate: true });
       }
       if (!getValues('charges')) {
-        setValue('charges', etat.charges, { shouldValidate: true });
+        setValue('charges', phase.charges, { shouldValidate: true });
       }
     }
     // L'initialisation ne doit se produire qu'au premier chargement des paramètres.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parametres.data]);
+  }, [settings.data]);
 
-  const totalEstime = (() => {
-    const loyer = parseMontant(valeurs.loyerHc) ?? '0';
-    const charges = parseMontant(valeurs.charges) ?? '0';
-    return formatEUR(Number(loyer) + Number(charges));
+  const estimatedTotal = (() => {
+    const rent = parseAmount(values.loyerHc) ?? '0';
+    const costs = parseAmount(values.charges) ?? '0';
+    return formatEUR(Number(rent) + Number(costs));
   })();
 
-  async function executerGeneration(valeursSoumises: QuittanceFormValues) {
+  async function runGeneration(submittedValues: RentReceiptFormValues) {
     if (!validation.success) {
       return;
     }
-    const corps = requeteDepuisValeurs(valeursSoumises, modeleSelectionne);
-    setGenerationEnCours(true);
+    const requestBody = requestFromValues(submittedValues, selectedModel);
+    setGenerationInProgress(true);
     try {
-      const quittance = await api.quittances.generer(corps);
-      setResultat(quittance);
-      brouillon.marquerGenere();
+      const rentReceipt = await api.quittances.generer(requestBody);
+      setResult(rentReceipt);
+      draft.marquerGenere();
       await queryClient.invalidateQueries({ queryKey: ['quittances'] });
       toast.succes(
-        `Quittance de ${formatMois(valeursSoumises.mois)} générée en version ${quittance.version ?? 1}.`,
+        `Quittance de ${formatMonth(submittedValues.mois)} générée en version ${rentReceipt.version ?? 1}.`,
       );
     } catch (error) {
-      toast.erreur(messageErreur(error));
+      toast.erreur(errorMessage(error));
     } finally {
-      setGenerationEnCours(false);
+      setGenerationInProgress(false);
     }
   }
 
-  function soumettre(valeursSoumises: QuittanceFormValues) {
-    valeursEnAttente.current = valeursSoumises;
-    if (quittanceActive.data) {
-      setDialogueRegeneration(true);
+  function soumettre(submittedValues: RentReceiptFormValues) {
+    pendingValues.current = submittedValues;
+    if (activeRentReceipt.data) {
+      setRegenerationDialog(true);
       return;
     }
-    void executerGeneration(valeursSoumises);
+    void runGeneration(submittedValues);
   }
 
-  async function telechargerQuittance(quittance: QuittanceDto) {
-    if (!quittance.id) {
+  async function downloadRentReceipt(rentReceipt: RentReceiptDto) {
+    if (!rentReceipt.id) {
       return;
     }
     try {
-      const reponse = await api.quittances.pdf(quittance.id);
-      telechargerBlob(
-        reponse.blob,
-        reponse.nomFichier ?? `quittance_${quittance.mois ?? brouillon.mois}.pdf`,
+      const reply = await api.quittances.pdf(rentReceipt.id);
+      downloadBlob(
+        reply.blob,
+        reply.nomFichier ?? `quittance_${rentReceipt.mois ?? draft.mois}.pdf`,
       );
     } catch (error) {
-      toast.erreur(messageErreur(error));
+      toast.erreur(errorMessage(error));
     }
   }
 
-  function allerVersNote() {
-    const mois = resultat?.mois ?? brouillon.mois;
-    useNoteDraft.getState().changerMois(mois);
+  function goToStatement() {
+    const month = result?.mois ?? draft.mois;
+    useStatementDraft.getState().changerMois(month);
     navigate('/generer/note-frais');
   }
 
-  function reprendreConfiguration() {
-    if (!parametres.data) {
+  function resumeConfiguration() {
+    if (!settings.data) {
       return;
     }
-    brouillon.reprendreDepuisParametres(parametres.data);
-    setValue('loyerHc', parametres.data.loyerHc ?? '', { shouldValidate: true });
-    setValue('charges', parametres.data.provisionCharges ?? '', { shouldValidate: true });
+    draft.reprendreDepuisParametres(settings.data);
+    setValue('loyerHc', settings.data.loyerHc ?? '', { shouldValidate: true });
+    setValue('charges', settings.data.provisionCharges ?? '', { shouldValidate: true });
     toast.info('Montants repris depuis la configuration.');
   }
 
-  function changerMois(valeur: string) {
-    if (!valeur) {
+  function changeMonth(value: string) {
+    if (!value) {
       return;
     }
-    brouillon.changerMois(valeur);
-    const periode = periodeDuMois(valeur);
-    setValue('periodeDebut', periode.debut, { shouldValidate: true });
-    setValue('periodeFin', periode.fin, { shouldValidate: true });
+    draft.changerMois(value);
+    const period = periodOfMonth(value);
+    setValue('periodeDebut', period.debut, { shouldValidate: true });
+    setValue('periodeFin', period.fin, { shouldValidate: true });
   }
 
-  const versionActive = quittanceActive.data?.version;
-  const totalAffiche = resultat
-    ? formatEUR(resultat.total)
-    : quittanceActive.data
-      ? formatEUR(quittanceActive.data.total)
+  const activeVersion = activeRentReceipt.data?.version;
+  const displayedTotal = result
+    ? formatEUR(result.total)
+    : activeRentReceipt.data
+      ? formatEUR(activeRentReceipt.data.total)
       : null;
 
   return (
@@ -215,24 +215,24 @@ export function GenererQuittancePage() {
         description="Choisissez le mois : la période, les montants et les coordonnées sont pré-remplis depuis votre configuration. Ajustez si besoin, puis générez le document définitif."
         actions={
           <>
-            <Bouton
+            <Button
               variante="secondaire"
               icone={<ReceiptText size={15} />}
               onClick={() => navigate('/generer/note-frais')}
             >
               Note de frais du mois
-            </Bouton>
+            </Button>
             <span className="hidden items-center gap-1.5 rounded-full border border-line bg-surface/70 px-3 py-2 text-xs font-medium text-ink-soft sm:inline-flex">
               <CalendarDays size={14} aria-hidden="true" />
-              {formatMois(brouillon.mois)}
+              {formatMonth(draft.mois)}
             </span>
           </>
         }
       />
 
-      {parametres.isError ? (
+      {settings.isError ? (
         <div className="mb-4">
-          <EtatErreur message={messageErreur(parametres.error)} onReessayer={() => void parametres.refetch()} />
+          <ErrorState message={errorMessage(settings.error)} onReessayer={() => void settings.refetch()} />
         </div>
       ) : null}
 
@@ -241,24 +241,24 @@ export function GenererQuittancePage() {
           <button
             type="button"
             role="tab"
-            aria-selected={voletMobile === 'saisie'}
-            onClick={() => setVoletMobile('saisie')}
-            className={cn('segmented-item flex-1', voletMobile === 'saisie' && 'segmented-item-actif')}
+            aria-selected={mobilePanel === 'saisie'}
+            onClick={() => setMobilePanel('saisie')}
+            className={cn('segmented-item flex-1', mobilePanel === 'saisie' && 'segmented-item-actif')}
           >
             Saisie
           </button>
           <button
             type="button"
             role="tab"
-            aria-selected={voletMobile === 'apercu'}
-            onClick={() => setVoletMobile('apercu')}
+            aria-selected={mobilePanel === 'apercu'}
+            onClick={() => setMobilePanel('apercu')}
             className={cn(
               'segmented-item flex flex-1 items-center justify-center gap-2',
-              voletMobile === 'apercu' && 'segmented-item-actif',
+              mobilePanel === 'apercu' && 'segmented-item-actif',
             )}
           >
             Aperçu
-            {apercu.misAJour ? <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" /> : null}
+            {preview.misAJour ? <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" /> : null}
           </button>
         </div>
       </div>
@@ -266,9 +266,9 @@ export function GenererQuittancePage() {
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.02fr)_minmax(400px,0.98fr)] xl:gap-6">
         <div
           data-cy="volet-saisie"
-          className={cn('min-w-0 space-y-4', mobile && voletMobile !== 'saisie' && 'hidden')}
+          className={cn('min-w-0 space-y-4', mobile && mobilePanel !== 'saisie' && 'hidden')}
         >
-          {quittanceActive.data && !resultat ? (
+          {activeRentReceipt.data && !result ? (
             <div className="carte flex flex-wrap items-center justify-between gap-3 border-accent/20 bg-accent-soft/45 p-4">
               <div className="flex items-start gap-3">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-surface text-accent">
@@ -276,16 +276,16 @@ export function GenererQuittancePage() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-ink">
-                    {formatMois(quittanceActive.data.mois)} — version {versionActive} déjà active
+                    {formatMonth(activeRentReceipt.data.mois)} — version {activeVersion} déjà active
                   </p>
                   <p className="text-xs text-ink-soft">
-                    Total {totalAffiche}. Générer à nouveau créera la version {(versionActive ?? 0) + 1}.
+                    Total {displayedTotal}. Générer à nouveau créera la version {(activeVersion ?? 0) + 1}.
                   </p>
                 </div>
               </div>
-              {quittanceActive.data.id ? (
+              {activeRentReceipt.data.id ? (
                 <a
-                  href={api.quittances.urlPdf(quittanceActive.data.id)}
+                  href={api.quittances.urlPdf(activeRentReceipt.data.id)}
                   target="_blank"
                   rel="noreferrer"
                   className="btn btn-secondaire btn-petit"
@@ -297,7 +297,7 @@ export function GenererQuittancePage() {
             </div>
           ) : null}
 
-          {resultat ? (
+          {result ? (
             <div className="carte animation-fondu overflow-hidden border-accent/25">
               <div className="flex items-start gap-3 bg-accent-soft/60 px-5 py-4">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent text-white">
@@ -306,27 +306,27 @@ export function GenererQuittancePage() {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold text-accent">Quittance générée</p>
                   <p className="mt-0.5 text-sm text-ink">
-                    {formatMois(resultat.mois)} · version {resultat.version ?? 1} · {formatEUR(resultat.total)}
+                    {formatMonth(result.mois)} · version {result.version ?? 1} · {formatEUR(result.total)}
                   </p>
                   <p className="mt-0.5 text-xs text-ink-soft">
-                    Enregistrée dans l’historique avec le template « {resultat.templateNom ?? 'modèle intégré'} » v
-                    {resultat.templateVersion ?? 1}.
+                    Enregistrée dans l’historique avec le template « {result.templateNom ?? 'modèle intégré'} » v
+                    {result.templateVersion ?? 1}.
                   </p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 px-5 py-4">
-                <Bouton
+                <Button
                   variante="primaire"
                   petit
                   icone={<Download size={14} />}
-                  onClick={() => void telechargerQuittance(resultat)}
+                  onClick={() => void downloadRentReceipt(result)}
                   data-cy="btn-telecharger-quittance"
                 >
                   Télécharger le PDF
-                </Bouton>
-                {resultat.id ? (
+                </Button>
+                {result.id ? (
                   <a
-                    href={api.quittances.urlPdf(resultat.id)}
+                    href={api.quittances.urlPdf(result.id)}
                     target="_blank"
                     rel="noreferrer"
                     className="btn btn-secondaire btn-petit"
@@ -335,9 +335,9 @@ export function GenererQuittancePage() {
                     Ouvrir
                   </a>
                 ) : null}
-                <Bouton variante="fantome" petit onClick={allerVersNote}>
+                <Button variante="fantome" petit onClick={goToStatement}>
                   Aller à la note de frais de ce mois
-                </Bouton>
+                </Button>
               </div>
             </div>
           ) : null}
@@ -357,7 +357,7 @@ export function GenererQuittancePage() {
 
               <div className="carte-corps space-y-5">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <GroupeChamp
+                  <FieldGroup
                     id="quittance-mois"
                     label="Mois concerné"
                     erreur={errors.mois?.message}
@@ -370,12 +370,12 @@ export function GenererQuittancePage() {
                       data-cy="select-mois"
                       aria-invalid={Boolean(errors.mois)}
                       {...register('mois', {
-                        onChange: (evenement) => changerMois(evenement.target.value),
+                        onChange: (event) => changeMonth(event.target.value),
                       })}
                     />
-                  </GroupeChamp>
+                  </FieldGroup>
 
-                  <GroupeChamp
+                  <FieldGroup
                     id="quittance-template"
                     label="Template"
                     aide="Le modèle actif est utilisé par défaut."
@@ -385,25 +385,25 @@ export function GenererQuittancePage() {
                       id="quittance-template"
                       className="champ"
                       data-cy="select-template"
-                      value={modeleSelectionne ?? ''}
-                      onChange={(evenement) =>
-                        brouillon.definirTemplate(evenement.target.value ? Number(evenement.target.value) : null)
+                      value={selectedModel ?? ''}
+                      onChange={(event) =>
+                        draft.definirTemplate(event.target.value ? Number(event.target.value) : null)
                       }
-                      disabled={templates.isPending || modeles.length === 0}
+                      disabled={templates.isPending || models.length === 0}
                     >
-                      {modeles.length === 0 ? <option value="">Modèle intégré</option> : null}
-                      {modeles.map((modele) => (
-                        <option key={modele.id} value={modele.id}>
-                          {modele.nom} — v{modele.version}
-                          {modele.actif ? ' (actif)' : ''}
+                      {models.length === 0 ? <option value="">Modèle intégré</option> : null}
+                      {models.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.nom} — v{model.version}
+                          {model.actif ? ' (actif)' : ''}
                         </option>
                       ))}
                     </select>
-                  </GroupeChamp>
+                  </FieldGroup>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <GroupeChamp
+                  <FieldGroup
                     id="quittance-debut"
                     label="Début de période"
                     erreur={errors.periodeDebut?.message}
@@ -414,25 +414,25 @@ export function GenererQuittancePage() {
                       className={cn('champ', errors.periodeDebut && 'champ-erreur')}
                       aria-invalid={Boolean(errors.periodeDebut)}
                       {...register('periodeDebut', {
-                        onChange: (evenement) => brouillon.modifier({ periodeDebut: evenement.target.value }),
+                        onChange: (event) => draft.modifier({ periodeDebut: event.target.value }),
                       })}
                     />
-                  </GroupeChamp>
-                  <GroupeChamp id="quittance-fin" label="Fin de période" erreur={errors.periodeFin?.message}>
+                  </FieldGroup>
+                  <FieldGroup id="quittance-fin" label="Fin de période" erreur={errors.periodeFin?.message}>
                     <input
                       id="quittance-fin"
                       type="date"
                       className={cn('champ', errors.periodeFin && 'champ-erreur')}
                       aria-invalid={Boolean(errors.periodeFin)}
                       {...register('periodeFin', {
-                        onChange: (evenement) => brouillon.modifier({ periodeFin: evenement.target.value }),
+                        onChange: (event) => draft.modifier({ periodeFin: event.target.value }),
                       })}
                     />
-                  </GroupeChamp>
+                  </FieldGroup>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <GroupeChamp
+                  <FieldGroup
                     id="quittance-loyer"
                     label="Loyer hors charges"
                     erreur={errors.loyerHc?.message}
@@ -445,15 +445,15 @@ export function GenererQuittancePage() {
                         className={cn('champ pr-9', errors.loyerHc && 'champ-erreur')}
                         aria-invalid={Boolean(errors.loyerHc)}
                         {...register('loyerHc', {
-                          onChange: (evenement) => brouillon.modifier({ loyerHc: evenement.target.value }),
+                          onChange: (event) => draft.modifier({ loyerHc: event.target.value }),
                         })}
                       />
                       <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">
                         €
                       </span>
                     </div>
-                  </GroupeChamp>
-                  <GroupeChamp
+                  </FieldGroup>
+                  <FieldGroup
                     id="quittance-charges"
                     label="Provision pour charges"
                     erreur={errors.charges?.message}
@@ -465,20 +465,20 @@ export function GenererQuittancePage() {
                         className={cn('champ pr-9', errors.charges && 'champ-erreur')}
                         aria-invalid={Boolean(errors.charges)}
                         {...register('charges', {
-                          onChange: (evenement) => brouillon.modifier({ charges: evenement.target.value }),
+                          onChange: (event) => draft.modifier({ charges: event.target.value }),
                         })}
                       />
                       <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">
                         €
                       </span>
                     </div>
-                  </GroupeChamp>
+                  </FieldGroup>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/15 bg-accent-soft/45 px-4 py-3.5">
                   <div>
                     <p className="eyebrow text-accent">Total estimé</p>
-                    <p className="mt-1 font-display text-[28px] leading-none text-accent-strong nombre">{totalEstime}</p>
+                    <p className="mt-1 font-display text-[28px] leading-none text-accent-strong nombre">{estimatedTotal}</p>
                   </div>
                   <p className="max-w-[240px] text-right text-[11px] leading-snug text-ink-soft">
                     Affichage estimé. Le backend calcule le total du PDF avec arrondi au centime.
@@ -486,26 +486,26 @@ export function GenererQuittancePage() {
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <GroupeChamp id="quittance-paiement" label="Date de paiement" erreur={errors.datePaiement?.message}>
+                  <FieldGroup id="quittance-paiement" label="Date de paiement" erreur={errors.datePaiement?.message}>
                     <input
                       id="quittance-paiement"
                       type="date"
                       className={cn('champ', errors.datePaiement && 'champ-erreur')}
                       {...register('datePaiement', {
-                        onChange: (evenement) => brouillon.modifier({ datePaiement: evenement.target.value }),
+                        onChange: (event) => draft.modifier({ datePaiement: event.target.value }),
                       })}
                     />
-                  </GroupeChamp>
-                  <GroupeChamp id="quittance-emission" label="Date d’émission" erreur={errors.dateEmission?.message}>
+                  </FieldGroup>
+                  <FieldGroup id="quittance-emission" label="Date d’émission" erreur={errors.dateEmission?.message}>
                     <input
                       id="quittance-emission"
                       type="date"
                       className={cn('champ', errors.dateEmission && 'champ-erreur')}
                       {...register('dateEmission', {
-                        onChange: (evenement) => brouillon.modifier({ dateEmission: evenement.target.value }),
+                        onChange: (event) => draft.modifier({ dateEmission: event.target.value }),
                       })}
                     />
-                  </GroupeChamp>
+                  </FieldGroup>
                 </div>
 
                 <p className="aide">
@@ -523,33 +523,33 @@ export function GenererQuittancePage() {
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-6">
                 <div className="flex flex-wrap gap-2">
-                  <Bouton
+                  <Button
                     type="submit"
                     variante="primaire"
-                    chargement={generationEnCours}
+                    chargement={generationInProgress}
                     icone={<ReceiptText size={16} />}
-                    disabled={!isValid || quittanceActive.isPending || templates.isPending}
+                    disabled={!isValid || activeRentReceipt.isPending || templates.isPending}
                     data-cy="btn-generer-quittance"
                   >
                     Générer la quittance
-                  </Bouton>
-                  <Bouton
+                  </Button>
+                  <Button
                     variante="fantome"
                     petit
                     icone={<RotateCcw size={13} />}
-                    onClick={reprendreConfiguration}
-                    disabled={!parametres.data || generationEnCours}
+                    onClick={resumeConfiguration}
+                    disabled={!settings.data || generationInProgress}
                   >
                     Reprendre la configuration
-                  </Bouton>
+                  </Button>
                 </div>
-                {quittanceActive.data ? (
+                {activeRentReceipt.data ? (
                   <p className="text-[11px] text-ink-soft">
-                    Version active : v{versionActive} → v{(versionActive ?? 0) + 1} à la génération.
+                    Version active : v{activeVersion} → v{(activeVersion ?? 0) + 1} à la génération.
                   </p>
                 ) : (
                   <p className="text-[11px] text-ink-soft">
-                    {generationEnCours ? (
+                    {generationInProgress ? (
                       <span className="inline-flex items-center gap-1.5">
                         <LoaderCircle size={12} className="animate-spin" /> Génération en cours…
                       </span>
@@ -567,35 +567,35 @@ export function GenererQuittancePage() {
           data-cy="volet-apercu"
           className={cn(
             'min-w-0',
-            mobile && voletMobile !== 'apercu' && 'hidden',
+            mobile && mobilePanel !== 'apercu' && 'hidden',
             'lg:sticky lg:top-6 lg:self-start',
           )}
         >
           <PdfViewer
-            url={apercu.url}
-            chargement={apercu.chargement}
+            url={preview.url}
+            chargement={preview.chargement}
             erreur={
               !validation.success
                 ? 'Complétez les champs de la quittance pour actualiser l’aperçu.'
-                : apercu.erreur
+                : preview.erreur
             }
-            misAJour={apercu.misAJour}
-            onTelecharger={apercu.telecharger}
+            misAJour={preview.misAJour}
+            onTelecharger={preview.telecharger}
             actions={
               <select
                 aria-label="Template de la quittance"
                 className="rounded-lg border border-line bg-white px-2 py-1.5 text-[11px] font-medium text-ink-soft"
-                value={modeleSelectionne ?? ''}
-                onChange={(evenement) =>
-                  brouillon.definirTemplate(evenement.target.value ? Number(evenement.target.value) : null)
+                value={selectedModel ?? ''}
+                onChange={(event) =>
+                  draft.definirTemplate(event.target.value ? Number(event.target.value) : null)
                 }
-                disabled={modeles.length === 0}
+                disabled={models.length === 0}
                 data-cy="select-template-apercu"
               >
-                {modeles.length === 0 ? <option value="">Modèle intégré</option> : null}
-                {modeles.map((modele) => (
-                  <option key={modele.id} value={modele.id}>
-                    {modele.nom} — v{modele.version}
+                {models.length === 0 ? <option value="">Modèle intégré</option> : null}
+                {models.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.nom} — v{model.version}
                   </option>
                 ))}
               </select>
@@ -608,24 +608,24 @@ export function GenererQuittancePage() {
         </div>
       </div>
 
-      <DialogueConfirmation
-        ouvert={dialogueRegeneration}
+      <ConfirmDialog
+        ouvert={regenerationDialog}
         titre="Générer une nouvelle version ?"
         message={
           <>
-            Une quittance active existe déjà pour {formatMois(brouillon.mois)} (version {versionActive}).
-            La version {(versionActive ?? 0) + 1} sera créée et l’ancienne restera consultable dans l’historique.
+            Une quittance active existe déjà pour {formatMonth(draft.mois)} (version {activeVersion}).
+            La version {(activeVersion ?? 0) + 1} sera créée et l’ancienne restera consultable dans l’historique.
           </>
         }
         libelleConfirmer="Créer la nouvelle version"
         onConfirmer={() => {
-          setDialogueRegeneration(false);
-          const valeursSoumises = valeursEnAttente.current;
-          if (valeursSoumises) {
-            void executerGeneration(valeursSoumises);
+          setRegenerationDialog(false);
+          const submittedValues = pendingValues.current;
+          if (submittedValues) {
+            void runGeneration(submittedValues);
           }
         }}
-        onAnnuler={() => setDialogueRegeneration(false)}
+        onAnnuler={() => setRegenerationDialog(false)}
         dataCy="dialogue-regeneration-quittance"
       />
     </>

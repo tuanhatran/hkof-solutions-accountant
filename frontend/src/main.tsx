@@ -17,12 +17,12 @@ const queryClient = new QueryClient({
   },
 });
 
-const racine = document.getElementById('root');
-if (!racine) {
+const root = document.getElementById('root');
+if (!root) {
   throw new Error('Élément racine introuvable dans index.html.');
 }
 
-createRoot(racine).render(
+createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />

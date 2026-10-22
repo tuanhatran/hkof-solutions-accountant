@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-interface GroupeChampProps {
+interface FieldGroupProps {
   id: string;
   label: string;
   erreur?: string;
@@ -10,7 +10,7 @@ interface GroupeChampProps {
   children: ReactNode;
 }
 
-export function GroupeChamp({ id, label, erreur, aide, badge, className, children }: GroupeChampProps) {
+export function FieldGroup({ id, label, erreur: errorText, aide: help, badge, className, children }: FieldGroupProps) {
   return (
     <div className={className}>
       <div className="flex items-center justify-between gap-2">
@@ -20,14 +20,14 @@ export function GroupeChamp({ id, label, erreur, aide, badge, className, childre
         {badge}
       </div>
       {children}
-      {aide && !erreur ? (
+      {help && !errorText ? (
         <p className="aide" id={`${id}-aide`}>
-          {aide}
+          {help}
         </p>
       ) : null}
-      {erreur ? (
+      {errorText ? (
         <p className="erreur-champ" id={`${id}-erreur`} role="alert">
-          {erreur}
+          {errorText}
         </p>
       ) : null}
     </div>

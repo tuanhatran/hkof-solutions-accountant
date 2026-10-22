@@ -1,19 +1,18 @@
 import {
-  MOIS,
-  ajouterFrais,
-  ajouterLoyer,
-  attendreApercu,
-  attendreFichierSelectionne,
-  attendreMontant,
-  attendreValeur,
-  configurerLlm,
-  creerQuittance,
-  desactiverLlm,
-  teledechargerEtLirePdf,
+  MONTHS,
+  addExpense,
+  addRent,
+  waitForSelectedFile,
+  waitForAmount,
+  waitForValue,
+  configureLlm,
+  createRentReceipt,
+  disableLlm,
+  downloadAndReadPdf,
 } from '../support/helpers';
 
-describe('Admin IA et templates', () => {
-  it('charge les modèles du mock et réussit le test de connexion', () => {
+describe('AI admin and templates', () => {
+  it('loads mock models and passes the connection test', () => {
     cy.visit('/admin');
 
     cy.get('[data-cy="select-llm-model"]', { timeout: 25_000 }).should('be.visible');
@@ -33,7 +32,7 @@ describe('Admin IA et templates', () => {
     );
   });
 
-  it('affiche un avertissement dès que l’URL du LLM n’est plus locale', () => {
+  it('shows a warning as soon as the LLM URL is no longer local', () => {
     cy.visit('/admin');
     cy.get('[data-cy="input-llm-url"]', { timeout: 20_000 }).should('be.visible');
 
@@ -46,9 +45,9 @@ describe('Admin IA et templates', () => {
     );
   });
 
-  it('reste utilisable en manuel quand Ollama est injoignable', () => {
-    configurerLlm({ url: 'http://127.0.0.1:11499' });
-    creerQuittance();
+  it('stays usable in manual mode when Ollama is unreachable', () => {
+    configureLlm({ url: 'http://127.0.0.1:11499' });
+    createRentReceipt();
     cy.visit('/admin');
     cy.get('[data-cy="badge-llm-status"]', { timeout: 30_000 })
       .first()
@@ -56,24 +55,24 @@ describe('Admin IA et templates', () => {
     cy.get('[data-cy="llm-statut"]').should('contain.text', 'Injoignable');
 
     cy.visit('/generer/note-frais');
-    cy.choisirMois(MOIS);
+    cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled');
-    ajouterLoyer();
-    ajouterFrais({ type: 'gaz', fixture: 'facture-gaz.txt', montant: '120.00' });
-    attendreMontant('[data-cy="total-retenu"]', '992,85');
+    addRent();
+    addExpense({ type: 'gaz', fixture: 'facture-gaz.txt', montant: '120.00' });
+    waitForAmount('[data-cy="total-retenu"]', '992,85');
   });
 
-  it('reste utilisable en manuel quand l’IA est désactivée', () => {
-    desactiverLlm();
-    creerQuittance();
+  it('stays usable in manual mode when AI is disabled', () => {
+    disableLlm();
+    createRentReceipt();
     cy.visit('/generer/note-frais');
-    cy.choisirMois(MOIS);
+    cy.chooseMonth(MONTHS);
 
     cy.get('[data-cy="badge-llm-status"]', { timeout: 20_000 })
       .first()
       .should('contain.text', 'IA désactivée');
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled');
-    ajouterLoyer();
+    addRent();
 
     cy.get('[data-cy="dropzone-fichier"]').selectFile('cypress/fixtures/facture-gaz.txt', {
       force: true,
@@ -82,14 +81,14 @@ describe('Admin IA et templates', () => {
       'contain.text',
       'désactivée',
     );
-    attendreFichierSelectionne('facture-gaz.txt');
+    waitForSelectedFile('facture-gaz.txt');
 
     cy.get('[data-cy="input-montant-ttc"]').clear().type('120.00');
     cy.get('[data-cy="btn-ajouter-frais"]').should('not.be.disabled').click();
-    attendreMontant('[data-cy="total-retenu"]', '992,85');
+    waitForAmount('[data-cy="total-retenu"]', '992,85');
   });
 
-  it('importe, prévisualise, active un template puis revient au modèle intégré', () => {
+  it('imports, previews, activates a template then reverts to the built-in model', () => {
     cy.visit('/templates');
     cy.get('[data-cy="dropzone-template-quittance"]', { timeout: 20_000 }).should('exist');
 
@@ -120,35 +119,35 @@ describe('Admin IA et templates', () => {
 
     cy.intercept('POST', '/api/quittances/apercu').as('apercu');
     cy.get('[data-cy="tab-quittance"]').click();
-    attendreValeur('#quittance-loyer', '900.00');
+    waitForValue('#quittance-loyer', '900.00');
     cy.wait('@apercu', { timeout: 30_000 });
-    attendreApercu();
+    cy.waitForPreview();
     cy.get('[data-cy="select-template"] option:selected', { timeout: 20_000 }).should(
       'contain.text',
       'Quittance E2E',
     );
 
-    teledechargerEtLirePdf(
+    downloadAndReadPdf(
       '[data-cy="btn-telecharger-apercu"]',
       'quittance_apercu.pdf',
-      (texte) => {
-        expect(texte).to.contain('QUITTANCE TEST E2E');
-        expect(texte).to.contain('APERÇU');
+      (text) => {
+        expect(text).to.contain('QUITTANCE TEST E2E');
+        expect(text).to.contain('APERÇU');
       },
     );
 
-    cy.choisirMois(MOIS);
+    cy.chooseMonth(MONTHS);
     cy.get('[data-cy="btn-generer-quittance"]').should('not.be.disabled').click();
     cy.contains('Quittance générée', { timeout: 25_000 }).should('be.visible');
 
-    teledechargerEtLirePdf(
+    downloadAndReadPdf(
       '[data-cy="btn-telecharger-quittance"]',
       'quittance_2026-01.pdf',
-      (texte) => {
-        expect(texte).to.contain('QUITTANCE TEST E2E');
-        expect(texte).to.contain('Janvier 2026');
-        expect(texte).to.contain('950,00 €');
-        expect(texte).not.to.contain('APERÇU');
+      (text) => {
+        expect(text).to.contain('QUITTANCE TEST E2E');
+        expect(text).to.contain('Janvier 2026');
+        expect(text).to.contain('950,00 €');
+        expect(text).not.to.contain('APERÇU');
       },
     );
 

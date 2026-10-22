@@ -1,63 +1,63 @@
-const MOIS_VALIDE = /^\d{4}-(0[1-9]|1[0-2])$/;
+const VALID_MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 
-export function moisCourant(date = new Date()): string {
+export function currentMonth(date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-export function estMoisValide(mois: string): boolean {
-  return MOIS_VALIDE.test(mois);
+export function isValidMonth(month: string): boolean {
+  return VALID_MONTH.test(month);
 }
 
-export function joursDansMois(mois: string): number {
-  if (!estMoisValide(mois)) {
+export function daysInMonth(month: string): number {
+  if (!isValidMonth(month)) {
     return 0;
   }
-  const [annee, numeroMois] = mois.split('-').map(Number);
-  return new Date(annee, numeroMois, 0).getDate();
+  const [year, monthNumber] = month.split('-').map(Number);
+  return new Date(year, monthNumber, 0).getDate();
 }
 
-export function periodeDuMois(mois: string): { debut: string; fin: string } {
-  if (!estMoisValide(mois)) {
+export function periodOfMonth(month: string): { debut: string; fin: string } {
+  if (!isValidMonth(month)) {
     return { debut: '', fin: '' };
   }
-  const jours = joursDansMois(mois);
-  return { debut: `${mois}-01`, fin: `${mois}-${String(jours).padStart(2, '0')}` };
+  const days = daysInMonth(month);
+  return { debut: `${month}-01`, fin: `${month}-${String(days).padStart(2, '0')}` };
 }
 
-export function dateAujourdhui(date = new Date()): string {
-  const annee = date.getFullYear();
-  const mois = String(date.getMonth() + 1).padStart(2, '0');
-  const jour = String(date.getDate()).padStart(2, '0');
-  return `${annee}-${mois}-${jour}`;
+export function todayDate(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
-export function moisDeDate(date: string): string {
+export function monthOfDate(date: string): string {
   return date.slice(0, 7);
 }
 
-export function estDateValide(date: string): boolean {
+export function isValidDate(date: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return false;
   }
-  const [annee, mois, jour] = date.split('-').map(Number);
-  const candidate = new Date(annee, mois - 1, jour);
+  const [year, month, day] = date.split('-').map(Number);
+  const candidate = new Date(year, month - 1, day);
   return (
-    candidate.getFullYear() === annee &&
-    candidate.getMonth() === mois - 1 &&
-    candidate.getDate() === jour
+    candidate.getFullYear() === year &&
+    candidate.getMonth() === month - 1 &&
+    candidate.getDate() === day
   );
 }
 
-export function periodeDansLOrdre(debut: string, fin: string): boolean {
-  return estDateValide(debut) && estDateValide(fin) && debut <= fin;
+export function periodInOrder(start: string, end: string): boolean {
+  return isValidDate(start) && isValidDate(end) && start <= end;
 }
 
-export function dureeEnJours(debut: string, fin: string): number {
-  if (!estDateValide(debut) || !estDateValide(fin) || fin < debut) {
+export function durationInDays(start: string, end: string): number {
+  if (!isValidDate(start) || !isValidDate(end) || end < start) {
     return 0;
   }
-  const [anneeD, moisD, jourD] = debut.split('-').map(Number);
-  const [anneeF, moisF, jourF] = fin.split('-').map(Number);
-  const millis = Date.UTC(anneeF, moisF - 1, jourF) - Date.UTC(anneeD, moisD - 1, jourD);
+  const [yearStart, startMonth, dayStart] = start.split('-').map(Number);
+  const [yearEnd, endMonth, dayEnd] = end.split('-').map(Number);
+  const millis = Date.UTC(yearEnd, endMonth - 1, dayEnd) - Date.UTC(yearStart, startMonth - 1, dayStart);
   return Math.round(millis / 86_400_000) + 1;
 }

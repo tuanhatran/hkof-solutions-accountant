@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
-  fraisSchema,
+  expenseSchema,
   llmSchema,
-  parametresSchema,
-  posteSchema,
-  quittanceSchema,
+  settingsSchema,
+  expenseItemSchema,
+  rentReceiptSchema,
 } from './validation';
 
-const FRAIS_VALIDE = {
+const VALID_EXPENSE = {
   posteCode: 'gaz',
   montantTtc: '120,00',
   prorataPct: '35,71',
@@ -16,7 +16,7 @@ const FRAIS_VALIDE = {
   montantMoisSurcharge: '',
 };
 
-const PARAMETRES_VALIDES = {
+const VALID_SETTINGS = {
   raisonSociale: 'HKOF',
   formeJuridique: 'EURL',
   siren: '123 456 789',
@@ -34,27 +34,27 @@ const PARAMETRES_VALIDES = {
   lieuEmission: 'Paris',
 };
 
-describe('fraisSchema', () => {
-  it('accepte une saisie complète', () => {
-    expect(fraisSchema.safeParse(FRAIS_VALIDE).success).toBe(true);
+describe('expenseSchema', () => {
+  it('accepts a complete entry', () => {
+    expect(expenseSchema.safeParse(VALID_EXPENSE).success).toBe(true);
   });
 
-  it('refuse un montant nul ou un prorata hors bornes', () => {
-    expect(fraisSchema.safeParse({ ...FRAIS_VALIDE, montantTtc: '0' }).success).toBe(false);
-    expect(fraisSchema.safeParse({ ...FRAIS_VALIDE, prorataPct: '101' }).success).toBe(false);
-    expect(fraisSchema.safeParse({ ...FRAIS_VALIDE, prorataPct: '35,711' }).success).toBe(false);
+  it('rejects a zero amount or an out-of-range pro-rata', () => {
+    expect(expenseSchema.safeParse({ ...VALID_EXPENSE, montantTtc: '0' }).success).toBe(false);
+    expect(expenseSchema.safeParse({ ...VALID_EXPENSE, prorataPct: '101' }).success).toBe(false);
+    expect(expenseSchema.safeParse({ ...VALID_EXPENSE, prorataPct: '35,711' }).success).toBe(false);
   });
 
-  it('exige une période complète et ordonnée', () => {
-    expect(fraisSchema.safeParse({ ...FRAIS_VALIDE, periodeFin: '' }).success).toBe(false);
+  it('requires a complete and ordered period', () => {
+    expect(expenseSchema.safeParse({ ...VALID_EXPENSE, periodeFin: '' }).success).toBe(false);
     expect(
-      fraisSchema.safeParse({ ...FRAIS_VALIDE, periodeDebut: '2026-10-31', periodeFin: '2026-10-01' }).success,
+      expenseSchema.safeParse({ ...VALID_EXPENSE, periodeDebut: '2026-10-31', periodeFin: '2026-10-01' }).success,
     ).toBe(false);
   });
 });
 
-describe('quittanceSchema', () => {
-  const VALIDE = {
+describe('rentReceiptSchema', () => {
+  const VALID = {
     mois: '2026-10',
     periodeDebut: '2026-10-01',
     periodeFin: '2026-10-31',
@@ -64,36 +64,36 @@ describe('quittanceSchema', () => {
     dateEmission: '',
   };
 
-  it('accepte la période du mois et des dates optionnelles vides', () => {
-    expect(quittanceSchema.safeParse(VALIDE).success).toBe(true);
+  it('accepts the month period and empty optional dates', () => {
+    expect(rentReceiptSchema.safeParse(VALID).success).toBe(true);
   });
 
-  it('refuse une période inversée et un mois invalide', () => {
-    expect(quittanceSchema.safeParse({ ...VALIDE, periodeFin: '2026-09-30' }).success).toBe(false);
-    expect(quittanceSchema.safeParse({ ...VALIDE, mois: '2026-13' }).success).toBe(false);
+  it('rejects a reversed period and an invalid month', () => {
+    expect(rentReceiptSchema.safeParse({ ...VALID, periodeFin: '2026-09-30' }).success).toBe(false);
+    expect(rentReceiptSchema.safeParse({ ...VALID, mois: '2026-13' }).success).toBe(false);
   });
 });
 
-describe('parametresSchema', () => {
-  it('accepte une configuration complète', () => {
-    expect(parametresSchema.safeParse(PARAMETRES_VALIDES).success).toBe(true);
+describe('settingsSchema', () => {
+  it('accepts a complete configuration', () => {
+    expect(settingsSchema.safeParse(VALID_SETTINGS).success).toBe(true);
   });
 
-  it('refuse une surface professionnelle supérieure à la surface totale', () => {
-    const resultat = parametresSchema.safeParse({ ...PARAMETRES_VALIDES, surfacePro: '80' });
-    expect(resultat.success).toBe(false);
-    if (!resultat.success) {
-      expect(resultat.error.issues.some((issue) => issue.path[0] === 'surfacePro')).toBe(true);
+  it('rejects a professional area larger than the total area', () => {
+    const result = settingsSchema.safeParse({ ...VALID_SETTINGS, surfacePro: '80' });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((issue) => issue.path[0] === 'surfacePro')).toBe(true);
     }
   });
 
-  it('refuse un SIREN mal formé', () => {
-    expect(parametresSchema.safeParse({ ...PARAMETRES_VALIDES, siren: '12345' }).success).toBe(false);
+  it('rejects a malformed SIREN', () => {
+    expect(settingsSchema.safeParse({ ...VALID_SETTINGS, siren: '12345' }).success).toBe(false);
   });
 });
 
-describe('posteSchema', () => {
-  const VALIDE = {
+describe('expenseItemSchema', () => {
+  const VALID = {
     code: 'gaz',
     libelle: 'Gaz',
     fournisseur: 'EDF',
@@ -104,18 +104,18 @@ describe('posteSchema', () => {
     plusieursLignesAutorisees: false,
   };
 
-  it('accepte un code simple', () => {
-    expect(posteSchema.safeParse(VALIDE).success).toBe(true);
+  it('accepts a simple code', () => {
+    expect(expenseItemSchema.safeParse(VALID).success).toBe(true);
   });
 
-  it('refuse un code avec espaces ou caractères spéciaux', () => {
-    expect(posteSchema.safeParse({ ...VALIDE, code: 'gaz ville' }).success).toBe(false);
-    expect(posteSchema.safeParse({ ...VALIDE, code: 'gaz/ville' }).success).toBe(false);
+  it('rejects a code with spaces or special characters', () => {
+    expect(expenseItemSchema.safeParse({ ...VALID, code: 'gaz ville' }).success).toBe(false);
+    expect(expenseItemSchema.safeParse({ ...VALID, code: 'gaz/ville' }).success).toBe(false);
   });
 });
 
 describe('llmSchema', () => {
-  const VALIDE = {
+  const VALID = {
     actif: true,
     url: 'http://host.docker.internal:11434',
     modele: 'qwen2.5:7b',
@@ -129,13 +129,13 @@ describe('llmSchema', () => {
     supprimerCle: false,
   };
 
-  it('accepte une configuration locale sans clé', () => {
-    expect(llmSchema.safeParse(VALIDE).success).toBe(true);
+  it('accepts a local configuration without key', () => {
+    expect(llmSchema.safeParse(VALID).success).toBe(true);
   });
 
-  it('refuse une URL non http(s) et une température hors bornes', () => {
-    expect(llmSchema.safeParse({ ...VALIDE, url: 'ftp://serveur' }).success).toBe(false);
-    expect(llmSchema.safeParse({ ...VALIDE, temperature: '2,1' }).success).toBe(false);
-    expect(llmSchema.safeParse({ ...VALIDE, timeoutSeconds: 2 }).success).toBe(false);
+  it('rejects a non-http(s) URL and an out-of-range temperature', () => {
+    expect(llmSchema.safeParse({ ...VALID, url: 'ftp://serveur' }).success).toBe(false);
+    expect(llmSchema.safeParse({ ...VALID, temperature: '2,1' }).success).toBe(false);
+    expect(llmSchema.safeParse({ ...VALID, timeoutSeconds: 2 }).success).toBe(false);
   });
 });

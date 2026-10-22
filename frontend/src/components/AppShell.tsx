@@ -8,10 +8,10 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { DialogueConfirmation } from './DialogueConfirmation';
+import { ConfirmDialog } from './ConfirmDialog';
 import { LlmBadge } from './LlmBadge';
 import { ToastHost } from './ToastHost';
-import { useBlocageBrouillon } from '@/hooks/useBlocageBrouillon';
+import { useDraftBlock } from '@/hooks/useDraftBlock';
 import { cn } from '@/lib/cn';
 
 const SECTIONS = [
@@ -36,9 +36,9 @@ const SECTIONS = [
   },
 ];
 
-const LIENS_MOBILE = SECTIONS.flatMap((section) => section.liens);
+const MOBILE_LINKS = SECTIONS.flatMap((section) => section.liens);
 
-function Marque({ compact = false }: { compact?: boolean }) {
+function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-3">
       <span
@@ -60,18 +60,18 @@ function Marque({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function NavigationLaterale() {
+function SideNavigation() {
   return (
     <nav className="mt-8 flex-1 space-y-6" aria-label="Navigation principale">
       {SECTIONS.map((section) => (
         <div key={section.titre}>
           <p className="px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">{section.titre}</p>
           <div className="mt-2 space-y-1">
-            {section.liens.map((lien) => (
+            {section.liens.map((link) => (
               <NavLink
-                key={lien.vers}
-                to={lien.vers}
-                data-cy={lien.dataCy}
+                key={link.vers}
+                to={link.vers}
+                data-cy={link.dataCy}
                 className={({ isActive }) =>
                   cn(
                     'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium transition',
@@ -83,12 +83,12 @@ function NavigationLaterale() {
               >
                 {({ isActive }) => (
                   <>
-                    <lien.icone
+                    <link.icone
                       size={17}
                       className={cn('shrink-0 transition', isActive ? 'text-[#e7b98f]' : 'text-white/45 group-hover:text-white/70')}
                       aria-hidden="true"
                     />
-                    <span className="flex-1">{lien.libelle}</span>
+                    <span className="flex-1">{link.libelle}</span>
                     {isActive ? <span className="h-1.5 w-1.5 rounded-full bg-[#e7b98f]" aria-hidden="true" /> : null}
                   </>
                 )}
@@ -102,7 +102,7 @@ function NavigationLaterale() {
 }
 
 export function AppShell() {
-  const blocker = useBlocageBrouillon();
+  const blocker = useDraftBlock();
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[256px_minmax(0,1fr)]">
@@ -121,9 +121,9 @@ export function AppShell() {
         }}
       >
         <div className="px-2">
-          <Marque />
+          <Brand />
         </div>
-        <NavigationLaterale />
+        <SideNavigation />
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.055] p-3.5">
           <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/55">
             <ShieldCheck size={14} className="text-[#e7b98f]" aria-hidden="true" />
@@ -142,14 +142,14 @@ export function AppShell() {
       <div className="min-w-0">
         <header className="sticky top-0 z-30 border-b border-line/80 bg-[#123f33] px-4 py-3 lg:hidden">
           <div className="flex items-center justify-between gap-3">
-            <Marque compact />
+            <Brand compact />
             <LlmBadge sombre />
           </div>
           <nav className="-mx-1 mt-3 flex gap-1 overflow-x-auto pb-0.5" aria-label="Navigation principale mobile">
-            {LIENS_MOBILE.map((lien) => (
+            {MOBILE_LINKS.map((link) => (
               <NavLink
-                key={lien.vers}
-                to={lien.vers}
+                key={link.vers}
+                to={link.vers}
                 className={({ isActive }) =>
                   cn(
                     'flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition',
@@ -157,8 +157,8 @@ export function AppShell() {
                   )
                 }
               >
-                <lien.icone size={13} aria-hidden="true" />
-                {lien.libelle}
+                <link.icone size={13} aria-hidden="true" />
+                {link.libelle}
               </NavLink>
             ))}
           </nav>
@@ -170,7 +170,7 @@ export function AppShell() {
       </div>
 
       <ToastHost />
-      <DialogueConfirmation
+      <ConfirmDialog
         ouvert={blocker.state === 'blocked'}
         titre="Brouillon non généré"
         message="Des informations saisies ne sont pas encore enregistrées. Voulez-vous vraiment quitter cette page ? Le brouillon est conservé pendant la session, mais le document ne sera pas généré."

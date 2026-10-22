@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import type { ParametresDto } from '@/api/types';
-import { dateAujourdhui, moisCourant, periodeDuMois } from '@/lib/dates';
+import type { SettingsDto } from '@/api/types';
+import { todayDate, currentMonth, periodOfMonth } from '@/lib/dates';
 
-interface QuittanceDraftState {
+interface RentReceiptDraftState {
   mois: string;
   periodeDebut: string;
   periodeFin: string;
@@ -14,72 +14,72 @@ interface QuittanceDraftState {
   templateId: number | null;
   initialise: boolean;
   dirty: boolean;
-  changerMois: (mois: string) => void;
+  changerMois: (month: string) => void;
   modifier: (
-    valeurs: Partial<
+    values: Partial<
       Pick<
-        QuittanceDraftState,
+        RentReceiptDraftState,
         'periodeDebut' | 'periodeFin' | 'loyerHc' | 'charges' | 'datePaiement' | 'dateEmission'
       >
     >,
   ) => void;
   definirTemplate: (templateId: number | null) => void;
-  initialiserDepuisParametres: (parametres: ParametresDto) => void;
-  reprendreDepuisParametres: (parametres: ParametresDto) => void;
+  initialiserDepuisParametres: (settings: SettingsDto) => void;
+  reprendreDepuisParametres: (settings: SettingsDto) => void;
   marquerGenere: () => void;
 }
 
-const moisInitial = moisCourant();
-const periodeInitiale = periodeDuMois(moisInitial);
-const aujourdHui = dateAujourdhui();
+const initialMonth = currentMonth();
+const initialPeriod = periodOfMonth(initialMonth);
+const today = todayDate();
 
-export const useQuittanceDraft = create<QuittanceDraftState>()(
+export const useRentReceiptDraft = create<RentReceiptDraftState>()(
   persist(
     (set, get) => ({
-      mois: moisInitial,
-      periodeDebut: periodeInitiale.debut,
-      periodeFin: periodeInitiale.fin,
+      mois: initialMonth,
+      periodeDebut: initialPeriod.debut,
+      periodeFin: initialPeriod.fin,
       loyerHc: '',
       charges: '',
-      datePaiement: aujourdHui,
-      dateEmission: aujourdHui,
+      datePaiement: today,
+      dateEmission: today,
       templateId: null,
       initialise: false,
       dirty: false,
 
-      changerMois: (mois) => {
-        if (mois === get().mois) {
+      changerMois: (month) => {
+        if (month === get().mois) {
           return;
         }
-        const periode = periodeDuMois(mois);
+        const period = periodOfMonth(month);
         set({
-          mois,
-          periodeDebut: periode.debut,
-          periodeFin: periode.fin,
+          mois: month,
+          periodeDebut: period.debut,
+          periodeFin: period.fin,
           dirty: true,
         });
       },
 
-      modifier: (valeurs) => set({ ...valeurs, dirty: true }),
+      modifier: (values) => set({ ...values, dirty: true }),
 
       definirTemplate: (templateId) => set({ templateId, dirty: true }),
 
-      initialiserDepuisParametres: (parametres) => {
+      initialiserDepuisParametres: (settings) => {
         if (get().initialise) {
           return;
         }
         set({
-          loyerHc: parametres.loyerHc ?? '',
-          charges: parametres.provisionCharges ?? '',
+          loyerHc: settings.loyerHc ?? '',
+          charges: settings.provisionCharges ?? '',
           initialise: true,
           dirty: false,
         });
       },
 
-      reprendreDepuisParametres: (parametres) =>
+      reprendreDepuisParametres: (settings) =>
         set({
-          loyerHc: parametres.loyerHc ?? '',
-          charges: parametres.provisionCharges ?? '',
+          loyerHc: settings.loyerHc ?? '',
+          charges: settings.provisionCharges ?? '',
           dirty: true,
         }),
 

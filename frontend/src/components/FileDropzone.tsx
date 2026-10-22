@@ -2,11 +2,11 @@ import { FileText, Image as ImageIcon, Table2, UploadCloud, X } from 'lucide-rea
 import { useState } from 'react';
 import { useDropzone, type Accept, type FileRejection } from 'react-dropzone';
 import { cn } from '@/lib/cn';
-import { formatOctets } from '@/lib/format';
+import { formatBytes } from '@/lib/format';
 
-const TAILLE_MAX = 10 * 1024 * 1024;
+const MAX_SIZE = 10 * 1024 * 1024;
 
-export const FORMATS_JUSTIFICATIF: Accept = {
+export const RECEIPT_FORMATS: Accept = {
   'application/pdf': ['.pdf'],
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
@@ -18,7 +18,7 @@ export const FORMATS_JUSTIFICATIF: Accept = {
 };
 
 interface FileDropzoneProps {
-  onFichier: (fichier: File) => void;
+  onFichier: (file: File) => void;
   disabled?: boolean;
   dataCy: string;
   erreurExterne?: string | null;
@@ -29,52 +29,52 @@ interface FileDropzoneProps {
   ariaLabel?: string;
 }
 
-function messageRejet(
-  rejet: FileRejection,
-  tailleMax: number,
-  descriptionFormats: string,
+function rejectionMessage(
+  rejection: FileRejection,
+  maxSize: number,
+  formatsDescription: string,
 ): string {
-  const code = rejet.errors[0]?.code;
+  const code = rejection.errors[0]?.code;
   if (code === 'file-too-large') {
-    return `Fichier trop volumineux (${Math.round(tailleMax / (1024 * 1024))} Mo maximum).`;
+    return `Fichier trop volumineux (${Math.round(maxSize / (1024 * 1024))} Mo maximum).`;
   }
   if (code === 'too-many-files') {
     return 'Un seul fichier à la fois.';
   }
-  return `Format non accepté. Formats : ${descriptionFormats}.`;
+  return `Format non accepté. Formats : ${formatsDescription}.`;
 }
 
 export function FileDropzone({
-  onFichier,
+  onFichier: onFile,
   disabled = false,
   dataCy,
-  erreurExterne,
-  texte = 'Glissez votre justificatif ici',
-  accept = FORMATS_JUSTIFICATIF,
-  tailleMax = TAILLE_MAX,
-  descriptionFormats = 'PDF, DOCX, XLSX, XLS, CSV, TXT, JPG, PNG',
+  erreurExterne: externalError,
+  texte: text = 'Glissez votre justificatif ici',
+  accept = RECEIPT_FORMATS,
+  tailleMax: maxSize = MAX_SIZE,
+  descriptionFormats: formatsDescription = 'PDF, DOCX, XLSX, XLS, CSV, TXT, JPG, PNG',
   ariaLabel = 'Choisir un fichier justificatif',
 }: FileDropzoneProps) {
-  const [erreur, setErreur] = useState<string | null>(null);
+  const [errorText, setErrorText] = useState<string | null>(null);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept,
-    maxSize: tailleMax,
+    maxSize: maxSize,
     multiple: false,
     disabled,
-    onDropAccepted: (fichiers) => {
-      setErreur(null);
-      if (fichiers[0]) {
-        onFichier(fichiers[0]);
+    onDropAccepted: (files) => {
+      setErrorText(null);
+      if (files[0]) {
+        onFile(files[0]);
       }
     },
-    onDropRejected: (rejets) => {
-      const premier = rejets[0];
-      setErreur(premier ? messageRejet(premier, tailleMax, descriptionFormats) : 'Fichier refusé.');
+    onDropRejected: (rejections) => {
+      const first = rejections[0];
+      setErrorText(first ? rejectionMessage(first, maxSize, formatsDescription) : 'Fichier refusé.');
     },
   });
 
-  const message = erreurExterne ?? erreur;
+  const message = externalError ?? errorText;
 
   return (
     <div>
@@ -94,10 +94,10 @@ export function FileDropzone({
         <span className="grid h-11 w-11 place-items-center rounded-full bg-surface text-accent shadow-sm transition group-hover:scale-105">
           <UploadCloud size={20} aria-hidden="true" />
         </span>
-        <p className="mt-3 text-sm font-semibold text-ink">{texte}</p>
+        <p className="mt-3 text-sm font-semibold text-ink">{text}</p>
         <p className="mt-1 text-xs text-ink-soft">ou cliquez pour parcourir vos fichiers</p>
         <p className="mt-3 text-[11px] text-ink-soft/80">
-          {descriptionFormats} — {Math.round(tailleMax / (1024 * 1024))} Mo max.
+          {formatsDescription} — {Math.round(maxSize / (1024 * 1024))} Mo max.
         </p>
       </div>
       {message ? (
@@ -109,7 +109,7 @@ export function FileDropzone({
   );
 }
 
-interface FichierSelectionneProps {
+interface SelectedFileProps {
   nom: string;
   taille?: number | null;
   typeMime?: string | null;
@@ -117,31 +117,31 @@ interface FichierSelectionneProps {
   onRetirer?: () => void;
 }
 
-export function FichierSelectionne({ nom, taille, typeMime, enCours, onRetirer }: FichierSelectionneProps) {
-  const Icone = typeMime?.startsWith('image/')
+export function SelectedFile({ nom: name, taille: size, typeMime: mimeType, enCours: inProgress, onRetirer: onRemove }: SelectedFileProps) {
+  const IconComponent = mimeType?.startsWith('image/')
     ? ImageIcon
-    : typeMime?.includes('sheet') || typeMime?.includes('csv')
+    : mimeType?.includes('sheet') || mimeType?.includes('csv')
       ? Table2
       : FileText;
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-line bg-paper/50 p-3">
       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-surface text-accent">
-        <Icone size={18} aria-hidden="true" />
+        <IconComponent size={18} aria-hidden="true" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-ink" title={nom}>
-          {nom}
+        <p className="truncate text-sm font-semibold text-ink" title={name}>
+          {name}
         </p>
-        <p className="text-xs text-ink-soft">{taille ? formatOctets(taille) : 'Justificatif joint'}</p>
+        <p className="text-xs text-ink-soft">{size ? formatBytes(size) : 'Justificatif joint'}</p>
       </div>
-      {onRetirer ? (
+      {onRemove ? (
         <button
           type="button"
-          onClick={onRetirer}
-          disabled={enCours}
+          onClick={onRemove}
+          disabled={inProgress}
           className="rounded-lg p-2 text-ink-soft transition hover:bg-danger-soft hover:text-danger disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label={`Retirer ${nom}`}
+          aria-label={`Retirer ${name}`}
           data-cy="btn-retirer-fichier"
         >
           <X size={16} />
@@ -151,6 +151,6 @@ export function FichierSelectionne({ nom, taille, typeMime, enCours, onRetirer }
   );
 }
 
-export const FORMATS_TEMPLATE: Accept = {
+export const TEMPLATE_FORMATS: Accept = {
   'text/html': ['.html', '.htm'],
 };

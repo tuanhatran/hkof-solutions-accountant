@@ -4,25 +4,25 @@ import { cn } from '@/lib/cn';
 
 type VarianteBouton = 'primaire' | 'secondaire' | 'fantome' | 'danger';
 
-interface BoutonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variante?: VarianteBouton;
   chargement?: boolean;
   icone?: ReactNode;
   petit?: boolean;
 }
 
-const CLASSES_VARIANTE: Record<VarianteBouton, string> = {
+const VARIANT_CLASS_NAMES: Record<VarianteBouton, string> = {
   primaire: 'btn-primaire',
   secondaire: 'btn-secondaire',
   fantome: 'btn-fantome',
   danger: 'btn-danger',
 };
 
-export const Bouton = forwardRef<HTMLButtonElement, BoutonProps>(function Bouton(
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Bouton(
   {
     variante = 'secondaire',
-    chargement = false,
-    icone,
+    chargement: loading = false,
+    icone: icon,
     petit = false,
     className,
     children,
@@ -36,12 +36,12 @@ export const Bouton = forwardRef<HTMLButtonElement, BoutonProps>(function Bouton
     <button
       ref={ref}
       type={type}
-      className={cn('btn', CLASSES_VARIANTE[variante], petit && 'btn-petit', className)}
-      disabled={disabled || chargement}
-      aria-busy={chargement || undefined}
+      className={cn('btn', VARIANT_CLASS_NAMES[variante], petit && 'btn-petit', className)}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       {...props}
     >
-      {chargement ? <LoaderCircle size={16} className="animate-spin" aria-hidden="true" /> : icone}
+      {loading ? <LoaderCircle size={16} className="animate-spin" aria-hidden="true" /> : icon}
       {children}
     </button>
   );

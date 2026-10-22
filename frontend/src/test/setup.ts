@@ -7,10 +7,10 @@ afterEach(() => {
 });
 
 if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
-  window.matchMedia = (requete: string) =>
+  window.matchMedia = (request: string) =>
     ({
       matches: false,
-      media: requete,
+      media: request,
       onchange: null,
       addListener: () => undefined,
       removeListener: () => undefined,

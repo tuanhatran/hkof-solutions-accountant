@@ -18,61 +18,61 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { estAnnulation, messageErreur, telechargerBlob } from '@/api/client';
+import { isCancellation, errorMessage, downloadBlob } from '@/api/client';
 import { api } from '@/api/endpoints';
 import {
-  useNoteActive,
-  useParametres,
-  usePostes,
-  useQuittanceActive,
+  useActiveStatement,
+  useSettings,
+  useExpenseItems,
+  useActiveRentReceipt,
   useTemplates,
 } from '@/api/queries';
 import type {
-  CalculResponse,
-  ConfianceIa,
+  CalculationResponse,
+  AiConfidence,
   ExtractionDto,
-  LigneRequest,
-  NoteApercuRequest,
-  NoteDto,
-  NoteGenerationRequest,
-  PosteDto,
+  LineRequest,
+  StatementPreviewRequest,
+  StatementDto,
+  StatementGenerationRequest,
+  ExpenseItemDto,
 } from '@/api/types';
-import { BadgeIA } from '@/components/BadgeIA';
-import { Bouton } from '@/components/Bouton';
-import { DialogueConfirmation } from '@/components/DialogueConfirmation';
-import { EtatErreur, Spinner } from '@/components/Etats';
-import { FichierSelectionne, FileDropzone } from '@/components/FileDropzone';
-import { GroupeChamp } from '@/components/GroupeChamp';
+import { AiBadge } from '@/components/AiBadge';
+import { Button } from '@/components/Button';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { ErrorState, Spinner } from '@/components/States';
+import { SelectedFile, FileDropzone } from '@/components/FileDropzone';
+import { FieldGroup } from '@/components/FieldGroup';
 import { PageHeader } from '@/components/PageHeader';
 import { PdfViewer } from '@/components/PdfViewer';
-import { estAnalyseEnCours, useAnalyse, type EtatAnalyse } from '@/hooks/useAnalyse';
-import { useApercuPdf } from '@/hooks/useApercuPdf';
+import { isAnalysisRunning, useAnalysis, type AnalysisState } from '@/hooks/useAnalysis';
+import { usePdfPreview } from '@/hooks/usePdfPreview';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { periodeDansLOrdre, estDateValide } from '@/lib/dates';
+import { periodInOrder, isValidDate } from '@/lib/dates';
 import { cn } from '@/lib/cn';
 import {
-  formatDateHeure,
+  formatDateTime,
   formatEUR,
-  formatMois,
-  formatPeriode,
-  montantRetenuEstime,
-  parseMontant,
-  parsePourcentage,
+  formatMonth,
+  formatPeriod,
+  estimatedRetainedAmount,
+  parseAmount,
+  parsePercentage,
 } from '@/lib/format';
 import {
-  nouvelleCle,
-  typeDejaAjoute,
-  typesManquants,
-  versLigneRequest,
-  type LigneBrouillon,
-} from '@/lib/lignes';
-import { estimerVentilation } from '@/lib/ventilation';
-import { fraisSchema, type FraisFormValues } from '@/lib/validation';
-import { useLignesNote, useNoteDraft } from '@/state/noteDraft';
-import { useQuittanceDraft } from '@/state/quittanceDraft';
+  newKey,
+  typeAlreadyAdded,
+  missingTypes,
+  toLineRequest,
+  type DraftLine,
+} from '@/lib/lines';
+import { estimateAllocation } from '@/lib/allocation';
+import { expenseSchema, type ExpenseFormValues } from '@/lib/validation';
+import { useStatementLines, useStatementDraft } from '@/state/statementDraft';
+import { useRentReceiptDraft } from '@/state/rentReceiptDraft';
 import { toast } from '@/state/toasts';
 
-const VALEURS_INITIALES: FraisFormValues = {
+const INITIAL_VALUES: ExpenseFormValues = {
   posteCode: '',
   montantTtc: '',
   prorataPct: '100',
@@ -81,24 +81,24 @@ const VALEURS_INITIALES: FraisFormValues = {
   montantMoisSurcharge: '',
 };
 
-interface FichierJoint {
+interface AttachedFile {
   id: number;
   nom: string;
   taille: number | null;
   typeMime: string | null;
 }
 
-interface EtatIa {
+interface AiState {
   type: boolean;
   montant: boolean;
   periode: boolean;
   montantDetecte: string | null;
   fournisseur: string | null;
   extraitSource: string | null;
-  confiance: ConfianceIa | null;
+  confiance: AiConfidence | null;
 }
 
-const IA_VIDE: EtatIa = {
+const AI_EMPTY: AiState = {
   type: false,
   montant: false,
   periode: false,
@@ -108,37 +108,37 @@ const IA_VIDE: EtatIa = {
   confiance: null,
 };
 
-function confianceValide(valeur: string | null | undefined): ConfianceIa | null {
-  return valeur === 'haute' || valeur === 'moyenne' || valeur === 'basse' ? valeur : null;
+function confidenceValid(value: string | null | undefined): AiConfidence | null {
+  return value === 'haute' || value === 'moyenne' || value === 'basse' ? value : null;
 }
 
-function libelleConfiance(confiance: ConfianceIa | null): string | null {
-  if (confiance === 'haute') {
+function confidenceLabel(confidence: AiConfidence | null): string | null {
+  if (confidence === 'haute') {
     return 'Confiance élevée';
   }
-  if (confiance === 'moyenne') {
+  if (confidence === 'moyenne') {
     return 'Confiance moyenne';
   }
-  if (confiance === 'basse') {
+  if (confidence === 'basse') {
     return 'Confiance faible — vérifiez les valeurs';
   }
   return null;
 }
 
-function PanneauAnalyse({
-  etat,
-  aFichier,
-  onAnnuler,
+function AnalysisPanel({
+  etat: phase,
+  aFichier: hasFile,
+  onAnnuler: onCancel,
 }: {
-  etat: EtatAnalyse;
+  etat: AnalysisState;
   aFichier: boolean;
   onAnnuler: () => void;
 }) {
-  const enCours = estAnalyseEnCours(etat);
-  const resultat: ExtractionDto | null = etat.statut === 'terminee' ? etat.analyse.resultat ?? null : null;
-  const duree =
-    etat.statut === 'terminee' && etat.analyse.dureeMs
-      ? `${(etat.analyse.dureeMs / 1000).toFixed(1)} s`
+  const inProgress = isAnalysisRunning(phase);
+  const result: ExtractionDto | null = phase.statut === 'terminee' ? phase.analyse.resultat ?? null : null;
+  const duration =
+    phase.statut === 'terminee' && phase.analyse.dureeMs
+      ? `${(phase.analyse.dureeMs / 1000).toFixed(1)} s`
       : null;
 
   return (
@@ -147,41 +147,41 @@ function PanneauAnalyse({
       aria-live="polite"
       className={cn(
         'rounded-xl border px-3.5 py-3 text-xs',
-        etat.statut === 'echec'
+        phase.statut === 'echec'
           ? 'border-warning/25 bg-warning-soft/40 text-warning'
-          : etat.statut === 'terminee'
+          : phase.statut === 'terminee'
             ? 'border-copper/20 bg-copper-soft/50 text-ink'
-            : enCours
+            : inProgress
               ? 'border-accent/20 bg-accent-soft/45 text-ink'
               : 'border-line bg-paper/50 text-ink-soft',
       )}
     >
-      {enCours ? (
+      {inProgress ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="flex items-center gap-2 font-medium">
             <Spinner taille={14} />
-            {etat.statut === 'demarrage'
+            {phase.statut === 'demarrage'
               ? 'Préparation de l’analyse…'
               : 'Analyse IA en cours — le modèle local peut prendre quelques secondes.'}
           </span>
-          <Bouton variante="fantome" petit onClick={onAnnuler} data-cy="btn-annuler-analyse">
+          <Button variante="fantome" petit onClick={onCancel} data-cy="btn-annuler-analyse">
             <X size={13} aria-hidden="true" />
             Annuler l’analyse
-          </Bouton>
+          </Button>
         </div>
-      ) : etat.statut === 'terminee' ? (
+      ) : phase.statut === 'terminee' ? (
         <div className="space-y-2">
           <p className="flex items-center gap-2 font-semibold text-ink">
             <CheckCircle2 size={14} className="text-copper" aria-hidden="true" />
-            Analyse terminée{duree ? ` en ${duree}` : ''} — les champs vides ont été pré-remplis.
+            Analyse terminée{duration ? ` en ${duration}` : ''} — les champs vides ont été pré-remplis.
           </p>
-          {resultat ? (
+          {result ? (
             <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-soft">
-              <BadgeIA extraitSource={resultat.extraitSource} />
-              {resultat.fournisseur ? <span>Fournisseur détecté : {resultat.fournisseur}</span> : null}
-              {libelleConfiance(confianceValide(resultat.confiance)) ? (
-                <span className={cn(confianceValide(resultat.confiance) === 'basse' && 'font-semibold text-warning')}>
-                  {libelleConfiance(confianceValide(resultat.confiance))}
+              <AiBadge extraitSource={result.extraitSource} />
+              {result.fournisseur ? <span>Fournisseur détecté : {result.fournisseur}</span> : null}
+              {confidenceLabel(confidenceValid(result.confiance)) ? (
+                <span className={cn(confidenceValid(result.confiance) === 'basse' && 'font-semibold text-warning')}>
+                  {confidenceLabel(confidenceValid(result.confiance))}
                 </span>
               ) : null}
             </div>
@@ -190,28 +190,28 @@ function PanneauAnalyse({
               Aucune information exploitable n’a été extraite. Complétez le frais manuellement.
             </p>
           )}
-          {resultat?.extraitSource ? (
+          {result?.extraitSource ? (
             <p className="border-l-2 border-copper/30 pl-2 text-[11px] italic text-ink-soft">
-              « {resultat.extraitSource} »
+              « {result.extraitSource} »
             </p>
           ) : null}
           <p className="text-[11px] text-ink-soft">
             Les propositions de l’IA restent modifiables. Vérifiez-les avant d’ajouter le frais.
           </p>
         </div>
-      ) : etat.statut === 'echec' ? (
+      ) : phase.statut === 'echec' ? (
         <p className="flex items-start gap-2">
           <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
           <span>
-            {etat.message} L’analyse est facultative : vous pouvez saisir le montant et le prorata
+            {phase.message} L’analyse est facultative : vous pouvez saisir le montant et le prorata
             manuellement.
           </span>
         </p>
-      ) : etat.statut === 'annulee' ? (
-        <p>{etat.message} La saisie manuelle reste disponible.</p>
+      ) : phase.statut === 'annulee' ? (
+        <p>{phase.message} La saisie manuelle reste disponible.</p>
       ) : (
         <p>
-          {aFichier
+          {hasFile
             ? 'Analyse non lancée. Vous pouvez saisir le frais manuellement.'
             : 'Déposez un justificatif : l’analyse IA démarrera automatiquement. Elle reste facultative.'}
         </p>
@@ -220,34 +220,34 @@ function PanneauAnalyse({
   );
 }
 
-export function GenererNoteFraisPage() {
+export function GenerateExpenseStatementPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const brouillon = useNoteDraft();
-  const lignes = useLignesNote();
+  const draft = useStatementDraft();
+  const lines = useStatementLines();
   const mobile = useMediaQuery('(max-width: 1023px)');
-  const [voletMobile, setVoletMobile] = useState<'saisie' | 'apercu'>('saisie');
+  const [mobilePanel, setMobilePanel] = useState<'saisie' | 'apercu'>('saisie');
 
-  const mois = brouillon.mois;
-  const parametres = useParametres();
-  const postesQuery = usePostes(false);
+  const month = draft.mois;
+  const settings = useSettings();
+  const expenseItemsQuery = useExpenseItems(false);
   const templates = useTemplates('NOTE_FRAIS');
-  const quittance = useQuittanceActive(mois);
-  const noteActive = useNoteActive(mois);
+  const rentReceipt = useActiveRentReceipt(month);
+  const activeStatement = useActiveStatement(month);
 
-  const postes = useMemo<PosteDto[]>(
-    () => [...(postesQuery.data ?? [])].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0)),
-    [postesQuery.data],
+  const expenseItems = useMemo<ExpenseItemDto[]>(
+    () => [...(expenseItemsQuery.data ?? [])].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0)),
+    [expenseItemsQuery.data],
   );
-  const posteParCode = useMemo(
-    () => new Map(postes.map((poste) => [poste.code ?? '', poste])),
-    [postes],
+  const expenseItemByCode = useMemo(
+    () => new Map(expenseItems.map((expenseItem) => [expenseItem.code ?? '', expenseItem])),
+    [expenseItems],
   );
 
-  const modeles = templates.data ?? [];
-  const modeleActif = modeles.find((modele) => modele.actif) ?? null;
-  const templateSelectionne = brouillon.templatesParMois[mois] ?? modeleActif?.id ?? null;
-  const complet = brouillon.completsParMois[mois] ?? true;
+  const models = templates.data ?? [];
+  const activeModel = models.find((model) => model.actif) ?? null;
+  const selectedTemplate = draft.templatesParMois[month] ?? activeModel?.id ?? null;
+  const complete = draft.completsParMois[month] ?? true;
 
   const {
     register,
@@ -258,67 +258,67 @@ export function GenererNoteFraisPage() {
     reset,
     setError,
     formState: { errors, isValid },
-  } = useForm<FraisFormValues>({
-    resolver: zodResolver(fraisSchema),
+  } = useForm<ExpenseFormValues>({
+    resolver: zodResolver(expenseSchema),
     mode: 'onChange',
-    defaultValues: VALEURS_INITIALES,
+    defaultValues: INITIAL_VALUES,
   });
 
-  const valeurs = watch();
-  const estLoyer = valeurs.posteCode === 'loyer';
-  const loyerDisponible = Boolean(quittance.data?.id);
+  const values = watch();
+  const isRent = values.posteCode === 'loyer';
+  const availableRent = Boolean(rentReceipt.data?.id);
 
-  const { etat: etatAnalyse, demarrer, annuler, reinitialiser } = useAnalyse();
-  const [justificatif, setJustificatif] = useState<FichierJoint | null>(null);
-  const [televersement, setTeleversement] = useState(false);
-  const [erreurFichier, setErreurFichier] = useState<string | null>(null);
-  const [ia, setIa] = useState<EtatIa>(IA_VIDE);
-  const [ligneEnEdition, setLigneEnEdition] = useState<string | null>(null);
-  const [periodeVisible, setPeriodeVisible] = useState(false);
-  const [ligneASupprimer, setLigneASupprimer] = useState<LigneBrouillon | null>(null);
-  const [dialogueRegeneration, setDialogueRegeneration] = useState(false);
-  const [generationEnCours, setGenerationEnCours] = useState(false);
-  const [resultat, setResultat] = useState<NoteDto | null>(null);
+  const { etat: analysisPhase, demarrer: start, annuler: cancel, reinitialiser: resetStatement } = useAnalysis();
+  const [receipt, setReceipt] = useState<AttachedFile | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [ai, setAi] = useState<AiState>(AI_EMPTY);
+  const [lineBeingEdited, setLineBeingEdited] = useState<string | null>(null);
+  const [periodVisible, setPeriodVisible] = useState(false);
+  const [lineToRemove, setLineToRemove] = useState<DraftLine | null>(null);
+  const [regenerationDialog, setRegenerationDialog] = useState(false);
+  const [generationInProgress, setGenerationInProgress] = useState(false);
+  const [result, setResult] = useState<StatementDto | null>(null);
 
   const uploadSequence = useRef(0);
-  const analyseAppliquee = useRef<number | null>(null);
-  const justificatifOriginal = useRef<FichierJoint | null>(null);
+  const appliedAnalysis = useRef<number | null>(null);
+  const originalReceipt = useRef<AttachedFile | null>(null);
   const typeRef = useRef<HTMLSelectElement>(null);
-  const carteFormulaireRef = useRef<HTMLFormElement>(null);
+  const formCardRef = useRef<HTMLFormElement>(null);
 
-  function libererSiNonAttache(fichier: FichierJoint) {
-    const estOriginal = justificatifOriginal.current?.id === fichier.id;
-    if (!estOriginal) {
-      void api.justificatifs.supprimer(fichier.id).catch(() => undefined);
+  function releaseIfNotAttached(file: AttachedFile) {
+    const isOriginal = originalReceipt.current?.id === file.id;
+    if (!isOriginal) {
+      void api.justificatifs.supprimer(file.id).catch(() => undefined);
     }
   }
 
-  function reinitialiserFormulaire() {
-    reset(VALEURS_INITIALES);
-    setIa(IA_VIDE);
-    setPeriodeVisible(false);
-    setErreurFichier(null);
-    setLigneEnEdition(null);
-    setJustificatif(null);
-    justificatifOriginal.current = null;
-    analyseAppliquee.current = null;
+  function resetForm() {
+    reset(INITIAL_VALUES);
+    setAi(AI_EMPTY);
+    setPeriodVisible(false);
+    setFileError(null);
+    setLineBeingEdited(null);
+    setReceipt(null);
+    originalReceipt.current = null;
+    appliedAnalysis.current = null;
   }
 
-  function focaliserType() {
+  function focusType() {
     window.setTimeout(() => typeRef.current?.focus(), 0);
   }
 
-  async function televerser(fichier: File) {
+  async function upload(file: File) {
     const sequence = ++uploadSequence.current;
-    const ancien = justificatif;
-    setTeleversement(true);
-    setErreurFichier(null);
-    setIa(IA_VIDE);
-    analyseAppliquee.current = null;
-    reinitialiser();
+    const old = receipt;
+    setUploading(true);
+    setFileError(null);
+    setAi(AI_EMPTY);
+    appliedAnalysis.current = null;
+    resetStatement();
 
     try {
-      const dto = await api.justificatifs.uploader(fichier);
+      const dto = await api.justificatifs.uploader(file);
       if (!dto.id) {
         throw new Error('Le justificatif n’a pas pu être enregistré.');
       }
@@ -326,482 +326,482 @@ export function GenererNoteFraisPage() {
         void api.justificatifs.supprimer(dto.id).catch(() => undefined);
         return;
       }
-      if (ancien) {
-        libererSiNonAttache(ancien);
+      if (old) {
+        releaseIfNotAttached(old);
       }
-      setJustificatif({
+      setReceipt({
         id: dto.id,
-        nom: dto.nomFichier ?? fichier.name,
-        taille: dto.taille ?? fichier.size,
-        typeMime: dto.typeMime ?? fichier.type,
+        nom: dto.nomFichier ?? file.name,
+        taille: dto.taille ?? file.size,
+        typeMime: dto.typeMime ?? file.type,
       });
-      await demarrer(dto.id);
+      await start(dto.id);
     } catch (error) {
       if (sequence === uploadSequence.current) {
-        setJustificatif(ancien);
-        setErreurFichier(messageErreur(error));
+        setReceipt(old);
+        setFileError(errorMessage(error));
       }
     } finally {
       if (sequence === uploadSequence.current) {
-        setTeleversement(false);
+        setUploading(false);
       }
     }
   }
 
-  function retirerFichier() {
+  function removeFile() {
     uploadSequence.current += 1;
-    void annuler(true);
-    const ancien = justificatif;
-    setJustificatif(null);
-    setErreurFichier(null);
-    setIa(IA_VIDE);
-    analyseAppliquee.current = null;
-    if (ancien) {
-      libererSiNonAttache(ancien);
+    void cancel(true);
+    const old = receipt;
+    setReceipt(null);
+    setFileError(null);
+    setAi(AI_EMPTY);
+    appliedAnalysis.current = null;
+    if (old) {
+      releaseIfNotAttached(old);
     }
   }
 
   useEffect(() => {
-    const quittanceActive = quittance.data;
-    if (!quittanceActive?.id || !quittanceActive.total) {
+    const activeRentReceipt = rentReceipt.data;
+    if (!activeRentReceipt?.id || !activeRentReceipt.total) {
       return;
     }
     if (getValues('posteCode') !== 'loyer') {
       return;
     }
-    setValue('montantTtc', quittanceActive.total, { shouldValidate: true, shouldDirty: true });
+    setValue('montantTtc', activeRentReceipt.total, { shouldValidate: true, shouldDirty: true });
     // Le montant du loyer est verrouillé sur la quittance active du mois.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quittance.data?.id, quittance.data?.total]);
+  }, [rentReceipt.data?.id, rentReceipt.data?.total]);
 
   useEffect(() => {
-    if (etatAnalyse.statut !== 'terminee' || !postesQuery.data) {
+    if (analysisPhase.statut !== 'terminee' || !expenseItemsQuery.data) {
       return;
     }
-    const analyse = etatAnalyse.analyse;
-    const analyseId = analyse.id;
-    if (analyseId === null || analyseId === undefined || analyseAppliquee.current === analyseId) {
+    const analysis = analysisPhase.analyse;
+    const analysisId = analysis.id;
+    if (analysisId === null || analysisId === undefined || appliedAnalysis.current === analysisId) {
       return;
     }
-    if (analyse.justificatifId !== justificatif?.id) {
+    if (analysis.justificatifId !== receipt?.id) {
       return;
     }
-    analyseAppliquee.current = analyseId;
-    const extraction = analyse.resultat;
+    appliedAnalysis.current = analysisId;
+    const extraction = analysis.resultat;
     if (!extraction) {
       return;
     }
 
-    const actuelles = getValues();
-    const lignesActuelles = useNoteDraft.getState().lignesParMois[mois] ?? [];
-    let typeApplique = false;
-    let montantApplique = false;
-    let periodeAppliquee = false;
+    const current = getValues();
+    const currentLines = useStatementDraft.getState().lignesParMois[month] ?? [];
+    let appliedType = false;
+    let appliedAmount = false;
+    let appliedPeriod = false;
 
-    const montantSuggere =
+    const suggestedAmount =
       extraction.devise && extraction.devise.toUpperCase() !== 'EUR'
         ? null
         : extraction.montantTtc
-          ? parseMontant(extraction.montantTtc)
+          ? parseAmount(extraction.montantTtc)
           : null;
 
-    if (!actuelles.montantTtc && montantSuggere !== null) {
-      montantApplique = true;
+    if (!current.montantTtc && suggestedAmount !== null) {
+      appliedAmount = true;
     }
 
-    const debut = extraction.periodeDebut && estDateValide(extraction.periodeDebut) ? extraction.periodeDebut : '';
-    const fin = extraction.periodeFin && estDateValide(extraction.periodeFin) ? extraction.periodeFin : '';
-    const periodeValide = Boolean(debut && fin && periodeDansLOrdre(debut, fin));
+    const start = extraction.periodeDebut && isValidDate(extraction.periodeDebut) ? extraction.periodeDebut : '';
+    const end = extraction.periodeFin && isValidDate(extraction.periodeFin) ? extraction.periodeFin : '';
+    const isValidPeriod = Boolean(start && end && periodInOrder(start, end));
 
-    if (!actuelles.periodeDebut && !actuelles.periodeFin && periodeValide) {
-      periodeAppliquee = true;
+    if (!current.periodeDebut && !current.periodeFin && isValidPeriod) {
+      appliedPeriod = true;
     }
 
-    const posteSuggere =
+    const suggestedItem =
       extraction.typeSuggere && extraction.typeSuggere !== 'loyer'
-        ? posteParCode.get(extraction.typeSuggere) ?? null
+        ? expenseItemByCode.get(extraction.typeSuggere) ?? null
         : null;
-    const autres = lignesActuelles.filter((ligne) => ligne.cle !== ligneEnEdition);
+    const others = currentLines.filter((line) => line.cle !== lineBeingEdited);
 
     if (
-      !actuelles.posteCode &&
-      posteSuggere?.code &&
-      (posteSuggere.plusieursLignesAutorisees || !typeDejaAjoute(autres, posteSuggere.code))
+      !current.posteCode &&
+      suggestedItem?.code &&
+      (suggestedItem.plusieursLignesAutorisees || !typeAlreadyAdded(others, suggestedItem.code))
     ) {
-      typeApplique = true;
-      setValue('posteCode', posteSuggere.code, { shouldValidate: true, shouldDirty: true });
+      appliedType = true;
+      setValue('posteCode', suggestedItem.code, { shouldValidate: true, shouldDirty: true });
       if (
-        (actuelles.prorataPct === '' || actuelles.prorataPct === '100') &&
-        posteSuggere.prorataPct
+        (current.prorataPct === '' || current.prorataPct === '100') &&
+        suggestedItem.prorataPct
       ) {
-        setValue('prorataPct', posteSuggere.prorataPct, { shouldValidate: true, shouldDirty: true });
+        setValue('prorataPct', suggestedItem.prorataPct, { shouldValidate: true, shouldDirty: true });
       }
     }
 
-    if (montantApplique && montantSuggere) {
-      setValue('montantTtc', montantSuggere, { shouldValidate: true, shouldDirty: true });
+    if (appliedAmount && suggestedAmount) {
+      setValue('montantTtc', suggestedAmount, { shouldValidate: true, shouldDirty: true });
     }
-    if (periodeAppliquee) {
-      setValue('periodeDebut', debut, { shouldValidate: true, shouldDirty: true });
-      setValue('periodeFin', fin, { shouldValidate: true, shouldDirty: true });
-      setPeriodeVisible(true);
+    if (appliedPeriod) {
+      setValue('periodeDebut', start, { shouldValidate: true, shouldDirty: true });
+      setValue('periodeFin', end, { shouldValidate: true, shouldDirty: true });
+      setPeriodVisible(true);
     }
 
-    setIa({
-      type: typeApplique,
-      montant: montantApplique,
-      periode: periodeAppliquee,
-      montantDetecte: montantSuggere,
+    setAi({
+      type: appliedType,
+      montant: appliedAmount,
+      periode: appliedPeriod,
+      montantDetecte: suggestedAmount,
       fournisseur: extraction.fournisseur ?? null,
       extraitSource: extraction.extraitSource ?? null,
-      confiance: confianceValide(extraction.confiance),
+      confiance: confidenceValid(extraction.confiance),
     });
-    if (montantApplique || periodeAppliquee || typeApplique) {
+    if (appliedAmount || appliedPeriod || appliedType) {
       toast.info('Des champs ont été pré-remplis par l’IA. Vérifiez-les avant d’ajouter le frais.');
     }
     // L'extraction n'est appliquée qu'une fois par analyse, et uniquement aux champs vides.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [etatAnalyse, justificatif?.id, postesQuery.data, ligneEnEdition]);
+  }, [analysisPhase, receipt?.id, expenseItemsQuery.data, lineBeingEdited]);
 
-  function changerMois(valeur: string) {
-    if (!valeur || valeur === mois) {
+  function changeMonth(value: string) {
+    if (!value || value === month) {
       return;
     }
     uploadSequence.current += 1;
-    void annuler(true);
-    reinitialiser();
-    if (justificatif) {
-      libererSiNonAttache(justificatif);
+    void cancel(true);
+    resetStatement();
+    if (receipt) {
+      releaseIfNotAttached(receipt);
     }
-    reinitialiserFormulaire();
-    setResultat(null);
-    setVoletMobile('saisie');
-    brouillon.changerMois(valeur);
+    resetForm();
+    setResult(null);
+    setMobilePanel('saisie');
+    draft.changerMois(value);
   }
 
-  function changerType(code: string) {
-    const ancien = getValues('posteCode');
-    const poste = posteParCode.get(code) ?? null;
+  function changeType(code: string) {
+    const old = getValues('posteCode');
+    const expenseItem = expenseItemByCode.get(code) ?? null;
     setValue('posteCode', code, { shouldValidate: true, shouldDirty: true });
-    setValue('prorataPct', poste?.prorataPct ?? '100', { shouldValidate: true, shouldDirty: true });
+    setValue('prorataPct', expenseItem?.prorataPct ?? '100', { shouldValidate: true, shouldDirty: true });
     setValue('periodeDebut', '', { shouldDirty: true });
     setValue('periodeFin', '', { shouldDirty: true });
     setValue('montantMoisSurcharge', '', { shouldDirty: true });
-    setPeriodeVisible(false);
-    setIa((precedent) => ({ ...precedent, type: false, periode: false }));
+    setPeriodVisible(false);
+    setAi((previous) => ({ ...previous, type: false, periode: false }));
 
-    if (code === 'loyer' && ancien !== 'loyer') {
-      if (!ligneEnEdition) {
-        retirerFichier();
+    if (code === 'loyer' && old !== 'loyer') {
+      if (!lineBeingEdited) {
+        removeFile();
       } else {
-        void annuler(true);
-        reinitialiser();
+        void cancel(true);
+        resetStatement();
       }
-      setValue('montantTtc', quittance.data?.total ?? '', { shouldValidate: true, shouldDirty: true });
-    } else if (code !== 'loyer' && ancien === 'loyer') {
+      setValue('montantTtc', rentReceipt.data?.total ?? '', { shouldValidate: true, shouldDirty: true });
+    } else if (code !== 'loyer' && old === 'loyer') {
       setValue('montantTtc', '', { shouldValidate: true, shouldDirty: true });
     }
   }
 
-  function editerLigne(ligne: LigneBrouillon) {
+  function editLine(line: DraftLine) {
     uploadSequence.current += 1;
-    void annuler(true);
-    reinitialiser();
-    analyseAppliquee.current = null;
-    setLigneEnEdition(ligne.cle);
-    const fichier: FichierJoint | null = ligne.justificatifId
+    void cancel(true);
+    resetStatement();
+    appliedAnalysis.current = null;
+    setLineBeingEdited(line.cle);
+    const file: AttachedFile | null = line.justificatifId
       ? {
-          id: ligne.justificatifId,
-          nom: ligne.justificatifNom ?? 'Justificatif',
+          id: line.justificatifId,
+          nom: line.justificatifNom ?? 'Justificatif',
           taille: null,
           typeMime: null,
         }
       : null;
-    justificatifOriginal.current = fichier;
-    setJustificatif(fichier);
-    setErreurFichier(null);
+    originalReceipt.current = file;
+    setReceipt(file);
+    setFileError(null);
     reset({
-      posteCode: ligne.posteCode,
+      posteCode: line.posteCode,
       montantTtc:
-        ligne.posteCode === 'loyer' && quittance.data?.total ? quittance.data.total : ligne.montantTtc,
-      prorataPct: ligne.prorataPct,
-      periodeDebut: ligne.periodeDebut,
-      periodeFin: ligne.periodeFin,
-      montantMoisSurcharge: ligne.montantMoisSurcharge,
+        line.posteCode === 'loyer' && rentReceipt.data?.total ? rentReceipt.data.total : line.montantTtc,
+      prorataPct: line.prorataPct,
+      periodeDebut: line.periodeDebut,
+      periodeFin: line.periodeFin,
+      montantMoisSurcharge: line.montantMoisSurcharge,
     });
-    setPeriodeVisible(Boolean(ligne.periodeDebut || ligne.periodeFin || ligne.montantMoisSurcharge));
-    setIa({
+    setPeriodVisible(Boolean(line.periodeDebut || line.periodeFin || line.montantMoisSurcharge));
+    setAi({
       type: false,
-      montant: ligne.sourceMontant === 'AI',
+      montant: line.sourceMontant === 'AI',
       periode: false,
-      montantDetecte: ligne.montantDetecteIa,
-      fournisseur: ligne.fournisseurDetecte,
+      montantDetecte: line.montantDetecteIa,
+      fournisseur: line.fournisseurDetecte,
       extraitSource: null,
-      confiance: ligne.confianceIa,
+      confiance: line.confianceIa,
     });
-    setResultat(null);
-    carteFormulaireRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    focaliserType();
+    setResult(null);
+    formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    focusType();
   }
 
-  function annulerEdition() {
+  function cancelEdit() {
     uploadSequence.current += 1;
-    void annuler(true);
-    reinitialiser();
-    if (justificatif) {
-      libererSiNonAttache(justificatif);
+    void cancel(true);
+    resetStatement();
+    if (receipt) {
+      releaseIfNotAttached(receipt);
     }
-    reinitialiserFormulaire();
-    focaliserType();
+    resetForm();
+    focusType();
   }
 
-  function enregistrerFrais(valeursSoumises: FraisFormValues) {
-    const poste = posteParCode.get(valeursSoumises.posteCode);
-    if (!poste?.code) {
+  function saveExpense(submittedValues: ExpenseFormValues) {
+    const expenseItem = expenseItemByCode.get(submittedValues.posteCode);
+    if (!expenseItem?.code) {
       setError('posteCode', { type: 'manual', message: 'Sélectionnez un type de frais.' });
       return;
     }
-    const autres = lignes.filter((ligne) => ligne.cle !== ligneEnEdition);
-    if (!poste.plusieursLignesAutorisees && typeDejaAjoute(autres, poste.code)) {
+    const others = lines.filter((line) => line.cle !== lineBeingEdited);
+    if (!expenseItem.plusieursLignesAutorisees && typeAlreadyAdded(others, expenseItem.code)) {
       setError('posteCode', {
         type: 'manual',
         message: 'Ce type est déjà présent. Modifiez la ligne existante ou autorisez plusieurs lignes.',
       });
       return;
     }
-    const ligneLoyer = poste.code === 'loyer';
-    if (ligneLoyer && !loyerDisponible) {
-      setErreurFichier('Ajoutez d’abord la quittance du mois pour utiliser ce type.');
+    const rentLine = expenseItem.code === 'loyer';
+    if (rentLine && !availableRent) {
+      setFileError('Ajoutez d’abord la quittance du mois pour utiliser ce type.');
       return;
     }
-    if (!ligneLoyer && !justificatif) {
-      setErreurFichier('Le justificatif est obligatoire pour ce type de frais.');
+    if (!rentLine && !receipt) {
+      setFileError('Le justificatif est obligatoire pour ce type de frais.');
       return;
     }
 
-    const montantTtc = parseMontant(valeursSoumises.montantTtc);
-    const prorataPct = parsePourcentage(valeursSoumises.prorataPct);
-    if (montantTtc === null || prorataPct === null) {
+    const amountInclVat = parseAmount(submittedValues.montantTtc);
+    const proRataPct = parsePercentage(submittedValues.prorataPct);
+    if (amountInclVat === null || proRataPct === null) {
       return;
     }
-    const surcharge = valeursSoumises.montantMoisSurcharge.trim()
-      ? parseMontant(valeursSoumises.montantMoisSurcharge)
+    const override = submittedValues.montantMoisSurcharge.trim()
+      ? parseAmount(submittedValues.montantMoisSurcharge)
       : null;
 
-    const ligne: LigneBrouillon = {
-      cle: ligneEnEdition ?? nouvelleCle(),
-      posteCode: poste.code,
-      montantTtc,
-      prorataPct,
-      periodeDebut: valeursSoumises.periodeDebut,
-      periodeFin: valeursSoumises.periodeFin,
-      montantMoisSurcharge: surcharge ?? '',
-      justificatifId: ligneLoyer ? null : justificatif?.id ?? null,
-      justificatifNom: ligneLoyer ? null : justificatif?.nom ?? null,
-      sourceMontant: ia.montant ? 'AI' : 'MANUAL',
-      montantDetecteIa: ia.montantDetecte,
-      confianceIa: ia.confiance,
-      fournisseurDetecte: ia.fournisseur,
+    const line: DraftLine = {
+      cle: lineBeingEdited ?? newKey(),
+      posteCode: expenseItem.code,
+      montantTtc: amountInclVat,
+      prorataPct: proRataPct,
+      periodeDebut: submittedValues.periodeDebut,
+      periodeFin: submittedValues.periodeFin,
+      montantMoisSurcharge: override ?? '',
+      justificatifId: rentLine ? null : receipt?.id ?? null,
+      justificatifNom: rentLine ? null : receipt?.nom ?? null,
+      sourceMontant: ai.montant ? 'AI' : 'MANUAL',
+      montantDetecteIa: ai.montantDetecte,
+      confianceIa: ai.confiance,
+      fournisseurDetecte: ai.fournisseur,
     };
 
-    if (ligneEnEdition) {
-      brouillon.modifierLigne(ligneEnEdition, ligne);
+    if (lineBeingEdited) {
+      draft.modifierLigne(lineBeingEdited, line);
       toast.succes('Frais modifié.');
     } else {
-      brouillon.ajouterLigne(ligne);
+      draft.ajouterLigne(line);
       toast.succes('Frais ajouté.');
     }
 
-    if (ligneLoyer && justificatif && justificatifOriginal.current?.id !== justificatif.id) {
-      libererSiNonAttache(justificatif);
+    if (rentLine && receipt && originalReceipt.current?.id !== receipt.id) {
+      releaseIfNotAttached(receipt);
     }
     uploadSequence.current += 1;
-    void annuler(true);
-    reinitialiser();
-    reinitialiserFormulaire();
-    setResultat(null);
-    focaliserType();
+    void cancel(true);
+    resetStatement();
+    resetForm();
+    setResult(null);
+    focusType();
   }
 
-  function supprimerLigne() {
-    if (!ligneASupprimer) {
+  function removeLine() {
+    if (!lineToRemove) {
       return;
     }
-    const cle = ligneASupprimer.cle;
-    brouillon.supprimerLigne(cle);
-    if (ligneEnEdition === cle) {
-      reinitialiserFormulaire();
+    const key = lineToRemove.cle;
+    draft.supprimerLigne(key);
+    if (lineBeingEdited === key) {
+      resetForm();
     }
-    setLigneASupprimer(null);
-    setResultat(null);
+    setLineToRemove(null);
+    setResult(null);
     toast.info('Frais supprimé.');
   }
 
-  function modifierProrata(ligne: LigneBrouillon, valeur: string) {
-    brouillon.modifierLigne(ligne.cle, { prorataPct: valeur });
-    setResultat(null);
+  function changeProRata(line: DraftLine, value: string) {
+    draft.modifierLigne(line.cle, { prorataPct: value });
+    setResult(null);
   }
 
-  const requetes = useMemo<{ valeurs: LigneRequest[] | null; erreur: string | null }>(() => {
+  const requests = useMemo<{ valeurs: LineRequest[] | null; erreur: string | null }>(() => {
     try {
-      return { valeurs: lignes.map(versLigneRequest), erreur: null };
+      return { valeurs: lines.map(toLineRequest), erreur: null };
     } catch (error) {
       return {
         valeurs: null,
         erreur: error instanceof Error ? error.message : 'Les lignes contiennent une valeur invalide.',
       };
     }
-  }, [lignes]);
+  }, [lines]);
 
-  const signatureCalcul = useMemo(
-    () => JSON.stringify({ mois, lignes: requetes.valeurs }),
-    [mois, requetes],
+  const calculationSignature = useMemo(
+    () => JSON.stringify({ mois: month, lignes: requests.valeurs }),
+    [month, requests],
   );
 
-  const [calcul, setCalcul] = useState<CalculResponse | null>(null);
-  const [signatureCalculee, setSignatureCalculee] = useState<string | null>(null);
-  const [calculEnCours, setCalculEnCours] = useState(false);
-  const [calculErreur, setCalculErreur] = useState<string | null>(null);
+  const [calculation, setCalculation] = useState<CalculationResponse | null>(null);
+  const [calculatedSignature, setCalculatedSignature] = useState<string | null>(null);
+  const [calculationInProgress, setCalculationInProgress] = useState(false);
+  const [calculationError, setCalculationError] = useState<string | null>(null);
 
   useEffect(() => {
-    const controleur = new AbortController();
-    if (requetes.erreur) {
-      setCalculErreur(requetes.erreur);
-      setCalculEnCours(false);
-      return () => controleur.abort();
+    const controller = new AbortController();
+    if (requests.erreur) {
+      setCalculationError(requests.erreur);
+      setCalculationInProgress(false);
+      return () => controller.abort();
     }
-    if (!requetes.valeurs) {
-      return () => controleur.abort();
+    if (!requests.valeurs) {
+      return () => controller.abort();
     }
-    const requetesValides = requetes.valeurs;
-    setCalculEnCours(true);
-    setCalculErreur(null);
+    const validRequests = requests.valeurs;
+    setCalculationInProgress(true);
+    setCalculationError(null);
     const timer = window.setTimeout(async () => {
       try {
-        const reponse = await api.notes.calculer({ mois, lignes: requetesValides }, controleur.signal);
-        if (controleur.signal.aborted) {
+        const reply = await api.notes.calculer({ mois: month, lignes: validRequests }, controller.signal);
+        if (controller.signal.aborted) {
           return;
         }
-        setCalcul(reponse);
-        setSignatureCalculee(signatureCalcul);
-        setCalculEnCours(false);
+        setCalculation(reply);
+        setCalculatedSignature(calculationSignature);
+        setCalculationInProgress(false);
       } catch (error) {
-        if (estAnnulation(error) || controleur.signal.aborted) {
+        if (isCancellation(error) || controller.signal.aborted) {
           return;
         }
-        setCalculErreur(messageErreur(error));
-        setCalculEnCours(false);
+        setCalculationError(errorMessage(error));
+        setCalculationInProgress(false);
       }
     }, 300);
     return () => {
       window.clearTimeout(timer);
-      controleur.abort();
+      controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signatureCalcul, mois, requetes.erreur]);
+  }, [calculationSignature, month, requests.erreur]);
 
-  const calculAJour =
-    signatureCalculee === signatureCalcul && calcul !== null && calculErreur === null;
+  const calculationUpToDate =
+    calculatedSignature === calculationSignature && calculation !== null && calculationError === null;
 
-  const requeteApercu = useMemo<NoteApercuRequest | null>(() => {
-    if (!requetes.valeurs || lignes.length === 0) {
+  const previewRequest = useMemo<StatementPreviewRequest | null>(() => {
+    if (!requests.valeurs || lines.length === 0) {
       return null;
     }
-    const corps: NoteApercuRequest = { mois, complet, lignes: requetes.valeurs };
-    if (templateSelectionne !== null) {
-      corps.templateId = templateSelectionne;
+    const requestBody: StatementPreviewRequest = { mois: month, complet: complete, lignes: requests.valeurs };
+    if (selectedTemplate !== null) {
+      requestBody.templateId = selectedTemplate;
     }
-    return corps;
-  }, [mois, complet, templateSelectionne, requetes, lignes.length]);
+    return requestBody;
+  }, [month, complete, selectedTemplate, requests, lines.length]);
 
-  const apercu = useApercuPdf(
+  const preview = usePdfPreview(
     (signal) =>
-      requeteApercu
-        ? api.notes.apercu(requeteApercu, signal)
+      previewRequest
+        ? api.notes.apercu(previewRequest, signal)
         : Promise.reject(new DOMException('Aperçu inactif', 'AbortError')),
-    JSON.stringify(requeteApercu ?? { inactif: true }),
-    { actif: requeteApercu !== null, debounceMs: 400 },
+    JSON.stringify(previewRequest ?? { inactif: true }),
+    { actif: previewRequest !== null, debounceMs: 400 },
   );
 
-  function allerVersQuittance() {
-    useQuittanceDraft.getState().changerMois(mois);
+  function goToRentReceipt() {
+    useRentReceiptDraft.getState().changerMois(month);
     navigate('/generer/quittance');
   }
 
-  async function genererNote() {
-    if (!requetes.valeurs || lignes.length === 0 || !calculAJour) {
+  async function generateStatement() {
+    if (!requests.valeurs || lines.length === 0 || !calculationUpToDate) {
       return;
     }
-    setGenerationEnCours(true);
+    setGenerationInProgress(true);
     try {
-      const corps: NoteGenerationRequest = { mois, lignes: requetes.valeurs };
-      if (templateSelectionne !== null) {
-        corps.templateId = templateSelectionne;
+      const requestBody: StatementGenerationRequest = { mois: month, lignes: requests.valeurs };
+      if (selectedTemplate !== null) {
+        requestBody.templateId = selectedTemplate;
       }
-      const note = await api.notes.generer(corps);
-      setResultat(note);
-      brouillon.marquerGenere();
+      const statement = await api.notes.generer(requestBody);
+      setResult(statement);
+      draft.marquerGenere();
       await queryClient.invalidateQueries({ queryKey: ['notes'] });
-      toast.succes(`Note de ${formatMois(mois)} générée en version ${note.version ?? 1}.`);
+      toast.succes(`Note de ${formatMonth(month)} générée en version ${statement.version ?? 1}.`);
     } catch (error) {
-      toast.erreur(messageErreur(error));
+      toast.erreur(errorMessage(error));
     } finally {
-      setGenerationEnCours(false);
+      setGenerationInProgress(false);
     }
   }
 
-  function demanderGeneration() {
-    if (noteActive.data) {
-      setDialogueRegeneration(true);
+  function requestGeneration() {
+    if (activeStatement.data) {
+      setRegenerationDialog(true);
       return;
     }
-    void genererNote();
+    void generateStatement();
   }
 
-  async function telechargerNote(note: NoteDto, avecAnnexes: boolean) {
-    if (!note.id) {
+  async function downloadStatement(statement: StatementDto, withAttachments: boolean) {
+    if (!statement.id) {
       return;
     }
     try {
-      const reponse = await api.notes.pdf(note.id, avecAnnexes);
-      telechargerBlob(
-        reponse.blob,
-        reponse.nomFichier ??
-          `note_frais_${note.mois ?? mois}_v${note.version ?? 1}${avecAnnexes ? '_complet' : ''}.pdf`,
+      const reply = await api.notes.pdf(statement.id, withAttachments);
+      downloadBlob(
+        reply.blob,
+        reply.nomFichier ??
+          `note_frais_${statement.mois ?? month}_v${statement.version ?? 1}${withAttachments ? '_complet' : ''}.pdf`,
       );
     } catch (error) {
-      toast.erreur(messageErreur(error));
+      toast.erreur(errorMessage(error));
     }
   }
 
-  const estimation = estimerVentilation(
-    valeurs.montantTtc,
-    valeurs.prorataPct,
-    valeurs.periodeDebut,
-    valeurs.periodeFin,
-    mois,
+  const estimate = estimateAllocation(
+    values.montantTtc,
+    values.prorataPct,
+    values.periodeDebut,
+    values.periodeFin,
+    month,
   );
-  const surchargeSaisie = valeurs.montantMoisSurcharge.trim()
-    ? parseMontant(valeurs.montantMoisSurcharge)
+  const typedOverride = values.montantMoisSurcharge.trim()
+    ? parseAmount(values.montantMoisSurcharge)
     : null;
-  const montantMoisEstime = surchargeSaisie ?? estimation?.montantMois ?? valeurs.montantTtc;
-  const montantRetenuAffiche = montantRetenuEstime(montantMoisEstime, valeurs.prorataPct);
-  const typesOublies = typesManquants(postes, lignes);
-  const erreurBasseConfiance = ia.confiance === 'basse' && (ia.montant || ia.periode);
+  const estimatedMonthAmount = typedOverride ?? estimate?.montantMois ?? values.montantTtc;
+  const displayedRetainedAmount = estimatedRetainedAmount(estimatedMonthAmount, values.prorataPct);
+  const omittedTypes = missingTypes(expenseItems, lines);
+  const lowConfidenceError = ai.confiance === 'basse' && (ai.montant || ai.periode);
 
-  function optionDesactivee(poste: PosteDto): boolean {
-    if (!poste.code || poste.plusieursLignesAutorisees) {
+  function optionDisabled(expenseItem: ExpenseItemDto): boolean {
+    if (!expenseItem.code || expenseItem.plusieursLignesAutorisees) {
       return false;
     }
-    if (ligneEnEdition && lignes.find((ligne) => ligne.cle === ligneEnEdition)?.posteCode === poste.code) {
+    if (lineBeingEdited && lines.find((line) => line.cle === lineBeingEdited)?.posteCode === expenseItem.code) {
       return false;
     }
-    return typeDejaAjoute(lignes, poste.code);
+    return typeAlreadyAdded(lines, expenseItem.code);
   }
 
-  const totalAffiche = calcul?.total;
-  const versionActive = noteActive.data?.version;
-  const templateCourant = modeleActif?.nom ?? 'modèle intégré';
+  const displayedTotal = calculation?.total;
+  const activeVersion = activeStatement.data?.version;
+  const currentTemplate = activeModel?.nom ?? 'modèle intégré';
 
   return (
     <>
@@ -811,18 +811,18 @@ export function GenererNoteFraisPage() {
         description="Ajoutez les factures du mois, vérifiez les propositions de l’IA et laissez le backend calculer la quote-part. Le loyer est repris de la quittance active."
         actions={
           <>
-            <Bouton variante="secondaire" icone={<ReceiptText size={15} />} onClick={allerVersQuittance}>
+            <Button variante="secondaire" icone={<ReceiptText size={15} />} onClick={goToRentReceipt}>
               Quittance du mois
-            </Bouton>
+            </Button>
             <span className="hidden items-center gap-1.5 rounded-full border border-line bg-surface/70 px-3 py-2 text-xs font-medium text-ink-soft sm:inline-flex">
               <CalendarDays size={14} aria-hidden="true" />
-              {formatMois(mois)}
+              {formatMonth(month)}
             </span>
           </>
         }
       />
 
-      {noteActive.data && !resultat ? (
+      {activeStatement.data && !result ? (
         <div className="carte mb-4 flex flex-wrap items-center justify-between gap-3 border-accent/20 bg-accent-soft/45 p-4">
           <div className="flex items-start gap-3">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-surface text-accent">
@@ -830,19 +830,19 @@ export function GenererNoteFraisPage() {
             </span>
             <div>
               <p className="text-sm font-semibold text-ink">
-                {formatMois(mois)} — note version {versionActive} déjà active
+                {formatMonth(month)} — note version {activeVersion} déjà active
               </p>
               <p className="text-xs text-ink-soft">
-                Total {formatEUR(noteActive.data.total)}. Générer à nouveau créera la version{' '}
-                {(versionActive ?? 0) + 1}.
+                Total {formatEUR(activeStatement.data.total)}. Générer à nouveau créera la version{' '}
+                {(activeVersion ?? 0) + 1}.
               </p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {noteActive.data.id ? (
+            {activeStatement.data.id ? (
               <>
                 <a
-                  href={api.notes.urlPdf(noteActive.data.id, false)}
+                  href={api.notes.urlPdf(activeStatement.data.id, false)}
                   target="_blank"
                   rel="noreferrer"
                   className="btn btn-secondaire btn-petit"
@@ -851,7 +851,7 @@ export function GenererNoteFraisPage() {
                   Ouvrir
                 </a>
                 <a
-                  href={api.notes.urlPdf(noteActive.data.id, true)}
+                  href={api.notes.urlPdf(activeStatement.data.id, true)}
                   target="_blank"
                   rel="noreferrer"
                   className="btn btn-secondaire btn-petit"
@@ -865,16 +865,16 @@ export function GenererNoteFraisPage() {
         </div>
       ) : null}
 
-      {parametres.isError ? (
+      {settings.isError ? (
         <div className="mb-4">
-          <EtatErreur message={messageErreur(parametres.error)} onReessayer={() => void parametres.refetch()} />
+          <ErrorState message={errorMessage(settings.error)} onReessayer={() => void settings.refetch()} />
         </div>
       ) : null}
-      {postesQuery.isError ? (
+      {expenseItemsQuery.isError ? (
         <div className="mb-4">
-          <EtatErreur
-            message={messageErreur(postesQuery.error)}
-            onReessayer={() => void postesQuery.refetch()}
+          <ErrorState
+            message={errorMessage(expenseItemsQuery.error)}
+            onReessayer={() => void expenseItemsQuery.refetch()}
           />
         </div>
       ) : null}
@@ -884,24 +884,24 @@ export function GenererNoteFraisPage() {
           <button
             type="button"
             role="tab"
-            aria-selected={voletMobile === 'saisie'}
-            onClick={() => setVoletMobile('saisie')}
-            className={cn('segmented-item flex-1', voletMobile === 'saisie' && 'segmented-item-actif')}
+            aria-selected={mobilePanel === 'saisie'}
+            onClick={() => setMobilePanel('saisie')}
+            className={cn('segmented-item flex-1', mobilePanel === 'saisie' && 'segmented-item-actif')}
           >
             Saisie
           </button>
           <button
             type="button"
             role="tab"
-            aria-selected={voletMobile === 'apercu'}
-            onClick={() => setVoletMobile('apercu')}
+            aria-selected={mobilePanel === 'apercu'}
+            onClick={() => setMobilePanel('apercu')}
             className={cn(
               'segmented-item flex flex-1 items-center justify-center gap-2',
-              voletMobile === 'apercu' && 'segmented-item-actif',
+              mobilePanel === 'apercu' && 'segmented-item-actif',
             )}
           >
             Aperçu
-            {apercu.misAJour ? <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" /> : null}
+            {preview.misAJour ? <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" /> : null}
           </button>
         </div>
       </div>
@@ -909,14 +909,14 @@ export function GenererNoteFraisPage() {
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.06fr)_minmax(400px,0.94fr)] xl:gap-6">
         <div
           data-cy="volet-saisie"
-          className={cn('min-w-0 space-y-4', mobile && voletMobile !== 'saisie' && 'hidden')}
+          className={cn('min-w-0 space-y-4', mobile && mobilePanel !== 'saisie' && 'hidden')}
         >
           <div className="carte">
             <div className="carte-entete">
               <div>
-                <p className="eyebrow">{ligneEnEdition ? 'Modification' : 'Ajouter un frais'}</p>
+                <p className="eyebrow">{lineBeingEdited ? 'Modification' : 'Ajouter un frais'}</p>
                 <h2 className="mt-1 text-[22px] text-ink">
-                  {ligneEnEdition ? 'Modifier le frais' : 'Nouveau frais'}
+                  {lineBeingEdited ? 'Modifier le frais' : 'Nouveau frais'}
                 </h2>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -929,24 +929,24 @@ export function GenererNoteFraisPage() {
                     type="month"
                     className="champ mt-0 w-auto py-1.5 text-xs"
                     data-cy="select-mois"
-                    value={mois}
-                    onChange={(evenement) => changerMois(evenement.target.value)}
+                    value={month}
+                    onChange={(event) => changeMonth(event.target.value)}
                   />
                 </div>
               </div>
             </div>
 
-            <form ref={carteFormulaireRef} onSubmit={handleSubmit(enregistrerFrais)} noValidate>
+            <form ref={formCardRef} onSubmit={handleSubmit(saveExpense)} noValidate>
               <div className="carte-corps space-y-5">
                 <div className="grid gap-4 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-                  <GroupeChamp
+                  <FieldGroup
                     id="frais-type"
                     label="Type de frais"
                     erreur={errors.posteCode?.message}
-                    badge={ia.type ? <BadgeIA libelle="Type suggéré par IA" /> : undefined}
+                    badge={ai.type ? <AiBadge libelle="Type suggéré par IA" /> : undefined}
                     aide={
-                      ia.fournisseur
-                        ? `Fournisseur détecté : ${ia.fournisseur}`
+                      ai.fournisseur
+                        ? `Fournisseur détecté : ${ai.fournisseur}`
                         : 'Les libellés proviennent de votre configuration.'
                     }
                   >
@@ -955,27 +955,27 @@ export function GenererNoteFraisPage() {
                       ref={typeRef}
                       className={cn('champ', errors.posteCode && 'champ-erreur')}
                       data-cy="select-type-frais"
-                      value={valeurs.posteCode}
-                      onChange={(evenement) => changerType(evenement.target.value)}
+                      value={values.posteCode}
+                      onChange={(event) => changeType(event.target.value)}
                       aria-invalid={Boolean(errors.posteCode)}
-                      disabled={postesQuery.isPending}
+                      disabled={expenseItemsQuery.isPending}
                     >
                       <option value="">Sélectionner…</option>
-                      {postes.map((poste) => (
+                      {expenseItems.map((expenseItem) => (
                         <option
-                          key={poste.code}
-                          value={poste.code}
-                          disabled={optionDesactivee(poste)}
+                          key={expenseItem.code}
+                          value={expenseItem.code}
+                          disabled={optionDisabled(expenseItem)}
                         >
-                          {poste.libelle ?? poste.code}
-                          {poste.fournisseur ? ` (${poste.fournisseur})` : ''}
-                          {optionDesactivee(poste) ? ' — déjà ajouté' : ''}
+                          {expenseItem.libelle ?? expenseItem.code}
+                          {expenseItem.fournisseur ? ` (${expenseItem.fournisseur})` : ''}
+                          {optionDisabled(expenseItem) ? ' — déjà ajouté' : ''}
                         </option>
                       ))}
                     </select>
-                  </GroupeChamp>
+                  </FieldGroup>
 
-                  <GroupeChamp
+                  <FieldGroup
                     id="frais-prorata"
                     label="Prorata (%)"
                     erreur={errors.prorataPct?.message}
@@ -994,29 +994,29 @@ export function GenererNoteFraisPage() {
                         %
                       </span>
                     </div>
-                  </GroupeChamp>
+                  </FieldGroup>
                 </div>
 
-                {estLoyer ? (
+                {isRent ? (
                   <div className="rounded-xl border border-line bg-paper/50 p-4">
-                    {quittance.isPending ? (
+                    {rentReceipt.isPending ? (
                       <p className="flex items-center gap-2 text-sm text-ink-soft">
                         <Spinner taille={16} /> Recherche de la quittance du mois…
                       </p>
-                    ) : quittance.data ? (
+                    ) : rentReceipt.data ? (
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                           <p className="text-sm font-semibold text-ink">
-                            Quittance de {formatMois(mois)} (v{quittance.data.version ?? 1}) :{' '}
-                            <span className="nombre">{formatEUR(quittance.data.total)}</span>
+                            Quittance de {formatMonth(month)} (v{rentReceipt.data.version ?? 1}) :{' '}
+                            <span className="nombre">{formatEUR(rentReceipt.data.total)}</span>
                           </p>
                           <p className="mt-1 text-xs text-ink-soft">
                             Montant pré-rempli et verrouillé. La quittance sera annexée automatiquement.
                           </p>
                         </div>
-                        {quittance.data.id ? (
+                        {rentReceipt.data.id ? (
                           <a
-                            href={api.quittances.urlPdf(quittance.data.id)}
+                            href={api.quittances.urlPdf(rentReceipt.data.id)}
                             target="_blank"
                             rel="noreferrer"
                             className="btn btn-secondaire btn-petit"
@@ -1041,9 +1041,9 @@ export function GenererNoteFraisPage() {
                             </p>
                           </div>
                         </div>
-                        <Bouton variante="secondaire" petit onClick={allerVersQuittance}>
+                        <Button variante="secondaire" petit onClick={goToRentReceipt}>
                           Générer la quittance
-                        </Bouton>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -1055,47 +1055,47 @@ export function GenererNoteFraisPage() {
                       </span>
                       <span className="text-[11px] text-ink-soft">10 Mo max.</span>
                     </div>
-                    {televersement ? (
+                    {uploading ? (
                       <div className="flex items-center gap-3 rounded-xl border border-line bg-paper/50 p-4 text-sm text-ink-soft">
                         <Spinner taille={18} />
                         Envoi et préparation de l’analyse…
                       </div>
-                    ) : justificatif ? (
-                      <FichierSelectionne
-                        nom={justificatif.nom}
-                        taille={justificatif.taille}
-                        typeMime={justificatif.typeMime}
-                        onRetirer={retirerFichier}
+                    ) : receipt ? (
+                      <SelectedFile
+                        nom={receipt.nom}
+                        taille={receipt.taille}
+                        typeMime={receipt.typeMime}
+                        onRetirer={removeFile}
                       />
                     ) : (
                       <FileDropzone
-                        onFichier={(fichier) => void televerser(fichier)}
+                        onFichier={(file) => void upload(file)}
                         dataCy="dropzone-fichier"
-                        disabled={postesQuery.isPending}
+                        disabled={expenseItemsQuery.isPending}
                       />
                     )}
-                    {erreurFichier ? (
+                    {fileError ? (
                       <p className="erreur-champ" role="alert">
-                        {erreurFichier}
+                        {fileError}
                       </p>
                     ) : null}
                   </div>
                 )}
 
-                {!estLoyer ? (
-                  <PanneauAnalyse
-                    etat={etatAnalyse}
-                    aFichier={justificatif !== null || televersement}
-                    onAnnuler={() => void annuler()}
+                {!isRent ? (
+                  <AnalysisPanel
+                    etat={analysisPhase}
+                    aFichier={receipt !== null || uploading}
+                    onAnnuler={() => void cancel()}
                   />
                 ) : null}
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <GroupeChamp
+                  <FieldGroup
                     id="frais-montant"
                     label="Montant TTC"
                     erreur={errors.montantTtc?.message}
-                    badge={ia.montant ? <BadgeIA extraitSource={ia.extraitSource} /> : undefined}
+                    badge={ai.montant ? <AiBadge extraitSource={ai.extraitSource} /> : undefined}
                   >
                     <div className="relative">
                       <input
@@ -1104,26 +1104,26 @@ export function GenererNoteFraisPage() {
                         className={cn(
                           'champ pr-9',
                           errors.montantTtc && 'champ-erreur',
-                          erreurBasseConfiance && ia.montant && 'champ-avertissement',
+                          lowConfidenceError && ai.montant && 'champ-avertissement',
                         )}
                         data-cy="input-montant-ttc"
                         aria-invalid={Boolean(errors.montantTtc)}
-                        aria-readonly={estLoyer && loyerDisponible}
-                        readOnly={estLoyer && loyerDisponible}
+                        aria-readonly={isRent && availableRent}
+                        readOnly={isRent && availableRent}
                         {...register('montantTtc', {
-                          onChange: () => setIa((precedent) => ({ ...precedent, montant: false })),
+                          onChange: () => setAi((previous) => ({ ...previous, montant: false })),
                         })}
                       />
                       <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">
                         €
                       </span>
                     </div>
-                  </GroupeChamp>
+                  </FieldGroup>
 
                   <div className="flex flex-col justify-end rounded-xl border border-accent/15 bg-accent-soft/45 px-4 py-3">
                     <p className="eyebrow text-accent">Montant retenu estimé</p>
                     <p className="mt-1 font-display text-[24px] leading-none text-accent-strong nombre">
-                      {montantRetenuAffiche}
+                      {displayedRetainedAmount}
                     </p>
                     <p className="mt-1.5 text-[11px] leading-snug text-ink-soft">
                       Estimation d’affichage : le backend recalcule chaque ligne avec arrondi au centime.
@@ -1131,7 +1131,7 @@ export function GenererNoteFraisPage() {
                   </div>
                 </div>
 
-                {erreurBasseConfiance ? (
+                {lowConfidenceError ? (
                   <p className="flex items-start gap-2 rounded-lg bg-warning-soft/50 px-3 py-2 text-xs text-warning">
                     <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
                     Confiance faible : vérifiez le montant et la période avant d’ajouter le frais.
@@ -1142,33 +1142,33 @@ export function GenererNoteFraisPage() {
                   <button
                     type="button"
                     className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-[13px] font-semibold text-ink"
-                    onClick={() => setPeriodeVisible((valeur) => !valeur)}
-                    aria-expanded={periodeVisible}
+                    onClick={() => setPeriodVisible((value) => !value)}
+                    aria-expanded={periodVisible}
                   >
                     <span className="flex flex-wrap items-center gap-2">
                       Facture sur plusieurs mois ?
-                      {ia.periode ? <BadgeIA libelle="Période détectée" /> : null}
-                      {!periodeVisible && (valeurs.periodeDebut || valeurs.periodeFin) ? (
+                      {ai.periode ? <AiBadge libelle="Période détectée" /> : null}
+                      {!periodVisible && (values.periodeDebut || values.periodeFin) ? (
                         <span className="text-[11px] font-normal text-ink-soft">
-                          {formatPeriode(valeurs.periodeDebut, valeurs.periodeFin)}
+                          {formatPeriod(values.periodeDebut, values.periodeFin)}
                         </span>
                       ) : null}
                     </span>
                     <ChevronDown
                       size={16}
-                      className={cn('shrink-0 text-ink-soft transition', periodeVisible && 'rotate-180')}
+                      className={cn('shrink-0 text-ink-soft transition', periodVisible && 'rotate-180')}
                       aria-hidden="true"
                     />
                   </button>
 
-                  {periodeVisible ? (
+                  {periodVisible ? (
                     <div className="space-y-4 border-t border-line px-4 pb-4 pt-4">
                       <p className="text-[11px] leading-relaxed text-ink-soft">
                         Renseignez la période de la facture : le montant du mois est ventilé au prorata
                         temporis par le backend.
                       </p>
                       <div className="grid gap-4 sm:grid-cols-2">
-                        <GroupeChamp
+                        <FieldGroup
                           id="frais-periode-debut"
                           label="Début de la période"
                           erreur={errors.periodeDebut?.message}
@@ -1180,11 +1180,11 @@ export function GenererNoteFraisPage() {
                             data-cy="input-periode-debut"
                             aria-invalid={Boolean(errors.periodeDebut)}
                             {...register('periodeDebut', {
-                              onChange: () => setIa((precedent) => ({ ...precedent, periode: false })),
+                              onChange: () => setAi((previous) => ({ ...previous, periode: false })),
                             })}
                           />
-                        </GroupeChamp>
-                        <GroupeChamp
+                        </FieldGroup>
+                        <FieldGroup
                           id="frais-periode-fin"
                           label="Fin de la période"
                           erreur={errors.periodeFin?.message}
@@ -1196,13 +1196,13 @@ export function GenererNoteFraisPage() {
                             data-cy="input-periode-fin"
                             aria-invalid={Boolean(errors.periodeFin)}
                             {...register('periodeFin', {
-                              onChange: () => setIa((precedent) => ({ ...precedent, periode: false })),
+                              onChange: () => setAi((previous) => ({ ...previous, periode: false })),
                             })}
                           />
-                        </GroupeChamp>
+                        </FieldGroup>
                       </div>
                       <div className="grid gap-4 sm:grid-cols-2">
-                        <GroupeChamp
+                        <FieldGroup
                           id="frais-montant-mois"
                           label="Montant du mois (optionnel)"
                           erreur={errors.montantMoisSurcharge?.message}
@@ -1221,17 +1221,17 @@ export function GenererNoteFraisPage() {
                               €
                             </span>
                           </div>
-                        </GroupeChamp>
+                        </FieldGroup>
                         <div className="flex flex-col justify-end">
-                          {estimation ? (
+                          {estimate ? (
                             <p className="rounded-lg bg-surface px-3 py-2.5 text-xs leading-relaxed text-ink-soft">
                               Ventilation estimée :{' '}
                               <span className="font-semibold text-ink">
-                                {estimation.joursMois} jours sur {estimation.joursTotal}
+                                {estimate.joursMois} jours sur {estimate.joursTotal}
                               </span>{' '}
-                              → <span className="nombre">{estimation.montantMois}</span>
+                              → <span className="nombre">{estimate.montantMois}</span>
                               <br />
-                              Retenu estimé : <span className="nombre">{montantRetenuAffiche}</span>
+                              Retenu estimé : <span className="nombre">{displayedRetainedAmount}</span>
                             </p>
                           ) : (
                             <p className="rounded-lg bg-surface px-3 py-2.5 text-xs text-ink-soft">
@@ -1247,24 +1247,24 @@ export function GenererNoteFraisPage() {
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-6">
                 <div className="flex flex-wrap gap-2">
-                  <Bouton
+                  <Button
                     type="submit"
                     variante="primaire"
-                    icone={ligneEnEdition ? <Pencil size={15} /> : <Plus size={16} />}
+                    icone={lineBeingEdited ? <Pencil size={15} /> : <Plus size={16} />}
                     disabled={
                       !isValid ||
-                      televersement ||
-                      (!estLoyer && !justificatif) ||
-                      (estLoyer && !loyerDisponible)
+                      uploading ||
+                      (!isRent && !receipt) ||
+                      (isRent && !availableRent)
                     }
                     data-cy="btn-ajouter-frais"
                   >
-                    {ligneEnEdition ? 'Enregistrer la modification' : 'Ajouter ce frais'}
-                  </Bouton>
-                  {ligneEnEdition ? (
-                    <Bouton variante="fantome" petit onClick={annulerEdition}>
+                    {lineBeingEdited ? 'Enregistrer la modification' : 'Ajouter ce frais'}
+                  </Button>
+                  {lineBeingEdited ? (
+                    <Button variante="fantome" petit onClick={cancelEdit}>
                       Annuler la modification
-                    </Bouton>
+                    </Button>
                   ) : null}
                 </div>
                 <p className="text-[11px] text-ink-soft">
@@ -1281,23 +1281,23 @@ export function GenererNoteFraisPage() {
                 <h2 className="mt-1 text-[22px] text-ink">Frais ajoutés</h2>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                {typesOublies.length > 0 ? (
-                  <span className="badge badge-avertissement" title={`Il manque : ${typesOublies.join(', ')}`}>
+                {omittedTypes.length > 0 ? (
+                  <span className="badge badge-avertissement" title={`Il manque : ${omittedTypes.join(', ')}`}>
                     <AlertTriangle size={11} aria-hidden="true" />
-                    Il manque : {typesOublies.join(', ')}
+                    Il manque : {omittedTypes.join(', ')}
                   </span>
                 ) : null}
-                <span className="badge badge-neutre">{lignes.length} ligne{lignes.length > 1 ? 's' : ''}</span>
+                <span className="badge badge-neutre">{lines.length} ligne{lines.length > 1 ? 's' : ''}</span>
               </div>
             </div>
 
             <div data-cy="liste-frais">
-              {lignes.length === 0 ? (
+              {lines.length === 0 ? (
                 <div className="flex flex-col items-center justify-center px-5 py-10 text-center">
                   <span className="grid h-11 w-11 place-items-center rounded-full bg-paper-deep/70 text-ink-soft">
                     <FileText size={20} aria-hidden="true" />
                   </span>
-                  <p className="mt-3 text-sm font-semibold text-ink">Aucun frais pour {formatMois(mois)}</p>
+                  <p className="mt-3 text-sm font-semibold text-ink">Aucun frais pour {formatMonth(month)}</p>
                   <p className="mt-1 max-w-sm text-xs text-ink-soft">
                     Sélectionnez un type de frais ci-dessus, déposez un justificatif et ajoutez la ligne.
                   </p>
@@ -1317,36 +1317,36 @@ export function GenererNoteFraisPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {lignes.map((ligne, index) => {
-                        const poste = posteParCode.get(ligne.posteCode);
-                        const dto = calculAJour ? calcul?.lignes?.[index] : undefined;
+                      {lines.map((line, index) => {
+                        const expenseItem = expenseItemByCode.get(line.posteCode);
+                        const dto = calculationUpToDate ? calculation?.lignes?.[index] : undefined;
                         return (
-                          <tr key={ligne.cle} data-cy={`ligne-frais-${ligne.posteCode}`}>
+                          <tr key={line.cle} data-cy={`ligne-frais-${line.posteCode}`}>
                             <td>
                               <p className="font-semibold text-ink">
-                                {poste?.libelle ?? dto?.posteLibelle ?? ligne.posteCode}
+                                {expenseItem?.libelle ?? dto?.posteLibelle ?? line.posteCode}
                               </p>
-                              {ligne.justificatifNom ? (
-                                <p className="mt-0.5 max-w-[160px] truncate text-[11px] text-ink-soft" title={ligne.justificatifNom}>
-                                  {ligne.justificatifNom}
+                              {line.justificatifNom ? (
+                                <p className="mt-0.5 max-w-[160px] truncate text-[11px] text-ink-soft" title={line.justificatifNom}>
+                                  {line.justificatifNom}
                                 </p>
                               ) : null}
                             </td>
                             <td className="text-ink-soft">
-                              {ligne.fournisseurDetecte ?? poste?.fournisseur ?? '—'}
+                              {line.fournisseurDetecte ?? expenseItem?.fournisseur ?? '—'}
                             </td>
                             <td className="whitespace-nowrap text-xs text-ink-soft">
-                              {ligne.periodeDebut && ligne.periodeFin
-                                ? formatPeriode(ligne.periodeDebut, ligne.periodeFin)
+                              {line.periodeDebut && line.periodeFin
+                                ? formatPeriod(line.periodeDebut, line.periodeFin)
                                 : 'Mois concerné'}
                             </td>
                             <td className="whitespace-nowrap text-right">
                               <span className="nombre font-semibold text-ink">
-                                {formatEUR(ligne.montantTtc)}
+                                {formatEUR(line.montantTtc)}
                               </span>
-                              {ligne.sourceMontant === 'AI' ? (
+                              {line.sourceMontant === 'AI' ? (
                                 <span className="ml-2 inline-flex align-middle">
-                                  <BadgeIA />
+                                  <AiBadge />
                                 </span>
                               ) : null}
                             </td>
@@ -1356,18 +1356,18 @@ export function GenererNoteFraisPage() {
                                   inputMode="decimal"
                                   className={cn(
                                     'champ mt-0 px-2 py-1 pr-6 text-xs',
-                                    parsePourcentage(ligne.prorataPct) === null && 'champ-erreur',
+                                    parsePercentage(line.prorataPct) === null && 'champ-erreur',
                                   )}
-                                  value={ligne.prorataPct}
-                                  onChange={(evenement) => modifierProrata(ligne, evenement.target.value)}
-                                  onBlur={(evenement) => {
-                                    const normalise = parsePourcentage(evenement.target.value);
-                                    if (normalise !== null) {
-                                      modifierProrata(ligne, normalise);
+                                  value={line.prorataPct}
+                                  onChange={(event) => changeProRata(line, event.target.value)}
+                                  onBlur={(event) => {
+                                    const normalized = parsePercentage(event.target.value);
+                                    if (normalized !== null) {
+                                      changeProRata(line, normalized);
                                     }
                                   }}
-                                  aria-label={`Prorata de ${poste?.libelle ?? ligne.posteCode}`}
-                                  aria-invalid={parsePourcentage(ligne.prorataPct) === null}
+                                  aria-label={`Prorata de ${expenseItem?.libelle ?? line.posteCode}`}
+                                  aria-invalid={parsePercentage(line.prorataPct) === null}
                                 />
                                 <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-[11px] text-ink-soft">
                                   %
@@ -1381,20 +1381,20 @@ export function GenererNoteFraisPage() {
                                 </span>
                               ) : (
                                 <span className="text-xs text-ink-soft">
-                                  {calculEnCours ? 'Calcul…' : '—'}
+                                  {calculationInProgress ? 'Calcul…' : '—'}
                                 </span>
                               )}
                             </td>
                             <td>
                               <div className="flex items-center justify-end gap-1">
-                                {ligne.justificatifId ? (
+                                {line.justificatifId ? (
                                   <a
-                                    href={api.justificatifs.urlFichier(ligne.justificatifId)}
+                                    href={api.justificatifs.urlFichier(line.justificatifId)}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="rounded-lg p-1.5 text-ink-soft transition hover:bg-paper-deep hover:text-ink"
-                                    aria-label={`Voir le justificatif de ${poste?.libelle ?? ligne.posteCode}`}
-                                    data-cy={`btn-voir-justificatif-${ligne.posteCode}`}
+                                    aria-label={`Voir le justificatif de ${expenseItem?.libelle ?? line.posteCode}`}
+                                    data-cy={`btn-voir-justificatif-${line.posteCode}`}
                                   >
                                     <FileText size={15} />
                                   </a>
@@ -1402,18 +1402,18 @@ export function GenererNoteFraisPage() {
                                 <button
                                   type="button"
                                   className="rounded-lg p-1.5 text-ink-soft transition hover:bg-paper-deep hover:text-ink"
-                                  onClick={() => editerLigne(ligne)}
-                                  aria-label={`Modifier ${poste?.libelle ?? ligne.posteCode}`}
-                                  data-cy={`btn-modifier-${ligne.posteCode}`}
+                                  onClick={() => editLine(line)}
+                                  aria-label={`Modifier ${expenseItem?.libelle ?? line.posteCode}`}
+                                  data-cy={`btn-modifier-${line.posteCode}`}
                                 >
                                   <Pencil size={15} />
                                 </button>
                                 <button
                                   type="button"
                                   className="rounded-lg p-1.5 text-ink-soft transition hover:bg-danger-soft hover:text-danger"
-                                  onClick={() => setLigneASupprimer(ligne)}
-                                  aria-label={`Supprimer ${poste?.libelle ?? ligne.posteCode}`}
-                                  data-cy={`btn-supprimer-${ligne.posteCode}`}
+                                  onClick={() => setLineToRemove(line)}
+                                  aria-label={`Supprimer ${expenseItem?.libelle ?? line.posteCode}`}
+                                  data-cy={`btn-supprimer-${line.posteCode}`}
                                 >
                                   <Trash2 size={15} />
                                 </button>
@@ -1434,66 +1434,66 @@ export function GenererNoteFraisPage() {
                   <p className="eyebrow">Total retenu</p>
                   <p className="mt-1 flex items-baseline gap-2 font-display text-[30px] leading-none text-accent-strong">
                     <span className="nombre" data-cy="total-retenu">
-                      {formatEUR(totalAffiche)}
+                      {formatEUR(displayedTotal)}
                     </span>
-                    {calculEnCours ? <Spinner taille={15} /> : null}
+                    {calculationInProgress ? <Spinner taille={15} /> : null}
                   </p>
-                  {calcul?.totalEnLettres ? (
-                    <p className="mt-1.5 text-xs text-ink-soft">Soit {calcul.totalEnLettres}.</p>
+                  {calculation?.totalEnLettres ? (
+                    <p className="mt-1.5 text-xs text-ink-soft">Soit {calculation.totalEnLettres}.</p>
                   ) : null}
                 </div>
                 <div className="text-right text-[11px] leading-relaxed text-ink-soft">
                   <p>
                     Base de prorata :{' '}
                     <span className="font-medium text-ink">
-                      {calcul?.baseProrataDetail ?? parametres.data?.prorataBaseDetail ?? '—'}
+                      {calculation?.baseProrataDetail ?? settings.data?.prorataBaseDetail ?? '—'}
                     </span>
                   </p>
-                  {calcul?.baseProrata ? (
+                  {calculation?.baseProrata ? (
                     <p>
-                      Quote-part de référence : <span className="nombre">{formatEUR(calcul.baseProrata)}</span>
+                      Quote-part de référence : <span className="nombre">{formatEUR(calculation.baseProrata)}</span>
                     </p>
                   ) : null}
                   <p>Calcul backend · recalcul automatique (300 ms).</p>
                 </div>
               </div>
 
-              {calculErreur ? (
+              {calculationError ? (
                 <p className="erreur-champ" role="alert">
-                  Calcul indisponible : {calculErreur}
+                  Calcul indisponible : {calculationError}
                 </p>
               ) : null}
-              {requetes.erreur && !calculErreur ? (
+              {requests.erreur && !calculationError ? (
                 <p className="erreur-champ" role="alert">
-                  {requetes.erreur}
+                  {requests.erreur}
                 </p>
               ) : null}
 
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <Bouton
+                <Button
                   variante="primaire"
                   icone={<FileCheck2 size={16} />}
-                  chargement={generationEnCours}
-                  disabled={lignes.length === 0 || !calculAJour}
-                  onClick={demanderGeneration}
+                  chargement={generationInProgress}
+                  disabled={lines.length === 0 || !calculationUpToDate}
+                  onClick={requestGeneration}
                   data-cy="btn-generer-note"
                 >
                   Générer la note de frais
-                </Bouton>
+                </Button>
                 <p className="max-w-[300px] text-[11px] leading-snug text-ink-soft">
-                  {lignes.length === 0
+                  {lines.length === 0
                     ? 'Ajoutez au moins un frais pour générer la note.'
-                    : !calculAJour
+                    : !calculationUpToDate
                       ? 'En attente du calcul backend à jour…'
-                      : noteActive.data
-                        ? `Une version ${versionActive} existe : la version ${(versionActive ?? 0) + 1} sera créée.`
+                      : activeStatement.data
+                        ? `Une version ${activeVersion} existe : la version ${(activeVersion ?? 0) + 1} sera créée.`
                         : 'Le PDF définitif sera enregistré dans l’historique.'}
                 </p>
               </div>
             </div>
           </div>
 
-          {resultat ? (
+          {result ? (
             <div className="carte animation-fondu overflow-hidden border-accent/25">
               <div className="flex items-start gap-3 bg-accent-soft/60 px-5 py-4">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent text-white">
@@ -1502,37 +1502,37 @@ export function GenererNoteFraisPage() {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold text-accent">Note de frais générée</p>
                   <p className="mt-0.5 text-sm text-ink">
-                    {formatMois(resultat.mois)} · version {resultat.version ?? 1} ·{' '}
-                    {formatEUR(resultat.total)}
+                    {formatMonth(result.mois)} · version {result.version ?? 1} ·{' '}
+                    {formatEUR(result.total)}
                   </p>
                   <p className="mt-0.5 text-xs text-ink-soft">
-                    Enregistrée avec le template « {resultat.templateNom ?? templateCourant} » v
-                    {resultat.templateVersion ?? 1} le {formatDateHeure(resultat.createdAt)}.
+                    Enregistrée avec le template « {result.templateNom ?? currentTemplate} » v
+                    {result.templateVersion ?? 1} le {formatDateTime(result.createdAt)}.
                   </p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 px-5 py-4">
-                <Bouton
+                <Button
                   variante="primaire"
                   petit
                   icone={<Download size={14} />}
-                  onClick={() => void telechargerNote(resultat, false)}
+                  onClick={() => void downloadStatement(result, false)}
                   data-cy="btn-telecharger-note"
                 >
                   Télécharger la note seule
-                </Bouton>
-                <Bouton
+                </Button>
+                <Button
                   variante="secondaire"
                   petit
                   icone={<Download size={14} />}
-                  onClick={() => void telechargerNote(resultat, true)}
+                  onClick={() => void downloadStatement(result, true)}
                   data-cy="btn-telecharger-note-complete"
                 >
                   Télécharger la note complète
-                </Bouton>
-                {resultat.id ? (
+                </Button>
+                {result.id ? (
                   <a
-                    href={api.notes.urlPdf(resultat.id, false)}
+                    href={api.notes.urlPdf(result.id, false)}
                     target="_blank"
                     rel="noreferrer"
                     className="btn btn-secondaire btn-petit"
@@ -1550,40 +1550,40 @@ export function GenererNoteFraisPage() {
           data-cy="volet-apercu"
           className={cn(
             'min-w-0',
-            mobile && voletMobile !== 'apercu' && 'hidden',
+            mobile && mobilePanel !== 'apercu' && 'hidden',
             'lg:sticky lg:top-6 lg:self-start',
           )}
         >
           <PdfViewer
-            url={requeteApercu ? apercu.url : null}
-            chargement={apercu.chargement}
+            url={previewRequest ? preview.url : null}
+            chargement={preview.chargement}
             erreur={
-              requetes.erreur
+              requests.erreur
                 ? 'Corrigez les lignes en rouge pour actualiser l’aperçu.'
-                : lignes.length === 0
+                : lines.length === 0
                   ? 'Ajoutez un frais pour voir l’aperçu de la note.'
-                  : apercu.erreur
+                  : preview.erreur
             }
-            misAJour={apercu.misAJour}
-            onTelecharger={apercu.telecharger}
+            misAJour={preview.misAJour}
+            onTelecharger={preview.telecharger}
             actions={
               <>
                 <select
                   aria-label="Template de la note de frais"
                   className="rounded-lg border border-line bg-white px-2 py-1.5 text-[11px] font-medium text-ink-soft"
-                  value={templateSelectionne ?? ''}
-                  onChange={(evenement) =>
-                    brouillon.definirTemplate(
-                      evenement.target.value ? Number(evenement.target.value) : null,
+                  value={selectedTemplate ?? ''}
+                  onChange={(event) =>
+                    draft.definirTemplate(
+                      event.target.value ? Number(event.target.value) : null,
                     )
                   }
-                  disabled={modeles.length === 0}
+                  disabled={models.length === 0}
                   data-cy="select-template"
                 >
-                  {modeles.length === 0 ? <option value="">Modèle intégré</option> : null}
-                  {modeles.map((modele) => (
-                    <option key={modele.id} value={modele.id}>
-                      {modele.nom} — v{modele.version}
+                  {models.length === 0 ? <option value="">Modèle intégré</option> : null}
+                  {models.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.nom} — v{model.version}
                     </option>
                   ))}
                 </select>
@@ -1591,8 +1591,8 @@ export function GenererNoteFraisPage() {
                   <input
                     type="checkbox"
                     className="h-3.5 w-3.5 accent-[#1d5b49]"
-                    checked={complet}
-                    onChange={(evenement) => brouillon.definirComplet(evenement.target.checked)}
+                    checked={complete}
+                    onChange={(event) => draft.definirComplet(event.target.checked)}
                     data-cy="toggle-apercu-complet"
                   />
                   Avec annexes
@@ -1607,39 +1607,39 @@ export function GenererNoteFraisPage() {
         </div>
       </div>
 
-      <DialogueConfirmation
-        ouvert={ligneASupprimer !== null}
+      <ConfirmDialog
+        ouvert={lineToRemove !== null}
         titre="Supprimer ce frais ?"
         message={
-          ligneASupprimer ? (
+          lineToRemove ? (
             <>
-              La ligne « {posteParCode.get(ligneASupprimer.posteCode)?.libelle ?? ligneASupprimer.posteCode} »
+              La ligne « {expenseItemByCode.get(lineToRemove.posteCode)?.libelle ?? lineToRemove.posteCode} »
               sera retirée du brouillon. Cette action ne modifie pas les versions déjà générées.
             </>
           ) : null
         }
         libelleConfirmer="Supprimer"
         variante="danger"
-        onConfirmer={supprimerLigne}
-        onAnnuler={() => setLigneASupprimer(null)}
+        onConfirmer={removeLine}
+        onAnnuler={() => setLineToRemove(null)}
         dataCy="dialogue-suppression-frais"
       />
 
-      <DialogueConfirmation
-        ouvert={dialogueRegeneration}
+      <ConfirmDialog
+        ouvert={regenerationDialog}
         titre="Générer une nouvelle version ?"
         message={
           <>
-            Une note active existe déjà pour {formatMois(mois)} (version {versionActive}). La version{' '}
-            {(versionActive ?? 0) + 1} sera créée et l’ancienne restera consultable dans l’historique.
+            Une note active existe déjà pour {formatMonth(month)} (version {activeVersion}). La version{' '}
+            {(activeVersion ?? 0) + 1} sera créée et l’ancienne restera consultable dans l’historique.
           </>
         }
         libelleConfirmer="Créer la nouvelle version"
         onConfirmer={() => {
-          setDialogueRegeneration(false);
-          void genererNote();
+          setRegenerationDialog(false);
+          void generateStatement();
         }}
-        onAnnuler={() => setDialogueRegeneration(false)}
+        onAnnuler={() => setRegenerationDialog(false)}
         dataCy="dialogue-regeneration-note"
       />
     </>

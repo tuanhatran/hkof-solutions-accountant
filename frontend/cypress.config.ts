@@ -14,7 +14,7 @@ function cheminSur(cheminRelatif: string): string {
   return absolu;
 }
 
-async function attendreFichier(nom: string, timeoutMs = 30_000): Promise<string> {
+async function waitForDownload(nom: string, timeoutMs = 30_000): Promise<string> {
   if (nom.includes('/') || nom.includes('\\')) {
     throw new Error(`Nom de fichier attendu sans dossier : ${nom}`);
   }
@@ -52,7 +52,7 @@ export default defineConfig({
     retries: { runMode: 1, openMode: 0 },
     setupNodeEvents(on) {
       on('task', {
-        async lirePdf(chemin: string): Promise<string> {
+        async readPdf(chemin: string): Promise<string> {
           const absolu = chemin.startsWith(RACINE) ? chemin : cheminSur(chemin);
           const donnees = await fs.readFile(absolu);
           const parseur = new PDFParse({ data: donnees });
@@ -60,15 +60,15 @@ export default defineConfig({
           await parseur.destroy();
           return resultat.text;
         },
-        async tailleFichier(chemin: string): Promise<number> {
+        async fileSize(chemin: string): Promise<number> {
           const absolu = chemin.startsWith(RACINE) ? chemin : cheminSur(chemin);
           const statut = await fs.stat(absolu);
           return statut.size;
         },
-        async attendreFichier(nom: string): Promise<string> {
-          return attendreFichier(nom);
+        async waitForDownload(nom: string): Promise<string> {
+          return waitForDownload(nom);
         },
-        async nettoyerTelechargements(): Promise<number> {
+        async clearDownloads(): Promise<number> {
           await fs.mkdir(DOSSIER_TELECHARGEMENTS, { recursive: true });
           const entrees = await fs.readdir(DOSSIER_TELECHARGEMENTS);
           let supprimes = 0;
@@ -82,7 +82,7 @@ export default defineConfig({
           }
           return supprimes;
         },
-        async supprimerFichier(chemin: string): Promise<boolean> {
+        async deleteFile(chemin: string): Promise<boolean> {
           try {
             await fs.unlink(cheminSur(chemin));
             return true;
@@ -90,7 +90,7 @@ export default defineConfig({
             return false;
           }
         },
-        async creerFichierGeant(chemin: string): Promise<string> {
+        async createLargeFile(chemin: string): Promise<string> {
           const absolu = cheminSur(chemin);
           await fs.mkdir(path.dirname(absolu), { recursive: true });
           const contenu = Buffer.alloc(11 * 1024 * 1024, 'a');

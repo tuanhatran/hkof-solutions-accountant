@@ -16,24 +16,24 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { messageErreur, telechargerBlob } from '@/api/client';
+import { errorMessage, downloadBlob } from '@/api/client';
 import { api } from '@/api/endpoints';
-import { cles, useTemplates, useVariablesTemplate } from '@/api/queries';
-import type { RapportValidationDto, TemplateDto, TypeTemplate } from '@/api/types';
-import { Bouton } from '@/components/Bouton';
-import { DialogueConfirmation } from '@/components/DialogueConfirmation';
-import { EtatChargement, EtatErreur } from '@/components/Etats';
-import { FichierSelectionne, FileDropzone, FORMATS_TEMPLATE } from '@/components/FileDropzone';
+import { queryKeys, useTemplates, useTemplateVariables } from '@/api/queries';
+import type { ValidationReportDto, TemplateDto, TemplateType } from '@/api/types';
+import { Button } from '@/components/Button';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { LoadingState, ErrorState } from '@/components/States';
+import { SelectedFile, FileDropzone, TEMPLATE_FORMATS } from '@/components/FileDropzone';
 import { PageHeader } from '@/components/PageHeader';
 import { PdfViewer } from '@/components/PdfViewer';
 import { cn } from '@/lib/cn';
-import { formatDateHeure } from '@/lib/format';
+import { formatDateTime } from '@/lib/format';
 import { toast } from '@/state/toasts';
 
-const TAILLE_MAX_TEMPLATE = 5 * 1024 * 1024;
+const MAX_TEMPLATE_SIZE = 5 * 1024 * 1024;
 
 interface ConfigurationType {
-  type: TypeTemplate;
+  type: TemplateType;
   titre: string;
   description: string;
   dropzone: string;
@@ -57,8 +57,8 @@ const TYPES: ConfigurationType[] = [
   },
 ];
 
-function nomFichierSur(nom: string | undefined, version: number | undefined): string {
-  const base = (nom ?? 'template')
+function fileNameOn(name: string | undefined, version: number | undefined): string {
+  const base = (name ?? 'template')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9._-]+/g, '_')
@@ -66,19 +66,19 @@ function nomFichierSur(nom: string | undefined, version: number | undefined): st
   return `${base || 'template'}_v${version ?? 1}.html`;
 }
 
-function BadgeStructure({ valide }: { valide: boolean }) {
+function BadgeStructure({ valide: valid }: { valide: boolean }) {
   return (
-    <span className={cn('badge', valide ? 'badge-accent' : 'badge-danger')}>
-      {valide ? <Check size={12} aria-hidden="true" /> : <X size={12} aria-hidden="true" />}
-      {valide ? 'Structure valide' : 'Structure invalide'}
+    <span className={cn('badge', valid ? 'badge-accent' : 'badge-danger')}>
+      {valid ? <Check size={12} aria-hidden="true" /> : <X size={12} aria-hidden="true" />}
+      {valid ? 'Structure valide' : 'Structure invalide'}
     </span>
   );
 }
 
-function ListeVariables({
-  titre,
+function VariableList({
+  titre: title,
   variables,
-  ton,
+  ton: tone,
 }: {
   titre: string;
   variables: string[];
@@ -89,16 +89,16 @@ function ListeVariables({
   }
   return (
     <div>
-      <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-soft">{titre}</p>
+      <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-soft">{title}</p>
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {variables.map((variable) => (
           <code
             key={variable}
             className={cn(
               'rounded-md border px-1.5 py-0.5 font-mono text-[11px]',
-              ton === 'danger'
+              tone === 'danger'
                 ? 'border-danger/25 bg-danger-soft text-danger'
-                : ton === 'avertissement'
+                : tone === 'avertissement'
                   ? 'border-warning/25 bg-warning-soft text-warning'
                   : 'border-accent/15 bg-accent-soft text-accent',
             )}
@@ -111,11 +111,11 @@ function ListeVariables({
   );
 }
 
-function RapportValidation({ rapport }: { rapport: RapportValidationDto }) {
-  const reconnues = rapport.variablesReconnues ?? [];
-  const inconnues = rapport.variablesInconnues ?? [];
-  const manquantes = rapport.variablesManquantes ?? [];
-  const erreurs = rapport.erreurs ?? [];
+function ValidationReport({ rapport: report }: { rapport: ValidationReportDto }) {
+  const recognizedVariables = report.variablesReconnues ?? [];
+  const unknownVariables = report.variablesInconnues ?? [];
+  const missingVariables = report.variablesManquantes ?? [];
+  const errorList = report.erreurs ?? [];
 
   return (
     <div
@@ -124,26 +124,26 @@ function RapportValidation({ rapport }: { rapport: RapportValidationDto }) {
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-ink">Rapport de validation</p>
-        <BadgeStructure valide={Boolean(rapport.structureValide)} />
+        <BadgeStructure valide={Boolean(report.structureValide)} />
       </div>
-      <ListeVariables titre={`Variables reconnues (${reconnues.length})`} variables={reconnues} ton="accent" />
-      <ListeVariables titre={`Variables inconnues (${inconnues.length})`} variables={inconnues} ton="danger" />
-      <ListeVariables
-        titre={`Obligatoires manquantes (${manquantes.length})`}
-        variables={manquantes}
+      <VariableList titre={`Variables reconnues (${recognizedVariables.length})`} variables={recognizedVariables} ton="accent" />
+      <VariableList titre={`Variables inconnues (${unknownVariables.length})`} variables={unknownVariables} ton="danger" />
+      <VariableList
+        titre={`Obligatoires manquantes (${missingVariables.length})`}
+        variables={missingVariables}
         ton="avertissement"
       />
-      {erreurs.length > 0 ? (
+      {errorList.length > 0 ? (
         <div className="rounded-lg border border-danger/20 bg-danger-soft/60 p-3">
           <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-danger">Erreurs</p>
           <ul className="mt-1.5 list-disc space-y-1 pl-4 text-xs text-danger">
-            {erreurs.map((erreur) => (
-              <li key={erreur}>{erreur}</li>
+            {errorList.map((errorText) => (
+              <li key={errorText}>{errorText}</li>
             ))}
           </ul>
         </div>
       ) : null}
-      {manquantes.length > 0 && erreurs.length === 0 ? (
+      {missingVariables.length > 0 && errorList.length === 0 ? (
         <p className="text-xs text-warning">
           Avertissement : le modèle sera accepté, mais les champs obligatoires absents apparaîtront vides dans le
           document.
@@ -153,23 +153,23 @@ function RapportValidation({ rapport }: { rapport: RapportValidationDto }) {
   );
 }
 
-function ReferenceVariables({ type }: { type: TypeTemplate }) {
-  const variables = useVariablesTemplate(type);
-  const [copie, setCopie] = useState<string | null>(null);
+function ReferenceVariables({ type }: { type: TemplateType }) {
+  const variables = useTemplateVariables(type);
+  const [copy, setCopy] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!copie) {
+    if (!copy) {
       return;
     }
-    const minuterie = window.setTimeout(() => setCopie(null), 1_800);
-    return () => window.clearTimeout(minuterie);
-  }, [copie]);
+    const timer = window.setTimeout(() => setCopy(null), 1_800);
+    return () => window.clearTimeout(timer);
+  }, [copy]);
 
-  async function copier(nom: string) {
+  async function copyTemplate(name: string) {
     try {
-      await navigator.clipboard.writeText(`{{${nom}}}`);
-      setCopie(nom);
-      toast.succes(`{{${nom}}} copié dans le presse-papiers.`);
+      await navigator.clipboard.writeText(`{{${name}}}`);
+      setCopy(name);
+      toast.succes(`{{${name}}} copié dans le presse-papiers.`);
     } catch {
       toast.erreur('Impossible de copier dans le presse-papiers. Sélectionnez la variable manuellement.');
     }
@@ -190,7 +190,7 @@ function ReferenceVariables({ type }: { type: TypeTemplate }) {
       {variables.isPending ? (
         <p className="mt-3 text-xs text-ink-soft">Chargement des variables…</p>
       ) : variables.isError ? (
-        <p className="mt-3 text-xs text-danger">{messageErreur(variables.error)}</p>
+        <p className="mt-3 text-xs text-danger">{errorMessage(variables.error)}</p>
       ) : (
         <div className="mt-4 space-y-3">
           <p className="text-xs leading-relaxed text-ink-soft">
@@ -227,12 +227,12 @@ function ReferenceVariables({ type }: { type: TypeTemplate }) {
               </thead>
               <tbody>
                 {(variables.data ?? []).map((variable) => {
-                  const nom = variable.nom ?? '';
+                  const name = variable.nom ?? '';
                   return (
-                    <tr key={nom}>
+                    <tr key={name}>
                       <td>
                         <code className="rounded bg-paper-deep/60 px-1.5 py-0.5 font-mono text-[11.5px] text-ink">
-                          {`{{${nom}}}`}
+                          {`{{${name}}}`}
                         </code>
                         {variable.obligatoire ? (
                           <span className="ml-1.5 text-[10px] font-bold uppercase text-copper">requis</span>
@@ -243,12 +243,12 @@ function ReferenceVariables({ type }: { type: TypeTemplate }) {
                       <td className="text-right">
                         <button
                           type="button"
-                          onClick={() => void copier(nom)}
+                          onClick={() => void copyTemplate(name)}
                           className="rounded-lg p-1.5 text-ink-soft transition hover:bg-accent-soft hover:text-accent"
-                          aria-label={`Copier la variable ${nom}`}
+                          aria-label={`Copier la variable ${name}`}
                           title="Copier"
                         >
-                          {copie === nom ? <Check size={15} /> : <Clipboard size={15} />}
+                          {copy === name ? <Check size={15} /> : <Clipboard size={15} />}
                         </button>
                       </td>
                     </tr>
@@ -263,12 +263,12 @@ function ReferenceVariables({ type }: { type: TypeTemplate }) {
   );
 }
 
-function ApercuModele({
+function ModelPreview({
   template,
   url,
-  onFermer,
-  onActiver,
-  activationEnCours,
+  onFermer: onClose,
+  onActiver: onActivate,
+  activationEnCours: activationInProgress,
 }: {
   template: TemplateDto;
   url: string;
@@ -277,21 +277,21 @@ function ApercuModele({
   activationEnCours: boolean;
 }) {
   useEffect(() => {
-    const surTouche = (evenement: KeyboardEvent) => {
-      if (evenement.key === 'Escape') {
-        onFermer();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
       }
     };
-    document.addEventListener('keydown', surTouche);
-    return () => document.removeEventListener('keydown', surTouche);
-  }, [onFermer]);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 p-3 backdrop-blur-[3px] sm:p-6"
-      onMouseDown={(evenement) => {
-        if (evenement.target === evenement.currentTarget) {
-          onFermer();
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
         }
       }}
     >
@@ -311,19 +311,19 @@ function ApercuModele({
           </div>
           <div className="flex items-center gap-2">
             {!template.actif ? (
-              <Bouton
+              <Button
                 variante="secondaire"
                 petit
-                onClick={onActiver}
-                chargement={activationEnCours}
+                onClick={onActivate}
+                chargement={activationInProgress}
                 icone={<Check size={14} />}
               >
                 Activer ce modèle
-              </Bouton>
+              </Button>
             ) : null}
             <button
               type="button"
-              onClick={onFermer}
+              onClick={onClose}
               className="rounded-lg p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
               aria-label="Fermer l’aperçu"
             >
@@ -338,146 +338,146 @@ function ApercuModele({
   );
 }
 
-function CarteTemplates({ configuration }: { configuration: ConfigurationType }) {
-  const { type, titre, description, dropzone, icone: Icone } = configuration;
+function TemplatesCard({ configuration }: { configuration: ConfigurationType }) {
+  const { type, titre: title, description, dropzone, icone: IconComponent } = configuration;
   const queryClient = useQueryClient();
   const templates = useTemplates(type);
-  const [nom, setNom] = useState('');
-  const [fichier, setFichier] = useState<File | null>(null);
-  const [rapport, setRapport] = useState<RapportValidationDto | null>(null);
-  const [dernierImport, setDernierImport] = useState<TemplateDto | null>(null);
-  const [erreurUpload, setErreurUpload] = useState<string | null>(null);
-  const [apercu, setApercu] = useState<{ template: TemplateDto; url: string } | null>(null);
-  const [apercuEnCours, setApercuEnCours] = useState<number | null>(null);
-  const [aSupprimer, setASupprimer] = useState<TemplateDto | null>(null);
-  const [reinitialisationOuverte, setReinitialisationOuverte] = useState(false);
+  const [name, setName] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [report, setReport] = useState<ValidationReportDto | null>(null);
+  const [lastImport, setLastImport] = useState<TemplateDto | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ template: TemplateDto; url: string } | null>(null);
+  const [previewInProgress, setPreviewInProgress] = useState<number | null>(null);
+  const [toDelete, setToDelete] = useState<TemplateDto | null>(null);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   useEffect(() => {
     return () => {
-      if (apercu) {
-        URL.revokeObjectURL(apercu.url);
+      if (preview) {
+        URL.revokeObjectURL(preview.url);
       }
     };
-  }, [apercu]);
+  }, [preview]);
 
   const versions = templates.data ?? [];
-  const actif = versions.find((template) => template.actif) ?? versions.find((template) => template.integre) ?? null;
-  const modeleIntegre = versions.find((template) => template.integre) ?? null;
+  const active = versions.find((template) => template.actif) ?? versions.find((template) => template.integre) ?? null;
+  const builtInModel = versions.find((template) => template.integre) ?? null;
 
-  function invalider() {
-    void queryClient.invalidateQueries({ queryKey: cles.templates(type) });
+  function invalidate() {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.templates(type) });
   }
 
-  const televerser = useMutation({
-    mutationFn: ({ nomTemplate, fichierTemplate }: { nomTemplate: string; fichierTemplate: File }) =>
-      api.templates.uploader(type, nomTemplate, fichierTemplate),
+  const upload = useMutation({
+    mutationFn: ({ nomTemplate: templateName, fichierTemplate: templateFile }: { nomTemplate: string; fichierTemplate: File }) =>
+      api.templates.uploader(type, templateName, templateFile),
     onSuccess: (template) => {
-      invalider();
-      setRapport(template.rapport ?? null);
-      setDernierImport(template);
-      setFichier(null);
-      setErreurUpload(null);
+      invalidate();
+      setReport(template.rapport ?? null);
+      setLastImport(template);
+      setFile(null);
+      setUploadError(null);
       toast.succes(`Version v${template.version} importée. Vérifiez l’aperçu puis activez-la.`);
     },
     onError: (error) => {
-      setRapport(null);
-      setDernierImport(null);
-      setErreurUpload(messageErreur(error));
+      setReport(null);
+      setLastImport(null);
+      setUploadError(errorMessage(error));
     },
   });
 
-  const activer = useMutation({
+  const activate = useMutation({
     mutationFn: (template: TemplateDto) => api.templates.activer(template.id as number),
     onSuccess: (template) => {
-      invalider();
-      setApercu(null);
+      invalidate();
+      setPreview(null);
       toast.succes(`Le modèle « ${template.nom} » v${template.version} est désormais actif.`);
     },
-    onError: (error) => toast.erreur(messageErreur(error)),
+    onError: (error) => toast.erreur(errorMessage(error)),
   });
 
-  const supprimer = useMutation({
+  const remove = useMutation({
     mutationFn: (template: TemplateDto) => api.templates.supprimer(template.id as number),
     onSuccess: () => {
-      invalider();
-      setASupprimer(null);
+      invalidate();
+      setToDelete(null);
       toast.succes('Version supprimée. Le fichier reste archivé côté stockage.');
     },
     onError: (error) => {
-      setASupprimer(null);
-      toast.erreur(messageErreur(error));
+      setToDelete(null);
+      toast.erreur(errorMessage(error));
     },
   });
 
-  const reinitialiser = useMutation({
+  const resetMutation = useMutation({
     mutationFn: () => api.templates.reinitialiser(type),
     onSuccess: (template) => {
-      invalider();
-      setReinitialisationOuverte(false);
+      invalidate();
+      setResetDialogOpen(false);
       toast.succes(`Modèle intégré restauré et activé (v${template.version}).`);
     },
     onError: (error) => {
-      setReinitialisationOuverte(false);
-      toast.erreur(messageErreur(error));
+      setResetDialogOpen(false);
+      toast.erreur(errorMessage(error));
     },
   });
 
-  const telecharger = useMutation({
+  const download = useMutation({
     mutationFn: (template: TemplateDto) => api.templates.fichier(template.id as number),
-    onSuccess: (reponse, template) => {
-      telechargerBlob(reponse.blob, nomFichierSur(template.nom, template.version));
+    onSuccess: (reply, template) => {
+      downloadBlob(reply.blob, fileNameOn(template.nom, template.version));
     },
-    onError: (error) => toast.erreur(messageErreur(error)),
+    onError: (error) => toast.erreur(errorMessage(error)),
   });
 
-  const telechargerDefaut = useMutation({
+  const downloadDefault = useMutation({
     mutationFn: () => api.templates.defaut(type),
-    onSuccess: (reponse) => {
-      telechargerBlob(
-        reponse.blob,
+    onSuccess: (reply) => {
+      downloadBlob(
+        reply.blob,
         type === 'QUITTANCE' ? 'modele-quittance-defaut.html' : 'modele-note-frais-defaut.html',
       );
     },
-    onError: (error) => toast.erreur(messageErreur(error)),
+    onError: (error) => toast.erreur(errorMessage(error)),
   });
 
-  async function ouvrirApercu(template: TemplateDto) {
-    if (!template.id || apercuEnCours !== null) {
+  async function openPreview(template: TemplateDto) {
+    if (!template.id || previewInProgress !== null) {
       return;
     }
-    setApercuEnCours(template.id);
+    setPreviewInProgress(template.id);
     try {
-      const reponse = await api.templates.apercu(template.id);
-      setApercu({ template, url: URL.createObjectURL(reponse.blob) });
+      const reply = await api.templates.apercu(template.id);
+      setPreview({ template, url: URL.createObjectURL(reply.blob) });
     } catch (error) {
-      toast.erreur(messageErreur(error));
+      toast.erreur(errorMessage(error));
     } finally {
-      setApercuEnCours(null);
+      setPreviewInProgress(null);
     }
   }
 
-  function choisirFichier(nouveau: File) {
-    setFichier(nouveau);
-    setErreurUpload(null);
-    setRapport(null);
-    setDernierImport(null);
-    if (!nom.trim()) {
-      setNom(nouveau.name.replace(/\.html?$/i, ''));
+  function chooseFile(newItem: File) {
+    setFile(newItem);
+    setUploadError(null);
+    setReport(null);
+    setLastImport(null);
+    if (!name.trim()) {
+      setName(newItem.name.replace(/\.html?$/i, ''));
     }
   }
 
-  const peutTeleverser = fichier !== null && nom.trim().length > 0 && !televerser.isPending;
-  const versionsPrecedentes = versions.filter((template) => !template.actif);
+  const canUpload = file !== null && name.trim().length > 0 && !upload.isPending;
+  const previousVersions = versions.filter((template) => !template.actif);
 
   return (
     <section className="carte overflow-hidden">
       <div className="carte-entete">
         <div className="flex items-start gap-3">
           <span className="grid h-11 w-11 place-items-center rounded-xl bg-accent-soft text-accent">
-            <Icone size={20} aria-hidden="true" />
+            <IconComponent size={20} aria-hidden="true" />
           </span>
           <div>
-            <h2 className="text-xl text-ink">{titre}</h2>
+            <h2 className="text-xl text-ink">{title}</h2>
             <p className="mt-0.5 text-xs text-ink-soft">{description}</p>
           </div>
         </div>
@@ -489,9 +489,9 @@ function CarteTemplates({ configuration }: { configuration: ConfigurationType })
 
       <div className="carte-corps space-y-5">
         {templates.isError ? (
-          <EtatErreur message={messageErreur(templates.error)} onReessayer={() => void templates.refetch()} />
+          <ErrorState message={errorMessage(templates.error)} onReessayer={() => void templates.refetch()} />
         ) : templates.isPending ? (
-          <EtatChargement message="Chargement des modèles…" />
+          <LoadingState message="Chargement des modèles…" />
         ) : (
           <>
             <div className="rounded-xl border border-accent/15 bg-accent-soft/40 p-4">
@@ -500,77 +500,77 @@ function CarteTemplates({ configuration }: { configuration: ConfigurationType })
                   <p className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-accent">
                     Modèle actif
                   </p>
-                  {actif ? (
+                  {active ? (
                     <>
                       <p className="mt-1 flex flex-wrap items-center gap-2 text-base font-semibold text-ink">
-                        {actif.nom}
-                        <span className="badge badge-accent">v{actif.version}</span>
-                        {actif.integre ? <span className="badge badge-neutre">intégré</span> : null}
+                        {active.nom}
+                        <span className="badge badge-accent">v{active.version}</span>
+                        {active.integre ? <span className="badge badge-neutre">intégré</span> : null}
                       </p>
                       <p className="mt-1 text-xs text-ink-soft">
-                        {actif.format ?? 'HTML'} · importé le {formatDateHeure(actif.createdAt)}
+                        {active.format ?? 'HTML'} · importé le {formatDateTime(active.createdAt)}
                       </p>
                     </>
                   ) : (
                     <p className="mt-1 text-sm font-semibold text-warning">Aucun modèle actif.</p>
                   )}
                 </div>
-                {actif ? (
+                {active ? (
                   <div className="flex flex-wrap gap-2">
-                    <Bouton
+                    <Button
                       variante="secondaire"
                       petit
                       icone={<Eye size={14} />}
-                      chargement={apercuEnCours === actif.id}
-                      onClick={() => void ouvrirApercu(actif)}
+                      chargement={previewInProgress === active.id}
+                      onClick={() => void openPreview(active)}
                       data-cy="btn-apercu-template-actif"
                     >
                       Aperçu
-                    </Bouton>
-                    <Bouton
+                    </Button>
+                    <Button
                       variante="secondaire"
                       petit
                       icone={<Download size={14} />}
-                      chargement={telecharger.isPending && telecharger.variables?.id === actif.id}
-                      onClick={() => telecharger.mutate(actif)}
+                      chargement={download.isPending && download.variables?.id === active.id}
+                      onClick={() => download.mutate(active)}
                     >
                       Télécharger
-                    </Bouton>
+                    </Button>
                   </div>
                 ) : (
-                  <Bouton
+                  <Button
                     variante="primaire"
                     petit
                     icone={<RotateCcw size={14} />}
-                    onClick={() => setReinitialisationOuverte(true)}
+                    onClick={() => setResetDialogOpen(true)}
                   >
                     Restaurer le modèle intégré
-                  </Bouton>
+                  </Button>
                 )}
               </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Bouton
+              <Button
                 variante="secondaire"
                 petit
                 icone={<Download size={14} />}
-                chargement={telechargerDefaut.isPending}
-                onClick={() => telechargerDefaut.mutate()}
+                chargement={downloadDefault.isPending}
+                onClick={() => downloadDefault.mutate()}
               >
                 Télécharger le modèle par défaut intégré
-              </Bouton>
-              <Bouton
+              </Button>
+              <Button
                 variante="secondaire"
                 petit
                 icone={<RotateCcw size={14} />}
-                onClick={() => setReinitialisationOuverte(true)}
-                disabled={Boolean(actif?.integre)}
-                title={actif?.integre ? 'Le modèle intégré est déjà actif.' : undefined}
+                onClick={() => setResetDialogOpen(true)}
+                disabled={Boolean(active?.integre)}
+                title={active?.integre ? 'Le modèle intégré est déjà actif.' : undefined}
                 data-cy="btn-modele-defaut"
               >
                 Revenir au modèle par défaut
-              </Bouton>
+              </Button>
             </div>
 
             <div>
@@ -580,8 +580,8 @@ function CarteTemplates({ configuration }: { configuration: ConfigurationType })
               </div>
               <ul className="mt-2 divide-y divide-line rounded-xl border border-line">
                 {versions.map((template) => {
-                  const estActif = Boolean(template.actif);
-                  const suppressionImpossible = estActif || Boolean(template.integre);
+                  const isTemplateActive = Boolean(template.actif);
+                  const deletionBlocked = isTemplateActive || Boolean(template.integre);
                   return (
                     <li
                       key={template.id}
@@ -590,70 +590,70 @@ function CarteTemplates({ configuration }: { configuration: ConfigurationType })
                       <div className="min-w-0">
                         <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-ink">
                           <span className="truncate">{template.nom}</span>
-                          <span className={cn('badge', estActif ? 'badge-accent' : 'badge-neutre')}>
+                          <span className={cn('badge', isTemplateActive ? 'badge-accent' : 'badge-neutre')}>
                             v{template.version}
                           </span>
                           {template.integre ? <span className="badge badge-neutre">intégré</span> : null}
-                          {estActif ? <span className="text-[10px] font-bold uppercase text-accent">active</span> : null}
+                          {isTemplateActive ? <span className="text-[10px] font-bold uppercase text-accent">active</span> : null}
                         </p>
                         <p className="mt-0.5 text-[11px] text-ink-soft">
-                          {template.format ?? 'HTML'} · {formatDateHeure(template.createdAt)}
+                          {template.format ?? 'HTML'} · {formatDateTime(template.createdAt)}
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-1">
-                        <Bouton
+                        <Button
                           variante="fantome"
                           petit
                           icone={<Eye size={13} />}
-                          chargement={apercuEnCours === template.id}
-                          onClick={() => void ouvrirApercu(template)}
+                          chargement={previewInProgress === template.id}
+                          onClick={() => void openPreview(template)}
                         >
                           Aperçu
-                        </Bouton>
-                        <Bouton
+                        </Button>
+                        <Button
                           variante="fantome"
                           petit
                           icone={<Download size={13} />}
-                          chargement={telecharger.isPending && telecharger.variables?.id === template.id}
-                          onClick={() => telecharger.mutate(template)}
+                          chargement={download.isPending && download.variables?.id === template.id}
+                          onClick={() => download.mutate(template)}
                         >
                           Télécharger
-                        </Bouton>
-                        {!estActif ? (
-                          <Bouton
+                        </Button>
+                        {!isTemplateActive ? (
+                          <Button
                             variante="fantome"
                             petit
                             icone={<Check size={13} />}
-                            chargement={activer.isPending && activer.variables?.id === template.id}
-                            onClick={() => activer.mutate(template)}
+                            chargement={activate.isPending && activate.variables?.id === template.id}
+                            onClick={() => activate.mutate(template)}
                             data-cy="btn-activer-template"
                           >
                             Activer
-                          </Bouton>
+                          </Button>
                         ) : null}
-                        <Bouton
+                        <Button
                           variante="fantome"
                           petit
-                          className={cn(!suppressionImpossible && 'text-danger hover:bg-danger-soft')}
+                          className={cn(!deletionBlocked && 'text-danger hover:bg-danger-soft')}
                           icone={<Trash2 size={13} />}
-                          disabled={suppressionImpossible}
+                          disabled={deletionBlocked}
                           title={
-                            suppressionImpossible
+                            deletionBlocked
                               ? template.integre
                                 ? 'Le modèle intégré ne peut pas être supprimé.'
                                 : 'Le modèle actif ne peut pas être supprimé.'
                               : undefined
                           }
-                          onClick={() => setASupprimer(template)}
+                          onClick={() => setToDelete(template)}
                         >
                           Supprimer
-                        </Bouton>
+                        </Button>
                       </div>
                     </li>
                   );
                 })}
               </ul>
-              {versionsPrecedentes.length === 0 ? (
+              {previousVersions.length === 0 ? (
                 <p className="mt-2 text-xs text-ink-soft">Aucune version précédente archivée.</p>
               ) : null}
             </div>
@@ -676,83 +676,83 @@ function CarteTemplates({ configuration }: { configuration: ConfigurationType })
                   <input
                     id={`nom-template-${type}`}
                     className="champ"
-                    value={nom}
+                    value={name}
                     maxLength={120}
                     placeholder="Ex. Quittance — version 2027"
-                    onChange={(evenement) => setNom(evenement.target.value)}
+                    onChange={(event) => setName(event.target.value)}
                     data-cy="input-template-nom"
                   />
                 </div>
 
-                {fichier ? (
-                  <FichierSelectionne
-                    nom={fichier.name}
-                    taille={fichier.size}
-                    typeMime={fichier.type}
-                    enCours={televerser.isPending}
-                    onRetirer={() => setFichier(null)}
+                {file ? (
+                  <SelectedFile
+                    nom={file.name}
+                    taille={file.size}
+                    typeMime={file.type}
+                    enCours={upload.isPending}
+                    onRetirer={() => setFile(null)}
                   />
                 ) : (
                   <FileDropzone
-                    onFichier={choisirFichier}
-                    disabled={televerser.isPending}
+                    onFichier={chooseFile}
+                    disabled={upload.isPending}
                     dataCy={dropzone}
-                    accept={FORMATS_TEMPLATE}
-                    tailleMax={TAILLE_MAX_TEMPLATE}
+                    accept={TEMPLATE_FORMATS}
+                    tailleMax={MAX_TEMPLATE_SIZE}
                     descriptionFormats="HTML, HTM"
                     texte="Déposez votre template HTML"
                     ariaLabel="Choisir un fichier template HTML"
                   />
                 )}
 
-                {erreurUpload ? (
+                {uploadError ? (
                   <p className="rounded-lg border border-danger/20 bg-danger-soft/60 p-3 text-xs font-medium text-danger" role="alert">
-                    {erreurUpload}
+                    {uploadError}
                   </p>
                 ) : null}
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <Bouton
+                  <Button
                     variante="primaire"
                     icone={<UploadCloud size={15} />}
-                    chargement={televerser.isPending}
-                    disabled={!peutTeleverser}
+                    chargement={upload.isPending}
+                    disabled={!canUpload}
                     onClick={() => {
-                      if (fichier && nom.trim()) {
-                        televerser.mutate({ nomTemplate: nom.trim(), fichierTemplate: fichier });
+                      if (file && name.trim()) {
+                        upload.mutate({ nomTemplate: name.trim(), fichierTemplate: file });
                       }
                     }}
                     data-cy="btn-televerser-template"
                   >
                     Valider et importer
-                  </Bouton>
+                  </Button>
                   <span className="text-[11px] text-ink-soft">
                     Une version importée doit être activée explicitement.
                   </span>
                 </div>
 
-                {rapport ? <RapportValidation rapport={rapport} /> : null}
+                {report ? <ValidationReport rapport={report} /> : null}
 
-                {rapport && dernierImport?.id ? (
+                {report && lastImport?.id ? (
                   <div className="flex flex-wrap items-center gap-2">
-                    <Bouton
+                    <Button
                       variante="secondaire"
                       petit
                       icone={<Eye size={14} />}
-                      chargement={apercuEnCours === dernierImport.id}
-                      onClick={() => void ouvrirApercu(dernierImport)}
+                      chargement={previewInProgress === lastImport.id}
+                      onClick={() => void openPreview(lastImport)}
                     >
-                      Aperçu de la version v{dernierImport.version}
-                    </Bouton>
-                    <Bouton
+                      Aperçu de la version v{lastImport.version}
+                    </Button>
+                    <Button
                       variante="secondaire"
                       petit
                       icone={<Check size={14} />}
-                      chargement={activer.isPending && activer.variables?.id === dernierImport.id}
-                      onClick={() => activer.mutate(dernierImport)}
+                      chargement={activate.isPending && activate.variables?.id === lastImport.id}
+                      onClick={() => activate.mutate(lastImport)}
                     >
-                      Activer la version v{dernierImport.version}
-                    </Bouton>
+                      Activer la version v{lastImport.version}
+                    </Button>
                   </div>
                 ) : null}
               </div>
@@ -771,46 +771,46 @@ function CarteTemplates({ configuration }: { configuration: ConfigurationType })
 
       <ReferenceVariables type={type} />
 
-      <DialogueConfirmation
-        ouvert={aSupprimer !== null}
+      <ConfirmDialog
+        ouvert={toDelete !== null}
         titre="Supprimer cette version ?"
         message={
-          aSupprimer
-            ? `La version v${aSupprimer.version} de « ${aSupprimer.nom} » ne sera plus proposée. Les documents qui l’utilisent restent inchangés.`
+          toDelete
+            ? `La version v${toDelete.version} de « ${toDelete.nom} » ne sera plus proposée. Les documents qui l’utilisent restent inchangés.`
             : ''
         }
         libelleConfirmer="Supprimer"
         variante="danger"
         onConfirmer={() => {
-          if (aSupprimer) {
-            supprimer.mutate(aSupprimer);
+          if (toDelete) {
+            remove.mutate(toDelete);
           }
         }}
-        onAnnuler={() => setASupprimer(null)}
+        onAnnuler={() => setToDelete(null)}
         dataCy="dialogue-supprimer-template"
       />
 
-      <DialogueConfirmation
-        ouvert={reinitialisationOuverte}
+      <ConfirmDialog
+        ouvert={resetDialogOpen}
         titre="Revenir au modèle par défaut ?"
         message={
-          modeleIntegre
-            ? `Le modèle intégré « ${modeleIntegre.nom} » (v${modeleIntegre.version}) redeviendra actif. Vos versions importées restent disponibles.`
+          builtInModel
+            ? `Le modèle intégré « ${builtInModel.nom} » (v${builtInModel.version}) redeviendra actif. Vos versions importées restent disponibles.`
             : 'Le modèle intégré redeviendra actif. Vos versions importées restent disponibles.'
         }
         libelleConfirmer="Restaurer le modèle"
-        onConfirmer={() => reinitialiser.mutate()}
-        onAnnuler={() => setReinitialisationOuverte(false)}
+        onConfirmer={() => resetMutation.mutate()}
+        onAnnuler={() => setResetDialogOpen(false)}
         dataCy="dialogue-modele-defaut"
       />
 
-      {apercu ? (
-        <ApercuModele
-          template={apercu.template}
-          url={apercu.url}
-          onFermer={() => setApercu(null)}
-          onActiver={() => activer.mutate(apercu.template)}
-          activationEnCours={activer.isPending}
+      {preview ? (
+        <ModelPreview
+          template={preview.template}
+          url={preview.url}
+          onFermer={() => setPreview(null)}
+          onActiver={() => activate.mutate(preview.template)}
+          activationEnCours={activate.isPending}
         />
       ) : null}
     </section>
@@ -827,7 +827,7 @@ export function TemplatesPage() {
       />
       <div className="grid gap-6 xl:grid-cols-2">
         {TYPES.map((configuration) => (
-          <CarteTemplates key={configuration.type} configuration={configuration} />
+          <TemplatesCard key={configuration.type} configuration={configuration} />
         ))}
       </div>
       <div className="mt-6 flex items-start gap-2 rounded-2xl border border-warning/20 bg-warning-soft/50 px-4 py-3 text-xs leading-relaxed text-warning">

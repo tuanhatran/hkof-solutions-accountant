@@ -18,27 +18,27 @@ export class ApiError extends Error {
   }
 }
 
-async function messageDepuisReponse(response: Response): Promise<string> {
+async function messageFromResponse(response: Response): Promise<string> {
   try {
-    const texte = await response.text();
-    if (!texte) {
+    const text = await response.text();
+    if (!text) {
       return `Erreur ${response.status} : la requête a échoué.`;
     }
     const type = response.headers.get('content-type') ?? '';
     if (type.includes('json')) {
-      const corps = JSON.parse(texte) as ProblemDetail;
-      return corps.detail || corps.title || `Erreur ${response.status}.`;
+      const requestBody = JSON.parse(text) as ProblemDetail;
+      return requestBody.detail || requestBody.title || `Erreur ${response.status}.`;
     }
-    return texte;
+    return text;
   } catch {
     return `Erreur ${response.status} : la requête a échoué.`;
   }
 }
 
-export async function requete<T>(chemin: string, init?: RequestInit): Promise<T> {
+export async function request<T>(filePath: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(chemin, init);
+    response = await fetch(filePath, init);
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw error;
@@ -49,11 +49,11 @@ export async function requete<T>(chemin: string, init?: RequestInit): Promise<T>
     );
   }
   if (!response.ok) {
-    const message = await messageDepuisReponse(response);
+    const message = await messageFromResponse(response);
     let problem: ProblemDetail | null = null;
     try {
-      const texte = await response.clone().text();
-      problem = texte ? (JSON.parse(texte) as ProblemDetail) : null;
+      const text = await response.clone().text();
+      problem = text ? (JSON.parse(text) as ProblemDetail) : null;
     } catch {
       problem = null;
     }
@@ -69,31 +69,31 @@ export async function requete<T>(chemin: string, init?: RequestInit): Promise<T>
   return (await response.text()) as T;
 }
 
-export interface ReponseBlob {
+export interface ResponseBlob {
   blob: Blob;
   nomFichier: string | null;
 }
 
-function nomDepuisDisposition(disposition: string | null): string | null {
+function nameFromDisposition(disposition: string | null): string | null {
   if (!disposition) {
     return null;
   }
-  const etoile = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
-  if (etoile) {
+  const starred = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
+  if (starred) {
     try {
-      return decodeURIComponent(etoile[1]);
+      return decodeURIComponent(starred[1]);
     } catch {
-      return etoile[1];
+      return starred[1];
     }
   }
   const simple = /filename="?([^";]+)"?/i.exec(disposition);
   return simple ? simple[1] : null;
 }
 
-export async function requeteBlob(chemin: string, init?: RequestInit): Promise<ReponseBlob> {
+export async function blobRequest(filePath: string, init?: RequestInit): Promise<ResponseBlob> {
   let response: Response;
   try {
-    response = await fetch(chemin, init);
+    response = await fetch(filePath, init);
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw error;
@@ -104,26 +104,26 @@ export async function requeteBlob(chemin: string, init?: RequestInit): Promise<R
     );
   }
   if (!response.ok) {
-    throw new ApiError(await messageDepuisReponse(response), response.status);
+    throw new ApiError(await messageFromResponse(response), response.status);
   }
   return {
     blob: await response.blob(),
-    nomFichier: nomDepuisDisposition(response.headers.get('content-disposition')),
+    nomFichier: nameFromDisposition(response.headers.get('content-disposition')),
   };
 }
 
-export function telechargerBlob(blob: Blob, nomFichier: string): void {
+export function downloadBlob(blob: Blob, fileName: string): void {
   const url = URL.createObjectURL(blob);
-  const lien = document.createElement('a');
-  lien.href = url;
-  lien.download = nomFichier;
-  document.body.appendChild(lien);
-  lien.click();
-  lien.remove();
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
 }
 
-export function messageErreur(error: unknown): string {
+export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     return error.message;
   }
@@ -133,6 +133,6 @@ export function messageErreur(error: unknown): string {
   return 'Une erreur inattendue est survenue.';
 }
 
-export function estAnnulation(error: unknown): boolean {
+export function isCancellation(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
 }

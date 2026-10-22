@@ -1,48 +1,48 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from './endpoints';
-import type { TypeTemplate } from './types';
+import type { TemplateType } from './types';
 
-export const cles = {
+export const queryKeys = {
   parametres: ['parametres'] as const,
-  postes: (tous: boolean) => ['postes', tous] as const,
-  templates: (type: TypeTemplate) => ['templates', type] as const,
-  variables: (type: TypeTemplate) => ['templates', type, 'variables'] as const,
+  postes: (all: boolean) => ['postes', all] as const,
+  templates: (type: TemplateType) => ['templates', type] as const,
+  variables: (type: TemplateType) => ['templates', type, 'variables'] as const,
   llmConfig: ['llm', 'config'] as const,
   llmStatut: ['llm', 'statut'] as const,
   llmModeles: ['llm', 'modeles'] as const,
-  quittanceActive: (mois: string) => ['quittances', 'active', mois] as const,
-  noteActive: (mois: string) => ['notes', 'active', mois] as const,
-  quittances: (mois?: string) => ['quittances', mois ?? 'toutes'] as const,
-  notes: (mois?: string) => ['notes', mois ?? 'toutes'] as const,
+  quittanceActive: (month: string) => ['quittances', 'active', month] as const,
+  noteActive: (month: string) => ['notes', 'active', month] as const,
+  quittances: (month?: string) => ['quittances', month ?? 'toutes'] as const,
+  notes: (month?: string) => ['notes', month ?? 'toutes'] as const,
 };
 
-export function useParametres() {
+export function useSettings() {
   return useQuery({
-    queryKey: cles.parametres,
+    queryKey: queryKeys.parametres,
     queryFn: () => api.parametres.obtenir(),
     staleTime: 30_000,
   });
 }
 
-export function usePostes(tous = false) {
+export function useExpenseItems(all = false) {
   return useQuery({
-    queryKey: cles.postes(tous),
-    queryFn: () => api.postes.lister(tous),
+    queryKey: queryKeys.postes(all),
+    queryFn: () => api.postes.lister(all),
     staleTime: 30_000,
   });
 }
 
-export function useTemplates(type: TypeTemplate) {
+export function useTemplates(type: TemplateType) {
   return useQuery({
-    queryKey: cles.templates(type),
+    queryKey: queryKeys.templates(type),
     queryFn: () => api.templates.lister(type),
     staleTime: 15_000,
   });
 }
 
-export function useVariablesTemplate(type: TypeTemplate) {
+export function useTemplateVariables(type: TemplateType) {
   return useQuery({
-    queryKey: cles.variables(type),
+    queryKey: queryKeys.variables(type),
     queryFn: () => api.templates.variables(type),
     staleTime: 5 * 60_000,
   });
@@ -50,7 +50,7 @@ export function useVariablesTemplate(type: TypeTemplate) {
 
 export function useLlmConfig() {
   return useQuery({
-    queryKey: cles.llmConfig,
+    queryKey: queryKeys.llmConfig,
     queryFn: () => api.llm.obtenir(),
     retry: false,
   });
@@ -58,7 +58,7 @@ export function useLlmConfig() {
 
 export function useLlmStatus() {
   return useQuery({
-    queryKey: cles.llmStatut,
+    queryKey: queryKeys.llmStatut,
     queryFn: () => api.llm.statut(),
     refetchInterval: 45_000,
     retry: false,
@@ -67,7 +67,7 @@ export function useLlmStatus() {
 
 export function useLlmModeles(url: string | null) {
   return useQuery({
-    queryKey: [...cles.llmModeles, url ?? ''],
+    queryKey: [...queryKeys.llmModeles, url ?? ''],
     queryFn: () => api.llm.modeles(),
     enabled: Boolean(url),
     retry: false,
@@ -75,36 +75,36 @@ export function useLlmModeles(url: string | null) {
   });
 }
 
-export function useQuittanceActive(mois: string) {
+export function useActiveRentReceipt(month: string) {
   return useQuery({
-    queryKey: cles.quittanceActive(mois),
-    queryFn: () => api.quittances.active(mois),
-    enabled: /^\d{4}-\d{2}$/.test(mois),
+    queryKey: queryKeys.quittanceActive(month),
+    queryFn: () => api.quittances.active(month),
+    enabled: /^\d{4}-\d{2}$/.test(month),
     staleTime: 10_000,
   });
 }
 
-export function useNoteActive(mois: string) {
+export function useActiveStatement(month: string) {
   return useQuery({
-    queryKey: cles.noteActive(mois),
-    queryFn: () => api.notes.active(mois),
-    enabled: /^\d{4}-\d{2}$/.test(mois),
+    queryKey: queryKeys.noteActive(month),
+    queryFn: () => api.notes.active(month),
+    enabled: /^\d{4}-\d{2}$/.test(month),
     staleTime: 10_000,
   });
 }
 
-export function useQuittances(mois?: string) {
+export function useRentReceipts(month?: string) {
   return useQuery({
-    queryKey: cles.quittances(mois),
-    queryFn: () => api.quittances.lister(mois),
+    queryKey: queryKeys.quittances(month),
+    queryFn: () => api.quittances.lister(month),
     staleTime: 10_000,
   });
 }
 
-export function useNotes(mois?: string) {
+export function useStatements(month?: string) {
   return useQuery({
-    queryKey: cles.notes(mois),
-    queryFn: () => api.notes.lister(mois),
+    queryKey: queryKeys.notes(month),
+    queryFn: () => api.notes.lister(month),
     staleTime: 10_000,
   });
 }

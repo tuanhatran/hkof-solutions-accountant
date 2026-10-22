@@ -3,45 +3,45 @@
 declare global {
   namespace Cypress {
     interface Chainable {
-      reinitialiser(): Chainable<void>;
-      choisirMois(mois: string): Chainable<void>;
-      attendreApercu(): Chainable<void>;
+      resetState(): Chainable<void>;
+      chooseMonth(month: string): Chainable<void>;
+      waitForPreview(): Chainable<void>;
     }
   }
 }
 
-function definirValeur(input: HTMLInputElement, valeur: string) {
+function setFieldValue(input: HTMLInputElement, value: string) {
   const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-  setter?.call(input, valeur);
+  setter?.call(input, value);
   input.dispatchEvent(new Event('input', { bubbles: true }));
   input.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-Cypress.Commands.add('reinitialiser', () => {
+Cypress.Commands.add('resetState', () => {
   cy.request({ method: 'POST', url: '/api/e2e/reset' }).its('status').should('eq', 204);
 });
 
-Cypress.Commands.add('choisirMois', (mois: string) => {
+Cypress.Commands.add('chooseMonth', (month: string) => {
   cy.get('[data-cy="select-mois"]')
     .filter(':visible')
     .first()
     .then(($input) => {
       const input = $input[0] as HTMLInputElement;
       input.focus();
-      definirValeur(input, mois);
+      setFieldValue(input, month);
       input.blur();
     });
 });
 
-Cypress.Commands.add('attendreApercu', () => {
+Cypress.Commands.add('waitForPreview', () => {
   cy.get('[data-cy="apercu-maj"]', { timeout: 20_000 }).should('contain.text', 'Mis à jour');
 });
 
 beforeEach(() => {
   cy.clearAllSessionStorage();
   cy.clearAllLocalStorage();
-  cy.reinitialiser();
-  cy.task('nettoyerTelechargements');
+  cy.resetState();
+  cy.task('clearDownloads');
 });
 
 export {};

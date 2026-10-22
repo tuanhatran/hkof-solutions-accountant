@@ -10,30 +10,30 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { messageErreur } from '@/api/client';
+import { errorMessage } from '@/api/client';
 import { api } from '@/api/endpoints';
-import { useNotes, useQuittances } from '@/api/queries';
-import type { NoteDto, QuittanceDto } from '@/api/types';
-import { Bouton } from '@/components/Bouton';
-import { DialogueConfirmation } from '@/components/DialogueConfirmation';
-import { EtatChargement, EtatErreur, EtatVide } from '@/components/Etats';
+import { useStatements, useRentReceipts } from '@/api/queries';
+import type { StatementDto, RentReceiptDto } from '@/api/types';
+import { Button } from '@/components/Button';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { LoadingState, ErrorState, EmptyState } from '@/components/States';
 import { PageHeader } from '@/components/PageHeader';
-import { formatDateHeure, formatEUR, formatMois } from '@/lib/format';
-import { useNoteDraft } from '@/state/noteDraft';
-import { useQuittanceDraft } from '@/state/quittanceDraft';
+import { formatDateTime, formatEUR, formatMonth } from '@/lib/format';
+import { useStatementDraft } from '@/state/statementDraft';
+import { useRentReceiptDraft } from '@/state/rentReceiptDraft';
 import { toast } from '@/state/toasts';
 
-interface GroupeMois {
+interface MonthGroup {
   mois: string;
-  quittances: QuittanceDto[];
-  notes: NoteDto[];
+  quittances: RentReceiptDto[];
+  notes: StatementDto[];
 }
 
-function courante<T extends { statut?: string }>(documents: T[]): T | null {
+function current<T extends { statut?: string }>(documents: T[]): T | null {
   return documents.find((document) => document.statut === 'ACTIVE') ?? documents[0] ?? null;
 }
 
-function BadgeVersion({ version, active }: { version: number; active: boolean }) {
+function VersionBadge({ version, active }: { version: number; active: boolean }) {
   return active ? (
     <span className="badge badge-accent">v{version} · active</span>
   ) : (
@@ -43,7 +43,7 @@ function BadgeVersion({ version, active }: { version: number; active: boolean })
 
 function ActionsPdf({
   href,
-  libelle,
+  libelle: labelText,
   dataCy,
 }: {
   href: string;
@@ -57,74 +57,74 @@ function ActionsPdf({
       data-cy={dataCy}
     >
       <Download size={12} aria-hidden="true" />
-      {libelle}
+      {labelText}
     </a>
   );
 }
 
-export function HistoriquePage() {
+export function HistoryPage() {
   const navigate = useNavigate();
-  const quittancesQuery = useQuittances();
-  const notesQuery = useNotes();
-  const [noteARecharger, setNoteARecharger] = useState<NoteDto | null>(null);
+  const rentReceiptsQuery = useRentReceipts();
+  const statementsQuery = useStatements();
+  const [statementToReload, setStatementToReload] = useState<StatementDto | null>(null);
 
-  const groupes = useMemo<GroupeMois[]>(() => {
-    const parMois = new Map<string, GroupeMois>();
-    for (const quittance of quittancesQuery.data ?? []) {
-      if (!quittance.mois) {
+  const groups = useMemo<MonthGroup[]>(() => {
+    const byMonth = new Map<string, MonthGroup>();
+    for (const rentReceipt of rentReceiptsQuery.data ?? []) {
+      if (!rentReceipt.mois) {
         continue;
       }
-      const groupe = parMois.get(quittance.mois) ?? {
-        mois: quittance.mois,
+      const group = byMonth.get(rentReceipt.mois) ?? {
+        mois: rentReceipt.mois,
         quittances: [],
         notes: [],
       };
-      groupe.quittances.push(quittance);
-      parMois.set(quittance.mois, groupe);
+      group.quittances.push(rentReceipt);
+      byMonth.set(rentReceipt.mois, group);
     }
-    for (const note of notesQuery.data ?? []) {
-      if (!note.mois) {
+    for (const statement of statementsQuery.data ?? []) {
+      if (!statement.mois) {
         continue;
       }
-      const groupe = parMois.get(note.mois) ?? { mois: note.mois, quittances: [], notes: [] };
-      groupe.notes.push(note);
-      parMois.set(note.mois, groupe);
+      const group = byMonth.get(statement.mois) ?? { mois: statement.mois, quittances: [], notes: [] };
+      group.notes.push(statement);
+      byMonth.set(statement.mois, group);
     }
-    return [...parMois.values()].sort((a, b) => b.mois.localeCompare(a.mois));
-  }, [quittancesQuery.data, notesQuery.data]);
+    return [...byMonth.values()].sort((a, b) => b.mois.localeCompare(a.mois));
+  }, [rentReceiptsQuery.data, statementsQuery.data]);
 
-  const chargement = quittancesQuery.isPending || notesQuery.isPending;
-  const erreur = quittancesQuery.isError
-    ? messageErreur(quittancesQuery.error)
-    : notesQuery.isError
-      ? messageErreur(notesQuery.error)
+  const loading = rentReceiptsQuery.isPending || statementsQuery.isPending;
+  const errorText = rentReceiptsQuery.isError
+    ? errorMessage(rentReceiptsQuery.error)
+    : statementsQuery.isError
+      ? errorMessage(statementsQuery.error)
       : null;
 
-  function recharger() {
-    void quittancesQuery.refetch();
-    void notesQuery.refetch();
+  function reload() {
+    void rentReceiptsQuery.refetch();
+    void statementsQuery.refetch();
   }
 
-  function creerQuittance(mois: string) {
-    useQuittanceDraft.getState().changerMois(mois);
+  function createRentReceipt(month: string) {
+    useRentReceiptDraft.getState().changerMois(month);
     navigate('/generer/quittance');
   }
 
-  function creerNote(mois: string) {
-    useNoteDraft.getState().changerMois(mois);
+  function createStatement(month: string) {
+    useStatementDraft.getState().changerMois(month);
     navigate('/generer/note-frais');
   }
 
-  function confirmerRechargement() {
-    if (!noteARecharger?.mois) {
+  function confirmReload() {
+    if (!statementToReload?.mois) {
       return;
     }
-    const quittance = courante(
-      groupes.find((groupe) => groupe.mois === noteARecharger.mois)?.quittances ?? [],
+    const rentReceipt = current(
+      groups.find((group) => group.mois === statementToReload.mois)?.quittances ?? [],
     );
-    useNoteDraft.getState().chargerDepuisNote(noteARecharger, quittance?.id ?? null);
-    setNoteARecharger(null);
-    toast.info(`Lignes de ${formatMois(noteARecharger.mois)} rechargées dans le brouillon.`);
+    useStatementDraft.getState().chargerDepuisNote(statementToReload, rentReceipt?.id ?? null);
+    setStatementToReload(null);
+    toast.info(`Lignes de ${formatMonth(statementToReload.mois)} rechargées dans le brouillon.`);
     navigate('/generer/note-frais');
   }
 
@@ -137,57 +137,57 @@ export function HistoriquePage() {
         actions={
           <span className="badge badge-neutre">
             <History size={12} aria-hidden="true" />
-            {groupes.length} mois suivi{groupes.length > 1 ? 's' : ''}
+            {groups.length} mois suivi{groups.length > 1 ? 's' : ''}
           </span>
         }
       />
 
-      {erreur ? (
+      {errorText ? (
         <div className="mb-4">
-          <EtatErreur message={erreur} onReessayer={recharger} />
+          <ErrorState message={errorText} onReessayer={reload} />
         </div>
       ) : null}
 
-      {chargement && groupes.length === 0 ? (
-        <EtatChargement message="Chargement de l’historique…" />
-      ) : groupes.length === 0 && !erreur ? (
-        <EtatVide
+      {loading && groups.length === 0 ? (
+        <LoadingState message="Chargement de l’historique…" />
+      ) : groups.length === 0 && !errorText ? (
+        <EmptyState
           titre="Aucun document pour le moment"
           description="Générez une quittance ou une note de frais : elle apparaîtra ici, avec toutes ses versions."
           icone={<Archive size={22} aria-hidden="true" />}
           action={
             <div className="flex flex-wrap justify-center gap-2">
-              <Bouton variante="primaire" onClick={() => navigate('/generer/quittance')}>
+              <Button variante="primaire" onClick={() => navigate('/generer/quittance')}>
                 Générer une quittance
-              </Bouton>
-              <Bouton variante="secondaire" onClick={() => navigate('/generer/note-frais')}>
+              </Button>
+              <Button variante="secondaire" onClick={() => navigate('/generer/note-frais')}>
                 Générer une note de frais
-              </Bouton>
+              </Button>
             </div>
           }
         />
       ) : (
         <div className="space-y-4" data-cy="historique">
-          {groupes.map((groupe) => {
-            const quittance = courante(groupe.quittances);
-            const note = courante(groupe.notes);
+          {groups.map((group) => {
+            const rentReceipt = current(group.quittances);
+            const statement = current(group.notes);
             return (
               <section
-                key={groupe.mois}
+                key={group.mois}
                 className="carte overflow-hidden"
-                data-cy={`historique-mois-${groupe.mois}`}
+                data-cy={`historique-mois-${group.mois}`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-paper/45 px-5 py-3.5 sm:px-6">
                   <div>
                     <p className="eyebrow">Mois</p>
-                    <h2 className="mt-1 text-[22px] text-ink">{formatMois(groupe.mois)}</h2>
+                    <h2 className="mt-1 text-[22px] text-ink">{formatMonth(group.mois)}</h2>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <span className={quittance ? 'badge badge-accent' : 'badge badge-neutre'}>
-                      Quittance {quittance ? `v${quittance.version ?? 1}` : 'non générée'}
+                    <span className={rentReceipt ? 'badge badge-accent' : 'badge badge-neutre'}>
+                      Quittance {rentReceipt ? `v${rentReceipt.version ?? 1}` : 'non générée'}
                     </span>
-                    <span className={note ? 'badge badge-accent' : 'badge badge-neutre'}>
-                      Note {note ? `v${note.version ?? 1}` : 'non générée'}
+                    <span className={statement ? 'badge badge-accent' : 'badge badge-neutre'}>
+                      Note {statement ? `v${statement.version ?? 1}` : 'non générée'}
                     </span>
                   </div>
                 </div>
@@ -201,31 +201,31 @@ export function HistoriquePage() {
                         </span>
                         <div>
                           <h3 className="text-[15px] font-semibold text-ink">Quittance de loyer</h3>
-                          {quittance ? (
+                          {rentReceipt ? (
                             <p className="text-xs text-ink-soft">
-                              Version {quittance.version ?? 1} · {formatDateHeure(quittance.createdAt)}
+                              Version {rentReceipt.version ?? 1} · {formatDateTime(rentReceipt.createdAt)}
                             </p>
                           ) : (
                             <p className="text-xs text-ink-soft">Aucune version pour ce mois.</p>
                           )}
                         </div>
                       </div>
-                      {quittance ? (
-                        <p className="font-display text-xl text-ink nombre">{formatEUR(quittance.total)}</p>
+                      {rentReceipt ? (
+                        <p className="font-display text-xl text-ink nombre">{formatEUR(rentReceipt.total)}</p>
                       ) : null}
                     </div>
 
-                    {quittance ? (
+                    {rentReceipt ? (
                       <div className="mt-4 flex flex-wrap gap-2">
-                        {quittance.id ? (
+                        {rentReceipt.id ? (
                           <>
                             <ActionsPdf
-                              href={api.quittances.urlPdf(quittance.id)}
+                              href={api.quittances.urlPdf(rentReceipt.id)}
                               libelle="Télécharger le PDF"
-                              dataCy={`btn-telecharger-quittance-${groupe.mois}`}
+                              dataCy={`btn-telecharger-quittance-${group.mois}`}
                             />
                             <a
-                              href={api.quittances.urlPdf(quittance.id)}
+                              href={api.quittances.urlPdf(rentReceipt.id)}
                               target="_blank"
                               rel="noreferrer"
                               className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] font-medium text-ink-soft transition hover:bg-paper-deep hover:text-ink"
@@ -237,34 +237,34 @@ export function HistoriquePage() {
                         ) : null}
                       </div>
                     ) : (
-                      <Bouton
+                      <Button
                         variante="secondaire"
                         petit
                         icone={<FilePlus2 size={13} />}
                         className="mt-4"
-                        onClick={() => creerQuittance(groupe.mois)}
+                        onClick={() => createRentReceipt(group.mois)}
                       >
                         Générer la quittance
-                      </Bouton>
+                      </Button>
                     )}
 
-                    {groupe.quittances.length > 1 ? (
+                    {group.quittances.length > 1 ? (
                       <details className="mt-4 rounded-xl border border-line bg-paper/35 px-3 py-2">
                         <summary className="cursor-pointer text-xs font-semibold text-ink-soft">
-                          Toutes les versions ({groupe.quittances.length})
+                          Toutes les versions ({group.quittances.length})
                         </summary>
                         <ul className="mt-2 space-y-1.5">
-                          {groupe.quittances.map((version) => (
+                          {group.quittances.map((version) => (
                             <li
                               key={version.id}
                               className="flex flex-wrap items-center justify-between gap-2 rounded-lg px-1.5 py-1 text-xs"
                             >
                               <span className="flex items-center gap-2">
-                                <BadgeVersion
+                                <VersionBadge
                                   version={version.version ?? 1}
                                   active={version.statut === 'ACTIVE'}
                                 />
-                                <span className="text-ink-soft">{formatDateHeure(version.createdAt)}</span>
+                                <span className="text-ink-soft">{formatDateTime(version.createdAt)}</span>
                                 <span className="font-medium text-ink nombre">{formatEUR(version.total)}</span>
                               </span>
                               {version.id ? (
@@ -285,11 +285,11 @@ export function HistoriquePage() {
                         </span>
                         <div>
                           <h3 className="text-[15px] font-semibold text-ink">Note de frais d’occupation</h3>
-                          {note ? (
+                          {statement ? (
                             <p className="text-xs text-ink-soft">
-                              Version {note.version ?? 1} · {formatDateHeure(note.createdAt)}
-                              {note.templateNom
-                                ? ` · ${note.templateNom} v${note.templateVersion ?? 1}`
+                              Version {statement.version ?? 1} · {formatDateTime(statement.createdAt)}
+                              {statement.templateNom
+                                ? ` · ${statement.templateNom} v${statement.templateVersion ?? 1}`
                                 : ''}
                             </p>
                           ) : (
@@ -297,27 +297,27 @@ export function HistoriquePage() {
                           )}
                         </div>
                       </div>
-                      {note ? (
-                        <p className="font-display text-xl text-ink nombre">{formatEUR(note.total)}</p>
+                      {statement ? (
+                        <p className="font-display text-xl text-ink nombre">{formatEUR(statement.total)}</p>
                       ) : null}
                     </div>
 
-                    {note ? (
+                    {statement ? (
                       <div className="mt-4 flex flex-wrap items-center gap-2">
-                        {note.id ? (
+                        {statement.id ? (
                           <>
                             <ActionsPdf
-                              href={api.notes.urlPdf(note.id, false)}
+                              href={api.notes.urlPdf(statement.id, false)}
                               libelle="Note seule"
-                              dataCy={`btn-telecharger-note-${groupe.mois}`}
+                              dataCy={`btn-telecharger-note-${group.mois}`}
                             />
                             <ActionsPdf
-                              href={api.notes.urlPdf(note.id, true)}
+                              href={api.notes.urlPdf(statement.id, true)}
                               libelle="Note complète"
-                              dataCy={`btn-telecharger-note-complete-${groupe.mois}`}
+                              dataCy={`btn-telecharger-note-complete-${group.mois}`}
                             />
                             <a
-                              href={api.notes.urlPdf(note.id, true)}
+                              href={api.notes.urlPdf(statement.id, true)}
                               target="_blank"
                               rel="noreferrer"
                               className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] font-medium text-ink-soft transition hover:bg-paper-deep hover:text-ink"
@@ -327,45 +327,45 @@ export function HistoriquePage() {
                             </a>
                           </>
                         ) : null}
-                        <Bouton
+                        <Button
                           variante="fantome"
                           petit
                           icone={<PencilLine size={13} />}
-                          onClick={() => setNoteARecharger(note)}
-                          data-cy={`btn-rouvrir-note-${groupe.mois}`}
+                          onClick={() => setStatementToReload(statement)}
+                          data-cy={`btn-rouvrir-note-${group.mois}`}
                         >
                           Rouvrir et modifier
-                        </Bouton>
+                        </Button>
                       </div>
                     ) : (
-                      <Bouton
+                      <Button
                         variante="secondaire"
                         petit
                         icone={<FilePlus2 size={13} />}
                         className="mt-4"
-                        onClick={() => creerNote(groupe.mois)}
+                        onClick={() => createStatement(group.mois)}
                       >
                         Générer la note
-                      </Bouton>
+                      </Button>
                     )}
 
-                    {groupe.notes.length > 1 ? (
+                    {group.notes.length > 1 ? (
                       <details className="mt-4 rounded-xl border border-line bg-paper/35 px-3 py-2">
                         <summary className="cursor-pointer text-xs font-semibold text-ink-soft">
-                          Toutes les versions ({groupe.notes.length})
+                          Toutes les versions ({group.notes.length})
                         </summary>
                         <ul className="mt-2 space-y-1.5">
-                          {groupe.notes.map((version) => (
+                          {group.notes.map((version) => (
                             <li
                               key={version.id}
                               className="flex flex-wrap items-center justify-between gap-2 rounded-lg px-1.5 py-1 text-xs"
                             >
                               <span className="flex flex-wrap items-center gap-2">
-                                <BadgeVersion
+                                <VersionBadge
                                   version={version.version ?? 1}
                                   active={version.statut === 'ACTIVE'}
                                 />
-                                <span className="text-ink-soft">{formatDateHeure(version.createdAt)}</span>
+                                <span className="text-ink-soft">{formatDateTime(version.createdAt)}</span>
                                 <span className="font-medium text-ink nombre">{formatEUR(version.total)}</span>
                               </span>
                               <span className="flex items-center gap-1">
@@ -381,7 +381,7 @@ export function HistoriquePage() {
                                 <button
                                   type="button"
                                   className="rounded-lg px-1.5 py-1 text-[11px] font-medium text-accent transition hover:bg-accent-soft"
-                                  onClick={() => setNoteARecharger(version)}
+                                  onClick={() => setStatementToReload(version)}
                                 >
                                   Charger
                                 </button>
@@ -399,21 +399,21 @@ export function HistoriquePage() {
         </div>
       )}
 
-      <DialogueConfirmation
-        ouvert={noteARecharger !== null}
+      <ConfirmDialog
+        ouvert={statementToReload !== null}
         titre="Rouvrir cette note ?"
         message={
-          noteARecharger ? (
+          statementToReload ? (
             <>
-              Les lignes de la version {noteARecharger.version ?? 1} de{' '}
-              {formatMois(noteARecharger.mois)} remplaceront le brouillon de ce mois dans l’onglet
+              Les lignes de la version {statementToReload.version ?? 1} de{' '}
+              {formatMonth(statementToReload.mois)} remplaceront le brouillon de ce mois dans l’onglet
               Note de frais. Les brouillons des autres mois sont conservés.
             </>
           ) : null
         }
         libelleConfirmer="Charger les lignes"
-        onConfirmer={confirmerRechargement}
-        onAnnuler={() => setNoteARecharger(null)}
+        onConfirmer={confirmReload}
+        onAnnuler={() => setStatementToReload(null)}
         dataCy="dialogue-rouvrir-note"
       />
     </>

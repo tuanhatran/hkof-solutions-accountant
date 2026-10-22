@@ -1,15 +1,15 @@
 import { ArrowLeft, Compass } from 'lucide-react';
 import { Link, Navigate, createBrowserRouter, isRouteErrorResponse, useRouteError } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
-import { Bouton } from '@/components/Bouton';
+import { Button } from '@/components/Button';
 import { AdminLlmPage } from '@/pages/AdminLlmPage';
-import { ConfigurationPage } from '@/pages/ConfigurationPage';
-import { GenererNoteFraisPage } from '@/pages/GenererNoteFraisPage';
-import { GenererQuittancePage } from '@/pages/GenererQuittancePage';
-import { HistoriquePage } from '@/pages/HistoriquePage';
+import { SettingsPage } from '@/pages/SettingsPage';
+import { GenerateExpenseStatementPage } from '@/pages/GenerateExpenseStatementPage';
+import { GenerateRentReceiptPage } from '@/pages/GenerateRentReceiptPage';
+import { HistoryPage } from '@/pages/HistoryPage';
 import { TemplatesPage } from '@/pages/TemplatesPage';
 
-function PageIntrouvable() {
+function NotFoundPage() {
   return (
     <div className="carte mx-auto mt-10 flex max-w-lg flex-col items-center px-6 py-14 text-center">
       <span className="grid h-14 w-14 place-items-center rounded-full bg-accent-soft text-accent">
@@ -21,20 +21,20 @@ function PageIntrouvable() {
         Cette adresse ne correspond à aucune page de HomeOfficeExpenses. Vos brouillons restent conservés pendant la session.
       </p>
       <Link to="/generer/quittance" className="mt-6">
-        <Bouton variante="primaire" icone={<ArrowLeft size={15} />}>
+        <Button variante="primaire" icone={<ArrowLeft size={15} />}>
           Revenir à la génération
-        </Bouton>
+        </Button>
       </Link>
     </div>
   );
 }
 
-function ErreurApplication() {
-  const erreur = useRouteError();
-  const message = isRouteErrorResponse(erreur)
-    ? `${erreur.status} — ${erreur.statusText}`
-    : erreur instanceof Error
-      ? erreur.message
+function AppError() {
+  const errorText = useRouteError();
+  const message = isRouteErrorResponse(errorText)
+    ? `${errorText.status} — ${errorText.statusText}`
+    : errorText instanceof Error
+      ? errorText.message
       : 'Une erreur inattendue est survenue.';
 
   return (
@@ -46,9 +46,9 @@ function ErreurApplication() {
         Vos données enregistrées ne sont pas affectées. Rechargez la page pour reprendre ; les brouillons de la session
         restent dans le stockage local du navigateur.
       </p>
-      <Bouton variante="primaire" className="mt-6" onClick={() => window.location.assign('/')}>
+      <Button variante="primaire" className="mt-6" onClick={() => window.location.assign('/')}>
         Recharger HomeOfficeExpenses
-      </Bouton>
+      </Button>
     </div>
   );
 }
@@ -57,17 +57,17 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <AppShell />,
-    errorElement: <ErreurApplication />,
+    errorElement: <AppError />,
     children: [
       { index: true, element: <Navigate to="/generer/quittance" replace /> },
       { path: 'generer', element: <Navigate to="/generer/quittance" replace /> },
-      { path: 'generer/quittance', element: <GenererQuittancePage /> },
-      { path: 'generer/note-frais', element: <GenererNoteFraisPage /> },
-      { path: 'historique', element: <HistoriquePage /> },
-      { path: 'configuration', element: <ConfigurationPage /> },
+      { path: 'generer/quittance', element: <GenerateRentReceiptPage /> },
+      { path: 'generer/note-frais', element: <GenerateExpenseStatementPage /> },
+      { path: 'historique', element: <HistoryPage /> },
+      { path: 'configuration', element: <SettingsPage /> },
       { path: 'templates', element: <TemplatesPage /> },
       { path: 'admin', element: <AdminLlmPage /> },
-      { path: '*', element: <PageIntrouvable /> },
+      { path: '*', element: <NotFoundPage /> },
     ],
   },
 ]);

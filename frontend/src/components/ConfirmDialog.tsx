@@ -1,10 +1,10 @@
 import { AlertTriangle, X } from 'lucide-react';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { Bouton } from './Bouton';
+import { Button } from './Button';
 import { cn } from '@/lib/cn';
 
-interface DialogueConfirmationProps {
+interface ConfirmDialogProps {
   ouvert: boolean;
   titre: string;
   message?: ReactNode;
@@ -16,43 +16,43 @@ interface DialogueConfirmationProps {
   dataCy?: string;
 }
 
-export function DialogueConfirmation({
-  ouvert,
-  titre,
+export function ConfirmDialog({
+  ouvert: open,
+  titre: title,
   message,
-  libelleConfirmer = 'Confirmer',
-  libelleAnnuler = 'Annuler',
+  libelleConfirmer: confirmLabel = 'Confirmer',
+  libelleAnnuler: cancelLabel = 'Annuler',
   variante = 'primaire',
-  onConfirmer,
-  onAnnuler,
+  onConfirmer: onConfirm,
+  onAnnuler: onCancel,
   dataCy = 'dialogue-confirmation',
-}: DialogueConfirmationProps) {
-  const boutonAnnuler = useRef<HTMLButtonElement>(null);
+}: ConfirmDialogProps) {
+  const cancelButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (!ouvert) {
+    if (!open) {
       return;
     }
-    boutonAnnuler.current?.focus();
-    const surTouche = (evenement: KeyboardEvent) => {
-      if (evenement.key === 'Escape') {
-        onAnnuler();
+    cancelButton.current?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onCancel();
       }
     };
-    document.addEventListener('keydown', surTouche);
-    return () => document.removeEventListener('keydown', surTouche);
-  }, [ouvert, onAnnuler]);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onCancel]);
 
-  if (!ouvert) {
+  if (!open) {
     return null;
   }
 
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-ink/35 p-4 backdrop-blur-[2px] sm:items-center"
-      onMouseDown={(evenement) => {
-        if (evenement.target === evenement.currentTarget) {
-          onAnnuler();
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onCancel();
         }
       }}
     >
@@ -75,13 +75,13 @@ export function DialogueConfirmation({
           </span>
           <div className="min-w-0 flex-1">
             <h2 id={`${dataCy}-titre`} className="text-xl text-ink">
-              {titre}
+              {title}
             </h2>
             {message ? <div className="mt-2 text-sm leading-relaxed text-ink-soft">{message}</div> : null}
           </div>
           <button
             type="button"
-            onClick={onAnnuler}
+            onClick={onCancel}
             className="rounded-lg p-1.5 text-ink-soft transition hover:bg-paper-deep hover:text-ink"
             aria-label="Fermer"
           >
@@ -89,16 +89,16 @@ export function DialogueConfirmation({
           </button>
         </div>
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Bouton ref={boutonAnnuler} variante="secondaire" onClick={onAnnuler}>
-            {libelleAnnuler}
-          </Bouton>
-          <Bouton
+          <Button ref={cancelButton} variante="secondaire" onClick={onCancel}>
+            {cancelLabel}
+          </Button>
+          <Button
             variante={variante === 'danger' ? 'danger' : 'primaire'}
-            onClick={onConfirmer}
+            onClick={onConfirm}
             data-cy="dialogue-confirmer"
           >
-            {libelleConfirmer}
-          </Bouton>
+            {confirmLabel}
+          </Button>
         </div>
       </div>
     </div>,

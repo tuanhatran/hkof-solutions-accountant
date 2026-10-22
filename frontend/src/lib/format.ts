@@ -1,23 +1,23 @@
-const ESPACES = /[\s\u00a0\u202f]/g;
+const WHITESPACE = /[\s\u00a0\u202f]/g;
 
-const NOMBRE_EURO = new Intl.NumberFormat('fr-FR', {
+const EURO_NUMBER = new Intl.NumberFormat('fr-FR', {
   style: 'currency',
   currency: 'EUR',
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
-const NOMBRE_DECIMAL = new Intl.NumberFormat('fr-FR', {
+const DECIMAL_NUMBER = new Intl.NumberFormat('fr-FR', {
   maximumFractionDigits: 2,
 });
 
-const DATE_FR = new Intl.DateTimeFormat('fr-FR', {
+const DATE_FORMATTER = new Intl.DateTimeFormat('fr-FR', {
   day: '2-digit',
   month: '2-digit',
   year: 'numeric',
 });
 
-const DATE_HEURE_FR = new Intl.DateTimeFormat('fr-FR', {
+const DATE_TIME_FORMATTER = new Intl.DateTimeFormat('fr-FR', {
   day: '2-digit',
   month: '2-digit',
   year: 'numeric',
@@ -25,15 +25,15 @@ const DATE_HEURE_FR = new Intl.DateTimeFormat('fr-FR', {
   minute: '2-digit',
 });
 
-const MOIS_FR = new Intl.DateTimeFormat('fr-FR', {
+const MONTH_NAMES = new Intl.DateTimeFormat('fr-FR', {
   month: 'long',
   year: 'numeric',
 });
 
-function nettoyerNombre(brut: string): string {
-  return brut
+function cleanNumber(raw: string): string {
+  return raw
     .trim()
-    .replace(ESPACES, '')
+    .replace(WHITESPACE, '')
     .replace(/[€%]/g, '')
     .replace(',', '.');
 }
@@ -42,150 +42,150 @@ function nettoyerNombre(brut: string): string {
  * Normalise un montant saisi en chaîne décimale à deux décimales.
  * Retourne null si la saisie n'est pas un montant positif ou nul à deux décimales.
  */
-export function parseMontant(brut: string): string | null {
-  if (!brut || brut.trim() === '') {
+export function parseAmount(raw: string): string | null {
+  if (!raw || raw.trim() === '') {
     return null;
   }
-  const valeur = nettoyerNombre(brut);
-  if (!/^\d+(?:\.\d{1,2})?$/.test(valeur)) {
+  const value = cleanNumber(raw);
+  if (!/^\d+(?:\.\d{1,2})?$/.test(value)) {
     return null;
   }
-  const [entier, decimales = ''] = valeur.split('.');
-  const entierNormalise = entier.replace(/^0+(?=\d)/, '');
-  return `${entierNormalise}.${(decimales + '00').slice(0, 2)}`;
+  const [integer, decimals = ''] = value.split('.');
+  const normalizedInteger = integer.replace(/^0+(?=\d)/, '');
+  return `${normalizedInteger}.${(decimals + '00').slice(0, 2)}`;
 }
 
 /**
  * Normalise un pourcentage (0 à 100, deux décimales maximum).
  */
-export function parsePourcentage(brut: string): string | null {
-  if (!brut || brut.trim() === '') {
+export function parsePercentage(raw: string): string | null {
+  if (!raw || raw.trim() === '') {
     return null;
   }
-  const valeur = nettoyerNombre(brut);
-  if (!/^\d+(?:\.\d{1,2})?$/.test(valeur)) {
+  const value = cleanNumber(raw);
+  if (!/^\d+(?:\.\d{1,2})?$/.test(value)) {
     return null;
   }
-  const nombre = Number(valeur);
-  if (!Number.isFinite(nombre) || nombre < 0 || nombre > 100) {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue) || numberValue < 0 || numberValue > 100) {
     return null;
   }
-  const [entier, decimales] = valeur.split('.');
-  if (!decimales) {
-    return entier.replace(/^0+(?=\d)/, '');
+  const [integer, decimals] = value.split('.');
+  if (!decimals) {
+    return integer.replace(/^0+(?=\d)/, '');
   }
-  const decimalesNettes = decimales.replace(/0+$/, '');
-  const entierNormalise = entier.replace(/^0+(?=\d)/, '');
-  return decimalesNettes === '' ? entierNormalise : `${entierNormalise}.${decimalesNettes}`;
+  const cleanDecimals = decimals.replace(/0+$/, '');
+  const normalizedInteger = integer.replace(/^0+(?=\d)/, '');
+  return cleanDecimals === '' ? normalizedInteger : `${normalizedInteger}.${cleanDecimals}`;
 }
 
-export function formatEUR(valeur: string | number | null | undefined): string {
-  if (valeur === null || valeur === undefined || valeur === '') {
+export function formatEUR(value: string | number | null | undefined): string {
+  if (value === null || value === undefined || value === '') {
     return '—';
   }
-  const nombre = typeof valeur === 'number' ? valeur : Number(valeur);
-  if (!Number.isFinite(nombre)) {
+  const numberValue = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(numberValue)) {
     return '—';
   }
-  return NOMBRE_EURO.format(nombre);
+  return EURO_NUMBER.format(numberValue);
 }
 
-export function formatPourcentage(valeur: string | number | null | undefined): string {
-  if (valeur === null || valeur === undefined || valeur === '') {
+export function formatPercentage(value: string | number | null | undefined): string {
+  if (value === null || value === undefined || value === '') {
     return '—';
   }
-  const nombre = typeof valeur === 'number' ? valeur : Number(valeur);
-  if (!Number.isFinite(nombre)) {
+  const numberValue = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(numberValue)) {
     return '—';
   }
-  return `${NOMBRE_DECIMAL.format(nombre)} %`;
+  return `${DECIMAL_NUMBER.format(numberValue)} %`;
 }
 
-export function parseDateIso(valeur: string | null | undefined): Date | null {
-  if (!valeur) {
+export function parseDateIso(value: string | null | undefined): Date | null {
+  if (!value) {
     return null;
   }
-  const correspondance = /^(\d{4})-(\d{2})-(\d{2})/.exec(valeur);
-  if (!correspondance) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (!match) {
     return null;
   }
-  const [, annee, mois, jour] = correspondance;
-  const date = new Date(Number(annee), Number(mois) - 1, Number(jour));
+  const [, year, month, day] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
   if (
-    date.getFullYear() !== Number(annee) ||
-    date.getMonth() !== Number(mois) - 1 ||
-    date.getDate() !== Number(jour)
+    date.getFullYear() !== Number(year) ||
+    date.getMonth() !== Number(month) - 1 ||
+    date.getDate() !== Number(day)
   ) {
     return null;
   }
   return date;
 }
 
-export function formatDateFR(valeur: string | null | undefined): string {
-  const date = parseDateIso(valeur);
-  return date ? DATE_FR.format(date) : '—';
+export function formatDate(value: string | null | undefined): string {
+  const date = parseDateIso(value);
+  return date ? DATE_FORMATTER.format(date) : '—';
 }
 
-export function formatDateHeure(valeur: string | null | undefined): string {
-  if (!valeur) {
+export function formatDateTime(value: string | null | undefined): string {
+  if (!value) {
     return '—';
   }
-  const date = new Date(valeur);
-  return Number.isNaN(date.getTime()) ? '—' : DATE_HEURE_FR.format(date);
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : DATE_TIME_FORMATTER.format(date);
 }
 
-export function formatMois(mois: string | null | undefined): string {
-  if (!mois || !/^\d{4}-\d{2}$/.test(mois)) {
+export function formatMonth(month: string | null | undefined): string {
+  if (!month || !/^\d{4}-\d{2}$/.test(month)) {
     return '—';
   }
-  const [annee, numeroMois] = mois.split('-').map(Number);
-  const date = new Date(annee, numeroMois - 1, 1);
-  const libelle = MOIS_FR.format(date);
-  return libelle.charAt(0).toUpperCase() + libelle.slice(1);
+  const [year, monthNumber] = month.split('-').map(Number);
+  const date = new Date(year, monthNumber - 1, 1);
+  const labelText = MONTH_NAMES.format(date);
+  return labelText.charAt(0).toUpperCase() + labelText.slice(1);
 }
 
-export function formatPeriode(
-  debut: string | null | undefined,
-  fin: string | null | undefined,
+export function formatPeriod(
+  start: string | null | undefined,
+  end: string | null | undefined,
 ): string {
-  if (!debut || !fin) {
+  if (!start || !end) {
     return '—';
   }
-  return `du ${formatDateFR(debut)} au ${formatDateFR(fin)}`;
+  return `du ${formatDate(start)} au ${formatDate(end)}`;
 }
 
-export function formatOctets(octets: number): string {
-  if (octets < 1024) {
-    return `${octets} o`;
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} o`;
   }
-  if (octets < 1024 * 1024) {
-    return `${NOMBRE_DECIMAL.format(octets / 1024)} Ko`;
+  if (bytes < 1024 * 1024) {
+    return `${DECIMAL_NUMBER.format(bytes / 1024)} Ko`;
   }
-  return `${NOMBRE_DECIMAL.format(octets / (1024 * 1024))} Mo`;
+  return `${DECIMAL_NUMBER.format(bytes / (1024 * 1024))} Mo`;
 }
 
 /**
  * Estimation d'affichage uniquement : le backend reste la seule source de vérité.
  */
-export function montantRetenuEstime(
-  montantTtc: string | null | undefined,
-  prorataPct: string | null | undefined,
+export function estimatedRetainedAmount(
+  amountInclVat: string | null | undefined,
+  proRataPct: string | null | undefined,
 ): string {
-  const montant = montantTtc ? Number(parseMontant(montantTtc) ?? '') : Number.NaN;
-  const pourcentage = prorataPct ? Number(parsePourcentage(prorataPct) ?? '') : Number.NaN;
-  if (!Number.isFinite(montant) || !Number.isFinite(pourcentage)) {
+  const amount = amountInclVat ? Number(parseAmount(amountInclVat) ?? '') : Number.NaN;
+  const percentage = proRataPct ? Number(parsePercentage(proRataPct) ?? '') : Number.NaN;
+  if (!Number.isFinite(amount) || !Number.isFinite(percentage)) {
     return '—';
   }
-  const centimes = Math.round(montant * 100);
-  const centiemesPct = Math.round(pourcentage * 100);
-  const retenus = Math.round((centimes * centiemesPct) / 10_000);
-  return formatEUR(retenus / 100);
+  const cents = Math.round(amount * 100);
+  const hundredthsPct = Math.round(percentage * 100);
+  const retained = Math.round((cents * hundredthsPct) / 10_000);
+  return formatEUR(retained / 100);
 }
 
-export function initiales(nom: string | null | undefined): string {
-  if (!nom) {
+export function initials(name: string | null | undefined): string {
+  if (!name) {
     return 'FO';
   }
-  const parties = nom.trim().split(/\s+/).filter(Boolean).slice(0, 2);
-  return parties.map((partie) => partie.charAt(0).toUpperCase()).join('') || 'FO';
+  const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
+  return parts.map((part) => part.charAt(0).toUpperCase()).join('') || 'FO';
 }

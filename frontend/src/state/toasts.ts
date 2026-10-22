@@ -1,25 +1,25 @@
 import { create } from 'zustand';
 
-export type TypeToast = 'succes' | 'erreur' | 'info';
+export type ToastType = 'succes' | 'erreur' | 'info';
 
 export interface Toast {
   id: number;
-  type: TypeToast;
+  type: ToastType;
   message: string;
 }
 
 interface ToastsState {
   toasts: Toast[];
-  ajouter: (message: string, type?: TypeToast) => void;
+  ajouter: (message: string, type?: ToastType) => void;
   retirer: (id: number) => void;
 }
 
-let prochainId = 1;
+let nextId = 1;
 
 export const useToasts = create<ToastsState>((set, get) => ({
   toasts: [],
   ajouter: (message, type = 'succes') => {
-    const id = prochainId++;
+    const id = nextId++;
     set({ toasts: [...get().toasts, { id, type, message }] });
     window.setTimeout(() => get().retirer(id), 5_000);
   },
