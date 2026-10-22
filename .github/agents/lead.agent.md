@@ -65,6 +65,15 @@ migration, the template sandbox, the LLM path or secrets.
 If the diff at the end touches one of those areas while the task was sized S, call
 `reviewer` anyway and say why in the report.
 
+## Models
+
+- **best** (planning and coding): `opencode/glm-5.3-flash-free` — your pinned model and
+  `builder`'s default.
+- **medium** (blocker-only review): `opencode/big-pickle` — `reviewer`'s default.
+- **quick** (S tasks): `opencode/mimo-v2.6-flash-free` — dispatch `builder` with this model
+  through the `subagent` tool's `model` parameter. `M` and `L` keep the default. If the
+  override is unavailable, run the default and record it in the handoff.
+
 ## Handoff
 
 Create or update `.handoff/tasks/<TASK-ID>.md` in the compact format of

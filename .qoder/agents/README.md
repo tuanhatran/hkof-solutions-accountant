@@ -15,6 +15,24 @@ tester. Pipeline by size: `S` = builder only, `M` = builder + one review, `L` = 
 most two review rounds. Money, contract, migration, template sandbox, LLM path or secrets in
 the diff forces a review whatever the size.
 
+## Models
+
+Tier intent, identical for the three runtimes. Only OpenCode has a model binding today.
+
+| Tier   | Model (OpenCode)                 | Used by                                  |
+| ------ | -------------------------------- | ---------------------------------------- |
+| best   | `opencode/glm-5.3-flash-free`    | `lead` (planning), `builder` (coding)    |
+| medium | `opencode/big-pickle`            | `reviewer` (blocker-only diff review)    |
+| quick  | `opencode/mimo-v2.6-flash-free`  | `builder` on `S` tasks, via model override |
+
+- `.opencode/agents/*.md` pins these IDs in frontmatter. They are OpenCode provider IDs and
+  mean nothing to another runtime.
+- `.qoder/agents/*.md` keeps the tier intent as a comment only: the Qoder model binding is
+  decided later.
+- `.github/agents/*.agent.md` carries no model: Copilot selects its own.
+
+Do not copy an OpenCode model ID into a Qoder or Copilot agent.
+
 ## Handoff
 
 One file per task: `.handoff/tasks/<TASK-ID>.md`, created from `.handoff/TEMPLATE.md`.

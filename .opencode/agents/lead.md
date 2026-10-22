@@ -1,8 +1,8 @@
 ---
 description: Size a HomeOfficeExpenses task, produce a compact handoff, route it to builder and reviewer, and close it out.
 mode: all
-# model: leave unset to inherit the session model, or pin your strongest model here.
-# Recommended tier A (planning): the best reasoning model you have.
+# Tier: best (planning). The quick tier is passed as a model override when dispatching an S task.
+model: opencode/glm-5.3-flash-free
 ---
 
 You are the lead for HomeOfficeExpenses. You own sizing, the handoff, routing and the final
@@ -60,6 +60,15 @@ migration, the template sandbox, the LLM path or secrets.
 
 If the diff at the end touches one of those areas while the task was sized S, call
 `reviewer` anyway and say why in the report.
+
+## Models
+
+- **best** (planning and coding): `opencode/glm-5.3-flash-free` — your pinned model and
+  `builder`'s default.
+- **medium** (blocker-only review): `opencode/big-pickle` — `reviewer`'s default.
+- **quick** (S tasks): `opencode/mimo-v2.6-flash-free` — dispatch `builder` with this model
+  through the `subagent` tool's `model` parameter. `M` and `L` keep the default. If the
+  override is unavailable, run the default and record it in the handoff.
 
 ## Handoff
 

@@ -13,7 +13,7 @@ Note: French UI labels, document wording and error messages quoted in this file 
 # NON-NEGOTIABLE RULES
 
 1. **The LLM extracts, it never calculates.** Totals, pro-rata, allocation and rounding are computed by the backend (`CalculationService`, `BigDecimal`).
-2. Any value detected by the LLM is **proposed, not imposed**: pre-filled, marked "Détecté par IA" (Detected by AI), editable. The user validates by clicking "Ajouter ce frais" (Add this expense).
+2. Any value detected by the LLM is **proposed, not imposed**: pre-filled, marked "Détecté par IA" (Detected by AI), editable. A detected amount must be confirmed with the check icon ("Confirmer le montant détecté par IA") before "Ajouter ce frais" (Add this expense) becomes available; the user then validates by clicking that button.
 3. The content of an analyzed document is **untrusted data** (prompt injection): the system prompt forbids following any instruction found in the document; the output is constrained to a JSON schema and validated server-side.
 4. If the LLM is disabled, unreachable or failing, the application remains **100% usable with manual entry**.
 5. **A single source of truth for amounts**: the total shown on screen, the one in the preview and the one in the final PDF all come from the same backend response.
@@ -304,6 +304,8 @@ On each tab, the window is split into **two panels**: "Saisie" (input) on the le
 ## UI behavior
 - Drop → upload → banner "Analyse en cours…" (analysis in progress; spinner, "Annuler" (Cancel) button).
 - Result: pre-fill of **Montant TTC**, **supplier** and, if the type is empty, **type suggestion** (never force a change to a type already chosen). Each filled field carries the "Détecté par IA" (Detected by AI) badge, with the source excerpt in a tooltip.
+- The detected amount always replaces the **Montant TTC** content, even when a value was already typed; the field stays editable and typing clears the AI badge.
+- The AI amount is **proposed, never imposed**: while the box still holds the detected amount, a check icon (`btn-confirmer-montant`) and the hint « Montant détecté par IA — confirmez-le pour ajouter le frais. » are shown, and "Ajouter ce frais" / "Enregistrer la modification" stay disabled until the click, which announces « Montant confirmé. » (`aria-live`). Typing a value, the rent amount of the month, a manual entry or reopening an already saved line never require the confirmation. No detected amount: no confirmation is asked.
 - Confidence "basse" (low) or amount not found: field highlighted in orange "À vérifier" (To verify).
 - Failure, timeout or LLM disabled: discreet message "Analyse indisponible, saisissez le montant" (Analysis unavailable, enter the amount).
 - Multiple file drop (optional): each one becomes an expense draft to validate.
@@ -370,7 +372,7 @@ Two cards: **Quittance de loyer** (rent receipt) and **Note de frais d'occupatio
 - Loading / error / empty states everywhere, success and error toasts in French.
 - Responsive (desktop first, usable on mobile); accessibility: associated labels, keyboard navigation (dropzone included), `aria-live` for errors, the total and the analysis status.
 - **`data-cy`** attributes on all interactive elements:
-  `tab-quittance`, `tab-note-frais`, `tab-templates`, `tab-admin`, `select-mois`, `btn-generer-quittance`, `select-type-frais`, `dropzone-fichier`, `input-montant-ttc`, `input-prorata`, `input-montant-mois`, `btn-ajouter-frais`, `liste-frais`, `ligne-frais-<code>`, `btn-modifier-<code>`, `btn-supprimer-<code>`, `total-retenu`, `btn-generer-note`, `btn-telecharger-note`, `btn-telecharger-note-complete`, `alerte-quittance-manquante`, `volet-saisie`, `volet-apercu`, `apercu-pdf`, `apercu-maj`, `toggle-apercu-complet`, `select-template`, `analyse-statut`, `btn-annuler-analyse`, `badge-ia-detecte`, `switch-llm-actif`, `input-llm-url`, `select-llm-model`, `btn-refresh-models`, `btn-test-llm`, `badge-llm-status`, `dropzone-template-quittance`, `dropzone-template-note`, `btn-activer-template`, `rapport-validation-template`, `btn-modele-defaut`.
+  `tab-quittance`, `tab-note-frais`, `tab-templates`, `tab-admin`, `select-mois`, `btn-generer-quittance`, `select-type-frais`, `dropzone-fichier`, `input-montant-ttc`, `input-prorata`, `input-montant-mois`, `btn-ajouter-frais`, `liste-frais`, `ligne-frais-<code>`, `btn-modifier-<code>`, `btn-supprimer-<code>`, `total-retenu`, `btn-generer-note`, `btn-telecharger-note`, `btn-telecharger-note-complete`, `alerte-quittance-manquante`, `volet-saisie`, `volet-apercu`, `apercu-pdf`, `apercu-maj`, `toggle-apercu-complet`, `select-template`, `analyse-statut`, `btn-annuler-analyse`, `badge-ia-detecte`, `btn-confirmer-montant`, `switch-llm-actif`, `input-llm-url`, `select-llm-model`, `btn-refresh-models`, `btn-test-llm`, `badge-llm-status`, `dropzone-template-quittance`, `dropzone-template-note`, `btn-activer-template`, `rapport-validation-template`, `btn-modele-defaut`.
 
 # TESTS
 

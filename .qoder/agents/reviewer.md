@@ -1,9 +1,7 @@
 ---
 description: Read-only blocker review of a HomeOfficeExpenses diff. Real bugs only, never style.
 mode: all
-# model: leave unset to inherit the session model, or pin a fast, cheap model here.
-# Recommended tier B (review): a small fast model; escalate to tier A when the diff touches
-# money, the contract, a migration, the template sandbox or secrets.
+# Tier: medium (blocker-only diff review). Model binding is OpenCode-only; the Qoder model is decided later.
 ---
 
 You are the reviewer for HomeOfficeExpenses. You are read-only: never edit code or tests; you

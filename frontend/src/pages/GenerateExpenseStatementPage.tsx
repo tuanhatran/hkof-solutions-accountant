@@ -38,6 +38,7 @@ import type {
   ExpenseItemDto,
 } from "@/api/types";
 import { AiBadge } from "@/components/AiBadge";
+import { AmountConfirmButton } from "@/components/AmountConfirmButton";
 import { Button } from "@/components/Button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ErrorState, Spinner } from "@/components/States";
@@ -91,6 +92,7 @@ interface AttachedFile {
 interface AiState {
   type: boolean;
   amount: boolean;
+  amountConfirmed: boolean;
   detectedAmount: string | null;
   supplier: string | null;
   sourceExtract: string | null;
@@ -100,6 +102,7 @@ interface AiState {
 const AI_EMPTY: AiState = {
   type: false,
   amount: false,
+  amountConfirmed: false,
   detectedAmount: null,
   supplier: null,
   sourceExtract: null,
@@ -186,7 +189,8 @@ function AnalysisPanel({
               aria-hidden="true"
             />
             Analyse terminée{duration ? ` en ${duration}` : ""} — les champs
-            vides ont été pré-remplis.
+            ont été pré-remplis et le montant détecté remplace la valeur
+            saisie.
           </p>
           {result ? (
             <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-soft">
@@ -314,6 +318,8 @@ export function GenerateExpenseStatementPage() {
   const [uploading, setUploading] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
   const [ai, setAi] = useState<AiState>(AI_EMPTY);
+  // Confirmation is required only while the box still holds the AI proposal.
+  const amountConfirmationPending = !isRent && ai.amount && !ai.amountConfirmed;
   const [lineBeingEdited, setLineBeingEdited] = useState<string | null>(null);
   const [lineToRemove, setLineToRemove] = useState<DraftLine | null>(null);
   const [regenerationDialog, setRegenerationDialog] = useState(false);
@@ -451,7 +457,9 @@ export function GenerateExpenseStatementPage() {
           ? parseAmount(extraction.amountInclVat)
           : null;
 
-    if (!current.amountInclVat && suggestedAmount !== null) {
+    // The detected amount always replaces the current value; the rent amount
+    // stays locked to the receipt of the month.
+    if (suggestedAmount !== null && current.itemCode !== "loyer") {
       appliedAmount = true;
     }
 
@@ -493,6 +501,7 @@ export function GenerateExpenseStatementPage() {
     setAi({
       type: appliedType,
       amount: appliedAmount,
+      amountConfirmed: false,
       detectedAmount: suggestedAmount,
       supplier: extraction.supplier ?? null,
       sourceExtract: extraction.sourceExcerpt ?? null,
@@ -503,7 +512,7 @@ export function GenerateExpenseStatementPage() {
         "Des champs ont été pré-remplis par l’IA. Vérifiez-les avant d’ajouter le frais.",
       );
     }
-    // Extraction is applied once per analysis, and only to empty fields.
+    // Extraction is applied once per analysis; the amount always overwrites.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analysisPhase, receipt?.id, expenseItemsQuery.data, lineBeingEdited]);
 
@@ -579,6 +588,7 @@ export function GenerateExpenseStatementPage() {
     setAi({
       type: false,
       amount: line.amountSource === "AI",
+      amountConfirmed: true,
       detectedAmount: line.aiDetectedAmount,
       supplier: line.detectedSupplier,
       sourceExtract: null,
@@ -601,6 +611,12 @@ export function GenerateExpenseStatementPage() {
   }
 
   function saveExpense(submittedValues: ExpenseFormValues) {
+    if (amountConfirmationPending) {
+      toast.info(
+        "Confirmez le montant détecté par IA avant d’ajouter le frais.",
+      );
+      return;
+    }
     const expenseItem = expenseItemByCode.get(submittedValues.itemCode);
     if (!expenseItem?.code) {
       setError("itemCode", {
@@ -1270,6 +1286,7 @@ export function GenerateExpenseStatementPage() {
                             setAi((previous) => ({
                               ...previous,
                               amount: false,
+                              amountConfirmed: true,
                             })),
                         })}
                       />
@@ -1290,6 +1307,18 @@ export function GenerateExpenseStatementPage() {
                     </p>
                   </div>
                 </div>
+
+                {ai.amount ? (
+                  <AmountConfirmButton
+                    confirmed={ai.amountConfirmed}
+                    onConfirm={() =>
+                      setAi((previous) => ({
+                        ...previous,
+                        amountConfirmed: true,
+                      }))
+                    }
+                  />
+                ) : null}
 
                 {lowConfidenceError ? (
                   <p className="flex items-start gap-2 rounded-lg bg-warning-soft/50 px-3 py-2 text-xs text-warning">
@@ -1352,7 +1381,8 @@ export function GenerateExpenseStatementPage() {
                       !isValid ||
                       uploading ||
                       (!isRent && !receipt) ||
-                      (isRent && !availableRent)
+                      (isRent && !availableRent) ||
+                      amountConfirmationPending
                     }
                     data-cy="btn-ajouter-frais"
                   >

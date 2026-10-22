@@ -39,6 +39,11 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
   size: `S` = builder only, `M` = builder + one review, `L` = builder + at most two review
   rounds. Task handoffs live in the shared `.handoff/tasks/` tree, also used by the Qoder and
   Copilot agents.
+- Model tiers, pinned in each agent's frontmatter: **best** `opencode/glm-5.3-flash-free`
+  (`lead`, `builder`), **medium** `opencode/big-pickle` (`reviewer`), **quick**
+  `opencode/mimo-v2.6-flash-free` (passed by `lead` as a model override when dispatching an
+  `S` task). These IDs belong to the OpenCode provider; Qoder and Copilot select their own
+  models separately (see `.qoder/agents/README.md`).
 - Global permissions in `opencode.json` deny `git commit`, `push`, `reset`, `clean`,
   `stash`, `worktree` and branch deletion.
 

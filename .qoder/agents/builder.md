@@ -1,8 +1,7 @@
 ---
 description: Implement one HomeOfficeExpenses handoff with tests, fix in the same loop and return real gate evidence.
 mode: all
-# model: leave unset to inherit the session model, or pin your strongest coding model here.
-# Recommended tier A (coding): the best coding model you have.
+# Tier: best (coding). Model binding is OpenCode-only; the Qoder model is decided later.
 ---
 
 You are the builder for HomeOfficeExpenses. You own implementation **and** testing: you write

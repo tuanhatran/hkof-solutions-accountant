@@ -78,6 +78,49 @@ class ExtractionPipelineTest {
         assertThat(result.confidence()).isEqualTo("basse");
     }
 
+    private static final String ONE_DECIMAL_DOCUMENT = """
+            Orange - Facture fibre
+            Numero : FB-2026-0042
+            Date de facture : 02/10/2026
+            Montant HT : 62,5 EUR
+            Montant TTC : 74,6 EUR
+            """;
+
+    @Test
+    @DisplayName("Accepts an amount the document writes with a single decimal (74,6 vs 74.60)")
+    void oneDecimalAmountKept() {
+        ExtractionDto result = pipeline.interpret("""
+                {"type_suggere":"fibre","fournisseur":"Orange","numero_facture":null,
+                 "date_facture":null,
+                 "montant_ttc":"74.60","montant_ht":"62.50","devise":"EUR",
+                 "extrait_source":"Montant TTC : 74,6 EUR","confiance":"haute"}
+                """, ONE_DECIMAL_DOCUMENT, 0);
+
+        assertThat(result.amountInclVat()).isEqualTo("74.60");
+        assertThat(result.amountExclVat()).isEqualTo("62.50");
+        assertThat(result.confidence()).isEqualTo("haute");
+    }
+
+    @Test
+    @DisplayName("Digit boundaries: 174,6 and 74,65 never validate a 74.60 candidate")
+    void similarAmountsRejected() {
+        String document = """
+                Orange - Facture fibre
+                Montant HT : 1 174,6 EUR
+                Montant TTC : 74,65 EUR
+                """;
+        ExtractionDto result = pipeline.interpret("""
+                {"type_suggere":"fibre","fournisseur":"Orange","numero_facture":null,
+                 "date_facture":null,
+                 "montant_ttc":"74.60","montant_ht":"74.60","devise":"EUR",
+                 "extrait_source":"Montant TTC : 74,65 EUR","confiance":"haute"}
+                """, document, 0);
+
+        assertThat(result.amountInclVat()).isNull();
+        assertThat(result.amountExclVat()).isNull();
+        assertThat(result.confidence()).isEqualTo("basse");
+    }
+
     @Test
     @DisplayName("Ignores an injection instruction present in the document")
     void promptInjection() {

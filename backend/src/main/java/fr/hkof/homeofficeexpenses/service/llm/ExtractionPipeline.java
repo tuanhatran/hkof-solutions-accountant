@@ -8,6 +8,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 
@@ -239,11 +240,18 @@ public class ExtractionPipeline {
         if (normalizedDocument.contains(candidate)) {
             return true;
         }
-        BigDecimal value = new BigDecimal(candidate);
-        if (value.stripTrailingZeros().scale() <= 0) {
-            return normalizedDocument.contains(value.toPlainString());
+        BigDecimal value = new BigDecimal(candidate).stripTrailingZeros();
+        String plain = value.toPlainString();
+        // Digit-bounded match: the document may write the amount with fewer or
+        // more decimal digits than the candidate ("74,6" vs "74.60", "78" vs
+        // "78.00"), but never inside a longer number ("174.6", "74.65").
+        String pattern;
+        if (plain.indexOf('.') < 0) {
+            pattern = "(?<![\\d.])" + Pattern.quote(plain) + "(?:\\.0+)?(?![.\\d])";
+        } else {
+            pattern = "(?<![\\d.])" + Pattern.quote(plain) + "0?(?![\\d])";
         }
-        return false;
+        return Pattern.compile(pattern).matcher(normalizedDocument).find();
     }
 
     private String normalizeForSearch(String text) {
