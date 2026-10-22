@@ -1,6 +1,6 @@
 ---
 description: Review current changes for correctness, regressions and missing tests
-agent: plan
+agent: reviewer
 ---
 
 Review the current changes for: $ARGUMENTS

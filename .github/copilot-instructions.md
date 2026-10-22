@@ -76,7 +76,8 @@ make up / make down
 
 ## Workflow
 
-- Agent workflow: `orchestrator` → `planner` → `coder` → `tester` → `reviewer`, one task per shared handoff in `.handoff/tasks/<TASK-ID>.md`.
+- Agent workflow: `lead` → `builder` → `reviewer`, one task per shared handoff in `.handoff/tasks/<TASK-ID>.md`. `lead` absorbs the former orchestrator and planner, `builder` absorbs the former coder and tester.
+- Pipeline by size: `S` = builder only, `M` = builder + one review, `L` = builder + at most two review rounds. Money, contract, migration, template sandbox, LLM or secrets in the diff forces a review whatever the size.
 - Each task runs on one dedicated branch, created after the user agrees on a name; a resumed task reuses its recorded branch. Never create a second branch for the same task.
 - File graph: query the local CodeGraph index in `.codegraph/` (`codegraph context`, `affected`, `impact`, `sync`); never commit or hand-edit it.
 - Behavior change: write the failing test first.
