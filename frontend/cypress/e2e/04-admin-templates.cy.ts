@@ -58,7 +58,7 @@ describe('AI admin and templates', () => {
     cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled');
     addRent();
-    addExpense({ type: 'gaz', fixture: 'facture-gaz.txt', montant: '120.00' });
+    addExpense({ itemCode: 'gaz', fixture: 'facture-gaz.txt', amountInclVat: '120.00' });
     waitForAmount('[data-cy="total-retenu"]', '992,85');
   });
 
@@ -117,10 +117,10 @@ describe('AI admin and templates', () => {
     cy.contains('li', 'Quittance E2E', { timeout: 20_000 }).should('contain.text', 'active');
     cy.get('[data-cy="btn-modele-defaut"]').first().should('not.be.disabled');
 
-    cy.intercept('POST', '/api/quittances/apercu').as('apercu');
+    cy.intercept('POST', '/api/rent-receipts/preview').as('preview');
     cy.get('[data-cy="tab-quittance"]').click();
     waitForValue('#quittance-loyer', '900.00');
-    cy.wait('@apercu', { timeout: 30_000 });
+    cy.wait('@preview', { timeout: 30_000 });
     cy.waitForPreview();
     cy.get('[data-cy="select-template"] option:selected', { timeout: 20_000 }).should(
       'contain.text',

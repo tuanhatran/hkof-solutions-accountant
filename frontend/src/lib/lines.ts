@@ -4,7 +4,7 @@ import type {
   LineDto,
   LineRequest,
   ExpenseItemDto,
-  SourceMontant,
+  AmountSource,
 } from '@/api/types';
 import { isValidDate } from './dates';
 import { parseAmount, parsePercentage } from './format';
@@ -19,7 +19,7 @@ export interface DraftLine {
   montantMoisSurcharge: string;
   justificatifId: number | null;
   justificatifNom: string | null;
-  sourceMontant: SourceMontant;
+  sourceMontant: AmountSource;
   montantDetecteIa: string | null;
   confianceIa: AiConfidence | null;
   fournisseurDetecte: string | null;
@@ -35,17 +35,17 @@ export function newKey(): string {
 export function fromLineDto(line: LineDto): DraftLine {
   return {
     cle: newKey(),
-    posteCode: line.posteCode ?? '',
-    montantTtc: line.montantTtc ?? '',
-    prorataPct: line.prorataPct ?? '100',
-    periodeDebut: line.periodeDebut ?? '',
-    periodeFin: line.periodeFin ?? '',
+    posteCode: line.itemCode ?? '',
+    montantTtc: line.amountInclVat ?? '',
+    prorataPct: line.proRataPct ?? '100',
+    periodeDebut: line.periodStart ?? '',
+    periodeFin: line.periodEnd ?? '',
     montantMoisSurcharge: '',
-    justificatifId: line.justificatifId ?? null,
-    justificatifNom: line.justificatifNom ?? null,
-    sourceMontant: (line.sourceMontant as SourceMontant) ?? 'MANUAL',
-    montantDetecteIa: line.montantDetecteIa ?? null,
-    confianceIa: (line.confianceIa as AiConfidence) ?? null,
+    justificatifId: line.receiptId ?? null,
+    justificatifNom: line.receiptName ?? null,
+    sourceMontant: (line.amountSource as AmountSource) ?? 'MANUAL',
+    montantDetecteIa: line.aiDetectedAmount ?? null,
+    confianceIa: (line.aiConfidence as AiConfidence) ?? null,
     fournisseurDetecte: null,
   };
 }
@@ -60,33 +60,33 @@ export function toLineRequest(line: DraftLine): LineRequest {
     throw new Error('Le prorata est invalide.');
   }
   const request: LineRequest = {
-    posteCode: line.posteCode,
-    montantTtc: amountInclVat,
-    prorataPct: proRataPct,
+    itemCode: line.posteCode,
+    amountInclVat,
+    proRataPct,
   };
   if (line.periodeDebut && line.periodeFin) {
     if (!isValidDate(line.periodeDebut) || !isValidDate(line.periodeFin)) {
       throw new Error('La période facturée est invalide.');
     }
-    request.periodeDebut = line.periodeDebut;
-    request.periodeFin = line.periodeFin;
+    request.periodStart = line.periodeDebut;
+    request.periodEnd = line.periodeFin;
   }
   if (line.montantMoisSurcharge.trim() !== '') {
     const override = parseAmount(line.montantMoisSurcharge);
     if (override === null) {
       throw new Error('Le montant du mois est invalide.');
     }
-    request.montantMoisSurcharge = override;
+    request.monthlyAmountOverride = override;
   }
   if (line.justificatifId !== null) {
-    request.justificatifId = line.justificatifId;
+    request.receiptId = line.justificatifId;
   }
-  request.sourceMontant = line.sourceMontant;
+  request.amountSource = line.sourceMontant;
   if (line.montantDetecteIa) {
-    request.montantDetecteIa = line.montantDetecteIa;
+    request.aiDetectedAmount = line.montantDetecteIa;
   }
   if (line.confianceIa) {
-    request.confianceIa = line.confianceIa;
+    request.aiConfidence = line.confianceIa;
   }
   return request;
 }
@@ -102,8 +102,8 @@ export function typeAlreadyAdded(lines: DraftLine[], expenseItemCode: string): b
 export function missingTypes(expenseItems: ExpenseItemDto[], lines: DraftLine[]): string[] {
   const codes = new Set(lines.map((line) => line.posteCode));
   return expenseItems
-    .filter((expenseItem) => expenseItem.code && !expenseItem.plusieursLignesAutorisees && !codes.has(expenseItem.code))
-    .map((expenseItem) => expenseItem.libelle?.toLowerCase() ?? expenseItem.code ?? '')
+    .filter((expenseItem) => expenseItem.code && !expenseItem.multipleLinesAllowed && !codes.has(expenseItem.code))
+    .map((expenseItem) => expenseItem.label?.toLowerCase() ?? expenseItem.code ?? '')
     .filter(Boolean);
 }
 
@@ -126,5 +126,5 @@ export function buildRentLine(amount: string, proRataPct: string): DraftLine {
 }
 
 export function receiptName(receipt: ReceiptDto | null): string | null {
-  return receipt?.nomFichier ?? null;
+  return receipt?.fileName ?? null;
 }

@@ -9,11 +9,11 @@ import {
 } from '../support/helpers';
 
 const LINES = [
-  { type: 'gaz', fixture: 'facture-gaz.txt', montant: '120.00' },
-  { type: 'electricite', fixture: 'facture-electricite.txt', montant: '88.20' },
-  { type: 'assurance', fixture: 'facture-assurance.txt', montant: '210.00' },
-  { type: 'telephone', fixture: 'facture-telephone.txt', montant: '29.99' },
-  { type: 'fibre', fixture: 'facture-fibre.txt', montant: '39.99' },
+  { itemCode: 'gaz', fixture: 'facture-gaz.txt', amountInclVat: '120.00' },
+  { itemCode: 'electricite', fixture: 'facture-electricite.txt', amountInclVat: '88.20' },
+  { itemCode: 'assurance', fixture: 'facture-assurance.txt', amountInclVat: '210.00' },
+  { itemCode: 'telephone', fixture: 'facture-telephone.txt', amountInclVat: '29.99' },
+  { itemCode: 'fibre', fixture: 'facture-fibre.txt', amountInclVat: '39.99' },
 ];
 
 describe('Expense statement — finalization', () => {

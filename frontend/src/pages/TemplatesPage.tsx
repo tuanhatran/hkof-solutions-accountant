@@ -112,10 +112,10 @@ function VariableList({
 }
 
 function ValidationReport({ rapport: report }: { rapport: ValidationReportDto }) {
-  const recognizedVariables = report.variablesReconnues ?? [];
-  const unknownVariables = report.variablesInconnues ?? [];
-  const missingVariables = report.variablesManquantes ?? [];
-  const errorList = report.erreurs ?? [];
+  const recognizedVariables = report.recognizedVariables ?? [];
+  const unknownVariables = report.unknownVariables ?? [];
+  const missingVariables = report.missingVariables ?? [];
+  const errorList = report.errors ?? [];
 
   return (
     <div
@@ -124,7 +124,7 @@ function ValidationReport({ rapport: report }: { rapport: ValidationReportDto })
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-ink">Rapport de validation</p>
-        <BadgeStructure valide={Boolean(report.structureValide)} />
+        <BadgeStructure valide={Boolean(report.structureValid)} />
       </div>
       <VariableList titre={`Variables reconnues (${recognizedVariables.length})`} variables={recognizedVariables} ton="accent" />
       <VariableList titre={`Variables inconnues (${unknownVariables.length})`} variables={unknownVariables} ton="danger" />
@@ -227,19 +227,19 @@ function ReferenceVariables({ type }: { type: TemplateType }) {
               </thead>
               <tbody>
                 {(variables.data ?? []).map((variable) => {
-                  const name = variable.nom ?? '';
+                  const name = variable.name ?? '';
                   return (
                     <tr key={name}>
                       <td>
                         <code className="rounded bg-paper-deep/60 px-1.5 py-0.5 font-mono text-[11.5px] text-ink">
                           {`{{${name}}}`}
                         </code>
-                        {variable.obligatoire ? (
+                        {variable.required ? (
                           <span className="ml-1.5 text-[10px] font-bold uppercase text-copper">requis</span>
                         ) : null}
                       </td>
                       <td className="text-xs text-ink-soft">{variable.description}</td>
-                      <td className="text-xs text-ink-soft/80">{variable.exemple || '—'}</td>
+                      <td className="text-xs text-ink-soft/80">{variable.example || '—'}</td>
                       <td className="text-right">
                         <button
                           type="button"
@@ -305,12 +305,12 @@ function ModelPreview({
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-accent-strong px-4 py-3 text-white">
           <div className="min-w-0">
             <h2 id="apercu-template-titre" className="truncate text-lg text-white">
-              Aperçu — {template.nom} · v{template.version}
+              Aperçu — {template.name} · v{template.version}
             </h2>
             <p className="text-[11px] text-white/60">Données d’exemple · filigrane « APERÇU » · rien n’est persisté.</p>
           </div>
           <div className="flex items-center gap-2">
-            {!template.actif ? (
+            {!template.active ? (
               <Button
                 variante="secondaire"
                 petit
@@ -361,8 +361,8 @@ function TemplatesCard({ configuration }: { configuration: ConfigurationType }) 
   }, [preview]);
 
   const versions = templates.data ?? [];
-  const active = versions.find((template) => template.actif) ?? versions.find((template) => template.integre) ?? null;
-  const builtInModel = versions.find((template) => template.integre) ?? null;
+  const active = versions.find((template) => template.active) ?? versions.find((template) => template.builtIn) ?? null;
+  const builtInModel = versions.find((template) => template.builtIn) ?? null;
 
   function invalidate() {
     void queryClient.invalidateQueries({ queryKey: queryKeys.templates(type) });
@@ -370,10 +370,10 @@ function TemplatesCard({ configuration }: { configuration: ConfigurationType }) 
 
   const upload = useMutation({
     mutationFn: ({ nomTemplate: templateName, fichierTemplate: templateFile }: { nomTemplate: string; fichierTemplate: File }) =>
-      api.templates.uploader(type, templateName, templateFile),
+      api.templates.upload(type, templateName, templateFile),
     onSuccess: (template) => {
       invalidate();
-      setReport(template.rapport ?? null);
+      setReport(template.report ?? null);
       setLastImport(template);
       setFile(null);
       setUploadError(null);
@@ -387,17 +387,17 @@ function TemplatesCard({ configuration }: { configuration: ConfigurationType }) 
   });
 
   const activate = useMutation({
-    mutationFn: (template: TemplateDto) => api.templates.activer(template.id as number),
+    mutationFn: (template: TemplateDto) => api.templates.activate(template.id as number),
     onSuccess: (template) => {
       invalidate();
       setPreview(null);
-      toast.succes(`Le modèle « ${template.nom} » v${template.version} est désormais actif.`);
+      toast.succes(`Le modèle « ${template.name} » v${template.version} est désormais actif.`);
     },
     onError: (error) => toast.erreur(errorMessage(error)),
   });
 
   const remove = useMutation({
-    mutationFn: (template: TemplateDto) => api.templates.supprimer(template.id as number),
+    mutationFn: (template: TemplateDto) => api.templates.delete(template.id as number),
     onSuccess: () => {
       invalidate();
       setToDelete(null);
@@ -410,7 +410,7 @@ function TemplatesCard({ configuration }: { configuration: ConfigurationType }) 
   });
 
   const resetMutation = useMutation({
-    mutationFn: () => api.templates.reinitialiser(type),
+    mutationFn: () => api.templates.resetDefault(type),
     onSuccess: (template) => {
       invalidate();
       setResetDialogOpen(false);
@@ -423,15 +423,15 @@ function TemplatesCard({ configuration }: { configuration: ConfigurationType }) 
   });
 
   const download = useMutation({
-    mutationFn: (template: TemplateDto) => api.templates.fichier(template.id as number),
+    mutationFn: (template: TemplateDto) => api.templates.file(template.id as number),
     onSuccess: (reply, template) => {
-      downloadBlob(reply.blob, fileNameOn(template.nom, template.version));
+      downloadBlob(reply.blob, fileNameOn(template.name, template.version));
     },
     onError: (error) => toast.erreur(errorMessage(error)),
   });
 
   const downloadDefault = useMutation({
-    mutationFn: () => api.templates.defaut(type),
+    mutationFn: () => api.templates.getDefault(type),
     onSuccess: (reply) => {
       downloadBlob(
         reply.blob,
@@ -447,7 +447,7 @@ function TemplatesCard({ configuration }: { configuration: ConfigurationType }) 
     }
     setPreviewInProgress(template.id);
     try {
-      const reply = await api.templates.apercu(template.id);
+      const reply = await api.templates.preview(template.id);
       setPreview({ template, url: URL.createObjectURL(reply.blob) });
     } catch (error) {
       toast.erreur(errorMessage(error));
@@ -467,7 +467,7 @@ function TemplatesCard({ configuration }: { configuration: ConfigurationType }) 
   }
 
   const canUpload = file !== null && name.trim().length > 0 && !upload.isPending;
-  const previousVersions = versions.filter((template) => !template.actif);
+  const previousVersions = versions.filter((template) => !template.active);
 
   return (
     <section className="carte overflow-hidden">
@@ -503,9 +503,9 @@ function TemplatesCard({ configuration }: { configuration: ConfigurationType }) 
                   {active ? (
                     <>
                       <p className="mt-1 flex flex-wrap items-center gap-2 text-base font-semibold text-ink">
-                        {active.nom}
+                        {active.name}
                         <span className="badge badge-accent">v{active.version}</span>
-                        {active.integre ? <span className="badge badge-neutre">intégré</span> : null}
+                        {active.builtIn ? <span className="badge badge-neutre">intégré</span> : null}
                       </p>
                       <p className="mt-1 text-xs text-ink-soft">
                         {active.format ?? 'HTML'} · importé le {formatDateTime(active.createdAt)}
@@ -565,8 +565,8 @@ function TemplatesCard({ configuration }: { configuration: ConfigurationType }) 
                 petit
                 icone={<RotateCcw size={14} />}
                 onClick={() => setResetDialogOpen(true)}
-                disabled={Boolean(active?.integre)}
-                title={active?.integre ? 'Le modèle intégré est déjà actif.' : undefined}
+                disabled={Boolean(active?.builtIn)}
+                title={active?.builtIn ? 'Le modèle intégré est déjà actif.' : undefined}
                 data-cy="btn-modele-defaut"
               >
                 Revenir au modèle par défaut
@@ -580,8 +580,8 @@ function TemplatesCard({ configuration }: { configuration: ConfigurationType }) 
               </div>
               <ul className="mt-2 divide-y divide-line rounded-xl border border-line">
                 {versions.map((template) => {
-                  const isTemplateActive = Boolean(template.actif);
-                  const deletionBlocked = isTemplateActive || Boolean(template.integre);
+                  const isTemplateActive = Boolean(template.active);
+                  const deletionBlocked = isTemplateActive || Boolean(template.builtIn);
                   return (
                     <li
                       key={template.id}
@@ -589,11 +589,11 @@ function TemplatesCard({ configuration }: { configuration: ConfigurationType }) 
                     >
                       <div className="min-w-0">
                         <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-ink">
-                          <span className="truncate">{template.nom}</span>
+                          <span className="truncate">{template.name}</span>
                           <span className={cn('badge', isTemplateActive ? 'badge-accent' : 'badge-neutre')}>
                             v{template.version}
                           </span>
-                          {template.integre ? <span className="badge badge-neutre">intégré</span> : null}
+                          {template.builtIn ? <span className="badge badge-neutre">intégré</span> : null}
                           {isTemplateActive ? <span className="text-[10px] font-bold uppercase text-accent">active</span> : null}
                         </p>
                         <p className="mt-0.5 text-[11px] text-ink-soft">
@@ -639,7 +639,7 @@ function TemplatesCard({ configuration }: { configuration: ConfigurationType }) 
                           disabled={deletionBlocked}
                           title={
                             deletionBlocked
-                              ? template.integre
+                              ? template.builtIn
                                 ? 'Le modèle intégré ne peut pas être supprimé.'
                                 : 'Le modèle actif ne peut pas être supprimé.'
                               : undefined
@@ -776,7 +776,7 @@ function TemplatesCard({ configuration }: { configuration: ConfigurationType }) 
         titre="Supprimer cette version ?"
         message={
           toDelete
-            ? `La version v${toDelete.version} de « ${toDelete.nom} » ne sera plus proposée. Les documents qui l’utilisent restent inchangés.`
+            ? `La version v${toDelete.version} de « ${toDelete.name} » ne sera plus proposée. Les documents qui l’utilisent restent inchangés.`
             : ''
         }
         libelleConfirmer="Supprimer"
@@ -795,7 +795,7 @@ function TemplatesCard({ configuration }: { configuration: ConfigurationType }) 
         titre="Revenir au modèle par défaut ?"
         message={
           builtInModel
-            ? `Le modèle intégré « ${builtInModel.nom} » (v${builtInModel.version}) redeviendra actif. Vos versions importées restent disponibles.`
+            ? `Le modèle intégré « ${builtInModel.name} » (v${builtInModel.version}) redeviendra actif. Vos versions importées restent disponibles.`
             : 'Le modèle intégré redeviendra actif. Vos versions importées restent disponibles.'
         }
         libelleConfirmer="Restaurer le modèle"

@@ -7,11 +7,40 @@ servers:
 - url: http://localhost:8080
   description: Generated server url
 paths:
-  /api/postes/{id}:
+  /api/settings:
+    get:
+      tags:
+      - settings-controller
+      operationId: getSettings
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SettingsDto"
     put:
       tags:
-      - poste-controller
-      operationId: mettreAJour
+      - settings-controller
+      operationId: updateSettings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SettingsDto"
+  /api/expense-items/{id}:
+    put:
+      tags:
+      - expense-item-controller
+      operationId: updateExpenseItem
       parameters:
       - name: id
         in: path
@@ -23,7 +52,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PosteRequest"
+              $ref: "#/components/schemas/ExpenseItemRequest"
         required: true
       responses:
         "200":
@@ -31,11 +60,11 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/PosteDto"
+                $ref: "#/components/schemas/ExpenseItemDto"
     delete:
       tags:
-      - poste-controller
-      operationId: supprimer
+      - expense-item-controller
+      operationId: deleteExpenseItem
       parameters:
       - name: id
         in: path
@@ -46,40 +75,11 @@ paths:
       responses:
         "204":
           description: No Content
-  /api/parametres:
-    get:
-      tags:
-      - parametres-controller
-      operationId: obtenir
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ParametresDto"
-    put:
-      tags:
-      - parametres-controller
-      operationId: mettreAJour_1
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ParametresRequest"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ParametresDto"
   /api/admin/llm:
     get:
       tags:
       - admin-llm-controller
-      operationId: obtenir_1
+      operationId: getLlmConfig
       responses:
         "200":
           description: OK
@@ -90,7 +90,7 @@ paths:
     put:
       tags:
       - admin-llm-controller
-      operationId: mettreAJour_2
+      operationId: updateLlmConfig
       requestBody:
         content:
           application/json:
@@ -108,7 +108,7 @@ paths:
     get:
       tags:
       - template-controller
-      operationId: lister
+      operationId: listTemplates
       parameters:
       - name: type
         in: query
@@ -130,7 +130,7 @@ paths:
     post:
       tags:
       - template-controller
-      operationId: uploader
+      operationId: uploadTemplate
       parameters:
       - name: type
         in: query
@@ -140,7 +140,7 @@ paths:
           enum:
           - RENT_RECEIPT
           - EXPENSE_STATEMENT
-      - name: nom
+      - name: name
         in: query
         required: true
         schema:
@@ -151,11 +151,11 @@ paths:
             schema:
               type: object
               properties:
-                fichier:
+                file:
                   type: string
                   format: binary
               required:
-              - fichier
+              - file
       responses:
         "201":
           description: Created
@@ -163,11 +163,11 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/TemplateDto"
-  /api/templates/{id}/apercu:
+  /api/templates/{id}/preview:
     post:
       tags:
       - template-controller
-      operationId: apercu
+      operationId: previewTemplate
       parameters:
       - name: id
         in: path
@@ -183,11 +183,11 @@ paths:
               schema:
                 type: string
                 format: byte
-  /api/templates/{id}/activer:
+  /api/templates/{id}/activate:
     post:
       tags:
       - template-controller
-      operationId: activer
+      operationId: activateTemplate
       parameters:
       - name: id
         in: path
@@ -202,11 +202,11 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/TemplateDto"
-  /api/templates/defaut/{type}:
+  /api/templates/default/{type}:
     get:
       tags:
       - template-controller
-      operationId: defaut
+      operationId: getDefaultTemplate
       parameters:
       - name: type
         in: path
@@ -227,7 +227,7 @@ paths:
     post:
       tags:
       - template-controller
-      operationId: reinitialiser
+      operationId: resetDefaultTemplate
       parameters:
       - name: type
         in: path
@@ -244,13 +244,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/TemplateDto"
-  /api/quittances:
+  /api/rent-receipts:
     get:
       tags:
-      - quittance-controller
-      operationId: lister_1
+      - rent-receipt-controller
+      operationId: listRentReceipts
       parameters:
-      - name: mois
+      - name: month
         in: query
         required: false
         schema:
@@ -263,16 +263,16 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/QuittanceDto"
+                  $ref: "#/components/schemas/RentReceiptDto"
     post:
       tags:
-      - quittance-controller
-      operationId: generer
+      - rent-receipt-controller
+      operationId: createRentReceipt
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/QuittanceRequest"
+              $ref: "#/components/schemas/RentReceiptRequest"
         required: true
       responses:
         "201":
@@ -280,17 +280,17 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/QuittanceDto"
-  /api/quittances/apercu:
+                $ref: "#/components/schemas/RentReceiptDto"
+  /api/rent-receipts/preview:
     post:
       tags:
-      - quittance-controller
-      operationId: apercu_1
+      - rent-receipt-controller
+      operationId: previewRentReceipt
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/QuittanceRequest"
+              $ref: "#/components/schemas/RentReceiptRequest"
         required: true
       responses:
         "200":
@@ -300,164 +300,34 @@ paths:
               schema:
                 type: string
                 format: byte
-  /api/postes:
-    get:
-      tags:
-      - poste-controller
-      operationId: lister_2
-      parameters:
-      - name: tous
-        in: query
-        required: false
-        schema:
-          type: boolean
-          default: false
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/PosteDto"
+  /api/receipts:
     post:
       tags:
-      - poste-controller
-      operationId: creer
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PosteRequest"
-        required: true
-      responses:
-        "201":
-          description: Created
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/PosteDto"
-  /api/notes-frais:
-    get:
-      tags:
-      - note-frais-controller
-      operationId: lister_3
-      parameters:
-      - name: mois
-        in: query
-        required: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/NoteDto"
-    post:
-      tags:
-      - note-frais-controller
-      operationId: generer_1
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NoteGenerationRequest"
-        required: true
-      responses:
-        "201":
-          description: Created
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/NoteDto"
-  /api/notes-frais/calcul:
-    post:
-      tags:
-      - note-frais-controller
-      operationId: calculer
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NoteCalculRequest"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/CalculResponse"
-  /api/notes-frais/brouillon:
-    post:
-      tags:
-      - note-frais-controller
-      operationId: brouillon
-      parameters:
-      - name: mois
-        in: query
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/BrouillonDto"
-  /api/notes-frais/apercu:
-    post:
-      tags:
-      - note-frais-controller
-      operationId: apercu_2
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NoteApercuRequest"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: string
-                format: byte
-  /api/justificatifs:
-    post:
-      tags:
-      - justificatif-controller
-      operationId: uploader_1
+      - receipt-controller
+      operationId: uploadReceipt
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                fichier:
+                file:
                   type: string
                   format: binary
               required:
-              - fichier
+              - file
       responses:
         "201":
           description: Created
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/JustificatifDto"
-  /api/justificatifs/{id}/analyse:
+                $ref: "#/components/schemas/ReceiptDto"
+  /api/receipts/{id}/analysis:
     post:
       tags:
-      - justificatif-controller
-      operationId: analyser
+      - receipt-controller
+      operationId: startReceiptAnalysis
       parameters:
       - name: id
         in: path
@@ -471,12 +341,150 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/AnalyseStartResponse"
+                $ref: "#/components/schemas/AnalysisStartResponse"
+  /api/expense-statements:
+    get:
+      tags:
+      - expense-statement-controller
+      operationId: listExpenseStatements
+      parameters:
+      - name: month
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StatementDto"
+    post:
+      tags:
+      - expense-statement-controller
+      operationId: createExpenseStatement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatementGenerationRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StatementDto"
+  /api/expense-statements/preview:
+    post:
+      tags:
+      - expense-statement-controller
+      operationId: previewStatement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatementPreviewRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+  /api/expense-statements/draft:
+    post:
+      tags:
+      - expense-statement-controller
+      operationId: createStatementDraft
+      parameters:
+      - name: month
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DraftDto"
+  /api/expense-statements/calculation:
+    post:
+      tags:
+      - expense-statement-controller
+      operationId: calculateStatement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatementCalculationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CalculationResponse"
+  /api/expense-items:
+    get:
+      tags:
+      - expense-item-controller
+      operationId: listExpenseItems
+      parameters:
+      - name: all
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExpenseItemDto"
+    post:
+      tags:
+      - expense-item-controller
+      operationId: createExpenseItem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExpenseItemRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ExpenseItemDto"
+  /api/e2e/reset:
+    post:
+      tags:
+      - e-2e-controller
+      operationId: resetE2eData
+      responses:
+        "204":
+          description: No Content
   /api/admin/llm/test:
     post:
       tags:
       - admin-llm-controller
-      operationId: tester
+      operationId: testLlm
       responses:
         "200":
           description: OK
@@ -484,11 +492,11 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/LlmTestResponse"
-  /api/templates/{id}/fichier:
+  /api/templates/{id}/file:
     get:
       tags:
       - template-controller
-      operationId: fichier
+      operationId: getTemplateFile
       parameters:
       - name: id
         in: path
@@ -508,7 +516,7 @@ paths:
     get:
       tags:
       - template-controller
-      operationId: variables
+      operationId: getTemplateVariables
       parameters:
       - name: type
         in: query
@@ -527,11 +535,11 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TemplateVariableDto"
-  /api/quittances/{id}:
+  /api/rent-receipts/{id}:
     get:
       tags:
-      - quittance-controller
-      operationId: obtenir_2
+      - rent-receipt-controller
+      operationId: getRentReceipt
       parameters:
       - name: id
         in: path
@@ -545,12 +553,12 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/QuittanceDto"
-  /api/quittances/{id}/pdf:
+                $ref: "#/components/schemas/RentReceiptDto"
+  /api/rent-receipts/{id}/pdf:
     get:
       tags:
-      - quittance-controller
-      operationId: pdf
+      - rent-receipt-controller
+      operationId: getRentReceiptPdf
       parameters:
       - name: id
         in: path
@@ -566,13 +574,13 @@ paths:
               schema:
                 type: string
                 format: byte
-  /api/quittances/active:
+  /api/rent-receipts/active:
     get:
       tags:
-      - quittance-controller
-      operationId: active
+      - rent-receipt-controller
+      operationId: getActiveRentReceipt
       parameters:
-      - name: mois
+      - name: month
         in: query
         required: true
         schema:
@@ -583,12 +591,12 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/QuittanceDto"
-  /api/notes-frais/{id}:
+                $ref: "#/components/schemas/RentReceiptDto"
+  /api/receipts/{id}:
     get:
       tags:
-      - note-frais-controller
-      operationId: obtenir_3
+      - receipt-controller
+      operationId: getReceipt
       parameters:
       - name: id
         in: path
@@ -602,12 +610,11 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/NoteDto"
-  /api/notes-frais/{id}/pdf:
-    get:
+                $ref: "#/components/schemas/ReceiptDto"
+    delete:
       tags:
-      - note-frais-controller
-      operationId: pdf_1
+      - receipt-controller
+      operationId: deleteReceipt
       parameters:
       - name: id
         in: path
@@ -615,7 +622,61 @@ paths:
         schema:
           type: integer
           format: int64
-      - name: complet
+      responses:
+        "204":
+          description: No Content
+  /api/receipts/{id}/file:
+    get:
+      tags:
+      - receipt-controller
+      operationId: getReceiptFile
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+  /api/expense-statements/{id}:
+    get:
+      tags:
+      - expense-statement-controller
+      operationId: getExpenseStatement
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StatementDto"
+  /api/expense-statements/{id}/pdf:
+    get:
+      tags:
+      - expense-statement-controller
+      operationId: getExpenseStatementPdf
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: complete
         in: query
         required: false
         schema:
@@ -629,13 +690,13 @@ paths:
               schema:
                 type: string
                 format: byte
-  /api/notes-frais/active:
+  /api/expense-statements/active:
     get:
       tags:
-      - note-frais-controller
-      operationId: active_1
+      - expense-statement-controller
+      operationId: getActiveExpenseStatement
       parameters:
-      - name: mois
+      - name: month
         in: query
         required: true
         schema:
@@ -646,65 +707,12 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/NoteDto"
-  /api/justificatifs/{id}:
-    get:
-      tags:
-      - justificatif-controller
-      operationId: obtenir_4
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/JustificatifDto"
-    delete:
-      tags:
-      - justificatif-controller
-      operationId: supprimer_1
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      responses:
-        "204":
-          description: No Content
-  /api/justificatifs/{id}/fichier:
-    get:
-      tags:
-      - justificatif-controller
-      operationId: fichier_1
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: string
-                format: byte
+                $ref: "#/components/schemas/StatementDto"
   /api/analyses/{id}:
     get:
       tags:
-      - analyse-controller
-      operationId: obtenir_5
+      - analysis-controller
+      operationId: getAnalysis
       parameters:
       - name: id
         in: path
@@ -718,11 +726,11 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/AnalyseDto"
+                $ref: "#/components/schemas/AnalysisDto"
     delete:
       tags:
-      - analyse-controller
-      operationId: annuler
+      - analysis-controller
+      operationId: cancelAnalysis
       parameters:
       - name: id
         in: path
@@ -736,12 +744,12 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/AnalyseDto"
+                $ref: "#/components/schemas/AnalysisDto"
   /api/analyses/{id}/events:
     get:
       tags:
-      - analyse-controller
-      operationId: evenements
+      - analysis-controller
+      operationId: streamAnalysisEvents
       parameters:
       - name: id
         in: path
@@ -760,7 +768,7 @@ paths:
     get:
       tags:
       - admin-llm-controller
-      operationId: statut
+      operationId: getLlmStatus
       responses:
         "200":
           description: OK
@@ -768,23 +776,11 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/LlmStatusDto"
-  /api/admin/llm/prompt-defaut:
-    get:
-      tags:
-      - admin-llm-controller
-      operationId: promptDefaut
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/PromptDefautDto"
   /api/admin/llm/models:
     get:
       tags:
       - admin-llm-controller
-      operationId: modeles
+      operationId: listLlmModels
       responses:
         "200":
           description: OK
@@ -794,11 +790,23 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/LlmModelDto"
+  /api/admin/llm/default-prompt:
+    get:
+      tags:
+      - admin-llm-controller
+      operationId: getDefaultLlmPrompt
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DefaultPromptDto"
   /api/templates/{id}:
     delete:
       tags:
       - template-controller
-      operationId: supprimer_2
+      operationId: deleteTemplate
       parameters:
       - name: id
         in: path
@@ -811,27 +819,100 @@ paths:
           description: No Content
 components:
   schemas:
-    PosteRequest:
+    SettingsRequest:
+      type: object
+      properties:
+        companyName:
+          type: string
+        legalForm:
+          type: string
+        siren:
+          type: string
+        companyAddress:
+          type: string
+        managerName:
+          type: string
+        homeAddress:
+          type: string
+        totalArea:
+          type: string
+        businessArea:
+          type: string
+        landlordName:
+          type: string
+        landlordAddress:
+          type: string
+        tenantName:
+          type: string
+        tenantAddress:
+          type: string
+        rentExclCharges:
+          type: string
+        chargesAdvance:
+          type: string
+        issuePlace:
+          type: string
+    SettingsDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyName:
+          type: string
+        legalForm:
+          type: string
+        siren:
+          type: string
+        companyAddress:
+          type: string
+        managerName:
+          type: string
+        homeAddress:
+          type: string
+        totalArea:
+          type: string
+        businessArea:
+          type: string
+        proRataBase:
+          type: string
+        proRataBaseDetail:
+          type: string
+        landlordName:
+          type: string
+        landlordAddress:
+          type: string
+        tenantName:
+          type: string
+        tenantAddress:
+          type: string
+        rentExclCharges:
+          type: string
+        chargesAdvance:
+          type: string
+        issuePlace:
+          type: string
+    ExpenseItemRequest:
       type: object
       properties:
         code:
           type: string
-        libelle:
+        label:
           type: string
-        fournisseur:
+        supplier:
           type: string
-        prorataPct:
+        proRataPct:
           type: string
-        periodicite:
+        periodicity:
           type: string
-        actif:
+        active:
           type: boolean
-        ordre:
+        sortOrder:
           type: integer
           format: int32
-        plusieursLignesAutorisees:
+        multipleLinesAllowed:
           type: boolean
-    PosteDto:
+    ExpenseItemDto:
       type: object
       properties:
         id:
@@ -839,104 +920,31 @@ components:
           format: int64
         code:
           type: string
-        libelle:
+        label:
           type: string
-        fournisseur:
+        supplier:
           type: string
-        prorataPct:
+        proRataPct:
           type: string
-        periodicite:
+        periodicity:
           type: string
-        actif:
+        active:
           type: boolean
-        ordre:
+        sortOrder:
           type: integer
           format: int32
-        plusieursLignesAutorisees:
+        multipleLinesAllowed:
           type: boolean
-    ParametresRequest:
-      type: object
-      properties:
-        raisonSociale:
-          type: string
-        formeJuridique:
-          type: string
-        siren:
-          type: string
-        societeAdresse:
-          type: string
-        gerant:
-          type: string
-        logementAdresse:
-          type: string
-        surfaceTotale:
-          type: string
-        surfacePro:
-          type: string
-        bailleurNom:
-          type: string
-        bailleurAdresse:
-          type: string
-        locataireNom:
-          type: string
-        locataireAdresse:
-          type: string
-        loyerHc:
-          type: string
-        provisionCharges:
-          type: string
-        lieuEmission:
-          type: string
-    ParametresDto:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        raisonSociale:
-          type: string
-        formeJuridique:
-          type: string
-        siren:
-          type: string
-        societeAdresse:
-          type: string
-        gerant:
-          type: string
-        logementAdresse:
-          type: string
-        surfaceTotale:
-          type: string
-        surfacePro:
-          type: string
-        prorataBase:
-          type: string
-        prorataBaseDetail:
-          type: string
-        bailleurNom:
-          type: string
-        bailleurAdresse:
-          type: string
-        locataireNom:
-          type: string
-        locataireAdresse:
-          type: string
-        loyerHc:
-          type: string
-        provisionCharges:
-          type: string
-        lieuEmission:
-          type: string
     LlmConfigRequest:
       type: object
       properties:
-        actif:
+        active:
           type: boolean
-        fournisseur:
+        supplier:
           type: string
         url:
           type: string
-        modele:
+        model:
           type: string
         timeoutSeconds:
           type: integer
@@ -946,25 +954,25 @@ components:
         numCtx:
           type: integer
           format: int32
-        pagesMax:
+        maxPages:
           type: integer
           format: int32
-        ocrActif:
+        ocrActive:
           type: boolean
-        promptExtraction:
+        extractionPrompt:
           type: string
-        cleApi:
+        apiKey:
           type: string
     LlmConfigDto:
       type: object
       properties:
-        actif:
+        active:
           type: boolean
-        fournisseur:
+        supplier:
           type: string
         url:
           type: string
-        modele:
+        model:
           type: string
         timeoutSeconds:
           type: integer
@@ -974,40 +982,19 @@ components:
         numCtx:
           type: integer
           format: int32
-        pagesMax:
+        maxPages:
           type: integer
           format: int32
-        ocrActif:
+        ocrActive:
           type: boolean
-        promptExtraction:
+        extractionPrompt:
           type: string
-        apiKeyConfiguree:
+        apiKeyConfigured:
           type: boolean
-        urlDistante:
+        remoteUrl:
           type: boolean
-        avertissement:
+        warning:
           type: string
-    RapportValidationDto:
-      type: object
-      properties:
-        variablesReconnues:
-          type: array
-          items:
-            type: string
-        variablesInconnues:
-          type: array
-          items:
-            type: string
-        variablesManquantes:
-          type: array
-          items:
-            type: string
-        structureValide:
-          type: boolean
-        erreurs:
-          type: array
-          items:
-            type: string
     TemplateDto:
       type: object
       properties:
@@ -1016,320 +1003,341 @@ components:
           format: int64
         type:
           type: string
-        nom:
+        name:
           type: string
         version:
           type: integer
           format: int32
         format:
           type: string
-        actif:
+        active:
           type: boolean
-        integre:
+        builtIn:
           type: boolean
         createdAt:
           type: string
           format: date-time
-        rapport:
-          $ref: "#/components/schemas/RapportValidationDto"
-    QuittanceRequest:
+        report:
+          $ref: "#/components/schemas/ValidationReportDto"
+    ValidationReportDto:
       type: object
       properties:
-        mois:
-          type: string
-        periodeDebut:
-          type: string
-        periodeFin:
-          type: string
-        loyerHc:
-          type: string
-        charges:
-          type: string
-        datePaiement:
-          type: string
-        dateEmission:
-          type: string
-        templateId:
-          type: integer
-          format: int64
-    QuittanceDto:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        mois:
-          type: string
-        periodeDebut:
-          type: string
-          format: date
-        periodeFin:
-          type: string
-          format: date
-        loyerHc:
-          type: string
-        charges:
-          type: string
-        total:
-          type: string
-        datePaiement:
-          type: string
-          format: date
-        dateEmission:
-          type: string
-          format: date
-        version:
-          type: integer
-          format: int32
-        statut:
-          type: string
-        templateId:
-          type: integer
-          format: int64
-        templateNom:
-          type: string
-        templateVersion:
-          type: integer
-          format: int32
-        createdAt:
-          type: string
-          format: date-time
-        pdfDisponible:
-          type: boolean
-    LigneRequest:
-      type: object
-      properties:
-        posteCode:
-          type: string
-        montantTtc:
-          type: string
-        prorataPct:
-          type: string
-        periodeDebut:
-          type: string
-        periodeFin:
-          type: string
-        montantMoisSurcharge:
-          type: string
-        justificatifId:
-          type: integer
-          format: int64
-        sourceMontant:
-          type: string
-        montantDetecteIa:
-          type: string
-        confianceIa:
-          type: string
-    NoteGenerationRequest:
-      type: object
-      properties:
-        mois:
-          type: string
-        templateId:
-          type: integer
-          format: int64
-        lignes:
-          type: array
-          items:
-            $ref: "#/components/schemas/LigneRequest"
-    LigneDto:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        posteCode:
-          type: string
-        posteLibelle:
-          type: string
-        fournisseur:
-          type: string
-        periodeDebut:
-          type: string
-          format: date
-        periodeFin:
-          type: string
-          format: date
-        montantTtc:
-          type: string
-        montantMois:
-          type: string
-        prorataPct:
-          type: string
-        montantRetenu:
-          type: string
-        justificatifId:
-          type: integer
-          format: int64
-        justificatifNom:
-          type: string
-        sourceMontant:
-          type: string
-        montantDetecteIa:
-          type: string
-        confianceIa:
-          type: string
-    NoteDto:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        mois:
-          type: string
-        numero:
-          type: string
-        total:
-          type: string
-        version:
-          type: integer
-          format: int32
-        statut:
-          type: string
-        templateId:
-          type: integer
-          format: int64
-        templateNom:
-          type: string
-        templateVersion:
-          type: integer
-          format: int32
-        createdAt:
-          type: string
-          format: date-time
-        lignes:
-          type: array
-          items:
-            $ref: "#/components/schemas/LigneDto"
-        pdfDisponible:
-          type: boolean
-        pdfCompletDisponible:
-          type: boolean
-    NoteCalculRequest:
-      type: object
-      properties:
-        mois:
-          type: string
-        lignes:
-          type: array
-          items:
-            $ref: "#/components/schemas/LigneRequest"
-    CalculResponse:
-      type: object
-      properties:
-        lignes:
-          type: array
-          items:
-            $ref: "#/components/schemas/LigneDto"
-        total:
-          type: string
-        totalEnLettres:
-          type: string
-        baseProrata:
-          type: string
-        baseProrataDetail:
-          type: string
-    BrouillonDto:
-      type: object
-      properties:
-        mois:
-          type: string
-        quittance:
-          $ref: "#/components/schemas/QuittanceDto"
-        lignes:
-          type: array
-          items:
-            $ref: "#/components/schemas/LigneDto"
-        baseProrata:
-          type: string
-        baseProrataDetail:
-          type: string
-        postesManquants:
+        recognizedVariables:
           type: array
           items:
             type: string
-    NoteApercuRequest:
+        unknownVariables:
+          type: array
+          items:
+            type: string
+        missingVariables:
+          type: array
+          items:
+            type: string
+        structureValid:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string
+    RentReceiptRequest:
       type: object
       properties:
-        mois:
+        month:
+          type: string
+        periodStart:
+          type: string
+        periodEnd:
+          type: string
+        rentExclCharges:
+          type: string
+        charges:
+          type: string
+        paymentDate:
+          type: string
+        issueDate:
           type: string
         templateId:
           type: integer
           format: int64
-        complet:
-          type: boolean
-        lignes:
-          type: array
-          items:
-            $ref: "#/components/schemas/LigneRequest"
-    JustificatifDto:
+    RentReceiptDto:
       type: object
       properties:
         id:
           type: integer
           format: int64
-        nomFichier:
+        month:
           type: string
-        typeMime:
+        periodStart:
           type: string
-        taille:
+          format: date
+        periodEnd:
+          type: string
+          format: date
+        rentExclCharges:
+          type: string
+        charges:
+          type: string
+        total:
+          type: string
+        paymentDate:
+          type: string
+          format: date
+        issueDate:
+          type: string
+          format: date
+        version:
+          type: integer
+          format: int32
+        status:
+          type: string
+        templateId:
+          type: integer
+          format: int64
+        templateName:
+          type: string
+        templateVersion:
+          type: integer
+          format: int32
+        createdAt:
+          type: string
+          format: date-time
+        pdfAvailable:
+          type: boolean
+    ReceiptDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        fileName:
+          type: string
+        mimeType:
+          type: string
+        size:
           type: integer
           format: int64
         createdAt:
           type: string
           format: date-time
-    AnalyseStartResponse:
+    AnalysisStartResponse:
       type: object
       properties:
-        analyseId:
+        analysisId:
           type: integer
           format: int64
-        statut:
+        status:
+          type: string
+    ExpenseLineRequest:
+      type: object
+      properties:
+        itemCode:
+          type: string
+        amountInclVat:
+          type: string
+        proRataPct:
+          type: string
+        periodStart:
+          type: string
+        periodEnd:
+          type: string
+        monthlyAmountOverride:
+          type: string
+        receiptId:
+          type: integer
+          format: int64
+        amountSource:
+          type: string
+        aiDetectedAmount:
+          type: string
+        aiConfidence:
+          type: string
+    StatementGenerationRequest:
+      type: object
+      properties:
+        month:
+          type: string
+        templateId:
+          type: integer
+          format: int64
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpenseLineRequest"
+    ExpenseLineDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        itemCode:
+          type: string
+        itemLabel:
+          type: string
+        supplier:
+          type: string
+        periodStart:
+          type: string
+          format: date
+        periodEnd:
+          type: string
+          format: date
+        amountInclVat:
+          type: string
+        monthlyAmount:
+          type: string
+        proRataPct:
+          type: string
+        claimedAmount:
+          type: string
+        receiptId:
+          type: integer
+          format: int64
+        receiptName:
+          type: string
+        amountSource:
+          type: string
+        aiDetectedAmount:
+          type: string
+        aiConfidence:
+          type: string
+    StatementDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        month:
+          type: string
+        number:
+          type: string
+        total:
+          type: string
+        version:
+          type: integer
+          format: int32
+        status:
+          type: string
+        templateId:
+          type: integer
+          format: int64
+        templateName:
+          type: string
+        templateVersion:
+          type: integer
+          format: int32
+        createdAt:
+          type: string
+          format: date-time
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpenseLineDto"
+        pdfAvailable:
+          type: boolean
+        fullPdfAvailable:
+          type: boolean
+    StatementPreviewRequest:
+      type: object
+      properties:
+        month:
+          type: string
+        templateId:
+          type: integer
+          format: int64
+        complete:
+          type: boolean
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpenseLineRequest"
+    DraftDto:
+      type: object
+      properties:
+        month:
+          type: string
+        rentReceipt:
+          $ref: "#/components/schemas/RentReceiptDto"
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpenseLineDto"
+        proRataBase:
+          type: string
+        proRataBaseDetail:
+          type: string
+        missingItems:
+          type: array
+          items:
+            type: string
+    StatementCalculationRequest:
+      type: object
+      properties:
+        month:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpenseLineRequest"
+    CalculationResponse:
+      type: object
+      properties:
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpenseLineDto"
+        total:
+          type: string
+        totalInWords:
+          type: string
+        proRataBase:
+          type: string
+        proRataBaseDetail:
           type: string
     LlmTestResponse:
       type: object
       properties:
-        succes:
+        success:
           type: boolean
-        dureeMs:
+        durationMs:
           type: integer
           format: int64
         message:
           type: string
-        montantDetecte:
+        detectedAmount:
           type: string
     TemplateVariableDto:
       type: object
       properties:
-        nom:
+        name:
           type: string
         description:
           type: string
-        obligatoire:
+        required:
           type: boolean
-        exemple:
+        example:
           type: string
-    AnalyseDto:
+    AnalysisDto:
       type: object
       properties:
         id:
           type: integer
           format: int64
-        justificatifId:
+        receiptId:
           type: integer
           format: int64
-        nomFichier:
+        fileName:
           type: string
-        statut:
+        status:
           type: string
-        modele:
+        model:
           type: string
-        dureeMs:
+        durationMs:
           type: integer
           format: int64
-        resultat:
+        result:
           $ref: "#/components/schemas/ExtractionDto"
-        messageErreur:
+        errorMessage:
           type: string
         createdAt:
           type: string
@@ -1337,27 +1345,27 @@ components:
     ExtractionDto:
       type: object
       properties:
-        typeSuggere:
+        suggestedType:
           type: string
-        fournisseur:
+        supplier:
           type: string
-        numeroFacture:
+        invoiceNumber:
           type: string
-        dateFacture:
+        invoiceDate:
           type: string
-        periodeDebut:
+        periodStart:
           type: string
-        periodeFin:
+        periodEnd:
           type: string
-        montantTtc:
+        amountInclVat:
           type: string
-        montantHt:
+        amountExclVat:
           type: string
-        devise:
+        currency:
           type: string
-        extraitSource:
+        sourceExcerpt:
           type: string
-        confiance:
+        confidence:
           type: string
     SseEmitter:
       type: object
@@ -1368,29 +1376,29 @@ components:
     LlmStatusDto:
       type: object
       properties:
-        statut:
+        status:
           type: string
-        actif:
+        active:
           type: boolean
-        joignable:
+        reachable:
           type: boolean
-        modelePresent:
+        modelAvailable:
           type: boolean
         message:
-          type: string
-    PromptDefautDto:
-      type: object
-      properties:
-        prompt:
           type: string
     LlmModelDto:
       type: object
       properties:
-        nom:
+        name:
           type: string
-        famille:
+        family:
           type: string
-        parametres:
+        parameters:
           type: string
         vision:
           type: boolean
+    DefaultPromptDto:
+      type: object
+      properties:
+        prompt:
+          type: string

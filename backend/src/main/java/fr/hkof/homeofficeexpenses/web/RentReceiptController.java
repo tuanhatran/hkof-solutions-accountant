@@ -19,7 +19,7 @@ import fr.hkof.homeofficeexpenses.web.dto.Dtos.RentReceiptDto;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.RentReceiptRequest;
 
 @RestController
-@RequestMapping("/api/quittances")
+@RequestMapping("/api/rent-receipts")
 public class RentReceiptController {
 
     private final RentReceiptService service;
@@ -30,17 +30,17 @@ public class RentReceiptController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public RentReceiptDto generer(@RequestBody RentReceiptRequest request) {
+    public RentReceiptDto createRentReceipt(@RequestBody RentReceiptRequest request) {
         return service.generer(request);
     }
 
     @GetMapping
-    public List<RentReceiptDto> lister(@RequestParam(required = false) String month) {
+    public List<RentReceiptDto> listRentReceipts(@RequestParam(required = false) String month) {
         return service.lister(month);
     }
 
     @GetMapping("/active")
-    public ResponseEntity<RentReceiptDto> active(@RequestParam String month) {
+    public ResponseEntity<RentReceiptDto> getActiveRentReceipt(@RequestParam String month) {
         RentReceipt rentReceipt = service.activePourMonth(month);
         return rentReceipt == null
                 ? ResponseEntity.noContent().build()
@@ -48,18 +48,18 @@ public class RentReceiptController {
     }
 
     @GetMapping("/{id}")
-    public RentReceiptDto obtenir(@PathVariable Long id) {
+    public RentReceiptDto getRentReceipt(@PathVariable Long id) {
         return service.obtenir(id);
     }
 
     @GetMapping("/{id}/pdf")
-    public ResponseEntity<byte[]> pdf(@PathVariable Long id) {
+    public ResponseEntity<byte[]> getRentReceiptPdf(@PathVariable Long id) {
         RentReceiptDto rentReceipt = service.obtenir(id);
         return PdfResponses.pdf(service.pdf(id), "quittance_" + rentReceipt.month() + ".pdf");
     }
 
-    @PostMapping("/apercu")
-    public ResponseEntity<byte[]> apercu(@RequestBody RentReceiptRequest request) {
+    @PostMapping("/preview")
+    public ResponseEntity<byte[]> previewRentReceipt(@RequestBody RentReceiptRequest request) {
         return PdfResponses.pdf(service.apercu(request), "quittance_apercu.pdf");
     }
 }

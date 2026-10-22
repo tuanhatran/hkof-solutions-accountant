@@ -126,7 +126,7 @@ export const expenseItemSchema = z.object({
   prorataPct: z
     .string()
     .refine((value) => parsePercentage(value) !== null, 'Prorata attendu entre 0 et 100.'),
-  periodicite: z.enum(['MONTHLY', 'BIMONTHLY', 'TRIMESTRIELLE', 'ANNUAL']),
+  periodicite: z.enum(['MONTHLY', 'BIMONTHLY', 'ANNUAL']),
   ordre: z.number().int('Ordre invalide.').min(0, "L'ordre doit être positif."),
   actif: z.boolean(),
   plusieursLignesAutorisees: z.boolean(),

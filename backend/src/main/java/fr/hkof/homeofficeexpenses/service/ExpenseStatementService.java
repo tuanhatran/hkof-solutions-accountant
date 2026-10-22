@@ -35,7 +35,7 @@ import fr.hkof.homeofficeexpenses.web.dto.Dtos.CalculationResponse;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.ExpenseLineDto;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.ExpenseLineRequest;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementPreviewRequest;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementCalculRequest;
+import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementCalculationRequest;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementDto;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementGenerationRequest;
 
@@ -74,7 +74,7 @@ public class ExpenseStatementService {
     }
 
     @Transactional(readOnly = true)
-    public CalculationResponse calculate(StatementCalculRequest request) {
+    public CalculationResponse calculate(StatementCalculationRequest request) {
         YearMonth month = Amounts.month(request.month());
         List<CalculatedLine> lines = calculateLines(request.lines(), month);
         Settings p = parametersService.entity();

@@ -135,10 +135,10 @@ function AnalysisPanel({
   onAnnuler: () => void;
 }) {
   const inProgress = isAnalysisRunning(phase);
-  const result: ExtractionDto | null = phase.statut === 'terminee' ? phase.analyse.resultat ?? null : null;
+  const result: ExtractionDto | null = phase.statut === 'terminee' ? phase.analyse.result ?? null : null;
   const duration =
-    phase.statut === 'terminee' && phase.analyse.dureeMs
-      ? `${(phase.analyse.dureeMs / 1000).toFixed(1)} s`
+    phase.statut === 'terminee' && phase.analyse.durationMs
+      ? `${(phase.analyse.durationMs / 1000).toFixed(1)} s`
       : null;
 
   return (
@@ -177,11 +177,11 @@ function AnalysisPanel({
           </p>
           {result ? (
             <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-soft">
-              <AiBadge extraitSource={result.extraitSource} />
-              {result.fournisseur ? <span>Fournisseur détecté : {result.fournisseur}</span> : null}
-              {confidenceLabel(confidenceValid(result.confiance)) ? (
-                <span className={cn(confidenceValid(result.confiance) === 'basse' && 'font-semibold text-warning')}>
-                  {confidenceLabel(confidenceValid(result.confiance))}
+              <AiBadge extraitSource={result.sourceExcerpt} />
+              {result.supplier ? <span>Fournisseur détecté : {result.supplier}</span> : null}
+              {confidenceLabel(confidenceValid(result.confidence)) ? (
+                <span className={cn(confidenceValid(result.confidence) === 'basse' && 'font-semibold text-warning')}>
+                  {confidenceLabel(confidenceValid(result.confidence))}
                 </span>
               ) : null}
             </div>
@@ -190,9 +190,9 @@ function AnalysisPanel({
               Aucune information exploitable n’a été extraite. Complétez le frais manuellement.
             </p>
           )}
-          {result?.extraitSource ? (
+          {result?.sourceExcerpt ? (
             <p className="border-l-2 border-copper/30 pl-2 text-[11px] italic text-ink-soft">
-              « {result.extraitSource} »
+              « {result.sourceExcerpt} »
             </p>
           ) : null}
           <p className="text-[11px] text-ink-soft">
@@ -236,7 +236,7 @@ export function GenerateExpenseStatementPage() {
   const activeStatement = useActiveStatement(month);
 
   const expenseItems = useMemo<ExpenseItemDto[]>(
-    () => [...(expenseItemsQuery.data ?? [])].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0)),
+    () => [...(expenseItemsQuery.data ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
     [expenseItemsQuery.data],
   );
   const expenseItemByCode = useMemo(
@@ -245,7 +245,7 @@ export function GenerateExpenseStatementPage() {
   );
 
   const models = templates.data ?? [];
-  const activeModel = models.find((model) => model.actif) ?? null;
+  const activeModel = models.find((model) => model.active) ?? null;
   const selectedTemplate = draft.templatesParMois[month] ?? activeModel?.id ?? null;
   const complete = draft.completsParMois[month] ?? true;
 
@@ -289,7 +289,7 @@ export function GenerateExpenseStatementPage() {
   function releaseIfNotAttached(file: AttachedFile) {
     const isOriginal = originalReceipt.current?.id === file.id;
     if (!isOriginal) {
-      void api.justificatifs.supprimer(file.id).catch(() => undefined);
+      void api.receipts.delete(file.id).catch(() => undefined);
     }
   }
 
@@ -318,12 +318,12 @@ export function GenerateExpenseStatementPage() {
     resetStatement();
 
     try {
-      const dto = await api.justificatifs.uploader(file);
+      const dto = await api.receipts.upload(file);
       if (!dto.id) {
         throw new Error('Le justificatif n’a pas pu être enregistré.');
       }
       if (sequence !== uploadSequence.current) {
-        void api.justificatifs.supprimer(dto.id).catch(() => undefined);
+        void api.receipts.delete(dto.id).catch(() => undefined);
         return;
       }
       if (old) {
@@ -331,9 +331,9 @@ export function GenerateExpenseStatementPage() {
       }
       setReceipt({
         id: dto.id,
-        nom: dto.nomFichier ?? file.name,
-        taille: dto.taille ?? file.size,
-        typeMime: dto.typeMime ?? file.type,
+        nom: dto.fileName ?? file.name,
+        taille: dto.size ?? file.size,
+        typeMime: dto.mimeType ?? file.type,
       });
       await start(dto.id);
     } catch (error) {
@@ -383,11 +383,11 @@ export function GenerateExpenseStatementPage() {
     if (analysisId === null || analysisId === undefined || appliedAnalysis.current === analysisId) {
       return;
     }
-    if (analysis.justificatifId !== receipt?.id) {
+    if (analysis.receiptId !== receipt?.id) {
       return;
     }
     appliedAnalysis.current = analysisId;
-    const extraction = analysis.resultat;
+    const extraction = analysis.result;
     if (!extraction) {
       return;
     }
@@ -399,18 +399,18 @@ export function GenerateExpenseStatementPage() {
     let appliedPeriod = false;
 
     const suggestedAmount =
-      extraction.devise && extraction.devise.toUpperCase() !== 'EUR'
+      extraction.currency && extraction.currency.toUpperCase() !== 'EUR'
         ? null
-        : extraction.montantTtc
-          ? parseAmount(extraction.montantTtc)
+        : extraction.amountInclVat
+          ? parseAmount(extraction.amountInclVat)
           : null;
 
     if (!current.montantTtc && suggestedAmount !== null) {
       appliedAmount = true;
     }
 
-    const start = extraction.periodeDebut && isValidDate(extraction.periodeDebut) ? extraction.periodeDebut : '';
-    const end = extraction.periodeFin && isValidDate(extraction.periodeFin) ? extraction.periodeFin : '';
+    const start = extraction.periodStart && isValidDate(extraction.periodStart) ? extraction.periodStart : '';
+    const end = extraction.periodEnd && isValidDate(extraction.periodEnd) ? extraction.periodEnd : '';
     const isValidPeriod = Boolean(start && end && periodInOrder(start, end));
 
     if (!current.periodeDebut && !current.periodeFin && isValidPeriod) {
@@ -418,23 +418,23 @@ export function GenerateExpenseStatementPage() {
     }
 
     const suggestedItem =
-      extraction.typeSuggere && extraction.typeSuggere !== 'loyer'
-        ? expenseItemByCode.get(extraction.typeSuggere) ?? null
+      extraction.suggestedType && extraction.suggestedType !== 'loyer'
+        ? expenseItemByCode.get(extraction.suggestedType) ?? null
         : null;
     const others = currentLines.filter((line) => line.cle !== lineBeingEdited);
 
     if (
       !current.posteCode &&
       suggestedItem?.code &&
-      (suggestedItem.plusieursLignesAutorisees || !typeAlreadyAdded(others, suggestedItem.code))
+      (suggestedItem.multipleLinesAllowed || !typeAlreadyAdded(others, suggestedItem.code))
     ) {
       appliedType = true;
       setValue('posteCode', suggestedItem.code, { shouldValidate: true, shouldDirty: true });
       if (
         (current.prorataPct === '' || current.prorataPct === '100') &&
-        suggestedItem.prorataPct
+        suggestedItem.proRataPct
       ) {
-        setValue('prorataPct', suggestedItem.prorataPct, { shouldValidate: true, shouldDirty: true });
+        setValue('prorataPct', suggestedItem.proRataPct, { shouldValidate: true, shouldDirty: true });
       }
     }
 
@@ -452,9 +452,9 @@ export function GenerateExpenseStatementPage() {
       montant: appliedAmount,
       periode: appliedPeriod,
       montantDetecte: suggestedAmount,
-      fournisseur: extraction.fournisseur ?? null,
-      extraitSource: extraction.extraitSource ?? null,
-      confiance: confidenceValid(extraction.confiance),
+      fournisseur: extraction.supplier ?? null,
+      extraitSource: extraction.sourceExcerpt ?? null,
+      confiance: confidenceValid(extraction.confidence),
     });
     if (appliedAmount || appliedPeriod || appliedType) {
       toast.info('Des champs ont été pré-remplis par l’IA. Vérifiez-les avant d’ajouter le frais.');
@@ -483,7 +483,7 @@ export function GenerateExpenseStatementPage() {
     const old = getValues('posteCode');
     const expenseItem = expenseItemByCode.get(code) ?? null;
     setValue('posteCode', code, { shouldValidate: true, shouldDirty: true });
-    setValue('prorataPct', expenseItem?.prorataPct ?? '100', { shouldValidate: true, shouldDirty: true });
+    setValue('prorataPct', expenseItem?.proRataPct ?? '100', { shouldValidate: true, shouldDirty: true });
     setValue('periodeDebut', '', { shouldDirty: true });
     setValue('periodeFin', '', { shouldDirty: true });
     setValue('montantMoisSurcharge', '', { shouldDirty: true });
@@ -562,7 +562,7 @@ export function GenerateExpenseStatementPage() {
       return;
     }
     const others = lines.filter((line) => line.cle !== lineBeingEdited);
-    if (!expenseItem.plusieursLignesAutorisees && typeAlreadyAdded(others, expenseItem.code)) {
+    if (!expenseItem.multipleLinesAllowed && typeAlreadyAdded(others, expenseItem.code)) {
       setError('posteCode', {
         type: 'manual',
         message: 'Ce type est déjà présent. Modifiez la ligne existante ou autorisez plusieurs lignes.',
@@ -678,7 +678,7 @@ export function GenerateExpenseStatementPage() {
     setCalculationError(null);
     const timer = window.setTimeout(async () => {
       try {
-        const reply = await api.notes.calculer({ mois: month, lignes: validRequests }, controller.signal);
+        const reply = await api.expenseStatements.calculate({ month, lines: validRequests }, controller.signal);
         if (controller.signal.aborted) {
           return;
         }
@@ -707,7 +707,7 @@ export function GenerateExpenseStatementPage() {
     if (!requests.valeurs || lines.length === 0) {
       return null;
     }
-    const requestBody: StatementPreviewRequest = { mois: month, complet: complete, lignes: requests.valeurs };
+    const requestBody: StatementPreviewRequest = { month, complete, lines: requests.valeurs };
     if (selectedTemplate !== null) {
       requestBody.templateId = selectedTemplate;
     }
@@ -717,7 +717,7 @@ export function GenerateExpenseStatementPage() {
   const preview = usePdfPreview(
     (signal) =>
       previewRequest
-        ? api.notes.apercu(previewRequest, signal)
+        ? api.expenseStatements.preview(previewRequest, signal)
         : Promise.reject(new DOMException('Aperçu inactif', 'AbortError')),
     JSON.stringify(previewRequest ?? { inactif: true }),
     { actif: previewRequest !== null, debounceMs: 400 },
@@ -734,11 +734,11 @@ export function GenerateExpenseStatementPage() {
     }
     setGenerationInProgress(true);
     try {
-      const requestBody: StatementGenerationRequest = { mois: month, lignes: requests.valeurs };
+      const requestBody: StatementGenerationRequest = { month, lines: requests.valeurs };
       if (selectedTemplate !== null) {
         requestBody.templateId = selectedTemplate;
       }
-      const statement = await api.notes.generer(requestBody);
+      const statement = await api.expenseStatements.create(requestBody);
       setResult(statement);
       draft.marquerGenere();
       await queryClient.invalidateQueries({ queryKey: ['notes'] });
@@ -763,11 +763,11 @@ export function GenerateExpenseStatementPage() {
       return;
     }
     try {
-      const reply = await api.notes.pdf(statement.id, withAttachments);
+      const reply = await api.expenseStatements.pdf(statement.id, withAttachments);
       downloadBlob(
         reply.blob,
         reply.nomFichier ??
-          `note_frais_${statement.mois ?? month}_v${statement.version ?? 1}${withAttachments ? '_complet' : ''}.pdf`,
+          `note_frais_${statement.month ?? month}_v${statement.version ?? 1}${withAttachments ? '_complet' : ''}.pdf`,
       );
     } catch (error) {
       toast.erreur(errorMessage(error));
@@ -790,7 +790,7 @@ export function GenerateExpenseStatementPage() {
   const lowConfidenceError = ai.confiance === 'basse' && (ai.montant || ai.periode);
 
   function optionDisabled(expenseItem: ExpenseItemDto): boolean {
-    if (!expenseItem.code || expenseItem.plusieursLignesAutorisees) {
+    if (!expenseItem.code || expenseItem.multipleLinesAllowed) {
       return false;
     }
     if (lineBeingEdited && lines.find((line) => line.cle === lineBeingEdited)?.posteCode === expenseItem.code) {
@@ -801,7 +801,7 @@ export function GenerateExpenseStatementPage() {
 
   const displayedTotal = calculation?.total;
   const activeVersion = activeStatement.data?.version;
-  const currentTemplate = activeModel?.nom ?? 'modèle intégré';
+  const currentTemplate = activeModel?.name ?? 'modèle intégré';
 
   return (
     <>
@@ -842,7 +842,7 @@ export function GenerateExpenseStatementPage() {
             {activeStatement.data.id ? (
               <>
                 <a
-                  href={api.notes.urlPdf(activeStatement.data.id, false)}
+                  href={api.expenseStatements.pdfUrl(activeStatement.data.id, false)}
                   target="_blank"
                   rel="noreferrer"
                   className="btn btn-secondaire btn-petit"
@@ -851,7 +851,7 @@ export function GenerateExpenseStatementPage() {
                   Ouvrir
                 </a>
                 <a
-                  href={api.notes.urlPdf(activeStatement.data.id, true)}
+                  href={api.expenseStatements.pdfUrl(activeStatement.data.id, true)}
                   target="_blank"
                   rel="noreferrer"
                   className="btn btn-secondaire btn-petit"
@@ -967,8 +967,8 @@ export function GenerateExpenseStatementPage() {
                           value={expenseItem.code}
                           disabled={optionDisabled(expenseItem)}
                         >
-                          {expenseItem.libelle ?? expenseItem.code}
-                          {expenseItem.fournisseur ? ` (${expenseItem.fournisseur})` : ''}
+                          {expenseItem.label ?? expenseItem.code}
+                          {expenseItem.supplier ? ` (${expenseItem.supplier})` : ''}
                           {optionDisabled(expenseItem) ? ' — déjà ajouté' : ''}
                         </option>
                       ))}
@@ -1016,7 +1016,7 @@ export function GenerateExpenseStatementPage() {
                         </div>
                         {rentReceipt.data.id ? (
                           <a
-                            href={api.quittances.urlPdf(rentReceipt.data.id)}
+                            href={api.rentReceipts.pdfUrl(rentReceipt.data.id)}
                             target="_blank"
                             rel="noreferrer"
                             className="btn btn-secondaire btn-petit"
@@ -1319,12 +1319,12 @@ export function GenerateExpenseStatementPage() {
                     <tbody>
                       {lines.map((line, index) => {
                         const expenseItem = expenseItemByCode.get(line.posteCode);
-                        const dto = calculationUpToDate ? calculation?.lignes?.[index] : undefined;
+                        const dto = calculationUpToDate ? calculation?.lines?.[index] : undefined;
                         return (
                           <tr key={line.cle} data-cy={`ligne-frais-${line.posteCode}`}>
                             <td>
                               <p className="font-semibold text-ink">
-                                {expenseItem?.libelle ?? dto?.posteLibelle ?? line.posteCode}
+                                {expenseItem?.label ?? dto?.itemLabel ?? line.posteCode}
                               </p>
                               {line.justificatifNom ? (
                                 <p className="mt-0.5 max-w-[160px] truncate text-[11px] text-ink-soft" title={line.justificatifNom}>
@@ -1333,7 +1333,7 @@ export function GenerateExpenseStatementPage() {
                               ) : null}
                             </td>
                             <td className="text-ink-soft">
-                              {line.fournisseurDetecte ?? expenseItem?.fournisseur ?? '—'}
+                              {line.fournisseurDetecte ?? expenseItem?.supplier ?? '—'}
                             </td>
                             <td className="whitespace-nowrap text-xs text-ink-soft">
                               {line.periodeDebut && line.periodeFin
@@ -1366,7 +1366,7 @@ export function GenerateExpenseStatementPage() {
                                       changeProRata(line, normalized);
                                     }
                                   }}
-                                  aria-label={`Prorata de ${expenseItem?.libelle ?? line.posteCode}`}
+                                  aria-label={`Prorata de ${expenseItem?.label ?? line.posteCode}`}
                                   aria-invalid={parsePercentage(line.prorataPct) === null}
                                 />
                                 <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-[11px] text-ink-soft">
@@ -1375,9 +1375,9 @@ export function GenerateExpenseStatementPage() {
                               </div>
                             </td>
                             <td className="whitespace-nowrap text-right">
-                              {dto?.montantRetenu ? (
+                              {dto?.claimedAmount ? (
                                 <span className="nombre font-semibold text-accent-strong">
-                                  {formatEUR(dto.montantRetenu)}
+                                  {formatEUR(dto.claimedAmount)}
                                 </span>
                               ) : (
                                 <span className="text-xs text-ink-soft">
@@ -1389,11 +1389,11 @@ export function GenerateExpenseStatementPage() {
                               <div className="flex items-center justify-end gap-1">
                                 {line.justificatifId ? (
                                   <a
-                                    href={api.justificatifs.urlFichier(line.justificatifId)}
+                                    href={api.receipts.fileUrl(line.justificatifId)}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="rounded-lg p-1.5 text-ink-soft transition hover:bg-paper-deep hover:text-ink"
-                                    aria-label={`Voir le justificatif de ${expenseItem?.libelle ?? line.posteCode}`}
+                                    aria-label={`Voir le justificatif de ${expenseItem?.label ?? line.posteCode}`}
                                     data-cy={`btn-voir-justificatif-${line.posteCode}`}
                                   >
                                     <FileText size={15} />
@@ -1403,7 +1403,7 @@ export function GenerateExpenseStatementPage() {
                                   type="button"
                                   className="rounded-lg p-1.5 text-ink-soft transition hover:bg-paper-deep hover:text-ink"
                                   onClick={() => editLine(line)}
-                                  aria-label={`Modifier ${expenseItem?.libelle ?? line.posteCode}`}
+                                  aria-label={`Modifier ${expenseItem?.label ?? line.posteCode}`}
                                   data-cy={`btn-modifier-${line.posteCode}`}
                                 >
                                   <Pencil size={15} />
@@ -1412,7 +1412,7 @@ export function GenerateExpenseStatementPage() {
                                   type="button"
                                   className="rounded-lg p-1.5 text-ink-soft transition hover:bg-danger-soft hover:text-danger"
                                   onClick={() => setLineToRemove(line)}
-                                  aria-label={`Supprimer ${expenseItem?.libelle ?? line.posteCode}`}
+                                  aria-label={`Supprimer ${expenseItem?.label ?? line.posteCode}`}
                                   data-cy={`btn-supprimer-${line.posteCode}`}
                                 >
                                   <Trash2 size={15} />
@@ -1438,20 +1438,20 @@ export function GenerateExpenseStatementPage() {
                     </span>
                     {calculationInProgress ? <Spinner taille={15} /> : null}
                   </p>
-                  {calculation?.totalEnLettres ? (
-                    <p className="mt-1.5 text-xs text-ink-soft">Soit {calculation.totalEnLettres}.</p>
+                  {calculation?.totalInWords ? (
+                    <p className="mt-1.5 text-xs text-ink-soft">Soit {calculation.totalInWords}.</p>
                   ) : null}
                 </div>
                 <div className="text-right text-[11px] leading-relaxed text-ink-soft">
                   <p>
                     Base de prorata :{' '}
                     <span className="font-medium text-ink">
-                      {calculation?.baseProrataDetail ?? settings.data?.prorataBaseDetail ?? '—'}
+                      {calculation?.proRataBaseDetail ?? settings.data?.proRataBaseDetail ?? '—'}
                     </span>
                   </p>
-                  {calculation?.baseProrata ? (
+                  {calculation?.proRataBase ? (
                     <p>
-                      Quote-part de référence : <span className="nombre">{formatEUR(calculation.baseProrata)}</span>
+                      Quote-part de référence : <span className="nombre">{formatEUR(calculation.proRataBase)}</span>
                     </p>
                   ) : null}
                   <p>Calcul backend · recalcul automatique (300 ms).</p>
@@ -1502,11 +1502,11 @@ export function GenerateExpenseStatementPage() {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold text-accent">Note de frais générée</p>
                   <p className="mt-0.5 text-sm text-ink">
-                    {formatMonth(result.mois)} · version {result.version ?? 1} ·{' '}
+                    {formatMonth(result.month)} · version {result.version ?? 1} ·{' '}
                     {formatEUR(result.total)}
                   </p>
                   <p className="mt-0.5 text-xs text-ink-soft">
-                    Enregistrée avec le template « {result.templateNom ?? currentTemplate} » v
+                    Enregistrée avec le template « {result.templateName ?? currentTemplate} » v
                     {result.templateVersion ?? 1} le {formatDateTime(result.createdAt)}.
                   </p>
                 </div>
@@ -1532,7 +1532,7 @@ export function GenerateExpenseStatementPage() {
                 </Button>
                 {result.id ? (
                   <a
-                    href={api.notes.urlPdf(result.id, false)}
+                    href={api.expenseStatements.pdfUrl(result.id, false)}
                     target="_blank"
                     rel="noreferrer"
                     className="btn btn-secondaire btn-petit"
@@ -1583,7 +1583,7 @@ export function GenerateExpenseStatementPage() {
                   {models.length === 0 ? <option value="">Modèle intégré</option> : null}
                   {models.map((model) => (
                     <option key={model.id} value={model.id}>
-                      {model.nom} — v{model.version}
+                      {model.name} — v{model.version}
                     </option>
                   ))}
                 </select>
@@ -1613,7 +1613,7 @@ export function GenerateExpenseStatementPage() {
         message={
           lineToRemove ? (
             <>
-              La ligne « {expenseItemByCode.get(lineToRemove.posteCode)?.libelle ?? lineToRemove.posteCode} »
+              La ligne « {expenseItemByCode.get(lineToRemove.posteCode)?.label ?? lineToRemove.posteCode} »
               sera retirée du brouillon. Cette action ne modifie pas les versions déjà générées.
             </>
           ) : null

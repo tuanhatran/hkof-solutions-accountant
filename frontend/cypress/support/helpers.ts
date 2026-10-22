@@ -44,19 +44,19 @@ export function typeValue(selector: string, value: string): void {
 }
 
 function endOfMonth(month: string): string {
-  const [year, pageNumber] = month.split('-').map(Number);
-  return new Date(Date.UTC(year, pageNumber, 0)).toISOString().slice(0, 10);
+  const [year, monthNumber] = month.split('-').map(Number);
+  return new Date(Date.UTC(year, monthNumber, 0)).toISOString().slice(0, 10);
 }
 
 export function createRentReceipt(month: string = MONTHS): void {
   cy.request({
     method: 'POST',
-    url: '/api/quittances',
+    url: '/api/rent-receipts',
     body: {
-      mois: month,
-      periodeDebut: `${month}-01`,
-      periodeFin: endOfMonth(month),
-      loyerHc: '900.00',
+      month,
+      periodStart: `${month}-01`,
+      periodEnd: endOfMonth(month),
+      rentExclCharges: '900.00',
       charges: '50.00',
     },
   })
@@ -64,32 +64,32 @@ export function createRentReceipt(month: string = MONTHS): void {
     .should('eq', 201);
 }
 
-export interface LlmConfiguration {
-  actif: boolean;
-  fournisseur: string;
+export interface LlmConfig {
+  active: boolean;
+  supplier: string;
   url: string;
-  modele: string;
+  model: string;
   timeoutSeconds: number;
   temperature: string;
   numCtx: number;
-  pagesMax: number;
-  ocrActif: boolean;
-  promptExtraction: string;
+  maxPages: number;
+  ocrActive: boolean;
+  extractionPrompt: string;
 }
 
-export function configureLlm(changes: Partial<LlmConfiguration>): void {
-  cy.request<LlmConfiguration>('/api/admin/llm').then(({ body }) => {
-    const requestBody: LlmConfiguration = {
-      actif: body.actif,
-      fournisseur: body.fournisseur,
+export function configureLlm(changes: Partial<LlmConfig>): void {
+  cy.request<LlmConfig>('/api/admin/llm').then(({ body }) => {
+    const requestBody: LlmConfig = {
+      active: body.active,
+      supplier: body.supplier,
       url: body.url,
-      modele: body.modele,
+      model: body.model,
       timeoutSeconds: body.timeoutSeconds,
       temperature: body.temperature,
       numCtx: body.numCtx,
-      pagesMax: body.pagesMax,
-      ocrActif: body.ocrActif,
-      promptExtraction: body.promptExtraction,
+      maxPages: body.maxPages,
+      ocrActive: body.ocrActive,
+      extractionPrompt: body.extractionPrompt,
       ...changes,
     };
     cy.request({ method: 'PUT', url: '/api/admin/llm', body: requestBody })
@@ -99,7 +99,7 @@ export function configureLlm(changes: Partial<LlmConfiguration>): void {
 }
 
 export function disableLlm(): void {
-  configureLlm({ actif: false });
+  configureLlm({ active: false });
 }
 
 export function uploadReceipt(fixture: string): void {
@@ -113,24 +113,24 @@ export function waitForSelectedFile(name: string): void {
 }
 
 export interface ManualExpense {
-  type: string;
+  itemCode: string;
   fixture?: string;
-  montant: string;
-  prorata?: string;
+  amountInclVat: string;
+  proRataPct?: string;
 }
 
 export function addExpense(expense: ManualExpense): void {
-  cy.get('[data-cy="select-type-frais"]').select(expense.type);
+  cy.get('[data-cy="select-type-frais"]').select(expense.itemCode);
   if (expense.fixture) {
     uploadReceipt(expense.fixture);
     waitForSelectedFile(expense.fixture);
   }
-  cy.get('[data-cy="input-montant-ttc"]').clear().type(expense.montant);
-  if (expense.prorata) {
-    cy.get('[data-cy="input-prorata"]').clear().type(expense.prorata);
+  cy.get('[data-cy="input-montant-ttc"]').clear().type(expense.amountInclVat);
+  if (expense.proRataPct) {
+    cy.get('[data-cy="input-prorata"]').clear().type(expense.proRataPct);
   }
   cy.get('[data-cy="btn-ajouter-frais"]').should('not.be.disabled').click();
-  cy.get(`[data-cy="ligne-frais-${expense.type}"]`).should('exist');
+  cy.get(`[data-cy="ligne-frais-${expense.itemCode}"]`).should('exist');
 }
 
 export function addRent(): void {

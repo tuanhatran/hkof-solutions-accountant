@@ -35,29 +35,29 @@ public class TemplateController {
     }
 
     @GetMapping
-    public List<TemplateDto> lister(@RequestParam TemplateType type) {
+    public List<TemplateDto> listTemplates(@RequestParam TemplateType type) {
         return service.lister(type);
     }
 
     @GetMapping("/variables")
-    public List<TemplateVariableDto> variables(@RequestParam TemplateType type) {
+    public List<TemplateVariableDto> getTemplateVariables(@RequestParam TemplateType type) {
         return service.variables(type);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public TemplateDto uploader(@RequestParam TemplateType type, @RequestParam String name,
-            @RequestParam("fichier") MultipartFile file) {
+    public TemplateDto uploadTemplate(@RequestParam TemplateType type, @RequestParam String name,
+            @RequestParam("file") MultipartFile file) {
         return service.uploader(type, name, file);
     }
 
-    @PostMapping("/{id}/activer")
-    public TemplateDto activer(@PathVariable Long id) {
+    @PostMapping("/{id}/activate")
+    public TemplateDto activateTemplate(@PathVariable Long id) {
         return service.activer(id);
     }
 
-    @GetMapping("/{id}/fichier")
-    public ResponseEntity<byte[]> file(@PathVariable Long id) {
+    @GetMapping("/{id}/file")
+    public ResponseEntity<byte[]> getTemplateFile(@PathVariable Long id) {
         TemplateDto template = service.versDto(service.parId(id));
         return PdfResponses.file(service.file(id), "text/html;charset=UTF-8",
                 template.name() + "_v" + template.version() + ".html");
@@ -65,25 +65,25 @@ public class TemplateController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    public void deleteTemplate(@PathVariable Long id) {
         service.delete(id);
     }
 
-    @GetMapping("/defaut/{type}")
-    public ResponseEntity<byte[]> defaut(@PathVariable TemplateType type) {
+    @GetMapping("/default/{type}")
+    public ResponseEntity<byte[]> getDefaultTemplate(@PathVariable TemplateType type) {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("text/html;charset=UTF-8"))
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .body(service.fileDefaut(type));
     }
 
-    @PostMapping("/defaut/{type}")
-    public TemplateDto reinitialiser(@PathVariable TemplateType type) {
+    @PostMapping("/default/{type}")
+    public TemplateDto resetDefaultTemplate(@PathVariable TemplateType type) {
         return service.reinitialiser(type);
     }
 
-    @PostMapping("/{id}/apercu")
-    public ResponseEntity<byte[]> apercu(@PathVariable Long id) {
+    @PostMapping("/{id}/preview")
+    public ResponseEntity<byte[]> previewTemplate(@PathVariable Long id) {
         TemplateDto template = service.versDto(service.parId(id));
         byte[] pdf = service.apercu(id, dataService.dataExample(TemplateType.valueOf(template.type())));
         return PdfResponses.pdf(pdf, "apercu_template.pdf");

@@ -22,17 +22,17 @@ public class AnalysisController {
     }
 
     @GetMapping("/{id}")
-    public AnalysisDto obtenir(@PathVariable Long id) {
+    public AnalysisDto getAnalysis(@PathVariable Long id) {
         return service.obtenir(id);
     }
 
     @GetMapping(value = "/{id}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter evenements(@PathVariable Long id) {
+    public SseEmitter streamAnalysisEvents(@PathVariable Long id) {
         return service.evenements(id);
     }
 
     @DeleteMapping("/{id}")
-    public AnalysisDto cancel(@PathVariable Long id) {
+    public AnalysisDto cancelAnalysis(@PathVariable Long id) {
         return service.cancel(id);
     }
 }

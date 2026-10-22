@@ -11,7 +11,7 @@ import type {
   LlmStatusDto,
   LlmTestResponse,
   StatementPreviewRequest,
-  StatementCalculRequest,
+  StatementCalculationRequest,
   StatementDto,
   StatementGenerationRequest,
   SettingsDto,
@@ -32,115 +32,115 @@ function json(init: RequestInit): RequestInit {
 }
 
 export const api = {
-  parametres: {
-    obtenir: () => request<SettingsDto>('/api/parametres'),
-    enregistrer: (requestBody: SettingsRequest) =>
-      request<SettingsDto>('/api/parametres', json({ method: 'PUT', body: JSON.stringify(requestBody) })),
+  settings: {
+    get: () => request<SettingsDto>('/api/settings'),
+    update: (requestBody: SettingsRequest) =>
+      request<SettingsDto>('/api/settings', json({ method: 'PUT', body: JSON.stringify(requestBody) })),
   },
 
-  postes: {
-    lister: (all = false) => request<ExpenseItemDto[]>(`/api/postes?tous=${all}`),
-    creer: (requestBody: ExpenseItemRequest) =>
-      request<ExpenseItemDto>('/api/postes', json({ method: 'POST', body: JSON.stringify(requestBody) })),
-    modifier: (id: number, requestBody: ExpenseItemRequest) =>
-      request<ExpenseItemDto>(`/api/postes/${id}`, json({ method: 'PUT', body: JSON.stringify(requestBody) })),
-    supprimer: (id: number) => request<void>(`/api/postes/${id}`, { method: 'DELETE' }),
+  expenseItems: {
+    list: (all = false) => request<ExpenseItemDto[]>(`/api/expense-items?all=${all}`),
+    create: (requestBody: ExpenseItemRequest) =>
+      request<ExpenseItemDto>('/api/expense-items', json({ method: 'POST', body: JSON.stringify(requestBody) })),
+    update: (id: number, requestBody: ExpenseItemRequest) =>
+      request<ExpenseItemDto>(`/api/expense-items/${id}`, json({ method: 'PUT', body: JSON.stringify(requestBody) })),
+    delete: (id: number) => request<void>(`/api/expense-items/${id}`, { method: 'DELETE' }),
   },
 
-  quittances: {
-    lister: (month?: string) =>
-      request<RentReceiptDto[]>(`/api/quittances${month ? `?mois=${encodeURIComponent(month)}` : ''}`),
+  rentReceipts: {
+    list: (month?: string) =>
+      request<RentReceiptDto[]>(`/api/rent-receipts${month ? `?month=${encodeURIComponent(month)}` : ''}`),
     active: async (month: string): Promise<RentReceiptDto | null> => {
       const result = await request<RentReceiptDto | undefined>(
-        `/api/quittances/active?mois=${encodeURIComponent(month)}`,
+        `/api/rent-receipts/active?month=${encodeURIComponent(month)}`,
       );
       return result ?? null;
     },
-    generer: (requestBody: RentReceiptRequest) =>
-      request<RentReceiptDto>('/api/quittances', json({ method: 'POST', body: JSON.stringify(requestBody) })),
-    apercu: (requestBody: RentReceiptRequest, signal?: AbortSignal): Promise<ResponseBlob> =>
-      blobRequest('/api/quittances/apercu', json({ method: 'POST', body: JSON.stringify(requestBody), signal })),
-    pdf: (id: number): Promise<ResponseBlob> => blobRequest(`/api/quittances/${id}/pdf`),
-    urlPdf: (id: number) => `/api/quittances/${id}/pdf`,
+    create: (requestBody: RentReceiptRequest) =>
+      request<RentReceiptDto>('/api/rent-receipts', json({ method: 'POST', body: JSON.stringify(requestBody) })),
+    preview: (requestBody: RentReceiptRequest, signal?: AbortSignal): Promise<ResponseBlob> =>
+      blobRequest('/api/rent-receipts/preview', json({ method: 'POST', body: JSON.stringify(requestBody), signal })),
+    pdf: (id: number): Promise<ResponseBlob> => blobRequest(`/api/rent-receipts/${id}/pdf`),
+    pdfUrl: (id: number) => `/api/rent-receipts/${id}/pdf`,
   },
 
-  notes: {
-    lister: (month?: string) =>
-      request<StatementDto[]>(`/api/notes-frais${month ? `?mois=${encodeURIComponent(month)}` : ''}`),
+  expenseStatements: {
+    list: (month?: string) =>
+      request<StatementDto[]>(`/api/expense-statements${month ? `?month=${encodeURIComponent(month)}` : ''}`),
     active: async (month: string): Promise<StatementDto | null> => {
       const result = await request<StatementDto | undefined>(
-        `/api/notes-frais/active?mois=${encodeURIComponent(month)}`,
+        `/api/expense-statements/active?month=${encodeURIComponent(month)}`,
       );
       return result ?? null;
     },
-    brouillon: (month: string) =>
-      request<DraftDto>(`/api/notes-frais/brouillon?mois=${encodeURIComponent(month)}`, {
+    draft: (month: string) =>
+      request<DraftDto>(`/api/expense-statements/draft?month=${encodeURIComponent(month)}`, {
         method: 'POST',
       }),
-    calculer: (requestBody: StatementCalculRequest, signal?: AbortSignal) =>
+    calculate: (requestBody: StatementCalculationRequest, signal?: AbortSignal) =>
       request<CalculationResponse>(
-        '/api/notes-frais/calcul',
+        '/api/expense-statements/calculation',
         json({ method: 'POST', body: JSON.stringify(requestBody), signal }),
       ),
-    apercu: (requestBody: StatementPreviewRequest, signal?: AbortSignal): Promise<ResponseBlob> =>
-      blobRequest('/api/notes-frais/apercu', json({ method: 'POST', body: JSON.stringify(requestBody), signal })),
-    generer: (requestBody: StatementGenerationRequest) =>
-      request<StatementDto>('/api/notes-frais', json({ method: 'POST', body: JSON.stringify(requestBody) })),
+    preview: (requestBody: StatementPreviewRequest, signal?: AbortSignal): Promise<ResponseBlob> =>
+      blobRequest('/api/expense-statements/preview', json({ method: 'POST', body: JSON.stringify(requestBody), signal })),
+    create: (requestBody: StatementGenerationRequest) =>
+      request<StatementDto>('/api/expense-statements', json({ method: 'POST', body: JSON.stringify(requestBody) })),
     pdf: (id: number, complete: boolean): Promise<ResponseBlob> =>
-      blobRequest(`/api/notes-frais/${id}/pdf?complet=${complete}`),
-    urlPdf: (id: number, complete: boolean) => `/api/notes-frais/${id}/pdf?complet=${complete}`,
+      blobRequest(`/api/expense-statements/${id}/pdf?complete=${complete}`),
+    pdfUrl: (id: number, complete: boolean) => `/api/expense-statements/${id}/pdf?complete=${complete}`,
   },
 
-  justificatifs: {
-    uploader: (file: File): Promise<ReceiptDto> => {
+  receipts: {
+    upload: (file: File): Promise<ReceiptDto> => {
       const payload = new FormData();
-      payload.append('fichier', file);
-      return request<ReceiptDto>('/api/justificatifs', { method: 'POST', body: payload });
+      payload.append('file', file);
+      return request<ReceiptDto>('/api/receipts', { method: 'POST', body: payload });
     },
-    supprimer: (id: number) => request<void>(`/api/justificatifs/${id}`, { method: 'DELETE' }),
-    urlFichier: (id: number) => `/api/justificatifs/${id}/fichier`,
+    delete: (id: number) => request<void>(`/api/receipts/${id}`, { method: 'DELETE' }),
+    fileUrl: (id: number) => `/api/receipts/${id}/file`,
   },
 
   analyses: {
-    demarrer: (receiptId: number) =>
-      request<AnalysisStartResponse>(`/api/justificatifs/${receiptId}/analyse`, {
+    start: (receiptId: number) =>
+      request<AnalysisStartResponse>(`/api/receipts/${receiptId}/analysis`, {
         method: 'POST',
       }),
-    obtenir: (id: number, signal?: AbortSignal) =>
+    get: (id: number, signal?: AbortSignal) =>
       request<AnalysisDto>(`/api/analyses/${id}`, { signal }),
-    annuler: (id: number) => request<AnalysisDto>(`/api/analyses/${id}`, { method: 'DELETE' }),
+    cancel: (id: number) => request<AnalysisDto>(`/api/analyses/${id}`, { method: 'DELETE' }),
   },
 
   llm: {
-    obtenir: () => request<LlmConfigDto>('/api/admin/llm'),
-    enregistrer: (requestBody: LlmConfigRequest) =>
+    get: () => request<LlmConfigDto>('/api/admin/llm'),
+    update: (requestBody: LlmConfigRequest) =>
       request<LlmConfigDto>('/api/admin/llm', json({ method: 'PUT', body: JSON.stringify(requestBody) })),
-    modeles: () => request<LlmModelDto[]>('/api/admin/llm/models'),
-    tester: () => request<LlmTestResponse>('/api/admin/llm/test', { method: 'POST' }),
-    statut: () => request<LlmStatusDto>('/api/admin/llm/status'),
-    promptDefaut: () => request<{ prompt?: string }>('/api/admin/llm/prompt-defaut'),
+    models: () => request<LlmModelDto[]>('/api/admin/llm/models'),
+    test: () => request<LlmTestResponse>('/api/admin/llm/test', { method: 'POST' }),
+    status: () => request<LlmStatusDto>('/api/admin/llm/status'),
+    defaultPrompt: () => request<{ prompt?: string }>('/api/admin/llm/default-prompt'),
   },
 
   templates: {
-    lister: (type: TemplateType) => request<TemplateDto[]>(`/api/templates?type=${type}`),
+    list: (type: TemplateType) => request<TemplateDto[]>(`/api/templates?type=${type}`),
     variables: (type: TemplateType) =>
       request<TemplateVariableDto[]>(`/api/templates/variables?type=${type}`),
-    uploader: (type: TemplateType, name: string, file: File): Promise<TemplateDto> => {
+    upload: (type: TemplateType, name: string, file: File): Promise<TemplateDto> => {
       const payload = new FormData();
       payload.append('type', type);
       payload.append('name', name);
-      payload.append('fichier', file);
+      payload.append('file', file);
       return request<TemplateDto>('/api/templates', { method: 'POST', body: payload });
     },
-    activer: (id: number) =>
-      request<TemplateDto>(`/api/templates/${id}/activer`, { method: 'POST' }),
-    apercu: (id: number): Promise<ResponseBlob> =>
-      blobRequest(`/api/templates/${id}/apercu`, { method: 'POST' }),
-    fichier: (id: number): Promise<ResponseBlob> => blobRequest(`/api/templates/${id}/fichier`),
-    supprimer: (id: number) => request<void>(`/api/templates/${id}`, { method: 'DELETE' }),
-    defaut: (type: TemplateType): Promise<ResponseBlob> =>
-      blobRequest(`/api/templates/defaut/${type}`),
-    reinitialiser: (type: TemplateType) =>
-      request<TemplateDto>(`/api/templates/defaut/${type}`, { method: 'POST' }),
+    activate: (id: number) =>
+      request<TemplateDto>(`/api/templates/${id}/activate`, { method: 'POST' }),
+    preview: (id: number): Promise<ResponseBlob> =>
+      blobRequest(`/api/templates/${id}/preview`, { method: 'POST' }),
+    file: (id: number): Promise<ResponseBlob> => blobRequest(`/api/templates/${id}/file`),
+    delete: (id: number) => request<void>(`/api/templates/${id}`, { method: 'DELETE' }),
+    getDefault: (type: TemplateType): Promise<ResponseBlob> =>
+      blobRequest(`/api/templates/default/${type}`),
+    resetDefault: (type: TemplateType) =>
+      request<TemplateDto>(`/api/templates/default/${type}`, { method: 'POST' }),
   },
 };

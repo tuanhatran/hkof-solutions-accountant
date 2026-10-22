@@ -97,8 +97,8 @@ export const useStatementDraft = create<StatementDraftState>()(
       },
 
       chargerDepuisNote: (statement, activeRentReceiptId) => {
-        const month = statement.mois ?? get().mois;
-        const lines = (statement.lignes ?? []).map(fromLineDto);
+        const month = statement.month ?? get().mois;
+        const lines = (statement.lines ?? []).map(fromLineDto);
         set({
           mois: month,
           lignesParMois: { ...get().lignesParMois, [month]: lines },

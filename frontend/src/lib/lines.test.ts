@@ -32,15 +32,15 @@ describe('toLineRequest', () => {
   it('normalizes amounts and keeps metadata', () => {
     const request = toLineRequest(line({ sourceMontant: 'AI', montantDetecteIa: '120.00', confianceIa: 'haute' }));
     expect(request).toMatchObject({
-      posteCode: 'gaz',
-      montantTtc: '120.00',
-      prorataPct: '35.71',
-      periodeDebut: '2026-09-01',
-      periodeFin: '2026-10-31',
-      justificatifId: 12,
-      sourceMontant: 'AI',
-      montantDetecteIa: '120.00',
-      confianceIa: 'haute',
+      itemCode: 'gaz',
+      amountInclVat: '120.00',
+      proRataPct: '35.71',
+      periodStart: '2026-09-01',
+      periodEnd: '2026-10-31',
+      receiptId: 12,
+      amountSource: 'AI',
+      aiDetectedAmount: '120.00',
+      aiConfidence: 'haute',
     });
   });
 
@@ -48,15 +48,15 @@ describe('toLineRequest', () => {
     const request = toLineRequest(
       line({ periodeDebut: '', periodeFin: '', justificatifId: null, montantMoisSurcharge: '' }),
     );
-    expect(request.periodeDebut).toBeUndefined();
-    expect(request.periodeFin).toBeUndefined();
-    expect(request.justificatifId).toBeUndefined();
-    expect(request.montantMoisSurcharge).toBeUndefined();
+    expect(request.periodStart).toBeUndefined();
+    expect(request.periodEnd).toBeUndefined();
+    expect(request.receiptId).toBeUndefined();
+    expect(request.monthlyAmountOverride).toBeUndefined();
   });
 
   it('adds the month override when provided', () => {
     const request = toLineRequest(line({ montantMoisSurcharge: '60,98' }));
-    expect(request.montantMoisSurcharge).toBe('60.98');
+    expect(request.monthlyAmountOverride).toBe('60.98');
   });
 
   it('rejects invalid amounts, pro-rata values and periods', () => {
@@ -69,8 +69,8 @@ describe('toLineRequest', () => {
 
 describe('expense type rules', () => {
   const expenseItems: ExpenseItemDto[] = [
-    { code: 'gaz', libelle: 'Gaz', plusieursLignesAutorisees: false },
-    { code: 'telephone', libelle: 'Téléphone', plusieursLignesAutorisees: true },
+    { code: 'gaz', label: 'Gaz', multipleLinesAllowed: false },
+    { code: 'telephone', label: 'Téléphone', multipleLinesAllowed: true },
   ];
 
   it('detects an already present type', () => {
@@ -96,16 +96,16 @@ describe('rent draft', () => {
 
   it('reloads a line from a DTO', () => {
     const reloaded = fromLineDto({
-      posteCode: 'gaz',
-      montantTtc: '120.00',
-      prorataPct: '35.71',
-      periodeDebut: '2026-09-01',
-      periodeFin: '2026-10-31',
-      justificatifId: 4,
-      justificatifNom: 'facture.pdf',
-      sourceMontant: 'AI',
-      montantDetecteIa: '120.00',
-      confianceIa: 'haute',
+      itemCode: 'gaz',
+      amountInclVat: '120.00',
+      proRataPct: '35.71',
+      periodStart: '2026-09-01',
+      periodEnd: '2026-10-31',
+      receiptId: 4,
+      receiptName: 'facture.pdf',
+      amountSource: 'AI',
+      aiDetectedAmount: '120.00',
+      aiConfidence: 'haute',
     });
     expect(reloaded.posteCode).toBe('gaz');
     expect(reloaded.justificatifNom).toBe('facture.pdf');

@@ -32,7 +32,6 @@ import { toast } from '@/state/toasts';
 const PERIODICITIES = [
   { valeur: 'MONTHLY', libelle: 'Mensuelle' },
   { valeur: 'BIMONTHLY', libelle: 'Bimestrielle' },
-  { valeur: 'TRIMESTRIELLE', libelle: 'Trimestrielle' },
   { valeur: 'ANNUAL', libelle: 'Annuelle' },
 ] as const;
 
@@ -44,21 +43,21 @@ function decimalFormatter(value: string | undefined): string {
 
 function valuesFromSettings(settings: SettingsDto | undefined): SettingsFormValues {
   return {
-    raisonSociale: settings?.raisonSociale ?? '',
-    formeJuridique: settings?.formeJuridique ?? '',
+    raisonSociale: settings?.companyName ?? '',
+    formeJuridique: settings?.legalForm ?? '',
     siren: settings?.siren ?? '',
-    societeAdresse: settings?.societeAdresse ?? '',
-    gerant: settings?.gerant ?? '',
-    logementAdresse: settings?.logementAdresse ?? '',
-    surfaceTotale: decimalFormatter(settings?.surfaceTotale),
-    surfacePro: decimalFormatter(settings?.surfacePro),
-    bailleurNom: settings?.bailleurNom ?? '',
-    bailleurAdresse: settings?.bailleurAdresse ?? '',
-    locataireNom: settings?.locataireNom ?? '',
-    locataireAdresse: settings?.locataireAdresse ?? '',
-    loyerHc: decimalFormatter(settings?.loyerHc),
-    provisionCharges: decimalFormatter(settings?.provisionCharges),
-    lieuEmission: settings?.lieuEmission ?? '',
+    societeAdresse: settings?.companyAddress ?? '',
+    gerant: settings?.managerName ?? '',
+    logementAdresse: settings?.homeAddress ?? '',
+    surfaceTotale: decimalFormatter(settings?.totalArea),
+    surfacePro: decimalFormatter(settings?.businessArea),
+    bailleurNom: settings?.landlordName ?? '',
+    bailleurAdresse: settings?.landlordAddress ?? '',
+    locataireNom: settings?.tenantName ?? '',
+    locataireAdresse: settings?.tenantAddress ?? '',
+    loyerHc: decimalFormatter(settings?.rentExclCharges),
+    provisionCharges: decimalFormatter(settings?.chargesAdvance),
+    lieuEmission: settings?.issuePlace ?? '',
   };
 }
 
@@ -141,38 +140,38 @@ function ExpenseItemForm({
     mode: 'onChange',
     defaultValues: {
       code: expenseItem?.code ?? '',
-      libelle: expenseItem?.libelle ?? '',
-      fournisseur: expenseItem?.fournisseur ?? '',
-      prorataPct: decimalFormatter(expenseItem?.prorataPct ?? defaultProRata),
-      periodicite: (expenseItem?.periodicite as Periodicity | undefined) ?? 'MONTHLY',
-      ordre: expenseItem?.ordre ?? defaultOrder,
-      actif: expenseItem?.actif ?? true,
-      plusieursLignesAutorisees: expenseItem?.plusieursLignesAutorisees ?? false,
+      libelle: expenseItem?.label ?? '',
+      fournisseur: expenseItem?.supplier ?? '',
+      prorataPct: decimalFormatter(expenseItem?.proRataPct ?? defaultProRata),
+      periodicite: (expenseItem?.periodicity as Periodicity | undefined) ?? 'MONTHLY',
+      ordre: expenseItem?.sortOrder ?? defaultOrder,
+      actif: expenseItem?.active ?? true,
+      plusieursLignesAutorisees: expenseItem?.multipleLinesAllowed ?? false,
     },
   });
 
   const save = useMutation({
     mutationFn: (values: ExpenseItemFormValues) => {
       const requestBody: ExpenseItemRequest = {
-        libelle: values.libelle.trim(),
-        fournisseur: values.fournisseur.trim() || undefined,
-        prorataPct: parsePercentage(values.prorataPct) ?? '0',
-        periodicite: values.periodicite,
-        ordre: values.ordre,
-        actif: values.actif,
-        plusieursLignesAutorisees: values.plusieursLignesAutorisees,
+        label: values.libelle.trim(),
+        supplier: values.fournisseur.trim() || undefined,
+        proRataPct: parsePercentage(values.prorataPct) ?? '0',
+        periodicity: values.periodicite,
+        sortOrder: values.ordre,
+        active: values.actif,
+        multipleLinesAllowed: values.plusieursLignesAutorisees,
       };
       if (!expenseItem && values.code.trim()) {
         requestBody.code = values.code.trim();
       }
-      return expenseItem?.id ? api.postes.modifier(expenseItem.id, requestBody) : api.postes.creer(requestBody);
+      return expenseItem?.id ? api.expenseItems.update(expenseItem.id, requestBody) : api.expenseItems.create(requestBody);
     },
     onSuccess: (result) => {
-      void queryClient.invalidateQueries({ queryKey: ['postes'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.expenseItemsAll });
       toast.succes(
         expenseItem
-          ? `Poste « ${result.libelle} » mis à jour.`
-          : `Poste « ${result.libelle} » ajouté à la liste des frais.`,
+          ? `Poste « ${result.label} » mis à jour.`
+          : `Poste « ${result.label} » ajouté à la liste des frais.`,
       );
       onClose();
     },
@@ -190,7 +189,7 @@ function ExpenseItemForm({
     >
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-[15px] font-semibold text-ink">
-          {expenseItem ? `Modifier le poste « ${expenseItem.libelle} »` : 'Ajouter un type de frais'}
+          {expenseItem ? `Modifier le poste « ${expenseItem.label} »` : 'Ajouter un type de frais'}
         </h3>
         {expenseItem ? (
           <span className="badge badge-neutre">
@@ -318,9 +317,9 @@ function ExpenseItemsManager({ prorataDefaut: defaultProRata }: { prorataDefaut:
   const [toDelete, setToDelete] = useState<ExpenseItemDto | null>(null);
 
   const remove = useMutation({
-    mutationFn: (expenseItem: ExpenseItemDto) => api.postes.supprimer(expenseItem.id as number),
+    mutationFn: (expenseItem: ExpenseItemDto) => api.expenseItems.delete(expenseItem.id as number),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['postes'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.expenseItemsAll });
       setToDelete(null);
       toast.succes('Poste désactivé et retiré de la liste des frais.');
     },
@@ -331,7 +330,7 @@ function ExpenseItemsManager({ prorataDefaut: defaultProRata }: { prorataDefaut:
   });
 
   const list = expenseItems.data ?? [];
-  const defaultOrder = list.reduce((maximum, expenseItem) => Math.max(maximum, expenseItem.ordre ?? 0), -1) + 1;
+  const defaultOrder = list.reduce((maximum, expenseItem) => Math.max(maximum, expenseItem.sortOrder ?? 0), -1) + 1;
 
   function openCreate() {
     setEditedItem(null);
@@ -407,25 +406,25 @@ function ExpenseItemsManager({ prorataDefaut: defaultProRata }: { prorataDefaut:
               </thead>
               <tbody>
                 {list.map((expenseItem) => (
-                  <tr key={expenseItem.id} className={cn(!expenseItem.actif && 'opacity-60')}>
+                  <tr key={expenseItem.id} className={cn(!expenseItem.active && 'opacity-60')}>
                     <td>
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="font-medium text-ink">{expenseItem.libelle}</span>
+                        <span className="font-medium text-ink">{expenseItem.label}</span>
                         <code className="rounded bg-paper-deep/60 px-1 py-0.5 font-mono text-[10.5px] text-ink-soft">
                           {expenseItem.code}
                         </code>
-                        {!expenseItem.actif ? <span className="badge badge-neutre">inactif</span> : null}
+                        {!expenseItem.active ? <span className="badge badge-neutre">inactif</span> : null}
                       </div>
                     </td>
-                    <td className="text-ink-soft">{expenseItem.fournisseur || '—'}</td>
-                    <td className="nombre text-right text-ink-soft">{formatPercentage(expenseItem.prorataPct)}</td>
+                    <td className="text-ink-soft">{expenseItem.supplier || '—'}</td>
+                    <td className="nombre text-right text-ink-soft">{formatPercentage(expenseItem.proRataPct)}</td>
                     <td className="text-xs capitalize text-ink-soft">
-                      {PERIODICITIES.find((periodicity) => periodicity.valeur === expenseItem.periodicite)?.libelle ??
-                        expenseItem.periodicite}
+                      {PERIODICITIES.find((periodicity) => periodicity.valeur === expenseItem.periodicity)?.libelle ??
+                        expenseItem.periodicity}
                     </td>
-                    <td className="nombre text-center text-ink-soft">{expenseItem.ordre}</td>
+                    <td className="nombre text-center text-ink-soft">{expenseItem.sortOrder}</td>
                     <td>
-                      {expenseItem.plusieursLignesAutorisees ? (
+                      {expenseItem.multipleLinesAllowed ? (
                         <span className="badge badge-accent">multi-lignes</span>
                       ) : (
                         <span className="text-xs text-ink-soft">une ligne</span>
@@ -467,7 +466,7 @@ function ExpenseItemsManager({ prorataDefaut: defaultProRata }: { prorataDefaut:
         titre="Retirer ce type de frais ?"
         message={
           toDelete
-            ? `« ${toDelete.libelle} » ne sera plus proposé dans la note de frais. Les documents existants conservent leurs lignes et leurs montants.`
+            ? `« ${toDelete.label} » ne sera plus proposé dans la note de frais. Les documents existants conservent leurs lignes et leurs montants.`
             : ''
         }
         libelleConfirmer="Retirer le poste"
@@ -519,26 +518,26 @@ export function SettingsPage() {
   const save = useMutation({
     mutationFn: (submittedValues: SettingsFormValues) => {
       const requestBody: SettingsRequest = {
-        raisonSociale: submittedValues.raisonSociale.trim(),
-        formeJuridique: submittedValues.formeJuridique.trim(),
+        companyName: submittedValues.raisonSociale.trim(),
+        legalForm: submittedValues.formeJuridique.trim(),
         siren: submittedValues.siren.trim(),
-        societeAdresse: submittedValues.societeAdresse.trim(),
-        gerant: submittedValues.gerant.trim(),
-        logementAdresse: submittedValues.logementAdresse.trim(),
-        surfaceTotale: parseAmount(submittedValues.surfaceTotale) ?? undefined,
-        surfacePro: parseAmount(submittedValues.surfacePro) ?? undefined,
-        bailleurNom: submittedValues.bailleurNom.trim(),
-        bailleurAdresse: submittedValues.bailleurAdresse.trim(),
-        locataireNom: submittedValues.locataireNom.trim(),
-        locataireAdresse: submittedValues.locataireAdresse.trim(),
-        loyerHc: parseAmount(submittedValues.loyerHc) ?? undefined,
-        provisionCharges: parseAmount(submittedValues.provisionCharges) ?? undefined,
-        lieuEmission: submittedValues.lieuEmission.trim(),
+        companyAddress: submittedValues.societeAdresse.trim(),
+        managerName: submittedValues.gerant.trim(),
+        homeAddress: submittedValues.logementAdresse.trim(),
+        totalArea: parseAmount(submittedValues.surfaceTotale) ?? undefined,
+        businessArea: parseAmount(submittedValues.surfacePro) ?? undefined,
+        landlordName: submittedValues.bailleurNom.trim(),
+        landlordAddress: submittedValues.bailleurAdresse.trim(),
+        tenantName: submittedValues.locataireNom.trim(),
+        tenantAddress: submittedValues.locataireAdresse.trim(),
+        rentExclCharges: parseAmount(submittedValues.loyerHc) ?? undefined,
+        chargesAdvance: parseAmount(submittedValues.provisionCharges) ?? undefined,
+        issuePlace: submittedValues.lieuEmission.trim(),
       };
-      return api.parametres.enregistrer(requestBody);
+      return api.settings.update(requestBody);
     },
     onSuccess: (payload) => {
-      queryClient.setQueryData(queryKeys.parametres, payload);
+      queryClient.setQueryData(queryKeys.settings, payload);
       toast.succes('Configuration enregistrée. Les prochains documents utiliseront ces valeurs.');
     },
   });
@@ -838,7 +837,7 @@ export function SettingsPage() {
         </form>
       )}
 
-      <ExpenseItemsManager prorataDefaut={settings.data?.prorataBase ?? '100.00'} />
+      <ExpenseItemsManager prorataDefaut={settings.data?.proRataBase ?? '100.00'} />
     </>
   );
 }

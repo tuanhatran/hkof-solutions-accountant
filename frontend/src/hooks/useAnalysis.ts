@@ -44,11 +44,11 @@ export function useAnalysis() {
     setEtat({ statut: 'demarrage' });
 
     try {
-      const launch = await api.analyses.demarrer(receiptId);
+      const launch = await api.analyses.start(receiptId);
       if (controller.signal.aborted || !mountRef.current) {
         return;
       }
-      const analysisId = launch.analyseId;
+      const analysisId = launch.analysisId;
       if (!analysisId) {
         throw new Error("L'analyse n'a pas pu démarrer.");
       }
@@ -57,22 +57,22 @@ export function useAnalysis() {
 
       const start = Date.now();
       while (!controller.signal.aborted && Date.now() - start < MAX_DURATION_MS) {
-        const analysis = await api.analyses.obtenir(analysisId, controller.signal);
+        const analysis = await api.analyses.get(analysisId, controller.signal);
         if (controller.signal.aborted || !mountRef.current) {
           return;
         }
-        if (analysis.statut === 'DONE') {
+        if (analysis.status === 'DONE') {
           setEtat({ statut: 'terminee', analyse: analysis });
           return;
         }
-        if (analysis.statut === 'FAILED') {
+        if (analysis.status === 'FAILED') {
           setEtat({
             statut: 'echec',
-            message: analysis.messageErreur || "L'analyse a échoué. Saisissez le montant manuellement.",
+            message: analysis.errorMessage || "L'analyse a échoué. Saisissez le montant manuellement.",
           });
           return;
         }
-        if (analysis.statut === 'CANCELLED') {
+        if (analysis.status === 'CANCELLED') {
           setEtat({ statut: 'annulee', message: 'Analyse annulée.' });
           return;
         }
@@ -101,7 +101,7 @@ export function useAnalysis() {
     analysisIdRef.current = null;
     if (analysisId !== null) {
       try {
-        await api.analyses.annuler(analysisId);
+        await api.analyses.cancel(analysisId);
       } catch {
         // L'analyse peut déjà être terminée : l'annulation est sans effet.
       }

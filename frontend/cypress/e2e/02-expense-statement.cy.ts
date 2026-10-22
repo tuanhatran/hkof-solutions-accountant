@@ -36,7 +36,7 @@ describe('Expense statement — entry and preview', () => {
 
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled');
     addRent();
-    addExpense({ type: 'gaz', fixture: 'facture-gaz.txt', montant: '120.00' });
+    addExpense({ itemCode: 'gaz', fixture: 'facture-gaz.txt', amountInclVat: '120.00' });
     waitForAmount('[data-cy="total-retenu"]', '992,85');
 
     cy.get('[data-cy="tab-quittance"]').click();
@@ -79,18 +79,18 @@ describe('Expense statement — entry and preview', () => {
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled');
 
     addExpense({
-      type: 'gaz',
+      itemCode: 'gaz',
       fixture: 'facture-gaz.txt',
-      montant: '130.00',
-      prorata: '35,71 %',
+      amountInclVat: '130.00',
+      proRataPct: '35,71 %',
     });
     waitForAmount('[data-cy="ligne-frais-gaz"]', '46,42');
 
     addExpense({
-      type: 'electricite',
+      itemCode: 'electricite',
       fixture: 'facture-electricite.txt',
-      montant: '88.20',
-      prorata: '35.71',
+      amountInclVat: '88.20',
+      proRataPct: '35.71',
     });
     waitForAmount('[data-cy="ligne-frais-electricite"]', '31,50');
 
@@ -244,26 +244,26 @@ describe('Expense statement — entry and preview', () => {
   it('updates the preview on each add, pro-rata change and removal', () => {
     disableLlm();
     createRentReceipt();
-    cy.intercept('POST', '/api/notes-frais/apercu').as('apercu');
+    cy.intercept('POST', '/api/expense-statements/preview').as('preview');
 
     cy.visit('/generer/note-frais');
     cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-type-frais"]').should('not.be.disabled');
 
     addRent();
-    cy.wait('@apercu', { timeout: 30_000 });
+    cy.wait('@preview', { timeout: 30_000 });
     cy.waitForPreview();
     waitForAmount('[data-cy="total-retenu"]', '950,00');
     verifyPreview('950,00');
 
-    addExpense({ type: 'gaz', fixture: 'facture-gaz.txt', montant: '120.00' });
-    cy.wait('@apercu', { timeout: 30_000 });
+    addExpense({ itemCode: 'gaz', fixture: 'facture-gaz.txt', amountInclVat: '120.00' });
+    cy.wait('@preview', { timeout: 30_000 });
     cy.waitForPreview();
     waitForAmount('[data-cy="total-retenu"]', '992,85');
     verifyPreview('992,85');
 
     cy.get('[aria-label="Prorata de Gaz"]').clear().type('50');
-    cy.wait('@apercu', { timeout: 30_000 });
+    cy.wait('@preview', { timeout: 30_000 });
     cy.waitForPreview();
     waitForAmount('[data-cy="total-retenu"]', '1 010,00');
     verifyPreview('1 010,00');
@@ -272,7 +272,7 @@ describe('Expense statement — entry and preview', () => {
     cy.get('[data-cy="dialogue-suppression-frais"]').should('be.visible');
     cy.get('[data-cy="dialogue-confirmer"]').click();
     cy.get('[data-cy="ligne-frais-gaz"]').should('not.exist');
-    cy.wait('@apercu', { timeout: 30_000 });
+    cy.wait('@preview', { timeout: 30_000 });
     cy.waitForPreview();
     waitForAmount('[data-cy="total-retenu"]', '950,00');
     verifyPreview('950,00');

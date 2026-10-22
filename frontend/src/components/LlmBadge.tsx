@@ -25,7 +25,7 @@ interface LlmBadgeProps {
 export function LlmBadge({ sombre: dark = false, avecLien: withLink = true }: LlmBadgeProps) {
   const { data, isPending, isError } = useLlmStatus();
 
-  const status = data?.statut as LlmStatus | undefined;
+  const status = data?.status as LlmStatus | undefined;
   const configuration = status ? STATUSES[status] : null;
   const text = isPending ? 'IA…' : isError ? 'IA indisponible' : (configuration?.texte ?? 'IA inconnue');
   const message = data?.message ?? 'État de l’analyse IA indisponible.';

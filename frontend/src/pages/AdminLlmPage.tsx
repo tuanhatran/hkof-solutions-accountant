@@ -20,7 +20,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { errorMessage } from '@/api/client';
 import { api } from '@/api/endpoints';
-import { queryKeys, useLlmConfig, useLlmModeles, useLlmStatus } from '@/api/queries';
+import { queryKeys, useLlmConfig, useLlmModels, useLlmStatus } from '@/api/queries';
 import type { LlmConfigDto, LlmConfigRequest, LlmTestResponse, LlmStatus } from '@/api/types';
 import { Button } from '@/components/Button';
 import { LoadingState, ErrorState } from '@/components/States';
@@ -95,15 +95,15 @@ function isLocalUrl(url: string): boolean {
 
 function valuesFromConfig(config: LlmConfigDto | undefined): LlmFormValues {
   return {
-    actif: config?.actif ?? false,
+    actif: config?.active ?? false,
     url: config?.url ?? 'http://host.docker.internal:11434',
-    modele: config?.modele ?? '',
+    modele: config?.model ?? '',
     timeoutSeconds: config?.timeoutSeconds ?? 120,
     temperature: config?.temperature ?? '0',
     numCtx: config?.numCtx ?? 8192,
-    pagesMax: config?.pagesMax ?? 5,
-    ocrActif: config?.ocrActif ?? false,
-    promptExtraction: config?.promptExtraction ?? '',
+    pagesMax: config?.maxPages ?? 5,
+    ocrActif: config?.ocrActive ?? false,
+    promptExtraction: config?.extractionPrompt ?? '',
     cleApi: '',
     supprimerCle: false,
   };
@@ -111,21 +111,21 @@ function valuesFromConfig(config: LlmConfigDto | undefined): LlmFormValues {
 
 function requestBodyFromValues(values: LlmFormValues): LlmConfigRequest {
   const requestBody: LlmConfigRequest = {
-    actif: values.actif,
-    fournisseur: 'OLLAMA',
+    active: values.actif,
+    supplier: 'OLLAMA',
     url: normalizeUrl(values.url),
-    modele: values.modele.trim(),
+    model: values.modele.trim(),
     timeoutSeconds: values.timeoutSeconds,
     temperature: values.temperature.trim().replace(',', '.'),
     numCtx: values.numCtx,
-    pagesMax: values.pagesMax,
-    ocrActif: values.ocrActif,
-    promptExtraction: values.promptExtraction.trim(),
+    maxPages: values.pagesMax,
+    ocrActive: values.ocrActif,
+    extractionPrompt: values.promptExtraction.trim(),
   };
   if (values.cleApi.trim()) {
-    requestBody.cleApi = values.cleApi.trim();
+    requestBody.apiKey = values.cleApi.trim();
   } else if (values.supprimerCle) {
-    requestBody.cleApi = '';
+    requestBody.apiKey = '';
   }
   return requestBody;
 }
@@ -157,7 +157,7 @@ function Switch({ actif: active, onChange }: { actif: boolean; onChange: () => v
 
 function StatusState() {
   const status = useLlmStatus();
-  const key = (status.data?.statut as LlmStatus | undefined) ?? null;
+  const key = (status.data?.status as LlmStatus | undefined) ?? null;
   const info = key ? STATUSES[key] : null;
 
   return (
@@ -204,8 +204,8 @@ function StatusState() {
         </div>
         <div className="flex items-center gap-2">
           <span className="hidden text-[11px] text-ink-soft sm:inline">
-            {status.data?.joignable ? 'Serveur joignable' : status.data ? 'Serveur non joignable' : '—'}
-            {status.data?.actif ? ' · IA activée' : status.data ? ' · IA désactivée' : ''}
+            {status.data?.reachable ? 'Serveur joignable' : status.data ? 'Serveur non joignable' : '—'}
+            {status.data?.active ? ' · IA activée' : status.data ? ' · IA désactivée' : ''}
           </span>
           <Button
             variante="secondaire"
@@ -253,7 +253,7 @@ export function AdminLlmPage() {
   const active = values.actif;
   const removeKey = values.supprimerCle;
   const remoteUrl = values.url.trim() !== '' && !isLocalUrl(values.url);
-  const models = useLlmModeles(loadedUrl);
+  const models = useLlmModels(loadedUrl);
 
   useEffect(() => {
     if (!config.data) {
@@ -278,7 +278,7 @@ export function AdminLlmPage() {
   }, [models.isError]);
 
   const save = useMutation({
-    mutationFn: (submittedValues: LlmFormValues) => api.llm.enregistrer(requestBodyFromValues(submittedValues)),
+    mutationFn: (submittedValues: LlmFormValues) => api.llm.update(requestBodyFromValues(submittedValues)),
     onSuccess: (payload) => {
       queryClient.setQueryData(queryKeys.llmConfig, payload);
       const url = normalizeUrl(payload.url ?? '');
@@ -286,7 +286,7 @@ export function AdminLlmPage() {
       setLoadedUrl(url || null);
       setTestResult(null);
       setTestError(null);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.llmStatut });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.llmStatus });
       toast.succes('Configuration IA enregistrée.');
     },
   });
@@ -305,9 +305,9 @@ export function AdminLlmPage() {
     setModelsLoading(true);
     try {
       if (url !== savedUrl) {
-        await api.llm.enregistrer({ url });
+        await api.llm.update({ url });
         setSavedUrl(url);
-        void queryClient.invalidateQueries({ queryKey: queryKeys.llmStatut });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.llmStatus });
       }
       if (url !== loadedUrl) {
         setLoadedUrl(url);
@@ -329,7 +329,7 @@ export function AdminLlmPage() {
   async function resetPrompt() {
     setPromptInProgress(true);
     try {
-      const reply = await api.llm.promptDefaut();
+      const reply = await api.llm.defaultPrompt();
       if (!reply.prompt) {
         toast.erreur('Le prompt par défaut est indisponible.');
         return;
@@ -348,19 +348,19 @@ export function AdminLlmPage() {
     setTestResult(null);
     setTestError(null);
     try {
-      const payload = await api.llm.enregistrer(requestBodyFromValues(submittedValues));
+      const payload = await api.llm.update(requestBodyFromValues(submittedValues));
       queryClient.setQueryData(queryKeys.llmConfig, payload);
       const url = normalizeUrl(payload.url ?? '');
       setSavedUrl(url);
       setLoadedUrl(url || null);
-      const result = await api.llm.tester();
+      const result = await api.llm.test();
       setTestResult(result);
-      if (result.succes) {
+      if (result.success) {
         toast.succes('Test de connexion réussi.');
       } else {
         toast.erreur(result.message ?? 'Le test de connexion a échoué.');
       }
-      void queryClient.invalidateQueries({ queryKey: queryKeys.llmStatut });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.llmStatus });
     } catch (error) {
       setTestError(errorMessage(error));
     } finally {
@@ -370,12 +370,12 @@ export function AdminLlmPage() {
 
   const modelOptions = useMemo(() => {
     const options = models.data ?? [];
-    if (values.modele && !options.some((model) => model.nom === values.modele)) {
+    if (values.modele && !options.some((model) => model.name === values.modele)) {
       return [
         {
-          nom: values.modele,
-          famille: null,
-          parametres: null,
+          name: values.modele,
+          family: null,
+          parameters: null,
           vision: false,
           configure: true,
         },
@@ -385,7 +385,7 @@ export function AdminLlmPage() {
     return options.map((model) => ({ ...model, configure: false }));
   }, [models.data, values.modele]);
 
-  const selectedModel = modelOptions.find((model) => model.nom === values.modele);
+  const selectedModel = modelOptions.find((model) => model.name === values.modele);
   const listLoading = modelsLoading || models.isPending;
 
   if (config.isPending) {
@@ -546,7 +546,7 @@ export function AdminLlmPage() {
                 erreur={errors.modele?.message}
                 aide={
                   selectedModel
-                    ? `${selectedModel.famille || 'Famille inconnue'}${selectedModel.parametres ? ` · ${selectedModel.parametres}` : ''}${selectedModel.vision ? ' · accepte les images' : ''}`
+                    ? `${selectedModel.family || 'Famille inconnue'}${selectedModel.parameters ? ` · ${selectedModel.parameters}` : ''}${selectedModel.vision ? ' · accepte les images' : ''}`
                     : 'La liste est chargée depuis /api/tags. Vous pouvez saisir un nom manuellement si Ollama est injoignable.'
                 }
               >
@@ -570,10 +570,10 @@ export function AdminLlmPage() {
                       {listLoading && modelOptions.length === 0 ? 'Chargement des modèles…' : 'Sélectionnez un modèle'}
                     </option>
                     {modelOptions.map((model) => (
-                      <option key={model.nom} value={model.nom}>
-                        {model.nom}
+                      <option key={model.name} value={model.name}>
+                        {model.name}
                         {model.vision ? ' · vision' : ''}
-                        {model.parametres ? ` · ${model.parametres}` : ''}
+                        {model.parameters ? ` · ${model.parameters}` : ''}
                         {model.configure ? ' (configuré)' : ''}
                       </option>
                     ))}
@@ -644,8 +644,8 @@ export function AdminLlmPage() {
                     </p>
                   </div>
                 </div>
-                <span className={cn('badge', config.data?.apiKeyConfiguree ? 'badge-accent' : 'badge-neutre')}>
-                  {config.data?.apiKeyConfiguree ? 'Clé configurée' : 'Aucune clé'}
+                <span className={cn('badge', config.data?.apiKeyConfigured ? 'badge-accent' : 'badge-neutre')}>
+                  {config.data?.apiKeyConfigured ? 'Clé configurée' : 'Aucune clé'}
                 </span>
               </div>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -655,13 +655,13 @@ export function AdminLlmPage() {
                     type="password"
                     autoComplete="new-password"
                     className="champ"
-                    placeholder={config.data?.apiKeyConfiguree ? 'Clé enregistrée — laisser vide' : 'Aucune clé enregistrée'}
+                    placeholder={config.data?.apiKeyConfigured ? 'Clé enregistrée — laisser vide' : 'Aucune clé enregistrée'}
                     disabled={removeKey}
                     {...register('cleApi')}
                     data-cy="input-llm-cle-api"
                   />
                 </FieldGroup>
-                {config.data?.apiKeyConfiguree ? (
+                {config.data?.apiKeyConfigured ? (
                   <label className="mt-1.5 flex cursor-pointer items-start gap-2 self-end rounded-xl border border-line bg-surface px-3 py-2.5 text-xs text-ink-soft">
                     <input
                       type="checkbox"
@@ -717,27 +717,27 @@ export function AdminLlmPage() {
               <div
                 className={cn(
                   'rounded-xl border p-4',
-                  testResult.succes ? 'border-accent/20 bg-accent-soft/50' : 'border-danger/20 bg-danger-soft/50',
+                  testResult.success ? 'border-accent/20 bg-accent-soft/50' : 'border-danger/20 bg-danger-soft/50',
                 )}
-                role={testResult.succes ? 'status' : 'alert'}
+                role={testResult.success ? 'status' : 'alert'}
                 data-cy="resultat-test-llm"
               >
                 <div className="flex items-center gap-2">
-                  {testResult.succes ? (
+                  {testResult.success ? (
                     <CheckCircle2 size={17} className="text-accent" aria-hidden="true" />
                   ) : (
                     <XCircle size={17} className="text-danger" aria-hidden="true" />
                   )}
-                  <p className={cn('text-sm font-semibold', testResult.succes ? 'text-accent' : 'text-danger')}>
-                    {testResult.succes ? 'Connexion réussie' : 'Test échoué'}
-                    {typeof testResult.dureeMs === 'number' ? ` en ${(testResult.dureeMs / 1000).toFixed(1)} s` : ''}
+                  <p className={cn('text-sm font-semibold', testResult.success ? 'text-accent' : 'text-danger')}>
+                    {testResult.success ? 'Connexion réussie' : 'Test échoué'}
+                    {typeof testResult.durationMs === 'number' ? ` en ${(testResult.durationMs / 1000).toFixed(1)} s` : ''}
                   </p>
                 </div>
                 <p className="mt-1 text-xs text-ink-soft">{testResult.message}</p>
-                {testResult.montantDetecte ? (
+                {testResult.detectedAmount ? (
                   <p className="mt-2 text-xs text-ink">
                     Montant détecté sur le document de test :{' '}
-                    <span className="font-mono font-semibold">{testResult.montantDetecte} €</span>
+                    <span className="font-mono font-semibold">{testResult.detectedAmount} €</span>
                   </p>
                 ) : null}
               </div>

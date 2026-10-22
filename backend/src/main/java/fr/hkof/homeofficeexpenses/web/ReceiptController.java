@@ -19,7 +19,7 @@ import fr.hkof.homeofficeexpenses.web.dto.Dtos.AnalysisStartResponse;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.ReceiptDto;
 
 @RestController
-@RequestMapping("/api/justificatifs")
+@RequestMapping("/api/receipts")
 public class ReceiptController {
 
     private final ReceiptService service;
@@ -32,30 +32,30 @@ public class ReceiptController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ReceiptDto uploader(@RequestParam("fichier") MultipartFile file) {
+    public ReceiptDto uploadReceipt(@RequestParam("file") MultipartFile file) {
         return service.uploader(file);
     }
 
     @GetMapping("/{id}")
-    public ReceiptDto obtenir(@PathVariable Long id) {
+    public ReceiptDto getReceipt(@PathVariable Long id) {
         return service.obtenir(id);
     }
 
-    @GetMapping("/{id}/fichier")
-    public ResponseEntity<byte[]> file(@PathVariable Long id) {
+    @GetMapping("/{id}/file")
+    public ResponseEntity<byte[]> getReceiptFile(@PathVariable Long id) {
         ReceiptDto receipt = service.obtenir(id);
         return PdfResponses.file(service.file(id), receipt.mimeType(), receipt.fileName());
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    public void deleteReceipt(@PathVariable Long id) {
         service.delete(id);
     }
 
-    @PostMapping("/{id}/analyse")
+    @PostMapping("/{id}/analysis")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public AnalysisStartResponse analyser(@PathVariable Long id) {
+    public AnalysisStartResponse startReceiptAnalysis(@PathVariable Long id) {
         AnalysisDto analysis = analysisJobService.lancer(id);
         return new AnalysisStartResponse(analysis.id(), analysis.status());
     }

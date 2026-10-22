@@ -11,7 +11,7 @@ import fr.hkof.homeofficeexpenses.web.dto.Dtos.SettingsDto;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.SettingsRequest;
 
 @RestController
-@RequestMapping("/api/parametres")
+@RequestMapping("/api/settings")
 public class SettingsController {
 
     private final SettingsService service;
@@ -21,12 +21,12 @@ public class SettingsController {
     }
 
     @GetMapping
-    public SettingsDto obtenir() {
+    public SettingsDto getSettings() {
         return service.obtenir();
     }
 
     @PutMapping
-    public SettingsDto mettreAJour(@RequestBody SettingsRequest request) {
+    public SettingsDto updateSettings(@RequestBody SettingsRequest request) {
         return service.mettreAJour(request);
     }
 }

@@ -140,7 +140,7 @@ public final class Dtos {
             String aiConfidence) {
     }
 
-    public record StatementCalculRequest(String month, List<ExpenseLineRequest> lines) {
+    public record StatementCalculationRequest(String month, List<ExpenseLineRequest> lines) {
     }
 
     public record StatementGenerationRequest(String month, Long templateId, List<ExpenseLineRequest> lines) {

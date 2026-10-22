@@ -29,32 +29,32 @@ public class AdminLlmController {
     }
 
     @GetMapping
-    public LlmConfigDto obtenir() {
+    public LlmConfigDto getLlmConfig() {
         return service.obtenir();
     }
 
     @PutMapping
-    public LlmConfigDto mettreAJour(@RequestBody LlmConfigRequest request) {
+    public LlmConfigDto updateLlmConfig(@RequestBody LlmConfigRequest request) {
         return service.mettreAJour(request);
     }
 
     @GetMapping("/models")
-    public List<LlmModelDto> models() {
+    public List<LlmModelDto> listLlmModels() {
         return service.models();
     }
 
     @PostMapping("/test")
-    public LlmTestResponse tester() {
+    public LlmTestResponse testLlm() {
         return service.tester();
     }
 
     @GetMapping("/status")
-    public LlmStatusDto status() {
+    public LlmStatusDto getLlmStatus() {
         return service.status();
     }
 
-    @GetMapping("/prompt-defaut")
-    public DefaultPromptDto promptDefaut() {
+    @GetMapping("/default-prompt")
+    public DefaultPromptDto getDefaultLlmPrompt() {
         return new DefaultPromptDto(DefaultPrompt.SYSTEM);
     }
 }

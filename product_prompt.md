@@ -118,32 +118,32 @@ homeofficeexpenses/
 
 Constraints: a single active version per month for each document type; regenerating creates a new version and keeps the previous one; a single active template per type; logical deletion only; generated documents keep a reference to the template they used.
 
-Identifiers (table, column, enum and endpoint names) stay in French because they are code contracts.
+API paths, query parameters and JSON field names are in English (code contracts, see `openapi/openapi.yaml`). Table, column and enum names follow the database schema. UI labels and texts stay in French (i18n later).
 
 # API REST (prefix `/api`)
 
-**Parameters and expense items**
-- `GET/PUT /parametres`
-- `GET/POST/PUT/DELETE /postes`
+**Settings and expense items**
+- `GET/PUT /settings`
+- `GET /expense-items?all=false|true`, `POST /expense-items`, `PUT/DELETE /expense-items/{id}`
 
 **Rent receipts**
-- `POST /quittances` (month or period + optional overrides) → creates and generates
-- `GET /quittances`, `GET /quittances?mois=AAAA-MM`, `GET /quittances/{id}`, `GET /quittances/{id}/pdf`
-- `POST /quittances/apercu`: watermarked PDF "APERÇU" (PREVIEW), nothing is persisted
+- `POST /rent-receipts` (month or period + optional overrides; body fields `month`, `periodStart`, `periodEnd`, `rentExclCharges`, `charges`, `paymentDate`, `issueDate`, `templateId`) → creates and generates
+- `GET /rent-receipts?month=AAAA-MM` (month optional), `GET /rent-receipts/active?month=AAAA-MM`, `GET /rent-receipts/{id}`, `GET /rent-receipts/{id}/pdf`
+- `POST /rent-receipts/preview`: watermarked PDF "APERÇU" (PREVIEW), nothing is persisted
 
-**Supporting documents**
-- `POST /justificatifs` (multipart) → id, name, MIME type, size
-- `DELETE /justificatifs/{id}`
+**Supporting documents (receipts)**
+- `POST /receipts` (multipart `file`) → id, fileName, mimeType, size
+- `GET /receipts/{id}`, `GET /receipts/{id}/file`, `DELETE /receipts/{id}`
 
 **Expense statements**
-- `POST /notes-frais/brouillon` (month) → pre-filled lines (rent taken from the receipt, default prorata)
-- `POST /notes-frais/calcul` (lines `{ posteCode, montantTtc, prorataPct, periodeDebut?, periodeFin?, montantMoisSurcharge? }`) → per line `montantMois`, `montantRetenu`, plus `total` and `totalEnLettres` (total in words)
-- `POST /notes-frais/apercu` (current draft; parameters `templateId?`, `complet?`) → watermarked PDF, nothing is persisted
-- `POST /notes-frais` → saves and generates the PDFs
-- `GET /notes-frais`, `GET /notes-frais/{id}`, `GET /notes-frais/{id}/pdf?complet=true|false`
+- `POST /expense-statements/draft?month=AAAA-MM` → pre-filled lines (rent taken from the receipt, default prorata)
+- `POST /expense-statements/calculation` (body `month`, `lines: [{ itemCode, amountInclVat, proRataPct, periodStart?, periodEnd?, monthlyAmountOverride? }]`) → per line `monthlyAmount`, `claimedAmount`, plus `total` and `totalInWords` (total in words)
+- `POST /expense-statements/preview` (body `month`, `templateId?`, `complete?`, `lines`) → watermarked PDF, nothing is persisted
+- `POST /expense-statements` (body `month`, `templateId?`, `lines`) → saves and generates the PDFs
+- `GET /expense-statements?month=AAAA-MM` (month optional), `GET /expense-statements/active?month=AAAA-MM`, `GET /expense-statements/{id}`, `GET /expense-statements/{id}/pdf?complete=true|false`
 
 **AI analysis**
-- `POST /justificatifs/{id}/analyse` → `202` + `analyseId`
+- `POST /receipts/{id}/analysis` → `202` + `analysisId`
 - `GET /analyses/{id}` (polling every 1 to 2 s, or SSE `GET /analyses/{id}/events`)
 - `DELETE /analyses/{id}` (cancel)
 
@@ -152,12 +152,13 @@ Identifiers (table, column, enum and endpoint names) stay in French because they
 - `GET /admin/llm/models` (equivalent of `ollama list`, via `GET {url}/api/tags`)
 - `POST /admin/llm/test`
 - `GET /admin/llm/status`
+- `GET /admin/llm/default-prompt`
 
 **Templates**
-- `GET /templates?type=RENT_RECEIPT|EXPENSE_STATEMENT`
+- `GET /templates?type=RENT_RECEIPT|EXPENSE_STATEMENT`, `GET /templates/variables?type=...`
 - `POST /templates` (multipart: type, name, file) → validation report
-- `POST /templates/{id}/activer`, `GET /templates/{id}/fichier`, `DELETE /templates/{id}`
-- `GET /templates/defaut/{type}`
+- `POST /templates/{id}/activate`, `GET /templates/{id}/file`, `POST /templates/{id}/preview`, `DELETE /templates/{id}`
+- `GET /templates/default/{type}`, `POST /templates/default/{type}` (reset to built-in default)
 - `POST /templates/{id}/apercu` (sample data)
 
 # NAVIGATION

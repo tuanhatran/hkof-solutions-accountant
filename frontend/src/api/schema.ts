@@ -4,7 +4,23 @@
  */
 
 export interface paths {
-    "/api/postes/{id}": {
+    "/api/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getSettings"];
+        put: operations["updateSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/expense-items/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -12,25 +28,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["mettreAJour"];
+        put: operations["updateExpenseItem"];
         post?: never;
-        delete: operations["supprimer"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/parametres": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["obtenir"];
-        put: operations["mettreAJour_1"];
-        post?: never;
-        delete?: never;
+        delete: operations["deleteExpenseItem"];
         options?: never;
         head?: never;
         patch?: never;
@@ -43,8 +43,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["obtenir_1"];
-        put: operations["mettreAJour_2"];
+        get: operations["getLlmConfig"];
+        put: operations["updateLlmConfig"];
         post?: never;
         delete?: never;
         options?: never;
@@ -59,16 +59,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister"];
+        get: operations["listTemplates"];
         put?: never;
-        post: operations["uploader"];
+        post: operations["uploadTemplate"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/templates/{id}/apercu": {
+    "/api/templates/{id}/preview": {
         parameters: {
             query?: never;
             header?: never;
@@ -77,14 +77,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["apercu"];
+        post: operations["previewTemplate"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/templates/{id}/activer": {
+    "/api/templates/{id}/activate": {
         parameters: {
             query?: never;
             header?: never;
@@ -93,94 +93,46 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["activer"];
+        post: operations["activateTemplate"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/templates/defaut/{type}": {
+    "/api/templates/default/{type}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["defaut"];
+        get: operations["getDefaultTemplate"];
         put?: never;
-        post: operations["reinitialiser"];
+        post: operations["resetDefaultTemplate"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/quittances": {
+    "/api/rent-receipts": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_1"];
+        get: operations["listRentReceipts"];
         put?: never;
-        post: operations["generer"];
+        post: operations["createRentReceipt"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/quittances/apercu": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["apercu_1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/postes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["lister_2"];
-        put?: never;
-        post: operations["creer"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/notes-frais": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["lister_3"];
-        put?: never;
-        post: operations["generer_1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/notes-frais/calcul": {
+    "/api/rent-receipts/preview": {
         parameters: {
             query?: never;
             header?: never;
@@ -189,14 +141,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["calculer"];
+        post: operations["previewRentReceipt"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/notes-frais/brouillon": {
+    "/api/receipts": {
         parameters: {
             query?: never;
             header?: never;
@@ -205,14 +157,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["brouillon"];
+        post: operations["uploadReceipt"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/notes-frais/apercu": {
+    "/api/receipts/{id}/analysis": {
         parameters: {
             query?: never;
             header?: never;
@@ -221,14 +173,30 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["apercu_2"];
+        post: operations["startReceiptAnalysis"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/justificatifs": {
+    "/api/expense-statements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listExpenseStatements"];
+        put?: never;
+        post: operations["createExpenseStatement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/expense-statements/preview": {
         parameters: {
             query?: never;
             header?: never;
@@ -237,14 +205,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["uploader_1"];
+        post: operations["previewStatement"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/justificatifs/{id}/analyse": {
+    "/api/expense-statements/draft": {
         parameters: {
             query?: never;
             header?: never;
@@ -253,7 +221,55 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["analyser"];
+        post: operations["createStatementDraft"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/expense-statements/calculation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["calculateStatement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/expense-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listExpenseItems"];
+        put?: never;
+        post: operations["createExpenseItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/e2e/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resetE2eData"];
         delete?: never;
         options?: never;
         head?: never;
@@ -269,21 +285,21 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["tester"];
+        post: operations["testLlm"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/templates/{id}/fichier": {
+    "/api/templates/{id}/file": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["fichier"];
+        get: operations["getTemplateFile"];
         put?: never;
         post?: never;
         delete?: never;
@@ -299,7 +315,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["variables"];
+        get: operations["getTemplateVariables"];
         put?: never;
         post?: never;
         delete?: never;
@@ -308,14 +324,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/quittances/{id}": {
+    "/api/rent-receipts/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["obtenir_2"];
+        get: operations["getRentReceipt"];
         put?: never;
         post?: never;
         delete?: never;
@@ -324,14 +340,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/quittances/{id}/pdf": {
+    "/api/rent-receipts/{id}/pdf": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["pdf"];
+        get: operations["getRentReceiptPdf"];
         put?: never;
         post?: never;
         delete?: never;
@@ -340,14 +356,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/quittances/active": {
+    "/api/rent-receipts/active": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["active"];
+        get: operations["getActiveRentReceipt"];
         put?: never;
         post?: never;
         delete?: never;
@@ -356,14 +372,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/notes-frais/{id}": {
+    "/api/receipts/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["obtenir_3"];
+        get: operations["getReceipt"];
+        put?: never;
+        post?: never;
+        delete: operations["deleteReceipt"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/receipts/{id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getReceiptFile"];
         put?: never;
         post?: never;
         delete?: never;
@@ -372,14 +404,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/notes-frais/{id}/pdf": {
+    "/api/expense-statements/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["pdf_1"];
+        get: operations["getExpenseStatement"];
         put?: never;
         post?: never;
         delete?: never;
@@ -388,14 +420,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/notes-frais/active": {
+    "/api/expense-statements/{id}/pdf": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["active_1"];
+        get: operations["getExpenseStatementPdf"];
         put?: never;
         post?: never;
         delete?: never;
@@ -404,30 +436,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/justificatifs/{id}": {
+    "/api/expense-statements/active": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["obtenir_4"];
-        put?: never;
-        post?: never;
-        delete: operations["supprimer_1"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/justificatifs/{id}/fichier": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["fichier_1"];
+        get: operations["getActiveExpenseStatement"];
         put?: never;
         post?: never;
         delete?: never;
@@ -443,10 +459,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["obtenir_5"];
+        get: operations["getAnalysis"];
         put?: never;
         post?: never;
-        delete: operations["annuler"];
+        delete: operations["cancelAnalysis"];
         options?: never;
         head?: never;
         patch?: never;
@@ -459,7 +475,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["evenements"];
+        get: operations["streamAnalysisEvents"];
         put?: never;
         post?: never;
         delete?: never;
@@ -475,23 +491,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["statut"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/llm/prompt-defaut": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["promptDefaut"];
+        get: operations["getLlmStatus"];
         put?: never;
         post?: never;
         delete?: never;
@@ -507,7 +507,23 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["modeles"];
+        get: operations["listLlmModels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/llm/default-prompt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getDefaultLlmPrompt"];
         put?: never;
         post?: never;
         delete?: never;
@@ -526,7 +542,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete: operations["supprimer_2"];
+        delete: operations["deleteTemplate"];
         options?: never;
         head?: never;
         patch?: never;
@@ -536,322 +552,322 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        PosteRequest: {
-            code?: string;
-            libelle?: string;
-            fournisseur?: string;
-            prorataPct?: string;
-            periodicite?: string;
-            actif?: boolean;
-            /** Format: int32 */
-            ordre?: number;
-            plusieursLignesAutorisees?: boolean;
+        SettingsRequest: {
+            companyName?: string;
+            legalForm?: string;
+            siren?: string;
+            companyAddress?: string;
+            managerName?: string;
+            homeAddress?: string;
+            totalArea?: string;
+            businessArea?: string;
+            landlordName?: string;
+            landlordAddress?: string;
+            tenantName?: string;
+            tenantAddress?: string;
+            rentExclCharges?: string;
+            chargesAdvance?: string;
+            issuePlace?: string;
         };
-        PosteDto: {
+        SettingsDto: {
+            /** Format: int64 */
+            id?: number;
+            companyName?: string;
+            legalForm?: string;
+            siren?: string;
+            companyAddress?: string;
+            managerName?: string;
+            homeAddress?: string;
+            totalArea?: string;
+            businessArea?: string;
+            proRataBase?: string;
+            proRataBaseDetail?: string;
+            landlordName?: string;
+            landlordAddress?: string;
+            tenantName?: string;
+            tenantAddress?: string;
+            rentExclCharges?: string;
+            chargesAdvance?: string;
+            issuePlace?: string;
+        };
+        ExpenseItemRequest: {
+            code?: string;
+            label?: string;
+            supplier?: string;
+            proRataPct?: string;
+            periodicity?: string;
+            active?: boolean;
+            /** Format: int32 */
+            sortOrder?: number;
+            multipleLinesAllowed?: boolean;
+        };
+        ExpenseItemDto: {
             /** Format: int64 */
             id?: number;
             code?: string;
-            libelle?: string;
-            fournisseur?: string;
-            prorataPct?: string;
-            periodicite?: string;
-            actif?: boolean;
+            label?: string;
+            supplier?: string;
+            proRataPct?: string;
+            periodicity?: string;
+            active?: boolean;
             /** Format: int32 */
-            ordre?: number;
-            plusieursLignesAutorisees?: boolean;
-        };
-        ParametresRequest: {
-            raisonSociale?: string;
-            formeJuridique?: string;
-            siren?: string;
-            societeAdresse?: string;
-            gerant?: string;
-            logementAdresse?: string;
-            surfaceTotale?: string;
-            surfacePro?: string;
-            bailleurNom?: string;
-            bailleurAdresse?: string;
-            locataireNom?: string;
-            locataireAdresse?: string;
-            loyerHc?: string;
-            provisionCharges?: string;
-            lieuEmission?: string;
-        };
-        ParametresDto: {
-            /** Format: int64 */
-            id?: number;
-            raisonSociale?: string;
-            formeJuridique?: string;
-            siren?: string;
-            societeAdresse?: string;
-            gerant?: string;
-            logementAdresse?: string;
-            surfaceTotale?: string;
-            surfacePro?: string;
-            prorataBase?: string;
-            prorataBaseDetail?: string;
-            bailleurNom?: string;
-            bailleurAdresse?: string;
-            locataireNom?: string;
-            locataireAdresse?: string;
-            loyerHc?: string;
-            provisionCharges?: string;
-            lieuEmission?: string;
+            sortOrder?: number;
+            multipleLinesAllowed?: boolean;
         };
         LlmConfigRequest: {
-            actif?: boolean;
-            fournisseur?: string;
+            active?: boolean;
+            supplier?: string;
             url?: string;
-            modele?: string;
+            model?: string;
             /** Format: int32 */
             timeoutSeconds?: number;
             temperature?: string;
             /** Format: int32 */
             numCtx?: number;
             /** Format: int32 */
-            pagesMax?: number;
-            ocrActif?: boolean;
-            promptExtraction?: string;
-            cleApi?: string;
+            maxPages?: number;
+            ocrActive?: boolean;
+            extractionPrompt?: string;
+            apiKey?: string;
         };
         LlmConfigDto: {
-            actif?: boolean;
-            fournisseur?: string;
+            active?: boolean;
+            supplier?: string;
             url?: string;
-            modele?: string;
+            model?: string;
             /** Format: int32 */
             timeoutSeconds?: number;
             temperature?: string;
             /** Format: int32 */
             numCtx?: number;
             /** Format: int32 */
-            pagesMax?: number;
-            ocrActif?: boolean;
-            promptExtraction?: string;
-            apiKeyConfiguree?: boolean;
-            urlDistante?: boolean;
-            avertissement?: string;
-        };
-        RapportValidationDto: {
-            variablesReconnues?: string[];
-            variablesInconnues?: string[];
-            variablesManquantes?: string[];
-            structureValide?: boolean;
-            erreurs?: string[];
+            maxPages?: number;
+            ocrActive?: boolean;
+            extractionPrompt?: string;
+            apiKeyConfigured?: boolean;
+            remoteUrl?: boolean;
+            warning?: string;
         };
         TemplateDto: {
             /** Format: int64 */
             id?: number;
             type?: string;
-            nom?: string;
+            name?: string;
             /** Format: int32 */
             version?: number;
             format?: string;
-            actif?: boolean;
-            integre?: boolean;
+            active?: boolean;
+            builtIn?: boolean;
             /** Format: date-time */
             createdAt?: string;
-            rapport?: components["schemas"]["RapportValidationDto"];
+            report?: components["schemas"]["ValidationReportDto"];
         };
-        QuittanceRequest: {
-            mois?: string;
-            periodeDebut?: string;
-            periodeFin?: string;
-            loyerHc?: string;
+        ValidationReportDto: {
+            recognizedVariables?: string[];
+            unknownVariables?: string[];
+            missingVariables?: string[];
+            structureValid?: boolean;
+            errors?: string[];
+        };
+        RentReceiptRequest: {
+            month?: string;
+            periodStart?: string;
+            periodEnd?: string;
+            rentExclCharges?: string;
             charges?: string;
-            datePaiement?: string;
-            dateEmission?: string;
+            paymentDate?: string;
+            issueDate?: string;
             /** Format: int64 */
             templateId?: number;
         };
-        QuittanceDto: {
+        RentReceiptDto: {
             /** Format: int64 */
             id?: number;
-            mois?: string;
+            month?: string;
             /** Format: date */
-            periodeDebut?: string;
+            periodStart?: string;
             /** Format: date */
-            periodeFin?: string;
-            loyerHc?: string;
+            periodEnd?: string;
+            rentExclCharges?: string;
             charges?: string;
             total?: string;
             /** Format: date */
-            datePaiement?: string;
+            paymentDate?: string;
             /** Format: date */
-            dateEmission?: string;
+            issueDate?: string;
             /** Format: int32 */
             version?: number;
-            statut?: string;
+            status?: string;
             /** Format: int64 */
             templateId?: number;
-            templateNom?: string;
+            templateName?: string;
             /** Format: int32 */
             templateVersion?: number;
             /** Format: date-time */
             createdAt?: string;
-            pdfDisponible?: boolean;
+            pdfAvailable?: boolean;
         };
-        LigneRequest: {
-            posteCode?: string;
-            montantTtc?: string;
-            prorataPct?: string;
-            periodeDebut?: string;
-            periodeFin?: string;
-            montantMoisSurcharge?: string;
+        ReceiptDto: {
             /** Format: int64 */
-            justificatifId?: number;
-            sourceMontant?: string;
-            montantDetecteIa?: string;
-            confianceIa?: string;
+            id?: number;
+            fileName?: string;
+            mimeType?: string;
+            /** Format: int64 */
+            size?: number;
+            /** Format: date-time */
+            createdAt?: string;
         };
-        NoteGenerationRequest: {
-            mois?: string;
+        AnalysisStartResponse: {
+            /** Format: int64 */
+            analysisId?: number;
+            status?: string;
+        };
+        ExpenseLineRequest: {
+            itemCode?: string;
+            amountInclVat?: string;
+            proRataPct?: string;
+            periodStart?: string;
+            periodEnd?: string;
+            monthlyAmountOverride?: string;
+            /** Format: int64 */
+            receiptId?: number;
+            amountSource?: string;
+            aiDetectedAmount?: string;
+            aiConfidence?: string;
+        };
+        StatementGenerationRequest: {
+            month?: string;
             /** Format: int64 */
             templateId?: number;
-            lignes?: components["schemas"]["LigneRequest"][];
+            lines?: components["schemas"]["ExpenseLineRequest"][];
         };
-        LigneDto: {
+        ExpenseLineDto: {
             /** Format: int64 */
             id?: number;
-            posteCode?: string;
-            posteLibelle?: string;
-            fournisseur?: string;
+            itemCode?: string;
+            itemLabel?: string;
+            supplier?: string;
             /** Format: date */
-            periodeDebut?: string;
+            periodStart?: string;
             /** Format: date */
-            periodeFin?: string;
-            montantTtc?: string;
-            montantMois?: string;
-            prorataPct?: string;
-            montantRetenu?: string;
+            periodEnd?: string;
+            amountInclVat?: string;
+            monthlyAmount?: string;
+            proRataPct?: string;
+            claimedAmount?: string;
             /** Format: int64 */
-            justificatifId?: number;
-            justificatifNom?: string;
-            sourceMontant?: string;
-            montantDetecteIa?: string;
-            confianceIa?: string;
+            receiptId?: number;
+            receiptName?: string;
+            amountSource?: string;
+            aiDetectedAmount?: string;
+            aiConfidence?: string;
         };
-        NoteDto: {
+        StatementDto: {
             /** Format: int64 */
             id?: number;
-            mois?: string;
-            numero?: string;
+            month?: string;
+            number?: string;
             total?: string;
             /** Format: int32 */
             version?: number;
-            statut?: string;
+            status?: string;
             /** Format: int64 */
             templateId?: number;
-            templateNom?: string;
+            templateName?: string;
             /** Format: int32 */
             templateVersion?: number;
             /** Format: date-time */
             createdAt?: string;
-            lignes?: components["schemas"]["LigneDto"][];
-            pdfDisponible?: boolean;
-            pdfCompletDisponible?: boolean;
+            lines?: components["schemas"]["ExpenseLineDto"][];
+            pdfAvailable?: boolean;
+            fullPdfAvailable?: boolean;
         };
-        NoteCalculRequest: {
-            mois?: string;
-            lignes?: components["schemas"]["LigneRequest"][];
-        };
-        CalculResponse: {
-            lignes?: components["schemas"]["LigneDto"][];
-            total?: string;
-            totalEnLettres?: string;
-            baseProrata?: string;
-            baseProrataDetail?: string;
-        };
-        BrouillonDto: {
-            mois?: string;
-            quittance?: components["schemas"]["QuittanceDto"];
-            lignes?: components["schemas"]["LigneDto"][];
-            baseProrata?: string;
-            baseProrataDetail?: string;
-            postesManquants?: string[];
-        };
-        NoteApercuRequest: {
-            mois?: string;
+        StatementPreviewRequest: {
+            month?: string;
             /** Format: int64 */
             templateId?: number;
-            complet?: boolean;
-            lignes?: components["schemas"]["LigneRequest"][];
+            complete?: boolean;
+            lines?: components["schemas"]["ExpenseLineRequest"][];
         };
-        JustificatifDto: {
-            /** Format: int64 */
-            id?: number;
-            nomFichier?: string;
-            typeMime?: string;
-            /** Format: int64 */
-            taille?: number;
-            /** Format: date-time */
-            createdAt?: string;
+        DraftDto: {
+            month?: string;
+            rentReceipt?: components["schemas"]["RentReceiptDto"];
+            lines?: components["schemas"]["ExpenseLineDto"][];
+            proRataBase?: string;
+            proRataBaseDetail?: string;
+            missingItems?: string[];
         };
-        AnalyseStartResponse: {
-            /** Format: int64 */
-            analyseId?: number;
-            statut?: string;
+        StatementCalculationRequest: {
+            month?: string;
+            lines?: components["schemas"]["ExpenseLineRequest"][];
+        };
+        CalculationResponse: {
+            lines?: components["schemas"]["ExpenseLineDto"][];
+            total?: string;
+            totalInWords?: string;
+            proRataBase?: string;
+            proRataBaseDetail?: string;
         };
         LlmTestResponse: {
-            succes?: boolean;
+            success?: boolean;
             /** Format: int64 */
-            dureeMs?: number;
+            durationMs?: number;
             message?: string;
-            montantDetecte?: string;
+            detectedAmount?: string;
         };
         TemplateVariableDto: {
-            nom?: string;
+            name?: string;
             description?: string;
-            obligatoire?: boolean;
-            exemple?: string;
+            required?: boolean;
+            example?: string;
         };
-        AnalyseDto: {
+        AnalysisDto: {
             /** Format: int64 */
             id?: number;
             /** Format: int64 */
-            justificatifId?: number;
-            nomFichier?: string;
-            statut?: string;
-            modele?: string;
+            receiptId?: number;
+            fileName?: string;
+            status?: string;
+            model?: string;
             /** Format: int64 */
-            dureeMs?: number;
-            resultat?: components["schemas"]["ExtractionDto"];
-            messageErreur?: string;
+            durationMs?: number;
+            result?: components["schemas"]["ExtractionDto"];
+            errorMessage?: string;
             /** Format: date-time */
             createdAt?: string;
         };
         ExtractionDto: {
-            typeSuggere?: string;
-            fournisseur?: string;
-            numeroFacture?: string;
-            dateFacture?: string;
-            periodeDebut?: string;
-            periodeFin?: string;
-            montantTtc?: string;
-            montantHt?: string;
-            devise?: string;
-            extraitSource?: string;
-            confiance?: string;
+            suggestedType?: string;
+            supplier?: string;
+            invoiceNumber?: string;
+            invoiceDate?: string;
+            periodStart?: string;
+            periodEnd?: string;
+            amountInclVat?: string;
+            amountExclVat?: string;
+            currency?: string;
+            sourceExcerpt?: string;
+            confidence?: string;
         };
         SseEmitter: {
             /** Format: int64 */
             timeout?: number;
         };
         LlmStatusDto: {
-            statut?: string;
-            actif?: boolean;
-            joignable?: boolean;
-            modelePresent?: boolean;
+            status?: string;
+            active?: boolean;
+            reachable?: boolean;
+            modelAvailable?: boolean;
             message?: string;
         };
-        PromptDefautDto: {
-            prompt?: string;
-        };
         LlmModelDto: {
-            nom?: string;
-            famille?: string;
-            parametres?: string;
+            name?: string;
+            family?: string;
+            parameters?: string;
             vision?: boolean;
+        };
+        DefaultPromptDto: {
+            prompt?: string;
         };
     };
     responses: never;
@@ -862,7 +878,51 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    mettreAJour: {
+    getSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SettingsDto"];
+                };
+            };
+        };
+    };
+    updateSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SettingsDto"];
+                };
+            };
+        };
+    };
+    updateExpenseItem: {
         parameters: {
             query?: never;
             header?: never;
@@ -873,7 +933,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PosteRequest"];
+                "application/json": components["schemas"]["ExpenseItemRequest"];
             };
         };
         responses: {
@@ -883,12 +943,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["PosteDto"];
+                    "*/*": components["schemas"]["ExpenseItemDto"];
                 };
             };
         };
     };
-    supprimer: {
+    deleteExpenseItem: {
         parameters: {
             query?: never;
             header?: never;
@@ -908,51 +968,7 @@ export interface operations {
             };
         };
     };
-    obtenir: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ParametresDto"];
-                };
-            };
-        };
-    };
-    mettreAJour_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ParametresRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ParametresDto"];
-                };
-            };
-        };
-    };
-    obtenir_1: {
+    getLlmConfig: {
         parameters: {
             query?: never;
             header?: never;
@@ -972,7 +988,7 @@ export interface operations {
             };
         };
     };
-    mettreAJour_2: {
+    updateLlmConfig: {
         parameters: {
             query?: never;
             header?: never;
@@ -996,7 +1012,7 @@ export interface operations {
             };
         };
     };
-    lister: {
+    listTemplates: {
         parameters: {
             query: {
                 type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
@@ -1018,11 +1034,11 @@ export interface operations {
             };
         };
     };
-    uploader: {
+    uploadTemplate: {
         parameters: {
             query: {
                 type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
-                nom: string;
+                name: string;
             };
             header?: never;
             path?: never;
@@ -1032,7 +1048,7 @@ export interface operations {
             content: {
                 "application/json": {
                     /** Format: binary */
-                    fichier: string;
+                    file: string;
                 };
             };
         };
@@ -1048,7 +1064,7 @@ export interface operations {
             };
         };
     };
-    apercu: {
+    previewTemplate: {
         parameters: {
             query?: never;
             header?: never;
@@ -1070,7 +1086,7 @@ export interface operations {
             };
         };
     };
-    activer: {
+    activateTemplate: {
         parameters: {
             query?: never;
             header?: never;
@@ -1092,7 +1108,7 @@ export interface operations {
             };
         };
     };
-    defaut: {
+    getDefaultTemplate: {
         parameters: {
             query?: never;
             header?: never;
@@ -1114,7 +1130,7 @@ export interface operations {
             };
         };
     };
-    reinitialiser: {
+    resetDefaultTemplate: {
         parameters: {
             query?: never;
             header?: never;
@@ -1136,10 +1152,10 @@ export interface operations {
             };
         };
     };
-    lister_1: {
+    listRentReceipts: {
         parameters: {
             query?: {
-                mois?: string;
+                month?: string;
             };
             header?: never;
             path?: never;
@@ -1153,12 +1169,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["QuittanceDto"][];
+                    "*/*": components["schemas"]["RentReceiptDto"][];
                 };
             };
         };
     };
-    generer: {
+    createRentReceipt: {
         parameters: {
             query?: never;
             header?: never;
@@ -1167,7 +1183,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["QuittanceRequest"];
+                "application/json": components["schemas"]["RentReceiptRequest"];
             };
         };
         responses: {
@@ -1177,12 +1193,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["QuittanceDto"];
+                    "*/*": components["schemas"]["RentReceiptDto"];
                 };
             };
         };
     };
-    apercu_1: {
+    previewRentReceipt: {
         parameters: {
             query?: never;
             header?: never;
@@ -1191,7 +1207,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["QuittanceRequest"];
+                "application/json": components["schemas"]["RentReceiptRequest"];
             };
         };
         responses: {
@@ -1206,169 +1222,7 @@ export interface operations {
             };
         };
     };
-    lister_2: {
-        parameters: {
-            query?: {
-                tous?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PosteDto"][];
-                };
-            };
-        };
-    };
-    creer: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PosteRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PosteDto"];
-                };
-            };
-        };
-    };
-    lister_3: {
-        parameters: {
-            query?: {
-                mois?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["NoteDto"][];
-                };
-            };
-        };
-    };
-    generer_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NoteGenerationRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["NoteDto"];
-                };
-            };
-        };
-    };
-    calculer: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NoteCalculRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["CalculResponse"];
-                };
-            };
-        };
-    };
-    brouillon: {
-        parameters: {
-            query: {
-                mois: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["BrouillonDto"];
-                };
-            };
-        };
-    };
-    apercu_2: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NoteApercuRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": string;
-                };
-            };
-        };
-    };
-    uploader_1: {
+    uploadReceipt: {
         parameters: {
             query?: never;
             header?: never;
@@ -1379,7 +1233,7 @@ export interface operations {
             content: {
                 "application/json": {
                     /** Format: binary */
-                    fichier: string;
+                    file: string;
                 };
             };
         };
@@ -1390,12 +1244,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["JustificatifDto"];
+                    "*/*": components["schemas"]["ReceiptDto"];
                 };
             };
         };
     };
-    analyser: {
+    startReceiptAnalysis: {
         parameters: {
             query?: never;
             header?: never;
@@ -1412,12 +1266,192 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["AnalyseStartResponse"];
+                    "*/*": components["schemas"]["AnalysisStartResponse"];
                 };
             };
         };
     };
-    tester: {
+    listExpenseStatements: {
+        parameters: {
+            query?: {
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StatementDto"][];
+                };
+            };
+        };
+    };
+    createExpenseStatement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatementGenerationRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StatementDto"];
+                };
+            };
+        };
+    };
+    previewStatement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatementPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    createStatementDraft: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DraftDto"];
+                };
+            };
+        };
+    };
+    calculateStatement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatementCalculationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CalculationResponse"];
+                };
+            };
+        };
+    };
+    listExpenseItems: {
+        parameters: {
+            query?: {
+                all?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ExpenseItemDto"][];
+                };
+            };
+        };
+    };
+    createExpenseItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpenseItemRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ExpenseItemDto"];
+                };
+            };
+        };
+    };
+    resetE2eData: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    testLlm: {
         parameters: {
             query?: never;
             header?: never;
@@ -1437,7 +1471,7 @@ export interface operations {
             };
         };
     };
-    fichier: {
+    getTemplateFile: {
         parameters: {
             query?: never;
             header?: never;
@@ -1459,7 +1493,7 @@ export interface operations {
             };
         };
     };
-    variables: {
+    getTemplateVariables: {
         parameters: {
             query: {
                 type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
@@ -1481,7 +1515,7 @@ export interface operations {
             };
         };
     };
-    obtenir_2: {
+    getRentReceipt: {
         parameters: {
             query?: never;
             header?: never;
@@ -1498,12 +1532,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["QuittanceDto"];
+                    "*/*": components["schemas"]["RentReceiptDto"];
                 };
             };
         };
     };
-    pdf: {
+    getRentReceiptPdf: {
         parameters: {
             query?: never;
             header?: never;
@@ -1525,10 +1559,10 @@ export interface operations {
             };
         };
     };
-    active: {
+    getActiveRentReceipt: {
         parameters: {
             query: {
-                mois: string;
+                month: string;
             };
             header?: never;
             path?: never;
@@ -1542,12 +1576,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["QuittanceDto"];
+                    "*/*": components["schemas"]["RentReceiptDto"];
                 };
             };
         };
     };
-    obtenir_3: {
+    getReceipt: {
         parameters: {
             query?: never;
             header?: never;
@@ -1564,80 +1598,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["NoteDto"];
+                    "*/*": components["schemas"]["ReceiptDto"];
                 };
             };
         };
     };
-    pdf_1: {
-        parameters: {
-            query?: {
-                complet?: boolean;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": string;
-                };
-            };
-        };
-    };
-    active_1: {
-        parameters: {
-            query: {
-                mois: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["NoteDto"];
-                };
-            };
-        };
-    };
-    obtenir_4: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["JustificatifDto"];
-                };
-            };
-        };
-    };
-    supprimer_1: {
+    deleteReceipt: {
         parameters: {
             query?: never;
             header?: never;
@@ -1657,7 +1623,7 @@ export interface operations {
             };
         };
     };
-    fichier_1: {
+    getReceiptFile: {
         parameters: {
             query?: never;
             header?: never;
@@ -1679,7 +1645,7 @@ export interface operations {
             };
         };
     };
-    obtenir_5: {
+    getExpenseStatement: {
         parameters: {
             query?: never;
             header?: never;
@@ -1696,12 +1662,58 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["AnalyseDto"];
+                    "*/*": components["schemas"]["StatementDto"];
                 };
             };
         };
     };
-    annuler: {
+    getExpenseStatementPdf: {
+        parameters: {
+            query?: {
+                complete?: boolean;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    getActiveExpenseStatement: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StatementDto"];
+                };
+            };
+        };
+    };
+    getAnalysis: {
         parameters: {
             query?: never;
             header?: never;
@@ -1718,12 +1730,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["AnalyseDto"];
+                    "*/*": components["schemas"]["AnalysisDto"];
                 };
             };
         };
     };
-    evenements: {
+    cancelAnalysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnalysisDto"];
+                };
+            };
+        };
+    };
+    streamAnalysisEvents: {
         parameters: {
             query?: never;
             header?: never;
@@ -1745,7 +1779,7 @@ export interface operations {
             };
         };
     };
-    statut: {
+    getLlmStatus: {
         parameters: {
             query?: never;
             header?: never;
@@ -1765,27 +1799,7 @@ export interface operations {
             };
         };
     };
-    promptDefaut: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PromptDefautDto"];
-                };
-            };
-        };
-    };
-    modeles: {
+    listLlmModels: {
         parameters: {
             query?: never;
             header?: never;
@@ -1805,7 +1819,27 @@ export interface operations {
             };
         };
     };
-    supprimer_2: {
+    getDefaultLlmPrompt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DefaultPromptDto"];
+                };
+            };
+        };
+    };
+    deleteTemplate: {
         parameters: {
             query?: never;
             header?: never;

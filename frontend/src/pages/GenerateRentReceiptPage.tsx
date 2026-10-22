@@ -30,17 +30,17 @@ function requestFromValues(
   templateId: number | null,
 ): RentReceiptRequest {
   const request: RentReceiptRequest = {
-    mois: values.mois,
-    periodeDebut: values.periodeDebut,
-    periodeFin: values.periodeFin,
-    loyerHc: parseAmount(values.loyerHc) ?? '',
+    month: values.mois,
+    periodStart: values.periodeDebut,
+    periodEnd: values.periodeFin,
+    rentExclCharges: parseAmount(values.loyerHc) ?? '',
     charges: parseAmount(values.charges) ?? '',
   };
   if (values.datePaiement) {
-    request.datePaiement = values.datePaiement;
+    request.paymentDate = values.datePaiement;
   }
   if (values.dateEmission) {
-    request.dateEmission = values.dateEmission;
+    request.issueDate = values.dateEmission;
   }
   if (templateId !== null) {
     request.templateId = templateId;
@@ -88,7 +88,7 @@ export function GenerateRentReceiptPage() {
   const validation = rentReceiptSchema.safeParse(values);
 
   const models = templates.data ?? [];
-  const activeModel = models.find((model) => model.actif) ?? null;
+  const activeModel = models.find((model) => model.active) ?? null;
   const selectedModel = draft.templateId ?? activeModel?.id ?? null;
   const request = validation.success
     ? requestFromValues(validation.data, selectedModel)
@@ -98,7 +98,7 @@ export function GenerateRentReceiptPage() {
   const preview = usePdfPreview(
     (signal) =>
       request
-        ? api.quittances.apercu(request, signal)
+        ? api.rentReceipts.preview(request, signal)
         : Promise.reject(new DOMException('Formulaire incomplet', 'AbortError')),
     signature,
     { actif: validation.success, debounceMs: 400 },
@@ -136,7 +136,7 @@ export function GenerateRentReceiptPage() {
     const requestBody = requestFromValues(submittedValues, selectedModel);
     setGenerationInProgress(true);
     try {
-      const rentReceipt = await api.quittances.generer(requestBody);
+      const rentReceipt = await api.rentReceipts.create(requestBody);
       setResult(rentReceipt);
       draft.marquerGenere();
       await queryClient.invalidateQueries({ queryKey: ['quittances'] });
@@ -164,10 +164,10 @@ export function GenerateRentReceiptPage() {
       return;
     }
     try {
-      const reply = await api.quittances.pdf(rentReceipt.id);
+      const reply = await api.rentReceipts.pdf(rentReceipt.id);
       downloadBlob(
         reply.blob,
-        reply.nomFichier ?? `quittance_${rentReceipt.mois ?? draft.mois}.pdf`,
+        reply.nomFichier ?? `quittance_${rentReceipt.month ?? draft.mois}.pdf`,
       );
     } catch (error) {
       toast.erreur(errorMessage(error));
@@ -175,7 +175,7 @@ export function GenerateRentReceiptPage() {
   }
 
   function goToStatement() {
-    const month = result?.mois ?? draft.mois;
+    const month = result?.month ?? draft.mois;
     useStatementDraft.getState().changerMois(month);
     navigate('/generer/note-frais');
   }
@@ -185,8 +185,8 @@ export function GenerateRentReceiptPage() {
       return;
     }
     draft.reprendreDepuisParametres(settings.data);
-    setValue('loyerHc', settings.data.loyerHc ?? '', { shouldValidate: true });
-    setValue('charges', settings.data.provisionCharges ?? '', { shouldValidate: true });
+    setValue('loyerHc', settings.data.rentExclCharges ?? '', { shouldValidate: true });
+    setValue('charges', settings.data.chargesAdvance ?? '', { shouldValidate: true });
     toast.info('Montants repris depuis la configuration.');
   }
 
@@ -276,7 +276,7 @@ export function GenerateRentReceiptPage() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-ink">
-                    {formatMonth(activeRentReceipt.data.mois)} — version {activeVersion} déjà active
+                    {formatMonth(activeRentReceipt.data.month)} — version {activeVersion} déjà active
                   </p>
                   <p className="text-xs text-ink-soft">
                     Total {displayedTotal}. Générer à nouveau créera la version {(activeVersion ?? 0) + 1}.
@@ -285,7 +285,7 @@ export function GenerateRentReceiptPage() {
               </div>
               {activeRentReceipt.data.id ? (
                 <a
-                  href={api.quittances.urlPdf(activeRentReceipt.data.id)}
+                  href={api.rentReceipts.pdfUrl(activeRentReceipt.data.id)}
                   target="_blank"
                   rel="noreferrer"
                   className="btn btn-secondaire btn-petit"
@@ -306,10 +306,10 @@ export function GenerateRentReceiptPage() {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold text-accent">Quittance générée</p>
                   <p className="mt-0.5 text-sm text-ink">
-                    {formatMonth(result.mois)} · version {result.version ?? 1} · {formatEUR(result.total)}
+                    {formatMonth(result.month)} · version {result.version ?? 1} · {formatEUR(result.total)}
                   </p>
                   <p className="mt-0.5 text-xs text-ink-soft">
-                    Enregistrée dans l’historique avec le template « {result.templateNom ?? 'modèle intégré'} » v
+                    Enregistrée dans l’historique avec le template « {result.templateName ?? 'modèle intégré'} » v
                     {result.templateVersion ?? 1}.
                   </p>
                 </div>
@@ -326,7 +326,7 @@ export function GenerateRentReceiptPage() {
                 </Button>
                 {result.id ? (
                   <a
-                    href={api.quittances.urlPdf(result.id)}
+                    href={api.rentReceipts.pdfUrl(result.id)}
                     target="_blank"
                     rel="noreferrer"
                     className="btn btn-secondaire btn-petit"
@@ -394,8 +394,8 @@ export function GenerateRentReceiptPage() {
                       {models.length === 0 ? <option value="">Modèle intégré</option> : null}
                       {models.map((model) => (
                         <option key={model.id} value={model.id}>
-                          {model.nom} — v{model.version}
-                          {model.actif ? ' (actif)' : ''}
+                          {model.name} — v{model.version}
+                          {model.active ? ' (actif)' : ''}
                         </option>
                       ))}
                     </select>
@@ -595,7 +595,7 @@ export function GenerateRentReceiptPage() {
                 {models.length === 0 ? <option value="">Modèle intégré</option> : null}
                 {models.map((model) => (
                   <option key={model.id} value={model.id}>
-                    {model.nom} — v{model.version}
+                    {model.name} — v{model.version}
                   </option>
                 ))}
               </select>

@@ -69,8 +69,8 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
           return;
         }
         set({
-          loyerHc: settings.loyerHc ?? '',
-          charges: settings.provisionCharges ?? '',
+          loyerHc: settings.rentExclCharges ?? '',
+          charges: settings.chargesAdvance ?? '',
           initialise: true,
           dirty: false,
         });
@@ -78,8 +78,8 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
 
       reprendreDepuisParametres: (settings) =>
         set({
-          loyerHc: settings.loyerHc ?? '',
-          charges: settings.provisionCharges ?? '',
+          loyerHc: settings.rentExclCharges ?? '',
+          charges: settings.chargesAdvance ?? '',
           dirty: true,
         }),
 

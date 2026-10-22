@@ -18,12 +18,12 @@ import fr.hkof.homeofficeexpenses.service.ExpenseStatementService;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.DraftDto;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.CalculationResponse;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementPreviewRequest;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementCalculRequest;
+import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementCalculationRequest;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementDto;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementGenerationRequest;
 
 @RestController
-@RequestMapping("/api/notes-frais")
+@RequestMapping("/api/expense-statements")
 public class ExpenseStatementController {
 
     private final ExpenseStatementService service;
@@ -32,34 +32,34 @@ public class ExpenseStatementController {
         this.service = service;
     }
 
-    @PostMapping("/brouillon")
-    public DraftDto draft(@RequestParam String month) {
+    @PostMapping("/draft")
+    public DraftDto createStatementDraft(@RequestParam String month) {
         return service.draft(month);
     }
 
-    @PostMapping("/calcul")
-    public CalculationResponse calculate(@RequestBody StatementCalculRequest request) {
+    @PostMapping("/calculation")
+    public CalculationResponse calculateStatement(@RequestBody StatementCalculationRequest request) {
         return service.calculate(request);
     }
 
-    @PostMapping("/apercu")
-    public ResponseEntity<byte[]> apercu(@RequestBody StatementPreviewRequest request) {
+    @PostMapping("/preview")
+    public ResponseEntity<byte[]> previewStatement(@RequestBody StatementPreviewRequest request) {
         return PdfResponses.pdf(service.apercu(request), "note_frais_apercu.pdf");
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public StatementDto generer(@RequestBody StatementGenerationRequest request) {
+    public StatementDto createExpenseStatement(@RequestBody StatementGenerationRequest request) {
         return service.generer(request);
     }
 
     @GetMapping
-    public List<StatementDto> lister(@RequestParam(required = false) String month) {
+    public List<StatementDto> listExpenseStatements(@RequestParam(required = false) String month) {
         return service.lister(month);
     }
 
     @GetMapping("/active")
-    public ResponseEntity<StatementDto> active(@RequestParam String month) {
+    public ResponseEntity<StatementDto> getActiveExpenseStatement(@RequestParam String month) {
         ExpenseStatement statement = service.activePourMonth(month);
         return statement == null
                 ? ResponseEntity.noContent().build()
@@ -67,12 +67,12 @@ public class ExpenseStatementController {
     }
 
     @GetMapping("/{id}")
-    public StatementDto obtenir(@PathVariable Long id) {
+    public StatementDto getExpenseStatement(@PathVariable Long id) {
         return service.obtenir(id);
     }
 
     @GetMapping("/{id}/pdf")
-    public ResponseEntity<byte[]> pdf(@PathVariable Long id,
+    public ResponseEntity<byte[]> getExpenseStatementPdf(@PathVariable Long id,
             @RequestParam(defaultValue = "false") boolean complete) {
         StatementDto statement = service.obtenir(id);
         String name = "note_frais_" + statement.month() + (complete ? "_complet" : "") + ".pdf";

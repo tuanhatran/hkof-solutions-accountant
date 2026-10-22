@@ -29,8 +29,8 @@ interface MonthGroup {
   notes: StatementDto[];
 }
 
-function current<T extends { statut?: string }>(documents: T[]): T | null {
-  return documents.find((document) => document.statut === 'ACTIVE') ?? documents[0] ?? null;
+function current<T extends { status?: string }>(documents: T[]): T | null {
+  return documents.find((document) => document.status === 'ACTIVE') ?? documents[0] ?? null;
 }
 
 function VersionBadge({ version, active }: { version: number; active: boolean }) {
@@ -71,24 +71,24 @@ export function HistoryPage() {
   const groups = useMemo<MonthGroup[]>(() => {
     const byMonth = new Map<string, MonthGroup>();
     for (const rentReceipt of rentReceiptsQuery.data ?? []) {
-      if (!rentReceipt.mois) {
+      if (!rentReceipt.month) {
         continue;
       }
-      const group = byMonth.get(rentReceipt.mois) ?? {
-        mois: rentReceipt.mois,
+      const group = byMonth.get(rentReceipt.month) ?? {
+        mois: rentReceipt.month,
         quittances: [],
         notes: [],
       };
       group.quittances.push(rentReceipt);
-      byMonth.set(rentReceipt.mois, group);
+      byMonth.set(rentReceipt.month, group);
     }
     for (const statement of statementsQuery.data ?? []) {
-      if (!statement.mois) {
+      if (!statement.month) {
         continue;
       }
-      const group = byMonth.get(statement.mois) ?? { mois: statement.mois, quittances: [], notes: [] };
+      const group = byMonth.get(statement.month) ?? { mois: statement.month, quittances: [], notes: [] };
       group.notes.push(statement);
-      byMonth.set(statement.mois, group);
+      byMonth.set(statement.month, group);
     }
     return [...byMonth.values()].sort((a, b) => b.mois.localeCompare(a.mois));
   }, [rentReceiptsQuery.data, statementsQuery.data]);
@@ -116,15 +116,15 @@ export function HistoryPage() {
   }
 
   function confirmReload() {
-    if (!statementToReload?.mois) {
+    if (!statementToReload?.month) {
       return;
     }
     const rentReceipt = current(
-      groups.find((group) => group.mois === statementToReload.mois)?.quittances ?? [],
+      groups.find((group) => group.mois === statementToReload.month)?.quittances ?? [],
     );
     useStatementDraft.getState().chargerDepuisNote(statementToReload, rentReceipt?.id ?? null);
     setStatementToReload(null);
-    toast.info(`Lignes de ${formatMonth(statementToReload.mois)} rechargées dans le brouillon.`);
+    toast.info(`Lignes de ${formatMonth(statementToReload.month)} rechargées dans le brouillon.`);
     navigate('/generer/note-frais');
   }
 
@@ -220,12 +220,12 @@ export function HistoryPage() {
                         {rentReceipt.id ? (
                           <>
                             <ActionsPdf
-                              href={api.quittances.urlPdf(rentReceipt.id)}
+                              href={api.rentReceipts.pdfUrl(rentReceipt.id)}
                               libelle="Télécharger le PDF"
                               dataCy={`btn-telecharger-quittance-${group.mois}`}
                             />
                             <a
-                              href={api.quittances.urlPdf(rentReceipt.id)}
+                              href={api.rentReceipts.pdfUrl(rentReceipt.id)}
                               target="_blank"
                               rel="noreferrer"
                               className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] font-medium text-ink-soft transition hover:bg-paper-deep hover:text-ink"
@@ -262,13 +262,13 @@ export function HistoryPage() {
                               <span className="flex items-center gap-2">
                                 <VersionBadge
                                   version={version.version ?? 1}
-                                  active={version.statut === 'ACTIVE'}
+                                  active={version.status === 'ACTIVE'}
                                 />
                                 <span className="text-ink-soft">{formatDateTime(version.createdAt)}</span>
                                 <span className="font-medium text-ink nombre">{formatEUR(version.total)}</span>
                               </span>
                               {version.id ? (
-                                <ActionsPdf href={api.quittances.urlPdf(version.id)} libelle="PDF" />
+                                <ActionsPdf href={api.rentReceipts.pdfUrl(version.id)} libelle="PDF" />
                               ) : null}
                             </li>
                           ))}
@@ -288,8 +288,8 @@ export function HistoryPage() {
                           {statement ? (
                             <p className="text-xs text-ink-soft">
                               Version {statement.version ?? 1} · {formatDateTime(statement.createdAt)}
-                              {statement.templateNom
-                                ? ` · ${statement.templateNom} v${statement.templateVersion ?? 1}`
+                              {statement.templateName
+                                ? ` · ${statement.templateName} v${statement.templateVersion ?? 1}`
                                 : ''}
                             </p>
                           ) : (
@@ -307,17 +307,17 @@ export function HistoryPage() {
                         {statement.id ? (
                           <>
                             <ActionsPdf
-                              href={api.notes.urlPdf(statement.id, false)}
+                              href={api.expenseStatements.pdfUrl(statement.id, false)}
                               libelle="Note seule"
                               dataCy={`btn-telecharger-note-${group.mois}`}
                             />
                             <ActionsPdf
-                              href={api.notes.urlPdf(statement.id, true)}
+                              href={api.expenseStatements.pdfUrl(statement.id, true)}
                               libelle="Note complète"
                               dataCy={`btn-telecharger-note-complete-${group.mois}`}
                             />
                             <a
-                              href={api.notes.urlPdf(statement.id, true)}
+                              href={api.expenseStatements.pdfUrl(statement.id, true)}
                               target="_blank"
                               rel="noreferrer"
                               className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] font-medium text-ink-soft transition hover:bg-paper-deep hover:text-ink"
@@ -363,7 +363,7 @@ export function HistoryPage() {
                               <span className="flex flex-wrap items-center gap-2">
                                 <VersionBadge
                                   version={version.version ?? 1}
-                                  active={version.statut === 'ACTIVE'}
+                                  active={version.status === 'ACTIVE'}
                                 />
                                 <span className="text-ink-soft">{formatDateTime(version.createdAt)}</span>
                                 <span className="font-medium text-ink nombre">{formatEUR(version.total)}</span>
@@ -371,9 +371,9 @@ export function HistoryPage() {
                               <span className="flex items-center gap-1">
                                 {version.id ? (
                                   <>
-                                    <ActionsPdf href={api.notes.urlPdf(version.id, false)} libelle="PDF" />
+                                    <ActionsPdf href={api.expenseStatements.pdfUrl(version.id, false)} libelle="PDF" />
                                     <ActionsPdf
-                                      href={api.notes.urlPdf(version.id, true)}
+                                      href={api.expenseStatements.pdfUrl(version.id, true)}
                                       libelle="Complète"
                                     />
                                   </>
@@ -406,7 +406,7 @@ export function HistoryPage() {
           statementToReload ? (
             <>
               Les lignes de la version {statementToReload.version ?? 1} de{' '}
-              {formatMonth(statementToReload.mois)} remplaceront le brouillon de ce mois dans l’onglet
+              {formatMonth(statementToReload.month)} remplaceront le brouillon de ce mois dans l’onglet
               Note de frais. Les brouillons des autres mois sont conservés.
             </>
           ) : null

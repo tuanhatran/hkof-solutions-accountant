@@ -19,7 +19,7 @@ import fr.hkof.homeofficeexpenses.web.dto.Dtos.ExpenseItemDto;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.ExpenseItemRequest;
 
 @RestController
-@RequestMapping("/api/postes")
+@RequestMapping("/api/expense-items")
 public class ExpenseItemController {
 
     private final ExpenseItemService service;
@@ -29,24 +29,24 @@ public class ExpenseItemController {
     }
 
     @GetMapping
-    public List<ExpenseItemDto> lister(@RequestParam(defaultValue = "false") boolean tous) {
-        return service.lister(tous);
+    public List<ExpenseItemDto> listExpenseItems(@RequestParam(defaultValue = "false") boolean all) {
+        return service.lister(all);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ExpenseItemDto creer(@RequestBody ExpenseItemRequest request) {
+    public ExpenseItemDto createExpenseItem(@RequestBody ExpenseItemRequest request) {
         return service.creer(request);
     }
 
     @PutMapping("/{id}")
-    public ExpenseItemDto mettreAJour(@PathVariable Long id, @RequestBody ExpenseItemRequest request) {
+    public ExpenseItemDto updateExpenseItem(@PathVariable Long id, @RequestBody ExpenseItemRequest request) {
         return service.mettreAJour(id, request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    public void deleteExpenseItem(@PathVariable Long id) {
         service.delete(id);
     }
 }
