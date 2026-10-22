@@ -8,8 +8,16 @@ import rentReceiptSource from "./GenerateRentReceiptPage.tsx?raw";
  * nothing, so the active-version cache stays stale after a generation.
  */
 const PAGES = [
-  ["GenerateExpenseStatementPage.tsx", expenseStatementSource, "queryKeys.statementsAll"],
-  ["GenerateRentReceiptPage.tsx", rentReceiptSource, "queryKeys.rentReceiptsAll"],
+  [
+    "GenerateExpenseStatementPage.tsx",
+    expenseStatementSource,
+    "queryKeys.statementsAll",
+  ],
+  [
+    "GenerateRentReceiptPage.tsx",
+    rentReceiptSource,
+    "queryKeys.rentReceiptsAll",
+  ],
 ] as const;
 
 describe("generation pages invalidation keys", () => {

@@ -17,28 +17,27 @@ const optionalDate = z
     "Date invalide (JJ/MM/AAAA).",
   );
 
-export const expenseSchema = z
-  .object({
-    itemCode: z.string().min(1, "Sélectionnez un type de frais."),
-    amountInclVat: z
-      .string()
-      .refine(
-        (value) => isValidAmount(value, true),
-        "Saisissez un montant supérieur à 0 (ex. 80,50).",
-      ),
-    proRataPct: z
-      .string()
-      .refine(
-        (value) => parsePercentage(value) !== null,
-        "Prorata attendu entre 0 et 100 (2 décimales max).",
-      ),
-    monthlyAmountOverride: z
-      .string()
-      .refine(
-        (value) => value === "" || isValidAmount(value, false),
-        "Le montant du mois doit être un montant positif.",
-      ),
-  });
+export const expenseSchema = z.object({
+  itemCode: z.string().min(1, "Sélectionnez un type de frais."),
+  amountInclVat: z
+    .string()
+    .refine(
+      (value) => isValidAmount(value, true),
+      "Saisissez un montant supérieur à 0 (ex. 80,50).",
+    ),
+  proRataPct: z
+    .string()
+    .refine(
+      (value) => parsePercentage(value) !== null,
+      "Prorata attendu entre 0 et 100 (2 décimales max).",
+    ),
+  monthlyAmountOverride: z
+    .string()
+    .refine(
+      (value) => value === "" || isValidAmount(value, false),
+      "Le montant du mois doit être un montant positif.",
+    ),
+});
 
 export type ExpenseFormValues = z.infer<typeof expenseSchema>;
 
@@ -71,14 +70,8 @@ export type RentReceiptFormValues = z.infer<typeof rentReceiptSchema>;
 
 export const settingsSchema = z
   .object({
-    companyName: z
-      .string()
-      .trim()
-      .min(1, "La raison sociale est obligatoire."),
-    legalForm: z
-      .string()
-      .trim()
-      .min(1, "La forme juridique est obligatoire."),
+    companyName: z.string().trim().min(1, "La raison sociale est obligatoire."),
+    legalForm: z.string().trim().min(1, "La forme juridique est obligatoire."),
     siren: z
       .string()
       .trim()
@@ -135,10 +128,7 @@ export const settingsSchema = z
         (value) => isValidAmount(value, false),
         "Provision pour charges invalide.",
       ),
-    issuePlace: z
-      .string()
-      .trim()
-      .min(1, "Le lieu d'émission est obligatoire."),
+    issuePlace: z.string().trim().min(1, "Le lieu d'émission est obligatoire."),
   })
   .refine(
     (values) => {
@@ -175,7 +165,10 @@ export const expenseItemSchema = z.object({
       "Prorata attendu entre 0 et 100.",
     ),
   periodicity: z.enum(["MONTHLY", "BIMONTHLY", "ANNUAL"]),
-  sortOrder: z.number().int("Ordre invalide.").min(0, "L'ordre doit être positif."),
+  sortOrder: z
+    .number()
+    .int("Ordre invalide.")
+    .min(0, "L'ordre doit être positif."),
   active: z.boolean(),
   multipleLinesAllowed: z.boolean(),
 });

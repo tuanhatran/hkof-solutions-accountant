@@ -62,12 +62,16 @@ describe("expenseSchema", () => {
   it("rejects a malformed monthly amount override", () => {
     expect(expenseSchema.safeParse(VALID_EXPENSE).success).toBe(true);
     expect(
-      expenseSchema.safeParse({ ...VALID_EXPENSE, monthlyAmountOverride: "60,98" })
-        .success,
+      expenseSchema.safeParse({
+        ...VALID_EXPENSE,
+        monthlyAmountOverride: "60,98",
+      }).success,
     ).toBe(true);
     expect(
-      expenseSchema.safeParse({ ...VALID_EXPENSE, monthlyAmountOverride: "abc" })
-        .success,
+      expenseSchema.safeParse({
+        ...VALID_EXPENSE,
+        monthlyAmountOverride: "abc",
+      }).success,
     ).toBe(false);
   });
 });

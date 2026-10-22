@@ -188,9 +188,8 @@ function AnalysisPanel({
               className="text-copper"
               aria-hidden="true"
             />
-            Analyse terminée{duration ? ` en ${duration}` : ""} — les champs
-            ont été pré-remplis et le montant détecté remplace la valeur
-            saisie.
+            Analyse terminée{duration ? ` en ${duration}` : ""} — les champs ont
+            été pré-remplis et le montant détecté remplace la valeur saisie.
           </p>
           {result ? (
             <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-soft">
@@ -445,8 +444,7 @@ export function GenerateExpenseStatementPage() {
     }
 
     const current = getValues();
-    const currentLines =
-      useStatementDraft.getState().linesByMonth[month] ?? [];
+    const currentLines = useStatementDraft.getState().linesByMonth[month] ?? [];
     let appliedType = false;
     let appliedAmount = false;
 
@@ -555,7 +553,10 @@ export function GenerateExpenseStatementPage() {
         shouldDirty: true,
       });
     } else if (code !== "loyer" && old === "loyer") {
-      setValue("amountInclVat", "", { shouldValidate: true, shouldDirty: true });
+      setValue("amountInclVat", "", {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
     }
   }
 
@@ -1091,10 +1092,7 @@ export function GenerateExpenseStatementPage() {
                     <select
                       id="frais-type"
                       ref={typeRef}
-                      className={cn(
-                        "field",
-                        errors.itemCode && "field-error",
-                      )}
+                      className={cn("field", errors.itemCode && "field-error")}
                       data-cy="select-type-frais"
                       value={values.itemCode}
                       onChange={(event) => changeType(event.target.value)}
@@ -1147,8 +1145,7 @@ export function GenerateExpenseStatementPage() {
                   <div className="rounded-xl border border-line bg-paper/50 p-4">
                     {rentReceipt.isPending ? (
                       <p className="flex items-center gap-2 text-sm text-ink-soft">
-                        <Spinner size={16} /> Recherche de la quittance du
-                        mois…
+                        <Spinner size={16} /> Recherche de la quittance du mois…
                       </p>
                     ) : rentReceipt.data ? (
                       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1273,9 +1270,7 @@ export function GenerateExpenseStatementPage() {
                         className={cn(
                           "field pr-9",
                           errors.amountInclVat && "field-error",
-                          lowConfidenceError &&
-                            ai.amount &&
-                            "field-warning",
+                          lowConfidenceError && ai.amount && "field-warning",
                         )}
                         data-cy="input-montant-ttc"
                         aria-invalid={Boolean(errors.amountInclVat)}
@@ -1523,9 +1518,7 @@ export function GenerateExpenseStatementPage() {
                               <div className="flex items-center justify-end gap-1">
                                 {line.receiptId ? (
                                   <a
-                                    href={api.receipts.fileUrl(
-                                      line.receiptId,
-                                    )}
+                                    href={api.receipts.fileUrl(line.receiptId)}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="rounded-lg p-1.5 text-ink-soft transition hover:bg-paper-deep hover:text-ink"

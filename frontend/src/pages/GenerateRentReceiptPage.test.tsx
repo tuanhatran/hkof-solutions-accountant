@@ -93,9 +93,13 @@ describe("GenerateRentReceiptPage", () => {
 
     await userEvent
       .setup()
-      .click(await screen.findByRole("button", { name: /Générer la quittance/ }));
+      .click(
+        await screen.findByRole("button", { name: /Générer la quittance/ }),
+      );
 
-    await waitFor(() => expect(api.rentReceipts.create).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(api.rentReceipts.create).toHaveBeenCalledTimes(1),
+    );
     await waitFor(() =>
       expect(
         queryClient.getQueryState(queryKeys.rentReceiptActive(MONTH))

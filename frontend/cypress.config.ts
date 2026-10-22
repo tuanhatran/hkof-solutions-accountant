@@ -56,7 +56,9 @@ export default defineConfig({
     setupNodeEvents(on) {
       on("task", {
         async readPdf(filePath: string): Promise<string> {
-          const absolutePath = filePath.startsWith(ROOT) ? filePath : resolvePath(filePath);
+          const absolutePath = filePath.startsWith(ROOT)
+            ? filePath
+            : resolvePath(filePath);
           const data = await fs.readFile(absolutePath);
           const parser = new PDFParse({ data });
           const result = await parser.getText();
@@ -64,7 +66,9 @@ export default defineConfig({
           return result.text;
         },
         async fileSize(filePath: string): Promise<number> {
-          const absolutePath = filePath.startsWith(ROOT) ? filePath : resolvePath(filePath);
+          const absolutePath = filePath.startsWith(ROOT)
+            ? filePath
+            : resolvePath(filePath);
           const stats = await fs.stat(absolutePath);
           return stats.size;
         },

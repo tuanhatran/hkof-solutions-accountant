@@ -4,1851 +4,1851 @@
  */
 
 export interface paths {
-    "/api/settings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getSettings"];
-        put: operations["updateSettings"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/api/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/expense-items/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put: operations["updateExpenseItem"];
-        post?: never;
-        delete: operations["deleteExpenseItem"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["getSettings"];
+    put: operations["updateSettings"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/expense-items/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/admin/llm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getLlmConfig"];
-        put: operations["updateLlmConfig"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put: operations["updateExpenseItem"];
+    post?: never;
+    delete: operations["deleteExpenseItem"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/admin/llm": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/templates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listTemplates"];
-        put?: never;
-        post: operations["uploadTemplate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["getLlmConfig"];
+    put: operations["updateLlmConfig"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/templates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/templates/{id}/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["previewTemplate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["listTemplates"];
+    put?: never;
+    post: operations["uploadTemplate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/templates/{id}/preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/templates/{id}/activate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["activateTemplate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["previewTemplate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/templates/{id}/activate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/templates/default/{type}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getDefaultTemplate"];
-        put?: never;
-        post: operations["resetDefaultTemplate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["activateTemplate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/templates/default/{type}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/rent-receipts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listRentReceipts"];
-        put?: never;
-        post: operations["createRentReceipt"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["getDefaultTemplate"];
+    put?: never;
+    post: operations["resetDefaultTemplate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/rent-receipts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/rent-receipts/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["previewRentReceipt"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["listRentReceipts"];
+    put?: never;
+    post: operations["createRentReceipt"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/rent-receipts/preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/receipts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["uploadReceipt"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["previewRentReceipt"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/receipts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/receipts/{id}/analysis": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["startReceiptAnalysis"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["uploadReceipt"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/receipts/{id}/analysis": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/expense-statements": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listExpenseStatements"];
-        put?: never;
-        post: operations["createExpenseStatement"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["startReceiptAnalysis"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/expense-statements": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/expense-statements/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["previewStatement"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["listExpenseStatements"];
+    put?: never;
+    post: operations["createExpenseStatement"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/expense-statements/preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/expense-statements/draft": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createStatementDraft"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["previewStatement"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/expense-statements/draft": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/expense-statements/calculation": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["calculateStatement"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["createStatementDraft"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/expense-statements/calculation": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/expense-items": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listExpenseItems"];
-        put?: never;
-        post: operations["createExpenseItem"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["calculateStatement"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/expense-items": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/e2e/reset": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["resetE2eData"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["listExpenseItems"];
+    put?: never;
+    post: operations["createExpenseItem"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/e2e/reset": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/admin/llm/test": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["testLlm"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["resetE2eData"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/admin/llm/test": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/templates/{id}/file": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getTemplateFile"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["testLlm"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/templates/{id}/file": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/templates/variables": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getTemplateVariables"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["getTemplateFile"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/templates/variables": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/rent-receipts/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getRentReceipt"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["getTemplateVariables"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/rent-receipts/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/rent-receipts/{id}/pdf": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getRentReceiptPdf"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["getRentReceipt"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/rent-receipts/{id}/pdf": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/rent-receipts/active": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getActiveRentReceipt"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["getRentReceiptPdf"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/rent-receipts/active": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/receipts/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getReceipt"];
-        put?: never;
-        post?: never;
-        delete: operations["deleteReceipt"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["getActiveRentReceipt"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/receipts/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/receipts/{id}/file": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getReceiptFile"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["getReceipt"];
+    put?: never;
+    post?: never;
+    delete: operations["deleteReceipt"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/receipts/{id}/file": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/expense-statements/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getExpenseStatement"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["getReceiptFile"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/expense-statements/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/expense-statements/{id}/pdf": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getExpenseStatementPdf"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["getExpenseStatement"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/expense-statements/{id}/pdf": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/expense-statements/active": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getActiveExpenseStatement"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["getExpenseStatementPdf"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/expense-statements/active": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/analyses/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getAnalysis"];
-        put?: never;
-        post?: never;
-        delete: operations["cancelAnalysis"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["getActiveExpenseStatement"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/analyses/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/analyses/{id}/events": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["streamAnalysisEvents"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["getAnalysis"];
+    put?: never;
+    post?: never;
+    delete: operations["cancelAnalysis"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/analyses/{id}/events": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/admin/llm/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getLlmStatus"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["streamAnalysisEvents"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/admin/llm/status": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/admin/llm/models": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listLlmModels"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["getLlmStatus"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/admin/llm/models": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/admin/llm/default-prompt": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getDefaultLlmPrompt"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["listLlmModels"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/admin/llm/default-prompt": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/templates/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["deleteTemplate"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["getDefaultLlmPrompt"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/templates/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations["deleteTemplate"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        SettingsRequest: {
-            companyName?: string;
-            legalForm?: string;
-            siren?: string;
-            companyAddress?: string;
-            managerName?: string;
-            homeAddress?: string;
-            totalArea?: string;
-            businessArea?: string;
-            landlordName?: string;
-            landlordAddress?: string;
-            tenantName?: string;
-            tenantAddress?: string;
-            rentExclCharges?: string;
-            chargesAdvance?: string;
-            issuePlace?: string;
-        };
-        SettingsDto: {
-            /** Format: int64 */
-            id?: number;
-            companyName?: string;
-            legalForm?: string;
-            siren?: string;
-            companyAddress?: string;
-            managerName?: string;
-            homeAddress?: string;
-            totalArea?: string;
-            businessArea?: string;
-            proRataBase?: string;
-            proRataBaseDetail?: string;
-            landlordName?: string;
-            landlordAddress?: string;
-            tenantName?: string;
-            tenantAddress?: string;
-            rentExclCharges?: string;
-            chargesAdvance?: string;
-            issuePlace?: string;
-        };
-        ExpenseItemRequest: {
-            code?: string;
-            label?: string;
-            supplier?: string;
-            proRataPct?: string;
-            periodicity?: string;
-            active?: boolean;
-            /** Format: int32 */
-            sortOrder?: number;
-            multipleLinesAllowed?: boolean;
-        };
-        ExpenseItemDto: {
-            /** Format: int64 */
-            id?: number;
-            code?: string;
-            label?: string;
-            supplier?: string;
-            proRataPct?: string;
-            periodicity?: string;
-            active?: boolean;
-            /** Format: int32 */
-            sortOrder?: number;
-            multipleLinesAllowed?: boolean;
-        };
-        LlmConfigRequest: {
-            active?: boolean;
-            supplier?: string;
-            url?: string;
-            model?: string;
-            /** Format: int32 */
-            timeoutSeconds?: number;
-            temperature?: string;
-            /** Format: int32 */
-            numCtx?: number;
-            /** Format: int32 */
-            maxPages?: number;
-            ocrActive?: boolean;
-            extractionPrompt?: string;
-            apiKey?: string;
-        };
-        LlmConfigDto: {
-            active?: boolean;
-            supplier?: string;
-            url?: string;
-            model?: string;
-            /** Format: int32 */
-            timeoutSeconds?: number;
-            temperature?: string;
-            /** Format: int32 */
-            numCtx?: number;
-            /** Format: int32 */
-            maxPages?: number;
-            ocrActive?: boolean;
-            extractionPrompt?: string;
-            apiKeyConfigured?: boolean;
-            remoteUrl?: boolean;
-            warning?: string;
-        };
-        TemplateDto: {
-            /** Format: int64 */
-            id?: number;
-            type?: string;
-            name?: string;
-            /** Format: int32 */
-            version?: number;
-            format?: string;
-            active?: boolean;
-            builtIn?: boolean;
-            /** Format: date-time */
-            createdAt?: string;
-            report?: components["schemas"]["ValidationReportDto"];
-        };
-        ValidationReportDto: {
-            recognizedVariables?: string[];
-            unknownVariables?: string[];
-            missingVariables?: string[];
-            structureValid?: boolean;
-            errors?: string[];
-        };
-        RentReceiptRequest: {
-            month?: string;
-            periodStart?: string;
-            periodEnd?: string;
-            rentExclCharges?: string;
-            charges?: string;
-            paymentDate?: string;
-            issueDate?: string;
-            /** Format: int64 */
-            templateId?: number;
-        };
-        RentReceiptDto: {
-            /** Format: int64 */
-            id?: number;
-            month?: string;
-            /** Format: date */
-            periodStart?: string;
-            /** Format: date */
-            periodEnd?: string;
-            rentExclCharges?: string;
-            charges?: string;
-            total?: string;
-            /** Format: date */
-            paymentDate?: string;
-            /** Format: date */
-            issueDate?: string;
-            /** Format: int32 */
-            version?: number;
-            status?: string;
-            /** Format: int64 */
-            templateId?: number;
-            templateName?: string;
-            /** Format: int32 */
-            templateVersion?: number;
-            /** Format: date-time */
-            createdAt?: string;
-            pdfAvailable?: boolean;
-        };
-        ReceiptDto: {
-            /** Format: int64 */
-            id?: number;
-            fileName?: string;
-            mimeType?: string;
-            /** Format: int64 */
-            size?: number;
-            /** Format: date-time */
-            createdAt?: string;
-        };
-        AnalysisStartResponse: {
-            /** Format: int64 */
-            analysisId?: number;
-            status?: string;
-        };
-        ExpenseLineRequest: {
-            itemCode?: string;
-            amountInclVat?: string;
-            proRataPct?: string;
-            monthlyAmountOverride?: string;
-            /** Format: int64 */
-            receiptId?: number;
-            amountSource?: string;
-            aiDetectedAmount?: string;
-            aiConfidence?: string;
-        };
-        StatementGenerationRequest: {
-            month?: string;
-            /** Format: int64 */
-            templateId?: number;
-            lines?: components["schemas"]["ExpenseLineRequest"][];
-        };
-        ExpenseLineDto: {
-            /** Format: int64 */
-            id?: number;
-            itemCode?: string;
-            itemLabel?: string;
-            supplier?: string;
-            amountInclVat?: string;
-            monthlyAmount?: string;
-            proRataPct?: string;
-            claimedAmount?: string;
-            /** Format: int64 */
-            receiptId?: number;
-            receiptName?: string;
-            amountSource?: string;
-            aiDetectedAmount?: string;
-            aiConfidence?: string;
-        };
-        StatementDto: {
-            /** Format: int64 */
-            id?: number;
-            month?: string;
-            number?: string;
-            total?: string;
-            /** Format: int32 */
-            version?: number;
-            status?: string;
-            /** Format: int64 */
-            templateId?: number;
-            templateName?: string;
-            /** Format: int32 */
-            templateVersion?: number;
-            /** Format: date-time */
-            createdAt?: string;
-            lines?: components["schemas"]["ExpenseLineDto"][];
-            pdfAvailable?: boolean;
-            fullPdfAvailable?: boolean;
-        };
-        StatementPreviewRequest: {
-            month?: string;
-            /** Format: int64 */
-            templateId?: number;
-            complete?: boolean;
-            lines?: components["schemas"]["ExpenseLineRequest"][];
-        };
-        DraftDto: {
-            month?: string;
-            rentReceipt?: components["schemas"]["RentReceiptDto"];
-            lines?: components["schemas"]["ExpenseLineDto"][];
-            proRataBase?: string;
-            proRataBaseDetail?: string;
-            missingItems?: string[];
-        };
-        StatementCalculationRequest: {
-            month?: string;
-            lines?: components["schemas"]["ExpenseLineRequest"][];
-        };
-        CalculationResponse: {
-            lines?: components["schemas"]["ExpenseLineDto"][];
-            total?: string;
-            totalInWords?: string;
-            proRataBase?: string;
-            proRataBaseDetail?: string;
-        };
-        LlmTestResponse: {
-            success?: boolean;
-            /** Format: int64 */
-            durationMs?: number;
-            message?: string;
-            detectedAmount?: string;
-        };
-        TemplateVariableDto: {
-            name?: string;
-            description?: string;
-            required?: boolean;
-            example?: string;
-        };
-        AnalysisDto: {
-            /** Format: int64 */
-            id?: number;
-            /** Format: int64 */
-            receiptId?: number;
-            fileName?: string;
-            status?: string;
-            model?: string;
-            /** Format: int64 */
-            durationMs?: number;
-            result?: components["schemas"]["ExtractionDto"];
-            errorMessage?: string;
-            /** Format: date-time */
-            createdAt?: string;
-        };
-        ExtractionDto: {
-            suggestedType?: string;
-            supplier?: string;
-            invoiceNumber?: string;
-            invoiceDate?: string;
-            amountInclVat?: string;
-            amountExclVat?: string;
-            currency?: string;
-            sourceExcerpt?: string;
-            confidence?: string;
-        };
-        SseEmitter: {
-            /** Format: int64 */
-            timeout?: number;
-        };
-        LlmStatusDto: {
-            status?: string;
-            active?: boolean;
-            reachable?: boolean;
-            modelAvailable?: boolean;
-            message?: string;
-        };
-        LlmModelDto: {
-            name?: string;
-            family?: string;
-            parameters?: string;
-            vision?: boolean;
-        };
-        DefaultPromptDto: {
-            prompt?: string;
-        };
+  schemas: {
+    SettingsRequest: {
+      companyName?: string;
+      legalForm?: string;
+      siren?: string;
+      companyAddress?: string;
+      managerName?: string;
+      homeAddress?: string;
+      totalArea?: string;
+      businessArea?: string;
+      landlordName?: string;
+      landlordAddress?: string;
+      tenantName?: string;
+      tenantAddress?: string;
+      rentExclCharges?: string;
+      chargesAdvance?: string;
+      issuePlace?: string;
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    SettingsDto: {
+      /** Format: int64 */
+      id?: number;
+      companyName?: string;
+      legalForm?: string;
+      siren?: string;
+      companyAddress?: string;
+      managerName?: string;
+      homeAddress?: string;
+      totalArea?: string;
+      businessArea?: string;
+      proRataBase?: string;
+      proRataBaseDetail?: string;
+      landlordName?: string;
+      landlordAddress?: string;
+      tenantName?: string;
+      tenantAddress?: string;
+      rentExclCharges?: string;
+      chargesAdvance?: string;
+      issuePlace?: string;
+    };
+    ExpenseItemRequest: {
+      code?: string;
+      label?: string;
+      supplier?: string;
+      proRataPct?: string;
+      periodicity?: string;
+      active?: boolean;
+      /** Format: int32 */
+      sortOrder?: number;
+      multipleLinesAllowed?: boolean;
+    };
+    ExpenseItemDto: {
+      /** Format: int64 */
+      id?: number;
+      code?: string;
+      label?: string;
+      supplier?: string;
+      proRataPct?: string;
+      periodicity?: string;
+      active?: boolean;
+      /** Format: int32 */
+      sortOrder?: number;
+      multipleLinesAllowed?: boolean;
+    };
+    LlmConfigRequest: {
+      active?: boolean;
+      supplier?: string;
+      url?: string;
+      model?: string;
+      /** Format: int32 */
+      timeoutSeconds?: number;
+      temperature?: string;
+      /** Format: int32 */
+      numCtx?: number;
+      /** Format: int32 */
+      maxPages?: number;
+      ocrActive?: boolean;
+      extractionPrompt?: string;
+      apiKey?: string;
+    };
+    LlmConfigDto: {
+      active?: boolean;
+      supplier?: string;
+      url?: string;
+      model?: string;
+      /** Format: int32 */
+      timeoutSeconds?: number;
+      temperature?: string;
+      /** Format: int32 */
+      numCtx?: number;
+      /** Format: int32 */
+      maxPages?: number;
+      ocrActive?: boolean;
+      extractionPrompt?: string;
+      apiKeyConfigured?: boolean;
+      remoteUrl?: boolean;
+      warning?: string;
+    };
+    TemplateDto: {
+      /** Format: int64 */
+      id?: number;
+      type?: string;
+      name?: string;
+      /** Format: int32 */
+      version?: number;
+      format?: string;
+      active?: boolean;
+      builtIn?: boolean;
+      /** Format: date-time */
+      createdAt?: string;
+      report?: components["schemas"]["ValidationReportDto"];
+    };
+    ValidationReportDto: {
+      recognizedVariables?: string[];
+      unknownVariables?: string[];
+      missingVariables?: string[];
+      structureValid?: boolean;
+      errors?: string[];
+    };
+    RentReceiptRequest: {
+      month?: string;
+      periodStart?: string;
+      periodEnd?: string;
+      rentExclCharges?: string;
+      charges?: string;
+      paymentDate?: string;
+      issueDate?: string;
+      /** Format: int64 */
+      templateId?: number;
+    };
+    RentReceiptDto: {
+      /** Format: int64 */
+      id?: number;
+      month?: string;
+      /** Format: date */
+      periodStart?: string;
+      /** Format: date */
+      periodEnd?: string;
+      rentExclCharges?: string;
+      charges?: string;
+      total?: string;
+      /** Format: date */
+      paymentDate?: string;
+      /** Format: date */
+      issueDate?: string;
+      /** Format: int32 */
+      version?: number;
+      status?: string;
+      /** Format: int64 */
+      templateId?: number;
+      templateName?: string;
+      /** Format: int32 */
+      templateVersion?: number;
+      /** Format: date-time */
+      createdAt?: string;
+      pdfAvailable?: boolean;
+    };
+    ReceiptDto: {
+      /** Format: int64 */
+      id?: number;
+      fileName?: string;
+      mimeType?: string;
+      /** Format: int64 */
+      size?: number;
+      /** Format: date-time */
+      createdAt?: string;
+    };
+    AnalysisStartResponse: {
+      /** Format: int64 */
+      analysisId?: number;
+      status?: string;
+    };
+    ExpenseLineRequest: {
+      itemCode?: string;
+      amountInclVat?: string;
+      proRataPct?: string;
+      monthlyAmountOverride?: string;
+      /** Format: int64 */
+      receiptId?: number;
+      amountSource?: string;
+      aiDetectedAmount?: string;
+      aiConfidence?: string;
+    };
+    StatementGenerationRequest: {
+      month?: string;
+      /** Format: int64 */
+      templateId?: number;
+      lines?: components["schemas"]["ExpenseLineRequest"][];
+    };
+    ExpenseLineDto: {
+      /** Format: int64 */
+      id?: number;
+      itemCode?: string;
+      itemLabel?: string;
+      supplier?: string;
+      amountInclVat?: string;
+      monthlyAmount?: string;
+      proRataPct?: string;
+      claimedAmount?: string;
+      /** Format: int64 */
+      receiptId?: number;
+      receiptName?: string;
+      amountSource?: string;
+      aiDetectedAmount?: string;
+      aiConfidence?: string;
+    };
+    StatementDto: {
+      /** Format: int64 */
+      id?: number;
+      month?: string;
+      number?: string;
+      total?: string;
+      /** Format: int32 */
+      version?: number;
+      status?: string;
+      /** Format: int64 */
+      templateId?: number;
+      templateName?: string;
+      /** Format: int32 */
+      templateVersion?: number;
+      /** Format: date-time */
+      createdAt?: string;
+      lines?: components["schemas"]["ExpenseLineDto"][];
+      pdfAvailable?: boolean;
+      fullPdfAvailable?: boolean;
+    };
+    StatementPreviewRequest: {
+      month?: string;
+      /** Format: int64 */
+      templateId?: number;
+      complete?: boolean;
+      lines?: components["schemas"]["ExpenseLineRequest"][];
+    };
+    DraftDto: {
+      month?: string;
+      rentReceipt?: components["schemas"]["RentReceiptDto"];
+      lines?: components["schemas"]["ExpenseLineDto"][];
+      proRataBase?: string;
+      proRataBaseDetail?: string;
+      missingItems?: string[];
+    };
+    StatementCalculationRequest: {
+      month?: string;
+      lines?: components["schemas"]["ExpenseLineRequest"][];
+    };
+    CalculationResponse: {
+      lines?: components["schemas"]["ExpenseLineDto"][];
+      total?: string;
+      totalInWords?: string;
+      proRataBase?: string;
+      proRataBaseDetail?: string;
+    };
+    LlmTestResponse: {
+      success?: boolean;
+      /** Format: int64 */
+      durationMs?: number;
+      message?: string;
+      detectedAmount?: string;
+    };
+    TemplateVariableDto: {
+      name?: string;
+      description?: string;
+      required?: boolean;
+      example?: string;
+    };
+    AnalysisDto: {
+      /** Format: int64 */
+      id?: number;
+      /** Format: int64 */
+      receiptId?: number;
+      fileName?: string;
+      status?: string;
+      model?: string;
+      /** Format: int64 */
+      durationMs?: number;
+      result?: components["schemas"]["ExtractionDto"];
+      errorMessage?: string;
+      /** Format: date-time */
+      createdAt?: string;
+    };
+    ExtractionDto: {
+      suggestedType?: string;
+      supplier?: string;
+      invoiceNumber?: string;
+      invoiceDate?: string;
+      amountInclVat?: string;
+      amountExclVat?: string;
+      currency?: string;
+      sourceExcerpt?: string;
+      confidence?: string;
+    };
+    SseEmitter: {
+      /** Format: int64 */
+      timeout?: number;
+    };
+    LlmStatusDto: {
+      status?: string;
+      active?: boolean;
+      reachable?: boolean;
+      modelAvailable?: boolean;
+      message?: string;
+    };
+    LlmModelDto: {
+      name?: string;
+      family?: string;
+      parameters?: string;
+      vision?: boolean;
+    };
+    DefaultPromptDto: {
+      prompt?: string;
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    getSettings: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["SettingsDto"];
-                };
-            };
-        };
+  getSettings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    updateSettings: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SettingsRequest"];
-            };
+        content: {
+          "*/*": components["schemas"]["SettingsDto"];
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["SettingsDto"];
-                };
-            };
-        };
+      };
     };
-    updateExpenseItem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ExpenseItemRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ExpenseItemDto"];
-                };
-            };
-        };
+  };
+  updateSettings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    deleteExpenseItem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SettingsRequest"];
+      };
     };
-    getLlmConfig: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["LlmConfigDto"];
-                };
-            };
+        content: {
+          "*/*": components["schemas"]["SettingsDto"];
         };
+      };
     };
-    updateLlmConfig: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LlmConfigRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["LlmConfigDto"];
-                };
-            };
-        };
+  };
+  updateExpenseItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
     };
-    listTemplates: {
-        parameters: {
-            query: {
-                type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TemplateDto"][];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ExpenseItemRequest"];
+      };
     };
-    uploadTemplate: {
-        parameters: {
-            query: {
-                type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
-                name: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /** Format: binary */
-                    file: string;
-                };
-            };
+        content: {
+          "*/*": components["schemas"]["ExpenseItemDto"];
         };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TemplateDto"];
-                };
-            };
-        };
+      };
     };
-    previewTemplate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": string;
-                };
-            };
-        };
+  };
+  deleteExpenseItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
     };
-    activateTemplate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TemplateDto"];
-                };
-            };
-        };
+        content?: never;
+      };
     };
-    getDefaultTemplate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": string;
-                };
-            };
-        };
+  };
+  getLlmConfig: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    resetDefaultTemplate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TemplateDto"];
-                };
-            };
+        content: {
+          "*/*": components["schemas"]["LlmConfigDto"];
         };
+      };
     };
-    listRentReceipts: {
-        parameters: {
-            query?: {
-                month?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["RentReceiptDto"][];
-                };
-            };
-        };
+  };
+  updateLlmConfig: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    createRentReceipt: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RentReceiptRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["RentReceiptDto"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LlmConfigRequest"];
+      };
     };
-    previewRentReceipt: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RentReceiptRequest"];
-            };
+        content: {
+          "*/*": components["schemas"]["LlmConfigDto"];
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": string;
-                };
-            };
-        };
+      };
     };
-    uploadReceipt: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /** Format: binary */
-                    file: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ReceiptDto"];
-                };
-            };
-        };
+  };
+  listTemplates: {
+    parameters: {
+      query: {
+        type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    startReceiptAnalysis: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Accepted */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["AnalysisStartResponse"];
-                };
-            };
+        content: {
+          "*/*": components["schemas"]["TemplateDto"][];
         };
+      };
     };
-    listExpenseStatements: {
-        parameters: {
-            query?: {
-                month?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["StatementDto"][];
-                };
-            };
-        };
+  };
+  uploadTemplate: {
+    parameters: {
+      query: {
+        type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
+        name: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    createExpenseStatement: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: {
+      content: {
+        "application/json": {
+          /** Format: binary */
+          file: string;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StatementGenerationRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["StatementDto"];
-                };
-            };
-        };
+      };
     };
-    previewStatement: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StatementPreviewRequest"];
-            };
+        content: {
+          "*/*": components["schemas"]["TemplateDto"];
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": string;
-                };
-            };
-        };
+      };
     };
-    createStatementDraft: {
-        parameters: {
-            query: {
-                month: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["DraftDto"];
-                };
-            };
-        };
+  };
+  previewTemplate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
     };
-    calculateStatement: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StatementCalculationRequest"];
-            };
+        content: {
+          "*/*": string;
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["CalculationResponse"];
-                };
-            };
-        };
+      };
     };
-    listExpenseItems: {
-        parameters: {
-            query?: {
-                all?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ExpenseItemDto"][];
-                };
-            };
-        };
+  };
+  activateTemplate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
     };
-    createExpenseItem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ExpenseItemRequest"];
-            };
+        content: {
+          "*/*": components["schemas"]["TemplateDto"];
         };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ExpenseItemDto"];
-                };
-            };
-        };
+      };
     };
-    resetE2eData: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  getDefaultTemplate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
+      };
+      cookie?: never;
     };
-    testLlm: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["LlmTestResponse"];
-                };
-            };
+        content: {
+          "*/*": string;
         };
+      };
     };
-    getTemplateFile: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": string;
-                };
-            };
-        };
+  };
+  resetDefaultTemplate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
+      };
+      cookie?: never;
     };
-    getTemplateVariables: {
-        parameters: {
-            query: {
-                type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TemplateVariableDto"][];
-                };
-            };
+        content: {
+          "*/*": components["schemas"]["TemplateDto"];
         };
+      };
     };
-    getRentReceipt: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["RentReceiptDto"];
-                };
-            };
-        };
+  };
+  listRentReceipts: {
+    parameters: {
+      query?: {
+        month?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    getRentReceiptPdf: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": string;
-                };
-            };
+        content: {
+          "*/*": components["schemas"]["RentReceiptDto"][];
         };
+      };
     };
-    getActiveRentReceipt: {
-        parameters: {
-            query: {
-                month: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["RentReceiptDto"];
-                };
-            };
-        };
+  };
+  createRentReceipt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    getReceipt: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ReceiptDto"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RentReceiptRequest"];
+      };
     };
-    deleteReceipt: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          "*/*": components["schemas"]["RentReceiptDto"];
         };
+      };
     };
-    getReceiptFile: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": string;
-                };
-            };
-        };
+  };
+  previewRentReceipt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    getExpenseStatement: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["StatementDto"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RentReceiptRequest"];
+      };
     };
-    getExpenseStatementPdf: {
-        parameters: {
-            query?: {
-                complete?: boolean;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": string;
-                };
-            };
+        content: {
+          "*/*": string;
         };
+      };
     };
-    getActiveExpenseStatement: {
-        parameters: {
-            query: {
-                month: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["StatementDto"];
-                };
-            };
-        };
+  };
+  uploadReceipt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    getAnalysis: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
+    requestBody?: {
+      content: {
+        "application/json": {
+          /** Format: binary */
+          file: string;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["AnalysisDto"];
-                };
-            };
-        };
+      };
     };
-    cancelAnalysis: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["AnalysisDto"];
-                };
-            };
+        content: {
+          "*/*": components["schemas"]["ReceiptDto"];
         };
+      };
     };
-    streamAnalysisEvents: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/event-stream": components["schemas"]["SseEmitter"];
-                };
-            };
-        };
+  };
+  startReceiptAnalysis: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
     };
-    getLlmStatus: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Accepted */
+      202: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["LlmStatusDto"];
-                };
-            };
+        content: {
+          "*/*": components["schemas"]["AnalysisStartResponse"];
         };
+      };
     };
-    listLlmModels: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["LlmModelDto"][];
-                };
-            };
-        };
+  };
+  listExpenseStatements: {
+    parameters: {
+      query?: {
+        month?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    getDefaultLlmPrompt: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["DefaultPromptDto"];
-                };
-            };
+        content: {
+          "*/*": components["schemas"]["StatementDto"][];
         };
+      };
     };
-    deleteTemplate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  createExpenseStatement: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StatementGenerationRequest"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["StatementDto"];
+        };
+      };
+    };
+  };
+  previewStatement: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StatementPreviewRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": string;
+        };
+      };
+    };
+  };
+  createStatementDraft: {
+    parameters: {
+      query: {
+        month: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["DraftDto"];
+        };
+      };
+    };
+  };
+  calculateStatement: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StatementCalculationRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["CalculationResponse"];
+        };
+      };
+    };
+  };
+  listExpenseItems: {
+    parameters: {
+      query?: {
+        all?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["ExpenseItemDto"][];
+        };
+      };
+    };
+  };
+  createExpenseItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ExpenseItemRequest"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["ExpenseItemDto"];
+        };
+      };
+    };
+  };
+  resetE2eData: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  testLlm: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["LlmTestResponse"];
+        };
+      };
+    };
+  };
+  getTemplateFile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": string;
+        };
+      };
+    };
+  };
+  getTemplateVariables: {
+    parameters: {
+      query: {
+        type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["TemplateVariableDto"][];
+        };
+      };
+    };
+  };
+  getRentReceipt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["RentReceiptDto"];
+        };
+      };
+    };
+  };
+  getRentReceiptPdf: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": string;
+        };
+      };
+    };
+  };
+  getActiveRentReceipt: {
+    parameters: {
+      query: {
+        month: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["RentReceiptDto"];
+        };
+      };
+    };
+  };
+  getReceipt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["ReceiptDto"];
+        };
+      };
+    };
+  };
+  deleteReceipt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getReceiptFile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": string;
+        };
+      };
+    };
+  };
+  getExpenseStatement: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["StatementDto"];
+        };
+      };
+    };
+  };
+  getExpenseStatementPdf: {
+    parameters: {
+      query?: {
+        complete?: boolean;
+      };
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": string;
+        };
+      };
+    };
+  };
+  getActiveExpenseStatement: {
+    parameters: {
+      query: {
+        month: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["StatementDto"];
+        };
+      };
+    };
+  };
+  getAnalysis: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["AnalysisDto"];
+        };
+      };
+    };
+  };
+  cancelAnalysis: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["AnalysisDto"];
+        };
+      };
+    };
+  };
+  streamAnalysisEvents: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/event-stream": components["schemas"]["SseEmitter"];
+        };
+      };
+    };
+  };
+  getLlmStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["LlmStatusDto"];
+        };
+      };
+    };
+  };
+  listLlmModels: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["LlmModelDto"][];
+        };
+      };
+    };
+  };
+  getDefaultLlmPrompt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["DefaultPromptDto"];
+        };
+      };
+    };
+  };
+  deleteTemplate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
 }

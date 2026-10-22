@@ -16,9 +16,7 @@ export function AmountConfirmButton({
         type="button"
         data-cy="btn-confirmer-montant"
         aria-label={
-          confirmed
-            ? "Montant confirmé"
-            : "Confirmer le montant détecté par IA"
+          confirmed ? "Montant confirmé" : "Confirmer le montant détecté par IA"
         }
         aria-pressed={confirmed}
         className={cn(
