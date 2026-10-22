@@ -136,7 +136,7 @@ Makefile                    Shortcuts: up, dev, test, e2e, down
 .github/workflows/ci.yml    CI: backend, frontend, e2e
 ```
 
-## Hypothèses (Assumptions)
+## Assumptions
 
 - Single-user, local deployment on a personal machine. The application is not exposed to the internet.
 - Ollama runs on the host by default. Linux hosts must set `OLLAMA_HOST=0.0.0.0`.

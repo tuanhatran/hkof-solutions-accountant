@@ -50,7 +50,7 @@ class OllamaClientTest {
     }
 
     @Test
-    @DisplayName("Liste les modèles installés via /api/tags")
+    @DisplayName("Lists installed models via /api/tags")
     void models() {
         serveur.stubFor(get(urlEqualTo("/api/tags")).willReturn(okJson("""
                 {"models":[
@@ -68,7 +68,7 @@ class OllamaClientTest {
     }
 
     @Test
-    @DisplayName("Envoie le schéma JSON et les options à /api/chat")
+    @DisplayName("Sends the JSON schema and options to /api/chat")
     void chat() {
         serveur.stubFor(post(urlEqualTo("/api/chat")).willReturn(okJson("""
                 {"message":{"role":"assistant","content":"{\\"montant_ttc\\":\\"78.00\\"}"},"done":true}
@@ -87,7 +87,7 @@ class OllamaClientTest {
     }
 
     @Test
-    @DisplayName("Détecte la capacité vision via /api/show")
+    @DisplayName("Detects the vision capability via /api/show")
     void vision() {
         serveur.stubFor(post(urlEqualTo("/api/show")).willReturn(okJson("""
                 {"capabilities":["completion","vision"]}
@@ -97,7 +97,7 @@ class OllamaClientTest {
     }
 
     @Test
-    @DisplayName("Un modèle texte ne gère pas les images")
+    @DisplayName("A text model does not handle images")
     void withoutVision() {
         serveur.stubFor(post(urlEqualTo("/api/show")).willReturn(okJson("""
                 {"capabilities":["completion"]}
@@ -107,7 +107,7 @@ class OllamaClientTest {
     }
 
     @Test
-    @DisplayName("Traduit une erreur Ollama en message français")
+    @DisplayName("Translates an Ollama error into a French message")
     void serverError() {
         serveur.stubFor(post(urlEqualTo("/api/chat")).willReturn(aResponse().withStatus(500)
                 .withHeader("Content-Type", "application/json")
@@ -119,7 +119,7 @@ class OllamaClientTest {
     }
 
     @Test
-    @DisplayName("Un Ollama injoignable donne un message actionnable")
+    @DisplayName("An unreachable Ollama yields an actionable message")
     void serverUnreachable() {
         config.setUrl("http://127.0.0.1:1");
 

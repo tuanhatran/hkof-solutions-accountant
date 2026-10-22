@@ -30,19 +30,19 @@ class NumberToWordsTest {
             "364.96, trois cent soixante-quatre euros et quatre-vingt-seize centimes",
             "1234.56, mille deux cent trente-quatre euros et cinquante-six centimes"
     })
-    @DisplayName("Convertit les montants en lettres avec les règles françaises")
+    @DisplayName("Converts amounts to words using French rules")
     void convertsToWords(String amount, String expected) {
         assertThat(NumberToWords.toWords(new BigDecimal(amount))).isEqualTo(expected);
     }
 
     @Test
-    @DisplayName("Un centime se met au singulier")
+    @DisplayName("One cent is singular")
     void singularCent() {
         assertThat(NumberToWords.toWords(new BigDecimal("1.01"))).isEqualTo("un euro et un centime");
     }
 
     @Test
-    @DisplayName("Le montant null renvoie une chaîne vide")
+    @DisplayName("A null amount returns an empty string")
     void amountNull() {
         assertThat(NumberToWords.toWords(null)).isEmpty();
     }

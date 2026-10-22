@@ -21,7 +21,7 @@ You build both tabs of the home page and the preview experience.
 - Receipt: month only, computed period (February/leap year), editable amounts, generation,
   versions.
 - Expense statement: type from `/expense-items`, accessible dropzone, AI analysis on drop
-  with polling and cancellation, amount/prorata/period, allocation, locked receipt case,
+  with polling and cancellation, amount/pro-rata/period, allocation, locked receipt case,
   editable list, backend total (300 ms debounce), missing items, statement-only or full
   generation.
 - Backend PDF preview via `react-pdf` (no iframe), 400 ms debounce, `AbortController`,

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HomeOfficeExpenses API
-  description: API locale de génération de quittances et de notes de frais d'occupation.
+  description: Local API for generating rent receipts and home-office expense statements.
   version: 1.0.0
 servers:
 - url: http://localhost:8080

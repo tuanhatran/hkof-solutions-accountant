@@ -7,23 +7,23 @@ const INTERVAL_MS = 1_200;
 const MAX_DURATION_MS = 180_000;
 
 export type AnalysisState =
-  | { statut: "inactif" }
-  | { statut: "demarrage" }
-  | { statut: "en_cours"; analyseId: number }
-  | { statut: "terminee"; analyse: AnalysisDto }
-  | { statut: "echec"; message: string }
-  | { statut: "annulee"; message: string };
+  | { status: "idle" }
+  | { status: "starting" }
+  | { status: "running"; analysisId: number }
+  | { status: "done"; analysis: AnalysisDto }
+  | { status: "failed"; message: string }
+  | { status: "cancelled"; message: string };
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
-export function isAnalysisRunning(phase: AnalysisState): boolean {
-  return phase.statut === "demarrage" || phase.statut === "en_cours";
+export function isAnalysisRunning(state: AnalysisState): boolean {
+  return state.status === "starting" || state.status === "running";
 }
 
 export function useAnalysis() {
-  const [phase, setEtat] = useState<AnalysisState>({ statut: "inactif" });
+  const [state, setState] = useState<AnalysisState>({ status: "idle" });
   const controllerRef = useRef<AbortController | null>(null);
   const analysisIdRef = useRef<number | null>(null);
   const mountRef = useRef(true);
@@ -41,7 +41,7 @@ export function useAnalysis() {
     const controller = new AbortController();
     controllerRef.current = controller;
     analysisIdRef.current = null;
-    setEtat({ statut: "demarrage" });
+    setState({ status: "starting" });
 
     try {
       const launch = await api.analyses.start(receiptId);
@@ -53,24 +53,24 @@ export function useAnalysis() {
         throw new Error("L'analyse n'a pas pu démarrer.");
       }
       analysisIdRef.current = analysisId;
-      setEtat({ statut: "en_cours", analyseId: analysisId });
+      setState({ status: "running", analysisId });
 
-      const start = Date.now();
+      const startedAt = Date.now();
       while (
         !controller.signal.aborted &&
-        Date.now() - start < MAX_DURATION_MS
+        Date.now() - startedAt < MAX_DURATION_MS
       ) {
         const analysis = await api.analyses.get(analysisId, controller.signal);
         if (controller.signal.aborted || !mountRef.current) {
           return;
         }
         if (analysis.status === "DONE") {
-          setEtat({ statut: "terminee", analyse: analysis });
+          setState({ status: "done", analysis });
           return;
         }
         if (analysis.status === "FAILED") {
-          setEtat({
-            statut: "echec",
+          setState({
+            status: "failed",
             message:
               analysis.errorMessage ||
               "L'analyse a échoué. Saisissez le montant manuellement.",
@@ -78,14 +78,14 @@ export function useAnalysis() {
           return;
         }
         if (analysis.status === "CANCELLED") {
-          setEtat({ statut: "annulee", message: "Analyse annulée." });
+          setState({ status: "cancelled", message: "Analyse annulée." });
           return;
         }
         await wait(INTERVAL_MS);
       }
       if (!controller.signal.aborted && mountRef.current) {
-        setEtat({
-          statut: "echec",
+        setState({
+          status: "failed",
           message:
             "L'analyse prend trop de temps. Saisissez le montant manuellement.",
         });
@@ -98,8 +98,8 @@ export function useAnalysis() {
       ) {
         return;
       }
-      setEtat({
-        statut: "echec",
+      setState({
+        status: "failed",
         message: "Analyse indisponible, saisissez le montant.",
       });
     }
@@ -117,24 +117,19 @@ export function useAnalysis() {
       }
     }
     if (mountRef.current) {
-      setEtat(
+      setState(
         silent
-          ? { statut: "inactif" }
-          : { statut: "annulee", message: "Analyse annulée." },
+          ? { status: "idle" }
+          : { status: "cancelled", message: "Analyse annulée." },
       );
     }
   }, []);
 
-  const resetAnalysis = useCallback(() => {
+  const reset = useCallback(() => {
     controllerRef.current?.abort();
     analysisIdRef.current = null;
-    setEtat({ statut: "inactif" });
+    setState({ status: "idle" });
   }, []);
 
-  return {
-    etat: phase,
-    demarrer: start,
-    annuler: cancel,
-    reinitialiser: resetAnalysis,
-  };
+  return { state, start, cancel, reset };
 }

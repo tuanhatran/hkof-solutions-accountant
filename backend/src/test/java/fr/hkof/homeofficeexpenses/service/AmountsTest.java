@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 class AmountsTest {
 
     @Test
-    @DisplayName("Accepte les montants avec virgule, point, espaces et symbole euro")
+    @DisplayName("Accepts amounts with comma, dot, spaces and euro symbol")
     void lenientDecimal() {
         assertThat(Amounts.decimal("80,50", "montant", true)).isEqualByComparingTo("80.50");
         assertThat(Amounts.decimal("1 234,56 €", "montant", true)).isEqualByComparingTo("1234.56");
@@ -20,7 +20,7 @@ class AmountsTest {
     }
 
     @Test
-    @DisplayName("Refuse un montant négatif ou nul quand il doit être positif")
+    @DisplayName("Rejects a negative or zero amount when it must be positive")
     void positiveDecimal() {
         assertThatThrownBy(() -> Amounts.decimal("0", "montant", true))
                 .isInstanceOf(BusinessException.class)
@@ -29,7 +29,7 @@ class AmountsTest {
     }
 
     @Test
-    @DisplayName("Accepte les proratas avec ou sans %, virgule et espaces")
+    @DisplayName("Accepts pro-rata values with or without %, comma and spaces")
     void lenientPercentage() {
         assertThat(Amounts.percentage("35,71")).isEqualByComparingTo("35.71");
         assertThat(Amounts.percentage("35.71 %")).isEqualByComparingTo("35.71");
@@ -39,7 +39,7 @@ class AmountsTest {
     }
 
     @Test
-    @DisplayName("Refuse plus de deux décimales de prorata")
+    @DisplayName("Rejects more than two decimals in a pro-rata value")
     void proRataPrecision() {
         assertThatThrownBy(() -> Amounts.percentage("35.712"))
                 .isInstanceOf(BusinessException.class)
@@ -47,7 +47,7 @@ class AmountsTest {
     }
 
     @Test
-    @DisplayName("Formate les montants à la française")
+    @DisplayName("Formats amounts in French style")
     void formatsFrench() {
         assertThat(Amounts.formatEUR(new BigDecimal("1234.5"))).isEqualTo("1\u00A0234,50\u00A0€");
         assertThat(Amounts.formatPercentage(new BigDecimal("35.71"))).isEqualTo("35,71\u00A0%");
@@ -55,7 +55,7 @@ class AmountsTest {
     }
 
     @Test
-    @DisplayName("Formate les mois en français")
+    @DisplayName("Formats months in French")
     void monthsFrench() {
         assertThat(Amounts.formatMonth(YearMonth.of(2026, 2))).isEqualTo("Février 2026");
         assertThat(Amounts.month("2026-02")).isEqualTo(YearMonth.of(2026, 2));

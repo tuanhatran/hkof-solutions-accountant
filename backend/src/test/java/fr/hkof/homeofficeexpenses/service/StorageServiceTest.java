@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 class StorageServiceTest {
 
     @Test
-    @DisplayName("Assainit les chemins, caractères interdits et noms réservés Windows")
+    @DisplayName("Sanitizes paths, forbidden characters and Windows reserved names")
     void sanitizesName() {
         assertThat(StorageService.sanitizeName("facture.pdf")).isEqualTo("facture.pdf");
         assertThat(StorageService.sanitizeName("../../etc/passwd")).isEqualTo("passwd");
@@ -22,7 +22,7 @@ class StorageServiceTest {
     }
 
     @Test
-    @DisplayName("Conserve l’extension en tronquant un nom très long")
+    @DisplayName("Keeps the extension when truncating a very long name")
     void longNameTruncated() {
         String name = "a".repeat(250) + ".pdf";
         String assaini = StorageService.sanitizeName(name);

@@ -4,34 +4,34 @@ import type { SettingsDto } from "@/api/types";
 import { todayDate, currentMonth, periodOfMonth } from "@/lib/dates";
 
 interface RentReceiptDraftState {
-  mois: string;
-  periodeDebut: string;
-  periodeFin: string;
-  loyerHc: string;
+  month: string;
+  periodStart: string;
+  periodEnd: string;
+  rentExclCharges: string;
   charges: string;
-  datePaiement: string;
-  dateEmission: string;
+  paymentDate: string;
+  issueDate: string;
   templateId: number | null;
-  initialise: boolean;
+  initialized: boolean;
   dirty: boolean;
-  changerMois: (month: string) => void;
-  modifier: (
+  changeMonth: (month: string) => void;
+  update: (
     values: Partial<
       Pick<
         RentReceiptDraftState,
-        | "periodeDebut"
-        | "periodeFin"
-        | "loyerHc"
+        | "periodStart"
+        | "periodEnd"
+        | "rentExclCharges"
         | "charges"
-        | "datePaiement"
-        | "dateEmission"
+        | "paymentDate"
+        | "issueDate"
       >
     >,
   ) => void;
-  definirTemplate: (templateId: number | null) => void;
-  initialiserDepuisParametres: (settings: SettingsDto) => void;
-  reprendreDepuisParametres: (settings: SettingsDto) => void;
-  marquerGenere: () => void;
+  setTemplate: (templateId: number | null) => void;
+  initializeFromSettings: (settings: SettingsDto) => void;
+  resumeFromSettings: (settings: SettingsDto) => void;
+  markGenerated: () => void;
 }
 
 const initialMonth = currentMonth();
@@ -41,69 +41,69 @@ const today = todayDate();
 export const useRentReceiptDraft = create<RentReceiptDraftState>()(
   persist(
     (set, get) => ({
-      mois: initialMonth,
-      periodeDebut: initialPeriod.debut,
-      periodeFin: initialPeriod.fin,
-      loyerHc: "",
+      month: initialMonth,
+      periodStart: initialPeriod.start,
+      periodEnd: initialPeriod.end,
+      rentExclCharges: "",
       charges: "",
-      datePaiement: today,
-      dateEmission: today,
+      paymentDate: today,
+      issueDate: today,
       templateId: null,
-      initialise: false,
+      initialized: false,
       dirty: false,
 
-      changerMois: (month) => {
-        if (month === get().mois) {
+      changeMonth: (month) => {
+        if (month === get().month) {
           return;
         }
         const period = periodOfMonth(month);
         set({
-          mois: month,
-          periodeDebut: period.debut,
-          periodeFin: period.fin,
+          month,
+          periodStart: period.start,
+          periodEnd: period.end,
           dirty: true,
         });
       },
 
-      modifier: (values) => set({ ...values, dirty: true }),
+      update: (values) => set({ ...values, dirty: true }),
 
-      definirTemplate: (templateId) => set({ templateId, dirty: true }),
+      setTemplate: (templateId) => set({ templateId, dirty: true }),
 
-      initialiserDepuisParametres: (settings) => {
-        if (get().initialise) {
+      initializeFromSettings: (settings) => {
+        if (get().initialized) {
           return;
         }
         set({
-          loyerHc: settings.rentExclCharges ?? "",
+          rentExclCharges: settings.rentExclCharges ?? "",
           charges: settings.chargesAdvance ?? "",
-          initialise: true,
+          initialized: true,
           dirty: false,
         });
       },
 
-      reprendreDepuisParametres: (settings) =>
+      resumeFromSettings: (settings) =>
         set({
-          loyerHc: settings.rentExclCharges ?? "",
+          rentExclCharges: settings.rentExclCharges ?? "",
           charges: settings.chargesAdvance ?? "",
           dirty: true,
         }),
 
-      marquerGenere: () => set({ dirty: false }),
+      markGenerated: () => set({ dirty: false }),
     }),
     {
-      name: "homeofficeexpenses.quittance-draft",
-      version: 1,
+      name: "homeofficeexpenses.receipt-draft",
+      version: 2,
       storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
-        mois: state.mois,
-        periodeDebut: state.periodeDebut,
-        periodeFin: state.periodeFin,
-        loyerHc: state.loyerHc,
+        month: state.month,
+        periodStart: state.periodStart,
+        periodEnd: state.periodEnd,
+        rentExclCharges: state.rentExclCharges,
         charges: state.charges,
-        datePaiement: state.datePaiement,
-        dateEmission: state.dateEmission,
+        paymentDate: state.paymentDate,
+        issueDate: state.issueDate,
         templateId: state.templateId,
-        initialise: state.initialise,
+        initialized: state.initialized,
         dirty: state.dirty,
       }),
     },

@@ -8,30 +8,30 @@ import {
 } from "./validation";
 
 const VALID_EXPENSE = {
-  posteCode: "gaz",
-  montantTtc: "120,00",
-  prorataPct: "35,71",
-  periodeDebut: "2026-09-01",
-  periodeFin: "2026-10-31",
-  montantMoisSurcharge: "",
+  itemCode: "gaz",
+  amountInclVat: "120,00",
+  proRataPct: "35,71",
+  periodStart: "2026-09-01",
+  periodEnd: "2026-10-31",
+  monthlyAmountOverride: "",
 };
 
 const VALID_SETTINGS = {
-  raisonSociale: "HKOF",
-  formeJuridique: "EURL",
+  companyName: "HKOF",
+  legalForm: "EURL",
   siren: "123 456 789",
-  societeAdresse: "1 rue de la Paix, 75002 Paris",
-  gerant: "Camille Martin",
-  logementAdresse: "12 rue des Lilas, 75011 Paris",
-  surfaceTotale: "70,00",
-  surfacePro: "25,00",
-  bailleurNom: "Propriétaire",
-  bailleurAdresse: "1 avenue du Parc, 75011 Paris",
-  locataireNom: "Locataire",
-  locataireAdresse: "12 rue des Lilas, 75011 Paris",
-  loyerHc: "900,00",
-  provisionCharges: "50,00",
-  lieuEmission: "Paris",
+  companyAddress: "1 rue de la Paix, 75002 Paris",
+  managerName: "Camille Martin",
+  homeAddress: "12 rue des Lilas, 75011 Paris",
+  totalArea: "70,00",
+  businessArea: "25,00",
+  landlordName: "Propriétaire",
+  landlordAddress: "1 avenue du Parc, 75011 Paris",
+  tenantName: "Locataire",
+  tenantAddress: "12 rue des Lilas, 75011 Paris",
+  rentExclCharges: "900,00",
+  chargesAdvance: "50,00",
+  issuePlace: "Paris",
 };
 
 describe("expenseSchema", () => {
@@ -41,26 +41,26 @@ describe("expenseSchema", () => {
 
   it("rejects a zero amount or an out-of-range pro-rata", () => {
     expect(
-      expenseSchema.safeParse({ ...VALID_EXPENSE, montantTtc: "0" }).success,
+      expenseSchema.safeParse({ ...VALID_EXPENSE, amountInclVat: "0" }).success,
     ).toBe(false);
     expect(
-      expenseSchema.safeParse({ ...VALID_EXPENSE, prorataPct: "101" }).success,
+      expenseSchema.safeParse({ ...VALID_EXPENSE, proRataPct: "101" }).success,
     ).toBe(false);
     expect(
-      expenseSchema.safeParse({ ...VALID_EXPENSE, prorataPct: "35,711" })
+      expenseSchema.safeParse({ ...VALID_EXPENSE, proRataPct: "35,711" })
         .success,
     ).toBe(false);
   });
 
   it("requires a complete and ordered period", () => {
     expect(
-      expenseSchema.safeParse({ ...VALID_EXPENSE, periodeFin: "" }).success,
+      expenseSchema.safeParse({ ...VALID_EXPENSE, periodEnd: "" }).success,
     ).toBe(false);
     expect(
       expenseSchema.safeParse({
         ...VALID_EXPENSE,
-        periodeDebut: "2026-10-31",
-        periodeFin: "2026-10-01",
+        periodStart: "2026-10-31",
+        periodEnd: "2026-10-01",
       }).success,
     ).toBe(false);
   });
@@ -68,13 +68,13 @@ describe("expenseSchema", () => {
 
 describe("rentReceiptSchema", () => {
   const VALID = {
-    mois: "2026-10",
-    periodeDebut: "2026-10-01",
-    periodeFin: "2026-10-31",
-    loyerHc: "900,00",
+    month: "2026-10",
+    periodStart: "2026-10-01",
+    periodEnd: "2026-10-31",
+    rentExclCharges: "900,00",
     charges: "50,00",
-    datePaiement: "",
-    dateEmission: "",
+    paymentDate: "",
+    issueDate: "",
   };
 
   it("accepts the month period and empty optional dates", () => {
@@ -83,11 +83,11 @@ describe("rentReceiptSchema", () => {
 
   it("rejects a reversed period and an invalid month", () => {
     expect(
-      rentReceiptSchema.safeParse({ ...VALID, periodeFin: "2026-09-30" })
+      rentReceiptSchema.safeParse({ ...VALID, periodEnd: "2026-09-30" })
         .success,
     ).toBe(false);
     expect(
-      rentReceiptSchema.safeParse({ ...VALID, mois: "2026-13" }).success,
+      rentReceiptSchema.safeParse({ ...VALID, month: "2026-13" }).success,
     ).toBe(false);
   });
 });
@@ -100,12 +100,12 @@ describe("settingsSchema", () => {
   it("rejects a professional area larger than the total area", () => {
     const result = settingsSchema.safeParse({
       ...VALID_SETTINGS,
-      surfacePro: "80",
+      businessArea: "80",
     });
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(
-        result.error.issues.some((issue) => issue.path[0] === "surfacePro"),
+        result.error.issues.some((issue) => issue.path[0] === "businessArea"),
       ).toBe(true);
     }
   });
@@ -120,13 +120,13 @@ describe("settingsSchema", () => {
 describe("expenseItemSchema", () => {
   const VALID = {
     code: "gaz",
-    libelle: "Gaz",
-    fournisseur: "EDF",
-    prorataPct: "35,71",
-    periodicite: "MONTHLY" as const,
-    ordre: 1,
-    actif: true,
-    plusieursLignesAutorisees: false,
+    label: "Gaz",
+    supplier: "EDF",
+    proRataPct: "35,71",
+    periodicity: "MONTHLY" as const,
+    sortOrder: 1,
+    active: true,
+    multipleLinesAllowed: false,
   };
 
   it("accepts a simple code", () => {
@@ -145,18 +145,18 @@ describe("expenseItemSchema", () => {
 
 describe("llmSchema", () => {
   const VALID = {
-    actif: true,
+    active: true,
     url: "http://host.docker.internal:11434",
-    modele: "qwen2.5:7b",
+    model: "qwen2.5:7b",
     timeoutSeconds: 120,
     temperature: "0",
     numCtx: 8192,
-    pagesMax: 5,
-    ocrActif: false,
-    promptExtraction:
+    maxPages: 5,
+    ocrActive: false,
+    extractionPrompt:
       "Tu extrais uniquement le montant TTC du document fourni.",
-    cleApi: "",
-    supprimerCle: false,
+    apiKey: "",
+    deleteApiKey: false,
   };
 
   it("accepts a local configuration without key", () => {

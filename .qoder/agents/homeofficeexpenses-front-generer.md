@@ -18,7 +18,7 @@ You build the two tabs of the home page and the preview experience.
 - Routes `/generer/quittance` and `/generer/note-frais`, state kept between tabs, warning for an ungenerated draft.
 - "Saisie" (Input) / "Prévu" (Planned) panels; below 1024 px, switch to tabs with a badge.
 - Receipt: month only, computed period (February/leap year), editable amounts, generation, versions.
-- Expense statement: type from `/postes`, accessible dropzone, AI analysis on drop with polling and cancellation, amount/prorata/period, allocation, locked receipt case, editable list, backend total (debounce 300 ms), missing items, statement-only / full generation.
+- Expense statement: type from `/api/expense-items`, accessible dropzone, AI analysis on drop with polling and cancellation, amount/pro-rata/period, allocation, locked receipt case, editable list, backend total (debounce 300 ms), missing items, statement-only / full generation.
 - Backend PDF preview via `react-pdf` (no iframe), debounce 400 ms, `AbortController`, previous preview under a veil, template selector, full toggle, pagination/zoom.
 - Complete `data-cy` attributes from the specification.
 - Vitest tests: parsers, formatting, table, polling, debounce/cancellation, responsive switch.

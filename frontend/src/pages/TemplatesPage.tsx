@@ -42,31 +42,31 @@ const MAX_TEMPLATE_SIZE = 5 * 1024 * 1024;
 
 interface ConfigurationType {
   type: TemplateType;
-  titre: string;
+  title: string;
   description: string;
-  dropzone: string;
-  icone: typeof FileText;
+  dataCy: string;
+  icon: typeof FileText;
 }
 
 const TYPES: ConfigurationType[] = [
   {
     type: "RENT_RECEIPT",
-    titre: "Quittance de loyer",
+    title: "Quittance de loyer",
     description: "Modèle utilisé pour les quittances mensuelles.",
-    dropzone: "dropzone-template-quittance",
-    icone: ReceiptText,
+    dataCy: "dropzone-template-quittance",
+    icon: ReceiptText,
   },
   {
     type: "EXPENSE_STATEMENT",
-    titre: "Note de frais d’occupation",
+    title: "Note de frais d’occupation",
     description:
       "Modèle utilisé pour les notes de frais et leur version complète.",
-    dropzone: "dropzone-template-note",
-    icone: FileText,
+    dataCy: "dropzone-template-note",
+    icon: FileText,
   },
 ];
 
-function fileNameOn(
+function downloadFileName(
   name: string | undefined,
   version: number | undefined,
 ): string {
@@ -78,7 +78,7 @@ function fileNameOn(
   return `${base || "template"}_v${version ?? 1}.html`;
 }
 
-function BadgeStructure({ valide: valid }: { valide: boolean }) {
+function BadgeStructure({ valid }: { valid: boolean }) {
   return (
     <span className={cn("badge", valid ? "badge-accent" : "badge-danger")}>
       {valid ? (
@@ -92,13 +92,13 @@ function BadgeStructure({ valide: valid }: { valide: boolean }) {
 }
 
 function VariableList({
-  titre: title,
+  title,
   variables,
-  ton: tone,
+  tone,
 }: {
-  titre: string;
+  title: string;
   variables: string[];
-  ton: "accent" | "danger" | "avertissement";
+  tone: "accent" | "danger" | "warning";
 }) {
   if (variables.length === 0) {
     return null;
@@ -116,7 +116,7 @@ function VariableList({
               "rounded-md border px-1.5 py-0.5 font-mono text-[11px]",
               tone === "danger"
                 ? "border-danger/25 bg-danger-soft text-danger"
-                : tone === "avertissement"
+                : tone === "warning"
                   ? "border-warning/25 bg-warning-soft text-warning"
                   : "border-accent/15 bg-accent-soft text-accent",
             )}
@@ -130,9 +130,9 @@ function VariableList({
 }
 
 function ValidationReport({
-  rapport: report,
+  report,
 }: {
-  rapport: ValidationReportDto;
+  report: ValidationReportDto;
 }) {
   const recognizedVariables = report.recognizedVariables ?? [];
   const unknownVariables = report.unknownVariables ?? [];
@@ -146,22 +146,22 @@ function ValidationReport({
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-ink">Rapport de validation</p>
-        <BadgeStructure valide={Boolean(report.structureValid)} />
+        <BadgeStructure valid={Boolean(report.structureValid)} />
       </div>
       <VariableList
-        titre={`Variables reconnues (${recognizedVariables.length})`}
+        title={`Variables reconnues (${recognizedVariables.length})`}
         variables={recognizedVariables}
-        ton="accent"
+        tone="accent"
       />
       <VariableList
-        titre={`Variables inconnues (${unknownVariables.length})`}
+        title={`Variables inconnues (${unknownVariables.length})`}
         variables={unknownVariables}
-        ton="danger"
+        tone="danger"
       />
       <VariableList
-        titre={`Obligatoires manquantes (${missingVariables.length})`}
+        title={`Obligatoires manquantes (${missingVariables.length})`}
         variables={missingVariables}
-        ton="avertissement"
+        tone="warning"
       />
       {errorList.length > 0 ? (
         <div className="rounded-lg border border-danger/20 bg-danger-soft/60 p-3">
@@ -201,9 +201,9 @@ function ReferenceVariables({ type }: { type: TemplateType }) {
     try {
       await navigator.clipboard.writeText(`{{${name}}}`);
       setCopy(name);
-      toast.succes(`{{${name}}} copié dans le presse-papiers.`);
+      toast.success(`{{${name}}} copié dans le presse-papiers.`);
     } catch {
-      toast.erreur(
+      toast.error(
         "Impossible de copier dans le presse-papiers. Sélectionnez la variable manuellement.",
       );
     }
@@ -215,7 +215,7 @@ function ReferenceVariables({ type }: { type: TemplateType }) {
         <span className="flex items-center gap-2">
           <FileCode2 size={16} className="text-accent" aria-hidden="true" />
           Référence des variables
-          <span className="badge badge-neutre">
+          <span className="badge badge-neutral">
             {variables.data?.length ?? "—"}
           </span>
         </span>
@@ -265,7 +265,7 @@ function ReferenceVariables({ type }: { type: TemplateType }) {
             </div>
           ) : null}
           <div className="overflow-x-auto">
-            <table className="tableau-frais">
+            <table className="expense-table">
               <thead>
                 <tr>
                   <th>Variable</th>
@@ -325,15 +325,15 @@ function ReferenceVariables({ type }: { type: TemplateType }) {
 function ModelPreview({
   template,
   url,
-  onFermer: onClose,
-  onActiver: onActivate,
-  activationEnCours: activationInProgress,
+  onClose,
+  onActivate,
+  activationInProgress,
 }: {
   template: TemplateDto;
   url: string;
-  onFermer: () => void;
-  onActiver: () => void;
-  activationEnCours: boolean;
+  onClose: () => void;
+  onActivate: () => void;
+  activationInProgress: boolean;
 }) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -355,7 +355,7 @@ function ModelPreview({
       }}
     >
       <div
-        className="animation-fondu flex max-h-[94vh] w-full max-w-4xl flex-col"
+        className="animation-fade flex max-h-[94vh] w-full max-w-4xl flex-col"
         role="dialog"
         aria-modal="true"
         aria-labelledby="apercu-template-titre"
@@ -376,11 +376,11 @@ function ModelPreview({
           <div className="flex items-center gap-2">
             {!template.active ? (
               <Button
-                variante="secondaire"
-                petit
+                variant="secondary"
+                small
                 onClick={onActivate}
-                chargement={activationInProgress}
-                icone={<Check size={14} />}
+                loading={activationInProgress}
+                icon={<Check size={14} />}
               >
                 Activer ce modèle
               </Button>
@@ -413,10 +413,10 @@ function TemplatesCard({
 }) {
   const {
     type,
-    titre: title,
+    title,
     description,
-    dropzone,
-    icone: IconComponent,
+    dataCy,
+    icon: IconComponent,
   } = configuration;
   const queryClient = useQueryClient();
   const templates = useTemplates(type);
@@ -456,11 +456,11 @@ function TemplatesCard({
 
   const upload = useMutation({
     mutationFn: ({
-      nomTemplate: templateName,
-      fichierTemplate: templateFile,
+      templateName: templateName,
+      templateFile: templateFile,
     }: {
-      nomTemplate: string;
-      fichierTemplate: File;
+      templateName: string;
+      templateFile: File;
     }) => api.templates.upload(type, templateName, templateFile),
     onSuccess: (template) => {
       invalidate();
@@ -468,7 +468,7 @@ function TemplatesCard({
       setLastImport(template);
       setFile(null);
       setUploadError(null);
-      toast.succes(
+      toast.success(
         `Version v${template.version} importée. Vérifiez l’aperçu puis activez-la.`,
       );
     },
@@ -485,11 +485,11 @@ function TemplatesCard({
     onSuccess: (template) => {
       invalidate();
       setPreview(null);
-      toast.succes(
+      toast.success(
         `Le modèle « ${template.name} » v${template.version} est désormais actif.`,
       );
     },
-    onError: (error) => toast.erreur(errorMessage(error)),
+    onError: (error) => toast.error(errorMessage(error)),
   });
 
   const remove = useMutation({
@@ -498,13 +498,13 @@ function TemplatesCard({
     onSuccess: () => {
       invalidate();
       setToDelete(null);
-      toast.succes(
+      toast.success(
         "Version supprimée. Le fichier reste archivé côté stockage.",
       );
     },
     onError: (error) => {
       setToDelete(null);
-      toast.erreur(errorMessage(error));
+      toast.error(errorMessage(error));
     },
   });
 
@@ -513,11 +513,11 @@ function TemplatesCard({
     onSuccess: (template) => {
       invalidate();
       setResetDialogOpen(false);
-      toast.succes(`Modèle intégré restauré et activé (v${template.version}).`);
+      toast.success(`Modèle intégré restauré et activé (v${template.version}).`);
     },
     onError: (error) => {
       setResetDialogOpen(false);
-      toast.erreur(errorMessage(error));
+      toast.error(errorMessage(error));
     },
   });
 
@@ -525,9 +525,9 @@ function TemplatesCard({
     mutationFn: (template: TemplateDto) =>
       api.templates.file(template.id as number),
     onSuccess: (reply, template) => {
-      downloadBlob(reply.blob, fileNameOn(template.name, template.version));
+      downloadBlob(reply.blob, downloadFileName(template.name, template.version));
     },
-    onError: (error) => toast.erreur(errorMessage(error)),
+    onError: (error) => toast.error(errorMessage(error)),
   });
 
   const downloadDefault = useMutation({
@@ -540,7 +540,7 @@ function TemplatesCard({
           : "modele-note-frais-defaut.html",
       );
     },
-    onError: (error) => toast.erreur(errorMessage(error)),
+    onError: (error) => toast.error(errorMessage(error)),
   });
 
   async function openPreview(template: TemplateDto) {
@@ -552,7 +552,7 @@ function TemplatesCard({
       const reply = await api.templates.preview(template.id);
       setPreview({ template, url: URL.createObjectURL(reply.blob) });
     } catch (error) {
-      toast.erreur(errorMessage(error));
+      toast.error(errorMessage(error));
     } finally {
       setPreviewInProgress(null);
     }
@@ -573,8 +573,8 @@ function TemplatesCard({
   const previousVersions = versions.filter((template) => !template.active);
 
   return (
-    <section className="carte overflow-hidden">
-      <div className="carte-entete">
+    <section className="card overflow-hidden">
+      <div className="card-header">
         <div className="flex items-start gap-3">
           <span className="grid h-11 w-11 place-items-center rounded-xl bg-accent-soft text-accent">
             <IconComponent size={20} aria-hidden="true" />
@@ -584,17 +584,17 @@ function TemplatesCard({
             <p className="mt-0.5 text-xs text-ink-soft">{description}</p>
           </div>
         </div>
-        <span className="badge badge-neutre">
+        <span className="badge badge-neutral">
           <ShieldCheck size={12} aria-hidden="true" />
           HTML + CSS
         </span>
       </div>
 
-      <div className="carte-corps space-y-5">
+      <div className="card-body space-y-5">
         {templates.isError ? (
           <ErrorState
             message={errorMessage(templates.error)}
-            onReessayer={() => void templates.refetch()}
+            onRetry={() => void templates.refetch()}
           />
         ) : templates.isPending ? (
           <LoadingState message="Chargement des modèles…" />
@@ -614,7 +614,7 @@ function TemplatesCard({
                           v{active.version}
                         </span>
                         {active.builtIn ? (
-                          <span className="badge badge-neutre">intégré</span>
+                          <span className="badge badge-neutral">intégré</span>
                         ) : null}
                       </p>
                       <p className="mt-1 text-xs text-ink-soft">
@@ -631,20 +631,20 @@ function TemplatesCard({
                 {active ? (
                   <div className="flex flex-wrap gap-2">
                     <Button
-                      variante="secondaire"
-                      petit
-                      icone={<Eye size={14} />}
-                      chargement={previewInProgress === active.id}
+                      variant="secondary"
+                      small
+                      icon={<Eye size={14} />}
+                      loading={previewInProgress === active.id}
                       onClick={() => void openPreview(active)}
                       data-cy="btn-apercu-template-actif"
                     >
                       Aperçu
                     </Button>
                     <Button
-                      variante="secondaire"
-                      petit
-                      icone={<Download size={14} />}
-                      chargement={
+                      variant="secondary"
+                      small
+                      icon={<Download size={14} />}
+                      loading={
                         download.isPending &&
                         download.variables?.id === active.id
                       }
@@ -655,9 +655,9 @@ function TemplatesCard({
                   </div>
                 ) : (
                   <Button
-                    variante="primaire"
-                    petit
-                    icone={<RotateCcw size={14} />}
+                    variant="primary"
+                    small
+                    icon={<RotateCcw size={14} />}
                     onClick={() => setResetDialogOpen(true)}
                   >
                     Restaurer le modèle intégré
@@ -668,18 +668,18 @@ function TemplatesCard({
 
             <div className="flex flex-wrap gap-2">
               <Button
-                variante="secondaire"
-                petit
-                icone={<Download size={14} />}
-                chargement={downloadDefault.isPending}
+                variant="secondary"
+                small
+                icon={<Download size={14} />}
+                loading={downloadDefault.isPending}
                 onClick={() => downloadDefault.mutate()}
               >
                 Télécharger le modèle par défaut intégré
               </Button>
               <Button
-                variante="secondaire"
-                petit
-                icone={<RotateCcw size={14} />}
+                variant="secondary"
+                small
+                icon={<RotateCcw size={14} />}
                 onClick={() => setResetDialogOpen(true)}
                 disabled={Boolean(active?.builtIn)}
                 title={
@@ -718,13 +718,13 @@ function TemplatesCard({
                               "badge",
                               isTemplateActive
                                 ? "badge-accent"
-                                : "badge-neutre",
+                                : "badge-neutral",
                             )}
                           >
                             v{template.version}
                           </span>
                           {template.builtIn ? (
-                            <span className="badge badge-neutre">intégré</span>
+                            <span className="badge badge-neutral">intégré</span>
                           ) : null}
                           {isTemplateActive ? (
                             <span className="text-[10px] font-bold uppercase text-accent">
@@ -739,19 +739,19 @@ function TemplatesCard({
                       </div>
                       <div className="flex flex-wrap items-center gap-1">
                         <Button
-                          variante="fantome"
-                          petit
-                          icone={<Eye size={13} />}
-                          chargement={previewInProgress === template.id}
+                          variant="ghost"
+                          small
+                          icon={<Eye size={13} />}
+                          loading={previewInProgress === template.id}
                           onClick={() => void openPreview(template)}
                         >
                           Aperçu
                         </Button>
                         <Button
-                          variante="fantome"
-                          petit
-                          icone={<Download size={13} />}
-                          chargement={
+                          variant="ghost"
+                          small
+                          icon={<Download size={13} />}
+                          loading={
                             download.isPending &&
                             download.variables?.id === template.id
                           }
@@ -761,10 +761,10 @@ function TemplatesCard({
                         </Button>
                         {!isTemplateActive ? (
                           <Button
-                            variante="fantome"
-                            petit
-                            icone={<Check size={13} />}
-                            chargement={
+                            variant="ghost"
+                            small
+                            icon={<Check size={13} />}
+                            loading={
                               activate.isPending &&
                               activate.variables?.id === template.id
                             }
@@ -775,13 +775,13 @@ function TemplatesCard({
                           </Button>
                         ) : null}
                         <Button
-                          variante="fantome"
-                          petit
+                          variant="ghost"
+                          small
                           className={cn(
                             !deletionBlocked &&
                               "text-danger hover:bg-danger-soft",
                           )}
-                          icone={<Trash2 size={13} />}
+                          icon={<Trash2 size={13} />}
                           disabled={deletionBlocked}
                           title={
                             deletionBlocked
@@ -824,14 +824,14 @@ function TemplatesCard({
               <div className="mt-3 space-y-3">
                 <div>
                   <label
-                    className="label-champ"
+                    className="field-label"
                     htmlFor={`nom-template-${type}`}
                   >
                     Nom de la version
                   </label>
                   <input
                     id={`nom-template-${type}`}
-                    className="champ"
+                    className="field"
                     value={name}
                     maxLength={120}
                     placeholder="Ex. Quittance — version 2027"
@@ -842,21 +842,21 @@ function TemplatesCard({
 
                 {file ? (
                   <SelectedFile
-                    nom={file.name}
-                    taille={file.size}
-                    typeMime={file.type}
-                    enCours={upload.isPending}
-                    onRetirer={() => setFile(null)}
+                    name={file.name}
+                    size={file.size}
+                    mimeType={file.type}
+                    inProgress={upload.isPending}
+                    onRemove={() => setFile(null)}
                   />
                 ) : (
                   <FileDropzone
-                    onFichier={chooseFile}
+                    onFile={chooseFile}
                     disabled={upload.isPending}
-                    dataCy={dropzone}
+                    dataCy={dataCy}
                     accept={TEMPLATE_FORMATS}
-                    tailleMax={MAX_TEMPLATE_SIZE}
-                    descriptionFormats="HTML, HTM"
-                    texte="Déposez votre template HTML"
+                    maxSize={MAX_TEMPLATE_SIZE}
+                    formatsDescription="HTML, HTM"
+                    text="Déposez votre template HTML"
                     ariaLabel="Choisir un fichier template HTML"
                   />
                 )}
@@ -872,15 +872,15 @@ function TemplatesCard({
 
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
-                    variante="primaire"
-                    icone={<UploadCloud size={15} />}
-                    chargement={upload.isPending}
+                    variant="primary"
+                    icon={<UploadCloud size={15} />}
+                    loading={upload.isPending}
                     disabled={!canUpload}
                     onClick={() => {
                       if (file && name.trim()) {
                         upload.mutate({
-                          nomTemplate: name.trim(),
-                          fichierTemplate: file,
+                          templateName: name.trim(),
+                          templateFile: file,
                         });
                       }
                     }}
@@ -893,24 +893,24 @@ function TemplatesCard({
                   </span>
                 </div>
 
-                {report ? <ValidationReport rapport={report} /> : null}
+                {report ? <ValidationReport report={report} /> : null}
 
                 {report && lastImport?.id ? (
                   <div className="flex flex-wrap items-center gap-2">
                     <Button
-                      variante="secondaire"
-                      petit
-                      icone={<Eye size={14} />}
-                      chargement={previewInProgress === lastImport.id}
+                      variant="secondary"
+                      small
+                      icon={<Eye size={14} />}
+                      loading={previewInProgress === lastImport.id}
                       onClick={() => void openPreview(lastImport)}
                     >
                       Aperçu de la version v{lastImport.version}
                     </Button>
                     <Button
-                      variante="secondaire"
-                      petit
-                      icone={<Check size={14} />}
-                      chargement={
+                      variant="secondary"
+                      small
+                      icon={<Check size={14} />}
+                      loading={
                         activate.isPending &&
                         activate.variables?.id === lastImport.id
                       }
@@ -942,35 +942,35 @@ function TemplatesCard({
       <ReferenceVariables type={type} />
 
       <ConfirmDialog
-        ouvert={toDelete !== null}
-        titre="Supprimer cette version ?"
+        open={toDelete !== null}
+        title="Supprimer cette version ?"
         message={
           toDelete
             ? `La version v${toDelete.version} de « ${toDelete.name} » ne sera plus proposée. Les documents qui l’utilisent restent inchangés.`
             : ""
         }
-        libelleConfirmer="Supprimer"
-        variante="danger"
-        onConfirmer={() => {
+        confirmLabel="Supprimer"
+        variant="danger"
+        onConfirm={() => {
           if (toDelete) {
             remove.mutate(toDelete);
           }
         }}
-        onAnnuler={() => setToDelete(null)}
+        onCancel={() => setToDelete(null)}
         dataCy="dialogue-supprimer-template"
       />
 
       <ConfirmDialog
-        ouvert={resetDialogOpen}
-        titre="Revenir au modèle par défaut ?"
+        open={resetDialogOpen}
+        title="Revenir au modèle par défaut ?"
         message={
           builtInModel
             ? `Le modèle intégré « ${builtInModel.name} » (v${builtInModel.version}) redeviendra actif. Vos versions importées restent disponibles.`
             : "Le modèle intégré redeviendra actif. Vos versions importées restent disponibles."
         }
-        libelleConfirmer="Restaurer le modèle"
-        onConfirmer={() => resetMutation.mutate()}
-        onAnnuler={() => setResetDialogOpen(false)}
+        confirmLabel="Restaurer le modèle"
+        onConfirm={() => resetMutation.mutate()}
+        onCancel={() => setResetDialogOpen(false)}
         dataCy="dialogue-modele-defaut"
       />
 
@@ -978,9 +978,9 @@ function TemplatesCard({
         <ModelPreview
           template={preview.template}
           url={preview.url}
-          onFermer={() => setPreview(null)}
-          onActiver={() => activate.mutate(preview.template)}
-          activationEnCours={activate.isPending}
+          onClose={() => setPreview(null)}
+          onActivate={() => activate.mutate(preview.template)}
+          activationInProgress={activate.isPending}
         />
       ) : null}
     </section>
@@ -991,8 +991,8 @@ export function TemplatesPage() {
   return (
     <>
       <PageHeader
-        surTitre="Réglages"
-        titre="Templates"
+        eyebrow="Réglages"
+        title="Templates"
         description="Personnalisez les documents générés sans toucher au calcul : le backend fournit les montants déjà formatés, votre modèle HTML ne fait que les mettre en page."
       />
       <div className="grid gap-6 xl:grid-cols-2">

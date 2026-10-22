@@ -20,7 +20,7 @@ description: Use when implementing or fixing a backend feature in HomeOfficeExpe
 - Existing operations: `allocateToMonth`, `claimedAmount`, `total`, `proRataBase`,
   `totalRentReceipt`. Add a new pure method rather than duplicating logic.
 - Allocation over a month: `amount × (days of the period inside the month / total days of the period)`.
-- Retained amount per line: `monthly amount × prorata %`, rounded to the cent.
+- Retained amount per line: `monthly amount × pro-rata %`, rounded to the cent.
 - Total: sum of the rounded retained amounts.
 - API amounts are decimal strings or integer cents, never JSON floats.
 - A controller never computes a total; it calls the service.
@@ -51,7 +51,7 @@ description: Use when implementing or fixing a backend feature in HomeOfficeExpe
 
 - JUnit 5 + AssertJ.
 - Money cases: 28/29/30/31-day months, leap years, bimonthly and annual invoices,
-  prorata bounds 0 and 100, rejected negative amounts, rounding at `.005`.
+  pro-rata bounds 0 and 100, rejected negative amounts, rounding at `.005`.
 - Number to words: 0, 1, 21, 71, 80, 81, 100, 1 000, 1 234.56 and cents.
 - Integration tests through MockMvc or the existing `ApiIntegrationTest` pattern.
 - LLM-related tests use WireMock or `mock-ollama`, never a real Ollama.

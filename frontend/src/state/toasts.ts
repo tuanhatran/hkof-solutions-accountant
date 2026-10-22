@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ToastType = "succes" | "erreur" | "info";
+export type ToastType = "success" | "error" | "info";
 
 export interface Toast {
   id: number;
@@ -10,25 +10,25 @@ export interface Toast {
 
 interface ToastsState {
   toasts: Toast[];
-  ajouter: (message: string, type?: ToastType) => void;
-  retirer: (id: number) => void;
+  add: (message: string, type?: ToastType) => void;
+  remove: (id: number) => void;
 }
 
 let nextId = 1;
 
 export const useToasts = create<ToastsState>((set, get) => ({
   toasts: [],
-  ajouter: (message, type = "succes") => {
+  add: (message, type = "success") => {
     const id = nextId++;
     set({ toasts: [...get().toasts, { id, type, message }] });
-    window.setTimeout(() => get().retirer(id), 5_000);
+    window.setTimeout(() => get().remove(id), 5_000);
   },
-  retirer: (id) =>
+  remove: (id) =>
     set({ toasts: get().toasts.filter((toast) => toast.id !== id) }),
 }));
 
 export const toast = {
-  succes: (message: string) => useToasts.getState().ajouter(message, "succes"),
-  erreur: (message: string) => useToasts.getState().ajouter(message, "erreur"),
-  info: (message: string) => useToasts.getState().ajouter(message, "info"),
+  success: (message: string) => useToasts.getState().add(message, "success"),
+  error: (message: string) => useToasts.getState().add(message, "error"),
+  info: (message: string) => useToasts.getState().add(message, "info"),
 };

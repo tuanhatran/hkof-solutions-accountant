@@ -25,17 +25,17 @@ import fr.hkof.homeofficeexpenses.service.llm.DefaultPrompt;
 @Component
 public class DataInitializer implements ApplicationRunner {
 
-    private final SettingsRepository parametersRepository;
+    private final SettingsRepository settingsRepository;
     private final ExpenseItemRepository expenseItemRepository;
     private final TemplateDocumentRepository templateRepository;
     private final LlmConfigRepository llmConfigRepository;
     private final AppProperties properties;
     private final Clock clock;
 
-    public DataInitializer(SettingsRepository parametersRepository, ExpenseItemRepository expenseItemRepository,
+    public DataInitializer(SettingsRepository settingsRepository, ExpenseItemRepository expenseItemRepository,
             TemplateDocumentRepository templateRepository, LlmConfigRepository llmConfigRepository,
             AppProperties properties, Clock clock) {
-        this.parametersRepository = parametersRepository;
+        this.settingsRepository = settingsRepository;
         this.expenseItemRepository = expenseItemRepository;
         this.templateRepository = templateRepository;
         this.llmConfigRepository = llmConfigRepository;
@@ -53,28 +53,28 @@ public class DataInitializer implements ApplicationRunner {
     }
 
     private void initSettings() {
-        if (parametersRepository.existsById(1L)) {
+        if (settingsRepository.existsById(1L)) {
             return;
         }
-        Settings p = new Settings();
-        p.setId(1L);
-        p.setCompanyName("HKOF");
-        p.setLegalForm("EURL");
-        p.setSiren("000 000 000");
-        p.setCompanyAddress("12 rue de la République, 75000 Paris");
-        p.setManagerName("Gérant");
-        p.setHomeAddress("12 rue de la République, 75000 Paris");
-        p.setTotalArea(new BigDecimal("70.00"));
-        p.setBusinessArea(new BigDecimal("25.00"));
-        p.setLandlordName("Nom du bailleur");
-        p.setLandlordAddress("Adresse du bailleur");
-        p.setTenantName("Nom du locataire");
-        p.setTenantAddress("Adresse du locataire");
-        p.setRentExclCharges(new BigDecimal("1300.00"));
-        p.setChargesAdvance(new BigDecimal("0.00"));
-        p.setIssuePlace("Paris");
-        p.setUpdatedAt(Instant.now(clock));
-        parametersRepository.save(p);
+        Settings settings = new Settings();
+        settings.setId(1L);
+        settings.setCompanyName("HKOF");
+        settings.setLegalForm("EURL");
+        settings.setSiren("000 000 000");
+        settings.setCompanyAddress("12 rue de la République, 75000 Paris");
+        settings.setManagerName("Gérant");
+        settings.setHomeAddress("12 rue de la République, 75000 Paris");
+        settings.setTotalArea(new BigDecimal("70.00"));
+        settings.setBusinessArea(new BigDecimal("25.00"));
+        settings.setLandlordName("Nom du bailleur");
+        settings.setLandlordAddress("Adresse du bailleur");
+        settings.setTenantName("Nom du locataire");
+        settings.setTenantAddress("Adresse du locataire");
+        settings.setRentExclCharges(new BigDecimal("1300.00"));
+        settings.setChargesAdvance(new BigDecimal("0.00"));
+        settings.setIssuePlace("Paris");
+        settings.setUpdatedAt(Instant.now(clock));
+        settingsRepository.save(settings);
     }
 
     private void initItems() {
@@ -86,7 +86,7 @@ public class DataInitializer implements ApplicationRunner {
         createExpenseItemIfAbsent("fibre", "Fibre internet", null, "35.71", "MONTHLY", 60);
     }
 
-    private void createExpenseItemIfAbsent(String code, String label, String supplier, String prorata,
+    private void createExpenseItemIfAbsent(String code, String label, String supplier, String proRataPct,
             String periodicity, int sortOrder) {
         if (expenseItemRepository.findFirstByCode(code).isPresent()) {
             return;
@@ -95,7 +95,7 @@ public class DataInitializer implements ApplicationRunner {
         expenseItem.setCode(code);
         expenseItem.setLabel(label);
         expenseItem.setSupplier(supplier);
-        expenseItem.setProRataPct(new BigDecimal(prorata));
+        expenseItem.setProRataPct(new BigDecimal(proRataPct));
         expenseItem.setPeriodicity(fr.hkof.homeofficeexpenses.domain.Periodicity.valueOf(periodicity));
         expenseItem.setActive(true);
         expenseItem.setSortOrder(sortOrder);
@@ -108,21 +108,21 @@ public class DataInitializer implements ApplicationRunner {
         for (TemplateType type : TemplateType.values()) {
             TemplateDocument builtIn = templateRepository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(type)
                     .orElseGet(() -> {
-                        TemplateDocument t = new TemplateDocument();
-                        t.setType(type);
-                        t.setName(type == TemplateType.RENT_RECEIPT
+                        TemplateDocument template = new TemplateDocument();
+                        template.setType(type);
+                        template.setName(type == TemplateType.RENT_RECEIPT
                                 ? "Quittance — modèle intégré"
                                 : "Note de frais — modèle intégré");
-                        t.setVersion(1);
-                        t.setFormat(TemplateFormat.HTML);
-                        t.setPath(type == TemplateType.RENT_RECEIPT
+                        template.setVersion(1);
+                        template.setFormat(TemplateFormat.HTML);
+                        template.setPath(type == TemplateType.RENT_RECEIPT
                                 ? "classpath:templates/defaut/quittance.html"
                                 : "classpath:templates/defaut/note-frais.html");
-                        t.setBuiltIn(true);
-                        t.setDeleted(false);
-                        t.setActive(false);
-                        t.setCreatedAt(Instant.now(clock));
-                        return templateRepository.save(t);
+                        template.setBuiltIn(true);
+                        template.setDeleted(false);
+                        template.setActive(false);
+                        template.setCreatedAt(Instant.now(clock));
+                        return templateRepository.save(template);
                     });
             if (templateRepository.findFirstByTypeAndActiveTrueAndDeletedFalse(type).isEmpty()) {
                 builtIn.setActive(true);

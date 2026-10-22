@@ -42,17 +42,17 @@ function requestFromValues(
   templateId: number | null,
 ): RentReceiptRequest {
   const request: RentReceiptRequest = {
-    month: values.mois,
-    periodStart: values.periodeDebut,
-    periodEnd: values.periodeFin,
-    rentExclCharges: parseAmount(values.loyerHc) ?? "",
+    month: values.month,
+    periodStart: values.periodStart,
+    periodEnd: values.periodEnd,
+    rentExclCharges: parseAmount(values.rentExclCharges) ?? "",
     charges: parseAmount(values.charges) ?? "",
   };
-  if (values.datePaiement) {
-    request.paymentDate = values.datePaiement;
+  if (values.paymentDate) {
+    request.paymentDate = values.paymentDate;
   }
-  if (values.dateEmission) {
-    request.issueDate = values.dateEmission;
+  if (values.issueDate) {
+    request.issueDate = values.issueDate;
   }
   if (templateId !== null) {
     request.templateId = templateId;
@@ -73,7 +73,7 @@ export function GenerateRentReceiptPage() {
 
   const settings = useSettings();
   const templates = useTemplates("RENT_RECEIPT");
-  const activeRentReceipt = useActiveRentReceipt(draft.mois);
+  const activeRentReceipt = useActiveRentReceipt(draft.month);
 
   const {
     register,
@@ -86,13 +86,13 @@ export function GenerateRentReceiptPage() {
     resolver: zodResolver(rentReceiptSchema),
     mode: "onChange",
     defaultValues: {
-      mois: draft.mois,
-      periodeDebut: draft.periodeDebut,
-      periodeFin: draft.periodeFin,
-      loyerHc: draft.loyerHc,
+      month: draft.month,
+      periodStart: draft.periodStart,
+      periodEnd: draft.periodEnd,
+      rentExclCharges: draft.rentExclCharges,
       charges: draft.charges,
-      datePaiement: draft.datePaiement,
-      dateEmission: draft.dateEmission,
+      paymentDate: draft.paymentDate,
+      issueDate: draft.issueDate,
     },
   });
 
@@ -115,22 +115,22 @@ export function GenerateRentReceiptPage() {
             new DOMException("Formulaire incomplet", "AbortError"),
           ),
     signature,
-    { actif: validation.success, debounceMs: 400 },
+    { active: validation.success, debounceMs: 400 },
   );
 
   useEffect(() => {
     if (!settings.data) {
       return;
     }
-    const initializedBefore = useRentReceiptDraft.getState().initialise;
-    draft.initialiserDepuisParametres(settings.data);
+    const initializedBefore = useRentReceiptDraft.getState().initialized;
+    draft.initializeFromSettings(settings.data);
     if (!initializedBefore) {
-      const phase = useRentReceiptDraft.getState();
-      if (!getValues("loyerHc")) {
-        setValue("loyerHc", phase.loyerHc, { shouldValidate: true });
+      const currentDraft = useRentReceiptDraft.getState();
+      if (!getValues("rentExclCharges")) {
+        setValue("rentExclCharges", currentDraft.rentExclCharges, { shouldValidate: true });
       }
       if (!getValues("charges")) {
-        setValue("charges", phase.charges, { shouldValidate: true });
+        setValue("charges", currentDraft.charges, { shouldValidate: true });
       }
     }
     // Initialization must only happen on the first settings load.
@@ -138,7 +138,7 @@ export function GenerateRentReceiptPage() {
   }, [settings.data]);
 
   const estimatedTotal = (() => {
-    const rent = parseAmount(values.loyerHc) ?? "0";
+    const rent = parseAmount(values.rentExclCharges) ?? "0";
     const costs = parseAmount(values.charges) ?? "0";
     return formatEUR(Number(rent) + Number(costs));
   })();
@@ -152,19 +152,19 @@ export function GenerateRentReceiptPage() {
     try {
       const rentReceipt = await api.rentReceipts.create(requestBody);
       setResult(rentReceipt);
-      draft.marquerGenere();
+      draft.markGenerated();
       await queryClient.invalidateQueries({ queryKey: ["quittances"] });
-      toast.succes(
-        `Quittance de ${formatMonth(submittedValues.mois)} générée en version ${rentReceipt.version ?? 1}.`,
+      toast.success(
+        `Quittance de ${formatMonth(submittedValues.month)} générée en version ${rentReceipt.version ?? 1}.`,
       );
     } catch (error) {
-      toast.erreur(errorMessage(error));
+      toast.error(errorMessage(error));
     } finally {
       setGenerationInProgress(false);
     }
   }
 
-  function soumettre(submittedValues: RentReceiptFormValues) {
+  function submit(submittedValues: RentReceiptFormValues) {
     pendingValues.current = submittedValues;
     if (activeRentReceipt.data) {
       setRegenerationDialog(true);
@@ -181,16 +181,16 @@ export function GenerateRentReceiptPage() {
       const reply = await api.rentReceipts.pdf(rentReceipt.id);
       downloadBlob(
         reply.blob,
-        reply.nomFichier ?? `quittance_${rentReceipt.month ?? draft.mois}.pdf`,
+        reply.fileName ?? `quittance_${rentReceipt.month ?? draft.month}.pdf`,
       );
     } catch (error) {
-      toast.erreur(errorMessage(error));
+      toast.error(errorMessage(error));
     }
   }
 
   function goToStatement() {
-    const month = result?.month ?? draft.mois;
-    useStatementDraft.getState().changerMois(month);
+    const month = result?.month ?? draft.month;
+    useStatementDraft.getState().changeMonth(month);
     navigate("/generer/note-frais");
   }
 
@@ -198,8 +198,8 @@ export function GenerateRentReceiptPage() {
     if (!settings.data) {
       return;
     }
-    draft.reprendreDepuisParametres(settings.data);
-    setValue("loyerHc", settings.data.rentExclCharges ?? "", {
+    draft.resumeFromSettings(settings.data);
+    setValue("rentExclCharges", settings.data.rentExclCharges ?? "", {
       shouldValidate: true,
     });
     setValue("charges", settings.data.chargesAdvance ?? "", {
@@ -212,10 +212,10 @@ export function GenerateRentReceiptPage() {
     if (!value) {
       return;
     }
-    draft.changerMois(value);
+    draft.changeMonth(value);
     const period = periodOfMonth(value);
-    setValue("periodeDebut", period.debut, { shouldValidate: true });
-    setValue("periodeFin", period.fin, { shouldValidate: true });
+    setValue("periodStart", period.start, { shouldValidate: true });
+    setValue("periodEnd", period.end, { shouldValidate: true });
   }
 
   const activeVersion = activeRentReceipt.data?.version;
@@ -228,21 +228,21 @@ export function GenerateRentReceiptPage() {
   return (
     <>
       <PageHeader
-        surTitre="Générer · Quittance"
-        titre="Quittance de loyer"
+        eyebrow="Générer · Quittance"
+        title="Quittance de loyer"
         description="Choisissez le mois : la période, les montants et les coordonnées sont pré-remplis depuis votre configuration. Ajustez si besoin, puis générez le document définitif."
         actions={
           <>
             <Button
-              variante="secondaire"
-              icone={<ReceiptText size={15} />}
+              variant="secondary"
+              icon={<ReceiptText size={15} />}
               onClick={() => navigate("/generer/note-frais")}
             >
               Note de frais du mois
             </Button>
             <span className="hidden items-center gap-1.5 rounded-full border border-line bg-surface/70 px-3 py-2 text-xs font-medium text-ink-soft sm:inline-flex">
               <CalendarDays size={14} aria-hidden="true" />
-              {formatMonth(draft.mois)}
+              {formatMonth(draft.month)}
             </span>
           </>
         }
@@ -252,7 +252,7 @@ export function GenerateRentReceiptPage() {
         <div className="mb-4">
           <ErrorState
             message={errorMessage(settings.error)}
-            onReessayer={() => void settings.refetch()}
+            onRetry={() => void settings.refetch()}
           />
         </div>
       ) : null}
@@ -270,7 +270,7 @@ export function GenerateRentReceiptPage() {
             onClick={() => setMobilePanel("saisie")}
             className={cn(
               "segmented-item flex-1",
-              mobilePanel === "saisie" && "segmented-item-actif",
+              mobilePanel === "saisie" && "segmented-item-active",
             )}
           >
             Saisie
@@ -282,11 +282,11 @@ export function GenerateRentReceiptPage() {
             onClick={() => setMobilePanel("apercu")}
             className={cn(
               "segmented-item flex flex-1 items-center justify-center gap-2",
-              mobilePanel === "apercu" && "segmented-item-actif",
+              mobilePanel === "apercu" && "segmented-item-active",
             )}
           >
             Aperçu
-            {preview.misAJour ? (
+            {preview.updatedAt ? (
               <span
                 className="h-1.5 w-1.5 rounded-full bg-accent"
                 aria-hidden="true"
@@ -305,7 +305,7 @@ export function GenerateRentReceiptPage() {
           )}
         >
           {activeRentReceipt.data && !result ? (
-            <div className="carte flex flex-wrap items-center justify-between gap-3 border-accent/20 bg-accent-soft/45 p-4">
+            <div className="card flex flex-wrap items-center justify-between gap-3 border-accent/20 bg-accent-soft/45 p-4">
               <div className="flex items-start gap-3">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-surface text-accent">
                   <FileCheck2 size={17} aria-hidden="true" />
@@ -326,7 +326,7 @@ export function GenerateRentReceiptPage() {
                   href={api.rentReceipts.pdfUrl(activeRentReceipt.data.id)}
                   target="_blank"
                   rel="noreferrer"
-                  className="btn btn-secondaire btn-petit"
+                  className="btn btn-secondary btn-small"
                 >
                   <ExternalLink size={13} aria-hidden="true" />
                   Ouvrir le PDF
@@ -336,7 +336,7 @@ export function GenerateRentReceiptPage() {
           ) : null}
 
           {result ? (
-            <div className="carte animation-fondu overflow-hidden border-accent/25">
+            <div className="card animation-fade overflow-hidden border-accent/25">
               <div className="flex items-start gap-3 bg-accent-soft/60 px-5 py-4">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent text-white">
                   <FileCheck2 size={19} aria-hidden="true" />
@@ -358,9 +358,9 @@ export function GenerateRentReceiptPage() {
               </div>
               <div className="flex flex-wrap gap-2 px-5 py-4">
                 <Button
-                  variante="primaire"
-                  petit
-                  icone={<Download size={14} />}
+                  variant="primary"
+                  small
+                  icon={<Download size={14} />}
                   onClick={() => void downloadRentReceipt(result)}
                   data-cy="btn-telecharger-quittance"
                 >
@@ -371,49 +371,49 @@ export function GenerateRentReceiptPage() {
                     href={api.rentReceipts.pdfUrl(result.id)}
                     target="_blank"
                     rel="noreferrer"
-                    className="btn btn-secondaire btn-petit"
+                    className="btn btn-secondary btn-small"
                   >
                     <ExternalLink size={14} aria-hidden="true" />
                     Ouvrir
                   </a>
                 ) : null}
-                <Button variante="fantome" petit onClick={goToStatement}>
+                <Button variant="ghost" small onClick={goToStatement}>
                   Aller à la note de frais de ce mois
                 </Button>
               </div>
             </div>
           ) : null}
 
-          <form onSubmit={handleSubmit(soumettre)} noValidate>
-            <div className="carte">
-              <div className="carte-entete">
+          <form onSubmit={handleSubmit(submit)} noValidate>
+            <div className="card">
+              <div className="card-header">
                 <div>
                   <p className="eyebrow">Étape 1</p>
                   <h2 className="mt-1 text-[22px] text-ink">
                     Paramètres de la quittance
                   </h2>
                 </div>
-                <span className="badge badge-neutre">
+                <span className="badge badge-neutral">
                   <Sparkles size={11} aria-hidden="true" />
                   Calcul backend
                 </span>
               </div>
 
-              <div className="carte-corps space-y-5">
+              <div className="card-body space-y-5">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FieldGroup
                     id="quittance-mois"
                     label="Mois concerné"
-                    erreur={errors.mois?.message}
-                    aide="La période est recalculée automatiquement."
+                    error={errors.month?.message}
+                    help="La période est recalculée automatiquement."
                   >
                     <input
                       id="quittance-mois"
                       type="month"
-                      className={cn("champ", errors.mois && "champ-erreur")}
+                      className={cn("field", errors.month && "field-error")}
                       data-cy="select-mois"
-                      aria-invalid={Boolean(errors.mois)}
-                      {...register("mois", {
+                      aria-invalid={Boolean(errors.month)}
+                      {...register("month", {
                         onChange: (event) => changeMonth(event.target.value),
                       })}
                     />
@@ -422,18 +422,18 @@ export function GenerateRentReceiptPage() {
                   <FieldGroup
                     id="quittance-template"
                     label="Template"
-                    aide="Le modèle actif est utilisé par défaut."
+                    help="Le modèle actif est utilisé par défaut."
                     badge={
-                      <span className="badge badge-neutre">Versionné</span>
+                      <span className="badge badge-neutral">Versionné</span>
                     }
                   >
                     <select
                       id="quittance-template"
-                      className="champ"
+                      className="field"
                       data-cy="select-template"
                       value={selectedModel ?? ""}
                       onChange={(event) =>
-                        draft.definirTemplate(
+                        draft.setTemplate(
                           event.target.value
                             ? Number(event.target.value)
                             : null,
@@ -458,38 +458,38 @@ export function GenerateRentReceiptPage() {
                   <FieldGroup
                     id="quittance-debut"
                     label="Début de période"
-                    erreur={errors.periodeDebut?.message}
+                    error={errors.periodStart?.message}
                   >
                     <input
                       id="quittance-debut"
                       type="date"
                       className={cn(
-                        "champ",
-                        errors.periodeDebut && "champ-erreur",
+                        "field",
+                        errors.periodStart && "field-error",
                       )}
-                      aria-invalid={Boolean(errors.periodeDebut)}
-                      {...register("periodeDebut", {
+                      aria-invalid={Boolean(errors.periodStart)}
+                      {...register("periodStart", {
                         onChange: (event) =>
-                          draft.modifier({ periodeDebut: event.target.value }),
+                          draft.update({ periodStart: event.target.value }),
                       })}
                     />
                   </FieldGroup>
                   <FieldGroup
                     id="quittance-fin"
                     label="Fin de période"
-                    erreur={errors.periodeFin?.message}
+                    error={errors.periodEnd?.message}
                   >
                     <input
                       id="quittance-fin"
                       type="date"
                       className={cn(
-                        "champ",
-                        errors.periodeFin && "champ-erreur",
+                        "field",
+                        errors.periodEnd && "field-error",
                       )}
-                      aria-invalid={Boolean(errors.periodeFin)}
-                      {...register("periodeFin", {
+                      aria-invalid={Boolean(errors.periodEnd)}
+                      {...register("periodEnd", {
                         onChange: (event) =>
-                          draft.modifier({ periodeFin: event.target.value }),
+                          draft.update({ periodEnd: event.target.value }),
                       })}
                     />
                   </FieldGroup>
@@ -499,21 +499,21 @@ export function GenerateRentReceiptPage() {
                   <FieldGroup
                     id="quittance-loyer"
                     label="Loyer hors charges"
-                    erreur={errors.loyerHc?.message}
-                    aide="Modifiable pour une régularisation ponctuelle."
+                    error={errors.rentExclCharges?.message}
+                    help="Modifiable pour une régularisation ponctuelle."
                   >
                     <div className="relative">
                       <input
                         id="quittance-loyer"
                         inputMode="decimal"
                         className={cn(
-                          "champ pr-9",
-                          errors.loyerHc && "champ-erreur",
+                          "field pr-9",
+                          errors.rentExclCharges && "field-error",
                         )}
-                        aria-invalid={Boolean(errors.loyerHc)}
-                        {...register("loyerHc", {
+                        aria-invalid={Boolean(errors.rentExclCharges)}
+                        {...register("rentExclCharges", {
                           onChange: (event) =>
-                            draft.modifier({ loyerHc: event.target.value }),
+                            draft.update({ rentExclCharges: event.target.value }),
                         })}
                       />
                       <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">
@@ -524,20 +524,20 @@ export function GenerateRentReceiptPage() {
                   <FieldGroup
                     id="quittance-charges"
                     label="Provision pour charges"
-                    erreur={errors.charges?.message}
+                    error={errors.charges?.message}
                   >
                     <div className="relative">
                       <input
                         id="quittance-charges"
                         inputMode="decimal"
                         className={cn(
-                          "champ pr-9",
-                          errors.charges && "champ-erreur",
+                          "field pr-9",
+                          errors.charges && "field-error",
                         )}
                         aria-invalid={Boolean(errors.charges)}
                         {...register("charges", {
                           onChange: (event) =>
-                            draft.modifier({ charges: event.target.value }),
+                            draft.update({ charges: event.target.value }),
                         })}
                       />
                       <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">
@@ -550,7 +550,7 @@ export function GenerateRentReceiptPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/15 bg-accent-soft/45 px-4 py-3.5">
                   <div>
                     <p className="eyebrow text-accent">Total estimé</p>
-                    <p className="mt-1 font-display text-[28px] leading-none text-accent-strong nombre">
+                    <p className="mt-1 font-display text-[28px] leading-none text-accent-strong number">
                       {estimatedTotal}
                     </p>
                   </div>
@@ -564,47 +564,47 @@ export function GenerateRentReceiptPage() {
                   <FieldGroup
                     id="quittance-paiement"
                     label="Date de paiement"
-                    erreur={errors.datePaiement?.message}
+                    error={errors.paymentDate?.message}
                   >
                     <input
                       id="quittance-paiement"
                       type="date"
                       className={cn(
-                        "champ",
-                        errors.datePaiement && "champ-erreur",
+                        "field",
+                        errors.paymentDate && "field-error",
                       )}
-                      {...register("datePaiement", {
+                      {...register("paymentDate", {
                         onChange: (event) =>
-                          draft.modifier({ datePaiement: event.target.value }),
+                          draft.update({ paymentDate: event.target.value }),
                       })}
                     />
                   </FieldGroup>
                   <FieldGroup
                     id="quittance-emission"
                     label="Date d’émission"
-                    erreur={errors.dateEmission?.message}
+                    error={errors.issueDate?.message}
                   >
                     <input
                       id="quittance-emission"
                       type="date"
                       className={cn(
-                        "champ",
-                        errors.dateEmission && "champ-erreur",
+                        "field",
+                        errors.issueDate && "field-error",
                       )}
-                      {...register("dateEmission", {
+                      {...register("issueDate", {
                         onChange: (event) =>
-                          draft.modifier({ dateEmission: event.target.value }),
+                          draft.update({ issueDate: event.target.value }),
                       })}
                     />
                   </FieldGroup>
                 </div>
 
-                <p className="aide">
+                <p className="hint">
                   Les coordonnées du bailleur, du locataire et du logement
                   proviennent de la{" "}
                   <button
                     type="button"
-                    className="lien"
+                    className="link"
                     onClick={() => navigate("/configuration")}
                   >
                     configuration
@@ -617,9 +617,9 @@ export function GenerateRentReceiptPage() {
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="submit"
-                    variante="primaire"
-                    chargement={generationInProgress}
-                    icone={<ReceiptText size={16} />}
+                    variant="primary"
+                    loading={generationInProgress}
+                    icon={<ReceiptText size={16} />}
                     disabled={
                       !isValid ||
                       activeRentReceipt.isPending ||
@@ -630,9 +630,9 @@ export function GenerateRentReceiptPage() {
                     Générer la quittance
                   </Button>
                   <Button
-                    variante="fantome"
-                    petit
-                    icone={<RotateCcw size={13} />}
+                    variant="ghost"
+                    small
+                    icon={<RotateCcw size={13} />}
                     onClick={resumeConfiguration}
                     disabled={!settings.data || generationInProgress}
                   >
@@ -671,21 +671,21 @@ export function GenerateRentReceiptPage() {
         >
           <PdfViewer
             url={preview.url}
-            chargement={preview.chargement}
-            erreur={
+            loading={preview.loading}
+            error={
               !validation.success
                 ? "Complétez les champs de la quittance pour actualiser l’aperçu."
-                : preview.erreur
+                : preview.error
             }
-            misAJour={preview.misAJour}
-            onTelecharger={preview.telecharger}
+            updatedAt={preview.updatedAt}
+            onDownload={preview.download}
             actions={
               <select
                 aria-label="Template de la quittance"
                 className="rounded-lg border border-line bg-white px-2 py-1.5 text-[11px] font-medium text-ink-soft"
                 value={selectedModel ?? ""}
                 onChange={(event) =>
-                  draft.definirTemplate(
+                  draft.setTemplate(
                     event.target.value ? Number(event.target.value) : null,
                   )
                 }
@@ -711,24 +711,24 @@ export function GenerateRentReceiptPage() {
       </div>
 
       <ConfirmDialog
-        ouvert={regenerationDialog}
-        titre="Générer une nouvelle version ?"
+        open={regenerationDialog}
+        title="Générer une nouvelle version ?"
         message={
           <>
-            Une quittance active existe déjà pour {formatMonth(draft.mois)}{" "}
+            Une quittance active existe déjà pour {formatMonth(draft.month)}{" "}
             (version {activeVersion}). La version {(activeVersion ?? 0) + 1}{" "}
             sera créée et l’ancienne restera consultable dans l’historique.
           </>
         }
-        libelleConfirmer="Créer la nouvelle version"
-        onConfirmer={() => {
+        confirmLabel="Créer la nouvelle version"
+        onConfirm={() => {
           setRegenerationDialog(false);
           const submittedValues = pendingValues.current;
           if (submittedValues) {
             void runGeneration(submittedValues);
           }
         }}
-        onAnnuler={() => setRegenerationDialog(false)}
+        onCancel={() => setRegenerationDialog(false)}
         dataCy="dialogue-regeneration-quittance"
       />
     </>

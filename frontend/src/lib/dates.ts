@@ -16,14 +16,14 @@ export function daysInMonth(month: string): number {
   return new Date(year, monthNumber, 0).getDate();
 }
 
-export function periodOfMonth(month: string): { debut: string; fin: string } {
+export function periodOfMonth(month: string): { start: string; end: string } {
   if (!isValidMonth(month)) {
-    return { debut: "", fin: "" };
+    return { start: "", end: "" };
   }
   const days = daysInMonth(month);
   return {
-    debut: `${month}-01`,
-    fin: `${month}-${String(days).padStart(2, "0")}`,
+    start: `${month}-01`,
+    end: `${month}-${String(days).padStart(2, "0")}`,
   };
 }
 

@@ -39,7 +39,7 @@ public class FileTypeDetector {
         if (mime == null) {
             throw new BusinessException("Format non accepté. Formats autorisés : PDF, DOCX, XLSX/XLS, CSV, TXT, JPG, PNG.");
         }
-        boolean valide = switch (extension) {
+        boolean valid = switch (extension) {
             case "pdf" -> startsWithBytes(content, "%PDF-".getBytes(StandardCharsets.US_ASCII));
             case "jpg", "jpeg" -> startsWithBytes(content, new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF});
             case "png" -> startsWithBytes(content, new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A});
@@ -49,7 +49,7 @@ public class FileTypeDetector {
             case "csv", "txt" -> isText(content);
             default -> false;
         };
-        if (!valide) {
+        if (!valid) {
             throw new BusinessException("Le contenu du fichier ne correspond pas à son extension (« ." + extension + " »).");
         }
         return new DetectedFile(fileName, extension, mime);
@@ -94,14 +94,14 @@ public class FileTypeDetector {
         return true;
     }
 
-    private boolean isZipContaining(byte[] content, String prefixe) {
+    private boolean isZipContaining(byte[] content, String prefix) {
         if (content.length < 4 || content[0] != 'P' || content[1] != 'K') {
             return false;
         }
         try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(content))) {
             ZipEntry entry;
             while ((entry = zip.getNextEntry()) != null) {
-                if (entry.getName().startsWith(prefixe)) {
+                if (entry.getName().startsWith(prefix)) {
                     return true;
                 }
             }
@@ -112,8 +112,8 @@ public class FileTypeDetector {
     }
 
     private boolean isText(byte[] content) {
-        int limite = Math.min(content.length, 4096);
-        for (int i = 0; i < limite; i++) {
+        int limit = Math.min(content.length, 4096);
+        for (int i = 0; i < limit; i++) {
             if (content[i] == 0) {
                 return false;
             }

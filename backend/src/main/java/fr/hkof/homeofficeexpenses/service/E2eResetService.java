@@ -37,14 +37,14 @@ public class E2eResetService {
     private final TemplateDocumentRepository templates;
     private final LlmConfigRepository llmConfigs;
     private final ExpenseItemRepository items;
-    private final SettingsRepository parameters;
-    private final StorageService stockage;
+    private final SettingsRepository settings;
+    private final StorageService storage;
     private final DataInitializer initializer;
 
     public E2eResetService(AnalysisDocumentRepository analyses, ExpenseLineRepository lines,
             ExpenseStatementRepository statements, RentReceiptRepository rentReceipts, ReceiptRepository receipts,
             TemplateDocumentRepository templates, LlmConfigRepository llmConfigs, ExpenseItemRepository items,
-            SettingsRepository parameters, StorageService stockage, DataInitializer initializer) {
+            SettingsRepository settings, StorageService storage, DataInitializer initializer) {
         this.analyses = analyses;
         this.lines = lines;
         this.statements = statements;
@@ -53,8 +53,8 @@ public class E2eResetService {
         this.templates = templates;
         this.llmConfigs = llmConfigs;
         this.items = items;
-        this.parameters = parameters;
-        this.stockage = stockage;
+        this.settings = settings;
+        this.storage = storage;
         this.initializer = initializer;
     }
 
@@ -68,18 +68,18 @@ public class E2eResetService {
         templates.deleteAllInBatch();
         llmConfigs.deleteAllInBatch();
         items.deleteAllInBatch();
-        parameters.deleteAllInBatch();
+        settings.deleteAllInBatch();
         cleanFiles();
         initializer.run(new DefaultApplicationArguments(new String[0]));
     }
 
     private void cleanFiles() {
         for (String folder : FOLDERS) {
-            Path rootPath = stockage.root().resolve(folder);
+            Path rootPath = storage.root().resolve(folder);
             try {
                 if (Files.exists(rootPath)) {
-                    try (Stream<Path> chemins = Files.walk(rootPath)) {
-                        List<Path> toDelete = chemins.sorted(Comparator.reverseOrder()).toList();
+                    try (Stream<Path> paths = Files.walk(rootPath)) {
+                        List<Path> toDelete = paths.sorted(Comparator.reverseOrder()).toList();
                         for (Path path : toDelete) {
                             Files.deleteIfExists(path);
                         }

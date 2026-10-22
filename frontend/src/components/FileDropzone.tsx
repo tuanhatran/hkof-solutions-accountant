@@ -28,14 +28,14 @@ export const RECEIPT_FORMATS: Accept = {
 };
 
 interface FileDropzoneProps {
-  onFichier: (file: File) => void;
+  onFile: (file: File) => void;
   disabled?: boolean;
   dataCy: string;
-  erreurExterne?: string | null;
-  texte?: string;
+  externalError?: string | null;
+  text?: string;
   accept?: Accept;
-  tailleMax?: number;
-  descriptionFormats?: string;
+  maxSize?: number;
+  formatsDescription?: string;
   ariaLabel?: string;
 }
 
@@ -55,22 +55,21 @@ function rejectionMessage(
 }
 
 export function FileDropzone({
-  onFichier: onFile,
+  onFile,
   disabled = false,
   dataCy,
-  erreurExterne: externalError,
-  texte: text = "Glissez votre justificatif ici",
+  externalError,
+  text = "Glissez votre justificatif ici",
   accept = RECEIPT_FORMATS,
-  tailleMax: maxSize = MAX_SIZE,
-  descriptionFormats:
-    formatsDescription = "PDF, DOCX, XLSX, XLS, CSV, TXT, JPG, PNG",
+  maxSize = MAX_SIZE,
+  formatsDescription = "PDF, DOCX, XLSX, XLS, CSV, TXT, JPG, PNG",
   ariaLabel = "Choisir un fichier justificatif",
 }: FileDropzoneProps) {
   const [errorText, setErrorText] = useState<string | null>(null);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept,
-    maxSize: maxSize,
+    maxSize,
     multiple: false,
     disabled,
     onDropAccepted: (files) => {
@@ -99,7 +98,7 @@ export function FileDropzone({
           "group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-7 text-center transition",
           isDragActive
             ? "border-accent bg-accent-soft/70"
-            : "border-line-forte/70 bg-paper/40 hover:border-accent/50 hover:bg-accent-soft/30",
+            : "border-line-strong/70 bg-paper/40 hover:border-accent/50 hover:bg-accent-soft/30",
           disabled && "cursor-not-allowed opacity-60",
           message && "border-danger/50 bg-danger-soft/30",
         )}
@@ -123,7 +122,7 @@ export function FileDropzone({
         </p>
       </div>
       {message ? (
-        <p className="erreur-champ" role="alert">
+        <p className="error-text" role="alert">
           {message}
         </p>
       ) : null}
@@ -132,19 +131,19 @@ export function FileDropzone({
 }
 
 interface SelectedFileProps {
-  nom: string;
-  taille?: number | null;
-  typeMime?: string | null;
-  enCours?: boolean;
-  onRetirer?: () => void;
+  name: string;
+  size?: number | null;
+  mimeType?: string | null;
+  inProgress?: boolean;
+  onRemove?: () => void;
 }
 
 export function SelectedFile({
-  nom: name,
-  taille: size,
-  typeMime: mimeType,
-  enCours: inProgress,
-  onRetirer: onRemove,
+  name,
+  size,
+  mimeType,
+  inProgress,
+  onRemove,
 }: SelectedFileProps) {
   const IconComponent = mimeType?.startsWith("image/")
     ? ImageIcon

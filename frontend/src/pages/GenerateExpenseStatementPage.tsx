@@ -77,39 +77,39 @@ import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { toast } from "@/state/toasts";
 
 const INITIAL_VALUES: ExpenseFormValues = {
-  posteCode: "",
-  montantTtc: "",
-  prorataPct: "100",
-  periodeDebut: "",
-  periodeFin: "",
-  montantMoisSurcharge: "",
+  itemCode: "",
+  amountInclVat: "",
+  proRataPct: "100",
+  periodStart: "",
+  periodEnd: "",
+  monthlyAmountOverride: "",
 };
 
 interface AttachedFile {
   id: number;
-  nom: string;
-  taille: number | null;
-  typeMime: string | null;
+  name: string;
+  size: number | null;
+  mimeType: string | null;
 }
 
 interface AiState {
   type: boolean;
-  montant: boolean;
-  periode: boolean;
-  montantDetecte: string | null;
-  fournisseur: string | null;
-  extraitSource: string | null;
-  confiance: AiConfidence | null;
+  amount: boolean;
+  period: boolean;
+  detectedAmount: string | null;
+  supplier: string | null;
+  sourceExtract: string | null;
+  confidence: AiConfidence | null;
 }
 
 const AI_EMPTY: AiState = {
   type: false,
-  montant: false,
-  periode: false,
-  montantDetecte: null,
-  fournisseur: null,
-  extraitSource: null,
-  confiance: null,
+  amount: false,
+  period: false,
+  detectedAmount: null,
+  supplier: null,
+  sourceExtract: null,
+  confidence: null,
 };
 
 function confidenceValid(
@@ -134,20 +134,20 @@ function confidenceLabel(confidence: AiConfidence | null): string | null {
 }
 
 function AnalysisPanel({
-  etat: phase,
-  aFichier: hasFile,
-  onAnnuler: onCancel,
+  state: phase,
+  hasFile,
+  onCancel,
 }: {
-  etat: AnalysisState;
-  aFichier: boolean;
-  onAnnuler: () => void;
+  state: AnalysisState;
+  hasFile: boolean;
+  onCancel: () => void;
 }) {
   const inProgress = isAnalysisRunning(phase);
   const result: ExtractionDto | null =
-    phase.statut === "terminee" ? (phase.analyse.result ?? null) : null;
+    phase.status === "done" ? (phase.analysis.result ?? null) : null;
   const duration =
-    phase.statut === "terminee" && phase.analyse.durationMs
-      ? `${(phase.analyse.durationMs / 1000).toFixed(1)} s`
+    phase.status === "done" && phase.analysis.durationMs
+      ? `${(phase.analysis.durationMs / 1000).toFixed(1)} s`
       : null;
 
   return (
@@ -156,9 +156,9 @@ function AnalysisPanel({
       aria-live="polite"
       className={cn(
         "rounded-xl border px-3.5 py-3 text-xs",
-        phase.statut === "echec"
+        phase.status === "failed"
           ? "border-warning/25 bg-warning-soft/40 text-warning"
-          : phase.statut === "terminee"
+          : phase.status === "done"
             ? "border-copper/20 bg-copper-soft/50 text-ink"
             : inProgress
               ? "border-accent/20 bg-accent-soft/45 text-ink"
@@ -168,14 +168,14 @@ function AnalysisPanel({
       {inProgress ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="flex items-center gap-2 font-medium">
-            <Spinner taille={14} />
-            {phase.statut === "demarrage"
+            <Spinner size={14} />
+            {phase.status === "starting"
               ? "Préparation de l’analyse…"
               : "Analyse IA en cours — le modèle local peut prendre quelques secondes."}
           </span>
           <Button
-            variante="fantome"
-            petit
+            variant="ghost"
+            small
             onClick={onCancel}
             data-cy="btn-annuler-analyse"
           >
@@ -183,7 +183,7 @@ function AnalysisPanel({
             Annuler l’analyse
           </Button>
         </div>
-      ) : phase.statut === "terminee" ? (
+      ) : phase.status === "done" ? (
         <div className="space-y-2">
           <p className="flex items-center gap-2 font-semibold text-ink">
             <CheckCircle2
@@ -196,7 +196,7 @@ function AnalysisPanel({
           </p>
           {result ? (
             <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-soft">
-              <AiBadge extraitSource={result.sourceExcerpt} />
+              <AiBadge sourceExtract={result.sourceExcerpt} />
               {result.supplier ? (
                 <span>Fournisseur détecté : {result.supplier}</span>
               ) : null}
@@ -227,7 +227,7 @@ function AnalysisPanel({
             d’ajouter le frais.
           </p>
         </div>
-      ) : phase.statut === "echec" ? (
+      ) : phase.status === "failed" ? (
         <p className="flex items-start gap-2">
           <AlertTriangle
             size={14}
@@ -239,7 +239,7 @@ function AnalysisPanel({
             montant et le prorata manuellement.
           </span>
         </p>
-      ) : phase.statut === "annulee" ? (
+      ) : phase.status === "cancelled" ? (
         <p>{phase.message} La saisie manuelle reste disponible.</p>
       ) : (
         <p>
@@ -258,9 +258,9 @@ export function GenerateExpenseStatementPage() {
   const draft = useStatementDraft();
   const lines = useStatementLines();
   const mobile = useMediaQuery("(max-width: 1023px)");
-  const [mobilePanel, setMobilePanel] = useState<"saisie" | "apercu">("saisie");
+  const [mobilePanel, setMobilePanel] = useState<"input" | "preview">("input");
 
-  const month = draft.mois;
+  const month = draft.month;
   const settings = useSettings();
   const expenseItemsQuery = useExpenseItems(false);
   const templates = useTemplates("EXPENSE_STATEMENT");
@@ -288,8 +288,8 @@ export function GenerateExpenseStatementPage() {
   const models = templates.data ?? [];
   const activeModel = models.find((model) => model.active) ?? null;
   const selectedTemplate =
-    draft.templatesParMois[month] ?? activeModel?.id ?? null;
-  const complete = draft.completsParMois[month] ?? true;
+    draft.templatesByMonth[month] ?? activeModel?.id ?? null;
+  const complete = draft.completeByMonth[month] ?? true;
 
   const {
     register,
@@ -307,14 +307,14 @@ export function GenerateExpenseStatementPage() {
   });
 
   const values = watch();
-  const isRent = values.posteCode === "loyer";
+  const isRent = values.itemCode === "loyer";
   const availableRent = Boolean(rentReceipt.data?.id);
 
   const {
-    etat: analysisPhase,
-    demarrer: start,
-    annuler: cancel,
-    reinitialiser: resetStatement,
+    state: analysisPhase,
+    start,
+    cancel,
+    reset: resetStatement,
   } = useAnalysis();
   const [receipt, setReceipt] = useState<AttachedFile | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -378,9 +378,9 @@ export function GenerateExpenseStatementPage() {
       }
       setReceipt({
         id: dto.id,
-        nom: dto.fileName ?? file.name,
-        taille: dto.size ?? file.size,
-        typeMime: dto.mimeType ?? file.type,
+        name: dto.fileName ?? file.name,
+        size: dto.size ?? file.size,
+        mimeType: dto.mimeType ?? file.type,
       });
       await start(dto.id);
     } catch (error) {
@@ -413,10 +413,10 @@ export function GenerateExpenseStatementPage() {
     if (!activeRentReceipt?.id || !activeRentReceipt.total) {
       return;
     }
-    if (getValues("posteCode") !== "loyer") {
+    if (getValues("itemCode") !== "loyer") {
       return;
     }
-    setValue("montantTtc", activeRentReceipt.total, {
+    setValue("amountInclVat", activeRentReceipt.total, {
       shouldValidate: true,
       shouldDirty: true,
     });
@@ -425,10 +425,10 @@ export function GenerateExpenseStatementPage() {
   }, [rentReceipt.data?.id, rentReceipt.data?.total]);
 
   useEffect(() => {
-    if (analysisPhase.statut !== "terminee" || !expenseItemsQuery.data) {
+    if (analysisPhase.status !== "done" || !expenseItemsQuery.data) {
       return;
     }
-    const analysis = analysisPhase.analyse;
+    const analysis = analysisPhase.analysis;
     const analysisId = analysis.id;
     if (
       analysisId === null ||
@@ -448,7 +448,7 @@ export function GenerateExpenseStatementPage() {
 
     const current = getValues();
     const currentLines =
-      useStatementDraft.getState().lignesParMois[month] ?? [];
+      useStatementDraft.getState().linesByMonth[month] ?? [];
     let appliedType = false;
     let appliedAmount = false;
     let appliedPeriod = false;
@@ -460,7 +460,7 @@ export function GenerateExpenseStatementPage() {
           ? parseAmount(extraction.amountInclVat)
           : null;
 
-    if (!current.montantTtc && suggestedAmount !== null) {
+    if (!current.amountInclVat && suggestedAmount !== null) {
       appliedAmount = true;
     }
 
@@ -474,7 +474,7 @@ export function GenerateExpenseStatementPage() {
         : "";
     const isValidPeriod = Boolean(start && end && periodInOrder(start, end));
 
-    if (!current.periodeDebut && !current.periodeFin && isValidPeriod) {
+    if (!current.periodStart && !current.periodEnd && isValidPeriod) {
       appliedPeriod = true;
     }
 
@@ -482,24 +482,24 @@ export function GenerateExpenseStatementPage() {
       extraction.suggestedType && extraction.suggestedType !== "loyer"
         ? (expenseItemByCode.get(extraction.suggestedType) ?? null)
         : null;
-    const others = currentLines.filter((line) => line.cle !== lineBeingEdited);
+    const others = currentLines.filter((line) => line.key !== lineBeingEdited);
 
     if (
-      !current.posteCode &&
+      !current.itemCode &&
       suggestedItem?.code &&
       (suggestedItem.multipleLinesAllowed ||
         !typeAlreadyAdded(others, suggestedItem.code))
     ) {
       appliedType = true;
-      setValue("posteCode", suggestedItem.code, {
+      setValue("itemCode", suggestedItem.code, {
         shouldValidate: true,
         shouldDirty: true,
       });
       if (
-        (current.prorataPct === "" || current.prorataPct === "100") &&
+        (current.proRataPct === "" || current.proRataPct === "100") &&
         suggestedItem.proRataPct
       ) {
-        setValue("prorataPct", suggestedItem.proRataPct, {
+        setValue("proRataPct", suggestedItem.proRataPct, {
           shouldValidate: true,
           shouldDirty: true,
         });
@@ -507,28 +507,28 @@ export function GenerateExpenseStatementPage() {
     }
 
     if (appliedAmount && suggestedAmount) {
-      setValue("montantTtc", suggestedAmount, {
+      setValue("amountInclVat", suggestedAmount, {
         shouldValidate: true,
         shouldDirty: true,
       });
     }
     if (appliedPeriod) {
-      setValue("periodeDebut", start, {
+      setValue("periodStart", start, {
         shouldValidate: true,
         shouldDirty: true,
       });
-      setValue("periodeFin", end, { shouldValidate: true, shouldDirty: true });
+      setValue("periodEnd", end, { shouldValidate: true, shouldDirty: true });
       setPeriodVisible(true);
     }
 
     setAi({
       type: appliedType,
-      montant: appliedAmount,
-      periode: appliedPeriod,
-      montantDetecte: suggestedAmount,
-      fournisseur: extraction.supplier ?? null,
-      extraitSource: extraction.sourceExcerpt ?? null,
-      confiance: confidenceValid(extraction.confidence),
+      amount: appliedAmount,
+      period: appliedPeriod,
+      detectedAmount: suggestedAmount,
+      supplier: extraction.supplier ?? null,
+      sourceExtract: extraction.sourceExcerpt ?? null,
+      confidence: confidenceValid(extraction.confidence),
     });
     if (appliedAmount || appliedPeriod || appliedType) {
       toast.info(
@@ -551,23 +551,23 @@ export function GenerateExpenseStatementPage() {
     }
     resetForm();
     setResult(null);
-    setMobilePanel("saisie");
-    draft.changerMois(value);
+    setMobilePanel("input");
+    draft.changeMonth(value);
   }
 
   function changeType(code: string) {
-    const old = getValues("posteCode");
+    const old = getValues("itemCode");
     const expenseItem = expenseItemByCode.get(code) ?? null;
-    setValue("posteCode", code, { shouldValidate: true, shouldDirty: true });
-    setValue("prorataPct", expenseItem?.proRataPct ?? "100", {
+    setValue("itemCode", code, { shouldValidate: true, shouldDirty: true });
+    setValue("proRataPct", expenseItem?.proRataPct ?? "100", {
       shouldValidate: true,
       shouldDirty: true,
     });
-    setValue("periodeDebut", "", { shouldDirty: true });
-    setValue("periodeFin", "", { shouldDirty: true });
-    setValue("montantMoisSurcharge", "", { shouldDirty: true });
+    setValue("periodStart", "", { shouldDirty: true });
+    setValue("periodEnd", "", { shouldDirty: true });
+    setValue("monthlyAmountOverride", "", { shouldDirty: true });
     setPeriodVisible(false);
-    setAi((previous) => ({ ...previous, type: false, periode: false }));
+    setAi((previous) => ({ ...previous, type: false, period: false }));
 
     if (code === "loyer" && old !== "loyer") {
       if (!lineBeingEdited) {
@@ -576,12 +576,12 @@ export function GenerateExpenseStatementPage() {
         void cancel(true);
         resetStatement();
       }
-      setValue("montantTtc", rentReceipt.data?.total ?? "", {
+      setValue("amountInclVat", rentReceipt.data?.total ?? "", {
         shouldValidate: true,
         shouldDirty: true,
       });
     } else if (code !== "loyer" && old === "loyer") {
-      setValue("montantTtc", "", { shouldValidate: true, shouldDirty: true });
+      setValue("amountInclVat", "", { shouldValidate: true, shouldDirty: true });
     }
   }
 
@@ -590,42 +590,42 @@ export function GenerateExpenseStatementPage() {
     void cancel(true);
     resetStatement();
     appliedAnalysis.current = null;
-    setLineBeingEdited(line.cle);
-    const file: AttachedFile | null = line.justificatifId
+    setLineBeingEdited(line.key);
+    const file: AttachedFile | null = line.receiptId
       ? {
-          id: line.justificatifId,
-          nom: line.justificatifNom ?? "Justificatif",
-          taille: null,
-          typeMime: null,
+          id: line.receiptId,
+          name: line.receiptName ?? "Justificatif",
+          size: null,
+          mimeType: null,
         }
       : null;
     originalReceipt.current = file;
     setReceipt(file);
     setFileError(null);
     reset({
-      posteCode: line.posteCode,
-      montantTtc:
-        line.posteCode === "loyer" && rentReceipt.data?.total
+      itemCode: line.itemCode,
+      amountInclVat:
+        line.itemCode === "loyer" && rentReceipt.data?.total
           ? rentReceipt.data.total
-          : line.montantTtc,
-      prorataPct: line.prorataPct,
-      periodeDebut: line.periodeDebut,
-      periodeFin: line.periodeFin,
-      montantMoisSurcharge: line.montantMoisSurcharge,
+          : line.amountInclVat,
+      proRataPct: line.proRataPct,
+      periodStart: line.periodStart,
+      periodEnd: line.periodEnd,
+      monthlyAmountOverride: line.monthlyAmountOverride,
     });
     setPeriodVisible(
       Boolean(
-        line.periodeDebut || line.periodeFin || line.montantMoisSurcharge,
+        line.periodStart || line.periodEnd || line.monthlyAmountOverride,
       ),
     );
     setAi({
       type: false,
-      montant: line.sourceMontant === "AI",
-      periode: false,
-      montantDetecte: line.montantDetecteIa,
-      fournisseur: line.fournisseurDetecte,
-      extraitSource: null,
-      confiance: line.confianceIa,
+      amount: line.amountSource === "AI",
+      period: false,
+      detectedAmount: line.aiDetectedAmount,
+      supplier: line.detectedSupplier,
+      sourceExtract: null,
+      confidence: line.aiConfidence,
     });
     setResult(null);
     formCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -644,20 +644,20 @@ export function GenerateExpenseStatementPage() {
   }
 
   function saveExpense(submittedValues: ExpenseFormValues) {
-    const expenseItem = expenseItemByCode.get(submittedValues.posteCode);
+    const expenseItem = expenseItemByCode.get(submittedValues.itemCode);
     if (!expenseItem?.code) {
-      setError("posteCode", {
+      setError("itemCode", {
         type: "manual",
         message: "Sélectionnez un type de frais.",
       });
       return;
     }
-    const others = lines.filter((line) => line.cle !== lineBeingEdited);
+    const others = lines.filter((line) => line.key !== lineBeingEdited);
     if (
       !expenseItem.multipleLinesAllowed &&
       typeAlreadyAdded(others, expenseItem.code)
     ) {
-      setError("posteCode", {
+      setError("itemCode", {
         type: "manual",
         message:
           "Ce type est déjà présent. Modifiez la ligne existante ou autorisez plusieurs lignes.",
@@ -676,37 +676,37 @@ export function GenerateExpenseStatementPage() {
       return;
     }
 
-    const amountInclVat = parseAmount(submittedValues.montantTtc);
-    const proRataPct = parsePercentage(submittedValues.prorataPct);
+    const amountInclVat = parseAmount(submittedValues.amountInclVat);
+    const proRataPct = parsePercentage(submittedValues.proRataPct);
     if (amountInclVat === null || proRataPct === null) {
       return;
     }
-    const override = submittedValues.montantMoisSurcharge.trim()
-      ? parseAmount(submittedValues.montantMoisSurcharge)
+    const override = submittedValues.monthlyAmountOverride.trim()
+      ? parseAmount(submittedValues.monthlyAmountOverride)
       : null;
 
     const line: DraftLine = {
-      cle: lineBeingEdited ?? newKey(),
-      posteCode: expenseItem.code,
-      montantTtc: amountInclVat,
-      prorataPct: proRataPct,
-      periodeDebut: submittedValues.periodeDebut,
-      periodeFin: submittedValues.periodeFin,
-      montantMoisSurcharge: override ?? "",
-      justificatifId: rentLine ? null : (receipt?.id ?? null),
-      justificatifNom: rentLine ? null : (receipt?.nom ?? null),
-      sourceMontant: ai.montant ? "AI" : "MANUAL",
-      montantDetecteIa: ai.montantDetecte,
-      confianceIa: ai.confiance,
-      fournisseurDetecte: ai.fournisseur,
+      key: lineBeingEdited ?? newKey(),
+      itemCode: expenseItem.code,
+      amountInclVat: amountInclVat,
+      proRataPct: proRataPct,
+      periodStart: submittedValues.periodStart,
+      periodEnd: submittedValues.periodEnd,
+      monthlyAmountOverride: override ?? "",
+      receiptId: rentLine ? null : (receipt?.id ?? null),
+      receiptName: rentLine ? null : (receipt?.name ?? null),
+      amountSource: ai.amount ? "AI" : "MANUAL",
+      aiDetectedAmount: ai.detectedAmount,
+      aiConfidence: ai.confidence,
+      detectedSupplier: ai.supplier,
     };
 
     if (lineBeingEdited) {
-      draft.modifierLigne(lineBeingEdited, line);
-      toast.succes("Frais modifié.");
+      draft.updateLine(lineBeingEdited, line);
+      toast.success("Frais modifié.");
     } else {
-      draft.ajouterLigne(line);
-      toast.succes("Frais ajouté.");
+      draft.addLine(line);
+      toast.success("Frais ajouté.");
     }
 
     if (rentLine && receipt && originalReceipt.current?.id !== receipt.id) {
@@ -724,8 +724,8 @@ export function GenerateExpenseStatementPage() {
     if (!lineToRemove) {
       return;
     }
-    const key = lineToRemove.cle;
-    draft.supprimerLigne(key);
+    const key = lineToRemove.key;
+    draft.removeLine(key);
     if (lineBeingEdited === key) {
       resetForm();
     }
@@ -735,20 +735,20 @@ export function GenerateExpenseStatementPage() {
   }
 
   function changeProRata(line: DraftLine, value: string) {
-    draft.modifierLigne(line.cle, { prorataPct: value });
+    draft.updateLine(line.key, { proRataPct: value });
     setResult(null);
   }
 
   const requests = useMemo<{
-    valeurs: LineRequest[] | null;
-    erreur: string | null;
+    values: LineRequest[] | null;
+    error: string | null;
   }>(() => {
     try {
-      return { valeurs: lines.map(toLineRequest), erreur: null };
+      return { values: lines.map(toLineRequest), error: null };
     } catch (error) {
       return {
-        valeurs: null,
-        erreur:
+        values: null,
+        error:
           error instanceof Error
             ? error.message
             : "Les lignes contiennent une valeur invalide.",
@@ -757,7 +757,7 @@ export function GenerateExpenseStatementPage() {
   }, [lines]);
 
   const calculationSignature = useMemo(
-    () => JSON.stringify({ mois: month, lignes: requests.valeurs }),
+    () => JSON.stringify({ month, lines: requests.values }),
     [month, requests],
   );
 
@@ -772,15 +772,15 @@ export function GenerateExpenseStatementPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    if (requests.erreur) {
-      setCalculationError(requests.erreur);
+    if (requests.error) {
+      setCalculationError(requests.error);
       setCalculationInProgress(false);
       return () => controller.abort();
     }
-    if (!requests.valeurs) {
+    if (!requests.values) {
       return () => controller.abort();
     }
-    const validRequests = requests.valeurs;
+    const validRequests = requests.values;
     setCalculationInProgress(true);
     setCalculationError(null);
     const timer = window.setTimeout(async () => {
@@ -808,7 +808,7 @@ export function GenerateExpenseStatementPage() {
       controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [calculationSignature, month, requests.erreur]);
+  }, [calculationSignature, month, requests.error]);
 
   const calculationUpToDate =
     calculatedSignature === calculationSignature &&
@@ -816,13 +816,13 @@ export function GenerateExpenseStatementPage() {
     calculationError === null;
 
   const previewRequest = useMemo<StatementPreviewRequest | null>(() => {
-    if (!requests.valeurs || lines.length === 0) {
+    if (!requests.values || lines.length === 0) {
       return null;
     }
     const requestBody: StatementPreviewRequest = {
       month,
       complete,
-      lines: requests.valeurs,
+      lines: requests.values,
     };
     if (selectedTemplate !== null) {
       requestBody.templateId = selectedTemplate;
@@ -835,37 +835,37 @@ export function GenerateExpenseStatementPage() {
       previewRequest
         ? api.expenseStatements.preview(previewRequest, signal)
         : Promise.reject(new DOMException("Aperçu inactif", "AbortError")),
-    JSON.stringify(previewRequest ?? { inactif: true }),
-    { actif: previewRequest !== null, debounceMs: 400 },
+    JSON.stringify(previewRequest ?? { inactive: true }),
+    { active: previewRequest !== null, debounceMs: 400 },
   );
 
   function goToRentReceipt() {
-    useRentReceiptDraft.getState().changerMois(month);
+    useRentReceiptDraft.getState().changeMonth(month);
     navigate("/generer/quittance");
   }
 
   async function generateStatement() {
-    if (!requests.valeurs || lines.length === 0 || !calculationUpToDate) {
+    if (!requests.values || lines.length === 0 || !calculationUpToDate) {
       return;
     }
     setGenerationInProgress(true);
     try {
       const requestBody: StatementGenerationRequest = {
         month,
-        lines: requests.valeurs,
+        lines: requests.values,
       };
       if (selectedTemplate !== null) {
         requestBody.templateId = selectedTemplate;
       }
       const statement = await api.expenseStatements.create(requestBody);
       setResult(statement);
-      draft.marquerGenere();
+      draft.markGenerated();
       await queryClient.invalidateQueries({ queryKey: ["notes"] });
-      toast.succes(
+      toast.success(
         `Note de ${formatMonth(month)} générée en version ${statement.version ?? 1}.`,
       );
     } catch (error) {
-      toast.erreur(errorMessage(error));
+      toast.error(errorMessage(error));
     } finally {
       setGenerationInProgress(false);
     }
@@ -893,33 +893,33 @@ export function GenerateExpenseStatementPage() {
       );
       downloadBlob(
         reply.blob,
-        reply.nomFichier ??
+        reply.fileName ??
           `note_frais_${statement.month ?? month}_v${statement.version ?? 1}${withAttachments ? "_complet" : ""}.pdf`,
       );
     } catch (error) {
-      toast.erreur(errorMessage(error));
+      toast.error(errorMessage(error));
     }
   }
 
   const estimate = estimateAllocation(
-    values.montantTtc,
-    values.prorataPct,
-    values.periodeDebut,
-    values.periodeFin,
+    values.amountInclVat,
+    values.proRataPct,
+    values.periodStart,
+    values.periodEnd,
     month,
   );
-  const typedOverride = values.montantMoisSurcharge.trim()
-    ? parseAmount(values.montantMoisSurcharge)
+  const typedOverride = values.monthlyAmountOverride.trim()
+    ? parseAmount(values.monthlyAmountOverride)
     : null;
   const estimatedMonthAmount =
-    typedOverride ?? estimate?.montantMois ?? values.montantTtc;
+    typedOverride ?? estimate?.monthAmount ?? values.amountInclVat;
   const displayedRetainedAmount = estimatedRetainedAmount(
     estimatedMonthAmount,
-    values.prorataPct,
+    values.proRataPct,
   );
   const omittedTypes = missingTypes(expenseItems, lines);
   const lowConfidenceError =
-    ai.confiance === "basse" && (ai.montant || ai.periode);
+    ai.confidence === "basse" && (ai.amount || ai.period);
 
   function optionDisabled(expenseItem: ExpenseItemDto): boolean {
     if (!expenseItem.code || expenseItem.multipleLinesAllowed) {
@@ -927,7 +927,7 @@ export function GenerateExpenseStatementPage() {
     }
     if (
       lineBeingEdited &&
-      lines.find((line) => line.cle === lineBeingEdited)?.posteCode ===
+      lines.find((line) => line.key === lineBeingEdited)?.itemCode ===
         expenseItem.code
     ) {
       return false;
@@ -942,14 +942,14 @@ export function GenerateExpenseStatementPage() {
   return (
     <>
       <PageHeader
-        surTitre="Générer · Note de frais"
-        titre="Note de frais d’occupation"
+        eyebrow="Générer · Note de frais"
+        title="Note de frais d’occupation"
         description="Ajoutez les factures du mois, vérifiez les propositions de l’IA et laissez le backend calculer la quote-part. Le loyer est repris de la quittance active."
         actions={
           <>
             <Button
-              variante="secondaire"
-              icone={<ReceiptText size={15} />}
+              variant="secondary"
+              icon={<ReceiptText size={15} />}
               onClick={goToRentReceipt}
             >
               Quittance du mois
@@ -963,7 +963,7 @@ export function GenerateExpenseStatementPage() {
       />
 
       {activeStatement.data && !result ? (
-        <div className="carte mb-4 flex flex-wrap items-center justify-between gap-3 border-accent/20 bg-accent-soft/45 p-4">
+        <div className="card mb-4 flex flex-wrap items-center justify-between gap-3 border-accent/20 bg-accent-soft/45 p-4">
           <div className="flex items-start gap-3">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-surface text-accent">
               <FileCheck2 size={17} aria-hidden="true" />
@@ -988,7 +988,7 @@ export function GenerateExpenseStatementPage() {
                   )}
                   target="_blank"
                   rel="noreferrer"
-                  className="btn btn-secondaire btn-petit"
+                  className="btn btn-secondary btn-small"
                 >
                   <ExternalLink size={13} aria-hidden="true" />
                   Ouvrir
@@ -1000,7 +1000,7 @@ export function GenerateExpenseStatementPage() {
                   )}
                   target="_blank"
                   rel="noreferrer"
-                  className="btn btn-secondaire btn-petit"
+                  className="btn btn-secondary btn-small"
                 >
                   <ExternalLink size={13} aria-hidden="true" />
                   Version complète
@@ -1015,7 +1015,7 @@ export function GenerateExpenseStatementPage() {
         <div className="mb-4">
           <ErrorState
             message={errorMessage(settings.error)}
-            onReessayer={() => void settings.refetch()}
+            onRetry={() => void settings.refetch()}
           />
         </div>
       ) : null}
@@ -1023,7 +1023,7 @@ export function GenerateExpenseStatementPage() {
         <div className="mb-4">
           <ErrorState
             message={errorMessage(expenseItemsQuery.error)}
-            onReessayer={() => void expenseItemsQuery.refetch()}
+            onRetry={() => void expenseItemsQuery.refetch()}
           />
         </div>
       ) : null}
@@ -1037,11 +1037,11 @@ export function GenerateExpenseStatementPage() {
           <button
             type="button"
             role="tab"
-            aria-selected={mobilePanel === "saisie"}
-            onClick={() => setMobilePanel("saisie")}
+            aria-selected={mobilePanel === "input"}
+            onClick={() => setMobilePanel("input")}
             className={cn(
               "segmented-item flex-1",
-              mobilePanel === "saisie" && "segmented-item-actif",
+              mobilePanel === "input" && "segmented-item-active",
             )}
           >
             Saisie
@@ -1049,15 +1049,15 @@ export function GenerateExpenseStatementPage() {
           <button
             type="button"
             role="tab"
-            aria-selected={mobilePanel === "apercu"}
-            onClick={() => setMobilePanel("apercu")}
+            aria-selected={mobilePanel === "preview"}
+            onClick={() => setMobilePanel("preview")}
             className={cn(
               "segmented-item flex flex-1 items-center justify-center gap-2",
-              mobilePanel === "apercu" && "segmented-item-actif",
+              mobilePanel === "preview" && "segmented-item-active",
             )}
           >
             Aperçu
-            {preview.misAJour ? (
+            {preview.updatedAt ? (
               <span
                 className="h-1.5 w-1.5 rounded-full bg-accent"
                 aria-hidden="true"
@@ -1072,11 +1072,11 @@ export function GenerateExpenseStatementPage() {
           data-cy="volet-saisie"
           className={cn(
             "min-w-0 space-y-4",
-            mobile && mobilePanel !== "saisie" && "hidden",
+            mobile && mobilePanel !== "input" && "hidden",
           )}
         >
-          <div className="carte">
-            <div className="carte-entete">
+          <div className="card">
+            <div className="card-header">
               <div>
                 <p className="eyebrow">
                   {lineBeingEdited ? "Modification" : "Ajouter un frais"}
@@ -1093,7 +1093,7 @@ export function GenerateExpenseStatementPage() {
                   <input
                     id="note-mois"
                     type="month"
-                    className="champ mt-0 w-auto py-1.5 text-xs"
+                    className="field mt-0 w-auto py-1.5 text-xs"
                     data-cy="select-mois"
                     value={month}
                     onChange={(event) => changeMonth(event.target.value)}
@@ -1107,20 +1107,20 @@ export function GenerateExpenseStatementPage() {
               onSubmit={handleSubmit(saveExpense)}
               noValidate
             >
-              <div className="carte-corps space-y-5">
+              <div className="card-body space-y-5">
                 <div className="grid gap-4 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
                   <FieldGroup
                     id="frais-type"
                     label="Type de frais"
-                    erreur={errors.posteCode?.message}
+                    error={errors.itemCode?.message}
                     badge={
                       ai.type ? (
-                        <AiBadge libelle="Type suggéré par IA" />
+                        <AiBadge label="Type suggéré par IA" />
                       ) : undefined
                     }
-                    aide={
-                      ai.fournisseur
-                        ? `Fournisseur détecté : ${ai.fournisseur}`
+                    help={
+                      ai.supplier
+                        ? `Fournisseur détecté : ${ai.supplier}`
                         : "Les libellés proviennent de votre configuration."
                     }
                   >
@@ -1128,13 +1128,13 @@ export function GenerateExpenseStatementPage() {
                       id="frais-type"
                       ref={typeRef}
                       className={cn(
-                        "champ",
-                        errors.posteCode && "champ-erreur",
+                        "field",
+                        errors.itemCode && "field-error",
                       )}
                       data-cy="select-type-frais"
-                      value={values.posteCode}
+                      value={values.itemCode}
                       onChange={(event) => changeType(event.target.value)}
-                      aria-invalid={Boolean(errors.posteCode)}
+                      aria-invalid={Boolean(errors.itemCode)}
                       disabled={expenseItemsQuery.isPending}
                     >
                       <option value="">Sélectionner…</option>
@@ -1157,20 +1157,20 @@ export function GenerateExpenseStatementPage() {
                   <FieldGroup
                     id="frais-prorata"
                     label="Prorata (%)"
-                    erreur={errors.prorataPct?.message}
-                    aide="Champ libre : 35,71 ou 35,71 %."
+                    error={errors.proRataPct?.message}
+                    help="Champ libre : 35,71 ou 35,71 %."
                   >
                     <div className="relative">
                       <input
                         id="frais-prorata"
                         inputMode="decimal"
                         className={cn(
-                          "champ pr-9",
-                          errors.prorataPct && "champ-erreur",
+                          "field pr-9",
+                          errors.proRataPct && "field-error",
                         )}
                         data-cy="input-prorata"
-                        aria-invalid={Boolean(errors.prorataPct)}
-                        {...register("prorataPct")}
+                        aria-invalid={Boolean(errors.proRataPct)}
+                        {...register("proRataPct")}
                       />
                       <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">
                         %
@@ -1183,7 +1183,7 @@ export function GenerateExpenseStatementPage() {
                   <div className="rounded-xl border border-line bg-paper/50 p-4">
                     {rentReceipt.isPending ? (
                       <p className="flex items-center gap-2 text-sm text-ink-soft">
-                        <Spinner taille={16} /> Recherche de la quittance du
+                        <Spinner size={16} /> Recherche de la quittance du
                         mois…
                       </p>
                     ) : rentReceipt.data ? (
@@ -1192,7 +1192,7 @@ export function GenerateExpenseStatementPage() {
                           <p className="text-sm font-semibold text-ink">
                             Quittance de {formatMonth(month)} (v
                             {rentReceipt.data.version ?? 1}) :{" "}
-                            <span className="nombre">
+                            <span className="number">
                               {formatEUR(rentReceipt.data.total)}
                             </span>
                           </p>
@@ -1206,7 +1206,7 @@ export function GenerateExpenseStatementPage() {
                             href={api.rentReceipts.pdfUrl(rentReceipt.data.id)}
                             target="_blank"
                             rel="noreferrer"
-                            className="btn btn-secondaire btn-petit"
+                            className="btn btn-secondary btn-small"
                           >
                             <ExternalLink size={13} aria-hidden="true" />
                             Voir le PDF
@@ -1236,8 +1236,8 @@ export function GenerateExpenseStatementPage() {
                           </div>
                         </div>
                         <Button
-                          variante="secondaire"
-                          petit
+                          variant="secondary"
+                          small
                           onClick={goToRentReceipt}
                         >
                           Générer la quittance
@@ -1248,7 +1248,7 @@ export function GenerateExpenseStatementPage() {
                 ) : (
                   <div>
                     <div className="mb-1.5 flex items-center justify-between gap-2">
-                      <span className="label-champ">
+                      <span className="field-label">
                         Fichier justificatif{" "}
                         <span className="text-danger">*</span>
                       </span>
@@ -1258,25 +1258,25 @@ export function GenerateExpenseStatementPage() {
                     </div>
                     {uploading ? (
                       <div className="flex items-center gap-3 rounded-xl border border-line bg-paper/50 p-4 text-sm text-ink-soft">
-                        <Spinner taille={18} />
+                        <Spinner size={18} />
                         Envoi et préparation de l’analyse…
                       </div>
                     ) : receipt ? (
                       <SelectedFile
-                        nom={receipt.nom}
-                        taille={receipt.taille}
-                        typeMime={receipt.typeMime}
-                        onRetirer={removeFile}
+                        name={receipt.name}
+                        size={receipt.size}
+                        mimeType={receipt.mimeType}
+                        onRemove={removeFile}
                       />
                     ) : (
                       <FileDropzone
-                        onFichier={(file) => void upload(file)}
+                        onFile={(file) => void upload(file)}
                         dataCy="dropzone-fichier"
                         disabled={expenseItemsQuery.isPending}
                       />
                     )}
                     {fileError ? (
-                      <p className="erreur-champ" role="alert">
+                      <p className="error-text" role="alert">
                         {fileError}
                       </p>
                     ) : null}
@@ -1285,9 +1285,9 @@ export function GenerateExpenseStatementPage() {
 
                 {!isRent ? (
                   <AnalysisPanel
-                    etat={analysisPhase}
-                    aFichier={receipt !== null || uploading}
-                    onAnnuler={() => void cancel()}
+                    state={analysisPhase}
+                    hasFile={receipt !== null || uploading}
+                    onCancel={() => void cancel()}
                   />
                 ) : null}
 
@@ -1295,10 +1295,10 @@ export function GenerateExpenseStatementPage() {
                   <FieldGroup
                     id="frais-montant"
                     label="Montant TTC"
-                    erreur={errors.montantTtc?.message}
+                    error={errors.amountInclVat?.message}
                     badge={
-                      ai.montant ? (
-                        <AiBadge extraitSource={ai.extraitSource} />
+                      ai.amount ? (
+                        <AiBadge sourceExtract={ai.sourceExtract} />
                       ) : undefined
                     }
                   >
@@ -1307,21 +1307,21 @@ export function GenerateExpenseStatementPage() {
                         id="frais-montant"
                         inputMode="decimal"
                         className={cn(
-                          "champ pr-9",
-                          errors.montantTtc && "champ-erreur",
+                          "field pr-9",
+                          errors.amountInclVat && "field-error",
                           lowConfidenceError &&
-                            ai.montant &&
-                            "champ-avertissement",
+                            ai.amount &&
+                            "field-warning",
                         )}
                         data-cy="input-montant-ttc"
-                        aria-invalid={Boolean(errors.montantTtc)}
+                        aria-invalid={Boolean(errors.amountInclVat)}
                         aria-readonly={isRent && availableRent}
                         readOnly={isRent && availableRent}
-                        {...register("montantTtc", {
+                        {...register("amountInclVat", {
                           onChange: () =>
                             setAi((previous) => ({
                               ...previous,
-                              montant: false,
+                              amount: false,
                             })),
                         })}
                       />
@@ -1333,7 +1333,7 @@ export function GenerateExpenseStatementPage() {
 
                   <div className="flex flex-col justify-end rounded-xl border border-accent/15 bg-accent-soft/45 px-4 py-3">
                     <p className="eyebrow text-accent">Montant retenu estimé</p>
-                    <p className="mt-1 font-display text-[24px] leading-none text-accent-strong nombre">
+                    <p className="mt-1 font-display text-[24px] leading-none text-accent-strong number">
                       {displayedRetainedAmount}
                     </p>
                     <p className="mt-1.5 text-[11px] leading-snug text-ink-soft">
@@ -1364,13 +1364,13 @@ export function GenerateExpenseStatementPage() {
                   >
                     <span className="flex flex-wrap items-center gap-2">
                       Facture sur plusieurs mois ?
-                      {ai.periode ? (
-                        <AiBadge libelle="Période détectée" />
+                      {ai.period ? (
+                        <AiBadge label="Période détectée" />
                       ) : null}
                       {!periodVisible &&
-                      (values.periodeDebut || values.periodeFin) ? (
+                      (values.periodStart || values.periodEnd) ? (
                         <span className="text-[11px] font-normal text-ink-soft">
-                          {formatPeriod(values.periodeDebut, values.periodeFin)}
+                          {formatPeriod(values.periodStart, values.periodEnd)}
                         </span>
                       ) : null}
                     </span>
@@ -1394,22 +1394,22 @@ export function GenerateExpenseStatementPage() {
                         <FieldGroup
                           id="frais-periode-debut"
                           label="Début de la période"
-                          erreur={errors.periodeDebut?.message}
+                          error={errors.periodStart?.message}
                         >
                           <input
                             id="frais-periode-debut"
                             type="date"
                             className={cn(
-                              "champ",
-                              errors.periodeDebut && "champ-erreur",
+                              "field",
+                              errors.periodStart && "field-error",
                             )}
                             data-cy="input-periode-debut"
-                            aria-invalid={Boolean(errors.periodeDebut)}
-                            {...register("periodeDebut", {
+                            aria-invalid={Boolean(errors.periodStart)}
+                            {...register("periodStart", {
                               onChange: () =>
                                 setAi((previous) => ({
                                   ...previous,
-                                  periode: false,
+                                  period: false,
                                 })),
                             })}
                           />
@@ -1417,22 +1417,22 @@ export function GenerateExpenseStatementPage() {
                         <FieldGroup
                           id="frais-periode-fin"
                           label="Fin de la période"
-                          erreur={errors.periodeFin?.message}
+                          error={errors.periodEnd?.message}
                         >
                           <input
                             id="frais-periode-fin"
                             type="date"
                             className={cn(
-                              "champ",
-                              errors.periodeFin && "champ-erreur",
+                              "field",
+                              errors.periodEnd && "field-error",
                             )}
                             data-cy="input-periode-fin"
-                            aria-invalid={Boolean(errors.periodeFin)}
-                            {...register("periodeFin", {
+                            aria-invalid={Boolean(errors.periodEnd)}
+                            {...register("periodEnd", {
                               onChange: () =>
                                 setAi((previous) => ({
                                   ...previous,
-                                  periode: false,
+                                  period: false,
                                 })),
                             })}
                           />
@@ -1442,22 +1442,22 @@ export function GenerateExpenseStatementPage() {
                         <FieldGroup
                           id="frais-montant-mois"
                           label="Montant du mois (optionnel)"
-                          erreur={errors.montantMoisSurcharge?.message}
-                          aide="Surcharge manuelle : remplace la ventilation calculée."
+                          error={errors.monthlyAmountOverride?.message}
+                          help="Surcharge manuelle : remplace la ventilation calculée."
                         >
                           <div className="relative">
                             <input
                               id="frais-montant-mois"
                               inputMode="decimal"
                               className={cn(
-                                "champ pr-9",
-                                errors.montantMoisSurcharge && "champ-erreur",
+                                "field pr-9",
+                                errors.monthlyAmountOverride && "field-error",
                               )}
                               data-cy="input-montant-mois"
                               aria-invalid={Boolean(
-                                errors.montantMoisSurcharge,
+                                errors.monthlyAmountOverride,
                               )}
-                              {...register("montantMoisSurcharge")}
+                              {...register("monthlyAmountOverride")}
                             />
                             <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">
                               €
@@ -1469,16 +1469,16 @@ export function GenerateExpenseStatementPage() {
                             <p className="rounded-lg bg-surface px-3 py-2.5 text-xs leading-relaxed text-ink-soft">
                               Ventilation estimée :{" "}
                               <span className="font-semibold text-ink">
-                                {estimate.joursMois} jours sur{" "}
-                                {estimate.joursTotal}
+                                {estimate.monthDays} jours sur{" "}
+                                {estimate.totalDays}
                               </span>{" "}
                               →{" "}
-                              <span className="nombre">
-                                {estimate.montantMois}
+                              <span className="number">
+                                {estimate.monthAmount}
                               </span>
                               <br />
                               Retenu estimé :{" "}
-                              <span className="nombre">
+                              <span className="number">
                                 {displayedRetainedAmount}
                               </span>
                             </p>
@@ -1499,8 +1499,8 @@ export function GenerateExpenseStatementPage() {
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="submit"
-                    variante="primaire"
-                    icone={
+                    variant="primary"
+                    icon={
                       lineBeingEdited ? (
                         <Pencil size={15} />
                       ) : (
@@ -1520,7 +1520,7 @@ export function GenerateExpenseStatementPage() {
                       : "Ajouter ce frais"}
                   </Button>
                   {lineBeingEdited ? (
-                    <Button variante="fantome" petit onClick={cancelEdit}>
+                    <Button variant="ghost" small onClick={cancelEdit}>
                       Annuler la modification
                     </Button>
                   ) : null}
@@ -1532,8 +1532,8 @@ export function GenerateExpenseStatementPage() {
             </form>
           </div>
 
-          <div className="carte">
-            <div className="carte-entete">
+          <div className="card">
+            <div className="card-header">
               <div>
                 <p className="eyebrow">Liste</p>
                 <h2 className="mt-1 text-[22px] text-ink">Frais ajoutés</h2>
@@ -1541,14 +1541,14 @@ export function GenerateExpenseStatementPage() {
               <div className="flex flex-wrap items-center gap-2">
                 {omittedTypes.length > 0 ? (
                   <span
-                    className="badge badge-avertissement"
+                    className="badge badge-warning"
                     title={`Il manque : ${omittedTypes.join(", ")}`}
                   >
                     <AlertTriangle size={11} aria-hidden="true" />
                     Il manque : {omittedTypes.join(", ")}
                   </span>
                 ) : null}
-                <span className="badge badge-neutre">
+                <span className="badge badge-neutral">
                   {lines.length} ligne{lines.length > 1 ? "s" : ""}
                 </span>
               </div>
@@ -1570,7 +1570,7 @@ export function GenerateExpenseStatementPage() {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="tableau-frais min-w-[760px]">
+                  <table className="expense-table min-w-[760px]">
                     <thead>
                       <tr>
                         <th scope="col">Type</th>
@@ -1591,49 +1591,49 @@ export function GenerateExpenseStatementPage() {
                     <tbody>
                       {lines.map((line, index) => {
                         const expenseItem = expenseItemByCode.get(
-                          line.posteCode,
+                          line.itemCode,
                         );
                         const dto = calculationUpToDate
                           ? calculation?.lines?.[index]
                           : undefined;
                         return (
                           <tr
-                            key={line.cle}
-                            data-cy={`ligne-frais-${line.posteCode}`}
+                            key={line.key}
+                            data-cy={`ligne-frais-${line.itemCode}`}
                           >
                             <td>
                               <p className="font-semibold text-ink">
                                 {expenseItem?.label ??
                                   dto?.itemLabel ??
-                                  line.posteCode}
+                                  line.itemCode}
                               </p>
-                              {line.justificatifNom ? (
+                              {line.receiptName ? (
                                 <p
                                   className="mt-0.5 max-w-[160px] truncate text-[11px] text-ink-soft"
-                                  title={line.justificatifNom}
+                                  title={line.receiptName}
                                 >
-                                  {line.justificatifNom}
+                                  {line.receiptName}
                                 </p>
                               ) : null}
                             </td>
                             <td className="text-ink-soft">
-                              {line.fournisseurDetecte ??
+                              {line.detectedSupplier ??
                                 expenseItem?.supplier ??
                                 "—"}
                             </td>
                             <td className="whitespace-nowrap text-xs text-ink-soft">
-                              {line.periodeDebut && line.periodeFin
+                              {line.periodStart && line.periodEnd
                                 ? formatPeriod(
-                                    line.periodeDebut,
-                                    line.periodeFin,
+                                    line.periodStart,
+                                    line.periodEnd,
                                   )
                                 : "Mois concerné"}
                             </td>
                             <td className="whitespace-nowrap text-right">
-                              <span className="nombre font-semibold text-ink">
-                                {formatEUR(line.montantTtc)}
+                              <span className="number font-semibold text-ink">
+                                {formatEUR(line.amountInclVat)}
                               </span>
-                              {line.sourceMontant === "AI" ? (
+                              {line.amountSource === "AI" ? (
                                 <span className="ml-2 inline-flex align-middle">
                                   <AiBadge />
                                 </span>
@@ -1644,11 +1644,11 @@ export function GenerateExpenseStatementPage() {
                                 <input
                                   inputMode="decimal"
                                   className={cn(
-                                    "champ mt-0 px-2 py-1 pr-6 text-xs",
-                                    parsePercentage(line.prorataPct) === null &&
-                                      "champ-erreur",
+                                    "field mt-0 px-2 py-1 pr-6 text-xs",
+                                    parsePercentage(line.proRataPct) === null &&
+                                      "field-error",
                                   )}
-                                  value={line.prorataPct}
+                                  value={line.proRataPct}
                                   onChange={(event) =>
                                     changeProRata(line, event.target.value)
                                   }
@@ -1660,9 +1660,9 @@ export function GenerateExpenseStatementPage() {
                                       changeProRata(line, normalized);
                                     }
                                   }}
-                                  aria-label={`Prorata de ${expenseItem?.label ?? line.posteCode}`}
+                                  aria-label={`Prorata de ${expenseItem?.label ?? line.itemCode}`}
                                   aria-invalid={
-                                    parsePercentage(line.prorataPct) === null
+                                    parsePercentage(line.proRataPct) === null
                                   }
                                 />
                                 <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-[11px] text-ink-soft">
@@ -1672,7 +1672,7 @@ export function GenerateExpenseStatementPage() {
                             </td>
                             <td className="whitespace-nowrap text-right">
                               {dto?.claimedAmount ? (
-                                <span className="nombre font-semibold text-accent-strong">
+                                <span className="number font-semibold text-accent-strong">
                                   {formatEUR(dto.claimedAmount)}
                                 </span>
                               ) : (
@@ -1683,16 +1683,16 @@ export function GenerateExpenseStatementPage() {
                             </td>
                             <td>
                               <div className="flex items-center justify-end gap-1">
-                                {line.justificatifId ? (
+                                {line.receiptId ? (
                                   <a
                                     href={api.receipts.fileUrl(
-                                      line.justificatifId,
+                                      line.receiptId,
                                     )}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="rounded-lg p-1.5 text-ink-soft transition hover:bg-paper-deep hover:text-ink"
-                                    aria-label={`Voir le justificatif de ${expenseItem?.label ?? line.posteCode}`}
-                                    data-cy={`btn-voir-justificatif-${line.posteCode}`}
+                                    aria-label={`Voir le justificatif de ${expenseItem?.label ?? line.itemCode}`}
+                                    data-cy={`btn-voir-justificatif-${line.itemCode}`}
                                   >
                                     <FileText size={15} />
                                   </a>
@@ -1701,8 +1701,8 @@ export function GenerateExpenseStatementPage() {
                                   type="button"
                                   className="rounded-lg p-1.5 text-ink-soft transition hover:bg-paper-deep hover:text-ink"
                                   onClick={() => editLine(line)}
-                                  aria-label={`Modifier ${expenseItem?.label ?? line.posteCode}`}
-                                  data-cy={`btn-modifier-${line.posteCode}`}
+                                  aria-label={`Modifier ${expenseItem?.label ?? line.itemCode}`}
+                                  data-cy={`btn-modifier-${line.itemCode}`}
                                 >
                                   <Pencil size={15} />
                                 </button>
@@ -1710,8 +1710,8 @@ export function GenerateExpenseStatementPage() {
                                   type="button"
                                   className="rounded-lg p-1.5 text-ink-soft transition hover:bg-danger-soft hover:text-danger"
                                   onClick={() => setLineToRemove(line)}
-                                  aria-label={`Supprimer ${expenseItem?.label ?? line.posteCode}`}
-                                  data-cy={`btn-supprimer-${line.posteCode}`}
+                                  aria-label={`Supprimer ${expenseItem?.label ?? line.itemCode}`}
+                                  data-cy={`btn-supprimer-${line.itemCode}`}
                                 >
                                   <Trash2 size={15} />
                                 </button>
@@ -1731,10 +1731,10 @@ export function GenerateExpenseStatementPage() {
                 <div>
                   <p className="eyebrow">Total retenu</p>
                   <p className="mt-1 flex items-baseline gap-2 font-display text-[30px] leading-none text-accent-strong">
-                    <span className="nombre" data-cy="total-retenu">
+                    <span className="number" data-cy="total-retenu">
                       {formatEUR(displayedTotal)}
                     </span>
-                    {calculationInProgress ? <Spinner taille={15} /> : null}
+                    {calculationInProgress ? <Spinner size={15} /> : null}
                   </p>
                   {calculation?.totalInWords ? (
                     <p className="mt-1.5 text-xs text-ink-soft">
@@ -1754,7 +1754,7 @@ export function GenerateExpenseStatementPage() {
                   {calculation?.proRataBase ? (
                     <p>
                       Quote-part de référence :{" "}
-                      <span className="nombre">
+                      <span className="number">
                         {formatEUR(calculation.proRataBase)}
                       </span>
                     </p>
@@ -1764,21 +1764,21 @@ export function GenerateExpenseStatementPage() {
               </div>
 
               {calculationError ? (
-                <p className="erreur-champ" role="alert">
+                <p className="error-text" role="alert">
                   Calcul indisponible : {calculationError}
                 </p>
               ) : null}
-              {requests.erreur && !calculationError ? (
-                <p className="erreur-champ" role="alert">
-                  {requests.erreur}
+              {requests.error && !calculationError ? (
+                <p className="error-text" role="alert">
+                  {requests.error}
                 </p>
               ) : null}
 
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <Button
-                  variante="primaire"
-                  icone={<FileCheck2 size={16} />}
-                  chargement={generationInProgress}
+                  variant="primary"
+                  icon={<FileCheck2 size={16} />}
+                  loading={generationInProgress}
                   disabled={lines.length === 0 || !calculationUpToDate}
                   onClick={requestGeneration}
                   data-cy="btn-generer-note"
@@ -1799,7 +1799,7 @@ export function GenerateExpenseStatementPage() {
           </div>
 
           {result ? (
-            <div className="carte animation-fondu overflow-hidden border-accent/25">
+            <div className="card animation-fade overflow-hidden border-accent/25">
               <div className="flex items-start gap-3 bg-accent-soft/60 px-5 py-4">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent text-white">
                   <FileCheck2 size={19} aria-hidden="true" />
@@ -1822,18 +1822,18 @@ export function GenerateExpenseStatementPage() {
               </div>
               <div className="flex flex-wrap gap-2 px-5 py-4">
                 <Button
-                  variante="primaire"
-                  petit
-                  icone={<Download size={14} />}
+                  variant="primary"
+                  small
+                  icon={<Download size={14} />}
                   onClick={() => void downloadStatement(result, false)}
                   data-cy="btn-telecharger-note"
                 >
                   Télécharger la note seule
                 </Button>
                 <Button
-                  variante="secondaire"
-                  petit
-                  icone={<Download size={14} />}
+                  variant="secondary"
+                  small
+                  icon={<Download size={14} />}
                   onClick={() => void downloadStatement(result, true)}
                   data-cy="btn-telecharger-note-complete"
                 >
@@ -1844,7 +1844,7 @@ export function GenerateExpenseStatementPage() {
                     href={api.expenseStatements.pdfUrl(result.id, false)}
                     target="_blank"
                     rel="noreferrer"
-                    className="btn btn-secondaire btn-petit"
+                    className="btn btn-secondary btn-small"
                   >
                     <ExternalLink size={14} aria-hidden="true" />
                     Ouvrir
@@ -1859,22 +1859,22 @@ export function GenerateExpenseStatementPage() {
           data-cy="volet-apercu"
           className={cn(
             "min-w-0",
-            mobile && mobilePanel !== "apercu" && "hidden",
+            mobile && mobilePanel !== "preview" && "hidden",
             "lg:sticky lg:top-6 lg:self-start",
           )}
         >
           <PdfViewer
             url={previewRequest ? preview.url : null}
-            chargement={preview.chargement}
-            erreur={
-              requests.erreur
+            loading={preview.loading}
+            error={
+              requests.error
                 ? "Corrigez les lignes en rouge pour actualiser l’aperçu."
                 : lines.length === 0
                   ? "Ajoutez un frais pour voir l’aperçu de la note."
-                  : preview.erreur
+                  : preview.error
             }
-            misAJour={preview.misAJour}
-            onTelecharger={preview.telecharger}
+            updatedAt={preview.updatedAt}
+            onDownload={preview.download}
             actions={
               <>
                 <select
@@ -1882,7 +1882,7 @@ export function GenerateExpenseStatementPage() {
                   className="rounded-lg border border-line bg-white px-2 py-1.5 text-[11px] font-medium text-ink-soft"
                   value={selectedTemplate ?? ""}
                   onChange={(event) =>
-                    draft.definirTemplate(
+                    draft.setTemplate(
                       event.target.value ? Number(event.target.value) : null,
                     )
                   }
@@ -1904,7 +1904,7 @@ export function GenerateExpenseStatementPage() {
                     className="h-3.5 w-3.5 accent-[#1d5b49]"
                     checked={complete}
                     onChange={(event) =>
-                      draft.definirComplet(event.target.checked)
+                      draft.setComplete(event.target.checked)
                     }
                     data-cy="toggle-apercu-complet"
                   />
@@ -1921,29 +1921,29 @@ export function GenerateExpenseStatementPage() {
       </div>
 
       <ConfirmDialog
-        ouvert={lineToRemove !== null}
-        titre="Supprimer ce frais ?"
+        open={lineToRemove !== null}
+        title="Supprimer ce frais ?"
         message={
           lineToRemove ? (
             <>
               La ligne «{" "}
-              {expenseItemByCode.get(lineToRemove.posteCode)?.label ??
-                lineToRemove.posteCode}{" "}
+              {expenseItemByCode.get(lineToRemove.itemCode)?.label ??
+                lineToRemove.itemCode}{" "}
               » sera retirée du brouillon. Cette action ne modifie pas les
               versions déjà générées.
             </>
           ) : null
         }
-        libelleConfirmer="Supprimer"
-        variante="danger"
-        onConfirmer={removeLine}
-        onAnnuler={() => setLineToRemove(null)}
+        confirmLabel="Supprimer"
+        variant="danger"
+        onConfirm={removeLine}
+        onCancel={() => setLineToRemove(null)}
         dataCy="dialogue-suppression-frais"
       />
 
       <ConfirmDialog
-        ouvert={regenerationDialog}
-        titre="Générer une nouvelle version ?"
+        open={regenerationDialog}
+        title="Générer une nouvelle version ?"
         message={
           <>
             Une note active existe déjà pour {formatMonth(month)} (version{" "}
@@ -1951,12 +1951,12 @@ export function GenerateExpenseStatementPage() {
             et l’ancienne restera consultable dans l’historique.
           </>
         }
-        libelleConfirmer="Créer la nouvelle version"
-        onConfirmer={() => {
+        confirmLabel="Créer la nouvelle version"
+        onConfirm={() => {
           setRegenerationDialog(false);
           void generateStatement();
         }}
-        onAnnuler={() => setRegenerationDialog(false)}
+        onCancel={() => setRegenerationDialog(false)}
         dataCy="dialogue-regeneration-note"
       />
     </>

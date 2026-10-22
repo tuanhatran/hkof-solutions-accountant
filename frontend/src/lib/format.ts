@@ -39,8 +39,8 @@ function cleanNumber(raw: string): string {
 }
 
 /**
- * Normalise un montant saisi en chaîne décimale à deux décimales.
- * Retourne null si la saisie n'est pas un montant positif ou nul à deux décimales.
+ * Normalizes a user-entered amount into a two-decimal string.
+ * Returns null when the input is not a positive or zero amount with at most two decimals.
  */
 export function parseAmount(raw: string): string | null {
   if (!raw || raw.trim() === "") {
@@ -56,7 +56,7 @@ export function parseAmount(raw: string): string | null {
 }
 
 /**
- * Normalise un pourcentage (0 à 100, deux décimales maximum).
+ * Normalizes a percentage (0 to 100, at most two decimals).
  */
 export function parsePercentage(raw: string): string | null {
   if (!raw || raw.trim() === "") {
@@ -169,7 +169,7 @@ export function formatBytes(bytes: number): string {
 }
 
 /**
- * Estimation d'affichage uniquement : le backend reste la seule source de vérité.
+ * Display-only estimate: the backend remains the single source of truth.
  */
 export function estimatedRetainedAmount(
   amountInclVat: string | null | undefined,

@@ -16,54 +16,54 @@ import { cn } from "@/lib/cn";
 
 const SECTIONS = [
   {
-    titre: "Générer",
-    liens: [
+    title: "Générer",
+    links: [
       {
-        vers: "/generer/quittance",
-        libelle: "Quittance de loyer",
-        icone: ReceiptText,
+        to: "/generer/quittance",
+        label: "Quittance de loyer",
+        icon: ReceiptText,
         dataCy: "tab-quittance",
       },
       {
-        vers: "/generer/note-frais",
-        libelle: "Note de frais",
-        icone: FileText,
+        to: "/generer/note-frais",
+        label: "Note de frais",
+        icon: FileText,
         dataCy: "tab-note-frais",
       },
     ],
   },
   {
-    titre: "Suivi",
-    liens: [
+    title: "Suivi",
+    links: [
       {
-        vers: "/historique",
-        libelle: "Historique",
-        icone: History,
+        to: "/historique",
+        label: "Historique",
+        icon: History,
         dataCy: "tab-historique",
       },
     ],
   },
   {
-    titre: "Réglages",
-    liens: [
+    title: "Réglages",
+    links: [
       {
-        vers: "/configuration",
-        libelle: "Configuration",
-        icone: SlidersHorizontal,
+        to: "/configuration",
+        label: "Configuration",
+        icon: SlidersHorizontal,
         dataCy: "tab-configuration",
       },
       {
-        vers: "/templates",
-        libelle: "Templates",
-        icone: LayoutTemplate,
+        to: "/templates",
+        label: "Templates",
+        icon: LayoutTemplate,
         dataCy: "tab-templates",
       },
-      { vers: "/admin", libelle: "Admin IA", icone: Bot, dataCy: "tab-admin" },
+      { to: "/admin", label: "Admin IA", icon: Bot, dataCy: "tab-admin" },
     ],
   },
 ];
 
-const MOBILE_LINKS = SECTIONS.flatMap((section) => section.liens);
+const MOBILE_LINKS = SECTIONS.flatMap((section) => section.links);
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
@@ -100,15 +100,15 @@ function SideNavigation() {
   return (
     <nav className="mt-8 flex-1 space-y-6" aria-label="Navigation principale">
       {SECTIONS.map((section) => (
-        <div key={section.titre}>
+        <div key={section.title}>
           <p className="px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">
-            {section.titre}
+            {section.title}
           </p>
           <div className="mt-2 space-y-1">
-            {section.liens.map((link) => (
+            {section.links.map((link) => (
               <NavLink
-                key={link.vers}
-                to={link.vers}
+                key={link.to}
+                to={link.to}
                 data-cy={link.dataCy}
                 className={({ isActive }) =>
                   cn(
@@ -121,7 +121,7 @@ function SideNavigation() {
               >
                 {({ isActive }) => (
                   <>
-                    <link.icone
+                    <link.icon
                       size={17}
                       className={cn(
                         "shrink-0 transition",
@@ -131,7 +131,7 @@ function SideNavigation() {
                       )}
                       aria-hidden="true"
                     />
-                    <span className="flex-1">{link.libelle}</span>
+                    <span className="flex-1">{link.label}</span>
                     {isActive ? (
                       <span
                         className="h-1.5 w-1.5 rounded-full bg-[#e7b98f]"
@@ -186,7 +186,7 @@ export function AppShell() {
             locale.
           </p>
           <div className="mt-3">
-            <LlmBadge sombre />
+            <LlmBadge dark />
           </div>
         </div>
         <p className="mt-5 px-2 text-[10px] text-white/25">
@@ -198,7 +198,7 @@ export function AppShell() {
         <header className="sticky top-0 z-30 border-b border-line/80 bg-[#123f33] px-4 py-3 lg:hidden">
           <div className="flex items-center justify-between gap-3">
             <Brand compact />
-            <LlmBadge sombre />
+            <LlmBadge dark />
           </div>
           <nav
             className="-mx-1 mt-3 flex gap-1 overflow-x-auto pb-0.5"
@@ -206,8 +206,8 @@ export function AppShell() {
           >
             {MOBILE_LINKS.map((link) => (
               <NavLink
-                key={link.vers}
-                to={link.vers}
+                key={link.to}
+                to={link.to}
                 className={({ isActive }) =>
                   cn(
                     "flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition",
@@ -217,8 +217,8 @@ export function AppShell() {
                   )
                 }
               >
-                <link.icone size={13} aria-hidden="true" />
-                {link.libelle}
+                <link.icon size={13} aria-hidden="true" />
+                {link.label}
               </NavLink>
             ))}
           </nav>
@@ -234,18 +234,18 @@ export function AppShell() {
 
       <ToastHost />
       <ConfirmDialog
-        ouvert={blocker.state === "blocked"}
-        titre="Brouillon non généré"
+        open={blocker.state === "blocked"}
+        title="Brouillon non généré"
         message="Des informations saisies ne sont pas encore enregistrées. Voulez-vous vraiment quitter cette page ? Le brouillon est conservé pendant la session, mais le document ne sera pas généré."
-        libelleConfirmer="Quitter la page"
-        libelleAnnuler="Rester"
-        variante="danger"
-        onConfirmer={() => {
+        confirmLabel="Quitter la page"
+        cancelLabel="Rester"
+        variant="danger"
+        onConfirm={() => {
           if (blocker.state === "blocked") {
             blocker.proceed();
           }
         }}
-        onAnnuler={() => {
+        onCancel={() => {
           if (blocker.state === "blocked") {
             blocker.reset();
           }

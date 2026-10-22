@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 class LlmConfigServiceTest {
 
     @Test
-    @DisplayName("Reconnaît les URL locales, les IP privées et la boucle locale IPv6")
+    @DisplayName("Recognizes local URLs, private IPs and the IPv6 loopback")
     void localUrl() {
         assertThat(LlmConfigService.isRemoteUrl("http://localhost:11434")).isFalse();
         assertThat(LlmConfigService.isRemoteUrl("http://host.docker.internal:11434")).isFalse();
@@ -23,7 +23,7 @@ class LlmConfigServiceTest {
     }
 
     @Test
-    @DisplayName("Considère comme distantes les URL publiques et les URL invalides")
+    @DisplayName("Treats public and invalid URLs as remote")
     void detectsRemoteUrl() {
         assertThat(LlmConfigService.isRemoteUrl("https://llm.exemple.fr")).isTrue();
         assertThat(LlmConfigService.isRemoteUrl("http://8.8.8.8:11434")).isTrue();

@@ -54,9 +54,9 @@ public final class TemplateCatalog {
     private TemplateCatalog() {
     }
 
-    private static void variable(Map<String, TemplateVariableDto> cible, String name, String description,
+    private static void variable(Map<String, TemplateVariableDto> target, String name, String description,
             boolean required, String example) {
-        cible.put(name, new TemplateVariableDto(name, description, required, example));
+        target.put(name, new TemplateVariableDto(name, description, required, example));
     }
 
     public static List<TemplateVariableDto> variables(TemplateType type) {
@@ -75,8 +75,8 @@ public final class TemplateCatalog {
     }
 
     public static String description(TemplateType type, String name) {
-        TemplateVariableDto variable = catalog(type).get(name);
-        return variable == null ? null : variable.description();
+        TemplateVariableDto templateVariable = catalog(type).get(name);
+        return templateVariable == null ? null : templateVariable.description();
     }
 
     private static Map<String, TemplateVariableDto> catalog(TemplateType type) {

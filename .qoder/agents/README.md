@@ -35,7 +35,7 @@ Each `.md` file is self-contained: it can be loaded as the prompt of a sub-agent
 
 - Agent instructions, code, comments and reports are in English.
 - User-facing strings only are in French (UI, documents, toasts, validation and API errors).
-- Domain names fixed by the specification stay as-is in the database and the contract.
+- Specification domain names stay French in the UI, documents and routes; code uses English names.
 
 ## Shared implementation decisions
 

@@ -19,11 +19,11 @@ public final class Amounts {
     private Amounts() {
     }
 
-    public static BigDecimal decimal(String value, String field, boolean positifStrict) {
+    public static BigDecimal decimal(String value, String field, boolean strictlyPositive) {
         if (value == null || value.isBlank()) {
             throw new BusinessException("Le champ « " + field + " » est obligatoire.");
         }
-        String nettoye = value.trim()
+        String normalized = value.trim()
                 .replace('\u00A0', ' ')
                 .replace('\u202F', ' ')
                 .replace(" ", "")
@@ -31,13 +31,13 @@ public final class Amounts {
                 .replace(",", ".");
         BigDecimal result;
         try {
-            result = new BigDecimal(nettoye);
+            result = new BigDecimal(normalized);
         } catch (NumberFormatException ex) {
             throw new BusinessException("« " + value + " » n'est pas un nombre valide pour « " + field + " ».");
         }
-        if (positifStrict ? result.signum() <= 0 : result.signum() < 0) {
+        if (strictlyPositive ? result.signum() <= 0 : result.signum() < 0) {
             throw new BusinessException("Le champ « " + field + " » doit être "
-                    + (positifStrict ? "strictement positif." : "positif ou nul."));
+                    + (strictlyPositive ? "strictement positif." : "positif ou nul."));
         }
         return result.setScale(SCALE, ROUND);
     }
@@ -53,7 +53,7 @@ public final class Amounts {
         if (value == null || value.isBlank()) {
             throw new BusinessException("Le prorata est obligatoire.");
         }
-        String nettoye = value.trim()
+        String normalized = value.trim()
                 .replace('\u00A0', ' ')
                 .replace('\u202F', ' ')
                 .replace(" ", "")
@@ -61,7 +61,7 @@ public final class Amounts {
                 .replace(",", ".");
         BigDecimal result;
         try {
-            result = new BigDecimal(nettoye);
+            result = new BigDecimal(normalized);
         } catch (NumberFormatException ex) {
             throw new BusinessException("« " + value + " » n'est pas un pourcentage valide.");
         }
@@ -100,10 +100,10 @@ public final class Amounts {
         if (amount == null) {
             return "";
         }
-        DecimalFormatSymbols symboles = DecimalFormatSymbols.getInstance(Locale.FRANCE);
-        symboles.setGroupingSeparator('\u00A0');
-        symboles.setDecimalSeparator(',');
-        DecimalFormat format = new DecimalFormat("#,##0.00", symboles);
+        DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance(Locale.FRANCE);
+        symbols.setGroupingSeparator('\u00A0');
+        symbols.setDecimalSeparator(',');
+        DecimalFormat format = new DecimalFormat("#,##0.00", symbols);
         return format.format(amount.setScale(SCALE, ROUND)) + "\u00A0€";
     }
 
@@ -111,10 +111,10 @@ public final class Amounts {
         if (pct == null) {
             return "";
         }
-        DecimalFormatSymbols symboles = DecimalFormatSymbols.getInstance(Locale.FRANCE);
-        symboles.setDecimalSeparator(',');
-        symboles.setGroupingSeparator('\u00A0');
-        DecimalFormat format = new DecimalFormat("0.00", symboles);
+        DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance(Locale.FRANCE);
+        symbols.setDecimalSeparator(',');
+        symbols.setGroupingSeparator('\u00A0');
+        DecimalFormat format = new DecimalFormat("0.00", symbols);
         return format.format(pct.setScale(SCALE, ROUND)) + "\u00A0%";
     }
 

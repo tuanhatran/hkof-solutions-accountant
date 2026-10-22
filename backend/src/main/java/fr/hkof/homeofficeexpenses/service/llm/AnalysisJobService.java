@@ -49,11 +49,11 @@ public class AnalysisJobService {
     private final ThreadPoolTaskExecutor executor;
     private final TransactionTemplate transactions;
     private final Clock clock;
-    private final ScheduledExecutorService planificateur;
+    private final ScheduledExecutorService scheduler;
 
     public AnalysisJobService(AnalysisDocumentRepository repository, ReceiptService receiptService,
             LlmConfigService llmConfigService, DocumentTextExtractor extractor, ExtractionPipeline pipeline,
-            @Qualifier("analyseExecutor") ThreadPoolTaskExecutor executor,
+            @Qualifier("analysisExecutor") ThreadPoolTaskExecutor executor,
             PlatformTransactionManager transactionManager, Clock clock) {
         this.repository = repository;
         this.receiptService = receiptService;
@@ -63,21 +63,21 @@ public class AnalysisJobService {
         this.executor = executor;
         this.transactions = new TransactionTemplate(transactionManager);
         this.clock = clock;
-        ScheduledThreadPoolExecutor planificateurLocal = new ScheduledThreadPoolExecutor(2, tache -> {
-            Thread thread = new Thread(tache, "analyse-sse");
+        ScheduledThreadPoolExecutor localScheduler = new ScheduledThreadPoolExecutor(2, task -> {
+            Thread thread = new Thread(task, "analysis-sse");
             thread.setDaemon(true);
             return thread;
         });
-        this.planificateur = planificateurLocal;
+        this.scheduler = localScheduler;
     }
 
     public AnalysisDto launch(Long receiptId) {
-        Launch lancement = transactions.execute(status -> {
+        Launch launch = transactions.execute(status -> {
             Receipt receipt = receiptService.entity(receiptId);
-            AnalysisDocument existante = repository.findFirstByReceiptIdAndStatusInOrderByIdDesc(
+            AnalysisDocument existingAnalysis = repository.findFirstByReceiptIdAndStatusInOrderByIdDesc(
                     receiptId, List.of(AnalysisStatus.PENDING, AnalysisStatus.RUNNING)).orElse(null);
-            if (existante != null) {
-                return new Launch(existante.getId(), false);
+            if (existingAnalysis != null) {
+                return new Launch(existingAnalysis.getId(), false);
             }
             AnalysisDocument analysis = new AnalysisDocument();
             analysis.setReceipt(receipt);
@@ -86,15 +86,15 @@ public class AnalysisJobService {
             analysis.setUpdatedAt(Instant.now(clock));
             return new Launch(repository.save(analysis).getId(), true);
         });
-        if (lancement == null) {
+        if (launch == null) {
             throw new NotFoundException("Justificatif introuvable.");
         }
-        if (lancement.created()) {
+        if (launch.created()) {
             try {
-                executor.execute(() -> execute(lancement.id()));
+                executor.execute(() -> execute(launch.id()));
             } catch (RuntimeException ex) {
                 transaction(() -> {
-                    AnalysisDocument reloaded = repository.findById(lancement.id()).orElse(null);
+                    AnalysisDocument reloaded = repository.findById(launch.id()).orElse(null);
                     if (reloaded != null) {
                         reloaded.setStatus(AnalysisStatus.FAILED);
                         reloaded.setErrorMessage("Le service d'analyse est saturé. Réessayez dans un instant.");
@@ -104,14 +104,14 @@ public class AnalysisJobService {
                 });
             }
         }
-        return get(lancement.id());
+        return get(launch.id());
     }
 
     private void execute(Long analysisId) {
-        long debut = System.currentTimeMillis();
-        ExtractionContext contexte;
+        long startedAt = System.currentTimeMillis();
+        ExtractionContext context;
         try {
-            contexte = transactions.execute(status -> {
+            context = transactions.execute(status -> {
                 AnalysisDocument analysis = repository.findWithReceiptById(analysisId).orElse(null);
                 if (analysis == null || analysis.getStatus() != AnalysisStatus.PENDING) {
                     return null;
@@ -133,33 +133,33 @@ public class AnalysisJobService {
                 return new ExtractionContext(receipt.getPath(), receipt.getMimeType(), config);
             });
         } catch (RuntimeException ex) {
-            LOG.warn("Impossible de démarrer l'analyse {}", analysisId, ex);
-            markFailed(analysisId, "Impossible de démarrer l'analyse : " + ex.getMessage(), debut);
+            LOG.warn("Unable to start analysis {}", analysisId, ex);
+            markFailed(analysisId, "Impossible de démarrer l'analyse : " + ex.getMessage(), startedAt);
             return;
         }
-        if (contexte == null) {
+        if (context == null) {
             return;
         }
         try {
-            Path path = Path.of(contexte.path());
+            Path path = Path.of(context.path());
             if (!Files.exists(path)) {
-                markFailed(analysisId, "Le fichier justificatif est introuvable sur le disque.", debut);
+                markFailed(analysisId, "Le fichier justificatif est introuvable sur le disque.", startedAt);
                 return;
             }
             DocumentTextExtractor.Extraction extraction = extractor.extract(
-                    path, contexte.mimeType(), contexte.config().getMaxPages());
+                    path, context.mimeType(), context.config().getMaxPages());
             ExtractionDto result = pipeline.extract(
-                    contexte.config(), extraction.text(), extraction.imagesBase64());
-            finish(analysisId, result, debut);
+                    context.config(), extraction.text(), extraction.imagesBase64());
+            finish(analysisId, result, startedAt);
         } catch (BusinessException ex) {
-            markFailed(analysisId, ex.getMessage(), debut);
+            markFailed(analysisId, ex.getMessage(), startedAt);
         } catch (RuntimeException ex) {
-            LOG.warn("Échec de l'analyse {}", analysisId, ex);
-            markFailed(analysisId, "L'analyse a échoué. Saisissez le montant manuellement.", debut);
+            LOG.warn("Analysis failed {}", analysisId, ex);
+            markFailed(analysisId, "L'analyse a échoué. Saisissez le montant manuellement.", startedAt);
         }
     }
 
-    private void finish(Long analysisId, ExtractionDto result, long debut) {
+    private void finish(Long analysisId, ExtractionDto result, long startedAt) {
         transaction(() -> {
             AnalysisDocument analysis = repository.findWithReceiptById(analysisId).orElse(null);
             if (analysis == null || analysis.getStatus() == AnalysisStatus.CANCELLED) {
@@ -168,13 +168,13 @@ public class AnalysisJobService {
             analysis.setStatus(AnalysisStatus.DONE);
             analysis.setResultJson(pipeline.toJson(result));
             analysis.setErrorMessage(null);
-            analysis.setDurationMs(System.currentTimeMillis() - debut);
+            analysis.setDurationMs(System.currentTimeMillis() - startedAt);
             analysis.setUpdatedAt(Instant.now(clock));
             repository.save(analysis);
         });
     }
 
-    private void markFailed(Long analysisId, String message, long debut) {
+    private void markFailed(Long analysisId, String message, long startedAt) {
         transaction(() -> {
             AnalysisDocument analysis = repository.findWithReceiptById(analysisId).orElse(null);
             if (analysis == null || analysis.getStatus() == AnalysisStatus.CANCELLED) {
@@ -182,7 +182,7 @@ public class AnalysisJobService {
             }
             analysis.setStatus(AnalysisStatus.FAILED);
             analysis.setErrorMessage(message);
-            analysis.setDurationMs(System.currentTimeMillis() - debut);
+            analysis.setDurationMs(System.currentTimeMillis() - startedAt);
             analysis.setUpdatedAt(Instant.now(clock));
             repository.save(analysis);
         });
@@ -211,33 +211,33 @@ public class AnalysisJobService {
     public SseEmitter events(Long id) {
         get(id);
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
-        AtomicBoolean termine = new AtomicBoolean(false);
-        emitter.onCompletion(() -> termine.set(true));
+        AtomicBoolean finished = new AtomicBoolean(false);
+        emitter.onCompletion(() -> finished.set(true));
         emitter.onTimeout(() -> {
-            termine.set(true);
+            finished.set(true);
             emitter.complete();
         });
-        emitter.onError(ex -> termine.set(true));
-        long echeance = System.currentTimeMillis() + SSE_TIMEOUT_MS;
-        planificateur.schedule(() -> broadcast(id, emitter, termine, echeance), 0, TimeUnit.MILLISECONDS);
+        emitter.onError(ex -> finished.set(true));
+        long deadline = System.currentTimeMillis() + SSE_TIMEOUT_MS;
+        scheduler.schedule(() -> broadcast(id, emitter, finished, deadline), 0, TimeUnit.MILLISECONDS);
         return emitter;
     }
 
-    private void broadcast(Long id, SseEmitter emitter, AtomicBoolean termine, long echeance) {
-        if (termine.get()) {
+    private void broadcast(Long id, SseEmitter emitter, AtomicBoolean finished, long deadline) {
+        if (finished.get()) {
             return;
         }
         try {
             AnalysisDto dto = get(id);
             emitter.send(SseEmitter.event().name("analyse").data(dto));
-            if (AnalysisStatus.valueOf(dto.status()).isFinished() || System.currentTimeMillis() > echeance) {
-                termine.set(true);
+            if (AnalysisStatus.valueOf(dto.status()).isFinished() || System.currentTimeMillis() > deadline) {
+                finished.set(true);
                 emitter.complete();
                 return;
             }
-            planificateur.schedule(() -> broadcast(id, emitter, termine, echeance), 900, TimeUnit.MILLISECONDS);
+            scheduler.schedule(() -> broadcast(id, emitter, finished, deadline), 900, TimeUnit.MILLISECONDS);
         } catch (Exception ex) {
-            termine.set(true);
+            finished.set(true);
             try {
                 emitter.completeWithError(ex);
             } catch (RuntimeException ignored) {
@@ -266,7 +266,7 @@ public class AnalysisJobService {
 
     @PreDestroy
     void stop() {
-        planificateur.shutdownNow();
+        scheduler.shutdownNow();
     }
 
     public AnalysisDto toDto(AnalysisDocument analysis) {

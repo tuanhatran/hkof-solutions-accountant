@@ -52,14 +52,14 @@ public class ExpenseStatementService {
     private final TemplateService templateService;
     private final TemplateDataService templateDataService;
     private final PdfService pdfService;
-    private final StorageService stockage;
-    private final DocumentTextExtractor extracteur;
+    private final StorageService storage;
+    private final DocumentTextExtractor textExtractor;
     private final Clock clock;
 
     public ExpenseStatementService(ExpenseStatementRepository repository, SettingsService parametersService,
             ExpenseItemService expenseItemService, RentReceiptService rentReceiptService, ReceiptService receiptService,
             TemplateService templateService, TemplateDataService templateDataService, PdfService pdfService,
-            StorageService stockage, DocumentTextExtractor extracteur, Clock clock) {
+            StorageService storage, DocumentTextExtractor textExtractor, Clock clock) {
         this.repository = repository;
         this.parametersService = parametersService;
         this.expenseItemService = expenseItemService;
@@ -68,8 +68,8 @@ public class ExpenseStatementService {
         this.templateService = templateService;
         this.templateDataService = templateDataService;
         this.pdfService = pdfService;
-        this.stockage = stockage;
-        this.extracteur = extracteur;
+        this.storage = storage;
+        this.textExtractor = textExtractor;
         this.clock = clock;
     }
 
@@ -77,26 +77,26 @@ public class ExpenseStatementService {
     public CalculationResponse calculate(StatementCalculationRequest request) {
         YearMonth month = Amounts.month(request.month());
         List<CalculatedLine> lines = calculateLines(request.lines(), month);
-        Settings p = parametersService.entity();
+        Settings settings = parametersService.entity();
         BigDecimal total = CalculationService.total(lines.stream().map(CalculatedLine::claimedAmount).toList());
         return new CalculationResponse(
                 lines.stream().map(this::toDto).toList(),
                 Amounts.apiValue(total),
                 NumberToWords.toWords(total),
-                Amounts.apiValue(CalculationService.proRataBase(p.getBusinessArea(), p.getTotalArea())),
-                templateDataService.proRataDetail(p));
+                Amounts.apiValue(CalculationService.proRataBase(settings.getBusinessArea(), settings.getTotalArea())),
+                templateDataService.proRataDetail(settings));
     }
 
     @Transactional(readOnly = true)
     public DraftDto draft(String monthText) {
         YearMonth month = Amounts.month(monthText);
-        Settings p = parametersService.entity();
+        Settings settings = parametersService.entity();
         RentReceipt rentReceipt = rentReceiptService.activeForMonth(month.toString());
         List<ExpenseLineDto> lines = new ArrayList<>();
         if (rentReceipt != null) {
-            ExpenseItem loyer = expenseItemService.entity("loyer");
+            ExpenseItem rentItem = expenseItemService.entity("loyer");
             lines.add(new ExpenseLineDto(
-                    null, loyer.getCode(), loyer.getLabel(), loyer.getSupplier(), null, null,
+                    null, rentItem.getCode(), rentItem.getLabel(), rentItem.getSupplier(), null, null,
                     Amounts.apiValue(rentReceipt.getTotal()),
                     Amounts.apiValue(rentReceipt.getTotal()),
                     "100.00",
@@ -111,8 +111,8 @@ public class ExpenseStatementService {
                 month.toString(),
                 rentReceipt == null ? null : rentReceiptService.toDto(rentReceipt),
                 lines,
-                Amounts.apiValue(CalculationService.proRataBase(p.getBusinessArea(), p.getTotalArea())),
-                templateDataService.proRataDetail(p),
+                Amounts.apiValue(CalculationService.proRataBase(settings.getBusinessArea(), settings.getTotalArea())),
+                templateDataService.proRataDetail(settings),
                 missing);
     }
 
@@ -120,11 +120,11 @@ public class ExpenseStatementService {
     public byte[] preview(StatementPreviewRequest request) {
         YearMonth month = Amounts.month(request.month());
         List<CalculatedLine> lines = calculateLines(request.lines(), month);
-        Settings p = parametersService.entity();
+        Settings settings = parametersService.entity();
         ExpenseStatement statement = buildStatement(month, lines, null, null);
         boolean complete = Boolean.TRUE.equals(request.complete());
         TemplateDocument template = templateForStatement(request.templateId());
-        String html = templateService.render(template, templateDataService.dataStatement(p, statement, complete));
+        String html = templateService.render(template, templateDataService.dataStatement(settings, statement, complete));
         byte[] pdf = pdfService.renderHtmlToPdf(html);
         if (complete) {
             pdf = pdfService.merge(withAttachments(pdf, statement, month));
@@ -139,18 +139,18 @@ public class ExpenseStatementService {
         if (lines.isEmpty()) {
             throw new BusinessException("Ajoutez au moins un frais avant de générer la note.");
         }
-        Settings p = parametersService.entity();
+        Settings settings = parametersService.entity();
         TemplateDocument template = templateForStatement(request.templateId());
         int version = repository.findFirstByMonthOrderByVersionDesc(month.toString())
                 .map(n -> n.getVersion() + 1)
                 .orElse(1);
         archive(month.toString());
         ExpenseStatement statement = buildStatement(month, lines, version, template);
-        String html = templateService.render(template, templateDataService.dataStatement(p, statement, true));
+        String html = templateService.render(template, templateDataService.dataStatement(settings, statement, true));
         byte[] pdf = pdfService.renderHtmlToPdf(html);
         byte[] pdfComplete = pdfService.merge(withAttachments(pdf, statement, month));
-        statement.setPdfPath(stockage.storePdf("note_frais_" + month + "_v" + version + ".pdf", pdf));
-        statement.setFullPdfPath(stockage.storePdf("note_frais_" + month + "_v" + version + "_complet.pdf", pdfComplete));
+        statement.setPdfPath(storage.storePdf("note_frais_" + month + "_v" + version + ".pdf", pdf));
+        statement.setFullPdfPath(storage.storePdf("note_frais_" + month + "_v" + version + "_complet.pdf", pdfComplete));
         ExpenseStatement saved = repository.saveAndFlush(statement);
         return toDto(saved);
     }
@@ -185,16 +185,16 @@ public class ExpenseStatementService {
         if (path == null) {
             throw new NotFoundException("Le PDF demandé est introuvable.");
         }
-        return stockage.read(path);
+        return storage.read(path);
     }
 
-    private List<CalculatedLine> calculateLines(List<ExpenseLineRequest> demandes, YearMonth month) {
-        if (demandes == null || demandes.isEmpty()) {
+    private List<CalculatedLine> calculateLines(List<ExpenseLineRequest> requests, YearMonth month) {
+        if (requests == null || requests.isEmpty()) {
             return List.of();
         }
-        List<CalculatedLine> result = new ArrayList<>();
+        List<CalculatedLine> calculatedLines = new ArrayList<>();
         Set<String> codes = new HashSet<>();
-        for (ExpenseLineRequest request : demandes) {
+        for (ExpenseLineRequest request : requests) {
             if (request.itemCode() == null || request.itemCode().isBlank()) {
                 throw new BusinessException("Le type de frais est obligatoire.");
             }
@@ -203,26 +203,26 @@ public class ExpenseStatementService {
                 throw new BusinessException("Le type « " + expenseItem.getLabel() + " » ne peut être ajouté qu'une fois.");
             }
             BigDecimal amountInclVat = Amounts.decimal(request.amountInclVat(), "montant TTC", true);
-            BigDecimal prorata = Amounts.percentage(request.proRataPct());
-            LocalDate debut = Amounts.optionalDate(request.periodStart(), "début de période");
-            LocalDate fin = Amounts.optionalDate(request.periodEnd(), "fin de période");
-            if ((debut == null) != (fin == null)) {
+            BigDecimal proRataPct = Amounts.percentage(request.proRataPct());
+            LocalDate periodStart = Amounts.optionalDate(request.periodStart(), "début de période");
+            LocalDate periodEnd = Amounts.optionalDate(request.periodEnd(), "fin de période");
+            if ((periodStart == null) != (periodEnd == null)) {
                 throw new BusinessException("Renseignez les deux dates de la période facturée, ou aucune.");
             }
             BigDecimal monthlyAmount = request.monthlyAmountOverride() == null || request.monthlyAmountOverride().isBlank()
-                    ? CalculationService.allocateToMonth(amountInclVat, debut, fin, month)
+                    ? CalculationService.allocateToMonth(amountInclVat, periodStart, periodEnd, month)
                     : Amounts.decimal(request.monthlyAmountOverride(), "montant du mois", false);
-            BigDecimal retenu = CalculationService.claimedAmount(monthlyAmount, prorata);
+            BigDecimal claimedAmount = CalculationService.claimedAmount(monthlyAmount, proRataPct);
             Receipt receipt = request.receiptId() == null
                     ? null
                     : receiptService.entity(request.receiptId());
             AmountSource source = amountSource(request.amountSource());
             BigDecimal detectedAmount = Amounts.optionalDecimal(request.aiDetectedAmount(), "montant détecté par IA");
             String confidence = confidence(request.aiConfidence());
-            result.add(new CalculatedLine(expenseItem, amountInclVat, debut, fin, monthlyAmount, prorata, retenu,
+            calculatedLines.add(new CalculatedLine(expenseItem, amountInclVat, periodStart, periodEnd, monthlyAmount, proRataPct, claimedAmount,
                     receipt, source, detectedAmount, confidence));
         }
-        return result;
+        return calculatedLines;
     }
 
     private ExpenseStatement buildStatement(YearMonth month, List<CalculatedLine> lines, Integer version,
@@ -243,10 +243,10 @@ public class ExpenseStatementService {
             ExpenseLine line = new ExpenseLine();
             line.setExpenseItem(calculated.expenseItem());
             line.setAmountInclVat(calculated.amountInclVat());
-            line.setPeriodStart(calculated.debut());
-            line.setPeriodEnd(calculated.fin());
+            line.setPeriodStart(calculated.periodStart());
+            line.setPeriodEnd(calculated.periodEnd());
             line.setMonthlyAmount(calculated.monthlyAmount());
-            line.setProRataPct(calculated.prorata());
+            line.setProRataPct(calculated.proRataPct());
             line.setClaimedAmount(calculated.claimedAmount());
             line.setReceipt(calculated.receipt());
             line.setAmountSource(calculated.source());
@@ -266,22 +266,22 @@ public class ExpenseStatementService {
         pdfs.add(statementPdf);
         RentReceipt rentReceipt = rentReceiptService.activeForMonth(month.toString());
         if (rentReceipt != null && rentReceipt.getPdfPath() != null) {
-            pdfs.add(stockage.read(rentReceipt.getPdfPath()));
+            pdfs.add(storage.read(rentReceipt.getPdfPath()));
         }
-        Set<Long> deja = new HashSet<>();
+        Set<Long> processedReceiptIds = new HashSet<>();
         for (ExpenseLine line : statement.getLines()) {
             Receipt receipt = line.getReceipt();
-            if (receipt == null || !deja.add(receipt.getId())) {
+            if (receipt == null || !processedReceiptIds.add(receipt.getId())) {
                 continue;
             }
-            byte[] content = stockage.read(receipt.getPath());
+            byte[] content = storage.read(receipt.getPath());
             if (receipt.getMimeType().equals("application/pdf")) {
                 pdfs.add(content);
             } else if (receipt.getMimeType().startsWith("image/")) {
                 pdfs.add(pdfService.imageToPdf(content, receipt.getFileName()));
             } else {
-                DocumentTextExtractor.Extraction extraction = extracteur.extract(
-                        Path.of(stockage.temporaryPath(receipt.getFileName(), content)),
+                DocumentTextExtractor.Extraction extraction = textExtractor.extract(
+                        Path.of(storage.temporaryPath(receipt.getFileName(), content)),
                         receipt.getMimeType(), 1);
                 pdfs.add(pdfService.pageText("Justificatif — " + receipt.getFileName(), extraction.text()));
             }
@@ -300,16 +300,16 @@ public class ExpenseStatementService {
     }
 
     private void archive(String month) {
-        List<ExpenseStatement> existantes = repository.findByMonthOrderByVersionDesc(month);
-        boolean modifie = false;
-        for (ExpenseStatement existante : existantes) {
-            if (existante.getStatus() == DocumentStatus.ACTIVE) {
-                existante.setStatus(DocumentStatus.ARCHIVED);
-                modifie = true;
+        List<ExpenseStatement> existingStatements = repository.findByMonthOrderByVersionDesc(month);
+        boolean modified = false;
+        for (ExpenseStatement existingStatement : existingStatements) {
+            if (existingStatement.getStatus() == DocumentStatus.ACTIVE) {
+                existingStatement.setStatus(DocumentStatus.ARCHIVED);
+                modified = true;
             }
         }
-        if (modifie) {
-            repository.saveAll(existantes);
+        if (modified) {
+            repository.saveAll(existingStatements);
             repository.flush();
         }
     }
@@ -329,11 +329,11 @@ public class ExpenseStatementService {
         if (value == null || value.isBlank()) {
             return null;
         }
-        String normalisee = value.trim().toLowerCase(Locale.ROOT);
-        if (!CONFIDENCE_LEVELS.contains(normalisee)) {
+        String normalizedConfidence = value.trim().toLowerCase(Locale.ROOT);
+        if (!CONFIDENCE_LEVELS.contains(normalizedConfidence)) {
             throw new BusinessException("Niveau de confiance IA invalide : " + value);
         }
-        return normalisee;
+        return normalizedConfidence;
     }
 
     public ExpenseLineDto toDto(CalculatedLine line) {
@@ -342,11 +342,11 @@ public class ExpenseStatementService {
                 line.expenseItem().getCode(),
                 line.expenseItem().getLabel(),
                 line.expenseItem().getSupplier(),
-                line.debut(),
-                line.fin(),
+                line.periodStart(),
+                line.periodEnd(),
                 Amounts.apiValue(line.amountInclVat()),
                 Amounts.apiValue(line.monthlyAmount()),
-                Amounts.apiValue(line.prorata()),
+                Amounts.apiValue(line.proRataPct()),
                 Amounts.apiValue(line.claimedAmount()),
                 line.receipt() == null ? null : line.receipt().getId(),
                 line.receipt() == null ? null : line.receipt().getFileName(),
@@ -393,10 +393,10 @@ public class ExpenseStatementService {
     private record CalculatedLine(
             ExpenseItem expenseItem,
             BigDecimal amountInclVat,
-            LocalDate debut,
-            LocalDate fin,
+            LocalDate periodStart,
+            LocalDate periodEnd,
             BigDecimal monthlyAmount,
-            BigDecimal prorata,
+            BigDecimal proRataPct,
             BigDecimal claimedAmount,
             Receipt receipt,
             AmountSource source,

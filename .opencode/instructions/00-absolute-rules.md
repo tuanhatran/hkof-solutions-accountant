@@ -11,8 +11,9 @@ truth; re-read them before acting when in doubt.
 - User-facing strings only: **French**. This covers the UI, generated documents, error
   messages, toasts and validation messages.
 - Domain terms defined by the specification (`Quittance`, `NoteFrais`, `LigneFrais`,
-  `Justificatif`, `Parametres`, `Poste`) keep those names in the database and the contract.
-  New code around them uses English names.
+  `Justificatif`, `Parametres`, `Poste`) stay French in the UI, documents and routes.
+  Code identifiers use their English equivalents (`RentReceipt`, `ExpenseStatement`,
+  `ExpenseLine`, `Receipt`, `Settings`, `ExpenseItem`).
 - Amounts are displayed in euros as `1 234,56 €`; dates as `DD/MM/YYYY`; API dates stay ISO.
 
 ## Monetary calculation

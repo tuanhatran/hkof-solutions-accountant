@@ -15,10 +15,10 @@ describe("estimateAllocation", () => {
       "2026-10",
     );
     expect(estimate).not.toBeNull();
-    expect(estimate?.joursTotal).toBe(61);
-    expect(estimate?.joursMois).toBe(31);
-    expect(normalizeSpaces(estimate?.montantMois ?? "")).toBe("60,98 €");
-    expect(normalizeSpaces(estimate?.montantRetenu ?? "")).toBe("21,78 €");
+    expect(estimate?.totalDays).toBe(61);
+    expect(estimate?.monthDays).toBe(31);
+    expect(normalizeSpaces(estimate?.monthAmount ?? "")).toBe("60,98 €");
+    expect(normalizeSpaces(estimate?.retainedAmount ?? "")).toBe("21,78 €");
   });
 
   it("returns the full amount for a period within the month", () => {
@@ -29,8 +29,8 @@ describe("estimateAllocation", () => {
       "2026-10-31",
       "2026-10",
     );
-    expect(estimate?.joursMois).toBe(31);
-    expect(normalizeSpaces(estimate?.montantMois ?? "")).toBe("42,00 €");
+    expect(estimate?.monthDays).toBe(31);
+    expect(normalizeSpaces(estimate?.monthAmount ?? "")).toBe("42,00 €");
   });
 
   it("returns null when the period does not overlap the month", () => {
@@ -41,8 +41,8 @@ describe("estimateAllocation", () => {
       "2026-09-30",
       "2026-10",
     );
-    expect(estimate?.joursMois).toBe(0);
-    expect(normalizeSpaces(estimate?.montantMois ?? "")).toBe("0,00 €");
+    expect(estimate?.monthDays).toBe(0);
+    expect(normalizeSpaces(estimate?.monthAmount ?? "")).toBe("0,00 €");
   });
 
   it("rejects incomplete or invalid data", () => {

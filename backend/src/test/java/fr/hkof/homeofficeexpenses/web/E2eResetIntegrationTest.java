@@ -28,7 +28,7 @@ class E2eResetIntegrationTest {
     private MockMvc mockMvc;
 
     @Test
-    @DisplayName("Le profil e2e remet la base et les fichiers dans leur état initial")
+    @DisplayName("The e2e profile resets the database and files to their initial state")
     void resetsData() throws Exception {
         mockMvc.perform(put("/api/settings")
                         .contentType(MediaType.APPLICATION_JSON)

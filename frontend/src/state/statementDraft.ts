@@ -7,22 +7,22 @@ import { fromLineDto, type DraftLine } from "@/lib/lines";
 const EMPTY_LINES: DraftLine[] = [];
 
 interface StatementDraftState {
-  mois: string;
-  lignesParMois: Record<string, DraftLine[]>;
-  templatesParMois: Record<string, number | null>;
-  completsParMois: Record<string, boolean>;
-  quittanceAmorcee: Record<string, number | null>;
-  dirtyParMois: Record<string, boolean>;
-  changerMois: (month: string) => void;
-  ajouterLigne: (line: DraftLine) => void;
-  modifierLigne: (key: string, values: Partial<DraftLine>) => void;
-  supprimerLigne: (key: string) => void;
-  remplacerLignes: (lines: DraftLine[]) => void;
-  definirTemplate: (templateId: number | null) => void;
-  definirComplet: (complete: boolean) => void;
-  marquerQuittanceAmorcee: (rentReceiptId: number | null) => void;
-  marquerGenere: () => void;
-  chargerDepuisNote: (
+  month: string;
+  linesByMonth: Record<string, DraftLine[]>;
+  templatesByMonth: Record<string, number | null>;
+  completeByMonth: Record<string, boolean>;
+  primedReceiptByMonth: Record<string, number | null>;
+  dirtyByMonth: Record<string, boolean>;
+  changeMonth: (month: string) => void;
+  addLine: (line: DraftLine) => void;
+  updateLine: (key: string, values: Partial<DraftLine>) => void;
+  removeLine: (key: string) => void;
+  replaceLines: (lines: DraftLine[]) => void;
+  setTemplate: (templateId: number | null) => void;
+  setComplete: (complete: boolean) => void;
+  markReceiptPrimed: (rentReceiptId: number | null) => void;
+  markGenerated: () => void;
+  loadFromStatement: (
     statement: StatementDto,
     activeRentReceiptId: number | null,
   ) => void;
@@ -31,137 +31,123 @@ interface StatementDraftState {
 export const useStatementDraft = create<StatementDraftState>()(
   persist(
     (set, get) => ({
-      mois: currentMonth(),
-      lignesParMois: {},
-      templatesParMois: {},
-      completsParMois: {},
-      quittanceAmorcee: {},
-      dirtyParMois: {},
+      month: currentMonth(),
+      linesByMonth: {},
+      templatesByMonth: {},
+      completeByMonth: {},
+      primedReceiptByMonth: {},
+      dirtyByMonth: {},
 
-      changerMois: (month) => set({ mois: month }),
+      changeMonth: (month) => set({ month }),
 
-      ajouterLigne: (line) => {
-        const { mois: month, lignesParMois: linesByMonth } = get();
+      addLine: (line) => {
+        const { month, linesByMonth } = get();
         set({
-          lignesParMois: {
+          linesByMonth: {
             ...linesByMonth,
             [month]: [...(linesByMonth[month] ?? EMPTY_LINES), line],
           },
-          dirtyParMois: { ...get().dirtyParMois, [month]: true },
+          dirtyByMonth: { ...get().dirtyByMonth, [month]: true },
         });
       },
 
-      modifierLigne: (key, values) => {
-        const {
-          mois: month,
-          lignesParMois: linesByMonth,
-          dirtyParMois: dirtyByMonth,
-        } = get();
+      updateLine: (key, values) => {
+        const { month, linesByMonth, dirtyByMonth } = get();
         const lines = linesByMonth[month] ?? EMPTY_LINES;
         set({
-          lignesParMois: {
+          linesByMonth: {
             ...linesByMonth,
             [month]: lines.map((line) =>
-              line.cle === key ? { ...line, ...values } : line,
+              line.key === key ? { ...line, ...values } : line,
             ),
           },
-          dirtyParMois: { ...dirtyByMonth, [month]: true },
+          dirtyByMonth: { ...dirtyByMonth, [month]: true },
         });
       },
 
-      supprimerLigne: (key) => {
-        const {
-          mois: month,
-          lignesParMois: linesByMonth,
-          dirtyParMois: dirtyByMonth,
-        } = get();
+      removeLine: (key) => {
+        const { month, linesByMonth, dirtyByMonth } = get();
         set({
-          lignesParMois: {
+          linesByMonth: {
             ...linesByMonth,
             [month]: (linesByMonth[month] ?? EMPTY_LINES).filter(
-              (line) => line.cle !== key,
+              (line) => line.key !== key,
             ),
           },
-          dirtyParMois: { ...dirtyByMonth, [month]: true },
+          dirtyByMonth: { ...dirtyByMonth, [month]: true },
         });
       },
 
-      remplacerLignes: (lines) => {
-        const {
-          mois: month,
-          lignesParMois: linesByMonth,
-          dirtyParMois: dirtyByMonth,
-        } = get();
+      replaceLines: (lines) => {
+        const { month, linesByMonth, dirtyByMonth } = get();
         set({
-          lignesParMois: { ...linesByMonth, [month]: lines },
-          dirtyParMois: { ...dirtyByMonth, [month]: true },
+          linesByMonth: { ...linesByMonth, [month]: lines },
+          dirtyByMonth: { ...dirtyByMonth, [month]: true },
         });
       },
 
-      definirTemplate: (templateId) => {
-        const { mois: month, templatesParMois: templatesByMonth } = get();
-        set({ templatesParMois: { ...templatesByMonth, [month]: templateId } });
+      setTemplate: (templateId) => {
+        const { month, templatesByMonth } = get();
+        set({ templatesByMonth: { ...templatesByMonth, [month]: templateId } });
       },
 
-      definirComplet: (complete) => {
-        const { mois: month, completsParMois: completeByMonth } = get();
-        set({ completsParMois: { ...completeByMonth, [month]: complete } });
+      setComplete: (complete) => {
+        const { month, completeByMonth } = get();
+        set({ completeByMonth: { ...completeByMonth, [month]: complete } });
       },
 
-      marquerQuittanceAmorcee: (rentReceiptId) => {
-        const { mois: month, quittanceAmorcee: rentReceiptPrimed } = get();
+      markReceiptPrimed: (rentReceiptId) => {
+        const { month, primedReceiptByMonth } = get();
         set({
-          quittanceAmorcee: { ...rentReceiptPrimed, [month]: rentReceiptId },
+          primedReceiptByMonth: { ...primedReceiptByMonth, [month]: rentReceiptId },
         });
       },
 
-      marquerGenere: () => {
-        const { mois: month, dirtyParMois: dirtyByMonth } = get();
-        set({ dirtyParMois: { ...dirtyByMonth, [month]: false } });
+      markGenerated: () => {
+        const { month, dirtyByMonth } = get();
+        set({ dirtyByMonth: { ...dirtyByMonth, [month]: false } });
       },
 
-      chargerDepuisNote: (statement, activeRentReceiptId) => {
-        const month = statement.month ?? get().mois;
+      loadFromStatement: (statement, activeRentReceiptId) => {
+        const month = statement.month ?? get().month;
         const lines = (statement.lines ?? []).map(fromLineDto);
         set({
-          mois: month,
-          lignesParMois: { ...get().lignesParMois, [month]: lines },
-          templatesParMois: {
-            ...get().templatesParMois,
+          month,
+          linesByMonth: { ...get().linesByMonth, [month]: lines },
+          templatesByMonth: {
+            ...get().templatesByMonth,
             [month]: statement.templateId ?? null,
           },
-          quittanceAmorcee: {
-            ...get().quittanceAmorcee,
+          primedReceiptByMonth: {
+            ...get().primedReceiptByMonth,
             [month]: activeRentReceiptId,
           },
-          dirtyParMois: { ...get().dirtyParMois, [month]: false },
+          dirtyByMonth: { ...get().dirtyByMonth, [month]: false },
         });
       },
     }),
     {
-      name: "homeofficeexpenses.note-draft",
-      version: 1,
+      name: "homeofficeexpenses.statement-draft",
+      version: 2,
       storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
-        mois: state.mois,
-        lignesParMois: state.lignesParMois,
-        templatesParMois: state.templatesParMois,
-        completsParMois: state.completsParMois,
-        quittanceAmorcee: state.quittanceAmorcee,
-        dirtyParMois: state.dirtyParMois,
+        month: state.month,
+        linesByMonth: state.linesByMonth,
+        templatesByMonth: state.templatesByMonth,
+        completeByMonth: state.completeByMonth,
+        primedReceiptByMonth: state.primedReceiptByMonth,
+        dirtyByMonth: state.dirtyByMonth,
       }),
     },
   ),
 );
 
 export function useStatementLines(): DraftLine[] {
-  const month = useStatementDraft((state) => state.mois);
-  return (
-    useStatementDraft((state) => state.lignesParMois[month]) ?? EMPTY_LINES
-  );
+  const month = useStatementDraft((state) => state.month);
+  return useStatementDraft((state) => state.linesByMonth[month]) ?? EMPTY_LINES;
 }
 
 export function useStatementDirty(): boolean {
-  const month = useStatementDraft((state) => state.mois);
-  return useStatementDraft((state) => state.dirtyParMois[month]) ?? false;
+  const month = useStatementDraft((state) => state.month);
+  return useStatementDraft((state) => state.dirtyByMonth[month]) ?? false;
 }

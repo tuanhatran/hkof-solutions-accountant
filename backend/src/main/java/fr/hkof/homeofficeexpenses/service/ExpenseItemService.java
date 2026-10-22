@@ -23,8 +23,8 @@ public class ExpenseItemService {
     }
 
     @Transactional(readOnly = true)
-    public List<ExpenseItemDto> list(boolean tous) {
-        List<ExpenseItem> items = tous
+    public List<ExpenseItemDto> list(boolean includeDeleted) {
+        List<ExpenseItem> items = includeDeleted
                 ? repository.findByDeletedFalseOrderBySortOrderAsc()
                 : repository.findByDeletedFalseAndActiveTrueOrderBySortOrderAsc();
         return items.stream().map(this::toDto).toList();
@@ -57,7 +57,7 @@ public class ExpenseItemService {
     @Transactional
     public ExpenseItemDto update(Long id, ExpenseItemRequest request) {
         ExpenseItem expenseItem = repository.findById(id)
-                .filter(p -> !p.isDeleted())
+                .filter(item -> !item.isDeleted())
                 .orElseThrow(() -> new NotFoundException("Poste introuvable."));
         apply(expenseItem, request);
         return toDto(repository.save(expenseItem));
@@ -66,7 +66,7 @@ public class ExpenseItemService {
     @Transactional
     public void delete(Long id) {
         ExpenseItem expenseItem = repository.findById(id)
-                .filter(p -> !p.isDeleted())
+                .filter(item -> !item.isDeleted())
                 .orElseThrow(() -> new NotFoundException("Poste introuvable."));
         expenseItem.setDeleted(true);
         expenseItem.setActive(false);
@@ -113,16 +113,16 @@ public class ExpenseItemService {
         return normalizeCode(label);
     }
 
-    public ExpenseItemDto toDto(ExpenseItem p) {
+    public ExpenseItemDto toDto(ExpenseItem expenseItem) {
         return new ExpenseItemDto(
-                p.getId(),
-                p.getCode(),
-                p.getLabel(),
-                p.getSupplier(),
-                Amounts.apiValue(p.getProRataPct()),
-                p.getPeriodicity().name(),
-                p.isActive(),
-                p.getSortOrder(),
-                p.isMultipleLinesAllowed());
+                expenseItem.getId(),
+                expenseItem.getCode(),
+                expenseItem.getLabel(),
+                expenseItem.getSupplier(),
+                Amounts.apiValue(expenseItem.getProRataPct()),
+                expenseItem.getPeriodicity().name(),
+                expenseItem.isActive(),
+                expenseItem.getSortOrder(),
+                expenseItem.isMultipleLinesAllowed());
     }
 }

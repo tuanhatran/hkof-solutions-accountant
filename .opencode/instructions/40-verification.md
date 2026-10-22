@@ -34,6 +34,6 @@ make up / make down
 - Summary of changes and touched files.
 - Explicit notice of any OpenAPI contract change.
 - Tests added or updated, with their result.
-- Assumptions recorded in `README.md`, section "Hypothèses", or in the task report.
+- Assumptions recorded in `README.md`, section "Assumptions", or in the task report.
 - Report any change to a file owned by another block.
 - Technical reports in English; user-facing excerpts keep their French wording.

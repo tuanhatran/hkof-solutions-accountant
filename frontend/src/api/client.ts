@@ -80,7 +80,7 @@ export async function request<T>(
 
 export interface ResponseBlob {
   blob: Blob;
-  nomFichier: string | null;
+  fileName: string | null;
 }
 
 function nameFromDisposition(disposition: string | null): string | null {
@@ -120,7 +120,7 @@ export async function blobRequest(
   }
   return {
     blob: await response.blob(),
-    nomFichier: nameFromDisposition(
+    fileName: nameFromDisposition(
       response.headers.get("content-disposition"),
     ),
   };

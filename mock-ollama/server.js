@@ -1,25 +1,25 @@
 const http = require('node:http');
 
 const PORT = Number(process.env.PORT || 11434);
-const MODELE_TEXTE = process.env.MOCK_MODEL || 'mock-extract:latest';
-const MODELE_VISION = 'mock-vision:latest';
-const MOIS_FIGE = /^\d{4}-(0[1-9]|1[0-2])$/.test(process.env.MOCK_MOIS || '')
-  ? process.env.MOCK_MOIS
+const TEXT_MODEL = process.env.MOCK_MODEL || 'mock-extract:latest';
+const VISION_MODEL = 'mock-vision:latest';
+const FIXED_MONTH = /^\d{4}-(0[1-9]|1[0-2])$/.test(process.env.MOCK_MONTH || '')
+  ? process.env.MOCK_MONTH
   : null;
-const DELAI_DEFAUT = Number(process.env.MOCK_DELAI_MS || 0);
+const DEFAULT_DELAY = Number(process.env.MOCK_DELAY_MS || 0);
 
-const MODELES = [
+const MODELS = [
   {
-    name: MODELE_TEXTE,
-    model: MODELE_TEXTE,
+    name: TEXT_MODEL,
+    model: TEXT_MODEL,
     modified_at: '2026-01-01T00:00:00Z',
     size: 1073741824,
     digest: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     details: { family: 'mock', parameter_size: '7B', quantization_level: 'Q4_0' },
   },
   {
-    name: MODELE_VISION,
-    model: MODELE_VISION,
+    name: VISION_MODEL,
+    model: VISION_MODEL,
     modified_at: '2026-01-01T00:00:00Z',
     size: 2147483648,
     digest: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
@@ -27,160 +27,167 @@ const MODELES = [
   },
 ];
 
-let compteurChat = 0;
+let chatCount = 0;
 
-function moisReference(decale = 0) {
-  if (MOIS_FIGE) {
-    const [annee, mois] = MOIS_FIGE.split('-').map(Number);
-    return { annee, mois: mois - 1 + decale };
+function monthReference(offset = 0) {
+  if (FIXED_MONTH) {
+    const [year, month] = FIXED_MONTH.split('-').map(Number);
+    return { year, month: month - 1 + offset };
   }
-  const maintenant = new Date();
-  return { annee: maintenant.getUTCFullYear(), mois: maintenant.getUTCMonth() + decale };
+  const now = new Date();
+  return { year: now.getUTCFullYear(), month: now.getUTCMonth() + offset };
 }
 
-function premierJourMois(decale = 0) {
-  const { annee, mois } = moisReference(decale);
-  return new Date(Date.UTC(annee, mois, 1));
+function firstDayOfMonth(offset = 0) {
+  const { year, month } = monthReference(offset);
+  return new Date(Date.UTC(year, month, 1));
 }
 
-function dernierJourMois(decale = 0) {
-  const { annee, mois } = moisReference(decale);
-  return new Date(Date.UTC(annee, mois + 1, 0));
+function lastDayOfMonth(offset = 0) {
+  const { year, month } = monthReference(offset);
+  return new Date(Date.UTC(year, month + 1, 0));
 }
 
 function iso(date) {
   return date.toISOString().slice(0, 10);
 }
 
-function normaliserMontant(brut) {
-  if (!brut) {
+function normalizeAmount(raw) {
+  if (!raw) {
     return null;
   }
-  const compact = brut.replace(/[€\s]/g, '');
-  const nettoye = compact.includes(',')
+  const compact = raw.replace(/[€\s]/g, '');
+  const normalized = compact.includes(',')
     ? compact.replace(/\./g, '').replace(',', '.')
     : compact;
-  if (!/^\d+(\.\d{1,2})?$/.test(nettoye) || Number(nettoye) <= 0) {
+  if (!/^\d+(\.\d{1,2})?$/.test(normalized) || Number(normalized) <= 0) {
     return null;
   }
-  return Number(nettoye).toFixed(2);
+  return Number(normalized).toFixed(2);
 }
 
-function extraire(contenu) {
-  if (contenu.includes('MOCK_ERREUR')) {
-    return { erreur: true };
+function extract(content) {
+  if (content.includes('MOCK_ERREUR')) {
+    return { error: true };
   }
-  if (contenu.includes('MOCK_ECHEC')) {
-    return { erreur: false, contenu: 'Désolé, je ne peux pas analyser ce document.' };
+  if (content.includes('MOCK_ECHEC')) {
+    return {
+      error: false,
+      content: 'Désolé, je ne peux pas analyser ce document.',
+    };
   }
-  const texte = contenu.replace(/<document>([\s\S]*?)<\/document>/, '$1');
-  const montantBrut = /Montant\s*TTC\s*:\s*([0-9][0-9 .,]*[0-9])/i.exec(texte);
-  const montant = normaliserMontant(montantBrut ? montantBrut[1] : null);
-  const fournisseur = /Fournisseur\s*:\s*([^\r\n]+)/i.exec(texte);
-  const type = /Type(?:\s+de\s+frais)?\s*:\s*([^\r\n]+)/i.exec(texte);
-  const fin = /Fin\s*:\s*(\d{4}-\d{2}-\d{2})/i.exec(texte);
-  const debut = /Début\s*:\s*(\d{4}-\d{2}-\d{2})/i.exec(texte);
-  const resultat = {
-    type_suggere: type ? type[1].trim().toLowerCase() : null,
-    fournisseur: fournisseur ? fournisseur[1].trim() : null,
+  const text = content.replace(/<document>([\s\S]*?)<\/document>/, '$1');
+  const rawAmount = /Montant\s*TTC\s*:\s*([0-9][0-9 .,]*[0-9])/i.exec(text);
+  const amount = normalizeAmount(rawAmount ? rawAmount[1] : null);
+  const supplier = /Fournisseur\s*:\s*([^\r\n]+)/i.exec(text);
+  const expenseType = /Type(?:\s+de\s+frais)?\s*:\s*([^\r\n]+)/i.exec(text);
+  const end = /Fin\s*:\s*(\d{4}-\d{2}-\d{2})/i.exec(text);
+  const start = /Début\s*:\s*(\d{4}-\d{2}-\d{2})/i.exec(text);
+  const result = {
+    type_suggere: expenseType ? expenseType[1].trim().toLowerCase() : null,
+    fournisseur: supplier ? supplier[1].trim() : null,
     numero_facture: null,
     date_facture: null,
-    periode_debut: debut ? debut[1] : iso(premierJourMois()),
-    periode_fin: fin ? fin[1] : iso(dernierJourMois()),
-    montant_ttc: montant,
+    periode_debut: start ? start[1] : iso(firstDayOfMonth()),
+    periode_fin: end ? end[1] : iso(lastDayOfMonth()),
+    montant_ttc: amount,
     montant_ht: null,
     devise: 'EUR',
-    extrait_source: montantBrut ? montantBrut[0].trim() : null,
-    confiance: montant ? 'haute' : 'basse',
+    extrait_source: rawAmount ? rawAmount[0].trim() : null,
+    confiance: amount ? 'haute' : 'basse',
   };
-  return { erreur: false, contenu: JSON.stringify(resultat) };
+  return { error: false, content: JSON.stringify(result) };
 }
 
-function repondre(reponse, statut, corps) {
-  const charge = JSON.stringify(corps);
-  reponse.writeHead(statut, {
+function respond(response, status, body) {
+  const payload = JSON.stringify(body);
+  response.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
-    'Content-Length': Buffer.byteLength(charge),
+    'Content-Length': Buffer.byteLength(payload),
   });
-  reponse.end(charge);
+  response.end(payload);
 }
 
-function lireCorps(requete) {
-  return new Promise((resoudre, rejeter) => {
-    const morceaux = [];
-    let taille = 0;
-    requete.on('data', (morceau) => {
-      taille += morceau.length;
-      if (taille > 20 * 1024 * 1024) {
-        rejeter(new Error('Corps trop volumineux'));
-        requete.destroy();
+function readBody(request) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    request.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > 20 * 1024 * 1024) {
+        reject(new Error('Body too large'));
+        request.destroy();
         return;
       }
-      morceaux.push(morceau);
+      chunks.push(chunk);
     });
-    requete.on('end', () => resoudre(Buffer.concat(morceaux).toString('utf8')));
-    requete.on('error', rejeter);
+    request.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    request.on('error', reject);
   });
 }
 
-const serveur = http.createServer(async (requete, reponse) => {
-  const url = new URL(requete.url, `http://localhost:${PORT}`);
-  if (requete.method === 'GET' && url.pathname === '/health') {
-    return repondre(reponse, 200, { statut: 'ok' });
+const server = http.createServer(async (request, response) => {
+  const url = new URL(request.url, `http://localhost:${PORT}`);
+  if (request.method === 'GET' && url.pathname === '/health') {
+    return respond(response, 200, { status: 'ok' });
   }
-  if (requete.method === 'GET' && url.pathname === '/api/version') {
-    return repondre(reponse, 200, { version: '0.0.0-mock' });
+  if (request.method === 'GET' && url.pathname === '/api/version') {
+    return respond(response, 200, { version: '0.0.0-mock' });
   }
-  if (requete.method === 'GET' && url.pathname === '/api/tags') {
-    return repondre(reponse, 200, { models: MODELES });
+  if (request.method === 'GET' && url.pathname === '/api/tags') {
+    return respond(response, 200, { models: MODELS });
   }
-  if (requete.method === 'POST' && url.pathname === '/api/show') {
-    let corps = {};
+  if (request.method === 'POST' && url.pathname === '/api/show') {
+    let body = {};
     try {
-      corps = JSON.parse(await lireCorps(requete));
+      body = JSON.parse(await readBody(request));
     } catch {
-      corps = {};
+      body = {};
     }
-    const vision = String(corps.model || '').includes('vision');
-    return repondre(reponse, 200, {
-      model: corps.model || MODELE_TEXTE,
+    const vision = String(body.model || '').includes('vision');
+    return respond(response, 200, {
+      model: body.model || TEXT_MODEL,
       capabilities: vision ? ['completion', 'vision'] : ['completion'],
       details: { family: vision ? 'mock-vision' : 'mock' },
     });
   }
-  if (requete.method === 'POST' && url.pathname === '/api/chat') {
-    let corps;
+  if (request.method === 'POST' && url.pathname === '/api/chat') {
+    let body;
     try {
-      corps = JSON.parse(await lireCorps(requete));
+      body = JSON.parse(await readBody(request));
     } catch {
-      return repondre(reponse, 400, { error: 'Corps JSON invalide' });
+      return respond(response, 400, { error: 'Invalid JSON body' });
     }
-    const messages = Array.isArray(corps.messages) ? corps.messages : [];
-    const utilisateur = [...messages].reverse().find((message) => message.role === 'user');
-    const contenu = utilisateur && typeof utilisateur.content === 'string' ? utilisateur.content : '';
-    compteurChat += 1;
-    const resultat = extraire(contenu);
-    const delai = contenu.includes('MOCK_LENT') ? Math.max(DELAI_DEFAUT, 4000) : DELAI_DEFAUT;
-    if (delai > 0) {
-      await new Promise((resoudre) => setTimeout(resoudre, delai));
+    const messages = Array.isArray(body.messages) ? body.messages : [];
+    const user = [...messages].reverse().find((message) => message.role === 'user');
+    const content = user && typeof user.content === 'string' ? user.content : '';
+    chatCount += 1;
+    const result = extract(content);
+    const delay = content.includes('MOCK_LENT')
+      ? Math.max(DEFAULT_DELAY, 4000)
+      : DEFAULT_DELAY;
+    if (delay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
-    if (resultat.erreur) {
-      return repondre(reponse, 500, { error: 'Erreur simulée par mock-ollama' });
+    if (result.error) {
+      return respond(response, 500, { error: 'Error simulated by mock-ollama' });
     }
-    return repondre(reponse, 200, {
-      model: corps.model || MODELE_TEXTE,
+    return respond(response, 200, {
+      model: body.model || TEXT_MODEL,
       created_at: '2026-01-01T00:00:00Z',
-      message: { role: 'assistant', content: resultat.contenu },
+      message: { role: 'assistant', content: result.content },
       done: true,
       total_duration: 1000000,
-      eval_count: compteurChat,
+      eval_count: chatCount,
     });
   }
-  return repondre(reponse, 404, { error: 'Route mock inconnue : ' + requete.method + ' ' + url.pathname });
+  return respond(response, 404, {
+    error: 'Unknown mock route: ' + request.method + ' ' + url.pathname,
+  });
 });
 
-serveur.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(
-    `mock-ollama à l'écoute sur http://0.0.0.0:${PORT} (modèle ${MODELE_TEXTE}, mois ${MOIS_FIGE ?? 'courant'})`,
+    `mock-ollama listening on http://0.0.0.0:${PORT} (model ${TEXT_MODEL}, month ${FIXED_MONTH ?? 'current'})`,
   );
 });

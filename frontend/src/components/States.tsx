@@ -4,10 +4,10 @@ import { Button } from "./Button";
 import { cn } from "@/lib/cn";
 
 export function Spinner({
-  taille: size = 18,
+  size = 18,
   className,
 }: {
-  taille?: number;
+  size?: number;
   className?: string;
 }) {
   return (
@@ -26,7 +26,7 @@ export function LoadingState({
 }) {
   return (
     <div
-      className="carte flex items-center gap-3 p-6 text-sm text-ink-soft"
+      className="card flex items-center gap-3 p-6 text-sm text-ink-soft"
       role="status"
     >
       <Spinner />
@@ -37,14 +37,14 @@ export function LoadingState({
 
 export function ErrorState({
   message,
-  onReessayer: onRetry,
+  onRetry,
 }: {
   message: string;
-  onReessayer?: () => void;
+  onRetry?: () => void;
 }) {
   return (
     <div
-      className="carte flex flex-col items-start gap-3 border-danger/25 bg-danger-soft/40 p-6"
+      className="card flex flex-col items-start gap-3 border-danger/25 bg-danger-soft/40 p-6"
       role="alert"
     >
       <div className="flex items-center gap-2 font-semibold text-danger">
@@ -54,9 +54,9 @@ export function ErrorState({
       <p className="text-sm text-ink-soft">{message}</p>
       {onRetry ? (
         <Button
-          variante="secondaire"
-          petit
-          icone={<RefreshCcw size={14} />}
+          variant="secondary"
+          small
+          icon={<RefreshCcw size={14} />}
           onClick={onRetry}
         >
           Réessayer
@@ -67,18 +67,18 @@ export function ErrorState({
 }
 
 export function EmptyState({
-  titre: title,
+  title,
   description,
   action,
-  icone: icon,
+  icon,
 }: {
-  titre: string;
+  title: string;
   description?: string;
   action?: ReactNode;
-  icone?: ReactNode;
+  icon?: ReactNode;
 }) {
   return (
-    <div className="carte flex flex-col items-center justify-center px-6 py-12 text-center">
+    <div className="card flex flex-col items-center justify-center px-6 py-12 text-center">
       <span className="grid h-12 w-12 place-items-center rounded-full bg-paper-deep/70 text-ink-soft">
         {icon ?? <Inbox size={22} aria-hidden="true" />}
       </span>

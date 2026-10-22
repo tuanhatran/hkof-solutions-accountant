@@ -32,11 +32,11 @@ public class OllamaClient {
     }
 
     public List<LlmModelDto> models(LlmConfig config) {
-        JsonNode racine = call(config, JsonNode.class, "GET", "/api/tags", null);
-        JsonNode liste = racine.path("models");
+        JsonNode root = call(config, JsonNode.class, "GET", "/api/tags", null);
+        JsonNode list = root.path("models");
         List<LlmModelDto> result = new ArrayList<>();
-        if (liste.isArray()) {
-            for (JsonNode model : liste) {
+        if (list.isArray()) {
+            for (JsonNode model : list) {
                 String name = model.path("name").asString("");
                 if (name.isBlank()) {
                     name = model.path("model").asString("");
@@ -55,12 +55,12 @@ public class OllamaClient {
             return false;
         }
         try {
-            JsonNode racine = call(config, JsonNode.class, "POST", "/api/show",
+            JsonNode root = call(config, JsonNode.class, "POST", "/api/show",
                     Map.of("model", model));
-            JsonNode capacites = racine.path("capabilities");
-            if (capacites.isArray()) {
-                for (JsonNode capacite : capacites) {
-                    if ("vision".equals(capacite.asString(""))) {
+            JsonNode capabilities = root.path("capabilities");
+            if (capabilities.isArray()) {
+                for (JsonNode capability : capabilities) {
+                    if ("vision".equals(capability.asString(""))) {
                         return true;
                     }
                 }
@@ -72,59 +72,59 @@ public class OllamaClient {
         return nameSuggestsVision(model);
     }
 
-    public String chat(LlmConfig config, String promptSysteme, String contentUtilisateur, List<String> imagesBase64) {
+    public String chat(LlmConfig config, String systemPrompt, String userContent, List<String> imagesBase64) {
         if (config.getModel() == null || config.getModel().isBlank()) {
             throw new BusinessException("Aucun modèle LLM n'est configuré. Renseignez-le dans Admin ou saisissez le montant manuellement.");
         }
-        Map<String, Object> messageUtilisateur = new LinkedHashMap<>();
-        messageUtilisateur.put("role", "user");
-        messageUtilisateur.put("content", contentUtilisateur);
+        Map<String, Object> userMessage = new LinkedHashMap<>();
+        userMessage.put("role", "user");
+        userMessage.put("content", userContent);
         if (imagesBase64 != null && !imagesBase64.isEmpty()) {
-            messageUtilisateur.put("images", imagesBase64);
+            userMessage.put("images", imagesBase64);
         }
-        Map<String, Object> charge = new LinkedHashMap<>();
-        charge.put("model", config.getModel());
-        charge.put("messages", List.of(
-                Map.of("role", "system", "content", promptSysteme),
-                messageUtilisateur));
-        charge.put("stream", false);
-        charge.put("format", objectMapper.readTree(DefaultPrompt.SCHEMA_JSON));
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("model", config.getModel());
+        payload.put("messages", List.of(
+                Map.of("role", "system", "content", systemPrompt),
+                userMessage));
+        payload.put("stream", false);
+        payload.put("format", objectMapper.readTree(DefaultPrompt.SCHEMA_JSON));
         Map<String, Object> options = new LinkedHashMap<>();
         options.put("temperature", config.getTemperature() == null ? 0 : config.getTemperature());
         options.put("num_ctx", config.getNumCtx());
-        charge.put("options", options);
+        payload.put("options", options);
 
-        JsonNode racine = call(config, JsonNode.class, "POST", "/api/chat", charge);
-        String content = racine.path("message").path("content").asString("");
+        JsonNode root = call(config, JsonNode.class, "POST", "/api/chat", payload);
+        String content = root.path("message").path("content").asString("");
         if (content.isBlank()) {
             throw new BusinessException("Le modèle LLM n'a renvoyé aucun contenu exploitable.");
         }
         return content;
     }
 
-    private <T> T call(LlmConfig config, Class<T> type, String methode, String path, Object corps) {
+    private <T> T call(LlmConfig config, Class<T> type, String method, String path, Object body) {
         if (config.getUrl() == null || config.getUrl().isBlank()) {
             throw new BusinessException("L'URL du service LLM n'est pas configurée.");
         }
-        SimpleClientHttpRequestFactory requetes = new SimpleClientHttpRequestFactory();
-        requetes.setConnectTimeout(Duration.ofSeconds(5));
-        requetes.setReadTimeout(Duration.ofSeconds(Math.max(5, config.getTimeoutSeconds())));
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(Duration.ofSeconds(5));
+        requestFactory.setReadTimeout(Duration.ofSeconds(Math.max(5, config.getTimeoutSeconds())));
         RestClient.Builder builder = RestClient.builder()
                 .baseUrl(config.getUrl().replaceAll("/+$", ""))
-                .requestFactory(requetes);
+                .requestFactory(requestFactory);
         if (config.getApiKey() != null && !config.getApiKey().isBlank()) {
             builder.defaultHeader("Authorization", "Bearer " + config.getApiKey());
         }
         RestClient client = builder.build();
         try {
-            RestClient.RequestBodySpec requete = client.method(org.springframework.http.HttpMethod.valueOf(methode))
+            RestClient.RequestBodySpec request = client.method(org.springframework.http.HttpMethod.valueOf(method))
                     .uri(path)
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON);
-            if (corps != null) {
-                return requete.body(corps).retrieve().body(type);
+            if (body != null) {
+                return request.body(body).retrieve().body(type);
             }
-            return requete.retrieve().body(type);
+            return request.retrieve().body(type);
         } catch (RestClientResponseException ex) {
             String detail = ex.getResponseBodyAsString();
             if (detail != null && detail.length() > 300) {
@@ -142,7 +142,7 @@ public class OllamaClient {
         if (name == null) {
             return false;
         }
-        String minuscule = name.toLowerCase();
-        return VISION_MODELS.stream().anyMatch(minuscule::contains);
+        String lowercaseName = name.toLowerCase();
+        return VISION_MODELS.stream().anyMatch(lowercaseName::contains);
     }
 }

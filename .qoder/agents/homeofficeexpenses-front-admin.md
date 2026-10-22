@@ -16,7 +16,7 @@ You deliver the settings screens and the history.
 
 - LLM Admin: activation, URL, models (`/api/tags`), refresh, test, advanced settings, editable/resettable prompt, permanent status badge in the navigation, remote URL warning, key never redisplayed.
 - Templates: cards per type, active/version, upload with validation report, preview before activation, activation, download, deletion, default template, variable reference with copy.
-- Configuration: company, dwelling and surfaces, landlord, tenant, rent/provision, items CRUD (prorata, periodicity, order, active, multiple lines).
+- Configuration: company, dwelling and surfaces, landlord, tenant, rent/provision, items CRUD (pro-rata, periodicity, order, active, multiple lines).
 - History: list by month, statuses, totals, template versions, statement-only / full download, "Rouvrir et modifier" (Reopen and edit) reloading the draft.
 - Toasts and messages in French, accessibility, required `data-cy` attributes.
 

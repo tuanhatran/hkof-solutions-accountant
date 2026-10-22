@@ -3,38 +3,38 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { PDFParse } from "pdf-parse";
 
-const RACINE = process.cwd();
-const DOSSIER_TELECHARGEMENTS = path.resolve(RACINE, "cypress/downloads");
+const ROOT = process.cwd();
+const DOWNLOADS_DIR = path.resolve(ROOT, "cypress/downloads");
 
-function cheminSur(cheminRelatif: string): string {
-  const absolu = path.resolve(RACINE, cheminRelatif);
-  if (!absolu.startsWith(RACINE + path.sep)) {
-    throw new Error(`Chemin hors du projet refusé : ${cheminRelatif}`);
+function resolvePath(relativePath: string): string {
+  const absolutePath = path.resolve(ROOT, relativePath);
+  if (!absolutePath.startsWith(ROOT + path.sep)) {
+    throw new Error(`Path outside the project rejected: ${relativePath}`);
   }
-  return absolu;
+  return absolutePath;
 }
 
 async function waitForDownload(
-  nom: string,
+  name: string,
   timeoutMs = 30_000,
 ): Promise<string> {
-  if (nom.includes("/") || nom.includes("\\")) {
-    throw new Error(`Nom de fichier attendu sans dossier : ${nom}`);
+  if (name.includes("/") || name.includes("\\")) {
+    throw new Error(`Expected a file name without a directory: ${name}`);
   }
-  const cible = path.join(DOSSIER_TELECHARGEMENTS, nom);
-  const limite = Date.now() + timeoutMs;
-  while (Date.now() < limite) {
+  const target = path.join(DOWNLOADS_DIR, name);
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
     try {
-      const statut = await fs.stat(cible);
-      if (statut.isFile() && statut.size > 0) {
-        return cible;
+      const stats = await fs.stat(target);
+      if (stats.isFile() && stats.size > 0) {
+        return target;
       }
     } catch {
-      // Le téléchargement n'a pas encore commencé ou est en cours d'écriture.
+      // The download has not started yet or is still being written.
     }
-    await new Promise((resoudre) => setTimeout(resoudre, 150));
+    await new Promise((resolve) => setTimeout(resolve, 150));
   }
-  throw new Error(`Téléchargement absent après ${timeoutMs} ms : ${nom}`);
+  throw new Error(`Download missing after ${timeoutMs} ms: ${name}`);
 }
 
 export default defineConfig({
@@ -55,50 +55,50 @@ export default defineConfig({
     retries: { runMode: 1, openMode: 0 },
     setupNodeEvents(on) {
       on("task", {
-        async readPdf(chemin: string): Promise<string> {
-          const absolu = chemin.startsWith(RACINE) ? chemin : cheminSur(chemin);
-          const donnees = await fs.readFile(absolu);
-          const parseur = new PDFParse({ data: donnees });
-          const resultat = await parseur.getText();
-          await parseur.destroy();
-          return resultat.text;
+        async readPdf(filePath: string): Promise<string> {
+          const absolutePath = filePath.startsWith(ROOT) ? filePath : resolvePath(filePath);
+          const data = await fs.readFile(absolutePath);
+          const parser = new PDFParse({ data });
+          const result = await parser.getText();
+          await parser.destroy();
+          return result.text;
         },
-        async fileSize(chemin: string): Promise<number> {
-          const absolu = chemin.startsWith(RACINE) ? chemin : cheminSur(chemin);
-          const statut = await fs.stat(absolu);
-          return statut.size;
+        async fileSize(filePath: string): Promise<number> {
+          const absolutePath = filePath.startsWith(ROOT) ? filePath : resolvePath(filePath);
+          const stats = await fs.stat(absolutePath);
+          return stats.size;
         },
-        async waitForDownload(nom: string): Promise<string> {
-          return waitForDownload(nom);
+        async waitForDownload(name: string): Promise<string> {
+          return waitForDownload(name);
         },
         async clearDownloads(): Promise<number> {
-          await fs.mkdir(DOSSIER_TELECHARGEMENTS, { recursive: true });
-          const entrees = await fs.readdir(DOSSIER_TELECHARGEMENTS);
-          let supprimes = 0;
-          for (const entree of entrees) {
-            const cible = path.join(DOSSIER_TELECHARGEMENTS, entree);
-            const statut = await fs.stat(cible);
-            if (statut.isFile()) {
-              await fs.unlink(cible);
-              supprimes += 1;
+          await fs.mkdir(DOWNLOADS_DIR, { recursive: true });
+          const entries = await fs.readdir(DOWNLOADS_DIR);
+          let removed = 0;
+          for (const entry of entries) {
+            const target = path.join(DOWNLOADS_DIR, entry);
+            const stats = await fs.stat(target);
+            if (stats.isFile()) {
+              await fs.unlink(target);
+              removed += 1;
             }
           }
-          return supprimes;
+          return removed;
         },
-        async deleteFile(chemin: string): Promise<boolean> {
+        async deleteFile(filePath: string): Promise<boolean> {
           try {
-            await fs.unlink(cheminSur(chemin));
+            await fs.unlink(resolvePath(filePath));
             return true;
           } catch {
             return false;
           }
         },
-        async createLargeFile(chemin: string): Promise<string> {
-          const absolu = cheminSur(chemin);
-          await fs.mkdir(path.dirname(absolu), { recursive: true });
-          const contenu = Buffer.alloc(11 * 1024 * 1024, "a");
-          await fs.writeFile(absolu, contenu);
-          return absolu;
+        async createLargeFile(filePath: string): Promise<string> {
+          const absolutePath = resolvePath(filePath);
+          await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+          const content = Buffer.alloc(11 * 1024 * 1024, "a");
+          await fs.writeFile(absolutePath, content);
+          return absolutePath;
         },
       });
     },

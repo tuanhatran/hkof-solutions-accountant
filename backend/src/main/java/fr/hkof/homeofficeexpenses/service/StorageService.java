@@ -26,22 +26,22 @@ public class StorageService {
             "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
             "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9");
 
-    private final Path racine;
+    private final Path root;
     private final FileTypeDetector detector;
 
     public StorageService(AppProperties properties, FileTypeDetector detector) {
-        this.racine = Path.of(properties.dataDir()).toAbsolutePath().normalize();
+        this.root = Path.of(properties.dataDir()).toAbsolutePath().normalize();
         this.detector = detector;
         init();
     }
 
     private void init() {
         try {
-            Files.createDirectories(racine.resolve("justificatifs"));
-            Files.createDirectories(racine.resolve("sorties"));
-            Files.createDirectories(racine.resolve("templates"));
+            Files.createDirectories(root.resolve("justificatifs"));
+            Files.createDirectories(root.resolve("sorties"));
+            Files.createDirectories(root.resolve("templates"));
         } catch (IOException ex) {
-            throw new IllegalStateException("Impossible de créer le dossier de données " + racine, ex);
+            throw new IllegalStateException("Impossible de créer le data directory " + root, ex);
         }
     }
 
@@ -51,12 +51,12 @@ public class StorageService {
         }
         try {
             byte[] content = file.getBytes();
-            FileTypeDetector.DetectedFile detecte = detector.detectReceipt(file.getOriginalFilename(), content);
+            FileTypeDetector.DetectedFile detected = detector.detectReceipt(file.getOriginalFilename(), content);
             String name = sanitizeName(file.getOriginalFilename());
-            String stocke = UUID.randomUUID() + "." + detecte.extension();
-            Path cible = racine.resolve("justificatifs").resolve(stocke).normalize();
-            Files.write(cible, content);
-            return new StoredFile(name, detecte.mimeType(), cible.toString(), content.length, sha256(content));
+            String storedName = UUID.randomUUID() + "." + detected.extension();
+            Path target = root.resolve("justificatifs").resolve(storedName).normalize();
+            Files.write(target, content);
+            return new StoredFile(name, detected.mimeType(), target.toString(), content.length, sha256(content));
         } catch (IOException ex) {
             throw new IllegalStateException("Impossible d'enregistrer le justificatif.", ex);
         }
@@ -64,23 +64,23 @@ public class StorageService {
 
     public String storeTemplate(byte[] content, String type, int version) {
         try {
-            Path cible = racine.resolve("templates")
+            Path target = root.resolve("templates")
                     .resolve(type.toLowerCase() + "_v" + version + ".html")
                     .normalize();
-            Files.write(cible, content);
-            return cible.toString();
+            Files.write(target, content);
+            return target.toString();
         } catch (IOException ex) {
             throw new IllegalStateException("Impossible d'enregistrer le template.", ex);
         }
     }
 
-    public String storePdf(String nameRelatif, byte[] content) {
+    public String storePdf(String relativeName, byte[] content) {
         try {
-            Path cible = racine.resolve("sorties").resolve(nameRelatif).normalize();
-            checkInternal(cible);
-            Files.createDirectories(cible.getParent());
-            Files.write(cible, content);
-            return cible.toString();
+            Path target = root.resolve("sorties").resolve(relativeName).normalize();
+            checkInternal(target);
+            Files.createDirectories(target.getParent());
+            Files.write(target, content);
+            return target.toString();
         } catch (IOException ex) {
             throw new IllegalStateException("Impossible d'enregistrer le PDF.", ex);
         }
@@ -111,22 +111,22 @@ public class StorageService {
     public String temporaryPath(String fileName, byte[] content) {
         try {
             Path folder = Files.createTempDirectory("homeofficeexpenses-");
-            Path cible = folder.resolve(sanitizeName(fileName));
-            Files.copy(new java.io.ByteArrayInputStream(content), cible, StandardCopyOption.REPLACE_EXISTING);
-            cible.toFile().deleteOnExit();
+            Path target = folder.resolve(sanitizeName(fileName));
+            Files.copy(new java.io.ByteArrayInputStream(content), target, StandardCopyOption.REPLACE_EXISTING);
+            target.toFile().deleteOnExit();
             folder.toFile().deleteOnExit();
-            return cible.toString();
+            return target.toString();
         } catch (IOException ex) {
             throw new IllegalStateException("Impossible de préparer le fichier temporaire.", ex);
         }
     }
 
     public Path root() {
-        return racine;
+        return root;
     }
 
     private void checkInternal(Path file) {
-        if (!file.startsWith(racine)) {
+        if (!file.startsWith(root)) {
             throw new BusinessException("Accès fichier refusé.");
         }
     }
@@ -136,24 +136,24 @@ public class StorageService {
         String base = name == null
                 ? "fichier"
                 : name.substring(Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1);
-        String propre = base.replaceAll("[\\p{Cntrl}<>:\"/\\\\|?*]", "_").trim();
-        propre = propre.replaceAll("[. ]+$", "");
-        if (propre.isBlank()) {
-            propre = "fichier";
+        String sanitized = base.replaceAll("[\\p{Cntrl}<>:\"/\\\\|?*]", "_").trim();
+        sanitized = sanitized.replaceAll("[. ]+$", "");
+        if (sanitized.isBlank()) {
+            sanitized = "fichier";
         }
-        int point = propre.lastIndexOf('.');
-        String radical = point > 0 ? propre.substring(0, point) : propre;
-        if (RESERVED_NAMES.contains(radical.toUpperCase(Locale.ROOT))) {
-            propre = "_" + propre;
+        int dotIndex = sanitized.lastIndexOf('.');
+        String baseName = dotIndex > 0 ? sanitized.substring(0, dotIndex) : sanitized;
+        if (RESERVED_NAMES.contains(baseName.toUpperCase(Locale.ROOT))) {
+            sanitized = "_" + sanitized;
         }
-        if (propre.length() > 180) {
-            int dernierPoint = propre.lastIndexOf('.');
-            String extension = dernierPoint > 0 && propre.length() - dernierPoint <= 20
-                    ? propre.substring(dernierPoint)
+        if (sanitized.length() > 180) {
+            int lastDot = sanitized.lastIndexOf('.');
+            String extension = lastDot > 0 && sanitized.length() - lastDot <= 20
+                    ? sanitized.substring(lastDot)
                     : "";
-            propre = propre.substring(0, 180 - extension.length()) + extension;
+            sanitized = sanitized.substring(0, 180 - extension.length()) + extension;
         }
-        return propre;
+        return sanitized;
     }
 
     private String sha256(byte[] content) {

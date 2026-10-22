@@ -32,5 +32,5 @@ You produce all PDF documents and secure the templates supplied by the user.
 
 ## Exit criteria
 
-- Tests: validation (scripts/expressions/unknown variables), HTML rendering, watermark, merging, preview total identical to `/notes-frais/calcul`.
+- Tests: validation (scripts/expressions/unknown variables), HTML rendering, watermark, merging, preview total identical to `/api/expense-statements/calculation`.
 - PDF readable with accents and the € symbol, correct pagination, no blank pages.

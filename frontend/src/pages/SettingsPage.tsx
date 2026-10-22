@@ -45,12 +45,12 @@ import {
 import { toast } from "@/state/toasts";
 
 const PERIODICITIES = [
-  { valeur: "MONTHLY", libelle: "Mensuelle" },
-  { valeur: "BIMONTHLY", libelle: "Bimestrielle" },
-  { valeur: "ANNUAL", libelle: "Annuelle" },
+  { value: "MONTHLY", label: "Mensuelle" },
+  { value: "BIMONTHLY", label: "Bimestrielle" },
+  { value: "ANNUAL", label: "Annuelle" },
 ] as const;
 
-type Periodicity = (typeof PERIODICITIES)[number]["valeur"];
+type Periodicity = (typeof PERIODICITIES)[number]["value"];
 
 function decimalFormatter(value: string | undefined): string {
   return value ? value.replace(".", ",") : "";
@@ -60,21 +60,21 @@ function valuesFromSettings(
   settings: SettingsDto | undefined,
 ): SettingsFormValues {
   return {
-    raisonSociale: settings?.companyName ?? "",
-    formeJuridique: settings?.legalForm ?? "",
+    companyName: settings?.companyName ?? "",
+    legalForm: settings?.legalForm ?? "",
     siren: settings?.siren ?? "",
-    societeAdresse: settings?.companyAddress ?? "",
-    gerant: settings?.managerName ?? "",
-    logementAdresse: settings?.homeAddress ?? "",
-    surfaceTotale: decimalFormatter(settings?.totalArea),
-    surfacePro: decimalFormatter(settings?.businessArea),
-    bailleurNom: settings?.landlordName ?? "",
-    bailleurAdresse: settings?.landlordAddress ?? "",
-    locataireNom: settings?.tenantName ?? "",
-    locataireAdresse: settings?.tenantAddress ?? "",
-    loyerHc: decimalFormatter(settings?.rentExclCharges),
-    provisionCharges: decimalFormatter(settings?.chargesAdvance),
-    lieuEmission: settings?.issuePlace ?? "",
+    companyAddress: settings?.companyAddress ?? "",
+    managerName: settings?.managerName ?? "",
+    homeAddress: settings?.homeAddress ?? "",
+    totalArea: decimalFormatter(settings?.totalArea),
+    businessArea: decimalFormatter(settings?.businessArea),
+    landlordName: settings?.landlordName ?? "",
+    landlordAddress: settings?.landlordAddress ?? "",
+    tenantName: settings?.tenantName ?? "",
+    tenantAddress: settings?.tenantAddress ?? "",
+    rentExclCharges: decimalFormatter(settings?.rentExclCharges),
+    chargesAdvance: decimalFormatter(settings?.chargesAdvance),
+    issuePlace: settings?.issuePlace ?? "",
   };
 }
 
@@ -84,12 +84,12 @@ function cents(value: string): number {
 }
 
 function SectionHeader({
-  icone: IconComponent,
-  titre: title,
+  icon: IconComponent,
+  title,
   description,
 }: {
-  icone: typeof Building2;
-  titre: string;
+  icon: typeof Building2;
+  title: string;
   description: string;
 }) {
   return (
@@ -107,26 +107,26 @@ function SectionHeader({
 
 function SwitchField({
   id,
-  libelle: labelText,
+  label: labelText,
   description,
   register,
 }: {
   id: string;
-  libelle: string;
+  label: string;
   description: string;
   register: ReturnType<typeof useForm<ExpenseItemFormValues>>["register"];
 }) {
   return (
     <label
       htmlFor={id}
-      className="flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-paper/35 p-3 transition hover:border-line-forte"
+      className="flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-paper/35 p-3 transition hover:border-line-strong"
     >
       <input
         id={id}
         type="checkbox"
         className="mt-0.5 h-4 w-4 shrink-0 rounded border-line text-accent accent-[#1b5b49]"
         {...register(
-          id === "poste-actif" ? "actif" : "plusieursLignesAutorisees",
+          id === "poste-actif" ? "active" : "multipleLinesAllowed",
         )}
       />
       <span>
@@ -140,15 +140,15 @@ function SwitchField({
 }
 
 function ExpenseItemForm({
-  poste: expenseItem,
-  prorataDefaut: defaultProRata,
-  ordreDefaut: defaultOrder,
-  onFermer: onClose,
+  item: expenseItem,
+  defaultProRata: defaultProRata,
+  defaultOrder,
+  onClose: onClose,
 }: {
-  poste: ExpenseItemDto | null;
-  prorataDefaut: string;
-  ordreDefaut: number;
-  onFermer: () => void;
+  item: ExpenseItemDto | null;
+  defaultProRata: string;
+  defaultOrder: number;
+  onClose: () => void;
 }) {
   const queryClient = useQueryClient();
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -161,27 +161,27 @@ function ExpenseItemForm({
     mode: "onChange",
     defaultValues: {
       code: expenseItem?.code ?? "",
-      libelle: expenseItem?.label ?? "",
-      fournisseur: expenseItem?.supplier ?? "",
-      prorataPct: decimalFormatter(expenseItem?.proRataPct ?? defaultProRata),
-      periodicite:
+      label: expenseItem?.label ?? "",
+      supplier: expenseItem?.supplier ?? "",
+      proRataPct: decimalFormatter(expenseItem?.proRataPct ?? defaultProRata),
+      periodicity:
         (expenseItem?.periodicity as Periodicity | undefined) ?? "MONTHLY",
-      ordre: expenseItem?.sortOrder ?? defaultOrder,
-      actif: expenseItem?.active ?? true,
-      plusieursLignesAutorisees: expenseItem?.multipleLinesAllowed ?? false,
+      sortOrder: expenseItem?.sortOrder ?? defaultOrder,
+      active: expenseItem?.active ?? true,
+      multipleLinesAllowed: expenseItem?.multipleLinesAllowed ?? false,
     },
   });
 
   const save = useMutation({
     mutationFn: (values: ExpenseItemFormValues) => {
       const requestBody: ExpenseItemRequest = {
-        label: values.libelle.trim(),
-        supplier: values.fournisseur.trim() || undefined,
-        proRataPct: parsePercentage(values.prorataPct) ?? "0",
-        periodicity: values.periodicite,
-        sortOrder: values.ordre,
-        active: values.actif,
-        multipleLinesAllowed: values.plusieursLignesAutorisees,
+        label: values.label.trim(),
+        supplier: values.supplier.trim() || undefined,
+        proRataPct: parsePercentage(values.proRataPct) ?? "0",
+        periodicity: values.periodicity,
+        sortOrder: values.sortOrder,
+        active: values.active,
+        multipleLinesAllowed: values.multipleLinesAllowed,
       };
       if (!expenseItem && values.code.trim()) {
         requestBody.code = values.code.trim();
@@ -194,7 +194,7 @@ function ExpenseItemForm({
       void queryClient.invalidateQueries({
         queryKey: queryKeys.expenseItemsAll,
       });
-      toast.succes(
+      toast.success(
         expenseItem
           ? `Poste « ${result.label} » mis à jour.`
           : `Poste « ${result.label} » ajouté à la liste des frais.`,
@@ -220,7 +220,7 @@ function ExpenseItemForm({
             : "Ajouter un type de frais"}
         </h3>
         {expenseItem ? (
-          <span className="badge badge-neutre">
+          <span className="badge badge-neutral">
             <PencilLine size={11} aria-hidden="true" />
             {expenseItem.code}
           </span>
@@ -231,8 +231,8 @@ function ExpenseItemForm({
         <FieldGroup
           id="poste-code"
           label="Code"
-          erreur={errors.code?.message}
-          aide={
+          error={errors.code?.message}
+          help={
             expenseItem
               ? "Le code est immuable après création."
               : "Facultatif : généré depuis le libellé si vide."
@@ -241,8 +241,8 @@ function ExpenseItemForm({
           <input
             id="poste-code"
             className={cn(
-              "champ font-mono text-[13px]",
-              errors.code && "champ-erreur",
+              "field font-mono text-[13px]",
+              errors.code && "field-error",
             )}
             placeholder="gaz"
             readOnly={Boolean(expenseItem)}
@@ -253,57 +253,57 @@ function ExpenseItemForm({
         <FieldGroup
           id="poste-libelle"
           label="Libellé affiché"
-          erreur={errors.libelle?.message}
+          error={errors.label?.message}
         >
           <input
             id="poste-libelle"
-            className={cn("champ", errors.libelle && "champ-erreur")}
+            className={cn("field", errors.label && "field-error")}
             placeholder="Gaz"
-            {...register("libelle")}
+            {...register("label")}
             data-cy="input-poste-libelle"
           />
         </FieldGroup>
         <FieldGroup
           id="poste-fournisseur"
           label="Fournisseur"
-          erreur={errors.fournisseur?.message}
+          error={errors.supplier?.message}
         >
           <input
             id="poste-fournisseur"
-            className="champ"
+            className="field"
             placeholder="EDF"
-            {...register("fournisseur")}
+            {...register("supplier")}
             data-cy="input-poste-fournisseur"
           />
         </FieldGroup>
         <FieldGroup
           id="poste-prorata"
           label="Prorata par défaut (%)"
-          erreur={errors.prorataPct?.message}
-          aide="Pré-remplit le champ lors de l’ajout d’un frais ; modifiable au cas par cas."
+          error={errors.proRataPct?.message}
+          help="Pré-remplit le champ lors de l’ajout d’un frais ; modifiable au cas par cas."
         >
           <input
             id="poste-prorata"
-            className={cn("champ", errors.prorataPct && "champ-erreur")}
+            className={cn("field", errors.proRataPct && "field-error")}
             inputMode="decimal"
             placeholder="35,71"
-            {...register("prorataPct")}
+            {...register("proRataPct")}
             data-cy="input-poste-prorata"
           />
         </FieldGroup>
         <FieldGroup
           id="poste-periodicite"
           label="Périodicité"
-          erreur={errors.periodicite?.message}
+          error={errors.periodicity?.message}
         >
           <select
             id="poste-periodicite"
-            className="champ"
-            {...register("periodicite")}
+            className="field"
+            {...register("periodicity")}
           >
             {PERIODICITIES.map((periodicity) => (
-              <option key={periodicity.valeur} value={periodicity.valeur}>
-                {periodicity.libelle}
+              <option key={periodicity.value} value={periodicity.value}>
+                {periodicity.label}
               </option>
             ))}
           </select>
@@ -311,15 +311,15 @@ function ExpenseItemForm({
         <FieldGroup
           id="poste-ordre"
           label="Ordre d’affichage"
-          erreur={errors.ordre?.message}
+          error={errors.sortOrder?.message}
         >
           <input
             id="poste-ordre"
             type="number"
             min={0}
             step={1}
-            className={cn("champ", errors.ordre && "champ-erreur")}
-            {...register("ordre", { valueAsNumber: true })}
+            className={cn("field", errors.sortOrder && "field-error")}
+            {...register("sortOrder", { valueAsNumber: true })}
           />
         </FieldGroup>
       </div>
@@ -327,13 +327,13 @@ function ExpenseItemForm({
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <SwitchField
           id="poste-actif"
-          libelle="Poste actif"
+          label="Poste actif"
           description="Apparaît dans la liste déroulante de la note de frais."
           register={register}
         />
         <SwitchField
           id="poste-plusieurs-lignes"
-          libelle="Plusieurs lignes autorisées"
+          label="Plusieurs lignes autorisées"
           description="Autorise plusieurs frais de ce type pour un même mois (ex. téléphone)."
           register={register}
         />
@@ -350,19 +350,19 @@ function ExpenseItemForm({
 
       <div className="mt-4 flex flex-wrap justify-end gap-2">
         <Button
-          variante="fantome"
-          petit
+          variant="ghost"
+          small
           onClick={onClose}
           disabled={save.isPending}
         >
           Annuler
         </Button>
         <Button
-          variante="primaire"
-          petit
+          variant="primary"
+          small
           type="submit"
-          chargement={save.isPending}
-          icone={<Check size={14} />}
+          loading={save.isPending}
+          icon={<Check size={14} />}
           data-cy="btn-enregistrer-poste"
         >
           {expenseItem ? "Enregistrer le poste" : "Ajouter le poste"}
@@ -373,9 +373,9 @@ function ExpenseItemForm({
 }
 
 function ExpenseItemsManager({
-  prorataDefaut: defaultProRata,
+  defaultProRata: defaultProRata,
 }: {
-  prorataDefaut: string;
+  defaultProRata: string;
 }) {
   const queryClient = useQueryClient();
   const expenseItems = useExpenseItems(true);
@@ -391,11 +391,11 @@ function ExpenseItemsManager({
         queryKey: queryKeys.expenseItemsAll,
       });
       setToDelete(null);
-      toast.succes("Poste désactivé et retiré de la liste des frais.");
+      toast.success("Poste désactivé et retiré de la liste des frais.");
     },
     onError: (error) => {
       setToDelete(null);
-      toast.erreur(errorMessage(error));
+      toast.error(errorMessage(error));
     },
   });
 
@@ -417,8 +417,8 @@ function ExpenseItemsManager({
   }
 
   return (
-    <section className="carte mt-6 overflow-hidden">
-      <div className="carte-entete">
+    <section className="card mt-6 overflow-hidden">
+      <div className="card-header">
         <div className="flex items-start gap-3">
           <span className="grid h-9 w-9 place-items-center rounded-lg bg-accent-soft text-accent">
             <ReceiptText size={17} aria-hidden="true" />
@@ -432,9 +432,9 @@ function ExpenseItemsManager({
           </div>
         </div>
         <Button
-          variante="primaire"
-          petit
-          icone={<Plus size={14} />}
+          variant="primary"
+          small
+          icon={<Plus size={14} />}
           onClick={openCreate}
           disabled={formOpen && editedItem === null}
           data-cy="btn-ajouter-poste"
@@ -443,13 +443,13 @@ function ExpenseItemsManager({
         </Button>
       </div>
 
-      <div className="carte-corps space-y-4">
+      <div className="card-body space-y-4">
         {formOpen ? (
           <ExpenseItemForm
-            poste={editedItem}
-            prorataDefaut={defaultProRata}
-            ordreDefaut={defaultOrder}
-            onFermer={() => {
+            item={editedItem}
+            defaultProRata={defaultProRata}
+            defaultOrder={defaultOrder}
+            onClose={() => {
               setFormOpen(false);
               setEditedItem(null);
             }}
@@ -459,18 +459,18 @@ function ExpenseItemsManager({
         {expenseItems.isError ? (
           <ErrorState
             message={errorMessage(expenseItems.error)}
-            onReessayer={() => void expenseItems.refetch()}
+            onRetry={() => void expenseItems.refetch()}
           />
         ) : expenseItems.isPending ? (
           <LoadingState message="Chargement des postes…" />
         ) : list.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-line-forte p-6 text-center text-sm text-ink-soft">
+          <p className="rounded-xl border border-dashed border-line-strong p-6 text-center text-sm text-ink-soft">
             Aucun poste configuré. Ajoutez au moins « Loyer » et vos frais
             courants.
           </p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-line">
-            <table className="tableau-frais">
+            <table className="expense-table">
               <thead>
                 <tr>
                   <th>Libellé</th>
@@ -497,23 +497,23 @@ function ExpenseItemsManager({
                           {expenseItem.code}
                         </code>
                         {!expenseItem.active ? (
-                          <span className="badge badge-neutre">inactif</span>
+                          <span className="badge badge-neutral">inactif</span>
                         ) : null}
                       </div>
                     </td>
                     <td className="text-ink-soft">
                       {expenseItem.supplier || "—"}
                     </td>
-                    <td className="nombre text-right text-ink-soft">
+                    <td className="number text-right text-ink-soft">
                       {formatPercentage(expenseItem.proRataPct)}
                     </td>
                     <td className="text-xs capitalize text-ink-soft">
                       {PERIODICITIES.find(
                         (periodicity) =>
-                          periodicity.valeur === expenseItem.periodicity,
-                      )?.libelle ?? expenseItem.periodicity}
+                          periodicity.value === expenseItem.periodicity,
+                      )?.label ?? expenseItem.periodicity}
                     </td>
-                    <td className="nombre text-center text-ink-soft">
+                    <td className="number text-center text-ink-soft">
                       {expenseItem.sortOrder}
                     </td>
                     <td>
@@ -526,18 +526,18 @@ function ExpenseItemsManager({
                     <td>
                       <div className="flex justify-end gap-1">
                         <Button
-                          variante="fantome"
-                          petit
-                          icone={<PencilLine size={13} />}
+                          variant="ghost"
+                          small
+                          icon={<PencilLine size={13} />}
                           onClick={() => openEdit(expenseItem)}
                           data-cy={`btn-modifier-poste-${expenseItem.code}`}
                         >
                           Modifier
                         </Button>
                         <Button
-                          variante="fantome"
-                          petit
-                          icone={<Trash2 size={13} />}
+                          variant="ghost"
+                          small
+                          icon={<Trash2 size={13} />}
                           className="text-danger hover:bg-danger-soft"
                           onClick={() => setToDelete(expenseItem)}
                           data-cy={`btn-supprimer-poste-${expenseItem.code}`}
@@ -555,21 +555,21 @@ function ExpenseItemsManager({
       </div>
 
       <ConfirmDialog
-        ouvert={toDelete !== null}
-        titre="Retirer ce type de frais ?"
+        open={toDelete !== null}
+        title="Retirer ce type de frais ?"
         message={
           toDelete
             ? `« ${toDelete.label} » ne sera plus proposé dans la note de frais. Les documents existants conservent leurs lignes et leurs montants.`
             : ""
         }
-        libelleConfirmer="Retirer le poste"
-        variante="danger"
-        onConfirmer={() => {
+        confirmLabel="Retirer le poste"
+        variant="danger"
+        onConfirm={() => {
           if (toDelete) {
             remove.mutate(toDelete);
           }
         }}
-        onAnnuler={() => setToDelete(null)}
+        onCancel={() => setToDelete(null)}
         dataCy="dialogue-supprimer-poste"
       />
     </section>
@@ -599,41 +599,41 @@ export function SettingsPage() {
 
   const values = watch();
   const rentReceiptTotal =
-    cents(values.loyerHc) + cents(values.provisionCharges);
+    cents(values.rentExclCharges) + cents(values.chargesAdvance);
   const displayedProRata = useMemo(() => {
-    const proArea = parseAmount(values.surfacePro);
-    const totalArea = parseAmount(values.surfaceTotale);
+    const proArea = parseAmount(values.businessArea);
+    const totalArea = parseAmount(values.totalArea);
     if (proArea === null || totalArea === null || Number(totalArea) <= 0) {
       return null;
     }
     return (Number(proArea) / Number(totalArea)) * 100;
-  }, [values.surfacePro, values.surfaceTotale]);
+  }, [values.businessArea, values.totalArea]);
 
   const save = useMutation({
     mutationFn: (submittedValues: SettingsFormValues) => {
       const requestBody: SettingsRequest = {
-        companyName: submittedValues.raisonSociale.trim(),
-        legalForm: submittedValues.formeJuridique.trim(),
+        companyName: submittedValues.companyName.trim(),
+        legalForm: submittedValues.legalForm.trim(),
         siren: submittedValues.siren.trim(),
-        companyAddress: submittedValues.societeAdresse.trim(),
-        managerName: submittedValues.gerant.trim(),
-        homeAddress: submittedValues.logementAdresse.trim(),
-        totalArea: parseAmount(submittedValues.surfaceTotale) ?? undefined,
-        businessArea: parseAmount(submittedValues.surfacePro) ?? undefined,
-        landlordName: submittedValues.bailleurNom.trim(),
-        landlordAddress: submittedValues.bailleurAdresse.trim(),
-        tenantName: submittedValues.locataireNom.trim(),
-        tenantAddress: submittedValues.locataireAdresse.trim(),
-        rentExclCharges: parseAmount(submittedValues.loyerHc) ?? undefined,
+        companyAddress: submittedValues.companyAddress.trim(),
+        managerName: submittedValues.managerName.trim(),
+        homeAddress: submittedValues.homeAddress.trim(),
+        totalArea: parseAmount(submittedValues.totalArea) ?? undefined,
+        businessArea: parseAmount(submittedValues.businessArea) ?? undefined,
+        landlordName: submittedValues.landlordName.trim(),
+        landlordAddress: submittedValues.landlordAddress.trim(),
+        tenantName: submittedValues.tenantName.trim(),
+        tenantAddress: submittedValues.tenantAddress.trim(),
+        rentExclCharges: parseAmount(submittedValues.rentExclCharges) ?? undefined,
         chargesAdvance:
-          parseAmount(submittedValues.provisionCharges) ?? undefined,
-        issuePlace: submittedValues.lieuEmission.trim(),
+          parseAmount(submittedValues.chargesAdvance) ?? undefined,
+        issuePlace: submittedValues.issuePlace.trim(),
       };
       return api.settings.update(requestBody);
     },
     onSuccess: (payload) => {
       queryClient.setQueryData(queryKeys.settings, payload);
-      toast.succes(
+      toast.success(
         "Configuration enregistrée. Les prochains documents utiliseront ces valeurs.",
       );
     },
@@ -642,17 +642,17 @@ export function SettingsPage() {
   return (
     <>
       <PageHeader
-        surTitre="Réglages"
-        titre="Configuration"
+        eyebrow="Réglages"
+        title="Configuration"
         description="Ces informations alimentent les quittances, les notes de frais et les valeurs par défaut. Les calculs restent effectués par le backend."
         actions={
           <Button
-            variante="primaire"
+            variant="primary"
             type="submit"
             form="form-parametres"
             formNoValidate
-            icone={<Save size={15} />}
-            chargement={save.isPending}
+            icon={<Save size={15} />}
+            loading={save.isPending}
             data-cy="btn-enregistrer-configuration"
           >
             Enregistrer
@@ -663,7 +663,7 @@ export function SettingsPage() {
       {settings.isError ? (
         <ErrorState
           message={errorMessage(settings.error)}
-          onReessayer={() => void settings.refetch()}
+          onRetry={() => void settings.refetch()}
         />
       ) : settings.isPending ? (
         <LoadingState message="Chargement de la configuration…" />
@@ -676,54 +676,54 @@ export function SettingsPage() {
           )}
           noValidate
         >
-          <section className="carte overflow-hidden">
+          <section className="card overflow-hidden">
             <SectionHeader
-              icone={Building2}
-              titre="Société"
+              icon={Building2}
+              title="Société"
               description="Identité de l’EURL utilisée en en-tête de la note de frais."
             />
-            <div className="carte-corps grid gap-4 sm:grid-cols-2">
+            <div className="card-body grid gap-4 sm:grid-cols-2">
               <FieldGroup
                 id="param-raison-sociale"
                 label="Raison sociale"
-                erreur={errors.raisonSociale?.message}
+                error={errors.companyName?.message}
                 className="sm:col-span-1"
               >
                 <input
                   id="param-raison-sociale"
                   className={cn(
-                    "champ",
-                    errors.raisonSociale && "champ-erreur",
+                    "field",
+                    errors.companyName && "field-error",
                   )}
-                  {...register("raisonSociale")}
+                  {...register("companyName")}
                   data-cy="input-raison-sociale"
                 />
               </FieldGroup>
               <FieldGroup
                 id="param-forme-juridique"
                 label="Forme juridique"
-                erreur={errors.formeJuridique?.message}
+                error={errors.legalForm?.message}
               >
                 <input
                   id="param-forme-juridique"
                   className={cn(
-                    "champ",
-                    errors.formeJuridique && "champ-erreur",
+                    "field",
+                    errors.legalForm && "field-error",
                   )}
-                  {...register("formeJuridique")}
+                  {...register("legalForm")}
                 />
               </FieldGroup>
               <FieldGroup
                 id="param-siren"
                 label="SIREN"
-                erreur={errors.siren?.message}
-                aide="9 chiffres, espaces autorisés."
+                error={errors.siren?.message}
+                help="9 chiffres, espaces autorisés."
               >
                 <input
                   id="param-siren"
                   className={cn(
-                    "champ font-mono",
-                    errors.siren && "champ-erreur",
+                    "field font-mono",
+                    errors.siren && "field-error",
                   )}
                   inputMode="numeric"
                   placeholder="000 000 000"
@@ -732,102 +732,102 @@ export function SettingsPage() {
                 />
               </FieldGroup>
               <FieldGroup
-                id="param-gerant"
+                id="param-managerName"
                 label="Gérant"
-                erreur={errors.gerant?.message}
+                error={errors.managerName?.message}
               >
                 <input
-                  id="param-gerant"
-                  className={cn("champ", errors.gerant && "champ-erreur")}
-                  {...register("gerant")}
-                  data-cy="input-gerant"
+                  id="param-managerName"
+                  className={cn("field", errors.managerName && "field-error")}
+                  {...register("managerName")}
+                  data-cy="input-managerName"
                 />
               </FieldGroup>
               <FieldGroup
                 id="param-societe-adresse"
                 label="Adresse de la société"
-                erreur={errors.societeAdresse?.message}
+                error={errors.companyAddress?.message}
                 className="sm:col-span-2"
               >
                 <textarea
                   id="param-societe-adresse"
                   rows={2}
                   className={cn(
-                    "champ resize-y",
-                    errors.societeAdresse && "champ-erreur",
+                    "field resize-y",
+                    errors.companyAddress && "field-error",
                   )}
-                  {...register("societeAdresse")}
+                  {...register("companyAddress")}
                   data-cy="input-societe-adresse"
                 />
               </FieldGroup>
             </div>
           </section>
 
-          <section className="carte overflow-hidden">
+          <section className="card overflow-hidden">
             <SectionHeader
-              icone={Home}
-              titre="Logement et quote-part professionnelle"
+              icon={Home}
+              title="Logement et quote-part professionnelle"
               description="La surface professionnelle divisée par la surface totale fixe le prorata de référence."
             />
-            <div className="carte-corps grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="card-body grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <FieldGroup
                 id="param-logement-adresse"
                 label="Adresse du logement"
-                erreur={errors.logementAdresse?.message}
+                error={errors.homeAddress?.message}
                 className="sm:col-span-2 lg:col-span-4"
               >
                 <textarea
                   id="param-logement-adresse"
                   rows={2}
                   className={cn(
-                    "champ resize-y",
-                    errors.logementAdresse && "champ-erreur",
+                    "field resize-y",
+                    errors.homeAddress && "field-error",
                   )}
-                  {...register("logementAdresse")}
+                  {...register("homeAddress")}
                   data-cy="input-logement-adresse"
                 />
               </FieldGroup>
               <FieldGroup
                 id="param-surface-totale"
                 label="Surface totale (m²)"
-                erreur={errors.surfaceTotale?.message}
+                error={errors.totalArea?.message}
               >
                 <input
                   id="param-surface-totale"
                   className={cn(
-                    "champ",
-                    errors.surfaceTotale && "champ-erreur",
+                    "field",
+                    errors.totalArea && "field-error",
                   )}
                   inputMode="decimal"
                   placeholder="70,00"
-                  {...register("surfaceTotale")}
+                  {...register("totalArea")}
                   data-cy="input-surface-totale"
                 />
               </FieldGroup>
               <FieldGroup
                 id="param-surface-pro"
                 label="Surface professionnelle (m²)"
-                erreur={errors.surfacePro?.message}
+                error={errors.businessArea?.message}
               >
                 <input
                   id="param-surface-pro"
-                  className={cn("champ", errors.surfacePro && "champ-erreur")}
+                  className={cn("field", errors.businessArea && "field-error")}
                   inputMode="decimal"
                   placeholder="25,00"
-                  {...register("surfacePro")}
+                  {...register("businessArea")}
                   data-cy="input-surface-pro"
                 />
               </FieldGroup>
               <FieldGroup
                 id="param-lieu"
                 label="Lieu d’émission"
-                erreur={errors.lieuEmission?.message}
+                error={errors.issuePlace?.message}
               >
                 <input
                   id="param-lieu"
-                  className={cn("champ", errors.lieuEmission && "champ-erreur")}
+                  className={cn("field", errors.issuePlace && "field-error")}
                   placeholder="Paris"
-                  {...register("lieuEmission")}
+                  {...register("issuePlace")}
                   data-cy="input-lieu-emission"
                 />
               </FieldGroup>
@@ -851,120 +851,120 @@ export function SettingsPage() {
           </section>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <section className="carte overflow-hidden">
+            <section className="card overflow-hidden">
               <SectionHeader
-                icone={Landmark}
-                titre="Bailleur"
+                icon={Landmark}
+                title="Bailleur"
                 description="Propriétaire du logement, crédité dans la quittance."
               />
-              <div className="carte-corps grid gap-4">
+              <div className="card-body grid gap-4">
                 <FieldGroup
                   id="param-bailleur-nom"
                   label="Nom du bailleur"
-                  erreur={errors.bailleurNom?.message}
+                  error={errors.landlordName?.message}
                 >
                   <input
                     id="param-bailleur-nom"
                     className={cn(
-                      "champ",
-                      errors.bailleurNom && "champ-erreur",
+                      "field",
+                      errors.landlordName && "field-error",
                     )}
-                    {...register("bailleurNom")}
+                    {...register("landlordName")}
                   />
                 </FieldGroup>
                 <FieldGroup
                   id="param-bailleur-adresse"
                   label="Adresse du bailleur"
-                  erreur={errors.bailleurAdresse?.message}
+                  error={errors.landlordAddress?.message}
                 >
                   <textarea
                     id="param-bailleur-adresse"
                     rows={2}
                     className={cn(
-                      "champ resize-y",
-                      errors.bailleurAdresse && "champ-erreur",
+                      "field resize-y",
+                      errors.landlordAddress && "field-error",
                     )}
-                    {...register("bailleurAdresse")}
+                    {...register("landlordAddress")}
                   />
                 </FieldGroup>
               </div>
             </section>
 
-            <section className="carte overflow-hidden">
+            <section className="card overflow-hidden">
               <SectionHeader
-                icone={UsersRound}
-                titre="Locataire"
+                icon={UsersRound}
+                title="Locataire"
                 description="Occupant du logement, débiteur de la quittance."
               />
-              <div className="carte-corps grid gap-4">
+              <div className="card-body grid gap-4">
                 <FieldGroup
                   id="param-locataire-nom"
                   label="Nom du locataire"
-                  erreur={errors.locataireNom?.message}
+                  error={errors.tenantName?.message}
                 >
                   <input
                     id="param-locataire-nom"
                     className={cn(
-                      "champ",
-                      errors.locataireNom && "champ-erreur",
+                      "field",
+                      errors.tenantName && "field-error",
                     )}
-                    {...register("locataireNom")}
+                    {...register("tenantName")}
                   />
                 </FieldGroup>
                 <FieldGroup
                   id="param-locataire-adresse"
                   label="Adresse du locataire"
-                  erreur={errors.locataireAdresse?.message}
+                  error={errors.tenantAddress?.message}
                 >
                   <textarea
                     id="param-locataire-adresse"
                     rows={2}
                     className={cn(
-                      "champ resize-y",
-                      errors.locataireAdresse && "champ-erreur",
+                      "field resize-y",
+                      errors.tenantAddress && "field-error",
                     )}
-                    {...register("locataireAdresse")}
+                    {...register("tenantAddress")}
                   />
                 </FieldGroup>
               </div>
             </section>
           </div>
 
-          <section className="carte overflow-hidden">
+          <section className="card overflow-hidden">
             <SectionHeader
-              icone={UserRound}
-              titre="Loyer et charges"
+              icon={UserRound}
+              title="Loyer et charges"
               description="Valeurs pré-remplies dans l’onglet Quittance ; elles restent modifiables ponctuellement."
             />
-            <div className="carte-corps grid gap-4 sm:grid-cols-3">
+            <div className="card-body grid gap-4 sm:grid-cols-3">
               <FieldGroup
                 id="param-loyer-hc"
                 label="Loyer hors charges (€)"
-                erreur={errors.loyerHc?.message}
+                error={errors.rentExclCharges?.message}
               >
                 <input
                   id="param-loyer-hc"
-                  className={cn("champ", errors.loyerHc && "champ-erreur")}
+                  className={cn("field", errors.rentExclCharges && "field-error")}
                   inputMode="decimal"
                   placeholder="900,00"
-                  {...register("loyerHc")}
+                  {...register("rentExclCharges")}
                   data-cy="input-loyer-hc"
                 />
               </FieldGroup>
               <FieldGroup
                 id="param-provision"
                 label="Provision pour charges (€)"
-                erreur={errors.provisionCharges?.message}
+                error={errors.chargesAdvance?.message}
               >
                 <input
                   id="param-provision"
                   className={cn(
-                    "champ",
-                    errors.provisionCharges && "champ-erreur",
+                    "field",
+                    errors.chargesAdvance && "field-error",
                   )}
                   inputMode="decimal"
                   placeholder="50,00"
-                  {...register("provisionCharges")}
+                  {...register("chargesAdvance")}
                   data-cy="input-provision-charges"
                 />
               </FieldGroup>
@@ -1001,10 +1001,10 @@ export function SettingsPage() {
                 : "Toutes les valeurs sont à jour."}
             </p>
             <Button
-              variante="primaire"
+              variant="primary"
               type="submit"
-              icone={<Save size={15} />}
-              chargement={save.isPending}
+              icon={<Save size={15} />}
+              loading={save.isPending}
               data-cy="btn-enregistrer-configuration-bas"
             >
               Enregistrer la configuration
@@ -1014,7 +1014,7 @@ export function SettingsPage() {
       )}
 
       <ExpenseItemsManager
-        prorataDefaut={settings.data?.proRataBase ?? "100.00"}
+        defaultProRata={settings.data?.proRataBase ?? "100.00"}
       />
     </>
   );

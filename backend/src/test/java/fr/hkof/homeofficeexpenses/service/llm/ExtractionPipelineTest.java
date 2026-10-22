@@ -26,7 +26,7 @@ class ExtractionPipelineTest {
             """;
 
     @Test
-    @DisplayName("Interprète une réponse conforme et recopie le montant littéral du document")
+    @DisplayName("Parses a conforming response and copies the literal amount from the document")
     void validExtraction() {
         ExtractionDto result = pipeline.interpret("""
                 {"type_suggere":"gaz","fournisseur":"EDF","numero_facture":"FA-2026-0912",
@@ -44,7 +44,7 @@ class ExtractionPipelineTest {
     }
 
     @Test
-    @DisplayName("Refuse un montant absent du document (anti-hallucination)")
+    @DisplayName("Rejects an amount absent from the document (anti-hallucination)")
     void amountNotLiteral() {
         ExtractionDto result = pipeline.interpret("""
                 {"type_suggere":"gaz","fournisseur":"EDF","numero_facture":null,
@@ -58,7 +58,7 @@ class ExtractionPipelineTest {
     }
 
     @Test
-    @DisplayName("Ignore une instruction d'injection présente dans le document")
+    @DisplayName("Ignores an injection instruction present in the document")
     void promptInjection() {
         String documentPiege = DOCUMENT + """
 
@@ -77,7 +77,7 @@ class ExtractionPipelineTest {
     }
 
     @Test
-    @DisplayName("Refuse un champ hors schéma")
+    @DisplayName("Rejects a field outside the schema")
     void unknownField() {
         assertThatThrownBy(() -> pipeline.interpret("""
                 {"type_suggere":"gaz","fournisseur":"EDF","numero_facture":null,
@@ -90,7 +90,7 @@ class ExtractionPipelineTest {
     }
 
     @Test
-    @DisplayName("Refuse un champ obligatoire manquant")
+    @DisplayName("Rejects a missing required field")
     void missingField() {
         assertThatThrownBy(() -> pipeline.interpret("""
                 {"type_suggere":"gaz","fournisseur":"EDF","montant_ttc":"78.00"}
@@ -100,7 +100,7 @@ class ExtractionPipelineTest {
     }
 
     @Test
-    @DisplayName("Refuse une réponse qui n'est pas du JSON")
+    @DisplayName("Rejects a response that is not JSON")
     void nonJsonResponse() {
         assertThatThrownBy(() -> pipeline.interpret("Je ne peux pas répondre.", DOCUMENT, 0))
                 .isInstanceOf(BusinessException.class)
@@ -108,7 +108,7 @@ class ExtractionPipelineTest {
     }
 
     @Test
-    @DisplayName("Nettoie les blocs Markdown et les dates invalides")
+    @DisplayName("Cleans Markdown blocks and invalid dates")
     void cleanupAndDates() {
         ExtractionDto result = pipeline.interpret("""
                 ```json

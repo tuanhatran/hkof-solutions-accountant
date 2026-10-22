@@ -19,21 +19,21 @@ import fr.hkof.homeofficeexpenses.service.SettingsService;
 @Service
 public class TemplateDataService {
 
-    private final SettingsService parametersService;
+    private final SettingsService settingsService;
 
-    public TemplateDataService(SettingsService parametersService) {
-        this.parametersService = parametersService;
+    public TemplateDataService(SettingsService settingsService) {
+        this.settingsService = settingsService;
     }
 
-    public Map<String, Object> dataRentReceipt(Settings p, RentReceipt rentReceipt) {
+    public Map<String, Object> dataRentReceipt(Settings settings, RentReceipt rentReceipt) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("bailleur", Map.of(
-                "nom", text(p.getLandlordName()),
-                "adresse", text(p.getLandlordAddress())));
+                "nom", text(settings.getLandlordName()),
+                "adresse", text(settings.getLandlordAddress())));
         data.put("locataire", Map.of(
-                "nom", text(p.getTenantName()),
-                "adresse", text(p.getTenantAddress())));
-        data.put("logement", Map.of("adresse", text(p.getHomeAddress())));
+                "nom", text(settings.getTenantName()),
+                "adresse", text(settings.getTenantAddress())));
+        data.put("logement", Map.of("adresse", text(settings.getHomeAddress())));
         data.put("mois_libelle", Amounts.formatMonth(java.time.YearMonth.parse(rentReceipt.getMonth())));
         data.put("periode", Map.of(
                 "debut", Amounts.formatDate(rentReceipt.getPeriodStart()),
@@ -44,17 +44,17 @@ public class TemplateDataService {
         data.put("total_en_lettres", NumberToWords.toWords(rentReceipt.getTotal()));
         data.put("date_paiement", Amounts.formatDate(rentReceipt.getPaymentDate()));
         data.put("date_emission", Amounts.formatDate(rentReceipt.getIssueDate()));
-        data.put("lieu", text(p.getIssuePlace()));
+        data.put("lieu", text(settings.getIssuePlace()));
         return data;
     }
 
-    public Map<String, Object> dataStatement(Settings p, ExpenseStatement statement, boolean complete) {
+    public Map<String, Object> dataStatement(Settings settings, ExpenseStatement statement, boolean complete) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("societe", Map.of(
-                "raison_sociale", text(p.getCompanyName()),
-                "siren", text(p.getSiren()),
-                "adresse", text(p.getCompanyAddress())));
-        data.put("gerant", text(p.getManagerName()));
+                "raison_sociale", text(settings.getCompanyName()),
+                "siren", text(settings.getSiren()),
+                "adresse", text(settings.getCompanyAddress())));
+        data.put("gerant", text(settings.getManagerName()));
         data.put("mois_libelle", Amounts.formatMonth(java.time.YearMonth.parse(statement.getMonth())));
         data.put("numero", text(statement.getNumber()));
         List<Map<String, Object>> lines = new ArrayList<>();
@@ -71,42 +71,42 @@ public class TemplateDataService {
         data.put("lignes", lines);
         data.put("total", Amounts.formatEUR(statement.getTotal()));
         data.put("total_en_lettres", NumberToWords.toWords(statement.getTotal()));
-        data.put("base_prorata", proRataDetail(p));
+        data.put("base_prorata", proRataDetail(settings));
         data.put("date_emission", Amounts.formatDate(java.time.LocalDate.now()));
-        data.put("lieu", text(p.getIssuePlace()));
+        data.put("lieu", text(settings.getIssuePlace()));
         data.put("complete", complete);
         return data;
     }
 
     public Map<String, Object> dataExample(fr.hkof.homeofficeexpenses.domain.TemplateType type) {
-        Settings p = parametersService.entity();
+        Settings settings = settingsService.entity();
         if (type == fr.hkof.homeofficeexpenses.domain.TemplateType.RENT_RECEIPT) {
-            RentReceipt q = new RentReceipt();
-            q.setMonth("2026-10");
-            q.setPeriodStart(java.time.LocalDate.of(2026, 10, 1));
-            q.setPeriodEnd(java.time.LocalDate.of(2026, 10, 31));
-            q.setRentExclCharges(p.getRentExclCharges() == null ? new BigDecimal("900.00") : p.getRentExclCharges());
-            q.setCharges(p.getChargesAdvance() == null ? new BigDecimal("50.00") : p.getChargesAdvance());
-            q.setTotal(CalculationService.totalRentReceipt(q.getRentExclCharges(), q.getCharges()));
-            q.setPaymentDate(java.time.LocalDate.of(2026, 10, 5));
-            q.setIssueDate(java.time.LocalDate.of(2026, 10, 1));
-            return dataRentReceipt(p, q);
+            RentReceipt rentReceipt = new RentReceipt();
+            rentReceipt.setMonth("2026-10");
+            rentReceipt.setPeriodStart(java.time.LocalDate.of(2026, 10, 1));
+            rentReceipt.setPeriodEnd(java.time.LocalDate.of(2026, 10, 31));
+            rentReceipt.setRentExclCharges(settings.getRentExclCharges() == null ? new BigDecimal("900.00") : settings.getRentExclCharges());
+            rentReceipt.setCharges(settings.getChargesAdvance() == null ? new BigDecimal("50.00") : settings.getChargesAdvance());
+            rentReceipt.setTotal(CalculationService.totalRentReceipt(rentReceipt.getRentExclCharges(), rentReceipt.getCharges()));
+            rentReceipt.setPaymentDate(java.time.LocalDate.of(2026, 10, 5));
+            rentReceipt.setIssueDate(java.time.LocalDate.of(2026, 10, 1));
+            return dataRentReceipt(settings, rentReceipt);
         }
-        ExpenseStatement n = new ExpenseStatement();
-        n.setMonth("2026-10");
-        n.setNumber("NF-2026-10");
-        n.setTotal(new BigDecimal("364.96"));
-        dataStatementExample(p, n, true);
-        return dataStatementExample(p, n, true);
+        ExpenseStatement statement = new ExpenseStatement();
+        statement.setMonth("2026-10");
+        statement.setNumber("NF-2026-10");
+        statement.setTotal(new BigDecimal("364.96"));
+        dataStatementExample(settings, statement, true);
+        return dataStatementExample(settings, statement, true);
     }
 
-    private Map<String, Object> dataStatementExample(Settings p, ExpenseStatement statement, boolean complete) {
+    private Map<String, Object> dataStatementExample(Settings settings, ExpenseStatement statement, boolean complete) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("societe", Map.of(
-                "raison_sociale", text(p.getCompanyName()),
-                "siren", text(p.getSiren()),
-                "adresse", text(p.getCompanyAddress())));
-        data.put("gerant", text(p.getManagerName()));
+                "raison_sociale", text(settings.getCompanyName()),
+                "siren", text(settings.getSiren()),
+                "adresse", text(settings.getCompanyAddress())));
+        data.put("gerant", text(settings.getManagerName()));
         data.put("mois_libelle", "Octobre 2026");
         data.put("numero", statement.getNumber());
         List<Map<String, Object>> lines = new ArrayList<>();
@@ -119,35 +119,35 @@ public class TemplateDataService {
         data.put("lignes", lines);
         data.put("total", "1 075,87 €");
         data.put("total_en_lettres", "mille soixante-quinze euros et quatre-vingt-sept centimes");
-        data.put("base_prorata", proRataDetail(p));
+        data.put("base_prorata", proRataDetail(settings));
         data.put("date_emission", Amounts.formatDate(java.time.LocalDate.now()));
-        data.put("lieu", text(p.getIssuePlace()));
+        data.put("lieu", text(settings.getIssuePlace()));
         data.put("complete", complete);
         return data;
     }
 
-    private Map<String, Object> line(String expenseItem, String supplier, String period, String ttc, String prorata,
-            String retenu) {
+    private Map<String, Object> line(String expenseItem, String supplier, String period, String amountInclVat,
+            String proRata, String claimedAmount) {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("poste", expenseItem);
         item.put("fournisseur", supplier);
         item.put("periode", period);
-        item.put("montant_ttc", ttc);
-        item.put("prorata", prorata);
-        item.put("montant_retenu", retenu);
+        item.put("montant_ttc", amountInclVat);
+        item.put("prorata", proRata);
+        item.put("montant_retenu", claimedAmount);
         return item;
     }
 
-    private String period(java.time.LocalDate debut, java.time.LocalDate fin) {
-        if (debut == null || fin == null) {
+    private String period(java.time.LocalDate start, java.time.LocalDate end) {
+        if (start == null || end == null) {
             return "";
         }
-        return Amounts.formatDate(debut) + " au " + Amounts.formatDate(fin);
+        return Amounts.formatDate(start) + " au " + Amounts.formatDate(end);
     }
 
-    public String proRataDetail(Settings p) {
-        BigDecimal base = CalculationService.proRataBase(p.getBusinessArea(), p.getTotalArea());
-        return parametersService.proRataDetail(p, base);
+    public String proRataDetail(Settings settings) {
+        BigDecimal base = CalculationService.proRataBase(settings.getBusinessArea(), settings.getTotalArea());
+        return settingsService.proRataDetail(settings, base);
     }
 
     private String text(String value) {

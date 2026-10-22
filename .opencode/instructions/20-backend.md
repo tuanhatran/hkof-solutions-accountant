@@ -43,7 +43,7 @@
 
 - JUnit 5 + AssertJ.
 - Mandatory calculation cases: 28/29/30/31-day months, leap years, bimonthly and annual
-  invoices, prorata bounds, rejected negative amounts.
+  invoices, pro-rata bounds, rejected negative amounts.
 - Number to words: 0, 1, 21, 71, 80, 81, 100, 1 000, 1 234.56.
 - LLM tests use WireMock or `mock-ollama`, never a real Ollama instance.
 

@@ -28,16 +28,16 @@ describe("month", () => {
 
   it("builds the full month period, leap years included", () => {
     expect(periodOfMonth("2026-10")).toEqual({
-      debut: "2026-10-01",
-      fin: "2026-10-31",
+      start: "2026-10-01",
+      end: "2026-10-31",
     });
     expect(periodOfMonth("2024-02")).toEqual({
-      debut: "2024-02-01",
-      fin: "2024-02-29",
+      start: "2024-02-01",
+      end: "2024-02-29",
     });
     expect(periodOfMonth("2026-02")).toEqual({
-      debut: "2026-02-01",
-      fin: "2026-02-28",
+      start: "2026-02-01",
+      end: "2026-02-28",
     });
   });
 

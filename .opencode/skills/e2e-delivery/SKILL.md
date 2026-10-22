@@ -41,7 +41,7 @@ docker compose -p homeofficeexpenses-e2e \
 ## Scenarios
 
 Cover at minimum: configuration, receipt generation, tab state persistence, missing
-receipt, the six expense types, prorata, rejected file formats, AI analysis, synchronized
+receipt, the six expense types, pro-rata, rejected file formats, AI analysis, synchronized
 preview, edit/delete, admin LLM, templates, full generation with attachments, regeneration.
 
 ## Assertions

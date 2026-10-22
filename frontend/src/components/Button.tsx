@@ -2,29 +2,29 @@ import { LoaderCircle } from "lucide-react";
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-type VarianteBouton = "primaire" | "secondaire" | "fantome" | "danger";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variante?: VarianteBouton;
-  chargement?: boolean;
-  icone?: ReactNode;
-  petit?: boolean;
+  variant?: ButtonVariant;
+  loading?: boolean;
+  icon?: ReactNode;
+  small?: boolean;
 }
 
-const VARIANT_CLASS_NAMES: Record<VarianteBouton, string> = {
-  primaire: "btn-primaire",
-  secondaire: "btn-secondaire",
-  fantome: "btn-fantome",
+const VARIANT_CLASS_NAMES: Record<ButtonVariant, string> = {
+  primary: "btn-primary",
+  secondary: "btn-secondary",
+  ghost: "btn-ghost",
   danger: "btn-danger",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  function Bouton(
+  function Button(
     {
-      variante = "secondaire",
-      chargement: loading = false,
-      icone: icon,
-      petit = false,
+      variant = "secondary",
+      loading = false,
+      icon,
+      small = false,
       className,
       children,
       disabled,
@@ -39,8 +39,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         type={type}
         className={cn(
           "btn",
-          VARIANT_CLASS_NAMES[variante],
-          petit && "btn-petit",
+          VARIANT_CLASS_NAMES[variant],
+          small && "btn-small",
           className,
         )}
         disabled={disabled || loading}

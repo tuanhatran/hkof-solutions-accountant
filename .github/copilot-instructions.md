@@ -6,7 +6,7 @@ Personal, local, single-user app. It generates French rent receipts (quittances 
 
 - Code, identifiers, comments, documentation, instructions and reports: English.
 - User-facing strings only: French (UI, generated documents, toasts, validation and API error messages).
-- Domain names fixed by `product_prompt.md` (`Quittance`, `NoteFrais`, `LigneFrais`, `Justificatif`, `Parametres`, `Poste`) keep those names in the database and the contract.
+- Domain names fixed by `product_prompt.md` (`Quittance`, `NoteFrais`, `LigneFrais`, `Justificatif`, `Parametres`, `Poste`) stay French in the UI, documents and routes. Code identifiers use the English equivalents (`RentReceipt`, `ExpenseStatement`, `ExpenseLine`, `Receipt`, `Settings`, `ExpenseItem`).
 
 
 ## Response Style
@@ -20,7 +20,7 @@ Rules:
 
 ## Non-negotiable rules
 
-- The LLM extracts, it never calculates. Monetary calculation lives in `CalculService`, using `BigDecimal`, `RoundingMode.HALF_UP`, scale 2. Never `double` or `float`.
+- The LLM extracts, it never calculates. Monetary calculation lives in `CalculationService`, using `BigDecimal`, `RoundingMode.HALF_UP`, scale 2. Never `double` or `float`.
 - In the API, amounts are decimal strings (`"123.45"`) or integer cents, never JSON floats.
 - The frontend computes no authoritative amount. The backend response is the single reference total shared by the screen, the preview and the final PDF.
 - AI-detected values are proposed, never imposed: pre-filled, marked "Détecté par IA", editable, and validated by the user.
@@ -52,7 +52,7 @@ Rules:
 - Soft-deleted entities carry a `deleted` flag. Every query filters on it, for example `findByDeletedFalse...`.
 - Flyway migrations live in `backend/src/main/resources/db/migration/`. Never edit an applied migration. Add a new `V<n>__*.sql` file.
 - Read-only service methods use `@Transactional(readOnly = true)`.
-- `CalculService` is pure logic with no Spring dependency and full unit test coverage.
+- `CalculationService` is pure logic with no Spring dependency and full unit test coverage.
 
 ## Frontend conventions
 
@@ -82,7 +82,7 @@ make up / make down
 - Before claiming completion, run the relevant commands above and report the actual results.
 - Never commit, push, reset, clean, or stash. Do not create worktrees or finish branches unless the user asks.
 - Do not modify files that belong to another block without reporting it.
-- Record assumptions in `README.md`, section "Hypothèses".
+- Record assumptions in `README.md`, section "Assumptions".
 - Write code and comments in English; keep user-facing messages in French.
 
 ## Data and privacy

@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 interface FieldGroupProps {
   id: string;
   label: string;
-  erreur?: string;
-  aide?: string;
+  error?: string;
+  help?: string;
   badge?: ReactNode;
   className?: string;
   children: ReactNode;
@@ -13,8 +13,8 @@ interface FieldGroupProps {
 export function FieldGroup({
   id,
   label,
-  erreur: errorText,
-  aide: help,
+  error: errorText,
+  help,
   badge,
   className,
   children,
@@ -22,19 +22,19 @@ export function FieldGroup({
   return (
     <div className={className}>
       <div className="flex items-center justify-between gap-2">
-        <label htmlFor={id} className="label-champ">
+        <label htmlFor={id} className="field-label">
           {label}
         </label>
         {badge}
       </div>
       {children}
       {help && !errorText ? (
-        <p className="aide" id={`${id}-aide`}>
+        <p className="hint" id={`${id}-hint`}>
           {help}
         </p>
       ) : null}
       {errorText ? (
-        <p className="erreur-champ" id={`${id}-erreur`} role="alert">
+        <p className="error-text" id={`${id}-error`} role="alert">
           {errorText}
         </p>
       ) : null}

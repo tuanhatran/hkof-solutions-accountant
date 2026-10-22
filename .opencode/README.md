@@ -57,7 +57,7 @@ must appear in both.
 
 - Code, comments, documentation, instructions, agents, skills and reports: English.
 - User-facing UI text, documents, toasts and error messages: French.
-- Domain names fixed by the specification stay as-is in the database and the contract.
+- Specification domain names stay French in the UI, documents and routes; code uses English names.
 
 ## Maintenance
 

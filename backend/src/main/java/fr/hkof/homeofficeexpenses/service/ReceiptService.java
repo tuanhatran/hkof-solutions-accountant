@@ -17,26 +17,26 @@ public class ReceiptService {
 
     private final ReceiptRepository repository;
     private final ExpenseLineRepository lineRepository;
-    private final StorageService stockage;
+    private final StorageService storage;
     private final Clock clock;
 
     public ReceiptService(ReceiptRepository repository, ExpenseLineRepository lineRepository,
-            StorageService stockage, Clock clock) {
+            StorageService storage, Clock clock) {
         this.repository = repository;
         this.lineRepository = lineRepository;
-        this.stockage = stockage;
+        this.storage = storage;
         this.clock = clock;
     }
 
     @Transactional
     public ReceiptDto upload(MultipartFile file) {
-        StorageService.StoredFile stocke = stockage.storeReceipt(file);
+        StorageService.StoredFile storedFile = storage.storeReceipt(file);
         Receipt receipt = new Receipt();
-        receipt.setFileName(stocke.fileName());
-        receipt.setMimeType(stocke.mimeType());
-        receipt.setPath(stocke.path());
-        receipt.setSize(stocke.size());
-        receipt.setHashSha256(stocke.hashSha256());
+        receipt.setFileName(storedFile.fileName());
+        receipt.setMimeType(storedFile.mimeType());
+        receipt.setPath(storedFile.path());
+        receipt.setSize(storedFile.size());
+        receipt.setHashSha256(storedFile.hashSha256());
         receipt.setCreatedAt(Instant.now(clock));
         receipt.setDeleted(false);
         return toDto(repository.save(receipt));
@@ -45,7 +45,7 @@ public class ReceiptService {
     @Transactional(readOnly = true)
     public Receipt entity(Long id) {
         return repository.findById(id)
-                .filter(j -> !j.isDeleted())
+                .filter(receipt -> !receipt.isDeleted())
                 .orElseThrow(() -> new NotFoundException("Justificatif introuvable."));
     }
 
@@ -55,7 +55,7 @@ public class ReceiptService {
     }
 
     public byte[] file(Long id) {
-        return stockage.read(entity(id).getPath());
+        return storage.read(entity(id).getPath());
     }
 
     @Transactional
@@ -68,7 +68,7 @@ public class ReceiptService {
         repository.save(receipt);
     }
 
-    public ReceiptDto toDto(Receipt j) {
-        return new ReceiptDto(j.getId(), j.getFileName(), j.getMimeType(), j.getSize(), j.getCreatedAt());
+    public ReceiptDto toDto(Receipt receipt) {
+        return new ReceiptDto(receipt.getId(), receipt.getFileName(), receipt.getMimeType(), receipt.getSize(), receipt.getCreatedAt());
     }
 }

@@ -14,6 +14,6 @@ public class OpenApiConfig {
         return new OpenAPI().info(new Info()
                 .title("HomeOfficeExpenses API")
                 .version("1.0.0")
-                .description("API locale de génération de quittances et de notes de frais d'occupation."));
+                .description("Local API for generating rent receipts and home-office expense statements."));
     }
 }

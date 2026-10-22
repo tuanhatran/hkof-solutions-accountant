@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 class CalculationServiceTest {
 
     @Test
-    @DisplayName("Ventile une facture de 80 € du 01/09 au 31/10 sur octobre : 31 jours sur 61")
+    @DisplayName("Allocates an €80 invoice from 01/09 to 31/10 to October: 31 days out of 61")
     void allocatesToMonth() {
         BigDecimal result = CalculationService.allocateToMonth(
                 new BigDecimal("80.00"),
@@ -26,18 +26,18 @@ class CalculationServiceTest {
     }
 
     @Test
-    @DisplayName("Ventile 18 jours sur 61 à 23,61 € pour le mois de septembre")
+    @DisplayName("Allocates 18 days out of 61 to €23.61 for September")
     void allocatesPartialMonth() {
-        LocalDate debut = LocalDate.of(2026, 9, 13);
-        LocalDate fin = LocalDate.of(2026, 11, 12);
-        assertThat(CalculationService.allocateToMonth(new BigDecimal("80.00"), debut, fin, YearMonth.of(2026, 9)))
+        LocalDate periodStart = LocalDate.of(2026, 9, 13);
+        LocalDate periodEnd = LocalDate.of(2026, 11, 12);
+        assertThat(CalculationService.allocateToMonth(new BigDecimal("80.00"), periodStart, periodEnd, YearMonth.of(2026, 9)))
                 .isEqualByComparingTo("23.61");
-        assertThat(CalculationService.allocateToMonth(new BigDecimal("80.00"), debut, fin, YearMonth.of(2026, 10)))
+        assertThat(CalculationService.allocateToMonth(new BigDecimal("80.00"), periodStart, periodEnd, YearMonth.of(2026, 10)))
                 .isEqualByComparingTo("40.66");
     }
 
     @Test
-    @DisplayName("Une période hors du mois demandé donne zéro")
+    @DisplayName("A period outside the requested month yields zero")
     void periodOutsideMonth() {
         BigDecimal result = CalculationService.allocateToMonth(
                 new BigDecimal("50.00"),
@@ -48,14 +48,14 @@ class CalculationServiceTest {
     }
 
     @Test
-    @DisplayName("Sans période, le montant du mois est le montant TTC")
+    @DisplayName("Without a period, the monthly amount is the amount including VAT")
     void withoutPeriod() {
         assertThat(CalculationService.allocateToMonth(new BigDecimal("80.5"), null, null, YearMonth.of(2026, 10)))
                 .isEqualByComparingTo("80.50");
     }
 
     @Test
-    @DisplayName("Le prorata est arrondi au centime en HALF_UP")
+    @DisplayName("The pro-rata amount is rounded to the cent with HALF_UP")
     void claimedAmountRounded() {
         assertThat(CalculationService.claimedAmount(new BigDecimal("80.00"), new BigDecimal("35.71")))
                 .isEqualByComparingTo("28.57");
@@ -66,7 +66,7 @@ class CalculationServiceTest {
     }
 
     @Test
-    @DisplayName("Le total additionne des lignes déjà arrondies")
+    @DisplayName("The total adds up already rounded lines")
     void totalLinesRounded() {
         assertThat(CalculationService.total(List.of(
                 new BigDecimal("28.57"),
@@ -75,14 +75,14 @@ class CalculationServiceTest {
     }
 
     @Test
-    @DisplayName("La base du prorata vaut 25 / 70 = 35,71 %")
+    @DisplayName("The pro-rata base equals 25 / 70 = 35.71%")
     void proRataBase() {
         assertThat(CalculationService.proRataBase(new BigDecimal("25"), new BigDecimal("70")))
                 .isEqualByComparingTo("35.71");
     }
 
     @Test
-    @DisplayName("Les entrées invalides sont refusées avec un message français")
+    @DisplayName("Invalid inputs are rejected with a French message")
     void invalidInputs() {
         assertThatThrownBy(() -> CalculationService.allocateToMonth(
                 new BigDecimal("10"), LocalDate.of(2026, 10, 31), LocalDate.of(2026, 10, 1),

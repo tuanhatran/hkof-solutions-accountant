@@ -11,19 +11,19 @@ import {
 
 function line(partial: Partial<DraftLine> = {}): DraftLine {
   return {
-    cle: "ligne-1",
-    posteCode: "gaz",
-    montantTtc: "120,00",
-    prorataPct: "35,71",
-    periodeDebut: "2026-09-01",
-    periodeFin: "2026-10-31",
-    montantMoisSurcharge: "",
-    justificatifId: 12,
-    justificatifNom: "facture.pdf",
-    sourceMontant: "MANUAL",
-    montantDetecteIa: null,
-    confianceIa: null,
-    fournisseurDetecte: null,
+    key: "ligne-1",
+    itemCode: "gaz",
+    amountInclVat: "120,00",
+    proRataPct: "35,71",
+    periodStart: "2026-09-01",
+    periodEnd: "2026-10-31",
+    monthlyAmountOverride: "",
+    receiptId: 12,
+    receiptName: "facture.pdf",
+    amountSource: "MANUAL",
+    aiDetectedAmount: null,
+    aiConfidence: null,
+    detectedSupplier: null,
     ...partial,
   };
 }
@@ -32,9 +32,9 @@ describe("toLineRequest", () => {
   it("normalizes amounts and keeps metadata", () => {
     const request = toLineRequest(
       line({
-        sourceMontant: "AI",
-        montantDetecteIa: "120.00",
-        confianceIa: "haute",
+        amountSource: "AI",
+        aiDetectedAmount: "120.00",
+        aiConfidence: "haute",
       }),
     );
     expect(request).toMatchObject({
@@ -53,10 +53,10 @@ describe("toLineRequest", () => {
   it("omits unfilled optional fields", () => {
     const request = toLineRequest(
       line({
-        periodeDebut: "",
-        periodeFin: "",
-        justificatifId: null,
-        montantMoisSurcharge: "",
+        periodStart: "",
+        periodEnd: "",
+        receiptId: null,
+        monthlyAmountOverride: "",
       }),
     );
     expect(request.periodStart).toBeUndefined();
@@ -66,19 +66,19 @@ describe("toLineRequest", () => {
   });
 
   it("adds the month override when provided", () => {
-    const request = toLineRequest(line({ montantMoisSurcharge: "60,98" }));
+    const request = toLineRequest(line({ monthlyAmountOverride: "60,98" }));
     expect(request.monthlyAmountOverride).toBe("60.98");
   });
 
   it("rejects invalid amounts, pro-rata values and periods", () => {
-    expect(() => toLineRequest(line({ montantTtc: "0" }))).not.toThrow();
-    expect(() => toLineRequest(line({ montantTtc: "abc" }))).toThrow(
+    expect(() => toLineRequest(line({ amountInclVat: "0" }))).not.toThrow();
+    expect(() => toLineRequest(line({ amountInclVat: "abc" }))).toThrow(
       "Le montant TTC est invalide.",
     );
-    expect(() => toLineRequest(line({ prorataPct: "150" }))).toThrow(
+    expect(() => toLineRequest(line({ proRataPct: "150" }))).toThrow(
       "Le prorata est invalide.",
     );
-    expect(() => toLineRequest(line({ periodeDebut: "2026-02-30" }))).toThrow(
+    expect(() => toLineRequest(line({ periodStart: "2026-02-30" }))).toThrow(
       "La période facturée est invalide.",
     );
   });
@@ -104,11 +104,11 @@ describe("expense type rules", () => {
 describe("rent draft", () => {
   it("creates a line without receipt and with a pro-rata", () => {
     const rent = buildRentLine("950,00", "100");
-    expect(rent.posteCode).toBe("loyer");
-    expect(rent.montantTtc).toBe("950,00");
-    expect(rent.prorataPct).toBe("100");
-    expect(rent.justificatifId).toBeNull();
-    expect(rent.cle).not.toHaveLength(0);
+    expect(rent.itemCode).toBe("loyer");
+    expect(rent.amountInclVat).toBe("950,00");
+    expect(rent.proRataPct).toBe("100");
+    expect(rent.receiptId).toBeNull();
+    expect(rent.key).not.toHaveLength(0);
   });
 
   it("reloads a line from a DTO", () => {
@@ -124,9 +124,9 @@ describe("rent draft", () => {
       aiDetectedAmount: "120.00",
       aiConfidence: "haute",
     });
-    expect(reloaded.posteCode).toBe("gaz");
-    expect(reloaded.justificatifNom).toBe("facture.pdf");
-    expect(reloaded.sourceMontant).toBe("AI");
-    expect(reloaded.cle).not.toHaveLength(0);
+    expect(reloaded.itemCode).toBe("gaz");
+    expect(reloaded.receiptName).toBe("facture.pdf");
+    expect(reloaded.amountSource).toBe("AI");
+    expect(reloaded.key).not.toHaveLength(0);
   });
 });

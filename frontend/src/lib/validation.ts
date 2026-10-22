@@ -19,22 +19,22 @@ const optionalDate = z
 
 export const expenseSchema = z
   .object({
-    posteCode: z.string().min(1, "Sélectionnez un type de frais."),
-    montantTtc: z
+    itemCode: z.string().min(1, "Sélectionnez un type de frais."),
+    amountInclVat: z
       .string()
       .refine(
         (value) => isValidAmount(value, true),
         "Saisissez un montant supérieur à 0 (ex. 80,50).",
       ),
-    prorataPct: z
+    proRataPct: z
       .string()
       .refine(
         (value) => parsePercentage(value) !== null,
         "Prorata attendu entre 0 et 100 (2 décimales max).",
       ),
-    periodeDebut: optionalDate,
-    periodeFin: optionalDate,
-    montantMoisSurcharge: z
+    periodStart: optionalDate,
+    periodEnd: optionalDate,
+    monthlyAmountOverride: z
       .string()
       .refine(
         (value) => value === "" || isValidAmount(value, false),
@@ -42,19 +42,19 @@ export const expenseSchema = z
       ),
   })
   .superRefine((values, context) => {
-    const filledStart = values.periodeDebut !== "";
-    const filledEnd = values.periodeFin !== "";
+    const filledStart = values.periodStart !== "";
+    const filledEnd = values.periodEnd !== "";
     if (filledStart !== filledEnd) {
       context.addIssue({
         code: "custom",
-        path: [filledStart ? "periodeFin" : "periodeDebut"],
+        path: [filledStart ? "periodEnd" : "periodStart"],
         message: "Renseignez les deux dates de la période, ou aucune.",
       });
     }
-    if (filledStart && filledEnd && values.periodeDebut > values.periodeFin) {
+    if (filledStart && filledEnd && values.periodStart > values.periodEnd) {
       context.addIssue({
         code: "custom",
-        path: ["periodeFin"],
+        path: ["periodEnd"],
         message: "La fin de période doit être postérieure au début.",
       });
     }
@@ -64,10 +64,10 @@ export type ExpenseFormValues = z.infer<typeof expenseSchema>;
 
 export const rentReceiptSchema = z
   .object({
-    mois: z.string().refine(isValidMonth, "Choisissez un mois valide."),
-    periodeDebut: z.string().refine(isValidDate, "Date de début invalide."),
-    periodeFin: z.string().refine(isValidDate, "Date de fin invalide."),
-    loyerHc: z
+    month: z.string().refine(isValidMonth, "Choisissez un mois valide."),
+    periodStart: z.string().refine(isValidDate, "Date de début invalide."),
+    periodEnd: z.string().refine(isValidDate, "Date de fin invalide."),
+    rentExclCharges: z
       .string()
       .refine(
         (value) => isValidAmount(value, false),
@@ -79,11 +79,11 @@ export const rentReceiptSchema = z
         (value) => isValidAmount(value, false),
         "Provision pour charges invalide.",
       ),
-    datePaiement: optionalDate,
-    dateEmission: optionalDate,
+    paymentDate: optionalDate,
+    issueDate: optionalDate,
   })
-  .refine((values) => values.periodeFin >= values.periodeDebut, {
-    path: ["periodeFin"],
+  .refine((values) => values.periodEnd >= values.periodStart, {
+    path: ["periodEnd"],
     message: "La fin de période doit être postérieure au début.",
   });
 
@@ -91,11 +91,11 @@ export type RentReceiptFormValues = z.infer<typeof rentReceiptSchema>;
 
 export const settingsSchema = z
   .object({
-    raisonSociale: z
+    companyName: z
       .string()
       .trim()
       .min(1, "La raison sociale est obligatoire."),
-    formeJuridique: z
+    legalForm: z
       .string()
       .trim()
       .min(1, "La forme juridique est obligatoire."),
@@ -106,71 +106,71 @@ export const settingsSchema = z
         (value) => value === "" || /^\d{3}\s?\d{3}\s?\d{3}$/.test(value),
         "Le SIREN doit comporter 9 chiffres.",
       ),
-    societeAdresse: z
+    companyAddress: z
       .string()
       .trim()
       .min(1, "L'adresse de la société est obligatoire."),
-    gerant: z.string().trim().min(1, "Le gérant est obligatoire."),
-    logementAdresse: z
+    managerName: z.string().trim().min(1, "Le gérant est obligatoire."),
+    homeAddress: z
       .string()
       .trim()
       .min(1, "L'adresse du logement est obligatoire."),
-    surfaceTotale: z
+    totalArea: z
       .string()
       .refine(
         (value) => isValidAmount(value, true),
         "Surface totale invalide.",
       ),
-    surfacePro: z
+    businessArea: z
       .string()
       .refine(
         (value) => isValidAmount(value, true),
         "Surface professionnelle invalide.",
       ),
-    bailleurNom: z
+    landlordName: z
       .string()
       .trim()
       .min(1, "Le nom du bailleur est obligatoire."),
-    bailleurAdresse: z
+    landlordAddress: z
       .string()
       .trim()
       .min(1, "L'adresse du bailleur est obligatoire."),
-    locataireNom: z
+    tenantName: z
       .string()
       .trim()
       .min(1, "Le nom du locataire est obligatoire."),
-    locataireAdresse: z
+    tenantAddress: z
       .string()
       .trim()
       .min(1, "L'adresse du locataire est obligatoire."),
-    loyerHc: z
+    rentExclCharges: z
       .string()
       .refine(
         (value) => isValidAmount(value, true),
         "Loyer hors charges invalide.",
       ),
-    provisionCharges: z
+    chargesAdvance: z
       .string()
       .refine(
         (value) => isValidAmount(value, false),
         "Provision pour charges invalide.",
       ),
-    lieuEmission: z
+    issuePlace: z
       .string()
       .trim()
       .min(1, "Le lieu d'émission est obligatoire."),
   })
   .refine(
     (values) => {
-      const proSurface = parseAmount(values.surfacePro);
-      const totalSurface = parseAmount(values.surfaceTotale);
-      if (proSurface === null || totalSurface === null) {
+      const businessArea = parseAmount(values.businessArea);
+      const totalArea = parseAmount(values.totalArea);
+      if (businessArea === null || totalArea === null) {
         return false;
       }
-      return Number(proSurface) <= Number(totalSurface);
+      return Number(businessArea) <= Number(totalArea);
     },
     {
-      path: ["surfacePro"],
+      path: ["businessArea"],
       message:
         "La surface professionnelle ne peut pas dépasser la surface totale.",
     },
@@ -186,24 +186,24 @@ export const expenseItemSchema = z.object({
       (value) => value === "" || /^[a-zA-Z0-9_-]+$/.test(value),
       "Code invalide : lettres, chiffres, tirets et underscores uniquement.",
     ),
-  libelle: z.string().trim().min(1, "Le libellé est obligatoire."),
-  fournisseur: z.string(),
-  prorataPct: z
+  label: z.string().trim().min(1, "Le libellé est obligatoire."),
+  supplier: z.string(),
+  proRataPct: z
     .string()
     .refine(
       (value) => parsePercentage(value) !== null,
       "Prorata attendu entre 0 et 100.",
     ),
-  periodicite: z.enum(["MONTHLY", "BIMONTHLY", "ANNUAL"]),
-  ordre: z.number().int("Ordre invalide.").min(0, "L'ordre doit être positif."),
-  actif: z.boolean(),
-  plusieursLignesAutorisees: z.boolean(),
+  periodicity: z.enum(["MONTHLY", "BIMONTHLY", "ANNUAL"]),
+  sortOrder: z.number().int("Ordre invalide.").min(0, "L'ordre doit être positif."),
+  active: z.boolean(),
+  multipleLinesAllowed: z.boolean(),
 });
 
 export type ExpenseItemFormValues = z.infer<typeof expenseItemSchema>;
 
 export const llmSchema = z.object({
-  actif: z.boolean(),
+  active: z.boolean(),
   url: z
     .string()
     .trim()
@@ -215,7 +215,7 @@ export const llmSchema = z.object({
         return false;
       }
     }, "URL invalide : http:// ou https:// attendu."),
-  modele: z.string().trim().min(1, "Le nom du modèle est obligatoire."),
+  model: z.string().trim().min(1, "Le nom du modèle est obligatoire."),
   timeoutSeconds: z
     .number()
     .int("Délai invalide.")
@@ -230,18 +230,18 @@ export const llmSchema = z.object({
     .int("Contexte invalide.")
     .min(1024, "Le contexte doit être au moins de 1 024.")
     .max(131_072, "Le contexte ne peut pas dépasser 131 072."),
-  pagesMax: z
+  maxPages: z
     .number()
     .int("Nombre de pages invalide.")
     .min(1, "Au moins une page.")
     .max(20, "20 pages maximum."),
-  ocrActif: z.boolean(),
-  promptExtraction: z
+  ocrActive: z.boolean(),
+  extractionPrompt: z
     .string()
     .trim()
     .min(20, "Le prompt d'extraction est trop court."),
-  cleApi: z.string(),
-  supprimerCle: z.boolean(),
+  apiKey: z.string(),
+  deleteApiKey: z.boolean(),
 });
 
 export type LlmFormValues = z.infer<typeof llmSchema>;

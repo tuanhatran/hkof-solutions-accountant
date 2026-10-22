@@ -43,10 +43,10 @@ public class GlobalExceptionHandler {
         Map<String, String> fields = new LinkedHashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(error ->
                 fields.putIfAbsent(error.getField(), error.getDefaultMessage()));
-        ProblemDetail probleme = problem(HttpStatus.BAD_REQUEST, "Requête invalide",
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "Requête invalide",
                 "Certains champs sont invalides.");
-        probleme.setProperty("champs", fields);
-        return ResponseEntity.badRequest().body(probleme);
+        problem.setProperty("champs", fields);
+        return ResponseEntity.badRequest().body(problem);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -91,18 +91,18 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> unexpected(Exception ex) {
-        LOG.error("Erreur inattendue", ex);
+        LOG.error("Unexpected error", ex);
         return response(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur interne",
                 "Une erreur inattendue est survenue. Consultez les journaux du serveur.");
     }
 
-    private ResponseEntity<ProblemDetail> response(HttpStatus status, String titre, String detail) {
-        return ResponseEntity.status(status).body(problem(status, titre, detail));
+    private ResponseEntity<ProblemDetail> response(HttpStatus status, String title, String detail) {
+        return ResponseEntity.status(status).body(problem(status, title, detail));
     }
 
-    private ProblemDetail problem(HttpStatus status, String titre, String detail) {
-        ProblemDetail probleme = ProblemDetail.forStatusAndDetail(status, detail);
-        probleme.setTitle(titre);
-        return probleme;
+    private ProblemDetail problem(HttpStatus status, String title, String detail) {
+        ProblemDetail detailBody = ProblemDetail.forStatusAndDetail(status, detail);
+        detailBody.setTitle(title);
+        return detailBody;
     }
 }

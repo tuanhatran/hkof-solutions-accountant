@@ -42,38 +42,38 @@ import { toast } from "@/state/toasts";
 
 const STATUSES: Record<
   LlmStatus,
-  { texte: string; classe: string; point: string; description: string }
+  { text: string; className: string; dot: string; description: string }
 > = {
   PRET: {
-    texte: "Connecté",
-    classe: "badge-accent",
-    point: "bg-accent",
+    text: "Connecté",
+    className: "badge-accent",
+    dot: "bg-accent",
     description: "Le serveur Ollama et le modèle configuré sont disponibles.",
   },
   PRET_DISTANT: {
-    texte: "Connecté — serveur distant",
-    classe: "badge-avertissement",
-    point: "bg-warning",
+    text: "Connecté — serveur distant",
+    className: "badge-warning",
+    dot: "bg-warning",
     description:
       "Ollama répond, mais l’URL n’est pas locale : les documents quittent cette machine.",
   },
   MODELE_ABSENT: {
-    texte: "Modèle absent",
-    classe: "badge-avertissement",
-    point: "bg-warning",
+    text: "Modèle absent",
+    className: "badge-warning",
+    dot: "bg-warning",
     description: "Ollama répond mais le modèle sélectionné n’est pas installé.",
   },
   INJOIGNABLE: {
-    texte: "Injoignable",
-    classe: "badge-danger",
-    point: "bg-danger",
+    text: "Injoignable",
+    className: "badge-danger",
+    dot: "bg-danger",
     description:
       "Le serveur Ollama ne répond pas. La saisie manuelle reste disponible.",
   },
   DESACTIVE: {
-    texte: "Désactivé",
-    classe: "badge-neutre",
-    point: "bg-ink-soft/60",
+    text: "Désactivé",
+    className: "badge-neutral",
+    dot: "bg-ink-soft/60",
     description:
       "L’analyse IA est désactivée. Toute l’application reste utilisable manuellement.",
   },
@@ -124,46 +124,46 @@ function isLocalUrl(url: string): boolean {
 
 function valuesFromConfig(config: LlmConfigDto | undefined): LlmFormValues {
   return {
-    actif: config?.active ?? false,
+    active: config?.active ?? false,
     url: config?.url ?? "http://host.docker.internal:11434",
-    modele: config?.model ?? "",
+    model: config?.model ?? "",
     timeoutSeconds: config?.timeoutSeconds ?? 120,
     temperature: config?.temperature ?? "0",
     numCtx: config?.numCtx ?? 8192,
-    pagesMax: config?.maxPages ?? 5,
-    ocrActif: config?.ocrActive ?? false,
-    promptExtraction: config?.extractionPrompt ?? "",
-    cleApi: "",
-    supprimerCle: false,
+    maxPages: config?.maxPages ?? 5,
+    ocrActive: config?.ocrActive ?? false,
+    extractionPrompt: config?.extractionPrompt ?? "",
+    apiKey: "",
+    deleteApiKey: false,
   };
 }
 
 function requestBodyFromValues(values: LlmFormValues): LlmConfigRequest {
   const requestBody: LlmConfigRequest = {
-    active: values.actif,
+    active: values.active,
     supplier: "OLLAMA",
     url: normalizeUrl(values.url),
-    model: values.modele.trim(),
+    model: values.model.trim(),
     timeoutSeconds: values.timeoutSeconds,
     temperature: values.temperature.trim().replace(",", "."),
     numCtx: values.numCtx,
-    maxPages: values.pagesMax,
-    ocrActive: values.ocrActif,
-    extractionPrompt: values.promptExtraction.trim(),
+    maxPages: values.maxPages,
+    ocrActive: values.ocrActive,
+    extractionPrompt: values.extractionPrompt.trim(),
   };
-  if (values.cleApi.trim()) {
-    requestBody.apiKey = values.cleApi.trim();
-  } else if (values.supprimerCle) {
+  if (values.apiKey.trim()) {
+    requestBody.apiKey = values.apiKey.trim();
+  } else if (values.deleteApiKey) {
     requestBody.apiKey = "";
   }
   return requestBody;
 }
 
 function Switch({
-  actif: active,
+  enabled: active,
   onChange,
 }: {
-  actif: boolean;
+  enabled: boolean;
   onChange: () => void;
 }) {
   return (
@@ -176,7 +176,7 @@ function Switch({
       data-cy="switch-llm-actif"
       className={cn(
         "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors",
-        active ? "bg-accent" : "bg-line-forte",
+        active ? "bg-accent" : "bg-line-strong",
       )}
     >
       <span
@@ -196,7 +196,7 @@ function StatusState() {
   const info = key ? STATUSES[key] : null;
 
   return (
-    <section className="carte mb-6 overflow-hidden" data-cy="llm-statut">
+    <section className="card mb-6 overflow-hidden" data-cy="llm-statut">
       <div className="flex flex-wrap items-start justify-between gap-3 px-5 py-4 sm:px-6">
         <div className="flex items-start gap-3">
           <span
@@ -222,13 +222,13 @@ function StatusState() {
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <h2 className="text-lg text-ink">Connexion Ollama</h2>
               <span
-                className={cn("badge", info?.classe ?? "badge-neutre")}
+                className={cn("badge", info?.className ?? "badge-neutral")}
                 data-cy="badge-llm-statut-admin"
               >
                 <span
                   className={cn(
                     "h-1.5 w-1.5 rounded-full",
-                    info?.point ?? "bg-ink-soft/60",
+                    info?.dot ?? "bg-ink-soft/60",
                   )}
                   aria-hidden="true"
                 />
@@ -236,7 +236,7 @@ function StatusState() {
                   ? "Vérification…"
                   : status.isError
                     ? "Indisponible"
-                    : (info?.texte ?? "Inconnu")}
+                    : (info?.text ?? "Inconnu")}
               </span>
             </div>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-ink-soft">
@@ -260,10 +260,10 @@ function StatusState() {
                 : ""}
           </span>
           <Button
-            variante="secondaire"
-            petit
-            icone={<RefreshCw size={14} />}
-            chargement={status.isFetching}
+            variant="secondary"
+            small
+            icon={<RefreshCw size={14} />}
+            loading={status.isFetching}
             onClick={() => void status.refetch()}
           >
             Actualiser
@@ -302,8 +302,8 @@ export function AdminLlmPage() {
   });
 
   const values = watch();
-  const active = values.actif;
-  const removeKey = values.supprimerCle;
+  const active = values.active;
+  const removeKey = values.deleteApiKey;
   const remoteUrl = values.url.trim() !== "" && !isLocalUrl(values.url);
   const models = useLlmModels(loadedUrl);
 
@@ -319,7 +319,7 @@ export function AdminLlmPage() {
 
   useEffect(() => {
     if (removeKey) {
-      setValue("cleApi", "", { shouldDirty: true });
+      setValue("apiKey", "", { shouldDirty: true });
     }
   }, [removeKey, setValue]);
 
@@ -340,7 +340,7 @@ export function AdminLlmPage() {
       setTestResult(null);
       setTestError(null);
       void queryClient.invalidateQueries({ queryKey: queryKeys.llmStatus });
-      toast.succes("Configuration IA enregistrée.");
+      toast.success("Configuration IA enregistrée.");
     },
   });
 
@@ -384,16 +384,16 @@ export function AdminLlmPage() {
     try {
       const reply = await api.llm.defaultPrompt();
       if (!reply.prompt) {
-        toast.erreur("Le prompt par défaut est indisponible.");
+        toast.error("Le prompt par défaut est indisponible.");
         return;
       }
-      setValue("promptExtraction", reply.prompt, {
+      setValue("extractionPrompt", reply.prompt, {
         shouldDirty: true,
         shouldValidate: true,
       });
       toast.info("Prompt par défaut chargé. Enregistrez pour l’appliquer.");
     } catch (error) {
-      toast.erreur(errorMessage(error));
+      toast.error(errorMessage(error));
     } finally {
       setPromptInProgress(false);
     }
@@ -414,9 +414,9 @@ export function AdminLlmPage() {
       const result = await api.llm.test();
       setTestResult(result);
       if (result.success) {
-        toast.succes("Test de connexion réussi.");
+        toast.success("Test de connexion réussi.");
       } else {
-        toast.erreur(result.message ?? "Le test de connexion a échoué.");
+        toast.error(result.message ?? "Le test de connexion a échoué.");
       }
       void queryClient.invalidateQueries({ queryKey: queryKeys.llmStatus });
     } catch (error) {
@@ -429,12 +429,12 @@ export function AdminLlmPage() {
   const modelOptions = useMemo(() => {
     const options = models.data ?? [];
     if (
-      values.modele &&
-      !options.some((model) => model.name === values.modele)
+      values.model &&
+      !options.some((model) => model.name === values.model)
     ) {
       return [
         {
-          name: values.modele,
+          name: values.model,
           family: null,
           parameters: null,
           vision: false,
@@ -444,17 +444,17 @@ export function AdminLlmPage() {
       ];
     }
     return options.map((model) => ({ ...model, configure: false }));
-  }, [models.data, values.modele]);
+  }, [models.data, values.model]);
 
   const selectedModel = modelOptions.find(
-    (model) => model.name === values.modele,
+    (model) => model.name === values.model,
   );
   const listLoading = modelsLoading || models.isPending;
 
   if (config.isPending) {
     return (
       <>
-        <PageHeader surTitre="Réglages" titre="Admin IA" />
+        <PageHeader eyebrow="Réglages" title="Admin IA" />
         <LoadingState message="Chargement de la configuration IA…" />
       </>
     );
@@ -463,10 +463,10 @@ export function AdminLlmPage() {
   if (config.isError) {
     return (
       <>
-        <PageHeader surTitre="Réglages" titre="Admin IA" />
+        <PageHeader eyebrow="Réglages" title="Admin IA" />
         <ErrorState
           message={errorMessage(config.error)}
-          onReessayer={() => void config.refetch()}
+          onRetry={() => void config.refetch()}
         />
       </>
     );
@@ -475,26 +475,26 @@ export function AdminLlmPage() {
   return (
     <>
       <PageHeader
-        surTitre="Réglages"
-        titre="Admin IA"
+        eyebrow="Réglages"
+        title="Admin IA"
         description="Ollama reste local par défaut. Le modèle ne fait que proposer une extraction : tous les montants sont vérifiés et calculés par le backend."
         actions={
           <>
             <Button
-              variante="secondaire"
-              icone={<Activity size={15} />}
-              chargement={testInProgress}
+              variant="secondary"
+              icon={<Activity size={15} />}
+              loading={testInProgress}
               onClick={() => void runTest()}
               data-cy="btn-test-llm"
             >
               Tester la connexion
             </Button>
             <Button
-              variante="primaire"
+              variant="primary"
               type="submit"
               form="form-llm"
-              icone={<Save size={15} />}
-              chargement={save.isPending}
+              icon={<Save size={15} />}
+              loading={save.isPending}
               data-cy="btn-enregistrer-llm"
             >
               Enregistrer
@@ -538,8 +538,8 @@ export function AdminLlmPage() {
         )}
         noValidate
       >
-        <section className="carte overflow-hidden">
-          <div className="carte-entete">
+        <section className="card overflow-hidden">
+          <div className="card-header">
             <div className="flex items-start gap-3">
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-soft text-accent">
                 <Bot size={19} aria-hidden="true" />
@@ -556,15 +556,15 @@ export function AdminLlmPage() {
                 {active ? "Analyse IA activée" : "Analyse IA désactivée"}
               </span>
               <Switch
-                actif={active}
+                enabled={active}
                 onChange={() =>
-                  setValue("actif", !active, { shouldDirty: true })
+                  setValue("active", !active, { shouldDirty: true })
                 }
               />
             </div>
           </div>
 
-          <div className="carte-corps space-y-5">
+          <div className="card-body space-y-5">
             {!active ? (
               <div className="flex items-start gap-2 rounded-xl border border-line bg-paper/45 p-3 text-xs leading-relaxed text-ink-soft">
                 <AlertTriangle
@@ -581,7 +581,7 @@ export function AdminLlmPage() {
               <FieldGroup id="llm-fournisseur" label="Fournisseur">
                 <select
                   id="llm-fournisseur"
-                  className="champ"
+                  className="field"
                   value="OLLAMA"
                   disabled
                 >
@@ -595,13 +595,13 @@ export function AdminLlmPage() {
               <FieldGroup
                 id="llm-url"
                 label="URL du serveur Ollama"
-                erreur={errors.url?.message}
-                aide="Par défaut : http://host.docker.internal:11434. L’URL est enregistrée automatiquement lorsque la liste des modèles est actualisée."
+                error={errors.url?.message}
+                help="Par défaut : http://host.docker.internal:11434. L’URL est enregistrée automatiquement lorsque la liste des modèles est actualisée."
               >
                 <div className="flex gap-2">
                   <input
                     id="llm-url"
-                    className={cn("champ mt-1.5", errors.url && "champ-erreur")}
+                    className={cn("field mt-1.5", errors.url && "field-error")}
                     placeholder="http://host.docker.internal:11434"
                     autoComplete="off"
                     spellCheck={false}
@@ -615,9 +615,9 @@ export function AdminLlmPage() {
                     data-cy="input-llm-url"
                   />
                   <Button
-                    variante="secondaire"
+                    variant="secondary"
                     className="mt-1.5 shrink-0"
-                    icone={
+                    icon={
                       <RefreshCw
                         size={15}
                         className={cn(listLoading && "animate-spin")}
@@ -638,8 +638,8 @@ export function AdminLlmPage() {
               <FieldGroup
                 id="llm-modele"
                 label="Modèle"
-                erreur={errors.modele?.message}
-                aide={
+                error={errors.model?.message}
+                help={
                   selectedModel
                     ? `${selectedModel.family || "Famille inconnue"}${selectedModel.parameters ? ` · ${selectedModel.parameters}` : ""}${selectedModel.vision ? " · accepte les images" : ""}`
                     : "La liste est chargée depuis /api/tags. Vous pouvez saisir un nom manuellement si Ollama est injoignable."
@@ -648,15 +648,15 @@ export function AdminLlmPage() {
                 {!manualMode ? (
                   <select
                     id="llm-modele"
-                    className={cn("champ", errors.modele && "champ-erreur")}
-                    value={values.modele}
+                    className={cn("field", errors.model && "field-error")}
+                    value={values.model}
                     onChange={(event) => {
                       const choice = event.target.value;
                       if (choice === "__manuel__") {
                         setManualMode(true);
                         return;
                       }
-                      setValue("modele", choice, {
+                      setValue("model", choice, {
                         shouldDirty: true,
                         shouldValidate: true,
                       });
@@ -686,13 +686,13 @@ export function AdminLlmPage() {
                     <input
                       id="llm-modele"
                       className={cn(
-                        "champ mt-0",
-                        errors.modele && "champ-erreur",
+                        "field mt-0",
+                        errors.model && "field-error",
                       )}
                       placeholder="qwen2.5:7b"
                       autoComplete="off"
                       spellCheck={false}
-                      {...register("modele")}
+                      {...register("model")}
                       data-cy="input-llm-modele"
                     />
                     {models.data && models.data.length > 0 ? (
@@ -768,7 +768,7 @@ export function AdminLlmPage() {
                     "badge",
                     config.data?.apiKeyConfigured
                       ? "badge-accent"
-                      : "badge-neutre",
+                      : "badge-neutral",
                   )}
                 >
                   {config.data?.apiKeyConfigured
@@ -780,20 +780,20 @@ export function AdminLlmPage() {
                 <FieldGroup
                   id="llm-cle-api"
                   label="Nouvelle clé API"
-                  erreur={errors.cleApi?.message}
+                  error={errors.apiKey?.message}
                 >
                   <input
                     id="llm-cle-api"
                     type="password"
                     autoComplete="new-password"
-                    className="champ"
+                    className="field"
                     placeholder={
                       config.data?.apiKeyConfigured
                         ? "Clé enregistrée — laisser vide"
                         : "Aucune clé enregistrée"
                     }
                     disabled={removeKey}
-                    {...register("cleApi")}
+                    {...register("apiKey")}
                     data-cy="input-llm-cle-api"
                   />
                 </FieldGroup>
@@ -802,7 +802,7 @@ export function AdminLlmPage() {
                     <input
                       type="checkbox"
                       className="mt-0.5 h-4 w-4 rounded border-line accent-[#1b5b49]"
-                      {...register("supprimerCle")}
+                      {...register("deleteApiKey")}
                       data-cy="checkbox-supprimer-cle"
                     />
                     <span>
@@ -826,21 +826,21 @@ export function AdminLlmPage() {
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button
-                  variante="secondaire"
-                  petit
-                  icone={<Activity size={14} />}
-                  chargement={testInProgress}
+                  variant="secondary"
+                  small
+                  icon={<Activity size={14} />}
+                  loading={testInProgress}
                   onClick={() => void runTest()}
                   data-cy="btn-test-llm-bas"
                 >
                   Tester la connexion
                 </Button>
                 <Button
-                  variante="primaire"
-                  petit
+                  variant="primary"
+                  small
                   type="submit"
-                  icone={<Save size={14} />}
-                  chargement={save.isPending}
+                  icon={<Save size={14} />}
+                  loading={save.isPending}
                 >
                   Enregistrer
                 </Button>
@@ -909,8 +909,8 @@ export function AdminLlmPage() {
           </div>
         </section>
 
-        <details className="carte group overflow-hidden">
-          <summary className="carte-entete cursor-pointer list-none">
+        <details className="card group overflow-hidden">
+          <summary className="card-header cursor-pointer list-none">
             <div className="flex items-start gap-3">
               <span className="grid h-9 w-9 place-items-center rounded-lg bg-paper-deep text-ink-soft">
                 <Sparkles size={16} aria-hidden="true" />
@@ -931,12 +931,12 @@ export function AdminLlmPage() {
             </span>
           </summary>
 
-          <div className="carte-corps space-y-5 border-t border-line">
+          <div className="card-body space-y-5 border-t border-line">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <FieldGroup
                 id="llm-timeout"
                 label="Délai (secondes)"
-                erreur={errors.timeoutSeconds?.message}
+                error={errors.timeoutSeconds?.message}
               >
                 <input
                   id="llm-timeout"
@@ -945,8 +945,8 @@ export function AdminLlmPage() {
                   max={600}
                   step={1}
                   className={cn(
-                    "champ",
-                    errors.timeoutSeconds && "champ-erreur",
+                    "field",
+                    errors.timeoutSeconds && "field-error",
                   )}
                   {...register("timeoutSeconds", { valueAsNumber: true })}
                 />
@@ -954,12 +954,12 @@ export function AdminLlmPage() {
               <FieldGroup
                 id="llm-temperature"
                 label="Température"
-                erreur={errors.temperature?.message}
-                aide="0 = réponses déterministes, recommandé."
+                error={errors.temperature?.message}
+                help="0 = réponses déterministes, recommandé."
               >
                 <input
                   id="llm-temperature"
-                  className={cn("champ", errors.temperature && "champ-erreur")}
+                  className={cn("field", errors.temperature && "field-error")}
                   inputMode="decimal"
                   {...register("temperature")}
                 />
@@ -967,7 +967,7 @@ export function AdminLlmPage() {
               <FieldGroup
                 id="llm-numctx"
                 label="Contexte (num_ctx)"
-                erreur={errors.numCtx?.message}
+                error={errors.numCtx?.message}
               >
                 <input
                   id="llm-numctx"
@@ -975,14 +975,14 @@ export function AdminLlmPage() {
                   min={1024}
                   max={131072}
                   step={1024}
-                  className={cn("champ", errors.numCtx && "champ-erreur")}
+                  className={cn("field", errors.numCtx && "field-error")}
                   {...register("numCtx", { valueAsNumber: true })}
                 />
               </FieldGroup>
               <FieldGroup
                 id="llm-pages"
                 label="Pages max analysées"
-                erreur={errors.pagesMax?.message}
+                error={errors.maxPages?.message}
               >
                 <input
                   id="llm-pages"
@@ -990,8 +990,8 @@ export function AdminLlmPage() {
                   min={1}
                   max={20}
                   step={1}
-                  className={cn("champ", errors.pagesMax && "champ-erreur")}
-                  {...register("pagesMax", { valueAsNumber: true })}
+                  className={cn("field", errors.maxPages && "field-error")}
+                  {...register("maxPages", { valueAsNumber: true })}
                 />
               </FieldGroup>
             </div>
@@ -1000,7 +1000,7 @@ export function AdminLlmPage() {
               <input
                 type="checkbox"
                 className="mt-0.5 h-4 w-4 rounded border-line accent-[#1b5b49]"
-                {...register("ocrActif")}
+                {...register("ocrActive")}
               />
               <span>
                 <span className="block text-sm font-medium text-ink">
@@ -1015,14 +1015,14 @@ export function AdminLlmPage() {
 
             <div>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <label htmlFor="llm-prompt" className="label-champ">
+                <label htmlFor="llm-prompt" className="field-label">
                   Prompt d’extraction
                 </label>
                 <Button
-                  variante="secondaire"
-                  petit
-                  icone={<RotateCcw size={13} />}
-                  chargement={promptInProgress}
+                  variant="secondary"
+                  small
+                  icon={<RotateCcw size={13} />}
+                  loading={promptInProgress}
                   onClick={() => void resetPrompt()}
                   data-cy="btn-reinitialiser-prompt"
                 >
@@ -1034,18 +1034,18 @@ export function AdminLlmPage() {
                 rows={12}
                 spellCheck={false}
                 className={cn(
-                  "champ resize-y font-mono text-[12.5px] leading-relaxed",
-                  errors.promptExtraction && "champ-erreur",
+                  "field resize-y font-mono text-[12.5px] leading-relaxed",
+                  errors.extractionPrompt && "field-error",
                 )}
-                {...register("promptExtraction")}
+                {...register("extractionPrompt")}
                 data-cy="input-llm-prompt"
               />
-              {errors.promptExtraction ? (
-                <p className="erreur-champ" role="alert">
-                  {errors.promptExtraction.message}
+              {errors.extractionPrompt ? (
+                <p className="error-text" role="alert">
+                  {errors.extractionPrompt.message}
                 </p>
               ) : (
-                <p className="aide">
+                <p className="hint">
                   Le prompt système interdit au modèle d’obéir aux instructions
                   contenues dans un document et impose un JSON validé par le
                   serveur. Le modèle ne calcule jamais de montant.
@@ -1084,10 +1084,10 @@ export function AdminLlmPage() {
               : "Configuration à jour."}
           </p>
           <Button
-            variante="primaire"
+            variant="primary"
             type="submit"
-            icone={<Save size={15} />}
-            chargement={save.isPending}
+            icon={<Save size={15} />}
+            loading={save.isPending}
             data-cy="btn-enregistrer-llm-bas"
           >
             Enregistrer la configuration IA

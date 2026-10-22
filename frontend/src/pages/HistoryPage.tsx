@@ -24,9 +24,9 @@ import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { toast } from "@/state/toasts";
 
 interface MonthGroup {
-  mois: string;
-  quittances: RentReceiptDto[];
-  notes: StatementDto[];
+  month: string;
+  rentReceipts: RentReceiptDto[];
+  statements: StatementDto[];
 }
 
 function current<T extends { status?: string }>(documents: T[]): T | null {
@@ -47,17 +47,17 @@ function VersionBadge({
   return active ? (
     <span className="badge badge-accent">v{version} · active</span>
   ) : (
-    <span className="badge badge-neutre">v{version} · archivée</span>
+    <span className="badge badge-neutral">v{version} · archivée</span>
   );
 }
 
 function ActionsPdf({
   href,
-  libelle: labelText,
+  label: labelText,
   dataCy,
 }: {
   href: string;
-  libelle: string;
+  label: string;
   dataCy?: string;
 }) {
   return (
@@ -86,11 +86,11 @@ export function HistoryPage() {
         continue;
       }
       const group = byMonth.get(rentReceipt.month) ?? {
-        mois: rentReceipt.month,
-        quittances: [],
-        notes: [],
+        month: rentReceipt.month,
+        rentReceipts: [],
+        statements: [],
       };
-      group.quittances.push(rentReceipt);
+      group.rentReceipts.push(rentReceipt);
       byMonth.set(rentReceipt.month, group);
     }
     for (const statement of statementsQuery.data ?? []) {
@@ -98,14 +98,14 @@ export function HistoryPage() {
         continue;
       }
       const group = byMonth.get(statement.month) ?? {
-        mois: statement.month,
-        quittances: [],
-        notes: [],
+        month: statement.month,
+        rentReceipts: [],
+        statements: [],
       };
-      group.notes.push(statement);
+      group.statements.push(statement);
       byMonth.set(statement.month, group);
     }
-    return [...byMonth.values()].sort((a, b) => b.mois.localeCompare(a.mois));
+    return [...byMonth.values()].sort((a, b) => b.month.localeCompare(a.month));
   }, [rentReceiptsQuery.data, statementsQuery.data]);
 
   const loading = rentReceiptsQuery.isPending || statementsQuery.isPending;
@@ -121,12 +121,12 @@ export function HistoryPage() {
   }
 
   function createRentReceipt(month: string) {
-    useRentReceiptDraft.getState().changerMois(month);
+    useRentReceiptDraft.getState().changeMonth(month);
     navigate("/generer/quittance");
   }
 
   function createStatement(month: string) {
-    useStatementDraft.getState().changerMois(month);
+    useStatementDraft.getState().changeMonth(month);
     navigate("/generer/note-frais");
   }
 
@@ -135,12 +135,12 @@ export function HistoryPage() {
       return;
     }
     const rentReceipt = current(
-      groups.find((group) => group.mois === statementToReload.month)
-        ?.quittances ?? [],
+      groups.find((group) => group.month === statementToReload.month)
+        ?.rentReceipts ?? [],
     );
     useStatementDraft
       .getState()
-      .chargerDepuisNote(statementToReload, rentReceipt?.id ?? null);
+      .loadFromStatement(statementToReload, rentReceipt?.id ?? null);
     setStatementToReload(null);
     toast.info(
       `Lignes de ${formatMonth(statementToReload.month)} rechargées dans le brouillon.`,
@@ -151,11 +151,11 @@ export function HistoryPage() {
   return (
     <>
       <PageHeader
-        surTitre="Suivi"
-        titre="Historique"
+        eyebrow="Suivi"
+        title="Historique"
         description="Toutes les versions de vos quittances et notes de frais, classées par mois. Les versions archivées restent téléchargeables et consultables."
         actions={
-          <span className="badge badge-neutre">
+          <span className="badge badge-neutral">
             <History size={12} aria-hidden="true" />
             {groups.length} mois suivi{groups.length > 1 ? "s" : ""}
           </span>
@@ -164,7 +164,7 @@ export function HistoryPage() {
 
       {errorText ? (
         <div className="mb-4">
-          <ErrorState message={errorText} onReessayer={reload} />
+          <ErrorState message={errorText} onRetry={reload} />
         </div>
       ) : null}
 
@@ -172,19 +172,19 @@ export function HistoryPage() {
         <LoadingState message="Chargement de l’historique…" />
       ) : groups.length === 0 && !errorText ? (
         <EmptyState
-          titre="Aucun document pour le moment"
+          title="Aucun document pour le moment"
           description="Générez une quittance ou une note de frais : elle apparaîtra ici, avec toutes ses versions."
-          icone={<Archive size={22} aria-hidden="true" />}
+          icon={<Archive size={22} aria-hidden="true" />}
           action={
             <div className="flex flex-wrap justify-center gap-2">
               <Button
-                variante="primaire"
+                variant="primary"
                 onClick={() => navigate("/generer/quittance")}
               >
                 Générer une quittance
               </Button>
               <Button
-                variante="secondaire"
+                variant="secondary"
                 onClick={() => navigate("/generer/note-frais")}
               >
                 Générer une note de frais
@@ -195,19 +195,19 @@ export function HistoryPage() {
       ) : (
         <div className="space-y-4" data-cy="historique">
           {groups.map((group) => {
-            const rentReceipt = current(group.quittances);
-            const statement = current(group.notes);
+            const rentReceipt = current(group.rentReceipts);
+            const statement = current(group.statements);
             return (
               <section
-                key={group.mois}
-                className="carte overflow-hidden"
-                data-cy={`historique-mois-${group.mois}`}
+                key={group.month}
+                className="card overflow-hidden"
+                data-cy={`historique-mois-${group.month}`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-paper/45 px-5 py-3.5 sm:px-6">
                   <div>
                     <p className="eyebrow">Mois</p>
                     <h2 className="mt-1 text-[22px] text-ink">
-                      {formatMonth(group.mois)}
+                      {formatMonth(group.month)}
                     </h2>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -215,7 +215,7 @@ export function HistoryPage() {
                       className={
                         rentReceipt
                           ? "badge badge-accent"
-                          : "badge badge-neutre"
+                          : "badge badge-neutral"
                       }
                     >
                       Quittance{" "}
@@ -225,7 +225,7 @@ export function HistoryPage() {
                     </span>
                     <span
                       className={
-                        statement ? "badge badge-accent" : "badge badge-neutre"
+                        statement ? "badge badge-accent" : "badge badge-neutral"
                       }
                     >
                       Note{" "}
@@ -258,7 +258,7 @@ export function HistoryPage() {
                         </div>
                       </div>
                       {rentReceipt ? (
-                        <p className="font-display text-xl text-ink nombre">
+                        <p className="font-display text-xl text-ink number">
                           {formatEUR(rentReceipt.total)}
                         </p>
                       ) : null}
@@ -270,8 +270,8 @@ export function HistoryPage() {
                           <>
                             <ActionsPdf
                               href={api.rentReceipts.pdfUrl(rentReceipt.id)}
-                              libelle="Télécharger le PDF"
-                              dataCy={`btn-telecharger-quittance-${group.mois}`}
+                              label="Télécharger le PDF"
+                              dataCy={`btn-telecharger-quittance-${group.month}`}
                             />
                             <a
                               href={api.rentReceipts.pdfUrl(rentReceipt.id)}
@@ -287,23 +287,23 @@ export function HistoryPage() {
                       </div>
                     ) : (
                       <Button
-                        variante="secondaire"
-                        petit
-                        icone={<FilePlus2 size={13} />}
+                        variant="secondary"
+                        small
+                        icon={<FilePlus2 size={13} />}
                         className="mt-4"
-                        onClick={() => createRentReceipt(group.mois)}
+                        onClick={() => createRentReceipt(group.month)}
                       >
                         Générer la quittance
                       </Button>
                     )}
 
-                    {group.quittances.length > 1 ? (
+                    {group.rentReceipts.length > 1 ? (
                       <details className="mt-4 rounded-xl border border-line bg-paper/35 px-3 py-2">
                         <summary className="cursor-pointer text-xs font-semibold text-ink-soft">
-                          Toutes les versions ({group.quittances.length})
+                          Toutes les versions ({group.rentReceipts.length})
                         </summary>
                         <ul className="mt-2 space-y-1.5">
-                          {group.quittances.map((version) => (
+                          {group.rentReceipts.map((version) => (
                             <li
                               key={version.id}
                               className="flex flex-wrap items-center justify-between gap-2 rounded-lg px-1.5 py-1 text-xs"
@@ -316,14 +316,14 @@ export function HistoryPage() {
                                 <span className="text-ink-soft">
                                   {formatDateTime(version.createdAt)}
                                 </span>
-                                <span className="font-medium text-ink nombre">
+                                <span className="font-medium text-ink number">
                                   {formatEUR(version.total)}
                                 </span>
                               </span>
                               {version.id ? (
                                 <ActionsPdf
                                   href={api.rentReceipts.pdfUrl(version.id)}
-                                  libelle="PDF"
+                                  label="PDF"
                                 />
                               ) : null}
                             </li>
@@ -359,7 +359,7 @@ export function HistoryPage() {
                         </div>
                       </div>
                       {statement ? (
-                        <p className="font-display text-xl text-ink nombre">
+                        <p className="font-display text-xl text-ink number">
                           {formatEUR(statement.total)}
                         </p>
                       ) : null}
@@ -374,16 +374,16 @@ export function HistoryPage() {
                                 statement.id,
                                 false,
                               )}
-                              libelle="Note seule"
-                              dataCy={`btn-telecharger-note-${group.mois}`}
+                              label="Note seule"
+                              dataCy={`btn-telecharger-note-${group.month}`}
                             />
                             <ActionsPdf
                               href={api.expenseStatements.pdfUrl(
                                 statement.id,
                                 true,
                               )}
-                              libelle="Note complète"
-                              dataCy={`btn-telecharger-note-complete-${group.mois}`}
+                              label="Note complète"
+                              dataCy={`btn-telecharger-note-complete-${group.month}`}
                             />
                             <a
                               href={api.expenseStatements.pdfUrl(
@@ -400,34 +400,34 @@ export function HistoryPage() {
                           </>
                         ) : null}
                         <Button
-                          variante="fantome"
-                          petit
-                          icone={<PencilLine size={13} />}
+                          variant="ghost"
+                          small
+                          icon={<PencilLine size={13} />}
                           onClick={() => setStatementToReload(statement)}
-                          data-cy={`btn-rouvrir-note-${group.mois}`}
+                          data-cy={`btn-rouvrir-note-${group.month}`}
                         >
                           Rouvrir et modifier
                         </Button>
                       </div>
                     ) : (
                       <Button
-                        variante="secondaire"
-                        petit
-                        icone={<FilePlus2 size={13} />}
+                        variant="secondary"
+                        small
+                        icon={<FilePlus2 size={13} />}
                         className="mt-4"
-                        onClick={() => createStatement(group.mois)}
+                        onClick={() => createStatement(group.month)}
                       >
                         Générer la note
                       </Button>
                     )}
 
-                    {group.notes.length > 1 ? (
+                    {group.statements.length > 1 ? (
                       <details className="mt-4 rounded-xl border border-line bg-paper/35 px-3 py-2">
                         <summary className="cursor-pointer text-xs font-semibold text-ink-soft">
-                          Toutes les versions ({group.notes.length})
+                          Toutes les versions ({group.statements.length})
                         </summary>
                         <ul className="mt-2 space-y-1.5">
-                          {group.notes.map((version) => (
+                          {group.statements.map((version) => (
                             <li
                               key={version.id}
                               className="flex flex-wrap items-center justify-between gap-2 rounded-lg px-1.5 py-1 text-xs"
@@ -440,7 +440,7 @@ export function HistoryPage() {
                                 <span className="text-ink-soft">
                                   {formatDateTime(version.createdAt)}
                                 </span>
-                                <span className="font-medium text-ink nombre">
+                                <span className="font-medium text-ink number">
                                   {formatEUR(version.total)}
                                 </span>
                               </span>
@@ -452,14 +452,14 @@ export function HistoryPage() {
                                         version.id,
                                         false,
                                       )}
-                                      libelle="PDF"
+                                      label="PDF"
                                     />
                                     <ActionsPdf
                                       href={api.expenseStatements.pdfUrl(
                                         version.id,
                                         true,
                                       )}
-                                      libelle="Complète"
+                                      label="Complète"
                                     />
                                   </>
                                 ) : null}
@@ -485,8 +485,8 @@ export function HistoryPage() {
       )}
 
       <ConfirmDialog
-        ouvert={statementToReload !== null}
-        titre="Rouvrir cette note ?"
+        open={statementToReload !== null}
+        title="Rouvrir cette note ?"
         message={
           statementToReload ? (
             <>
@@ -497,9 +497,9 @@ export function HistoryPage() {
             </>
           ) : null
         }
-        libelleConfirmer="Charger les lignes"
-        onConfirmer={confirmReload}
-        onAnnuler={() => setStatementToReload(null)}
+        confirmLabel="Charger les lignes"
+        onConfirm={confirmReload}
+        onCancel={() => setStatementToReload(null)}
         dataCy="dialogue-rouvrir-note"
       />
     </>

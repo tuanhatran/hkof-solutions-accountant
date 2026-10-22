@@ -36,13 +36,13 @@ public class WebConfig implements WebMvcConfigurer {
         return Clock.system(ZoneId.of("Europe/Paris"));
     }
 
-    @Bean(name = "analyseExecutor")
+    @Bean(name = "analysisExecutor")
     ThreadPoolTaskExecutor analysisExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(1);
         executor.setMaxPoolSize(1);
         executor.setQueueCapacity(50);
-        executor.setThreadNamePrefix("analyse-");
+        executor.setThreadNamePrefix("analysis-");
         executor.initialize();
         return executor;
     }

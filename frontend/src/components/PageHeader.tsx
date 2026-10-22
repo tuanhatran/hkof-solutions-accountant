@@ -1,15 +1,15 @@
 import type { ReactNode } from "react";
 
 interface PageHeaderProps {
-  surTitre?: string;
-  titre: string;
+  eyebrow?: string;
+  title: string;
   description?: ReactNode;
   actions?: ReactNode;
 }
 
 export function PageHeader({
-  surTitre: eyebrow,
-  titre: title,
+  eyebrow,
+  title,
   description,
   actions,
 }: PageHeaderProps) {

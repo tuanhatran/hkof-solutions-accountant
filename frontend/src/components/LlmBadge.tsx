@@ -4,44 +4,41 @@ import type { LlmStatus } from "@/api/types";
 import { cn } from "@/lib/cn";
 
 interface StatusLabel {
-  texte: string;
-  classe: string;
-  point: string;
+  text: string;
+  className: string;
+  dot: string;
 }
 
 const STATUSES: Record<LlmStatus, StatusLabel> = {
-  PRET: { texte: "IA prête", classe: "badge-accent", point: "bg-accent" },
+  PRET: { text: "IA prête", className: "badge-accent", dot: "bg-accent" },
   PRET_DISTANT: {
-    texte: "IA distante",
-    classe: "badge-avertissement",
-    point: "bg-warning",
+    text: "IA distante",
+    className: "badge-warning",
+    dot: "bg-warning",
   },
   MODELE_ABSENT: {
-    texte: "Modèle absent",
-    classe: "badge-avertissement",
-    point: "bg-warning",
+    text: "Modèle absent",
+    className: "badge-warning",
+    dot: "bg-warning",
   },
   INJOIGNABLE: {
-    texte: "IA injoignable",
-    classe: "badge-danger",
-    point: "bg-danger",
+    text: "IA injoignable",
+    className: "badge-danger",
+    dot: "bg-danger",
   },
   DESACTIVE: {
-    texte: "IA désactivée",
-    classe: "badge-neutre",
-    point: "bg-ink-soft/60",
+    text: "IA désactivée",
+    className: "badge-neutral",
+    dot: "bg-ink-soft/60",
   },
 };
 
 interface LlmBadgeProps {
-  sombre?: boolean;
-  avecLien?: boolean;
+  dark?: boolean;
+  withLink?: boolean;
 }
 
-export function LlmBadge({
-  sombre: dark = false,
-  avecLien: withLink = true,
-}: LlmBadgeProps) {
+export function LlmBadge({ dark = false, withLink = true }: LlmBadgeProps) {
   const { data, isPending, isError } = useLlmStatus();
 
   const status = data?.status as LlmStatus | undefined;
@@ -50,7 +47,7 @@ export function LlmBadge({
     ? "IA…"
     : isError
       ? "IA indisponible"
-      : (configuration?.texte ?? "IA inconnue");
+      : (configuration?.text ?? "IA inconnue");
   const message = data?.message ?? "État de l’analyse IA indisponible.";
 
   const content = (
@@ -59,7 +56,7 @@ export function LlmBadge({
         "badge",
         dark
           ? "border-white/15 bg-white/10 text-white/90"
-          : (configuration?.classe ?? "badge-neutre"),
+          : (configuration?.className ?? "badge-neutral"),
       )}
       data-cy="badge-llm-status"
       title={message}
@@ -67,7 +64,7 @@ export function LlmBadge({
       <span
         className={cn(
           "h-1.5 w-1.5 rounded-full",
-          isError ? "bg-danger" : (configuration?.point ?? "bg-ink-soft/60"),
+          isError ? "bg-danger" : (configuration?.dot ?? "bg-ink-soft/60"),
           !isPending && !isError && status !== "DESACTIVE" && "animate-pulse",
         )}
         aria-hidden="true"

@@ -29,18 +29,18 @@ public class RentReceiptService {
     private final TemplateService templateService;
     private final TemplateDataService templateDataService;
     private final PdfService pdfService;
-    private final StorageService stockage;
+    private final StorageService storage;
     private final Clock clock;
 
     public RentReceiptService(RentReceiptRepository repository, SettingsService parametersService,
             TemplateService templateService, TemplateDataService templateDataService, PdfService pdfService,
-            StorageService stockage, Clock clock) {
+            StorageService storage, Clock clock) {
         this.repository = repository;
         this.parametersService = parametersService;
         this.templateService = templateService;
         this.templateDataService = templateDataService;
         this.pdfService = pdfService;
-        this.stockage = stockage;
+        this.storage = storage;
         this.clock = clock;
     }
 
@@ -48,23 +48,23 @@ public class RentReceiptService {
     public RentReceiptDto generate(RentReceiptRequest request) {
         YearMonth month = Amounts.month(request.month());
         Settings parameters = parametersService.entity();
-        LocalDate debut = dateOr(request.periodStart(), month.atDay(1));
-        LocalDate fin = dateOr(request.periodEnd(), month.atEndOfMonth());
-        if (fin.isBefore(debut)) {
+        LocalDate periodStart = dateOr(request.periodStart(), month.atDay(1));
+        LocalDate periodEnd = dateOr(request.periodEnd(), month.atEndOfMonth());
+        if (periodEnd.isBefore(periodStart)) {
             throw new BusinessException("La fin de période ne peut pas précéder le début.");
         }
-        BigDecimal loyer = request.rentExclCharges() == null || request.rentExclCharges().isBlank()
+        BigDecimal rentExclCharges = request.rentExclCharges() == null || request.rentExclCharges().isBlank()
                 ? parameters.getRentExclCharges()
                 : Amounts.decimal(request.rentExclCharges(), "loyer hors charges", false);
-        if (loyer == null) {
+        if (rentExclCharges == null) {
             throw new BusinessException("Renseignez le loyer hors charges dans la configuration.");
         }
         BigDecimal charges = request.charges() == null || request.charges().isBlank()
                 ? (parameters.getChargesAdvance() == null ? BigDecimal.ZERO : parameters.getChargesAdvance())
                 : Amounts.decimal(request.charges(), "provision pour charges", false);
-        BigDecimal total = CalculationService.totalRentReceipt(loyer, charges);
-        LocalDate emission = dateOr(request.issueDate(), LocalDate.now(clock));
-        LocalDate paiement = dateOr(request.paymentDate(), LocalDate.now(clock));
+        BigDecimal total = CalculationService.totalRentReceipt(rentExclCharges, charges);
+        LocalDate issueDate = dateOr(request.issueDate(), LocalDate.now(clock));
+        LocalDate paymentDate = dateOr(request.paymentDate(), LocalDate.now(clock));
 
         TemplateDocument template = templateService.active(TemplateType.RENT_RECEIPT);
         if (request.templateId() != null) {
@@ -75,19 +75,19 @@ public class RentReceiptService {
         }
 
         int version = repository.findFirstByMonthOrderByVersionDesc(month.toString())
-                .map(q -> q.getVersion() + 1)
+                .map(existing -> existing.getVersion() + 1)
                 .orElse(1);
         archive(month.toString());
 
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setMonth(month.toString());
-        rentReceipt.setPeriodStart(debut);
-        rentReceipt.setPeriodEnd(fin);
-        rentReceipt.setRentExclCharges(loyer);
+        rentReceipt.setPeriodStart(periodStart);
+        rentReceipt.setPeriodEnd(periodEnd);
+        rentReceipt.setRentExclCharges(rentExclCharges);
         rentReceipt.setCharges(charges);
         rentReceipt.setTotal(total);
-        rentReceipt.setPaymentDate(paiement);
-        rentReceipt.setIssueDate(emission);
+        rentReceipt.setPaymentDate(paymentDate);
+        rentReceipt.setIssueDate(issueDate);
         rentReceipt.setVersion(version);
         rentReceipt.setStatus(DocumentStatus.ACTIVE);
         rentReceipt.setTemplateId(template.getId());
@@ -97,7 +97,7 @@ public class RentReceiptService {
 
         String html = templateService.render(template, templateDataService.dataRentReceipt(parameters, rentReceipt));
         byte[] pdf = pdfService.renderHtmlToPdf(html);
-        String path = stockage.storePdf("quittance_" + month + "_v" + version + ".pdf", pdf);
+        String path = storage.storePdf("quittance_" + month + "_v" + version + ".pdf", pdf);
         rentReceipt.setPdfPath(path);
         return toDto(repository.save(rentReceipt));
     }
@@ -106,15 +106,15 @@ public class RentReceiptService {
     public byte[] preview(RentReceiptRequest request) {
         YearMonth month = Amounts.month(request.month());
         Settings parameters = parametersService.entity();
-        LocalDate debut = dateOr(request.periodStart(), month.atDay(1));
-        LocalDate fin = dateOr(request.periodEnd(), month.atEndOfMonth());
-        if (fin.isBefore(debut)) {
+        LocalDate periodStart = dateOr(request.periodStart(), month.atDay(1));
+        LocalDate periodEnd = dateOr(request.periodEnd(), month.atEndOfMonth());
+        if (periodEnd.isBefore(periodStart)) {
             throw new BusinessException("La fin de période ne peut pas précéder le début.");
         }
-        BigDecimal loyer = request.rentExclCharges() == null || request.rentExclCharges().isBlank()
+        BigDecimal rentExclCharges = request.rentExclCharges() == null || request.rentExclCharges().isBlank()
                 ? parameters.getRentExclCharges()
                 : Amounts.decimal(request.rentExclCharges(), "loyer hors charges", false);
-        if (loyer == null) {
+        if (rentExclCharges == null) {
             throw new BusinessException("Renseignez le loyer hors charges dans la configuration.");
         }
         BigDecimal charges = request.charges() == null || request.charges().isBlank()
@@ -122,11 +122,11 @@ public class RentReceiptService {
                 : Amounts.decimal(request.charges(), "provision pour charges", false);
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setMonth(month.toString());
-        rentReceipt.setPeriodStart(debut);
-        rentReceipt.setPeriodEnd(fin);
-        rentReceipt.setRentExclCharges(loyer);
+        rentReceipt.setPeriodStart(periodStart);
+        rentReceipt.setPeriodEnd(periodEnd);
+        rentReceipt.setRentExclCharges(rentExclCharges);
         rentReceipt.setCharges(charges);
-        rentReceipt.setTotal(CalculationService.totalRentReceipt(loyer, charges));
+        rentReceipt.setTotal(CalculationService.totalRentReceipt(rentExclCharges, charges));
         rentReceipt.setIssueDate(dateOr(request.issueDate(), LocalDate.now(clock)));
         rentReceipt.setPaymentDate(dateOr(request.paymentDate(), LocalDate.now(clock)));
         TemplateDocument template = request.templateId() == null
@@ -168,46 +168,46 @@ public class RentReceiptService {
         if (rentReceipt.getPdfPath() == null) {
             throw new NotFoundException("Le PDF de cette quittance est introuvable.");
         }
-        return stockage.read(rentReceipt.getPdfPath());
+        return storage.read(rentReceipt.getPdfPath());
     }
 
     private void archive(String month) {
-        List<RentReceipt> existantes = repository.findByMonthOrderByVersionDesc(month);
-        boolean modifie = false;
-        for (RentReceipt existante : existantes) {
-            if (existante.getStatus() == DocumentStatus.ACTIVE) {
-                existante.setStatus(DocumentStatus.ARCHIVED);
-                modifie = true;
+        List<RentReceipt> existingReceipts = repository.findByMonthOrderByVersionDesc(month);
+        boolean modified = false;
+        for (RentReceipt existingReceipt : existingReceipts) {
+            if (existingReceipt.getStatus() == DocumentStatus.ACTIVE) {
+                existingReceipt.setStatus(DocumentStatus.ARCHIVED);
+                modified = true;
             }
         }
-        if (modifie) {
-            repository.saveAll(existantes);
+        if (modified) {
+            repository.saveAll(existingReceipts);
             repository.flush();
         }
     }
 
-    private LocalDate dateOr(String date, LocalDate defaut) {
-        LocalDate parsee = Amounts.optionalDate(date, "date");
-        return parsee == null ? defaut : parsee;
+    private LocalDate dateOr(String date, LocalDate fallback) {
+        LocalDate parsed = Amounts.optionalDate(date, "date");
+        return parsed == null ? fallback : parsed;
     }
 
-    public RentReceiptDto toDto(RentReceipt q) {
+    public RentReceiptDto toDto(RentReceipt rentReceipt) {
         return new RentReceiptDto(
-                q.getId(),
-                q.getMonth(),
-                q.getPeriodStart(),
-                q.getPeriodEnd(),
-                Amounts.apiValue(q.getRentExclCharges()),
-                Amounts.apiValue(q.getCharges()),
-                Amounts.apiValue(q.getTotal()),
-                q.getPaymentDate(),
-                q.getIssueDate(),
-                q.getVersion(),
-                q.getStatus().name(),
-                q.getTemplateId(),
-                q.getTemplateName(),
-                q.getTemplateVersion(),
-                q.getCreatedAt(),
-                q.getPdfPath() != null);
+                rentReceipt.getId(),
+                rentReceipt.getMonth(),
+                rentReceipt.getPeriodStart(),
+                rentReceipt.getPeriodEnd(),
+                Amounts.apiValue(rentReceipt.getRentExclCharges()),
+                Amounts.apiValue(rentReceipt.getCharges()),
+                Amounts.apiValue(rentReceipt.getTotal()),
+                rentReceipt.getPaymentDate(),
+                rentReceipt.getIssueDate(),
+                rentReceipt.getVersion(),
+                rentReceipt.getStatus().name(),
+                rentReceipt.getTemplateId(),
+                rentReceipt.getTemplateName(),
+                rentReceipt.getTemplateVersion(),
+                rentReceipt.getCreatedAt(),
+                rentReceipt.getPdfPath() != null);
     }
 }

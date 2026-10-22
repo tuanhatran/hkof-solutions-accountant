@@ -36,7 +36,7 @@ class ApiIntegrationTest {
     private MockMvc mockMvc;
 
     @Test
-    @DisplayName("Parcourt le flux complet : paramètres, quittance, note de frais, justificatif, templates, LLM")
+    @DisplayName("Covers the full flow: settings, rent receipt, expense statement, receipt, templates, LLM")
     void fullFlow() throws Exception {
         mockMvc.perform(get("/api/settings"))
                 .andExpect(status().isOk())

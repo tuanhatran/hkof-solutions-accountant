@@ -138,8 +138,8 @@ public class LlmConfigService {
         try {
             List<LlmModelDto> models = ollamaClient.models(config);
             boolean present = config.getModel() != null && models.stream()
-                    .anyMatch(m -> m.name().equals(config.getModel())
-                            || m.name().startsWith(config.getModel() + ":"));
+                    .anyMatch(model -> model.name().equals(config.getModel())
+                            || model.name().startsWith(config.getModel() + ":"));
             if (!present) {
                 return new LlmStatusDto("MODELE_ABSENT", true, true, false,
                         "Ollama est joignable mais le modèle « " + config.getModel() + " » n'est pas installé.");
@@ -156,7 +156,7 @@ public class LlmConfigService {
 
     public LlmTestResponse testConnection() {
         LlmConfig config = entity();
-        long debut = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
         String text = """
                 Facture EDF - Gaz naturel
                 Client : HKOF
@@ -167,20 +167,20 @@ public class LlmConfigService {
                 """;
         try {
             var result = extractionPipeline.extractFromText(config, text, List.of());
-            long duree = System.currentTimeMillis() - debut;
+            long duration = System.currentTimeMillis() - start;
             String amount = result.amountInclVat();
             String message = amount == null
                     ? "Le modèle a répondu mais aucun montant exploitable n'a été détecté."
                     : "Réponse reçue et validée par le serveur.";
-            return new LlmTestResponse(true, duree, message, amount);
+            return new LlmTestResponse(true, duration, message, amount);
         } catch (BusinessException ex) {
-            return new LlmTestResponse(false, System.currentTimeMillis() - debut, ex.getMessage(), null);
+            return new LlmTestResponse(false, System.currentTimeMillis() - start, ex.getMessage(), null);
         }
     }
 
     public LlmConfigDto toDto(LlmConfig config) {
-        boolean distante = isRemoteUrl(config.getUrl());
-        String warning = distante
+        boolean remote = isRemoteUrl(config.getUrl());
+        String warning = remote
                 ? "Attention : cette URL n'est pas locale. Les justificatifs analysés seront envoyés à un service externe."
                 : null;
         return new LlmConfigDto(
@@ -195,7 +195,7 @@ public class LlmConfigService {
                 config.isOcrActive(),
                 config.getExtractionPrompt(),
                 config.getApiKey() != null && !config.getApiKey().isBlank(),
-                distante,
+                remote,
                 warning);
     }
 
@@ -205,30 +205,30 @@ public class LlmConfigService {
         }
         try {
             URI uri = URI.create(url.trim());
-            String hote = uri.getHost();
-            if (hote == null) {
+            String host = uri.getHost();
+            if (host == null) {
                 return true;
             }
-            String normalise = hote.toLowerCase(Locale.ROOT);
-            String sansCrochets = normalise.startsWith("[") && normalise.endsWith("]")
-                    ? normalise.substring(1, normalise.length() - 1)
-                    : normalise;
-            boolean prive = PRIVATE_IP.matcher(sansCrochets).matches()
-                    || sansCrochets.matches("^f[cd][0-9a-f]{2}:.*");
-            return !LOCAL_HOSTS.contains(normalise) && !prive;
+            String normalized = host.toLowerCase(Locale.ROOT);
+            String withoutBrackets = normalized.startsWith("[") && normalized.endsWith("]")
+                    ? normalized.substring(1, normalized.length() - 1)
+                    : normalized;
+            boolean privateAddress = PRIVATE_IP.matcher(withoutBrackets).matches()
+                    || withoutBrackets.matches("^f[cd][0-9a-f]{2}:.*");
+            return !LOCAL_HOSTS.contains(normalized) && !privateAddress;
         } catch (IllegalArgumentException ex) {
             return true;
         }
     }
 
     private String normalizeUrl(String url) {
-        String propre = url == null ? "" : url.trim().replaceAll("/+$", "");
-        if (propre.isBlank()) {
+        String normalizedUrl = url == null ? "" : url.trim().replaceAll("/+$", "");
+        if (normalizedUrl.isBlank()) {
             throw new BusinessException("L'URL du service LLM est obligatoire.");
         }
         URI uri;
         try {
-            uri = URI.create(propre);
+            uri = URI.create(normalizedUrl);
         } catch (IllegalArgumentException ex) {
             throw new BusinessException("L'URL du service LLM est invalide.");
         }
@@ -236,6 +236,6 @@ public class LlmConfigService {
                 || !(uri.getScheme().equals("http") || uri.getScheme().equals("https"))) {
             throw new BusinessException("L'URL du service LLM doit commencer par http:// ou https://.");
         }
-        return propre;
+        return normalizedUrl;
     }
 }

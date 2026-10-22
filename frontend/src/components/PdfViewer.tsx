@@ -20,10 +20,10 @@ pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
 
 interface PdfViewerProps {
   url: string | null;
-  chargement?: boolean;
-  erreur?: string | null;
-  misAJour?: Date | null;
-  onTelecharger?: () => void;
+  loading?: boolean;
+  error?: string | null;
+  updatedAt?: Date | null;
+  onDownload?: () => void;
   actions?: ReactNode;
   dataCy?: string;
   className?: string;
@@ -31,10 +31,10 @@ interface PdfViewerProps {
 
 export function PdfViewer({
   url,
-  chargement: loading = false,
-  erreur: errorText = null,
-  misAJour: updatedAt = null,
-  onTelecharger: onDownload,
+  loading = false,
+  error: errorText = null,
+  updatedAt = null,
+  onDownload,
   actions,
   dataCy = "apercu-pdf",
   className,
@@ -84,7 +84,7 @@ export function PdfViewer({
   return (
     <section
       className={cn(
-        "carte flex min-h-[420px] flex-col overflow-hidden",
+        "card flex min-h-[420px] flex-col overflow-hidden",
         className,
       )}
       data-cy={dataCy}
@@ -162,7 +162,7 @@ export function PdfViewer({
                         height: Math.round(1.414 * width * zoom),
                       }}
                     >
-                      <Spinner taille={24} />
+                      <Spinner size={24} />
                     </div>
                   }
                 />
@@ -172,7 +172,7 @@ export function PdfViewer({
             <div className="flex min-h-[340px] flex-col items-center justify-center gap-3 text-center">
               {loading ? (
                 <>
-                  <Spinner taille={26} />
+                  <Spinner size={26} />
                   <p className="text-sm text-ink-soft">
                     Préparation de l’aperçu…
                   </p>
@@ -193,8 +193,8 @@ export function PdfViewer({
         </div>
 
         {loading && url ? (
-          <div className="surface-verre absolute inset-0 flex flex-col items-center justify-center gap-2">
-            <Spinner taille={26} />
+          <div className="glass-surface absolute inset-0 flex flex-col items-center justify-center gap-2">
+            <Spinner size={26} />
             <p className="text-sm font-medium text-ink">
               Mise à jour de l’aperçu…
             </p>
@@ -256,9 +256,9 @@ export function PdfViewer({
         </div>
         {onDownload ? (
           <Button
-            variante="secondaire"
-            petit
-            icone={<Download size={14} />}
+            variant="secondary"
+            small
+            icon={<Download size={14} />}
             onClick={onDownload}
             disabled={!url}
             data-cy="btn-telecharger-apercu"

@@ -78,8 +78,8 @@ public class DocumentTextExtractor {
             }
             List<String> images = new ArrayList<>();
             PDFRenderer renderer = new PDFRenderer(document);
-            int limite = Math.min(pages, Math.max(1, maxPagesVision));
-            for (int i = 0; i < limite; i++) {
+            int limit = Math.min(pages, Math.max(1, maxPagesVision));
+            for (int i = 0; i < limit; i++) {
                 BufferedImage image = renderer.renderImageWithDPI(i, 150, ImageType.RGB);
                 ByteArrayOutputStream png = new ByteArrayOutputStream();
                 ImageIO.write(image, "png", png);
@@ -96,18 +96,18 @@ public class DocumentTextExtractor {
     private String extractDocx(byte[] content) throws IOException {
         try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(content))) {
             StringBuilder text = new StringBuilder();
-            for (XWPFParagraph paragraphe : document.getParagraphs()) {
-                if (!paragraphe.getText().isBlank()) {
-                    text.append(paragraphe.getText()).append('\n');
+            for (XWPFParagraph paragraph : document.getParagraphs()) {
+                if (!paragraph.getText().isBlank()) {
+                    text.append(paragraph.getText()).append('\n');
                 }
             }
             for (XWPFTable table : document.getTables()) {
                 for (XWPFTableRow line : table.getRows()) {
-                    List<String> cellules = new ArrayList<>();
-                    for (XWPFTableCell cellule : line.getTableCells()) {
-                        cellules.add(cellule.getText());
+                    List<String> cells = new ArrayList<>();
+                    for (XWPFTableCell cell : line.getTableCells()) {
+                        cells.add(cell.getText());
                     }
-                    text.append(String.join(" | ", cellules)).append('\n');
+                    text.append(String.join(" | ", cells)).append('\n');
                 }
             }
             return truncate(text.toString());
@@ -115,23 +115,23 @@ public class DocumentTextExtractor {
     }
 
     private String extractSpreadsheet(byte[] content) throws IOException {
-        try (Workbook classeur = WorkbookFactory.create(new ByteArrayInputStream(content))) {
+        try (Workbook workbook = WorkbookFactory.create(new ByteArrayInputStream(content))) {
             DataFormatter formatter = new DataFormatter(java.util.Locale.FRANCE);
             StringBuilder text = new StringBuilder();
-            for (int i = 0; i < classeur.getNumberOfSheets(); i++) {
-                Sheet feuille = classeur.getSheetAt(i);
-                text.append("Feuille : ").append(feuille.getSheetName()).append('\n');
-                int limiteLines = Math.min(feuille.getLastRowNum(), 2000);
-                for (int j = 0; j <= limiteLines; j++) {
-                    Row line = feuille.getRow(j);
+            for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                Sheet sheet = workbook.getSheetAt(i);
+                text.append("Feuille : ").append(sheet.getSheetName()).append('\n');
+                int rowLimit = Math.min(sheet.getLastRowNum(), 2000);
+                for (int j = 0; j <= rowLimit; j++) {
+                    Row line = sheet.getRow(j);
                     if (line == null) {
                         continue;
                     }
                     List<String> values = new ArrayList<>();
                     int last = Math.min(line.getLastCellNum(), 50);
                     for (int k = 0; k < last; k++) {
-                        Cell cellule = line.getCell(k);
-                        values.add(cellule == null ? "" : formatter.formatCellValue(cellule));
+                        Cell cell = line.getCell(k);
+                        values.add(cell == null ? "" : formatter.formatCellValue(cell));
                     }
                     if (values.stream().anyMatch(v -> !v.isBlank())) {
                         text.append(String.join(" | ", values)).append('\n');
@@ -146,13 +146,13 @@ public class DocumentTextExtractor {
         if (text == null) {
             return "";
         }
-        String propre = text.replaceAll("[\\t\\r]+", " ").replaceAll(" {2,}", " ").trim();
-        if (propre.length() <= MAX_LENGTH) {
-            return propre;
+        String normalized = text.replaceAll("[\\t\\r]+", " ").replaceAll(" {2,}", " ").trim();
+        if (normalized.length() <= MAX_LENGTH) {
+            return normalized;
         }
-        int debut = MAX_LENGTH / 2;
-        int fin = MAX_LENGTH - debut;
-        return propre.substring(0, debut) + "\n[…]\n" + propre.substring(propre.length() - fin);
+        int head = MAX_LENGTH / 2;
+        int tail = MAX_LENGTH - head;
+        return normalized.substring(0, head) + "\n[…]\n" + normalized.substring(normalized.length() - tail);
     }
 
     public record Extraction(String text, List<String> imagesBase64, boolean imageOnly, int pageCount) {

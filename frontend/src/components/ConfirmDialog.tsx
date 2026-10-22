@@ -5,26 +5,26 @@ import { Button } from "./Button";
 import { cn } from "@/lib/cn";
 
 interface ConfirmDialogProps {
-  ouvert: boolean;
-  titre: string;
+  open: boolean;
+  title: string;
   message?: ReactNode;
-  libelleConfirmer?: string;
-  libelleAnnuler?: string;
-  variante?: "primaire" | "danger";
-  onConfirmer: () => void;
-  onAnnuler: () => void;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  variant?: "primary" | "danger";
+  onConfirm: () => void;
+  onCancel: () => void;
   dataCy?: string;
 }
 
 export function ConfirmDialog({
-  ouvert: open,
-  titre: title,
+  open,
+  title,
   message,
-  libelleConfirmer: confirmLabel = "Confirmer",
-  libelleAnnuler: cancelLabel = "Annuler",
-  variante = "primaire",
-  onConfirmer: onConfirm,
-  onAnnuler: onCancel,
+  confirmLabel = "Confirmer",
+  cancelLabel = "Annuler",
+  variant = "primary",
+  onConfirm,
+  onCancel,
   dataCy = "dialogue-confirmation",
 }: ConfirmDialogProps) {
   const cancelButton = useRef<HTMLButtonElement>(null);
@@ -57,7 +57,7 @@ export function ConfirmDialog({
       }}
     >
       <div
-        className="animation-fondu w-full max-w-md rounded-2xl border border-line bg-surface p-5 shadow-flottante sm:p-6"
+        className="animation-fade w-full max-w-md rounded-2xl border border-line bg-surface p-5 shadow-floating sm:p-6"
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${dataCy}-titre`}
@@ -67,7 +67,7 @@ export function ConfirmDialog({
           <span
             className={cn(
               "mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-full",
-              variante === "danger"
+              variant === "danger"
                 ? "bg-danger-soft text-danger"
                 : "bg-warning-soft text-warning",
             )}
@@ -95,11 +95,11 @@ export function ConfirmDialog({
           </button>
         </div>
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button ref={cancelButton} variante="secondaire" onClick={onCancel}>
+          <Button ref={cancelButton} variant="secondary" onClick={onCancel}>
             {cancelLabel}
           </Button>
           <Button
-            variante={variante === "danger" ? "danger" : "primaire"}
+            variant={variant === "danger" ? "danger" : "primary"}
             onClick={onConfirm}
             data-cy="dialogue-confirmer"
           >

@@ -25,7 +25,7 @@ class TemplateServiceValidationTest {
     }
 
     @Test
-    @DisplayName("Les modèles intégrés passent la validation, y compris la boucle des lignes")
+    @DisplayName("Bundled templates pass validation, including the line loop")
     void bundledModelsValid() throws IOException {
         ValidationReportDto statement = service.validate(TemplateType.EXPENSE_STATEMENT, resource("templates/defaut/note-frais.html"));
         assertThat(statement.structureValid()).isTrue();
@@ -41,7 +41,7 @@ class TemplateServiceValidationTest {
     }
 
     @Test
-    @DisplayName("Une variable inconnue dans la boucle reste une erreur explicite")
+    @DisplayName("An unknown variable inside the loop remains an explicit error")
     void reportsUnknownVariable() {
         ValidationReportDto report = service.validate(TemplateType.EXPENSE_STATEMENT, """
                 <html><body>
@@ -55,7 +55,7 @@ class TemplateServiceValidationTest {
     }
 
     @Test
-    @DisplayName("Les variables obligatoires manquantes sont un avertissement, pas un blocage")
+    @DisplayName("Missing required variables are a warning, not a blocker")
     void reportsMissingVariables() {
         ValidationReportDto report = service.validate(TemplateType.RENT_RECEIPT,
                 "<html><body>{{bailleur.nom}}</body></html>");
@@ -64,7 +64,7 @@ class TemplateServiceValidationTest {
     }
 
     @Test
-    @DisplayName("Un script ou une expression exécutable invalide le template")
+    @DisplayName("A script or executable expression invalidates the template")
     void securityRefused() {
         ValidationReportDto script = service.validate(TemplateType.RENT_RECEIPT,
                 "<html><body><script>alert(1)</script>{{bailleur.nom}}</body></html>");

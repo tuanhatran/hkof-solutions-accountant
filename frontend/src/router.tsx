@@ -17,7 +17,7 @@ import { TemplatesPage } from "@/pages/TemplatesPage";
 
 function NotFoundPage() {
   return (
-    <div className="carte mx-auto mt-10 flex max-w-lg flex-col items-center px-6 py-14 text-center">
+    <div className="card mx-auto mt-10 flex max-w-lg flex-col items-center px-6 py-14 text-center">
       <span className="grid h-14 w-14 place-items-center rounded-full bg-accent-soft text-accent">
         <Compass size={26} aria-hidden="true" />
       </span>
@@ -28,7 +28,7 @@ function NotFoundPage() {
         brouillons restent conservés pendant la session.
       </p>
       <Link to="/generer/quittance" className="mt-6">
-        <Button variante="primaire" icone={<ArrowLeft size={15} />}>
+        <Button variant="primary" icon={<ArrowLeft size={15} />}>
           Revenir à la génération
         </Button>
       </Link>
@@ -59,7 +59,7 @@ function AppError() {
         du navigateur.
       </p>
       <Button
-        variante="primaire"
+        variant="primary"
         className="mt-6"
         onClick={() => window.location.assign("/")}
       >

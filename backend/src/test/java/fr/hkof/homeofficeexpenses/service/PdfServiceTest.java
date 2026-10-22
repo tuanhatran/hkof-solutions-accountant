@@ -20,7 +20,7 @@ class PdfServiceTest {
     private final PdfService pdfService = new PdfService();
 
     @Test
-    @DisplayName("Rend du HTML en PDF avec les polices, accents et montants français")
+    @DisplayName("Renders HTML to PDF with fonts, accents and French amounts")
     void rendersHtml() throws Exception {
         byte[] pdf = pdfService.renderHtmlToPdf("""
                 <!DOCTYPE html>
@@ -37,7 +37,7 @@ class PdfServiceTest {
     }
 
     @Test
-    @DisplayName("Appose le filigrane APERÇU sur chaque page")
+    @DisplayName("Applies the APERÇU watermark to every page")
     void watermark() throws Exception {
         byte[] pdf = pdfService.renderHtmlToPdf("<html><body><p>Document</p></body></html>");
         byte[] watermark = pdfService.addWatermark(pdf);
@@ -46,7 +46,7 @@ class PdfServiceTest {
     }
 
     @Test
-    @DisplayName("Convertit une image en page A4 et fusionne les PDF")
+    @DisplayName("Converts an image to an A4 page and merges PDFs")
     void imageAndMerge() throws Exception {
         BufferedImage image = new BufferedImage(200, 100, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphique = image.createGraphics();
@@ -68,7 +68,7 @@ class PdfServiceTest {
     }
 
     @Test
-    @DisplayName("Rend une page texte avec du contenu échappé")
+    @DisplayName("Renders a text page with escaped content")
     void pageText() throws Exception {
         byte[] pdf = pdfService.pageText("Annexe <test>", "Ligne 1 & ligne 2\nAccents : éàçù");
         assertThat(text(pdf)).contains("Annexe", "Ligne 1", "Accents");

@@ -2,14 +2,14 @@ import { durationInDays, daysInMonth } from "./dates";
 import { formatEUR, estimatedRetainedAmount, parseAmount } from "./format";
 
 export interface AllocationEstimate {
-  joursMois: number;
-  joursTotal: number;
-  montantMois: string;
-  montantRetenu: string;
+  monthDays: number;
+  totalDays: number;
+  monthAmount: string;
+  retainedAmount: string;
 }
 
 /**
- * Estimation locale pour l'aide à la saisie : le calcul de référence est effectué par le backend.
+ * Local estimate to help data entry: the reference calculation is performed by the backend.
  */
 export function estimateAllocation(
   amountInclVat: string,
@@ -40,9 +40,9 @@ export function estimateAllocation(
   const monthCents = Math.round((cents * monthDays) / totalDays);
   const monthAmount = (monthCents / 100).toFixed(2);
   return {
-    joursMois: monthDays,
-    joursTotal: totalDays,
-    montantMois: formatEUR(monthAmount),
-    montantRetenu: estimatedRetainedAmount(monthAmount, proRataPct),
+    monthDays,
+    totalDays,
+    monthAmount: formatEUR(monthAmount),
+    retainedAmount: estimatedRetainedAmount(monthAmount, proRataPct),
   };
 }

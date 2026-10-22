@@ -3,14 +3,14 @@ import { isCancellation, errorMessage, type ResponseBlob } from "@/api/client";
 
 interface PreviewState {
   url: string | null;
-  chargement: boolean;
-  erreur: string | null;
-  misAJour: Date | null;
+  loading: boolean;
+  error: string | null;
+  updatedAt: Date | null;
 }
 
 interface PreviewOptions {
   debounceMs?: number;
-  actif?: boolean;
+  active?: boolean;
 }
 
 export function usePdfPreview(
@@ -18,14 +18,14 @@ export function usePdfPreview(
   signature: string,
   options: PreviewOptions = {},
 ) {
-  const { debounceMs = 400, actif: active = true } = options;
+  const { debounceMs = 400, active = true } = options;
   const loadRef = useRef(load);
   loadRef.current = load;
-  const [phase, setEtat] = useState<PreviewState>({
+  const [state, setState] = useState<PreviewState>({
     url: null,
-    chargement: false,
-    erreur: null,
-    misAJour: null,
+    loading: false,
+    error: null,
+    updatedAt: null,
   });
   const urlRef = useRef<string | null>(null);
   const blobRef = useRef<Blob | null>(null);
@@ -35,14 +35,14 @@ export function usePdfPreview(
 
   useEffect(() => {
     if (!active) {
-      setEtat((previous) =>
-        previous.chargement ? { ...previous, chargement: false } : previous,
+      setState((previous) =>
+        previous.loading ? { ...previous, loading: false } : previous,
       );
       return;
     }
     controllerRef.current?.abort();
     const generation = ++generationRef.current;
-    setEtat((previous) => ({ ...previous, chargement: true, erreur: null }));
+    setState((previous) => ({ ...previous, loading: true, error: null }));
     let controller: AbortController | null = null;
 
     const timer = window.setTimeout(async () => {
@@ -59,18 +59,18 @@ export function usePdfPreview(
         }
         urlRef.current = url;
         blobRef.current = reply.blob;
-        if (reply.nomFichier) {
-          nameRef.current = reply.nomFichier;
+        if (reply.fileName) {
+          nameRef.current = reply.fileName;
         }
-        setEtat({ url, chargement: false, erreur: null, misAJour: new Date() });
+        setState({ url, loading: false, error: null, updatedAt: new Date() });
       } catch (error) {
         if (isCancellation(error) || generation !== generationRef.current) {
           return;
         }
-        setEtat((previous) => ({
+        setState((previous) => ({
           ...previous,
-          chargement: false,
-          erreur: errorMessage(error),
+          loading: false,
+          error: errorMessage(error),
         }));
       }
     }, debounceMs);
@@ -105,5 +105,5 @@ export function usePdfPreview(
     window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
   }, []);
 
-  return { ...phase, telecharger: download };
+  return { ...state, download };
 }

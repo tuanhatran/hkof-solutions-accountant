@@ -19,7 +19,7 @@ You prove the critical flows on a real stack, without a real LLM.
 - Deterministic `mock-ollama`: `/api/tags`, `/api/show`, `/api/chat` (results depending on
   the file name/content), controllable latency.
 - Fixtures: PDF/DOCX/XLSX/image invoices, invalid files, valid/invalid template, demo settings.
-- Cypress specs: configuration, receipt, tab persistence, missing receipt, 6 types, prorata,
+- Cypress specs: configuration, receipt, tab persistence, missing receipt, 6 types, pro-rata,
   rejected formats, AI analysis, synchronized preview, edit/delete, admin, templates, full
   generation, regeneration.
 - Command: `docker compose -f docker-compose.yml -f docker-compose.e2e.yml up --abort-on-container-exit --exit-code-from cypress`.

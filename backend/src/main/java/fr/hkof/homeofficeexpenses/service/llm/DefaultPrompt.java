@@ -12,7 +12,7 @@ public final class DefaultPrompt {
             N'utilise ni le montant HT, ni la TVA, ni un solde antérieur, ni un cumul annuel.
             Si une information est absente ou incertaine, renvoie null : ne devine jamais.
             Le montant doit être une chaîne décimale avec un point (exemple : "123.45"), sans espace ni symbole.
-            Les dates doivent être au format AAAA-MM-JJ.
+            Les dates doivent être au format YYYY-MM-DD.
             `type_suggere` vaut uniquement : gaz, electricite, loyer, telephone, assurance, fibre, autre, ou null.
             `extrait_source` est une courte phrase du document où figure le montant TTC.
             `confiance` vaut haute, moyenne ou basse.

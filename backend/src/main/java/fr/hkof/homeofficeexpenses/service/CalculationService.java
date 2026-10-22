@@ -8,41 +8,40 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
- * Logique monétaire pure, sans dépendance Spring. Toute valeur qui fait foi
- * passe par cette classe.
+ * Pure monetary logic with no Spring dependency. Every authoritative value goes through this class.
  */
 public final class CalculationService {
 
     private CalculationService() {
     }
 
-    public static BigDecimal allocateToMonth(BigDecimal amountInclVat, LocalDate debut, LocalDate fin, YearMonth month) {
+    public static BigDecimal allocateToMonth(BigDecimal amountInclVat, LocalDate periodStart, LocalDate periodEnd, YearMonth month) {
         if (amountInclVat == null) {
             throw new BusinessException("Le montant TTC est obligatoire.");
         }
         if (amountInclVat.signum() < 0) {
             throw new BusinessException("Le montant TTC ne peut pas être négatif.");
         }
-        if (debut == null && fin == null) {
+        if (periodStart == null && periodEnd == null) {
             return amountInclVat.setScale(2, RoundingMode.HALF_UP);
         }
-        if (debut == null || fin == null) {
+        if (periodStart == null || periodEnd == null) {
             throw new BusinessException("Les deux dates de période doivent être renseignées, ou aucune.");
         }
-        if (fin.isBefore(debut)) {
+        if (periodEnd.isBefore(periodStart)) {
             throw new BusinessException("La fin de période ne peut pas précéder le début.");
         }
-        long joursTotal = ChronoUnit.DAYS.between(debut, fin) + 1;
-        LocalDate debutMonth = month.atDay(1);
-        LocalDate finMonth = month.atEndOfMonth();
-        LocalDate debutInclus = debut.isBefore(debutMonth) ? debutMonth : debut;
-        LocalDate finIncluse = fin.isAfter(finMonth) ? finMonth : fin;
-        long joursDansMonth = ChronoUnit.DAYS.between(debutInclus, finIncluse) + 1;
-        if (joursDansMonth <= 0) {
+        long totalDays = ChronoUnit.DAYS.between(periodStart, periodEnd) + 1;
+        LocalDate monthStart = month.atDay(1);
+        LocalDate monthEnd = month.atEndOfMonth();
+        LocalDate includedStart = periodStart.isBefore(monthStart) ? monthStart : periodStart;
+        LocalDate includedEnd = periodEnd.isAfter(monthEnd) ? monthEnd : periodEnd;
+        long daysInMonth = ChronoUnit.DAYS.between(includedStart, includedEnd) + 1;
+        if (daysInMonth <= 0) {
             return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
-        return amountInclVat.multiply(BigDecimal.valueOf(joursDansMonth))
-                .divide(BigDecimal.valueOf(joursTotal), 2, RoundingMode.HALF_UP);
+        return amountInclVat.multiply(BigDecimal.valueOf(daysInMonth))
+                .divide(BigDecimal.valueOf(totalDays), 2, RoundingMode.HALF_UP);
     }
 
     public static BigDecimal claimedAmount(BigDecimal monthlyAmount, BigDecimal proRataPct) {

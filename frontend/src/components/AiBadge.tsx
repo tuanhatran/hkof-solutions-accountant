@@ -1,24 +1,24 @@
 import { Sparkles } from "lucide-react";
 
 interface AiBadgeProps {
-  extraitSource?: string | null;
-  libelle?: string;
+  sourceExtract?: string | null;
+  label?: string;
 }
 
 export function AiBadge({
-  extraitSource: sourceExtract,
-  libelle: labelText = "Détecté par IA",
+  sourceExtract,
+  label = "Détecté par IA",
 }: AiBadgeProps) {
   return (
     <span
-      className="badge badge-ia"
+      className="badge badge-ai"
       data-cy="badge-ia-detecte"
       title={
         sourceExtract ? `Extrait du document : « ${sourceExtract} »` : undefined
       }
     >
       <Sparkles size={11} aria-hidden="true" />
-      {labelText}
+      {label}
     </span>
   );
 }
