@@ -1,9 +1,15 @@
-import { MONTHS, waitForValue, downloadAndReadPdf } from "../support/helpers";
+import {
+  MONTHS,
+  SEED_RENT,
+  SEED_TOTAL,
+  waitForValue,
+  downloadAndReadPdf,
+} from "../support/helpers";
 
 describe("Rent receipt", () => {
   it("generates a receipt from the month, downloads the PDF, then creates a new version", () => {
     cy.visit("/generer/quittance");
-    waitForValue("#quittance-loyer", "900.00");
+    waitForValue("#quittance-loyer", SEED_RENT);
 
     cy.chooseMonth(MONTHS);
     waitForValue("#quittance-debut", "2026-01-01");
@@ -22,7 +28,7 @@ describe("Rent receipt", () => {
         expect(text).to.contain("Janvier 2026");
         expect(text).to.contain("01/01/2026");
         expect(text).to.contain("31/01/2026");
-        expect(text).to.contain("950,00 €");
+        expect(text).to.contain(SEED_TOTAL);
       },
     );
 

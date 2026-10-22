@@ -1,16 +1,21 @@
-import { waitForAmount, waitForText, waitForValue } from "../support/helpers";
+import {
+  SEED_PRORATA,
+  SEED_TOTAL,
+  waitForText,
+  waitForValue,
+} from "../support/helpers";
 
 describe("Settings", () => {
   it("saves settings and keeps them after reload", () => {
     cy.visit("/configuration");
 
     waitForValue('[data-cy="input-raison-sociale"]', "HKOF");
-    waitForText('[data-cy="prorata-indicatif"]', "35,71 %");
-    waitForAmount('[data-cy="total-quittance-config"]', "950,00");
+    waitForText('[data-cy="prorata-indicatif"]', SEED_PRORATA);
+    waitForText('[data-cy="total-quittance-config"]', SEED_TOTAL);
 
     cy.get('[data-cy="input-raison-sociale"]').clear().type("HKOF E2E");
     cy.get('[data-cy="input-provision-charges"]').clear().type("100,00");
-    waitForAmount('[data-cy="total-quittance-config"]', "1 000,00");
+    waitForText('[data-cy="total-quittance-config"]', "1 400,00 €");
 
     cy.get('[data-cy="input-provision-charges"]').clear().type("50,00");
     cy.get('[data-cy="btn-enregistrer-configuration-bas"]').click();
@@ -21,7 +26,7 @@ describe("Settings", () => {
     cy.reload();
     waitForValue('[data-cy="input-raison-sociale"]', "HKOF E2E");
     waitForValue('[data-cy="input-provision-charges"]', "50,00");
-    waitForAmount('[data-cy="total-quittance-config"]', "950,00");
+    waitForText('[data-cy="total-quittance-config"]', "1 350,00 €");
   });
 
   it("adds, edits then removes an expense type", () => {

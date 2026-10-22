@@ -193,9 +193,16 @@ public class TemplateService {
     @Transactional
     public TemplateDto activate(Long id) {
         TemplateDocument template = byId(id);
-        for (TemplateDocument other : repository.findByTypeAndActiveTrueAndDeletedFalse(template.getType())) {
+        List<TemplateDocument> activeTemplates = repository.findByTypeAndActiveTrueAndDeletedFalse(template.getType());
+        for (TemplateDocument other : activeTemplates) {
             other.setActive(false);
-            repository.save(other);
+        }
+        if (!activeTemplates.isEmpty()) {
+            // Flush the deactivation before activating the new version: the PostgreSQL partial
+            // unique index ux_template_active rejects two active rows for the same type, even
+            // within a single transaction.
+            repository.saveAll(activeTemplates);
+            repository.flush();
         }
         template.setActive(true);
         return toDto(repository.save(template));

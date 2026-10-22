@@ -15,7 +15,12 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
-import { useSettings, useActiveRentReceipt, useTemplates } from "@/api/queries";
+import {
+  queryKeys,
+  useSettings,
+  useActiveRentReceipt,
+  useTemplates,
+} from "@/api/queries";
 import type { RentReceiptDto, RentReceiptRequest } from "@/api/types";
 import { Button } from "@/components/Button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -153,7 +158,9 @@ export function GenerateRentReceiptPage() {
       const rentReceipt = await api.rentReceipts.create(requestBody);
       setResult(rentReceipt);
       draft.markGenerated();
-      await queryClient.invalidateQueries({ queryKey: ["quittances"] });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.rentReceiptsAll,
+      });
       toast.success(
         `Quittance de ${formatMonth(submittedValues.month)} générée en version ${rentReceipt.version ?? 1}.`,
       );

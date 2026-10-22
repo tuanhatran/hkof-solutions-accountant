@@ -19,7 +19,7 @@ services:
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_FLYWAY_ENABLED: "true"
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
-      OLLAMA_BASE_URL: http://mock-ollama:11434
+      OLLAMA_BASE_URL: http://ollama:11434
       OLLAMA_MODEL: mock-extract:latest
       APP_DATA_DIR: /tmp/e2e-data
     volumes: !reset []
@@ -29,6 +29,12 @@ services:
 
   mock-ollama:
     build: ./mock-ollama
+    # Exposed as "ollama" so the backend sees a local-looking LLM URL and the
+    # remote-server warning is not triggered (the product safety list stays unchanged).
+    networks:
+      default:
+        aliases:
+          - ollama
 
   cypress:
     image: cypress/included:16.2.0

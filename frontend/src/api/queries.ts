@@ -14,6 +14,8 @@ export const queryKeys = {
   rentReceiptActive: (month: string) =>
     ["rentReceipts", "active", month] as const,
   statementActive: (month: string) => ["statements", "active", month] as const,
+  rentReceiptsAll: ["rentReceipts"] as const,
+  statementsAll: ["statements"] as const,
   rentReceipts: (month?: string) => ["rentReceipts", month ?? "all"] as const,
   statements: (month?: string) => ["statements", month ?? "all"] as const,
 };

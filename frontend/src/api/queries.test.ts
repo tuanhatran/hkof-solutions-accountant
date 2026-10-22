@@ -22,3 +22,46 @@ describe("expense item query invalidation", () => {
     );
   });
 });
+
+describe("generated document query invalidation", () => {
+  const month = "2026-01";
+
+  it("invalidates the active statement through the statements prefix", () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(queryKeys.statementActive(month), null);
+    queryClient.setQueryData(queryKeys.rentReceiptActive(month), null);
+    queryClient.setQueryData(queryKeys.settings, {});
+
+    void queryClient.invalidateQueries({ queryKey: queryKeys.statementsAll });
+    expect(
+      queryClient.getQueryState(queryKeys.statementActive(month))?.isInvalidated,
+    ).toBe(true);
+    expect(
+      queryClient.getQueryState(queryKeys.rentReceiptActive(month))
+        ?.isInvalidated,
+    ).toBe(false);
+    expect(queryClient.getQueryState(queryKeys.settings)?.isInvalidated).toBe(
+      false,
+    );
+  });
+
+  it("invalidates the active rent receipt through the rent receipts prefix", () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(queryKeys.rentReceiptActive(month), null);
+    queryClient.setQueryData(queryKeys.statementActive(month), null);
+    queryClient.setQueryData(queryKeys.rentReceipts(month), []);
+
+    void queryClient.invalidateQueries({ queryKey: queryKeys.rentReceiptsAll });
+
+    expect(
+      queryClient.getQueryState(queryKeys.rentReceiptActive(month))
+        ?.isInvalidated,
+    ).toBe(true);
+    expect(
+      queryClient.getQueryState(queryKeys.rentReceipts(month))?.isInvalidated,
+    ).toBe(true);
+    expect(
+      queryClient.getQueryState(queryKeys.statementActive(month))?.isInvalidated,
+    ).toBe(false);
+  });
+});

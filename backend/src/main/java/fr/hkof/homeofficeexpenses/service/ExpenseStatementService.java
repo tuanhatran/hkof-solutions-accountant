@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
@@ -174,9 +175,15 @@ public class ExpenseStatementService {
                 .orElseThrow(() -> new NotFoundException("Note de frais introuvable."));
     }
 
+    /**
+     * Returns the DTO of the active statement for the month, mapped inside the transaction:
+     * {@code spring.jpa.open-in-view} is disabled, so the entity cannot be mapped by the
+     * controller without initializing its lazy lines.
+     */
     @Transactional(readOnly = true)
-    public ExpenseStatement activeForMonth(String month) {
-        return repository.findFirstByMonthAndStatusOrderByVersionDesc(month, DocumentStatus.ACTIVE).orElse(null);
+    public Optional<StatementDto> activeDtoForMonth(String month) {
+        return repository.findFirstByMonthAndStatusOrderByVersionDesc(month, DocumentStatus.ACTIVE)
+                .map(this::toDto);
     }
 
     public byte[] pdf(Long id, boolean complete) {

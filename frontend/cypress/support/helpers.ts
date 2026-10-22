@@ -2,6 +2,13 @@ export const MONTHS = "2026-01";
 export const FEBRUARY = "2026-02";
 export const MONTH_LABELS = "Janvier 2026";
 
+// Seed values returned by DataInitializer.initSettings(): rent 1300.00, charges 0.00,
+// areas 70/25 (35,71 %). The E2E reset replays that initializer, so specs must match it.
+export const SEED_RENT = "1300.00";
+export const SEED_CHARGES = "0.00";
+export const SEED_TOTAL = "1 300,00 €";
+export const SEED_PRORATA = "35,71 %";
+
 export function normalize(text: string | null | undefined): string {
   return (text ?? "").replace(/[\s\u00a0\u202f]+/g, " ").trim();
 }
