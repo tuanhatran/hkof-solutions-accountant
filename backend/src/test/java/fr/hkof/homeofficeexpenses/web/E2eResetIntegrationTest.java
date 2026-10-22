@@ -46,7 +46,7 @@ class E2eResetIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"code":"test-e2e","libelle":"Poste e2e","prorataPct":"35.71",
-                                 "periodicite":"MENSUELLE","actif":true,"ordre":99,
+                                 "periodicite":"MONTHLY","actif":true,"ordre":99,
                                  "plusieursLignesAutorisees":false}
                                 """))
                 .andExpect(status().isCreated());

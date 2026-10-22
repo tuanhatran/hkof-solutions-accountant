@@ -999,7 +999,7 @@ export interface operations {
     lister: {
         parameters: {
             query: {
-                type: "QUITTANCE" | "NOTE_FRAIS";
+                type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
             };
             header?: never;
             path?: never;
@@ -1021,7 +1021,7 @@ export interface operations {
     uploader: {
         parameters: {
             query: {
-                type: "QUITTANCE" | "NOTE_FRAIS";
+                type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
                 nom: string;
             };
             header?: never;
@@ -1097,7 +1097,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                type: "QUITTANCE" | "NOTE_FRAIS";
+                type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
             };
             cookie?: never;
         };
@@ -1119,7 +1119,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                type: "QUITTANCE" | "NOTE_FRAIS";
+                type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
             };
             cookie?: never;
         };
@@ -1462,7 +1462,7 @@ export interface operations {
     variables: {
         parameters: {
             query: {
-                type: "QUITTANCE" | "NOTE_FRAIS";
+                type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
             };
             header?: never;
             path?: never;

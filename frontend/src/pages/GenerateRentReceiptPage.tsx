@@ -60,7 +60,7 @@ export function GenerateRentReceiptPage() {
   const pendingValues = useRef<RentReceiptFormValues | null>(null);
 
   const settings = useSettings();
-  const templates = useTemplates('QUITTANCE');
+  const templates = useTemplates('RENT_RECEIPT');
   const activeRentReceipt = useActiveRentReceipt(draft.mois);
 
   const {

@@ -78,12 +78,12 @@ public class DataInitializer implements ApplicationRunner {
     }
 
     private void initialiserItems() {
-        creerExpenseItemSiAbsent("loyer", "Quittance de loyer", null, "100.00", "MENSUELLE", 10);
-        creerExpenseItemSiAbsent("gaz", "Gaz", "EDF", "35.71", "BIMESTRIELLE", 20);
-        creerExpenseItemSiAbsent("electricite", "Électricité", "Primeo", "35.71", "BIMESTRIELLE", 30);
-        creerExpenseItemSiAbsent("assurance", "Assurance habitation", null, "35.71", "ANNUELLE", 40);
-        creerExpenseItemSiAbsent("telephone", "Téléphone", null, "35.71", "MENSUELLE", 50);
-        creerExpenseItemSiAbsent("fibre", "Fibre internet", null, "35.71", "MENSUELLE", 60);
+        creerExpenseItemSiAbsent("loyer", "Quittance de loyer", null, "100.00", "MONTHLY", 10);
+        creerExpenseItemSiAbsent("gaz", "Gaz", "EDF", "35.71", "BIMONTHLY", 20);
+        creerExpenseItemSiAbsent("electricite", "Électricité", "Primeo", "35.71", "BIMONTHLY", 30);
+        creerExpenseItemSiAbsent("assurance", "Assurance habitation", null, "35.71", "ANNUAL", 40);
+        creerExpenseItemSiAbsent("telephone", "Téléphone", null, "35.71", "MONTHLY", 50);
+        creerExpenseItemSiAbsent("fibre", "Fibre internet", null, "35.71", "MONTHLY", 60);
     }
 
     private void creerExpenseItemSiAbsent(String code, String label, String supplier, String prorata,
@@ -110,12 +110,12 @@ public class DataInitializer implements ApplicationRunner {
                     .orElseGet(() -> {
                         TemplateDocument t = new TemplateDocument();
                         t.setType(type);
-                        t.setName(type == TemplateType.QUITTANCE
+                        t.setName(type == TemplateType.RENT_RECEIPT
                                 ? "Quittance — modèle intégré"
                                 : "Note de frais — modèle intégré");
                         t.setVersion(1);
                         t.setFormat(TemplateFormat.HTML);
-                        t.setPath(type == TemplateType.QUITTANCE
+                        t.setPath(type == TemplateType.RENT_RECEIPT
                                 ? "classpath:templates/defaut/quittance.html"
                                 : "classpath:templates/defaut/note-frais.html");
                         t.setBuiltIn(true);

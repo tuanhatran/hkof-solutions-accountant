@@ -291,9 +291,9 @@ public class ExpenseStatementService {
 
     private TemplateDocument templatePourStatement(Long templateId) {
         TemplateDocument template = templateId == null
-                ? templateService.active(TemplateType.NOTE_FRAIS)
+                ? templateService.active(TemplateType.EXPENSE_STATEMENT)
                 : templateService.parId(templateId);
-        if (template.getType() != TemplateType.NOTE_FRAIS) {
+        if (template.getType() != TemplateType.EXPENSE_STATEMENT) {
             throw new BusinessException("Le template sélectionné n'est pas un template de note de frais.");
         }
         return template;
@@ -304,7 +304,7 @@ public class ExpenseStatementService {
         boolean modifie = false;
         for (ExpenseStatement existante : existantes) {
             if (existante.getStatus() == DocumentStatus.ACTIVE) {
-                existante.setStatus(DocumentStatus.ARCHIVEE);
+                existante.setStatus(DocumentStatus.ARCHIVED);
                 modifie = true;
             }
         }

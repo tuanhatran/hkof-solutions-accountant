@@ -18,7 +18,7 @@ You extract proposals, never truths. The backend calculates.
 - `OllamaClient` (`RestClient`): `/api/tags`, `/api/show`, `/api/chat` non-streamed, timeout, translated errors.
 - Tika extraction (PDF, DOCX, XLSX, CSV, TXT), image rendering of PDF pages for a vision model, truncation keeping start + end.
 - `ExtractionPipeline`: anti-injection system prompt, JSON `format`, strict schema, validation, a single retry, anti-hallucination check on the amount.
-- `AnalyseJobService`: queue of one analysis at a time, statuses EN_ATTENTE/EN_COURS/TERMINEE/ECHEC/ANNULEE (PENDING/RUNNING/DONE/FAILED/CANCELLED), cancellation, SSE/GET polling.
+- `AnalyseJobService`: queue of one analysis at a time, statuses PENDING/RUNNING/DONE/FAILED/CANCELLED, cancellation, SSE/GET polling.
 - LLM Admin endpoints: configuration (key never returned), status, models, connection test, non-local URL warning.
 - Deterministic `mock-ollama` server for tests and E2E.
 - WireMock tests: model, valid response, invalid JSON (retry then failure), timeout, unreachable; prompt-injection tests.

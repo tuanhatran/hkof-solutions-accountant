@@ -61,18 +61,18 @@ export function useAnalysis() {
         if (controller.signal.aborted || !mountRef.current) {
           return;
         }
-        if (analysis.statut === 'TERMINEE') {
+        if (analysis.statut === 'DONE') {
           setEtat({ statut: 'terminee', analyse: analysis });
           return;
         }
-        if (analysis.statut === 'ECHEC') {
+        if (analysis.statut === 'FAILED') {
           setEtat({
             statut: 'echec',
             message: analysis.messageErreur || "L'analyse a échoué. Saisissez le montant manuellement.",
           });
           return;
         }
-        if (analysis.statut === 'ANNULEE') {
+        if (analysis.statut === 'CANCELLED') {
           setEtat({ statut: 'annulee', message: 'Analyse annulée.' });
           return;
         }

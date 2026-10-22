@@ -231,7 +231,7 @@ export function GenerateExpenseStatementPage() {
   const month = draft.mois;
   const settings = useSettings();
   const expenseItemsQuery = useExpenseItems(false);
-  const templates = useTemplates('NOTE_FRAIS');
+  const templates = useTemplates('EXPENSE_STATEMENT');
   const rentReceipt = useActiveRentReceipt(month);
   const activeStatement = useActiveStatement(month);
 

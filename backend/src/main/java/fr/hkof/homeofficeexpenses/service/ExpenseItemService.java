@@ -88,7 +88,7 @@ public class ExpenseItemService {
 
     private Periodicity periodicity(String value) {
         if (value == null || value.isBlank()) {
-            return Periodicity.MENSUELLE;
+            return Periodicity.MONTHLY;
         }
         try {
             return Periodicity.valueOf(value.trim().toUpperCase(Locale.ROOT));

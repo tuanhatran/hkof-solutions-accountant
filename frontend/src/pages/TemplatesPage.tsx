@@ -42,14 +42,14 @@ interface ConfigurationType {
 
 const TYPES: ConfigurationType[] = [
   {
-    type: 'QUITTANCE',
+    type: 'RENT_RECEIPT',
     titre: 'Quittance de loyer',
     description: 'Modèle utilisé pour les quittances mensuelles.',
     dropzone: 'dropzone-template-quittance',
     icone: ReceiptText,
   },
   {
-    type: 'NOTE_FRAIS',
+    type: 'EXPENSE_STATEMENT',
     titre: 'Note de frais d’occupation',
     description: 'Modèle utilisé pour les notes de frais et leur version complète.',
     dropzone: 'dropzone-template-note',
@@ -197,7 +197,7 @@ function ReferenceVariables({ type }: { type: TemplateType }) {
             Les montants sont déjà formatés en français par le backend : le template ne calcule rien. Les expressions
             non échappées, scripts, iframes, ressources distantes et expressions Thymeleaf/JSP sont refusés.
           </p>
-          {type === 'NOTE_FRAIS' ? (
+          {type === 'EXPENSE_STATEMENT' ? (
             <div className="rounded-xl border border-line bg-paper/50 p-3">
               <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-soft">
                 Boucle des frais
@@ -435,7 +435,7 @@ function TemplatesCard({ configuration }: { configuration: ConfigurationType }) 
     onSuccess: (reply) => {
       downloadBlob(
         reply.blob,
-        type === 'QUITTANCE' ? 'modele-quittance-defaut.html' : 'modele-note-frais-defaut.html',
+        type === 'RENT_RECEIPT' ? 'modele-quittance-defaut.html' : 'modele-note-frais-defaut.html',
       );
     },
     onError: (error) => toast.erreur(errorMessage(error)),

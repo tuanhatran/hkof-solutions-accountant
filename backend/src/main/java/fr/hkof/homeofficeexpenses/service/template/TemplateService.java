@@ -226,7 +226,7 @@ public class TemplateService {
     }
 
     public byte[] fileDefaut(TemplateType type) {
-        String path = type == TemplateType.QUITTANCE
+        String path = type == TemplateType.RENT_RECEIPT
                 ? "classpath:templates/defaut/quittance.html"
                 : "classpath:templates/defaut/note-frais.html";
         return stockage.lire(path);

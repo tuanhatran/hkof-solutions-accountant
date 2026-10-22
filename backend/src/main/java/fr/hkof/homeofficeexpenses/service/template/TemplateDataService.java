@@ -80,7 +80,7 @@ public class TemplateDataService {
 
     public Map<String, Object> dataExample(fr.hkof.homeofficeexpenses.domain.TemplateType type) {
         Settings p = parametersService.entity();
-        if (type == fr.hkof.homeofficeexpenses.domain.TemplateType.QUITTANCE) {
+        if (type == fr.hkof.homeofficeexpenses.domain.TemplateType.RENT_RECEIPT) {
             RentReceipt q = new RentReceipt();
             q.setMonth("2026-10");
             q.setPeriodStart(java.time.LocalDate.of(2026, 10, 1));

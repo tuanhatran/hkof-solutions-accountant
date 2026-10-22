@@ -75,13 +75,13 @@ public class AnalysisJobService {
         Launch lancement = transactions.execute(status -> {
             Receipt receipt = receiptService.entity(receiptId);
             AnalysisDocument existante = repository.findFirstByReceiptIdAndStatusInOrderByIdDesc(
-                    receiptId, List.of(AnalysisStatus.EN_ATTENTE, AnalysisStatus.EN_COURS)).orElse(null);
+                    receiptId, List.of(AnalysisStatus.PENDING, AnalysisStatus.RUNNING)).orElse(null);
             if (existante != null) {
                 return new Launch(existante.getId(), false);
             }
             AnalysisDocument analysis = new AnalysisDocument();
             analysis.setReceipt(receipt);
-            analysis.setStatus(AnalysisStatus.EN_ATTENTE);
+            analysis.setStatus(AnalysisStatus.PENDING);
             analysis.setCreatedAt(Instant.now(clock));
             analysis.setUpdatedAt(Instant.now(clock));
             return new Launch(repository.save(analysis).getId(), true);
@@ -96,7 +96,7 @@ public class AnalysisJobService {
                 transaction(() -> {
                     AnalysisDocument reloaded = repository.findById(lancement.id()).orElse(null);
                     if (reloaded != null) {
-                        reloaded.setStatus(AnalysisStatus.ECHEC);
+                        reloaded.setStatus(AnalysisStatus.FAILED);
                         reloaded.setErrorMessage("Le service d'analyse est saturé. Réessayez dans un instant.");
                         reloaded.setUpdatedAt(Instant.now(clock));
                         repository.save(reloaded);
@@ -113,19 +113,19 @@ public class AnalysisJobService {
         try {
             contexte = transactions.execute(status -> {
                 AnalysisDocument analysis = repository.findWithReceiptById(analysisId).orElse(null);
-                if (analysis == null || analysis.getStatus() != AnalysisStatus.EN_ATTENTE) {
+                if (analysis == null || analysis.getStatus() != AnalysisStatus.PENDING) {
                     return null;
                 }
                 LlmConfig config = llmConfigService.entity();
                 if (!config.isActive()) {
-                    analysis.setStatus(AnalysisStatus.ECHEC);
+                    analysis.setStatus(AnalysisStatus.FAILED);
                     analysis.setErrorMessage("L'analyse IA est désactivée. Saisissez le montant manuellement.");
                     analysis.setDurationMs(0L);
                     analysis.setUpdatedAt(Instant.now(clock));
                     repository.save(analysis);
                     return null;
                 }
-                analysis.setStatus(AnalysisStatus.EN_COURS);
+                analysis.setStatus(AnalysisStatus.RUNNING);
                 analysis.setModel(config.getModel());
                 analysis.setUpdatedAt(Instant.now(clock));
                 repository.save(analysis);
@@ -162,10 +162,10 @@ public class AnalysisJobService {
     private void terminer(Long analysisId, ExtractionDto result, long debut) {
         transaction(() -> {
             AnalysisDocument analysis = repository.findWithReceiptById(analysisId).orElse(null);
-            if (analysis == null || analysis.getStatus() == AnalysisStatus.ANNULEE) {
+            if (analysis == null || analysis.getStatus() == AnalysisStatus.CANCELLED) {
                 return;
             }
-            analysis.setStatus(AnalysisStatus.TERMINEE);
+            analysis.setStatus(AnalysisStatus.DONE);
             analysis.setResultJson(pipeline.versJson(result));
             analysis.setErrorMessage(null);
             analysis.setDurationMs(System.currentTimeMillis() - debut);
@@ -177,10 +177,10 @@ public class AnalysisJobService {
     private void marquerEchec(Long analysisId, String message, long debut) {
         transaction(() -> {
             AnalysisDocument analysis = repository.findWithReceiptById(analysisId).orElse(null);
-            if (analysis == null || analysis.getStatus() == AnalysisStatus.ANNULEE) {
+            if (analysis == null || analysis.getStatus() == AnalysisStatus.CANCELLED) {
                 return;
             }
-            analysis.setStatus(AnalysisStatus.ECHEC);
+            analysis.setStatus(AnalysisStatus.FAILED);
             analysis.setErrorMessage(message);
             analysis.setDurationMs(System.currentTimeMillis() - debut);
             analysis.setUpdatedAt(Instant.now(clock));
@@ -199,10 +199,10 @@ public class AnalysisJobService {
     public AnalysisDto cancel(Long id) {
         AnalysisDocument analysis = repository.findWithReceiptById(id)
                 .orElseThrow(() -> new NotFoundException("Analyse introuvable."));
-        if (analysis.getStatus().estTermine()) {
+        if (analysis.getStatus().isFinished()) {
             throw new BusinessException("Cette analyse est déjà terminée.");
         }
-        analysis.setStatus(AnalysisStatus.ANNULEE);
+        analysis.setStatus(AnalysisStatus.CANCELLED);
         analysis.setErrorMessage("Analyse annulée par l'utilisateur.");
         analysis.setUpdatedAt(Instant.now(clock));
         return versDto(repository.save(analysis));
@@ -230,7 +230,7 @@ public class AnalysisJobService {
         try {
             AnalysisDto dto = obtenir(id);
             emitter.send(SseEmitter.event().name("analyse").data(dto));
-            if (AnalysisStatus.valueOf(dto.status()).estTermine() || System.currentTimeMillis() > echeance) {
+            if (AnalysisStatus.valueOf(dto.status()).isFinished() || System.currentTimeMillis() > echeance) {
                 termine.set(true);
                 emitter.complete();
                 return;
@@ -250,9 +250,9 @@ public class AnalysisJobService {
     public void nettoyerAnalysesInterrompues() {
         transaction(() -> {
             List<AnalysisDocument> analyses = repository.findByStatusIn(
-                    List.of(AnalysisStatus.EN_ATTENTE, AnalysisStatus.EN_COURS));
+                    List.of(AnalysisStatus.PENDING, AnalysisStatus.RUNNING));
             for (AnalysisDocument analysis : analyses) {
-                analysis.setStatus(AnalysisStatus.ECHEC);
+                analysis.setStatus(AnalysisStatus.FAILED);
                 analysis.setErrorMessage("Analyse interrompue par un redémarrage. Relancez l'analyse.");
                 analysis.setUpdatedAt(Instant.now(clock));
                 repository.save(analysis);

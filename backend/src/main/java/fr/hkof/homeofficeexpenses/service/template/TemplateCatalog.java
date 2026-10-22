@@ -80,6 +80,6 @@ public final class TemplateCatalog {
     }
 
     private static Map<String, TemplateVariableDto> catalogue(TemplateType type) {
-        return type == TemplateType.QUITTANCE ? QUITTANCE : NOTE;
+        return type == TemplateType.RENT_RECEIPT ? QUITTANCE : NOTE;
     }
 }

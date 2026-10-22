@@ -30,10 +30,10 @@ import { settingsSchema, expenseItemSchema, type SettingsFormValues, type Expens
 import { toast } from '@/state/toasts';
 
 const PERIODICITIES = [
-  { valeur: 'MENSUELLE', libelle: 'Mensuelle' },
-  { valeur: 'BIMESTRIELLE', libelle: 'Bimestrielle' },
+  { valeur: 'MONTHLY', libelle: 'Mensuelle' },
+  { valeur: 'BIMONTHLY', libelle: 'Bimestrielle' },
   { valeur: 'TRIMESTRIELLE', libelle: 'Trimestrielle' },
-  { valeur: 'ANNUELLE', libelle: 'Annuelle' },
+  { valeur: 'ANNUAL', libelle: 'Annuelle' },
 ] as const;
 
 type Periodicity = (typeof PERIODICITIES)[number]['valeur'];
@@ -144,7 +144,7 @@ function ExpenseItemForm({
       libelle: expenseItem?.libelle ?? '',
       fournisseur: expenseItem?.fournisseur ?? '',
       prorataPct: decimalFormatter(expenseItem?.prorataPct ?? defaultProRata),
-      periodicite: (expenseItem?.periodicite as Periodicity | undefined) ?? 'MENSUELLE',
+      periodicite: (expenseItem?.periodicite as Periodicity | undefined) ?? 'MONTHLY',
       ordre: expenseItem?.ordre ?? defaultOrder,
       actif: expenseItem?.actif ?? true,
       plusieursLignesAutorisees: expenseItem?.plusieursLignesAutorisees ?? false,

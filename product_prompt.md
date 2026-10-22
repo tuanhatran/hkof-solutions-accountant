@@ -107,14 +107,14 @@ homeofficeexpenses/
 # DATA MODEL (indicative)
 
 - **parametres** (singleton): company (legal name, legal form, SIREN, address, manager), housing (address, total surface m², professional surface m²), landlord (name, address), tenant (name, address), rent excluding charges, service-charge provision, place of issue.
-- **poste** (expense item): id, code, label, supplier, default prorata_pct, periodicity (MENSUELLE / BIMESTRIELLE / ANNUELLE = monthly / bimonthly / annual), active, order, plusieurs_lignes_autorisees (multiple lines allowed). Initial values: rent (receipt), gas (EDF), electricity (Primeo), home insurance, phone, fibre internet.
+- **poste** (expense item): id, code, label, supplier, default prorata_pct, periodicity (MONTHLY / BIMONTHLY / ANNUAL), active, order, plusieurs_lignes_autorisees (multiple lines allowed). Initial values: rent (receipt), gas (EDF), electricity (Primeo), home insurance, phone, fibre internet.
 - **quittance** (rent receipt): id, month (AAAA-MM), period start/end, rent excl. charges, charges, total, payment date, issue date, version, status, template_id, PDF path, created_at.
 - **note_frais** (expense statement): id, month, number (`NF-AAAA-MM`), total, version, status, template_id, PDF paths, created_at.
 - **ligne_frais** (expense line): id, note_frais_id, poste_id, amount_ttc, invoice period start/end, montant_mois (amount for the month after allocation), prorata_pct, montant_retenu (retained amount), justificatif_id, `source_montant` (`MANUEL` = manual / `IA` = AI), `montant_detecte_ia` (AI-detected amount), `confiance_ia` (AI confidence).
 - **justificatif** (supporting document): id, file name, MIME type, path, size, SHA-256 hash.
-- **analyse_document** (document analysis): id, justificatif_id, status (`EN_ATTENTE` = pending, `EN_COURS` = running, `TERMINEE` = done, `ECHEC` = failed, `ANNULEE` = cancelled), model used, duration, JSON result, error message, created_at.
+- **analyse_document** (document analysis): id, justificatif_id, status (`PENDING`, `RUNNING`, `DONE`, `FAILED`, `CANCELLED`), model used, duration, JSON result, error message, created_at.
 - **llm_config** (singleton): enabled, provider, URL, model, timeout, temperature, num_ctx, max pages, OCR enabled, extraction prompt, API key (never returned by `GET`).
-- **template_document**: id, type (`QUITTANCE` / `NOTE_FRAIS`), name, version, format (`HTML` / `DOCX`), path, active, validation report, created_at.
+- **template_document**: id, type (`RENT_RECEIPT` / `EXPENSE_STATEMENT`), name, version, format (`HTML` / `DOCX`), path, active, validation report, created_at.
 
 Constraints: a single active version per month for each document type; regenerating creates a new version and keeps the previous one; a single active template per type; logical deletion only; generated documents keep a reference to the template they used.
 
@@ -154,7 +154,7 @@ Identifiers (table, column, enum and endpoint names) stay in French because they
 - `GET /admin/llm/status`
 
 **Templates**
-- `GET /templates?type=QUITTANCE|NOTE_FRAIS`
+- `GET /templates?type=RENT_RECEIPT|EXPENSE_STATEMENT`
 - `POST /templates` (multipart: type, name, file) → validation report
 - `POST /templates/{id}/activer`, `GET /templates/{id}/fichier`, `DELETE /templates/{id}`
 - `GET /templates/defaut/{type}`

@@ -29,9 +29,9 @@ export type TemplateDto = Schemas['TemplateDto'];
 export type TemplateVariableDto = Schemas['TemplateVariableDto'];
 export type ValidationReportDto = Schemas['RapportValidationDto'];
 
-export type TemplateType = 'QUITTANCE' | 'NOTE_FRAIS';
-export type AnalysisStatus = 'EN_ATTENTE' | 'EN_COURS' | 'TERMINEE' | 'ECHEC' | 'ANNULEE';
+export type TemplateType = 'RENT_RECEIPT' | 'EXPENSE_STATEMENT';
+export type AnalysisStatus = 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'CANCELLED';
 export type AiConfidence = 'haute' | 'moyenne' | 'basse';
 export type SourceMontant = 'MANUAL' | 'AI';
-export type Periodicity = 'MENSUELLE' | 'BIMESTRIELLE' | 'TRIMESTRIELLE' | 'ANNUELLE';
+export type Periodicity = 'MONTHLY' | 'BIMONTHLY' | 'TRIMESTRIELLE' | 'ANNUAL';
 export type LlmStatus = 'PRET' | 'PRET_DISTANT' | 'MODELE_ABSENT' | 'INJOIGNABLE' | 'DESACTIVE';

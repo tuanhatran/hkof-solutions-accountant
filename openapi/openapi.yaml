@@ -116,8 +116,8 @@ paths:
         schema:
           type: string
           enum:
-          - QUITTANCE
-          - NOTE_FRAIS
+          - RENT_RECEIPT
+          - EXPENSE_STATEMENT
       responses:
         "200":
           description: OK
@@ -138,8 +138,8 @@ paths:
         schema:
           type: string
           enum:
-          - QUITTANCE
-          - NOTE_FRAIS
+          - RENT_RECEIPT
+          - EXPENSE_STATEMENT
       - name: nom
         in: query
         required: true
@@ -214,8 +214,8 @@ paths:
         schema:
           type: string
           enum:
-          - QUITTANCE
-          - NOTE_FRAIS
+          - RENT_RECEIPT
+          - EXPENSE_STATEMENT
       responses:
         "200":
           description: OK
@@ -235,8 +235,8 @@ paths:
         schema:
           type: string
           enum:
-          - QUITTANCE
-          - NOTE_FRAIS
+          - RENT_RECEIPT
+          - EXPENSE_STATEMENT
       responses:
         "200":
           description: OK
@@ -516,8 +516,8 @@ paths:
         schema:
           type: string
           enum:
-          - QUITTANCE
-          - NOTE_FRAIS
+          - RENT_RECEIPT
+          - EXPENSE_STATEMENT
       responses:
         "200":
           description: OK

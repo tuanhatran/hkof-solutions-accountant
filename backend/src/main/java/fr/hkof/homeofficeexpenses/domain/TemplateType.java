@@ -1,6 +1,6 @@
 package fr.hkof.homeofficeexpenses.domain;
 
 public enum TemplateType {
-    QUITTANCE,
-    NOTE_FRAIS
+    RENT_RECEIPT,
+    EXPENSE_STATEMENT
 }

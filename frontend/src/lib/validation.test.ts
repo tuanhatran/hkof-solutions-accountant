@@ -98,7 +98,7 @@ describe('expenseItemSchema', () => {
     libelle: 'Gaz',
     fournisseur: 'EDF',
     prorataPct: '35,71',
-    periodicite: 'MENSUELLE' as const,
+    periodicite: 'MONTHLY' as const,
     ordre: 1,
     actif: true,
     plusieursLignesAutorisees: false,

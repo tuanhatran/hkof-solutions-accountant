@@ -146,13 +146,13 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.detail").value(
                         "Ce justificatif est utilisé par une note de frais et ne peut pas être supprimé."));
 
-        mockMvc.perform(get("/api/templates").param("type", "NOTE_FRAIS"))
+        mockMvc.perform(get("/api/templates").param("type", "EXPENSE_STATEMENT"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].integre").value(true))
                 .andExpect(jsonPath("$[0].actif").value(true));
 
-        mockMvc.perform(get("/api/templates/defaut/QUITTANCE"))
+        mockMvc.perform(get("/api/templates/defaut/RENT_RECEIPT"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("QUITTANCE DE LOYER")));
 

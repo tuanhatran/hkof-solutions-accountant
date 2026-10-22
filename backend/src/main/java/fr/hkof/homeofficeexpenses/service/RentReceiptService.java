@@ -66,10 +66,10 @@ public class RentReceiptService {
         LocalDate emission = dateOu(request.issueDate(), LocalDate.now(clock));
         LocalDate paiement = dateOu(request.paymentDate(), LocalDate.now(clock));
 
-        TemplateDocument template = templateService.active(TemplateType.QUITTANCE);
+        TemplateDocument template = templateService.active(TemplateType.RENT_RECEIPT);
         if (request.templateId() != null) {
             template = templateService.parId(request.templateId());
-            if (template.getType() != TemplateType.QUITTANCE) {
+            if (template.getType() != TemplateType.RENT_RECEIPT) {
                 throw new BusinessException("Le template sélectionné n'est pas un template de quittance.");
             }
         }
@@ -130,9 +130,9 @@ public class RentReceiptService {
         rentReceipt.setIssueDate(dateOu(request.issueDate(), LocalDate.now(clock)));
         rentReceipt.setPaymentDate(dateOu(request.paymentDate(), LocalDate.now(clock)));
         TemplateDocument template = request.templateId() == null
-                ? templateService.active(TemplateType.QUITTANCE)
+                ? templateService.active(TemplateType.RENT_RECEIPT)
                 : templateService.parId(request.templateId());
-        if (template.getType() != TemplateType.QUITTANCE) {
+        if (template.getType() != TemplateType.RENT_RECEIPT) {
             throw new BusinessException("Le template sélectionné n'est pas un template de quittance.");
         }
         String html = templateService.rendre(template, templateDataService.dataRentReceipt(parameters, rentReceipt));
@@ -176,7 +176,7 @@ public class RentReceiptService {
         boolean modifie = false;
         for (RentReceipt existante : existantes) {
             if (existante.getStatus() == DocumentStatus.ACTIVE) {
-                existante.setStatus(DocumentStatus.ARCHIVEE);
+                existante.setStatus(DocumentStatus.ARCHIVED);
                 modifie = true;
             }
         }
