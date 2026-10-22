@@ -32,32 +32,12 @@ export const expenseSchema = z
         (value) => parsePercentage(value) !== null,
         "Prorata attendu entre 0 et 100 (2 décimales max).",
       ),
-    periodStart: optionalDate,
-    periodEnd: optionalDate,
     monthlyAmountOverride: z
       .string()
       .refine(
         (value) => value === "" || isValidAmount(value, false),
         "Le montant du mois doit être un montant positif.",
       ),
-  })
-  .superRefine((values, context) => {
-    const filledStart = values.periodStart !== "";
-    const filledEnd = values.periodEnd !== "";
-    if (filledStart !== filledEnd) {
-      context.addIssue({
-        code: "custom",
-        path: [filledStart ? "periodEnd" : "periodStart"],
-        message: "Renseignez les deux dates de la période, ou aucune.",
-      });
-    }
-    if (filledStart && filledEnd && values.periodStart > values.periodEnd) {
-      context.addIssue({
-        code: "custom",
-        path: ["periodEnd"],
-        message: "La fin de période doit être postérieure au début.",
-      });
-    }
   });
 
 export type ExpenseFormValues = z.infer<typeof expenseSchema>;

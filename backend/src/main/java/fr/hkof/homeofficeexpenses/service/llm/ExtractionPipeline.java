@@ -114,12 +114,6 @@ public class ExtractionPipeline {
 
         String type = normalizeType(clean(root, "type_suggere", 40));
         String invoiceDate = date(root, "date_facture");
-        String periodStart = date(root, "periode_debut");
-        String periodEnd = date(root, "periode_fin");
-        if (periodStart != null && periodEnd != null && LocalDate.parse(periodEnd).isBefore(LocalDate.parse(periodStart))) {
-            periodStart = null;
-            periodEnd = null;
-        }
         String currency = clean(root, "devise", 8);
         if (currency == null) {
             currency = "EUR";
@@ -133,8 +127,6 @@ public class ExtractionPipeline {
                 clean(root, "fournisseur", 160),
                 clean(root, "numero_facture", 80),
                 invoiceDate,
-                periodStart,
-                periodEnd,
                 amountInclVat,
                 amountExclVat,
                 currency.toUpperCase(Locale.ROOT),
@@ -143,15 +135,18 @@ public class ExtractionPipeline {
     }
 
     private void checkFields(JsonNode root) {
+        // Legacy prompts and models may still return the invoice period: it is accepted and ignored.
         Set<String> allowed = Set.of("type_suggere", "fournisseur", "numero_facture", "date_facture",
                 "periode_debut", "periode_fin", "montant_ttc", "montant_ht", "devise", "extrait_source", "confiance");
+        Set<String> required = Set.of("type_suggere", "fournisseur", "numero_facture", "date_facture",
+                "montant_ttc", "montant_ht", "devise", "extrait_source", "confiance");
         for (String field : root.propertyNames()) {
             if (!allowed.contains(field)) {
                 throw new BusinessException("La réponse du modèle contient un champ non autorisé (« " + field
                         + " »). La saisie manuelle reste disponible.");
             }
         }
-        for (String field : allowed) {
+        for (String field : required) {
             JsonNode value = root.get(field);
             if (value == null) {
                 throw new BusinessException("La réponse du modèle ne respecte pas le schéma attendu (champ « "

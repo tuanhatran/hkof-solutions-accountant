@@ -1137,10 +1137,6 @@ components:
           type: string
         proRataPct:
           type: string
-        periodStart:
-          type: string
-        periodEnd:
-          type: string
         monthlyAmountOverride:
           type: string
         receiptId:
@@ -1176,12 +1172,6 @@ components:
           type: string
         supplier:
           type: string
-        periodStart:
-          type: string
-          format: date
-        periodEnd:
-          type: string
-          format: date
         amountInclVat:
           type: string
         monthlyAmount:
@@ -1352,10 +1342,6 @@ components:
         invoiceNumber:
           type: string
         invoiceDate:
-          type: string
-        periodStart:
-          type: string
-        periodEnd:
           type: string
         amountInclVat:
           type: string

@@ -6,7 +6,6 @@ import type {
   ExpenseItemDto,
   AmountSource,
 } from "@/api/types";
-import { isValidDate } from "./dates";
 import { parseAmount, parsePercentage } from "./format";
 
 export interface DraftLine {
@@ -14,8 +13,6 @@ export interface DraftLine {
   itemCode: string;
   amountInclVat: string;
   proRataPct: string;
-  periodStart: string;
-  periodEnd: string;
   monthlyAmountOverride: string;
   receiptId: number | null;
   receiptName: string | null;
@@ -41,8 +38,6 @@ export function fromLineDto(line: LineDto): DraftLine {
     itemCode: line.itemCode ?? "",
     amountInclVat: line.amountInclVat ?? "",
     proRataPct: line.proRataPct ?? "100",
-    periodStart: line.periodStart ?? "",
-    periodEnd: line.periodEnd ?? "",
     monthlyAmountOverride: "",
     receiptId: line.receiptId ?? null,
     receiptName: line.receiptName ?? null,
@@ -67,13 +62,6 @@ export function toLineRequest(line: DraftLine): LineRequest {
     amountInclVat,
     proRataPct,
   };
-  if (line.periodStart && line.periodEnd) {
-    if (!isValidDate(line.periodStart) || !isValidDate(line.periodEnd)) {
-      throw new Error("La période facturée est invalide.");
-    }
-    request.periodStart = line.periodStart;
-    request.periodEnd = line.periodEnd;
-  }
   if (line.monthlyAmountOverride.trim() !== "") {
     const override = parseAmount(line.monthlyAmountOverride);
     if (override === null) {
@@ -130,8 +118,6 @@ export function buildRentLine(amount: string, proRataPct: string): DraftLine {
     itemCode: "loyer",
     amountInclVat: amount,
     proRataPct,
-    periodStart: "",
-    periodEnd: "",
     monthlyAmountOverride: "",
     receiptId: null,
     receiptName: null,

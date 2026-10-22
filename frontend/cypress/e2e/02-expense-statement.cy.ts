@@ -216,8 +216,8 @@ describe("Expense statement — entry and preview", () => {
     waitForValue('[data-cy="select-type-frais"]', "gaz");
     waitForValue('[data-cy="input-montant-ttc"]', "120.00");
     waitForValue('[data-cy="input-prorata"]', "35.71");
-    waitForValue('[data-cy="input-periode-debut"]', "2026-01-01");
-    waitForValue('[data-cy="input-periode-fin"]', "2026-01-31");
+    cy.get('[data-cy="input-periode-debut"]').should("not.exist");
+    cy.get('[data-cy="input-periode-fin"]').should("not.exist");
     cy.contains("Fournisseur détecté : EDF").should("be.visible");
     cy.get('[data-cy="badge-ia-detecte"]').should(($badges) => {
       expect($badges.length).to.be.at.least(2);
