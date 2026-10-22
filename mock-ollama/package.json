@@ -1,0 +1,10 @@
+{
+  "name": "fraisocc-mock-ollama",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Serveur Ollama déterministe pour les tests E2E de FraisOcc",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

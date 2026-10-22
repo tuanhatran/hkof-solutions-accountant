@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Note de frais d'occupation</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 16mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'DejaVu Sans', sans-serif; font-size: 9.4pt; color: #1f2937; line-height: 1.45; margin: 0; }
+  .entete { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+  .entete td { vertical-align: top; }
+  .societe { font-size: 14pt; font-weight: bold; color: #1e3a8a; }
+  .societe-detail { font-size: 8.6pt; color: #4b5563; margin-top: 2px; }
+  .titre-bloc { text-align: right; }
+  .titre { font-size: 16pt; font-weight: bold; color: #1e3a8a; letter-spacing: 0.4px; }
+  .numero { display: inline-block; margin-top: 6px; background: #1e3a8a; color: #ffffff; font-size: 9pt; padding: 5px 10px; border-radius: 3px; }
+  .sous-titre { margin-top: 4px; color: #475569; font-size: 9.5pt; }
+  .objet { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; padding: 11px 14px; margin: 16px 0; }
+  .objet strong { color: #1e3a8a; }
+  .base { font-size: 8.8pt; color: #475569; margin-top: 5px; }
+  h2 { font-size: 10.2pt; color: #1e3a8a; margin: 18px 0 8px 0; }
+  table.detail { width: 100%; border-collapse: collapse; }
+  table.detail th { background: #1e3a8a; color: #ffffff; font-size: 8.2pt; text-align: left; padding: 7px 7px; }
+  table.detail td { padding: 7px 7px; border-bottom: 1px solid #e5e7eb; vertical-align: top; font-size: 8.8pt; }
+  table.detail tr:nth-child(even) td { background: #f8fafc; }
+  .droite { text-align: right; white-space: nowrap; }
+  .centre { text-align: center; }
+  .total-bloc { margin-top: 14px; width: 100%; border-collapse: collapse; }
+  .total-bloc td { vertical-align: middle; }
+  .total-libelle { font-size: 10.5pt; font-weight: bold; color: #1e3a8a; }
+  .total-valeur { text-align: right; font-size: 15pt; font-weight: bold; color: #1e3a8a; }
+  .total-lettres { margin-top: 4px; font-size: 8.8pt; color: #475569; text-align: right; font-style: italic; }
+  .mention { margin-top: 20px; padding: 12px 14px; border-left: 3px solid #1e3a8a; background: #f8fafc; font-size: 8.8pt; text-align: justify; }
+  .annexes { margin-top: 10px; font-size: 8.6pt; color: #475569; }
+  .signature { margin-top: 30px; width: 100%; }
+  .signature td { vertical-align: top; }
+  .cadre { width: 240px; height: 88px; border: 1px dashed #94a3b8; border-radius: 3px; padding: 8px; color: #64748b; font-size: 8.2pt; }
+  .pied { margin-top: 26px; border-top: 1px solid #e2e8f0; padding-top: 7px; font-size: 7.6pt; color: #94a3b8; text-align: center; }
+</style>
+</head>
+<body>
+  <table class="entete">
+    <tr>
+      <td>
+        <div class="societe">{{societe.raison_sociale}}</div>
+        <div class="societe-detail">{{societe.adresse}}</div>
+        <div class="societe-detail">SIREN : {{societe.siren}}</div>
+      </td>
+      <td class="titre-bloc">
+        <div class="titre">NOTE DE FRAIS D'OCCUPATION</div>
+        <div class="numero">{{numero}}</div>
+        <div class="sous-titre">{{mois_libelle}}</div>
+      </td>
+    </tr>
+  </table>
+
+  <div class="objet">
+    <strong>Quote-part du logement utilisée comme siège social</strong>
+    <div class="base">Base de calcul : {{base_prorata}}</div>
+  </div>
+
+  <h2>Détail des frais retenus</h2>
+  <table class="detail">
+    <thead>
+      <tr>
+        <th style="width: 21%;">Poste</th>
+        <th style="width: 17%;">Fournisseur</th>
+        <th style="width: 23%;">Période</th>
+        <th class="droite" style="width: 13%;">Montant TTC</th>
+        <th class="droite" style="width: 10%;">Prorata</th>
+        <th class="droite" style="width: 16%;">Montant retenu</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#lignes}}
+      <tr>
+        <td>{{poste}}</td>
+        <td>{{fournisseur}}</td>
+        <td>{{periode}}</td>
+        <td class="droite">{{montant_ttc}}</td>
+        <td class="droite">{{prorata}}</td>
+        <td class="droite"><strong>{{montant_retenu}}</strong></td>
+      </tr>
+      {{/lignes}}
+    </tbody>
+  </table>
+
+  <table class="total-bloc">
+    <tr>
+      <td class="total-libelle">TOTAL RETENU</td>
+      <td class="total-valeur">{{total}}</td>
+    </tr>
+  </table>
+  <div class="total-lettres">{{total_en_lettres}}</div>
+
+  <div class="mention">
+    La présente note de frais d'occupation est établie par {{societe.raison_sociale}} pour permettre le remboursement
+    au gérant, <strong>{{gerant}}</strong>, de la quote-part des frais du logement utilisée pour les besoins
+    professionnels de la société, sur la base indiquée ci-dessus. Les justificatifs correspondants sont joints.
+  </div>
+
+  {{#complete}}
+  <div class="annexes">Annexes jointes : quittance de loyer du mois et justificatifs des frais.</div>
+  {{/complete}}
+
+  <table class="signature">
+    <tr>
+      <td>
+        <div>Fait à <strong>{{lieu}}</strong>, le <strong>{{date_emission}}</strong></div>
+        <div style="margin-top: 6px; color: #64748b; font-size: 8.4pt;">{{societe.raison_sociale}} — {{gerant}}</div>
+      </td>
+      <td style="text-align: right;">
+        <div class="cadre">Signature du gérant<br /><br /><br /></div>
+      </td>
+    </tr>
+  </table>
+
+  <div class="pied">Document généré par FraisOcc — note de frais d'occupation</div>
+</body>
+</html>

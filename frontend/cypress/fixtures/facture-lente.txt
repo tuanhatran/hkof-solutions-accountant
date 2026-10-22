@@ -1,0 +1,5 @@
+Fournisseur : EDF
+Type de frais : gaz
+Montant TTC : 99,99 €
+MOCK_LENT
+Facture volontairement lente pour tester l'annulation de l'analyse.

@@ -1,0 +1,4 @@
+Fournisseur : Primeo
+Type de frais : electricite
+Montant TTC : 88,20 €
+Facture d'électricité du logement.

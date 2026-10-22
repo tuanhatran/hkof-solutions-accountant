@@ -1,0 +1,6 @@
+Fournisseur : EDF
+Type de frais : gaz
+Montant TTC : 120,00 €
+Début : 2026-01-01
+Fin : 2026-01-31
+Facture de gaz naturel pour la période indiquée.

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Quittance E2E</title>
+  <style>
+    body { font-family: 'DejaVu Sans', sans-serif; font-size: 11pt; color: #1f2937; }
+    h1 { color: #164a3c; font-size: 18pt; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    td { padding: 6px; border-bottom: 1px solid #e5e7eb; }
+    .total { font-weight: bold; font-size: 14pt; }
+  </style>
+</head>
+<body>
+  <h1>QUITTANCE TEST E2E</h1>
+  <p>{{bailleur.nom}} certifie avoir reçu de {{locataire.nom}} la somme de {{total}} pour le logement {{logement.adresse}}.</p>
+  <table>
+    <tr><td>Mois</td><td>{{mois_libelle}}</td></tr>
+    <tr><td>Période</td><td>du {{periode.debut}} au {{periode.fin}}</td></tr>
+    <tr><td>Loyer hors charges</td><td>{{loyer_hc}}</td></tr>
+    <tr><td>Total</td><td class="total">{{total}}</td></tr>
+  </table>
+  <p>{{total_en_lettres}}</p>
+  <p>Fait à {{lieu}}, le {{date_emission}}.</p>
+</body>
+</html>

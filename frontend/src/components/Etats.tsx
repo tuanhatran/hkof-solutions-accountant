@@ -1,0 +1,63 @@
+import { AlertCircle, Inbox, LoaderCircle, RefreshCcw } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { Bouton } from './Bouton';
+import { cn } from '@/lib/cn';
+
+export function Spinner({ taille = 18, className }: { taille?: number; className?: string }) {
+  return (
+    <LoaderCircle
+      size={taille}
+      className={cn('animate-spin text-accent', className)}
+      aria-hidden="true"
+    />
+  );
+}
+
+export function EtatChargement({ message = 'Chargement…' }: { message?: string }) {
+  return (
+    <div className="carte flex items-center gap-3 p-6 text-sm text-ink-soft" role="status">
+      <Spinner />
+      {message}
+    </div>
+  );
+}
+
+export function EtatErreur({ message, onReessayer }: { message: string; onReessayer?: () => void }) {
+  return (
+    <div className="carte flex flex-col items-start gap-3 border-danger/25 bg-danger-soft/40 p-6" role="alert">
+      <div className="flex items-center gap-2 font-semibold text-danger">
+        <AlertCircle size={18} aria-hidden="true" />
+        Impossible de charger les données
+      </div>
+      <p className="text-sm text-ink-soft">{message}</p>
+      {onReessayer ? (
+        <Bouton variante="secondaire" petit icone={<RefreshCcw size={14} />} onClick={onReessayer}>
+          Réessayer
+        </Bouton>
+      ) : null}
+    </div>
+  );
+}
+
+export function EtatVide({
+  titre,
+  description,
+  action,
+  icone,
+}: {
+  titre: string;
+  description?: string;
+  action?: ReactNode;
+  icone?: ReactNode;
+}) {
+  return (
+    <div className="carte flex flex-col items-center justify-center px-6 py-12 text-center">
+      <span className="grid h-12 w-12 place-items-center rounded-full bg-paper-deep/70 text-ink-soft">
+        {icone ?? <Inbox size={22} aria-hidden="true" />}
+      </span>
+      <h3 className="mt-4 text-lg text-ink">{titre}</h3>
+      {description ? <p className="mt-1.5 max-w-sm text-sm text-ink-soft">{description}</p> : null}
+      {action ? <div className="mt-5">{action}</div> : null}
+    </div>
+  );
+}

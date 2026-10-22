@@ -1,0 +1,32 @@
+# Backend (Maven / Spring Boot) generated output
+backend/target/
+backend/build/
+backend/data/
+backend/*.log
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/HELP.md
+
+# Frontend (Node / Vite / Cypress) generated output
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/.vite/
+frontend/*.tsbuildinfo
+frontend/*.local
+frontend/cypress/screenshots/
+frontend/cypress/videos/
+frontend/cypress/downloads/
+frontend/npm-debug.log*
+
+# Mock Ollama
+mock-ollama/node_modules/
+
+# Logs
+*.log
+
+# IDE and OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db

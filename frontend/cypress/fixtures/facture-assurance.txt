@@ -1,0 +1,4 @@
+Fournisseur : MAIF
+Type de frais : assurance
+Montant TTC : 210,00 €
+Cotisation annuelle d'assurance habitation.

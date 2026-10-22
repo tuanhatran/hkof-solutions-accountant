@@ -1,0 +1,9 @@
+EDF - Facture de gaz naturel
+Client : HKOF
+Numero de facture : FA-2026-0912
+Date de facture : 05/10/2026
+Periode du 01/09/2026 au 31/10/2026
+Montant HT : 65,00 EUR
+TVA 20 % : 13,00 EUR
+Total TTC : 78,00 EUR
+Net a payer : 78,00 EUR

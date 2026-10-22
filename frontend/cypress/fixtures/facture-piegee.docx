@@ -1,0 +1,2 @@
+Ce fichier porte l'extension .docx mais n'est pas un document OOXML.
+Le backend doit refuser son contenu et aucune ligne ne doit être ajoutée.

@@ -1,0 +1,258 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-paper: #f4f0e8;
+  --color-paper-deep: #eae3d7;
+  --color-surface: #fffdf8;
+  --color-ink: #21302b;
+  --color-ink-soft: #5c6a64;
+  --color-line: #ded6c8;
+  --color-line-forte: #c9bfae;
+  --color-accent: #1b5b49;
+  --color-accent-strong: #123f33;
+  --color-accent-soft: #e3efe9;
+  --color-copper: #a3613a;
+  --color-copper-soft: #f5e8dd;
+  --color-warning: #925512;
+  --color-warning-soft: #fbf0dc;
+  --color-danger: #a03d34;
+  --color-danger-soft: #f9e7e3;
+  --font-sans: 'Avenir Next', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-display: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  --font-mono: 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
+  --shadow-douce: 0 24px 60px -42px rgba(33, 48, 43, 0.55);
+  --shadow-flottante: 0 30px 80px -30px rgba(18, 63, 51, 0.35);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--color-paper);
+    background-image:
+      radial-gradient(1100px 520px at 105% -8%, rgba(27, 91, 73, 0.09), transparent 62%),
+      radial-gradient(900px 460px at -12% 104%, rgba(163, 97, 58, 0.07), transparent 55%);
+    background-attachment: fixed;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'kern' 1, 'liga' 1;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
+  }
+
+  ::selection {
+    background: rgba(27, 91, 73, 0.18);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
+
+  input[type='month']::-webkit-calendar-picker-indicator {
+    opacity: 0.55;
+    cursor: pointer;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(33, 48, 43, 0.18);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+}
+
+@layer components {
+  .carte {
+    @apply rounded-2xl border border-line bg-surface shadow-douce;
+  }
+
+  .carte-entete {
+    @apply flex flex-wrap items-start justify-between gap-4 border-b border-line px-5 py-4 sm:px-6;
+  }
+
+  .carte-corps {
+    @apply px-5 py-5 sm:px-6;
+  }
+
+  .label-champ {
+    @apply block text-[13px] font-semibold text-ink;
+  }
+
+  .champ {
+    @apply mt-1.5 w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-[15px] text-ink transition placeholder:text-ink-soft/45 hover:border-line-forte focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/10 disabled:cursor-not-allowed disabled:bg-paper-deep/60 disabled:text-ink-soft;
+  }
+
+  .champ-erreur {
+    @apply border-danger/70 focus:border-danger focus:ring-danger/10;
+  }
+
+  .champ-avertissement {
+    @apply border-warning/70 bg-warning-soft/50 focus:border-warning focus:ring-warning/10;
+  }
+
+  .aide {
+    @apply mt-1.5 text-xs leading-relaxed text-ink-soft;
+  }
+
+  .erreur-champ {
+    @apply mt-1.5 flex items-start gap-1 text-xs font-medium text-danger;
+  }
+
+  .btn {
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-xl border border-transparent px-4 py-2.5 text-sm font-semibold transition duration-150 disabled:cursor-not-allowed disabled:opacity-45;
+  }
+
+  .btn-primaire {
+    @apply bg-accent text-white shadow-[0_10px_24px_-14px_rgba(18,63,51,0.9)] hover:bg-accent-strong active:translate-y-px;
+  }
+
+  .btn-secondaire {
+    @apply border-line bg-white text-ink hover:border-line-forte hover:bg-paper/70 active:translate-y-px;
+  }
+
+  .btn-fantome {
+    @apply text-ink-soft hover:bg-paper-deep/70 hover:text-ink;
+  }
+
+  .btn-danger {
+    @apply border-danger/20 bg-danger-soft text-danger hover:border-danger/40 hover:bg-danger/10;
+  }
+
+  .btn-petit {
+    @apply rounded-lg px-2.5 py-1.5 text-xs;
+  }
+
+  .lien {
+    @apply font-medium text-accent underline decoration-accent/30 underline-offset-4 transition hover:decoration-accent;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.08em];
+  }
+
+  .badge-neutre {
+    @apply border-line bg-paper-deep/50 text-ink-soft;
+  }
+
+  .badge-accent {
+    @apply border-accent/15 bg-accent-soft text-accent;
+  }
+
+  .badge-ia {
+    @apply border-copper/20 bg-copper-soft text-copper;
+  }
+
+  .badge-avertissement {
+    @apply border-warning/20 bg-warning-soft text-warning;
+  }
+
+  .badge-danger {
+    @apply border-danger/20 bg-danger-soft text-danger;
+  }
+
+  .eyebrow {
+    @apply text-[11px] font-bold uppercase tracking-[0.18em] text-ink-soft;
+  }
+
+  .segmented {
+    @apply inline-flex rounded-xl border border-line bg-paper-deep/45 p-1;
+  }
+
+  .segmented-item {
+    @apply rounded-lg px-3 py-1.5 text-xs font-semibold text-ink-soft transition hover:text-ink;
+  }
+
+  .segmented-item-actif {
+    @apply bg-surface text-ink shadow-[0_2px_8px_-4px_rgba(33,48,43,0.35)];
+  }
+
+  .tableau-frais {
+    @apply w-full border-collapse text-left text-sm;
+  }
+
+  .tableau-frais th {
+    @apply border-b border-line px-3 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.08em] text-ink-soft;
+  }
+
+  .tableau-frais td {
+    @apply border-b border-line/70 px-3 py-3 align-middle;
+  }
+
+  .tableau-frais tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .nombre {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .surface-verre {
+    background: rgba(255, 253, 248, 0.82);
+    backdrop-filter: blur(14px);
+  }
+}
+
+@keyframes fondu {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes apparition-toast {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animation-fondu {
+  animation: fondu 220ms ease-out both;
+}
+
+.animation-toast {
+  animation: apparition-toast 180ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animation-fondu,
+  .animation-toast {
+    animation: none;
+  }
+}

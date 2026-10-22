@@ -1,0 +1,2 @@
+Document volontairement illisible pour simuler un échec d'analyse.
+MOCK_ECHEC
