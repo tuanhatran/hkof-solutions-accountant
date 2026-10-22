@@ -3,7 +3,6 @@ package fr.hkof.homeofficeexpenses.service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
@@ -133,12 +132,10 @@ public class StorageService {
     }
 
     static String assainirName(String name) {
-        String base;
-        try {
-            base = name == null ? "fichier" : Path.of(name).getFileName().toString();
-        } catch (InvalidPathException ex) {
-            base = name;
-        }
+        // Strip both separators so Windows-style names are handled on every OS.
+        String base = name == null
+                ? "fichier"
+                : name.substring(Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1);
         String propre = base.replaceAll("[\\p{Cntrl}<>:\"/\\\\|?*]", "_").trim();
         propre = propre.replaceAll("[. ]+$", "");
         if (propre.isBlank()) {

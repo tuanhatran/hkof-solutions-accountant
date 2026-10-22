@@ -40,8 +40,8 @@ class ApiIntegrationTest {
     void fluxComplete() throws Exception {
         mockMvc.perform(get("/api/parametres"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.prorataBase").value("35.71"))
-                .andExpect(jsonPath("$.loyerHc").value("900.00"));
+                .andExpect(jsonPath("$.proRataBase").value("35.71"))
+                .andExpect(jsonPath("$.rentExclCharges").value("900.00"));
 
         mockMvc.perform(get("/api/postes"))
                 .andExpect(status().isOk())
@@ -50,14 +50,14 @@ class ApiIntegrationTest {
         String rentReceipt = mockMvc.perform(post("/api/quittances")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"mois":"2026-11"}
+                                {"month":"2026-11"}
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.version").value(1))
-                .andExpect(jsonPath("$.statut").value("ACTIVE"))
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.total").value("950.00"))
-                .andExpect(jsonPath("$.periodeDebut").value("2026-11-01"))
-                .andExpect(jsonPath("$.periodeFin").value("2026-11-30"))
+                .andExpect(jsonPath("$.periodStart").value("2026-11-01"))
+                .andExpect(jsonPath("$.periodEnd").value("2026-11-30"))
                 .andReturn().getResponse().getContentAsString();
         long rentReceiptId = ((Number) JsonPath.read(rentReceipt, "$.id")).longValue();
 
@@ -72,11 +72,11 @@ class ApiIntegrationTest {
         mockMvc.perform(post("/api/quittances/apercu")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"mois":"2026-12"}
+                                {"month":"2026-12"}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_PDF));
-        mockMvc.perform(get("/api/quittances").param("mois", "2026-12"))
+        mockMvc.perform(get("/api/quittances").param("month", "2026-12"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
 
@@ -84,7 +84,7 @@ class ApiIntegrationTest {
                 "EDF - Gaz\nTotal TTC : 78,00 EUR\n".getBytes(StandardCharsets.UTF_8));
         String receipt = mockMvc.perform(multipart("/api/justificatifs").file(file))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.nomFichier").value("facture-gaz.txt"))
+                .andExpect(jsonPath("$.fileName").value("facture-gaz.txt"))
                 .andReturn().getResponse().getContentAsString();
         long receiptId = ((Number) JsonPath.read(receipt, "$.id")).longValue();
 
@@ -94,10 +94,10 @@ class ApiIntegrationTest {
 
         String statementJson = """
                 {
-                  "mois":"2026-11",
-                  "lignes":[
-                    {"posteCode":"loyer","montantTtc":"950.00","prorataPct":"100"},
-                    {"posteCode":"gaz","montantTtc":"80.00","prorataPct":"35,71","justificatifId":%d}
+                  "month":"2026-11",
+                  "lines":[
+                    {"itemCode":"loyer","amountInclVat":"950.00","proRataPct":"100"},
+                    {"itemCode":"gaz","amountInclVat":"80.00","proRataPct":"35,71","receiptId":%d}
                   ]
                 }
                 """.formatted(receiptId);
@@ -107,17 +107,17 @@ class ApiIntegrationTest {
                         .content(statementJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value("978.57"))
-                .andExpect(jsonPath("$.lignes[1].montantRetenu").value("28.57"))
-                .andExpect(jsonPath("$.lignes[1].justificatifNom").value("facture-gaz.txt"))
-                .andExpect(jsonPath("$.totalEnLettres")
+                .andExpect(jsonPath("$.lines[1].claimedAmount").value("28.57"))
+                .andExpect(jsonPath("$.lines[1].receiptName").value("facture-gaz.txt"))
+                .andExpect(jsonPath("$.totalInWords")
                         .value("neuf cent soixante-dix-huit euros et cinquante-sept centimes"));
 
         mockMvc.perform(post("/api/notes-frais/apercu")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"mois":"2026-11","complet":true,"lignes":[
-                                  {"posteCode":"loyer","montantTtc":"950.00","prorataPct":"100"},
-                                  {"posteCode":"gaz","montantTtc":"80.00","prorataPct":"35,71"}
+                                {"month":"2026-11","complete":true,"lines":[
+                                  {"itemCode":"loyer","amountInclVat":"950.00","proRataPct":"100"},
+                                  {"itemCode":"gaz","amountInclVat":"80.00","proRataPct":"35,71"}
                                 ]}
                                 """))
                 .andExpect(status().isOk())
@@ -127,14 +127,14 @@ class ApiIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(statementJson))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.numero").value("NF-2026-11"))
+                .andExpect(jsonPath("$.number").value("NF-2026-11"))
                 .andExpect(jsonPath("$.total").value("978.57"))
-                .andExpect(jsonPath("$.pdfCompletDisponible").value(true))
+                .andExpect(jsonPath("$.fullPdfAvailable").value(true))
                 .andReturn().getResponse().getContentAsString();
         long statementId = ((Number) JsonPath.read(statement, "$.id")).longValue();
 
         MvcResult complete = mockMvc.perform(get("/api/notes-frais/{id}/pdf", statementId)
-                        .param("complet", "true"))
+                        .param("complete", "true"))
                 .andExpect(status().isOk())
                 .andReturn();
         try (PDDocument document = PDDocument.load(complete.getResponse().getContentAsByteArray())) {
@@ -149,8 +149,8 @@ class ApiIntegrationTest {
         mockMvc.perform(get("/api/templates").param("type", "EXPENSE_STATEMENT"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].integre").value(true))
-                .andExpect(jsonPath("$[0].actif").value(true));
+                .andExpect(jsonPath("$[0].builtIn").value(true))
+                .andExpect(jsonPath("$[0].active").value(true));
 
         mockMvc.perform(get("/api/templates/defaut/RENT_RECEIPT"))
                 .andExpect(status().isOk())
@@ -162,18 +162,18 @@ class ApiIntegrationTest {
 
         mockMvc.perform(get("/api/admin/llm"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.urlDistante").value(false))
-                .andExpect(jsonPath("$.apiKeyConfiguree").value(false));
+                .andExpect(jsonPath("$.remoteUrl").value(false))
+                .andExpect(jsonPath("$.apiKeyConfigured").value(false));
 
         mockMvc.perform(put("/api/admin/llm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"url":"https://llm.exemple.fr","cleApi":"secret-de-test"}
+                                {"url":"https://llm.exemple.fr","apiKey":"secret-de-test"}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.urlDistante").value(true))
-                .andExpect(jsonPath("$.avertissement").isNotEmpty())
-                .andExpect(jsonPath("$.apiKeyConfiguree").value(true));
+                .andExpect(jsonPath("$.remoteUrl").value(true))
+                .andExpect(jsonPath("$.warning").isNotEmpty())
+                .andExpect(jsonPath("$.apiKeyConfigured").value(true));
 
         String config = mockMvc.perform(get("/api/admin/llm"))
                 .andExpect(status().isOk())
@@ -183,11 +183,11 @@ class ApiIntegrationTest {
         mockMvc.perform(put("/api/admin/llm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"url":"http://localhost:11434","cleApi":""}
+                                {"url":"http://localhost:11434","apiKey":""}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.urlDistante").value(false))
-                .andExpect(jsonPath("$.apiKeyConfiguree").value(false));
+                .andExpect(jsonPath("$.remoteUrl").value(false))
+                .andExpect(jsonPath("$.apiKeyConfigured").value(false));
 
         mockMvc.perform(get("/api/quittances/{id}", 999_999))
                 .andExpect(status().isNotFound())

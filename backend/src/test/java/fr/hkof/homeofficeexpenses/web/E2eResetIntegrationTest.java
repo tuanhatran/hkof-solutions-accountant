@@ -33,21 +33,21 @@ class E2eResetIntegrationTest {
         mockMvc.perform(put("/api/parametres")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"raisonSociale":"Test E2E","formeJuridique":"EURL","siren":"123 456 789",
-                                 "societeAdresse":"1 rue du Test, 75001 Paris","gerant":"Testeur",
-                                 "logementAdresse":"1 rue du Test, 75001 Paris","surfaceTotale":"80",
-                                 "surfacePro":"32","bailleurNom":"Bailleur Test","bailleurAdresse":"Adresse",
-                                 "locataireNom":"Locataire Test","locataireAdresse":"Adresse",
-                                 "loyerHc":"1000","provisionCharges":"100","lieuEmission":"Paris"}
+                                {"companyName":"Test E2E","legalForm":"EURL","siren":"123 456 789",
+                                 "companyAddress":"1 rue du Test, 75001 Paris","managerName":"Testeur",
+                                 "homeAddress":"1 rue du Test, 75001 Paris","totalArea":"80",
+                                 "businessArea":"32","landlordName":"Bailleur Test","landlordAddress":"Adresse",
+                                 "tenantName":"Locataire Test","tenantAddress":"Adresse",
+                                 "rentExclCharges":"1000","chargesAdvance":"100","issuePlace":"Paris"}
                                 """))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/postes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"code":"test-e2e","libelle":"Poste e2e","prorataPct":"35.71",
-                                 "periodicite":"MONTHLY","actif":true,"ordre":99,
-                                 "plusieursLignesAutorisees":false}
+                                {"code":"test-e2e","label":"Poste e2e","proRataPct":"35.71",
+                                 "periodicity":"MONTHLY","active":true,"sortOrder":99,
+                                 "multipleLinesAllowed":false}
                                 """))
                 .andExpect(status().isCreated());
 
@@ -63,8 +63,8 @@ class E2eResetIntegrationTest {
 
         mockMvc.perform(get("/api/parametres"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.raisonSociale").value("HKOF"))
-                .andExpect(jsonPath("$.loyerHc").value("900.00"));
+                .andExpect(jsonPath("$.companyName").value("HKOF"))
+                .andExpect(jsonPath("$.rentExclCharges").value("900.00"));
         mockMvc.perform(get("/api/postes"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(6))
