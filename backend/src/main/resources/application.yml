@@ -48,7 +48,7 @@ springdoc:
 
 app:
   data-dir: ${APP_DATA_DIR:./data}
-  cors-allowed-origins: ${APP_CORS_ORIGINS:http://localhost:5173}
+  cors-allowed-origins: ${APP_CORS_ORIGINS:http://localhost:5173,http://localhost:8080}
   llm:
     default-url: ${OLLAMA_BASE_URL:http://localhost:11434}
     default-model: ${OLLAMA_MODEL:qwen2.5:7b}

@@ -128,7 +128,7 @@ export const api = {
     uploader: (type: TemplateType, name: string, file: File): Promise<TemplateDto> => {
       const payload = new FormData();
       payload.append('type', type);
-      payload.append('nom', name);
+      payload.append('name', name);
       payload.append('fichier', file);
       return request<TemplateDto>('/api/templates', { method: 'POST', body: payload });
     },

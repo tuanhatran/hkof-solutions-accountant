@@ -2,6 +2,35 @@
 
 Personal local application for rent receipts (quittances) and home-office expense statements (notes de frais d'occupation). Read `product_prompt.md` (full specification) before any contribution.
 
+## Superpowers (required on every coding task)
+
+This project vendors the [Superpowers](https://github.com/obra/superpowers) skills
+(MIT, v7.0.1, commit `2ce8aa15d05bd57213e6f746f953aafb7ded7a8b`) in `.qoder/skills/`.
+The license is in `.qoder/skills/LICENSE-superpowers`.
+
+Before any coding, planning, debugging, or review task, invoke the
+`using-superpowers` skill and follow it. Skill references written as
+`superpowers:<name>` mean the project skill at `.qoder/skills/<name>/SKILL.md`.
+
+Default routing:
+
+- New feature or unclear request: `brainstorming`, then `writing-plans`.
+- Multi-step implementation: `executing-plans`.
+- Any behavior change: `test-driven-development` — write the failing test first.
+- Bug, failing test, or unexpected result: `systematic-debugging`.
+- Before claiming completion: `verification-before-completion`; use
+  `requesting-code-review` for non-trivial changes.
+
+## Project precedence
+
+The absolute rules below and the role protocol in `.qoder/agents/` take precedence
+over Superpowers skills. In particular:
+
+- Never commit, push, reset, clean, or stash. Do not create worktrees or finish
+  branches (`using-git-worktrees`, `finishing-a-development-branch`) unless the
+  user explicitly asks.
+- Never log or hand off secret values.
+
 ## Absolute rules
 
 - UI, documents and error messages in French. Amounts in euros, dates DD/MM/YYYY.
