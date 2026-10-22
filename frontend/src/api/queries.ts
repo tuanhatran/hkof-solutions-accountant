@@ -1,20 +1,21 @@
-import { useQuery } from '@tanstack/react-query';
-import { api } from './endpoints';
-import type { TemplateType } from './types';
+import { useQuery } from "@tanstack/react-query";
+import { api } from "./endpoints";
+import type { TemplateType } from "./types";
 
 export const queryKeys = {
-  settings: ['settings'] as const,
-  expenseItemsAll: ['expenseItems'] as const,
-  expenseItems: (all: boolean) => ['expenseItems', all] as const,
-  templates: (type: TemplateType) => ['templates', type] as const,
-  variables: (type: TemplateType) => ['templates', type, 'variables'] as const,
-  llmConfig: ['llm', 'config'] as const,
-  llmStatus: ['llm', 'status'] as const,
-  llmModels: ['llm', 'models'] as const,
-  rentReceiptActive: (month: string) => ['rentReceipts', 'active', month] as const,
-  statementActive: (month: string) => ['statements', 'active', month] as const,
-  rentReceipts: (month?: string) => ['rentReceipts', month ?? 'all'] as const,
-  statements: (month?: string) => ['statements', month ?? 'all'] as const,
+  settings: ["settings"] as const,
+  expenseItemsAll: ["expenseItems"] as const,
+  expenseItems: (all: boolean) => ["expenseItems", all] as const,
+  templates: (type: TemplateType) => ["templates", type] as const,
+  variables: (type: TemplateType) => ["templates", type, "variables"] as const,
+  llmConfig: ["llm", "config"] as const,
+  llmStatus: ["llm", "status"] as const,
+  llmModels: ["llm", "models"] as const,
+  rentReceiptActive: (month: string) =>
+    ["rentReceipts", "active", month] as const,
+  statementActive: (month: string) => ["statements", "active", month] as const,
+  rentReceipts: (month?: string) => ["rentReceipts", month ?? "all"] as const,
+  statements: (month?: string) => ["statements", month ?? "all"] as const,
 };
 
 export function useSettings() {
@@ -68,7 +69,7 @@ export function useLlmStatus() {
 
 export function useLlmModels(url: string | null) {
   return useQuery({
-    queryKey: [...queryKeys.llmModels, url ?? ''],
+    queryKey: [...queryKeys.llmModels, url ?? ""],
     queryFn: () => api.llm.models(),
     enabled: Boolean(url),
     retry: false,

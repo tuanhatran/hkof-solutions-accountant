@@ -1,13 +1,19 @@
-import { ArrowLeft, Compass } from 'lucide-react';
-import { Link, Navigate, createBrowserRouter, isRouteErrorResponse, useRouteError } from 'react-router-dom';
-import { AppShell } from '@/components/AppShell';
-import { Button } from '@/components/Button';
-import { AdminLlmPage } from '@/pages/AdminLlmPage';
-import { SettingsPage } from '@/pages/SettingsPage';
-import { GenerateExpenseStatementPage } from '@/pages/GenerateExpenseStatementPage';
-import { GenerateRentReceiptPage } from '@/pages/GenerateRentReceiptPage';
-import { HistoryPage } from '@/pages/HistoryPage';
-import { TemplatesPage } from '@/pages/TemplatesPage';
+import { ArrowLeft, Compass } from "lucide-react";
+import {
+  Link,
+  Navigate,
+  createBrowserRouter,
+  isRouteErrorResponse,
+  useRouteError,
+} from "react-router-dom";
+import { AppShell } from "@/components/AppShell";
+import { Button } from "@/components/Button";
+import { AdminLlmPage } from "@/pages/AdminLlmPage";
+import { SettingsPage } from "@/pages/SettingsPage";
+import { GenerateExpenseStatementPage } from "@/pages/GenerateExpenseStatementPage";
+import { GenerateRentReceiptPage } from "@/pages/GenerateRentReceiptPage";
+import { HistoryPage } from "@/pages/HistoryPage";
+import { TemplatesPage } from "@/pages/TemplatesPage";
 
 function NotFoundPage() {
   return (
@@ -18,7 +24,8 @@ function NotFoundPage() {
       <p className="eyebrow mt-5">Erreur 404</p>
       <h1 className="mt-2 text-3xl text-ink">Page introuvable</h1>
       <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-        Cette adresse ne correspond à aucune page de HomeOfficeExpenses. Vos brouillons restent conservés pendant la session.
+        Cette adresse ne correspond à aucune page de HomeOfficeExpenses. Vos
+        brouillons restent conservés pendant la session.
       </p>
       <Link to="/generer/quittance" className="mt-6">
         <Button variante="primaire" icone={<ArrowLeft size={15} />}>
@@ -35,18 +42,27 @@ function AppError() {
     ? `${errorText.status} — ${errorText.statusText}`
     : errorText instanceof Error
       ? errorText.message
-      : 'Une erreur inattendue est survenue.';
+      : "Une erreur inattendue est survenue.";
 
   return (
     <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 text-center">
       <p className="eyebrow">HomeOfficeExpenses</p>
-      <h1 className="mt-2 text-4xl text-ink">L’application a rencontré une erreur</h1>
-      <p className="mt-3 max-w-lg text-sm leading-relaxed text-ink-soft">{message}</p>
-      <p className="mt-2 max-w-lg text-xs text-ink-soft">
-        Vos données enregistrées ne sont pas affectées. Rechargez la page pour reprendre ; les brouillons de la session
-        restent dans le stockage local du navigateur.
+      <h1 className="mt-2 text-4xl text-ink">
+        L’application a rencontré une erreur
+      </h1>
+      <p className="mt-3 max-w-lg text-sm leading-relaxed text-ink-soft">
+        {message}
       </p>
-      <Button variante="primaire" className="mt-6" onClick={() => window.location.assign('/')}>
+      <p className="mt-2 max-w-lg text-xs text-ink-soft">
+        Vos données enregistrées ne sont pas affectées. Rechargez la page pour
+        reprendre ; les brouillons de la session restent dans le stockage local
+        du navigateur.
+      </p>
+      <Button
+        variante="primaire"
+        className="mt-6"
+        onClick={() => window.location.assign("/")}
+      >
         Recharger HomeOfficeExpenses
       </Button>
     </div>
@@ -55,19 +71,22 @@ function AppError() {
 
 export const router = createBrowserRouter([
   {
-    path: '/',
+    path: "/",
     element: <AppShell />,
     errorElement: <AppError />,
     children: [
       { index: true, element: <Navigate to="/generer/quittance" replace /> },
-      { path: 'generer', element: <Navigate to="/generer/quittance" replace /> },
-      { path: 'generer/quittance', element: <GenerateRentReceiptPage /> },
-      { path: 'generer/note-frais', element: <GenerateExpenseStatementPage /> },
-      { path: 'historique', element: <HistoryPage /> },
-      { path: 'configuration', element: <SettingsPage /> },
-      { path: 'templates', element: <TemplatesPage /> },
-      { path: 'admin', element: <AdminLlmPage /> },
-      { path: '*', element: <NotFoundPage /> },
+      {
+        path: "generer",
+        element: <Navigate to="/generer/quittance" replace />,
+      },
+      { path: "generer/quittance", element: <GenerateRentReceiptPage /> },
+      { path: "generer/note-frais", element: <GenerateExpenseStatementPage /> },
+      { path: "historique", element: <HistoryPage /> },
+      { path: "configuration", element: <SettingsPage /> },
+      { path: "templates", element: <TemplatesPage /> },
+      { path: "admin", element: <AdminLlmPage /> },
+      { path: "*", element: <NotFoundPage /> },
     ],
   },
 ]);

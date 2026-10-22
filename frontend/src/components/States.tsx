@@ -1,37 +1,64 @@
-import { AlertCircle, Inbox, LoaderCircle, RefreshCcw } from 'lucide-react';
-import type { ReactNode } from 'react';
-import { Button } from './Button';
-import { cn } from '@/lib/cn';
+import { AlertCircle, Inbox, LoaderCircle, RefreshCcw } from "lucide-react";
+import type { ReactNode } from "react";
+import { Button } from "./Button";
+import { cn } from "@/lib/cn";
 
-export function Spinner({ taille: size = 18, className }: { taille?: number; className?: string }) {
+export function Spinner({
+  taille: size = 18,
+  className,
+}: {
+  taille?: number;
+  className?: string;
+}) {
   return (
     <LoaderCircle
       size={size}
-      className={cn('animate-spin text-accent', className)}
+      className={cn("animate-spin text-accent", className)}
       aria-hidden="true"
     />
   );
 }
 
-export function LoadingState({ message = 'Chargement…' }: { message?: string }) {
+export function LoadingState({
+  message = "Chargement…",
+}: {
+  message?: string;
+}) {
   return (
-    <div className="carte flex items-center gap-3 p-6 text-sm text-ink-soft" role="status">
+    <div
+      className="carte flex items-center gap-3 p-6 text-sm text-ink-soft"
+      role="status"
+    >
       <Spinner />
       {message}
     </div>
   );
 }
 
-export function ErrorState({ message, onReessayer: onRetry }: { message: string; onReessayer?: () => void }) {
+export function ErrorState({
+  message,
+  onReessayer: onRetry,
+}: {
+  message: string;
+  onReessayer?: () => void;
+}) {
   return (
-    <div className="carte flex flex-col items-start gap-3 border-danger/25 bg-danger-soft/40 p-6" role="alert">
+    <div
+      className="carte flex flex-col items-start gap-3 border-danger/25 bg-danger-soft/40 p-6"
+      role="alert"
+    >
       <div className="flex items-center gap-2 font-semibold text-danger">
         <AlertCircle size={18} aria-hidden="true" />
         Impossible de charger les données
       </div>
       <p className="text-sm text-ink-soft">{message}</p>
       {onRetry ? (
-        <Button variante="secondaire" petit icone={<RefreshCcw size={14} />} onClick={onRetry}>
+        <Button
+          variante="secondaire"
+          petit
+          icone={<RefreshCcw size={14} />}
+          onClick={onRetry}
+        >
           Réessayer
         </Button>
       ) : null}
@@ -56,7 +83,9 @@ export function EmptyState({
         {icon ?? <Inbox size={22} aria-hidden="true" />}
       </span>
       <h3 className="mt-4 text-lg text-ink">{title}</h3>
-      {description ? <p className="mt-1.5 max-w-sm text-sm text-ink-soft">{description}</p> : null}
+      {description ? (
+        <p className="mt-1.5 max-w-sm text-sm text-ink-soft">{description}</p>
+      ) : null}
       {action ? <div className="mt-5">{action}</div> : null}
     </div>
   );

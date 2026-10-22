@@ -1,12 +1,12 @@
-import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import "@testing-library/jest-dom/vitest";
+import { cleanup } from "@testing-library/react";
+import { afterEach } from "vitest";
 
 afterEach(() => {
   cleanup();
 });
 
-if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
+if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
   window.matchMedia = (request: string) =>
     ({
       matches: false,
@@ -20,11 +20,12 @@ if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
     }) as MediaQueryList;
 }
 
-if (typeof globalThis.ResizeObserver === 'undefined') {
+if (typeof globalThis.ResizeObserver === "undefined") {
   class ResizeObserverTest {
     observe() {}
     unobserve() {}
     disconnect() {}
   }
-  globalThis.ResizeObserver = ResizeObserverTest as unknown as typeof ResizeObserver;
+  globalThis.ResizeObserver =
+    ResizeObserverTest as unknown as typeof ResizeObserver;
 }

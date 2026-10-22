@@ -7,21 +7,21 @@ import {
   FileText,
   History,
   PencilLine,
-} from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { errorMessage } from '@/api/client';
-import { api } from '@/api/endpoints';
-import { useStatements, useRentReceipts } from '@/api/queries';
-import type { StatementDto, RentReceiptDto } from '@/api/types';
-import { Button } from '@/components/Button';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { LoadingState, ErrorState, EmptyState } from '@/components/States';
-import { PageHeader } from '@/components/PageHeader';
-import { formatDateTime, formatEUR, formatMonth } from '@/lib/format';
-import { useStatementDraft } from '@/state/statementDraft';
-import { useRentReceiptDraft } from '@/state/rentReceiptDraft';
-import { toast } from '@/state/toasts';
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { errorMessage } from "@/api/client";
+import { api } from "@/api/endpoints";
+import { useStatements, useRentReceipts } from "@/api/queries";
+import type { StatementDto, RentReceiptDto } from "@/api/types";
+import { Button } from "@/components/Button";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { LoadingState, ErrorState, EmptyState } from "@/components/States";
+import { PageHeader } from "@/components/PageHeader";
+import { formatDateTime, formatEUR, formatMonth } from "@/lib/format";
+import { useStatementDraft } from "@/state/statementDraft";
+import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
+import { toast } from "@/state/toasts";
 
 interface MonthGroup {
   mois: string;
@@ -30,10 +30,20 @@ interface MonthGroup {
 }
 
 function current<T extends { status?: string }>(documents: T[]): T | null {
-  return documents.find((document) => document.status === 'ACTIVE') ?? documents[0] ?? null;
+  return (
+    documents.find((document) => document.status === "ACTIVE") ??
+    documents[0] ??
+    null
+  );
 }
 
-function VersionBadge({ version, active }: { version: number; active: boolean }) {
+function VersionBadge({
+  version,
+  active,
+}: {
+  version: number;
+  active: boolean;
+}) {
   return active ? (
     <span className="badge badge-accent">v{version} · active</span>
   ) : (
@@ -66,7 +76,8 @@ export function HistoryPage() {
   const navigate = useNavigate();
   const rentReceiptsQuery = useRentReceipts();
   const statementsQuery = useStatements();
-  const [statementToReload, setStatementToReload] = useState<StatementDto | null>(null);
+  const [statementToReload, setStatementToReload] =
+    useState<StatementDto | null>(null);
 
   const groups = useMemo<MonthGroup[]>(() => {
     const byMonth = new Map<string, MonthGroup>();
@@ -86,7 +97,11 @@ export function HistoryPage() {
       if (!statement.month) {
         continue;
       }
-      const group = byMonth.get(statement.month) ?? { mois: statement.month, quittances: [], notes: [] };
+      const group = byMonth.get(statement.month) ?? {
+        mois: statement.month,
+        quittances: [],
+        notes: [],
+      };
       group.notes.push(statement);
       byMonth.set(statement.month, group);
     }
@@ -107,12 +122,12 @@ export function HistoryPage() {
 
   function createRentReceipt(month: string) {
     useRentReceiptDraft.getState().changerMois(month);
-    navigate('/generer/quittance');
+    navigate("/generer/quittance");
   }
 
   function createStatement(month: string) {
     useStatementDraft.getState().changerMois(month);
-    navigate('/generer/note-frais');
+    navigate("/generer/note-frais");
   }
 
   function confirmReload() {
@@ -120,12 +135,17 @@ export function HistoryPage() {
       return;
     }
     const rentReceipt = current(
-      groups.find((group) => group.mois === statementToReload.month)?.quittances ?? [],
+      groups.find((group) => group.mois === statementToReload.month)
+        ?.quittances ?? [],
     );
-    useStatementDraft.getState().chargerDepuisNote(statementToReload, rentReceipt?.id ?? null);
+    useStatementDraft
+      .getState()
+      .chargerDepuisNote(statementToReload, rentReceipt?.id ?? null);
     setStatementToReload(null);
-    toast.info(`Lignes de ${formatMonth(statementToReload.month)} rechargées dans le brouillon.`);
-    navigate('/generer/note-frais');
+    toast.info(
+      `Lignes de ${formatMonth(statementToReload.month)} rechargées dans le brouillon.`,
+    );
+    navigate("/generer/note-frais");
   }
 
   return (
@@ -137,7 +157,7 @@ export function HistoryPage() {
         actions={
           <span className="badge badge-neutre">
             <History size={12} aria-hidden="true" />
-            {groups.length} mois suivi{groups.length > 1 ? 's' : ''}
+            {groups.length} mois suivi{groups.length > 1 ? "s" : ""}
           </span>
         }
       />
@@ -157,10 +177,16 @@ export function HistoryPage() {
           icone={<Archive size={22} aria-hidden="true" />}
           action={
             <div className="flex flex-wrap justify-center gap-2">
-              <Button variante="primaire" onClick={() => navigate('/generer/quittance')}>
+              <Button
+                variante="primaire"
+                onClick={() => navigate("/generer/quittance")}
+              >
                 Générer une quittance
               </Button>
-              <Button variante="secondaire" onClick={() => navigate('/generer/note-frais')}>
+              <Button
+                variante="secondaire"
+                onClick={() => navigate("/generer/note-frais")}
+              >
                 Générer une note de frais
               </Button>
             </div>
@@ -180,14 +206,30 @@ export function HistoryPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-paper/45 px-5 py-3.5 sm:px-6">
                   <div>
                     <p className="eyebrow">Mois</p>
-                    <h2 className="mt-1 text-[22px] text-ink">{formatMonth(group.mois)}</h2>
+                    <h2 className="mt-1 text-[22px] text-ink">
+                      {formatMonth(group.mois)}
+                    </h2>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <span className={rentReceipt ? 'badge badge-accent' : 'badge badge-neutre'}>
-                      Quittance {rentReceipt ? `v${rentReceipt.version ?? 1}` : 'non générée'}
+                    <span
+                      className={
+                        rentReceipt
+                          ? "badge badge-accent"
+                          : "badge badge-neutre"
+                      }
+                    >
+                      Quittance{" "}
+                      {rentReceipt
+                        ? `v${rentReceipt.version ?? 1}`
+                        : "non générée"}
                     </span>
-                    <span className={statement ? 'badge badge-accent' : 'badge badge-neutre'}>
-                      Note {statement ? `v${statement.version ?? 1}` : 'non générée'}
+                    <span
+                      className={
+                        statement ? "badge badge-accent" : "badge badge-neutre"
+                      }
+                    >
+                      Note{" "}
+                      {statement ? `v${statement.version ?? 1}` : "non générée"}
                     </span>
                   </div>
                 </div>
@@ -200,18 +242,25 @@ export function HistoryPage() {
                           <FileText size={17} aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="text-[15px] font-semibold text-ink">Quittance de loyer</h3>
+                          <h3 className="text-[15px] font-semibold text-ink">
+                            Quittance de loyer
+                          </h3>
                           {rentReceipt ? (
                             <p className="text-xs text-ink-soft">
-                              Version {rentReceipt.version ?? 1} · {formatDateTime(rentReceipt.createdAt)}
+                              Version {rentReceipt.version ?? 1} ·{" "}
+                              {formatDateTime(rentReceipt.createdAt)}
                             </p>
                           ) : (
-                            <p className="text-xs text-ink-soft">Aucune version pour ce mois.</p>
+                            <p className="text-xs text-ink-soft">
+                              Aucune version pour ce mois.
+                            </p>
                           )}
                         </div>
                       </div>
                       {rentReceipt ? (
-                        <p className="font-display text-xl text-ink nombre">{formatEUR(rentReceipt.total)}</p>
+                        <p className="font-display text-xl text-ink nombre">
+                          {formatEUR(rentReceipt.total)}
+                        </p>
                       ) : null}
                     </div>
 
@@ -262,13 +311,20 @@ export function HistoryPage() {
                               <span className="flex items-center gap-2">
                                 <VersionBadge
                                   version={version.version ?? 1}
-                                  active={version.status === 'ACTIVE'}
+                                  active={version.status === "ACTIVE"}
                                 />
-                                <span className="text-ink-soft">{formatDateTime(version.createdAt)}</span>
-                                <span className="font-medium text-ink nombre">{formatEUR(version.total)}</span>
+                                <span className="text-ink-soft">
+                                  {formatDateTime(version.createdAt)}
+                                </span>
+                                <span className="font-medium text-ink nombre">
+                                  {formatEUR(version.total)}
+                                </span>
                               </span>
                               {version.id ? (
-                                <ActionsPdf href={api.rentReceipts.pdfUrl(version.id)} libelle="PDF" />
+                                <ActionsPdf
+                                  href={api.rentReceipts.pdfUrl(version.id)}
+                                  libelle="PDF"
+                                />
                               ) : null}
                             </li>
                           ))}
@@ -284,21 +340,28 @@ export function HistoryPage() {
                           <FileCheck2 size={17} aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="text-[15px] font-semibold text-ink">Note de frais d’occupation</h3>
+                          <h3 className="text-[15px] font-semibold text-ink">
+                            Note de frais d’occupation
+                          </h3>
                           {statement ? (
                             <p className="text-xs text-ink-soft">
-                              Version {statement.version ?? 1} · {formatDateTime(statement.createdAt)}
+                              Version {statement.version ?? 1} ·{" "}
+                              {formatDateTime(statement.createdAt)}
                               {statement.templateName
                                 ? ` · ${statement.templateName} v${statement.templateVersion ?? 1}`
-                                : ''}
+                                : ""}
                             </p>
                           ) : (
-                            <p className="text-xs text-ink-soft">Aucune version pour ce mois.</p>
+                            <p className="text-xs text-ink-soft">
+                              Aucune version pour ce mois.
+                            </p>
                           )}
                         </div>
                       </div>
                       {statement ? (
-                        <p className="font-display text-xl text-ink nombre">{formatEUR(statement.total)}</p>
+                        <p className="font-display text-xl text-ink nombre">
+                          {formatEUR(statement.total)}
+                        </p>
                       ) : null}
                     </div>
 
@@ -307,17 +370,26 @@ export function HistoryPage() {
                         {statement.id ? (
                           <>
                             <ActionsPdf
-                              href={api.expenseStatements.pdfUrl(statement.id, false)}
+                              href={api.expenseStatements.pdfUrl(
+                                statement.id,
+                                false,
+                              )}
                               libelle="Note seule"
                               dataCy={`btn-telecharger-note-${group.mois}`}
                             />
                             <ActionsPdf
-                              href={api.expenseStatements.pdfUrl(statement.id, true)}
+                              href={api.expenseStatements.pdfUrl(
+                                statement.id,
+                                true,
+                              )}
                               libelle="Note complète"
                               dataCy={`btn-telecharger-note-complete-${group.mois}`}
                             />
                             <a
-                              href={api.expenseStatements.pdfUrl(statement.id, true)}
+                              href={api.expenseStatements.pdfUrl(
+                                statement.id,
+                                true,
+                              )}
                               target="_blank"
                               rel="noreferrer"
                               className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] font-medium text-ink-soft transition hover:bg-paper-deep hover:text-ink"
@@ -363,17 +435,30 @@ export function HistoryPage() {
                               <span className="flex flex-wrap items-center gap-2">
                                 <VersionBadge
                                   version={version.version ?? 1}
-                                  active={version.status === 'ACTIVE'}
+                                  active={version.status === "ACTIVE"}
                                 />
-                                <span className="text-ink-soft">{formatDateTime(version.createdAt)}</span>
-                                <span className="font-medium text-ink nombre">{formatEUR(version.total)}</span>
+                                <span className="text-ink-soft">
+                                  {formatDateTime(version.createdAt)}
+                                </span>
+                                <span className="font-medium text-ink nombre">
+                                  {formatEUR(version.total)}
+                                </span>
                               </span>
                               <span className="flex items-center gap-1">
                                 {version.id ? (
                                   <>
-                                    <ActionsPdf href={api.expenseStatements.pdfUrl(version.id, false)} libelle="PDF" />
                                     <ActionsPdf
-                                      href={api.expenseStatements.pdfUrl(version.id, true)}
+                                      href={api.expenseStatements.pdfUrl(
+                                        version.id,
+                                        false,
+                                      )}
+                                      libelle="PDF"
+                                    />
+                                    <ActionsPdf
+                                      href={api.expenseStatements.pdfUrl(
+                                        version.id,
+                                        true,
+                                      )}
                                       libelle="Complète"
                                     />
                                   </>
@@ -405,9 +490,10 @@ export function HistoryPage() {
         message={
           statementToReload ? (
             <>
-              Les lignes de la version {statementToReload.version ?? 1} de{' '}
-              {formatMonth(statementToReload.month)} remplaceront le brouillon de ce mois dans l’onglet
-              Note de frais. Les brouillons des autres mois sont conservés.
+              Les lignes de la version {statementToReload.version ?? 1} de{" "}
+              {formatMonth(statementToReload.month)} remplaceront le brouillon
+              de ce mois dans l’onglet Note de frais. Les brouillons des autres
+              mois sont conservés.
             </>
           ) : null
         }

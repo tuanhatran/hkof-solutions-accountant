@@ -1,6 +1,7 @@
 # HomeOfficeExpenses agents
 
-Breakdown derived from "Working method for agents" (`product_prompt.md`). Seven agents, one per block, plus an implicit orchestrator (the main agent).
+Breakdown derived from "Working method for agents" (`product_prompt.md`). Eight agents,
+one per block, plus an implicit orchestrator (the main agent).
 
 | Order | Agent | Scope | Depends on |
 |---|---|---|---|
@@ -13,6 +14,12 @@ Breakdown derived from "Working method for agents" (`product_prompt.md`). Seven 
 | 6 | `homeofficeexpenses-front-admin` | Admin, Templates, Configuration, History | contract + backend |
 | 7 | `homeofficeexpenses-e2e` | Cypress, mock-ollama, fixtures | everything |
 
+## OpenCode mirror
+
+`.opencode/agents/*.md` contains the same eight blocks in OpenCode Markdown agent format.
+These files are the source of truth for the breakdown; the OpenCode mirror must stay
+aligned. `.opencode/skills/` holds the project skills used by those agents.
+
 ## Contract
 
 - `openapi/openapi.yaml` is the source of truth between backend and frontend.
@@ -23,6 +30,12 @@ Breakdown derived from "Working method for agents" (`product_prompt.md`). Seven 
 ## Usage
 
 Each `.md` file is self-contained: it can be loaded as the prompt of a sub-agent. The main agent orchestrates, checks interfaces and runs integration tests. Agents never access the real LLM in automated tests: `mock-ollama` is deterministic.
+
+## Language
+
+- Agent instructions, code, comments and reports are in English.
+- User-facing strings only are in French (UI, documents, toasts, validation and API errors).
+- Domain names fixed by the specification stay as-is in the database and the contract.
 
 ## Shared implementation decisions
 

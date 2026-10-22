@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { isCancellation, errorMessage, type ResponseBlob } from '@/api/client';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { isCancellation, errorMessage, type ResponseBlob } from "@/api/client";
 
 interface PreviewState {
   url: string | null;
@@ -29,7 +29,7 @@ export function usePdfPreview(
   });
   const urlRef = useRef<string | null>(null);
   const blobRef = useRef<Blob | null>(null);
-  const nameRef = useRef<string>('apercu.pdf');
+  const nameRef = useRef<string>("apercu.pdf");
   const generationRef = useRef(0);
   const controllerRef = useRef<AbortController | null>(null);
 
@@ -96,7 +96,7 @@ export function usePdfPreview(
       return;
     }
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = nameRef.current;
     document.body.appendChild(link);

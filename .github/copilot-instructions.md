@@ -1,6 +1,13 @@
 # HomeOfficeExpenses: Copilot instructions
 
-Personal, local, single-user app. It generates French rent receipts (quittances de loyer) and home-office expense statements (notes de frais d'occupation). Full specification: `product_prompt.md`. Agent protocol: `AGENTS.md` and `.qoder/agents/`. Read them before any non-trivial change.
+Personal, local, single-user app. It generates French rent receipts (quittances de loyer) and home-office expense statements (notes de frais d'occupation). Full specification: `product_prompt.md`. Agent protocol: `AGENTS.md`, `.qoder/agents/` and `.opencode/agents/`. Read them before any non-trivial change.
+
+## Language
+
+- Code, identifiers, comments, documentation, instructions and reports: English.
+- User-facing strings only: French (UI, generated documents, toasts, validation and API error messages).
+- Domain names fixed by `product_prompt.md` (`Quittance`, `NoteFrais`, `LigneFrais`, `Justificatif`, `Parametres`, `Poste`) keep those names in the database and the contract.
+
 
 ## Response Style
 
@@ -76,6 +83,7 @@ make up / make down
 - Never commit, push, reset, clean, or stash. Do not create worktrees or finish branches unless the user asks.
 - Do not modify files that belong to another block without reporting it.
 - Record assumptions in `README.md`, section "Hypothèses".
+- Write code and comments in English; keep user-facing messages in French.
 
 ## Data and privacy
 

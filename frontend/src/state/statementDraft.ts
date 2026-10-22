@@ -1,8 +1,8 @@
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import type { StatementDto } from '@/api/types';
-import { currentMonth } from '@/lib/dates';
-import { fromLineDto, type DraftLine } from '@/lib/lines';
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import type { StatementDto } from "@/api/types";
+import { currentMonth } from "@/lib/dates";
+import { fromLineDto, type DraftLine } from "@/lib/lines";
 
 const EMPTY_LINES: DraftLine[] = [];
 
@@ -22,7 +22,10 @@ interface StatementDraftState {
   definirComplet: (complete: boolean) => void;
   marquerQuittanceAmorcee: (rentReceiptId: number | null) => void;
   marquerGenere: () => void;
-  chargerDepuisNote: (statement: StatementDto, activeRentReceiptId: number | null) => void;
+  chargerDepuisNote: (
+    statement: StatementDto,
+    activeRentReceiptId: number | null,
+  ) => void;
 }
 
 export const useStatementDraft = create<StatementDraftState>()(
@@ -40,36 +43,55 @@ export const useStatementDraft = create<StatementDraftState>()(
       ajouterLigne: (line) => {
         const { mois: month, lignesParMois: linesByMonth } = get();
         set({
-          lignesParMois: { ...linesByMonth, [month]: [...(linesByMonth[month] ?? EMPTY_LINES), line] },
+          lignesParMois: {
+            ...linesByMonth,
+            [month]: [...(linesByMonth[month] ?? EMPTY_LINES), line],
+          },
           dirtyParMois: { ...get().dirtyParMois, [month]: true },
         });
       },
 
       modifierLigne: (key, values) => {
-        const { mois: month, lignesParMois: linesByMonth, dirtyParMois: dirtyByMonth } = get();
+        const {
+          mois: month,
+          lignesParMois: linesByMonth,
+          dirtyParMois: dirtyByMonth,
+        } = get();
         const lines = linesByMonth[month] ?? EMPTY_LINES;
         set({
           lignesParMois: {
             ...linesByMonth,
-            [month]: lines.map((line) => (line.cle === key ? { ...line, ...values } : line)),
+            [month]: lines.map((line) =>
+              line.cle === key ? { ...line, ...values } : line,
+            ),
           },
           dirtyParMois: { ...dirtyByMonth, [month]: true },
         });
       },
 
       supprimerLigne: (key) => {
-        const { mois: month, lignesParMois: linesByMonth, dirtyParMois: dirtyByMonth } = get();
+        const {
+          mois: month,
+          lignesParMois: linesByMonth,
+          dirtyParMois: dirtyByMonth,
+        } = get();
         set({
           lignesParMois: {
             ...linesByMonth,
-            [month]: (linesByMonth[month] ?? EMPTY_LINES).filter((line) => line.cle !== key),
+            [month]: (linesByMonth[month] ?? EMPTY_LINES).filter(
+              (line) => line.cle !== key,
+            ),
           },
           dirtyParMois: { ...dirtyByMonth, [month]: true },
         });
       },
 
       remplacerLignes: (lines) => {
-        const { mois: month, lignesParMois: linesByMonth, dirtyParMois: dirtyByMonth } = get();
+        const {
+          mois: month,
+          lignesParMois: linesByMonth,
+          dirtyParMois: dirtyByMonth,
+        } = get();
         set({
           lignesParMois: { ...linesByMonth, [month]: lines },
           dirtyParMois: { ...dirtyByMonth, [month]: true },
@@ -88,7 +110,9 @@ export const useStatementDraft = create<StatementDraftState>()(
 
       marquerQuittanceAmorcee: (rentReceiptId) => {
         const { mois: month, quittanceAmorcee: rentReceiptPrimed } = get();
-        set({ quittanceAmorcee: { ...rentReceiptPrimed, [month]: rentReceiptId } });
+        set({
+          quittanceAmorcee: { ...rentReceiptPrimed, [month]: rentReceiptId },
+        });
       },
 
       marquerGenere: () => {
@@ -106,13 +130,16 @@ export const useStatementDraft = create<StatementDraftState>()(
             ...get().templatesParMois,
             [month]: statement.templateId ?? null,
           },
-          quittanceAmorcee: { ...get().quittanceAmorcee, [month]: activeRentReceiptId },
+          quittanceAmorcee: {
+            ...get().quittanceAmorcee,
+            [month]: activeRentReceiptId,
+          },
           dirtyParMois: { ...get().dirtyParMois, [month]: false },
         });
       },
     }),
     {
-      name: 'homeofficeexpenses.note-draft',
+      name: "homeofficeexpenses.note-draft",
       version: 1,
       storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
@@ -129,7 +156,9 @@ export const useStatementDraft = create<StatementDraftState>()(
 
 export function useStatementLines(): DraftLine[] {
   const month = useStatementDraft((state) => state.mois);
-  return useStatementDraft((state) => state.lignesParMois[month]) ?? EMPTY_LINES;
+  return (
+    useStatementDraft((state) => state.lignesParMois[month]) ?? EMPTY_LINES
+  );
 }
 
 export function useStatementDirty(): boolean {

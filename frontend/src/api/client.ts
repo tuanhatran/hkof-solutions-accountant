@@ -10,9 +10,13 @@ export class ApiError extends Error {
   readonly status: number | null;
   readonly problem: ProblemDetail | null;
 
-  constructor(message: string, status: number | null = null, problem: ProblemDetail | null = null) {
+  constructor(
+    message: string,
+    status: number | null = null,
+    problem: ProblemDetail | null = null,
+  ) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
     this.status = status;
     this.problem = problem;
   }
@@ -24,10 +28,12 @@ async function messageFromResponse(response: Response): Promise<string> {
     if (!text) {
       return `Erreur ${response.status} : la requête a échoué.`;
     }
-    const type = response.headers.get('content-type') ?? '';
-    if (type.includes('json')) {
+    const type = response.headers.get("content-type") ?? "";
+    if (type.includes("json")) {
       const requestBody = JSON.parse(text) as ProblemDetail;
-      return requestBody.detail || requestBody.title || `Erreur ${response.status}.`;
+      return (
+        requestBody.detail || requestBody.title || `Erreur ${response.status}.`
+      );
     }
     return text;
   } catch {
@@ -35,12 +41,15 @@ async function messageFromResponse(response: Response): Promise<string> {
   }
 }
 
-export async function request<T>(filePath: string, init?: RequestInit): Promise<T> {
+export async function request<T>(
+  filePath: string,
+  init?: RequestInit,
+): Promise<T> {
   let response: Response;
   try {
     response = await fetch(filePath, init);
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
+    if (error instanceof DOMException && error.name === "AbortError") {
       throw error;
     }
     throw new ApiError(
@@ -62,8 +71,8 @@ export async function request<T>(filePath: string, init?: RequestInit): Promise<
   if (response.status === 204 || response.status === 205) {
     return undefined as T;
   }
-  const type = response.headers.get('content-type') ?? '';
-  if (type.includes('json')) {
+  const type = response.headers.get("content-type") ?? "";
+  if (type.includes("json")) {
     return (await response.json()) as T;
   }
   return (await response.text()) as T;
@@ -90,12 +99,15 @@ function nameFromDisposition(disposition: string | null): string | null {
   return simple ? simple[1] : null;
 }
 
-export async function blobRequest(filePath: string, init?: RequestInit): Promise<ResponseBlob> {
+export async function blobRequest(
+  filePath: string,
+  init?: RequestInit,
+): Promise<ResponseBlob> {
   let response: Response;
   try {
     response = await fetch(filePath, init);
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
+    if (error instanceof DOMException && error.name === "AbortError") {
       throw error;
     }
     throw new ApiError(
@@ -108,13 +120,15 @@ export async function blobRequest(filePath: string, init?: RequestInit): Promise
   }
   return {
     blob: await response.blob(),
-    nomFichier: nameFromDisposition(response.headers.get('content-disposition')),
+    nomFichier: nameFromDisposition(
+      response.headers.get("content-disposition"),
+    ),
   };
 }
 
 export function downloadBlob(blob: Blob, fileName: string): void {
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
   link.download = fileName;
   document.body.appendChild(link);
@@ -130,9 +144,9 @@ export function errorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-  return 'Une erreur inattendue est survenue.';
+  return "Une erreur inattendue est survenue.";
 }
 
 export function isCancellation(error: unknown): boolean {
-  return error instanceof DOMException && error.name === 'AbortError';
+  return error instanceof DOMException && error.name === "AbortError";
 }

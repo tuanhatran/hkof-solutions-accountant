@@ -1,5 +1,5 @@
-import { durationInDays, daysInMonth } from './dates';
-import { formatEUR, estimatedRetainedAmount, parseAmount } from './format';
+import { durationInDays, daysInMonth } from "./dates";
+import { formatEUR, estimatedRetainedAmount, parseAmount } from "./format";
 
 export interface AllocationEstimate {
   joursMois: number;
@@ -29,7 +29,7 @@ export function estimateAllocation(
   if (totalDays === 0) {
     return null;
   }
-  const lastDay = String(daysInMonth(month)).padStart(2, '0');
+  const lastDay = String(daysInMonth(month)).padStart(2, "0");
   const monthStart = `${month}-01`;
   const monthEnd = `${month}-${lastDay}`;
   const overlapStart = start > monthStart ? start : monthStart;

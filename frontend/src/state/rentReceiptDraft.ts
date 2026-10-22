@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import type { SettingsDto } from '@/api/types';
-import { todayDate, currentMonth, periodOfMonth } from '@/lib/dates';
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import type { SettingsDto } from "@/api/types";
+import { todayDate, currentMonth, periodOfMonth } from "@/lib/dates";
 
 interface RentReceiptDraftState {
   mois: string;
@@ -19,7 +19,12 @@ interface RentReceiptDraftState {
     values: Partial<
       Pick<
         RentReceiptDraftState,
-        'periodeDebut' | 'periodeFin' | 'loyerHc' | 'charges' | 'datePaiement' | 'dateEmission'
+        | "periodeDebut"
+        | "periodeFin"
+        | "loyerHc"
+        | "charges"
+        | "datePaiement"
+        | "dateEmission"
       >
     >,
   ) => void;
@@ -39,8 +44,8 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
       mois: initialMonth,
       periodeDebut: initialPeriod.debut,
       periodeFin: initialPeriod.fin,
-      loyerHc: '',
-      charges: '',
+      loyerHc: "",
+      charges: "",
       datePaiement: today,
       dateEmission: today,
       templateId: null,
@@ -69,8 +74,8 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
           return;
         }
         set({
-          loyerHc: settings.rentExclCharges ?? '',
-          charges: settings.chargesAdvance ?? '',
+          loyerHc: settings.rentExclCharges ?? "",
+          charges: settings.chargesAdvance ?? "",
           initialise: true,
           dirty: false,
         });
@@ -78,15 +83,15 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
 
       reprendreDepuisParametres: (settings) =>
         set({
-          loyerHc: settings.rentExclCharges ?? '',
-          charges: settings.chargesAdvance ?? '',
+          loyerHc: settings.rentExclCharges ?? "",
+          charges: settings.chargesAdvance ?? "",
           dirty: true,
         }),
 
       marquerGenere: () => set({ dirty: false }),
     }),
     {
-      name: 'homeofficeexpenses.quittance-draft',
+      name: "homeofficeexpenses.quittance-draft",
       version: 1,
       storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({

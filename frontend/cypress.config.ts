@@ -1,10 +1,10 @@
-import { defineConfig } from 'cypress';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { PDFParse } from 'pdf-parse';
+import { defineConfig } from "cypress";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { PDFParse } from "pdf-parse";
 
 const RACINE = process.cwd();
-const DOSSIER_TELECHARGEMENTS = path.resolve(RACINE, 'cypress/downloads');
+const DOSSIER_TELECHARGEMENTS = path.resolve(RACINE, "cypress/downloads");
 
 function cheminSur(cheminRelatif: string): string {
   const absolu = path.resolve(RACINE, cheminRelatif);
@@ -14,8 +14,11 @@ function cheminSur(cheminRelatif: string): string {
   return absolu;
 }
 
-async function waitForDownload(nom: string, timeoutMs = 30_000): Promise<string> {
-  if (nom.includes('/') || nom.includes('\\')) {
+async function waitForDownload(
+  nom: string,
+  timeoutMs = 30_000,
+): Promise<string> {
+  if (nom.includes("/") || nom.includes("\\")) {
     throw new Error(`Nom de fichier attendu sans dossier : ${nom}`);
   }
   const cible = path.join(DOSSIER_TELECHARGEMENTS, nom);
@@ -36,13 +39,13 @@ async function waitForDownload(nom: string, timeoutMs = 30_000): Promise<string>
 
 export default defineConfig({
   e2e: {
-    baseUrl: 'http://localhost:8080',
-    specPattern: 'cypress/e2e/**/*.cy.ts',
-    supportFile: 'cypress/support/e2e.ts',
-    fixturesFolder: 'cypress/fixtures',
-    downloadsFolder: 'cypress/downloads',
-    screenshotsFolder: 'cypress/screenshots',
-    videosFolder: 'cypress/videos',
+    baseUrl: "http://localhost:8080",
+    specPattern: "cypress/e2e/**/*.cy.ts",
+    supportFile: "cypress/support/e2e.ts",
+    fixturesFolder: "cypress/fixtures",
+    downloadsFolder: "cypress/downloads",
+    screenshotsFolder: "cypress/screenshots",
+    videosFolder: "cypress/videos",
     video: false,
     viewportWidth: 1440,
     viewportHeight: 1000,
@@ -51,7 +54,7 @@ export default defineConfig({
     responseTimeout: 30_000,
     retries: { runMode: 1, openMode: 0 },
     setupNodeEvents(on) {
-      on('task', {
+      on("task", {
         async readPdf(chemin: string): Promise<string> {
           const absolu = chemin.startsWith(RACINE) ? chemin : cheminSur(chemin);
           const donnees = await fs.readFile(absolu);
@@ -93,7 +96,7 @@ export default defineConfig({
         async createLargeFile(chemin: string): Promise<string> {
           const absolu = cheminSur(chemin);
           await fs.mkdir(path.dirname(absolu), { recursive: true });
-          const contenu = Buffer.alloc(11 * 1024 * 1024, 'a');
+          const contenu = Buffer.alloc(11 * 1024 * 1024, "a");
           await fs.writeFile(absolu, contenu);
           return absolu;
         },

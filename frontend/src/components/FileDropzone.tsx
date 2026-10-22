@@ -1,20 +1,30 @@
-import { FileText, Image as ImageIcon, Table2, UploadCloud, X } from 'lucide-react';
-import { useState } from 'react';
-import { useDropzone, type Accept, type FileRejection } from 'react-dropzone';
-import { cn } from '@/lib/cn';
-import { formatBytes } from '@/lib/format';
+import {
+  FileText,
+  Image as ImageIcon,
+  Table2,
+  UploadCloud,
+  X,
+} from "lucide-react";
+import { useState } from "react";
+import { useDropzone, type Accept, type FileRejection } from "react-dropzone";
+import { cn } from "@/lib/cn";
+import { formatBytes } from "@/lib/format";
 
 const MAX_SIZE = 10 * 1024 * 1024;
 
 export const RECEIPT_FORMATS: Accept = {
-  'application/pdf': ['.pdf'],
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-  'application/vnd.ms-excel': ['.xls'],
-  'text/csv': ['.csv'],
-  'text/plain': ['.txt'],
-  'image/jpeg': ['.jpg', '.jpeg'],
-  'image/png': ['.png'],
+  "application/pdf": [".pdf"],
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
+    ".docx",
+  ],
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+    ".xlsx",
+  ],
+  "application/vnd.ms-excel": [".xls"],
+  "text/csv": [".csv"],
+  "text/plain": [".txt"],
+  "image/jpeg": [".jpg", ".jpeg"],
+  "image/png": [".png"],
 };
 
 interface FileDropzoneProps {
@@ -35,11 +45,11 @@ function rejectionMessage(
   formatsDescription: string,
 ): string {
   const code = rejection.errors[0]?.code;
-  if (code === 'file-too-large') {
+  if (code === "file-too-large") {
     return `Fichier trop volumineux (${Math.round(maxSize / (1024 * 1024))} Mo maximum).`;
   }
-  if (code === 'too-many-files') {
-    return 'Un seul fichier à la fois.';
+  if (code === "too-many-files") {
+    return "Un seul fichier à la fois.";
   }
   return `Format non accepté. Formats : ${formatsDescription}.`;
 }
@@ -49,11 +59,12 @@ export function FileDropzone({
   disabled = false,
   dataCy,
   erreurExterne: externalError,
-  texte: text = 'Glissez votre justificatif ici',
+  texte: text = "Glissez votre justificatif ici",
   accept = RECEIPT_FORMATS,
   tailleMax: maxSize = MAX_SIZE,
-  descriptionFormats: formatsDescription = 'PDF, DOCX, XLSX, XLS, CSV, TXT, JPG, PNG',
-  ariaLabel = 'Choisir un fichier justificatif',
+  descriptionFormats:
+    formatsDescription = "PDF, DOCX, XLSX, XLS, CSV, TXT, JPG, PNG",
+  ariaLabel = "Choisir un fichier justificatif",
 }: FileDropzoneProps) {
   const [errorText, setErrorText] = useState<string | null>(null);
 
@@ -70,7 +81,11 @@ export function FileDropzone({
     },
     onDropRejected: (rejections) => {
       const first = rejections[0];
-      setErrorText(first ? rejectionMessage(first, maxSize, formatsDescription) : 'Fichier refusé.');
+      setErrorText(
+        first
+          ? rejectionMessage(first, maxSize, formatsDescription)
+          : "Fichier refusé.",
+      );
     },
   });
 
@@ -81,21 +96,28 @@ export function FileDropzone({
       <div
         {...getRootProps()}
         className={cn(
-          'group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-7 text-center transition',
+          "group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-7 text-center transition",
           isDragActive
-            ? 'border-accent bg-accent-soft/70'
-            : 'border-line-forte/70 bg-paper/40 hover:border-accent/50 hover:bg-accent-soft/30',
-          disabled && 'cursor-not-allowed opacity-60',
-          message && 'border-danger/50 bg-danger-soft/30',
+            ? "border-accent bg-accent-soft/70"
+            : "border-line-forte/70 bg-paper/40 hover:border-accent/50 hover:bg-accent-soft/30",
+          disabled && "cursor-not-allowed opacity-60",
+          message && "border-danger/50 bg-danger-soft/30",
         )}
         aria-disabled={disabled}
       >
-        <input {...getInputProps()} data-cy={dataCy} className="sr-only" aria-label={ariaLabel} />
+        <input
+          {...getInputProps()}
+          data-cy={dataCy}
+          className="sr-only"
+          aria-label={ariaLabel}
+        />
         <span className="grid h-11 w-11 place-items-center rounded-full bg-surface text-accent shadow-sm transition group-hover:scale-105">
           <UploadCloud size={20} aria-hidden="true" />
         </span>
         <p className="mt-3 text-sm font-semibold text-ink">{text}</p>
-        <p className="mt-1 text-xs text-ink-soft">ou cliquez pour parcourir vos fichiers</p>
+        <p className="mt-1 text-xs text-ink-soft">
+          ou cliquez pour parcourir vos fichiers
+        </p>
         <p className="mt-3 text-[11px] text-ink-soft/80">
           {formatsDescription} — {Math.round(maxSize / (1024 * 1024))} Mo max.
         </p>
@@ -117,10 +139,16 @@ interface SelectedFileProps {
   onRetirer?: () => void;
 }
 
-export function SelectedFile({ nom: name, taille: size, typeMime: mimeType, enCours: inProgress, onRetirer: onRemove }: SelectedFileProps) {
-  const IconComponent = mimeType?.startsWith('image/')
+export function SelectedFile({
+  nom: name,
+  taille: size,
+  typeMime: mimeType,
+  enCours: inProgress,
+  onRetirer: onRemove,
+}: SelectedFileProps) {
+  const IconComponent = mimeType?.startsWith("image/")
     ? ImageIcon
-    : mimeType?.includes('sheet') || mimeType?.includes('csv')
+    : mimeType?.includes("sheet") || mimeType?.includes("csv")
       ? Table2
       : FileText;
 
@@ -133,7 +161,9 @@ export function SelectedFile({ nom: name, taille: size, typeMime: mimeType, enCo
         <p className="truncate text-sm font-semibold text-ink" title={name}>
           {name}
         </p>
-        <p className="text-xs text-ink-soft">{size ? formatBytes(size) : 'Justificatif joint'}</p>
+        <p className="text-xs text-ink-soft">
+          {size ? formatBytes(size) : "Justificatif joint"}
+        </p>
       </div>
       {onRemove ? (
         <button
@@ -152,5 +182,5 @@ export function SelectedFile({ nom: name, taille: size, typeMime: mimeType, enCo
 }
 
 export const TEMPLATE_FORMATS: Accept = {
-  'text/html': ['.html', '.htm'],
+  "text/html": [".html", ".htm"],
 };

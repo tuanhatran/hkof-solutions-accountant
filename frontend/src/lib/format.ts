@@ -1,41 +1,41 @@
 const WHITESPACE = /[\s\u00a0\u202f]/g;
 
-const EURO_NUMBER = new Intl.NumberFormat('fr-FR', {
-  style: 'currency',
-  currency: 'EUR',
+const EURO_NUMBER = new Intl.NumberFormat("fr-FR", {
+  style: "currency",
+  currency: "EUR",
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
-const DECIMAL_NUMBER = new Intl.NumberFormat('fr-FR', {
+const DECIMAL_NUMBER = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 2,
 });
 
-const DATE_FORMATTER = new Intl.DateTimeFormat('fr-FR', {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
+const DATE_FORMATTER = new Intl.DateTimeFormat("fr-FR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
 });
 
-const DATE_TIME_FORMATTER = new Intl.DateTimeFormat('fr-FR', {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
+const DATE_TIME_FORMATTER = new Intl.DateTimeFormat("fr-FR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
 });
 
-const MONTH_NAMES = new Intl.DateTimeFormat('fr-FR', {
-  month: 'long',
-  year: 'numeric',
+const MONTH_NAMES = new Intl.DateTimeFormat("fr-FR", {
+  month: "long",
+  year: "numeric",
 });
 
 function cleanNumber(raw: string): string {
   return raw
     .trim()
-    .replace(WHITESPACE, '')
-    .replace(/[€%]/g, '')
-    .replace(',', '.');
+    .replace(WHITESPACE, "")
+    .replace(/[€%]/g, "")
+    .replace(",", ".");
 }
 
 /**
@@ -43,23 +43,23 @@ function cleanNumber(raw: string): string {
  * Retourne null si la saisie n'est pas un montant positif ou nul à deux décimales.
  */
 export function parseAmount(raw: string): string | null {
-  if (!raw || raw.trim() === '') {
+  if (!raw || raw.trim() === "") {
     return null;
   }
   const value = cleanNumber(raw);
   if (!/^\d+(?:\.\d{1,2})?$/.test(value)) {
     return null;
   }
-  const [integer, decimals = ''] = value.split('.');
-  const normalizedInteger = integer.replace(/^0+(?=\d)/, '');
-  return `${normalizedInteger}.${(decimals + '00').slice(0, 2)}`;
+  const [integer, decimals = ""] = value.split(".");
+  const normalizedInteger = integer.replace(/^0+(?=\d)/, "");
+  return `${normalizedInteger}.${(decimals + "00").slice(0, 2)}`;
 }
 
 /**
  * Normalise un pourcentage (0 à 100, deux décimales maximum).
  */
 export function parsePercentage(raw: string): string | null {
-  if (!raw || raw.trim() === '') {
+  if (!raw || raw.trim() === "") {
     return null;
   }
   const value = cleanNumber(raw);
@@ -70,33 +70,37 @@ export function parsePercentage(raw: string): string | null {
   if (!Number.isFinite(numberValue) || numberValue < 0 || numberValue > 100) {
     return null;
   }
-  const [integer, decimals] = value.split('.');
+  const [integer, decimals] = value.split(".");
   if (!decimals) {
-    return integer.replace(/^0+(?=\d)/, '');
+    return integer.replace(/^0+(?=\d)/, "");
   }
-  const cleanDecimals = decimals.replace(/0+$/, '');
-  const normalizedInteger = integer.replace(/^0+(?=\d)/, '');
-  return cleanDecimals === '' ? normalizedInteger : `${normalizedInteger}.${cleanDecimals}`;
+  const cleanDecimals = decimals.replace(/0+$/, "");
+  const normalizedInteger = integer.replace(/^0+(?=\d)/, "");
+  return cleanDecimals === ""
+    ? normalizedInteger
+    : `${normalizedInteger}.${cleanDecimals}`;
 }
 
 export function formatEUR(value: string | number | null | undefined): string {
-  if (value === null || value === undefined || value === '') {
-    return '—';
+  if (value === null || value === undefined || value === "") {
+    return "—";
   }
-  const numberValue = typeof value === 'number' ? value : Number(value);
+  const numberValue = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(numberValue)) {
-    return '—';
+    return "—";
   }
   return EURO_NUMBER.format(numberValue);
 }
 
-export function formatPercentage(value: string | number | null | undefined): string {
-  if (value === null || value === undefined || value === '') {
-    return '—';
+export function formatPercentage(
+  value: string | number | null | undefined,
+): string {
+  if (value === null || value === undefined || value === "") {
+    return "—";
   }
-  const numberValue = typeof value === 'number' ? value : Number(value);
+  const numberValue = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(numberValue)) {
-    return '—';
+    return "—";
   }
   return `${DECIMAL_NUMBER.format(numberValue)} %`;
 }
@@ -123,22 +127,22 @@ export function parseDateIso(value: string | null | undefined): Date | null {
 
 export function formatDate(value: string | null | undefined): string {
   const date = parseDateIso(value);
-  return date ? DATE_FORMATTER.format(date) : '—';
+  return date ? DATE_FORMATTER.format(date) : "—";
 }
 
 export function formatDateTime(value: string | null | undefined): string {
   if (!value) {
-    return '—';
+    return "—";
   }
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : DATE_TIME_FORMATTER.format(date);
+  return Number.isNaN(date.getTime()) ? "—" : DATE_TIME_FORMATTER.format(date);
 }
 
 export function formatMonth(month: string | null | undefined): string {
   if (!month || !/^\d{4}-\d{2}$/.test(month)) {
-    return '—';
+    return "—";
   }
-  const [year, monthNumber] = month.split('-').map(Number);
+  const [year, monthNumber] = month.split("-").map(Number);
   const date = new Date(year, monthNumber - 1, 1);
   const labelText = MONTH_NAMES.format(date);
   return labelText.charAt(0).toUpperCase() + labelText.slice(1);
@@ -149,7 +153,7 @@ export function formatPeriod(
   end: string | null | undefined,
 ): string {
   if (!start || !end) {
-    return '—';
+    return "—";
   }
   return `du ${formatDate(start)} au ${formatDate(end)}`;
 }
@@ -171,10 +175,14 @@ export function estimatedRetainedAmount(
   amountInclVat: string | null | undefined,
   proRataPct: string | null | undefined,
 ): string {
-  const amount = amountInclVat ? Number(parseAmount(amountInclVat) ?? '') : Number.NaN;
-  const percentage = proRataPct ? Number(parsePercentage(proRataPct) ?? '') : Number.NaN;
+  const amount = amountInclVat
+    ? Number(parseAmount(amountInclVat) ?? "")
+    : Number.NaN;
+  const percentage = proRataPct
+    ? Number(parsePercentage(proRataPct) ?? "")
+    : Number.NaN;
   if (!Number.isFinite(amount) || !Number.isFinite(percentage)) {
-    return '—';
+    return "—";
   }
   const cents = Math.round(amount * 100);
   const hundredthsPct = Math.round(percentage * 100);
@@ -184,8 +192,8 @@ export function estimatedRetainedAmount(
 
 export function initials(name: string | null | undefined): string {
   if (!name) {
-    return 'FO';
+    return "FO";
   }
   const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
-  return parts.map((part) => part.charAt(0).toUpperCase()).join('') || 'FO';
+  return parts.map((part) => part.charAt(0).toUpperCase()).join("") || "FO";
 }

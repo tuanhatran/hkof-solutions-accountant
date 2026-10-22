@@ -21,10 +21,35 @@ Default routing:
 - Before claiming completion: `verification-before-completion`; use
   `requesting-code-review` for non-trivial changes.
 
+The same skills are exposed to OpenCode through `.opencode/opencode.json`
+(`"skills": [".qoder/skills"]`). Do not copy or fork them.
+
+## OpenCode configuration
+
+The `.opencode/` directory is the OpenCode entry point for this project:
+
+- `opencode.json` — instructions glob, the `.qoder/skills` source, and git guards.
+- `instructions/` — detailed rules loaded alongside this file.
+- `agents/` — one subagent per delivery block, mirroring `.qoder/agents/`.
+- `skills/` — project skills for contract changes, backend, frontend, PDF, LLM and E2E.
+- `commands/` — `/verify`, `/contract`, `/review`.
+
+`.qoder/agents/*.md` remains the source of truth for the block breakdown. When a block
+changes, update both agent directories so they do not diverge.
+
+## Language policy
+
+- Code, identifiers, comments, documentation, agent instructions, skills and reports:
+  **English**.
+- User-facing strings only: **French** (UI, generated documents, toasts, validation and
+  API error messages), because the product is a French rent-receipt application.
+- Domain names fixed by `product_prompt.md` (`Quittance`, `NoteFrais`, `LigneFrais`,
+  `Justificatif`, `Parametres`, `Poste`) keep those names in the database and the contract.
+
 ## Project precedence
 
-The absolute rules below and the role protocol in `.qoder/agents/` take precedence
-over Superpowers skills. In particular:
+The absolute rules below and the role protocol in `.qoder/agents/` and
+`.opencode/agents/` take precedence over Superpowers skills. In particular:
 
 - Never commit, push, reset, clean, or stash. Do not create worktrees or finish
   branches (`using-git-worktrees`, `finishing-a-development-branch`) unless the
@@ -57,7 +82,7 @@ Java 25, Spring Boot 4.1.x, Maven, PostgreSQL 17 + Flyway, OpenHTMLToPDF/PDFBox,
 5. Verify before concluding: compilation, unit tests, frontend build, and UI walkthrough if available.
 6. Forbidden to add `any`, to compute an authoritative amount on the client side, or to bypass a test failure.
 
-## Commandes
+## Commands
 
 ```bash
 cd backend && ./mvnw test
@@ -67,4 +92,5 @@ make dev       # db + backend + vite
 make e2e
 ```
 
-Agents are described in `.qoder/agents/`.
+Agents are described in `.qoder/agents/` (source of truth) and `.opencode/agents/`
+(OpenCode mirror).

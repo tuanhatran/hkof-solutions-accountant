@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
-import { useBlocker } from 'react-router-dom';
-import { useStatementDirty } from '@/state/statementDraft';
-import { useRentReceiptDraft } from '@/state/rentReceiptDraft';
+import { useEffect } from "react";
+import { useBlocker } from "react-router-dom";
+import { useStatementDirty } from "@/state/statementDraft";
+import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 
 export function useDraftBlock() {
   const rentReceiptDirty = useRentReceiptDraft((state) => state.dirty);
@@ -9,8 +9,8 @@ export function useDraftBlock() {
   const draftExists = rentReceiptDirty || statementDirty;
 
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {
-    const fromGeneration = currentLocation.pathname.startsWith('/generer');
-    const toGeneration = nextLocation.pathname.startsWith('/generer');
+    const fromGeneration = currentLocation.pathname.startsWith("/generer");
+    const toGeneration = nextLocation.pathname.startsWith("/generer");
     return fromGeneration && !toGeneration && draftExists;
   });
 
@@ -20,10 +20,10 @@ export function useDraftBlock() {
     }
     const warn = (event: BeforeUnloadEvent) => {
       event.preventDefault();
-      event.returnValue = '';
+      event.returnValue = "";
     };
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
   }, [draftExists]);
 
   return blocker;

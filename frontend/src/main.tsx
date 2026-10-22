@@ -1,9 +1,9 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import { RouterProvider } from 'react-router-dom';
-import { router } from './router';
-import './index.css';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { RouterProvider } from "react-router-dom";
+import { router } from "./router";
+import "./index.css";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,9 +17,9 @@ const queryClient = new QueryClient({
   },
 });
 
-const root = document.getElementById('root');
+const root = document.getElementById("root");
 if (!root) {
-  throw new Error('Élément racine introuvable dans index.html.');
+  throw new Error("Élément racine introuvable dans index.html.");
 }
 
 createRoot(root).render(

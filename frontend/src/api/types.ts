@@ -1,37 +1,40 @@
-import type { components } from './schema';
+import type { components } from "./schema";
 
-type Schemas = components['schemas'];
+type Schemas = components["schemas"];
 
-export type SettingsDto = Schemas['SettingsDto'];
-export type SettingsRequest = Schemas['SettingsRequest'];
-export type ExpenseItemDto = Schemas['ExpenseItemDto'];
-export type ExpenseItemRequest = Schemas['ExpenseItemRequest'];
-export type RentReceiptDto = Schemas['RentReceiptDto'];
-export type RentReceiptRequest = Schemas['RentReceiptRequest'];
-export type LineRequest = Schemas['ExpenseLineRequest'];
-export type LineDto = Schemas['ExpenseLineDto'];
-export type StatementDto = Schemas['StatementDto'];
-export type StatementCalculationRequest = Schemas['StatementCalculationRequest'];
-export type StatementGenerationRequest = Schemas['StatementGenerationRequest'];
-export type StatementPreviewRequest = Schemas['StatementPreviewRequest'];
-export type CalculationResponse = Schemas['CalculationResponse'];
-export type DraftDto = Schemas['DraftDto'];
-export type ReceiptDto = Schemas['ReceiptDto'];
-export type AnalysisDto = Schemas['AnalysisDto'];
-export type ExtractionDto = Schemas['ExtractionDto'];
-export type AnalysisStartResponse = Schemas['AnalysisStartResponse'];
-export type LlmConfigDto = Schemas['LlmConfigDto'];
-export type LlmConfigRequest = Schemas['LlmConfigRequest'];
-export type LlmModelDto = Schemas['LlmModelDto'];
-export type LlmStatusDto = Schemas['LlmStatusDto'];
-export type LlmTestResponse = Schemas['LlmTestResponse'];
-export type TemplateDto = Schemas['TemplateDto'];
-export type TemplateVariableDto = Schemas['TemplateVariableDto'];
-export type ValidationReportDto = Schemas['ValidationReportDto'];
+export type SettingsDto = Schemas["SettingsDto"];
+export type SettingsRequest = Schemas["SettingsRequest"];
+export type ExpenseItemDto = Schemas["ExpenseItemDto"];
+export type ExpenseItemRequest = Schemas["ExpenseItemRequest"];
+export type RentReceiptDto = Schemas["RentReceiptDto"];
+export type RentReceiptRequest = Schemas["RentReceiptRequest"];
+export type LineRequest = Schemas["ExpenseLineRequest"];
+export type LineDto = Schemas["ExpenseLineDto"];
+export type StatementDto = Schemas["StatementDto"];
+export type StatementCalculationRequest =
+  Schemas["StatementCalculationRequest"];
+export type StatementGenerationRequest = Schemas["StatementGenerationRequest"];
+export type StatementPreviewRequest = Schemas["StatementPreviewRequest"];
+export type CalculationResponse = Schemas["CalculationResponse"];
+export type DraftDto = Schemas["DraftDto"];
+export type ReceiptDto = Schemas["ReceiptDto"];
+export type AnalysisDto = Schemas["AnalysisDto"];
+export type ExtractionDto = Schemas["ExtractionDto"];
+export type AnalysisStartResponse = Schemas["AnalysisStartResponse"];
+export type LlmConfigDto = Schemas["LlmConfigDto"];
+export type LlmConfigRequest = Schemas["LlmConfigRequest"];
+export type LlmModelDto = Schemas["LlmModelDto"];
+export type LlmStatusDto = Schemas["LlmStatusDto"];
+export type LlmTestResponse = Schemas["LlmTestResponse"];
+export type TemplateDto = Schemas["TemplateDto"];
+export type TemplateVariableDto = Schemas["TemplateVariableDto"];
+export type ValidationReportDto = Schemas["ValidationReportDto"];
 
-export type TemplateType = 'RENT_RECEIPT' | 'EXPENSE_STATEMENT';
-export type AnalysisStatus = 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'CANCELLED';
-export type AiConfidence = 'haute' | 'moyenne' | 'basse';
-export type AmountSource = 'MANUAL' | 'AI';
-export type Periodicity = 'MONTHLY' | 'BIMONTHLY' | 'ANNUAL';
-export type LlmStatus = 'PRET' | 'PRET_DISTANT' | 'MODELE_ABSENT' | 'INJOIGNABLE' | 'DESACTIVE';
+export type TemplateType = "RENT_RECEIPT" | "EXPENSE_STATEMENT";
+export type AnalysisStatus =
+  "PENDING" | "RUNNING" | "DONE" | "FAILED" | "CANCELLED";
+export type AiConfidence = "haute" | "moyenne" | "basse";
+export type AmountSource = "MANUAL" | "AI";
+export type Periodicity = "MONTHLY" | "BIMONTHLY" | "ANNUAL";
+export type LlmStatus =
+  "PRET" | "PRET_DISTANT" | "MODELE_ABSENT" | "INJOIGNABLE" | "DESACTIVE";

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 interface FieldGroupProps {
   id: string;
@@ -10,7 +10,15 @@ interface FieldGroupProps {
   children: ReactNode;
 }
 
-export function FieldGroup({ id, label, erreur: errorText, aide: help, badge, className, children }: FieldGroupProps) {
+export function FieldGroup({
+  id,
+  label,
+  erreur: errorText,
+  aide: help,
+  badge,
+  className,
+  children,
+}: FieldGroupProps) {
   return (
     <div className={className}>
       <div className="flex items-center justify-between gap-2">

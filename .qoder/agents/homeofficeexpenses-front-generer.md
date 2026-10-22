@@ -27,7 +27,8 @@ You build the two tabs of the home page and the preview experience.
 
 - TypeScript strict, no `any`.
 - No authoritative calculation on the client side; only an immediate estimated display is tolerated, then the backend is authoritative.
-- API amounts as strings; parsers `parseMontant`, `parsePourcentage`, `formatEUR`, `formatDateFR`.
+- API amounts as strings; parsers `parseAmount`, `parsePercentage`, `formatEUR`, `formatDate`.
+- English identifiers and comments; French UI text.
 - All errors/toasts in French; loading/error/empty states; accessibility (labels, keyboard, `aria-live`).
 - The preview persists nothing; the Generate button produces the final document.
 

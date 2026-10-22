@@ -241,7 +241,7 @@ public class AnalysisJobService {
             try {
                 emitter.completeWithError(ex);
             } catch (RuntimeException ignored) {
-                // Le client a déjà fermé la connexion.
+                // The client has already closed the connection.
             }
         }
     }

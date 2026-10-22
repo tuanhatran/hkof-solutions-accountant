@@ -67,7 +67,7 @@ public class OllamaClient {
                 return false;
             }
         } catch (BusinessException ignored) {
-            // Les anciennes versions d'Ollama ne renvoient pas les capacités.
+            // Older Ollama versions do not report capabilities.
         }
         return nameSuggestsVision(model);
     }

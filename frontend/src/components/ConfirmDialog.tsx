@@ -1,8 +1,8 @@
-import { AlertTriangle, X } from 'lucide-react';
-import { useEffect, useRef, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
-import { Button } from './Button';
-import { cn } from '@/lib/cn';
+import { AlertTriangle, X } from "lucide-react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { Button } from "./Button";
+import { cn } from "@/lib/cn";
 
 interface ConfirmDialogProps {
   ouvert: boolean;
@@ -10,7 +10,7 @@ interface ConfirmDialogProps {
   message?: ReactNode;
   libelleConfirmer?: string;
   libelleAnnuler?: string;
-  variante?: 'primaire' | 'danger';
+  variante?: "primaire" | "danger";
   onConfirmer: () => void;
   onAnnuler: () => void;
   dataCy?: string;
@@ -20,12 +20,12 @@ export function ConfirmDialog({
   ouvert: open,
   titre: title,
   message,
-  libelleConfirmer: confirmLabel = 'Confirmer',
-  libelleAnnuler: cancelLabel = 'Annuler',
-  variante = 'primaire',
+  libelleConfirmer: confirmLabel = "Confirmer",
+  libelleAnnuler: cancelLabel = "Annuler",
+  variante = "primaire",
   onConfirmer: onConfirm,
   onAnnuler: onCancel,
-  dataCy = 'dialogue-confirmation',
+  dataCy = "dialogue-confirmation",
 }: ConfirmDialogProps) {
   const cancelButton = useRef<HTMLButtonElement>(null);
 
@@ -35,12 +35,12 @@ export function ConfirmDialog({
     }
     cancelButton.current?.focus();
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         onCancel();
       }
     };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, [open, onCancel]);
 
   if (!open) {
@@ -66,8 +66,10 @@ export function ConfirmDialog({
         <div className="flex items-start gap-3">
           <span
             className={cn(
-              'mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-full',
-              variante === 'danger' ? 'bg-danger-soft text-danger' : 'bg-warning-soft text-warning',
+              "mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-full",
+              variante === "danger"
+                ? "bg-danger-soft text-danger"
+                : "bg-warning-soft text-warning",
             )}
             aria-hidden="true"
           >
@@ -77,7 +79,11 @@ export function ConfirmDialog({
             <h2 id={`${dataCy}-titre`} className="text-xl text-ink">
               {title}
             </h2>
-            {message ? <div className="mt-2 text-sm leading-relaxed text-ink-soft">{message}</div> : null}
+            {message ? (
+              <div className="mt-2 text-sm leading-relaxed text-ink-soft">
+                {message}
+              </div>
+            ) : null}
           </div>
           <button
             type="button"
@@ -93,7 +99,7 @@ export function ConfirmDialog({
             {cancelLabel}
           </Button>
           <Button
-            variante={variante === 'danger' ? 'danger' : 'primaire'}
+            variante={variante === "danger" ? "danger" : "primaire"}
             onClick={onConfirm}
             data-cy="dialogue-confirmer"
           >

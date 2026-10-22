@@ -1,5 +1,5 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Building2,
   Check,
@@ -12,52 +12,69 @@ import {
   Trash2,
   UserRound,
   UsersRound,
-} from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { errorMessage } from '@/api/client';
-import { api } from '@/api/endpoints';
-import { queryKeys, useSettings, useExpenseItems } from '@/api/queries';
-import type { SettingsDto, SettingsRequest, ExpenseItemDto, ExpenseItemRequest } from '@/api/types';
-import { Button } from '@/components/Button';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { LoadingState, ErrorState } from '@/components/States';
-import { FieldGroup } from '@/components/FieldGroup';
-import { PageHeader } from '@/components/PageHeader';
-import { cn } from '@/lib/cn';
-import { formatEUR, formatPercentage, parseAmount, parsePercentage } from '@/lib/format';
-import { settingsSchema, expenseItemSchema, type SettingsFormValues, type ExpenseItemFormValues } from '@/lib/validation';
-import { toast } from '@/state/toasts';
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { errorMessage } from "@/api/client";
+import { api } from "@/api/endpoints";
+import { queryKeys, useSettings, useExpenseItems } from "@/api/queries";
+import type {
+  SettingsDto,
+  SettingsRequest,
+  ExpenseItemDto,
+  ExpenseItemRequest,
+} from "@/api/types";
+import { Button } from "@/components/Button";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { LoadingState, ErrorState } from "@/components/States";
+import { FieldGroup } from "@/components/FieldGroup";
+import { PageHeader } from "@/components/PageHeader";
+import { cn } from "@/lib/cn";
+import {
+  formatEUR,
+  formatPercentage,
+  parseAmount,
+  parsePercentage,
+} from "@/lib/format";
+import {
+  settingsSchema,
+  expenseItemSchema,
+  type SettingsFormValues,
+  type ExpenseItemFormValues,
+} from "@/lib/validation";
+import { toast } from "@/state/toasts";
 
 const PERIODICITIES = [
-  { valeur: 'MONTHLY', libelle: 'Mensuelle' },
-  { valeur: 'BIMONTHLY', libelle: 'Bimestrielle' },
-  { valeur: 'ANNUAL', libelle: 'Annuelle' },
+  { valeur: "MONTHLY", libelle: "Mensuelle" },
+  { valeur: "BIMONTHLY", libelle: "Bimestrielle" },
+  { valeur: "ANNUAL", libelle: "Annuelle" },
 ] as const;
 
-type Periodicity = (typeof PERIODICITIES)[number]['valeur'];
+type Periodicity = (typeof PERIODICITIES)[number]["valeur"];
 
 function decimalFormatter(value: string | undefined): string {
-  return value ? value.replace('.', ',') : '';
+  return value ? value.replace(".", ",") : "";
 }
 
-function valuesFromSettings(settings: SettingsDto | undefined): SettingsFormValues {
+function valuesFromSettings(
+  settings: SettingsDto | undefined,
+): SettingsFormValues {
   return {
-    raisonSociale: settings?.companyName ?? '',
-    formeJuridique: settings?.legalForm ?? '',
-    siren: settings?.siren ?? '',
-    societeAdresse: settings?.companyAddress ?? '',
-    gerant: settings?.managerName ?? '',
-    logementAdresse: settings?.homeAddress ?? '',
+    raisonSociale: settings?.companyName ?? "",
+    formeJuridique: settings?.legalForm ?? "",
+    siren: settings?.siren ?? "",
+    societeAdresse: settings?.companyAddress ?? "",
+    gerant: settings?.managerName ?? "",
+    logementAdresse: settings?.homeAddress ?? "",
     surfaceTotale: decimalFormatter(settings?.totalArea),
     surfacePro: decimalFormatter(settings?.businessArea),
-    bailleurNom: settings?.landlordName ?? '',
-    bailleurAdresse: settings?.landlordAddress ?? '',
-    locataireNom: settings?.tenantName ?? '',
-    locataireAdresse: settings?.tenantAddress ?? '',
+    bailleurNom: settings?.landlordName ?? "",
+    bailleurAdresse: settings?.landlordAddress ?? "",
+    locataireNom: settings?.tenantName ?? "",
+    locataireAdresse: settings?.tenantAddress ?? "",
     loyerHc: decimalFormatter(settings?.rentExclCharges),
     provisionCharges: decimalFormatter(settings?.chargesAdvance),
-    lieuEmission: settings?.issuePlace ?? '',
+    lieuEmission: settings?.issuePlace ?? "",
   };
 }
 
@@ -97,7 +114,7 @@ function SwitchField({
   id: string;
   libelle: string;
   description: string;
-  register: ReturnType<typeof useForm<ExpenseItemFormValues>>['register'];
+  register: ReturnType<typeof useForm<ExpenseItemFormValues>>["register"];
 }) {
   return (
     <label
@@ -108,11 +125,15 @@ function SwitchField({
         id={id}
         type="checkbox"
         className="mt-0.5 h-4 w-4 shrink-0 rounded border-line text-accent accent-[#1b5b49]"
-        {...register(id === 'poste-actif' ? 'actif' : 'plusieursLignesAutorisees')}
+        {...register(
+          id === "poste-actif" ? "actif" : "plusieursLignesAutorisees",
+        )}
       />
       <span>
         <span className="block text-sm font-medium text-ink">{labelText}</span>
-        <span className="mt-0.5 block text-[11.5px] leading-relaxed text-ink-soft">{description}</span>
+        <span className="mt-0.5 block text-[11.5px] leading-relaxed text-ink-soft">
+          {description}
+        </span>
       </span>
     </label>
   );
@@ -137,13 +158,14 @@ function ExpenseItemForm({
     formState: { errors },
   } = useForm<ExpenseItemFormValues>({
     resolver: zodResolver(expenseItemSchema),
-    mode: 'onChange',
+    mode: "onChange",
     defaultValues: {
-      code: expenseItem?.code ?? '',
-      libelle: expenseItem?.label ?? '',
-      fournisseur: expenseItem?.supplier ?? '',
+      code: expenseItem?.code ?? "",
+      libelle: expenseItem?.label ?? "",
+      fournisseur: expenseItem?.supplier ?? "",
       prorataPct: decimalFormatter(expenseItem?.proRataPct ?? defaultProRata),
-      periodicite: (expenseItem?.periodicity as Periodicity | undefined) ?? 'MONTHLY',
+      periodicite:
+        (expenseItem?.periodicity as Periodicity | undefined) ?? "MONTHLY",
       ordre: expenseItem?.sortOrder ?? defaultOrder,
       actif: expenseItem?.active ?? true,
       plusieursLignesAutorisees: expenseItem?.multipleLinesAllowed ?? false,
@@ -155,7 +177,7 @@ function ExpenseItemForm({
       const requestBody: ExpenseItemRequest = {
         label: values.libelle.trim(),
         supplier: values.fournisseur.trim() || undefined,
-        proRataPct: parsePercentage(values.prorataPct) ?? '0',
+        proRataPct: parsePercentage(values.prorataPct) ?? "0",
         periodicity: values.periodicite,
         sortOrder: values.ordre,
         active: values.actif,
@@ -164,10 +186,14 @@ function ExpenseItemForm({
       if (!expenseItem && values.code.trim()) {
         requestBody.code = values.code.trim();
       }
-      return expenseItem?.id ? api.expenseItems.update(expenseItem.id, requestBody) : api.expenseItems.create(requestBody);
+      return expenseItem?.id
+        ? api.expenseItems.update(expenseItem.id, requestBody)
+        : api.expenseItems.create(requestBody);
     },
     onSuccess: (result) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.expenseItemsAll });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.expenseItemsAll,
+      });
       toast.succes(
         expenseItem
           ? `Poste « ${result.label} » mis à jour.`
@@ -189,7 +215,9 @@ function ExpenseItemForm({
     >
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-[15px] font-semibold text-ink">
-          {expenseItem ? `Modifier le poste « ${expenseItem.label} »` : 'Ajouter un type de frais'}
+          {expenseItem
+            ? `Modifier le poste « ${expenseItem.label} »`
+            : "Ajouter un type de frais"}
         </h3>
         {expenseItem ? (
           <span className="badge badge-neutre">
@@ -204,32 +232,47 @@ function ExpenseItemForm({
           id="poste-code"
           label="Code"
           erreur={errors.code?.message}
-          aide={expenseItem ? 'Le code est immuable après création.' : 'Facultatif : généré depuis le libellé si vide.'}
+          aide={
+            expenseItem
+              ? "Le code est immuable après création."
+              : "Facultatif : généré depuis le libellé si vide."
+          }
         >
           <input
             id="poste-code"
-            className={cn('champ font-mono text-[13px]', errors.code && 'champ-erreur')}
+            className={cn(
+              "champ font-mono text-[13px]",
+              errors.code && "champ-erreur",
+            )}
             placeholder="gaz"
             readOnly={Boolean(expenseItem)}
             disabled={Boolean(expenseItem)}
-            {...register('code')}
+            {...register("code")}
           />
         </FieldGroup>
-        <FieldGroup id="poste-libelle" label="Libellé affiché" erreur={errors.libelle?.message}>
+        <FieldGroup
+          id="poste-libelle"
+          label="Libellé affiché"
+          erreur={errors.libelle?.message}
+        >
           <input
             id="poste-libelle"
-            className={cn('champ', errors.libelle && 'champ-erreur')}
+            className={cn("champ", errors.libelle && "champ-erreur")}
             placeholder="Gaz"
-            {...register('libelle')}
+            {...register("libelle")}
             data-cy="input-poste-libelle"
           />
         </FieldGroup>
-        <FieldGroup id="poste-fournisseur" label="Fournisseur" erreur={errors.fournisseur?.message}>
+        <FieldGroup
+          id="poste-fournisseur"
+          label="Fournisseur"
+          erreur={errors.fournisseur?.message}
+        >
           <input
             id="poste-fournisseur"
             className="champ"
             placeholder="EDF"
-            {...register('fournisseur')}
+            {...register("fournisseur")}
             data-cy="input-poste-fournisseur"
           />
         </FieldGroup>
@@ -241,15 +284,23 @@ function ExpenseItemForm({
         >
           <input
             id="poste-prorata"
-            className={cn('champ', errors.prorataPct && 'champ-erreur')}
+            className={cn("champ", errors.prorataPct && "champ-erreur")}
             inputMode="decimal"
             placeholder="35,71"
-            {...register('prorataPct')}
+            {...register("prorataPct")}
             data-cy="input-poste-prorata"
           />
         </FieldGroup>
-        <FieldGroup id="poste-periodicite" label="Périodicité" erreur={errors.periodicite?.message}>
-          <select id="poste-periodicite" className="champ" {...register('periodicite')}>
+        <FieldGroup
+          id="poste-periodicite"
+          label="Périodicité"
+          erreur={errors.periodicite?.message}
+        >
+          <select
+            id="poste-periodicite"
+            className="champ"
+            {...register("periodicite")}
+          >
             {PERIODICITIES.map((periodicity) => (
               <option key={periodicity.valeur} value={periodicity.valeur}>
                 {periodicity.libelle}
@@ -257,14 +308,18 @@ function ExpenseItemForm({
             ))}
           </select>
         </FieldGroup>
-        <FieldGroup id="poste-ordre" label="Ordre d’affichage" erreur={errors.ordre?.message}>
+        <FieldGroup
+          id="poste-ordre"
+          label="Ordre d’affichage"
+          erreur={errors.ordre?.message}
+        >
           <input
             id="poste-ordre"
             type="number"
             min={0}
             step={1}
-            className={cn('champ', errors.ordre && 'champ-erreur')}
-            {...register('ordre', { valueAsNumber: true })}
+            className={cn("champ", errors.ordre && "champ-erreur")}
+            {...register("ordre", { valueAsNumber: true })}
           />
         </FieldGroup>
       </div>
@@ -285,13 +340,21 @@ function ExpenseItemForm({
       </div>
 
       {errorText ? (
-        <p className="mt-3 rounded-lg border border-danger/20 bg-danger-soft/60 p-2.5 text-xs text-danger" role="alert">
+        <p
+          className="mt-3 rounded-lg border border-danger/20 bg-danger-soft/60 p-2.5 text-xs text-danger"
+          role="alert"
+        >
           {errorText}
         </p>
       ) : null}
 
       <div className="mt-4 flex flex-wrap justify-end gap-2">
-        <Button variante="fantome" petit onClick={onClose} disabled={save.isPending}>
+        <Button
+          variante="fantome"
+          petit
+          onClick={onClose}
+          disabled={save.isPending}
+        >
           Annuler
         </Button>
         <Button
@@ -302,14 +365,18 @@ function ExpenseItemForm({
           icone={<Check size={14} />}
           data-cy="btn-enregistrer-poste"
         >
-          {expenseItem ? 'Enregistrer le poste' : 'Ajouter le poste'}
+          {expenseItem ? "Enregistrer le poste" : "Ajouter le poste"}
         </Button>
       </div>
     </form>
   );
 }
 
-function ExpenseItemsManager({ prorataDefaut: defaultProRata }: { prorataDefaut: string }) {
+function ExpenseItemsManager({
+  prorataDefaut: defaultProRata,
+}: {
+  prorataDefaut: string;
+}) {
   const queryClient = useQueryClient();
   const expenseItems = useExpenseItems(true);
   const [formOpen, setFormOpen] = useState(false);
@@ -317,11 +384,14 @@ function ExpenseItemsManager({ prorataDefaut: defaultProRata }: { prorataDefaut:
   const [toDelete, setToDelete] = useState<ExpenseItemDto | null>(null);
 
   const remove = useMutation({
-    mutationFn: (expenseItem: ExpenseItemDto) => api.expenseItems.delete(expenseItem.id as number),
+    mutationFn: (expenseItem: ExpenseItemDto) =>
+      api.expenseItems.delete(expenseItem.id as number),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.expenseItemsAll });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.expenseItemsAll,
+      });
       setToDelete(null);
-      toast.succes('Poste désactivé et retiré de la liste des frais.');
+      toast.succes("Poste désactivé et retiré de la liste des frais.");
     },
     onError: (error) => {
       setToDelete(null);
@@ -330,7 +400,11 @@ function ExpenseItemsManager({ prorataDefaut: defaultProRata }: { prorataDefaut:
   });
 
   const list = expenseItems.data ?? [];
-  const defaultOrder = list.reduce((maximum, expenseItem) => Math.max(maximum, expenseItem.sortOrder ?? 0), -1) + 1;
+  const defaultOrder =
+    list.reduce(
+      (maximum, expenseItem) => Math.max(maximum, expenseItem.sortOrder ?? 0),
+      -1,
+    ) + 1;
 
   function openCreate() {
     setEditedItem(null);
@@ -352,8 +426,8 @@ function ExpenseItemsManager({ prorataDefaut: defaultProRata }: { prorataDefaut:
           <div>
             <h2 className="text-xl text-ink">Types de frais</h2>
             <p className="mt-0.5 text-xs text-ink-soft">
-              Libellés, fournisseurs, prorata par défaut et périodicité alimentent la note de frais. Suppression
-              logique uniquement.
+              Libellés, fournisseurs, prorata par défaut et périodicité
+              alimentent la note de frais. Suppression logique uniquement.
             </p>
           </div>
         </div>
@@ -383,12 +457,16 @@ function ExpenseItemsManager({ prorataDefaut: defaultProRata }: { prorataDefaut:
         ) : null}
 
         {expenseItems.isError ? (
-          <ErrorState message={errorMessage(expenseItems.error)} onReessayer={() => void expenseItems.refetch()} />
+          <ErrorState
+            message={errorMessage(expenseItems.error)}
+            onReessayer={() => void expenseItems.refetch()}
+          />
         ) : expenseItems.isPending ? (
           <LoadingState message="Chargement des postes…" />
         ) : list.length === 0 ? (
           <p className="rounded-xl border border-dashed border-line-forte p-6 text-center text-sm text-ink-soft">
-            Aucun poste configuré. Ajoutez au moins « Loyer » et vos frais courants.
+            Aucun poste configuré. Ajoutez au moins « Loyer » et vos frais
+            courants.
           </p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-line">
@@ -406,23 +484,38 @@ function ExpenseItemsManager({ prorataDefaut: defaultProRata }: { prorataDefaut:
               </thead>
               <tbody>
                 {list.map((expenseItem) => (
-                  <tr key={expenseItem.id} className={cn(!expenseItem.active && 'opacity-60')}>
+                  <tr
+                    key={expenseItem.id}
+                    className={cn(!expenseItem.active && "opacity-60")}
+                  >
                     <td>
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="font-medium text-ink">{expenseItem.label}</span>
+                        <span className="font-medium text-ink">
+                          {expenseItem.label}
+                        </span>
                         <code className="rounded bg-paper-deep/60 px-1 py-0.5 font-mono text-[10.5px] text-ink-soft">
                           {expenseItem.code}
                         </code>
-                        {!expenseItem.active ? <span className="badge badge-neutre">inactif</span> : null}
+                        {!expenseItem.active ? (
+                          <span className="badge badge-neutre">inactif</span>
+                        ) : null}
                       </div>
                     </td>
-                    <td className="text-ink-soft">{expenseItem.supplier || '—'}</td>
-                    <td className="nombre text-right text-ink-soft">{formatPercentage(expenseItem.proRataPct)}</td>
-                    <td className="text-xs capitalize text-ink-soft">
-                      {PERIODICITIES.find((periodicity) => periodicity.valeur === expenseItem.periodicity)?.libelle ??
-                        expenseItem.periodicity}
+                    <td className="text-ink-soft">
+                      {expenseItem.supplier || "—"}
                     </td>
-                    <td className="nombre text-center text-ink-soft">{expenseItem.sortOrder}</td>
+                    <td className="nombre text-right text-ink-soft">
+                      {formatPercentage(expenseItem.proRataPct)}
+                    </td>
+                    <td className="text-xs capitalize text-ink-soft">
+                      {PERIODICITIES.find(
+                        (periodicity) =>
+                          periodicity.valeur === expenseItem.periodicity,
+                      )?.libelle ?? expenseItem.periodicity}
+                    </td>
+                    <td className="nombre text-center text-ink-soft">
+                      {expenseItem.sortOrder}
+                    </td>
                     <td>
                       {expenseItem.multipleLinesAllowed ? (
                         <span className="badge badge-accent">multi-lignes</span>
@@ -467,7 +560,7 @@ function ExpenseItemsManager({ prorataDefaut: defaultProRata }: { prorataDefaut:
         message={
           toDelete
             ? `« ${toDelete.label} » ne sera plus proposé dans la note de frais. Les documents existants conservent leurs lignes et leurs montants.`
-            : ''
+            : ""
         }
         libelleConfirmer="Retirer le poste"
         variante="danger"
@@ -494,7 +587,7 @@ export function SettingsPage() {
     formState: { errors, isDirty },
   } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
-    mode: 'onChange',
+    mode: "onChange",
     defaultValues: valuesFromSettings(undefined),
   });
 
@@ -505,7 +598,8 @@ export function SettingsPage() {
   }, [settings.data, reset]);
 
   const values = watch();
-  const rentReceiptTotal = cents(values.loyerHc) + cents(values.provisionCharges);
+  const rentReceiptTotal =
+    cents(values.loyerHc) + cents(values.provisionCharges);
   const displayedProRata = useMemo(() => {
     const proArea = parseAmount(values.surfacePro);
     const totalArea = parseAmount(values.surfaceTotale);
@@ -531,14 +625,17 @@ export function SettingsPage() {
         tenantName: submittedValues.locataireNom.trim(),
         tenantAddress: submittedValues.locataireAdresse.trim(),
         rentExclCharges: parseAmount(submittedValues.loyerHc) ?? undefined,
-        chargesAdvance: parseAmount(submittedValues.provisionCharges) ?? undefined,
+        chargesAdvance:
+          parseAmount(submittedValues.provisionCharges) ?? undefined,
         issuePlace: submittedValues.lieuEmission.trim(),
       };
       return api.settings.update(requestBody);
     },
     onSuccess: (payload) => {
       queryClient.setQueryData(queryKeys.settings, payload);
-      toast.succes('Configuration enregistrée. Les prochains documents utiliseront ces valeurs.');
+      toast.succes(
+        "Configuration enregistrée. Les prochains documents utiliseront ces valeurs.",
+      );
     },
   });
 
@@ -564,14 +661,19 @@ export function SettingsPage() {
       />
 
       {settings.isError ? (
-        <ErrorState message={errorMessage(settings.error)} onReessayer={() => void settings.refetch()} />
+        <ErrorState
+          message={errorMessage(settings.error)}
+          onReessayer={() => void settings.refetch()}
+        />
       ) : settings.isPending ? (
         <LoadingState message="Chargement de la configuration…" />
       ) : (
         <form
           id="form-parametres"
           className="space-y-6"
-          onSubmit={handleSubmit((submittedValues) => save.mutate(submittedValues))}
+          onSubmit={handleSubmit((submittedValues) =>
+            save.mutate(submittedValues),
+          )}
           noValidate
         >
           <section className="carte overflow-hidden">
@@ -589,8 +691,11 @@ export function SettingsPage() {
               >
                 <input
                   id="param-raison-sociale"
-                  className={cn('champ', errors.raisonSociale && 'champ-erreur')}
-                  {...register('raisonSociale')}
+                  className={cn(
+                    "champ",
+                    errors.raisonSociale && "champ-erreur",
+                  )}
+                  {...register("raisonSociale")}
                   data-cy="input-raison-sociale"
                 />
               </FieldGroup>
@@ -601,8 +706,11 @@ export function SettingsPage() {
               >
                 <input
                   id="param-forme-juridique"
-                  className={cn('champ', errors.formeJuridique && 'champ-erreur')}
-                  {...register('formeJuridique')}
+                  className={cn(
+                    "champ",
+                    errors.formeJuridique && "champ-erreur",
+                  )}
+                  {...register("formeJuridique")}
                 />
               </FieldGroup>
               <FieldGroup
@@ -613,18 +721,25 @@ export function SettingsPage() {
               >
                 <input
                   id="param-siren"
-                  className={cn('champ font-mono', errors.siren && 'champ-erreur')}
+                  className={cn(
+                    "champ font-mono",
+                    errors.siren && "champ-erreur",
+                  )}
                   inputMode="numeric"
                   placeholder="000 000 000"
-                  {...register('siren')}
+                  {...register("siren")}
                   data-cy="input-siren"
                 />
               </FieldGroup>
-              <FieldGroup id="param-gerant" label="Gérant" erreur={errors.gerant?.message}>
+              <FieldGroup
+                id="param-gerant"
+                label="Gérant"
+                erreur={errors.gerant?.message}
+              >
                 <input
                   id="param-gerant"
-                  className={cn('champ', errors.gerant && 'champ-erreur')}
-                  {...register('gerant')}
+                  className={cn("champ", errors.gerant && "champ-erreur")}
+                  {...register("gerant")}
                   data-cy="input-gerant"
                 />
               </FieldGroup>
@@ -637,8 +752,11 @@ export function SettingsPage() {
                 <textarea
                   id="param-societe-adresse"
                   rows={2}
-                  className={cn('champ resize-y', errors.societeAdresse && 'champ-erreur')}
-                  {...register('societeAdresse')}
+                  className={cn(
+                    "champ resize-y",
+                    errors.societeAdresse && "champ-erreur",
+                  )}
+                  {...register("societeAdresse")}
                   data-cy="input-societe-adresse"
                 />
               </FieldGroup>
@@ -661,8 +779,11 @@ export function SettingsPage() {
                 <textarea
                   id="param-logement-adresse"
                   rows={2}
-                  className={cn('champ resize-y', errors.logementAdresse && 'champ-erreur')}
-                  {...register('logementAdresse')}
+                  className={cn(
+                    "champ resize-y",
+                    errors.logementAdresse && "champ-erreur",
+                  )}
+                  {...register("logementAdresse")}
                   data-cy="input-logement-adresse"
                 />
               </FieldGroup>
@@ -673,10 +794,13 @@ export function SettingsPage() {
               >
                 <input
                   id="param-surface-totale"
-                  className={cn('champ', errors.surfaceTotale && 'champ-erreur')}
+                  className={cn(
+                    "champ",
+                    errors.surfaceTotale && "champ-erreur",
+                  )}
                   inputMode="decimal"
                   placeholder="70,00"
-                  {...register('surfaceTotale')}
+                  {...register("surfaceTotale")}
                   data-cy="input-surface-totale"
                 />
               </FieldGroup>
@@ -687,28 +811,41 @@ export function SettingsPage() {
               >
                 <input
                   id="param-surface-pro"
-                  className={cn('champ', errors.surfacePro && 'champ-erreur')}
+                  className={cn("champ", errors.surfacePro && "champ-erreur")}
                   inputMode="decimal"
                   placeholder="25,00"
-                  {...register('surfacePro')}
+                  {...register("surfacePro")}
                   data-cy="input-surface-pro"
                 />
               </FieldGroup>
-              <FieldGroup id="param-lieu" label="Lieu d’émission" erreur={errors.lieuEmission?.message}>
+              <FieldGroup
+                id="param-lieu"
+                label="Lieu d’émission"
+                erreur={errors.lieuEmission?.message}
+              >
                 <input
                   id="param-lieu"
-                  className={cn('champ', errors.lieuEmission && 'champ-erreur')}
+                  className={cn("champ", errors.lieuEmission && "champ-erreur")}
                   placeholder="Paris"
-                  {...register('lieuEmission')}
+                  {...register("lieuEmission")}
                   data-cy="input-lieu-emission"
                 />
               </FieldGroup>
               <div className="flex flex-col justify-center rounded-xl border border-accent/15 bg-accent-soft/45 px-4 py-3">
-                <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-accent">Prorata indicatif</p>
-                <p className="mt-1 font-display text-2xl text-accent-strong" data-cy="prorata-indicatif">
-                  {displayedProRata === null ? '—' : formatPercentage(displayedProRata)}
+                <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-accent">
+                  Prorata indicatif
                 </p>
-                <p className="text-[10.5px] text-ink-soft">Calculé et arrondi côté backend à l’enregistrement.</p>
+                <p
+                  className="mt-1 font-display text-2xl text-accent-strong"
+                  data-cy="prorata-indicatif"
+                >
+                  {displayedProRata === null
+                    ? "—"
+                    : formatPercentage(displayedProRata)}
+                </p>
+                <p className="text-[10.5px] text-ink-soft">
+                  Calculé et arrondi côté backend à l’enregistrement.
+                </p>
               </div>
             </div>
           </section>
@@ -721,11 +858,18 @@ export function SettingsPage() {
                 description="Propriétaire du logement, crédité dans la quittance."
               />
               <div className="carte-corps grid gap-4">
-                <FieldGroup id="param-bailleur-nom" label="Nom du bailleur" erreur={errors.bailleurNom?.message}>
+                <FieldGroup
+                  id="param-bailleur-nom"
+                  label="Nom du bailleur"
+                  erreur={errors.bailleurNom?.message}
+                >
                   <input
                     id="param-bailleur-nom"
-                    className={cn('champ', errors.bailleurNom && 'champ-erreur')}
-                    {...register('bailleurNom')}
+                    className={cn(
+                      "champ",
+                      errors.bailleurNom && "champ-erreur",
+                    )}
+                    {...register("bailleurNom")}
                   />
                 </FieldGroup>
                 <FieldGroup
@@ -736,8 +880,11 @@ export function SettingsPage() {
                   <textarea
                     id="param-bailleur-adresse"
                     rows={2}
-                    className={cn('champ resize-y', errors.bailleurAdresse && 'champ-erreur')}
-                    {...register('bailleurAdresse')}
+                    className={cn(
+                      "champ resize-y",
+                      errors.bailleurAdresse && "champ-erreur",
+                    )}
+                    {...register("bailleurAdresse")}
                   />
                 </FieldGroup>
               </div>
@@ -750,11 +897,18 @@ export function SettingsPage() {
                 description="Occupant du logement, débiteur de la quittance."
               />
               <div className="carte-corps grid gap-4">
-                <FieldGroup id="param-locataire-nom" label="Nom du locataire" erreur={errors.locataireNom?.message}>
+                <FieldGroup
+                  id="param-locataire-nom"
+                  label="Nom du locataire"
+                  erreur={errors.locataireNom?.message}
+                >
                   <input
                     id="param-locataire-nom"
-                    className={cn('champ', errors.locataireNom && 'champ-erreur')}
-                    {...register('locataireNom')}
+                    className={cn(
+                      "champ",
+                      errors.locataireNom && "champ-erreur",
+                    )}
+                    {...register("locataireNom")}
                   />
                 </FieldGroup>
                 <FieldGroup
@@ -765,8 +919,11 @@ export function SettingsPage() {
                   <textarea
                     id="param-locataire-adresse"
                     rows={2}
-                    className={cn('champ resize-y', errors.locataireAdresse && 'champ-erreur')}
-                    {...register('locataireAdresse')}
+                    className={cn(
+                      "champ resize-y",
+                      errors.locataireAdresse && "champ-erreur",
+                    )}
+                    {...register("locataireAdresse")}
                   />
                 </FieldGroup>
               </div>
@@ -780,13 +937,17 @@ export function SettingsPage() {
               description="Valeurs pré-remplies dans l’onglet Quittance ; elles restent modifiables ponctuellement."
             />
             <div className="carte-corps grid gap-4 sm:grid-cols-3">
-              <FieldGroup id="param-loyer-hc" label="Loyer hors charges (€)" erreur={errors.loyerHc?.message}>
+              <FieldGroup
+                id="param-loyer-hc"
+                label="Loyer hors charges (€)"
+                erreur={errors.loyerHc?.message}
+              >
                 <input
                   id="param-loyer-hc"
-                  className={cn('champ', errors.loyerHc && 'champ-erreur')}
+                  className={cn("champ", errors.loyerHc && "champ-erreur")}
                   inputMode="decimal"
                   placeholder="900,00"
-                  {...register('loyerHc')}
+                  {...register("loyerHc")}
                   data-cy="input-loyer-hc"
                 />
               </FieldGroup>
@@ -797,32 +958,47 @@ export function SettingsPage() {
               >
                 <input
                   id="param-provision"
-                  className={cn('champ', errors.provisionCharges && 'champ-erreur')}
+                  className={cn(
+                    "champ",
+                    errors.provisionCharges && "champ-erreur",
+                  )}
                   inputMode="decimal"
                   placeholder="50,00"
-                  {...register('provisionCharges')}
+                  {...register("provisionCharges")}
                   data-cy="input-provision-charges"
                 />
               </FieldGroup>
               <div className="flex flex-col justify-center rounded-xl border border-line bg-paper/45 px-4 py-3">
-                <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-ink-soft">Total quittance</p>
-                <p className="mt-1 font-display text-2xl text-ink" data-cy="total-quittance-config">
+                <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-ink-soft">
+                  Total quittance
+                </p>
+                <p
+                  className="mt-1 font-display text-2xl text-ink"
+                  data-cy="total-quittance-config"
+                >
                   {formatEUR(rentReceiptTotal / 100)}
                 </p>
-                <p className="text-[10.5px] text-ink-soft">Loyer + provision, recalculé par le backend.</p>
+                <p className="text-[10.5px] text-ink-soft">
+                  Loyer + provision, recalculé par le backend.
+                </p>
               </div>
             </div>
           </section>
 
           {save.isError ? (
-            <p className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-sm text-danger" role="alert">
+            <p
+              className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-sm text-danger"
+              role="alert"
+            >
               {errorMessage(save.error)}
             </p>
           ) : null}
 
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface/80 px-4 py-3">
             <p className="text-xs text-ink-soft" aria-live="polite">
-              {isDirty ? 'Modifications non enregistrées.' : 'Toutes les valeurs sont à jour.'}
+              {isDirty
+                ? "Modifications non enregistrées."
+                : "Toutes les valeurs sont à jour."}
             </p>
             <Button
               variante="primaire"
@@ -837,7 +1013,9 @@ export function SettingsPage() {
         </form>
       )}
 
-      <ExpenseItemsManager prorataDefaut={settings.data?.proRataBase ?? '100.00'} />
+      <ExpenseItemsManager
+        prorataDefaut={settings.data?.proRataBase ?? "100.00"}
+      />
     </>
   );
 }

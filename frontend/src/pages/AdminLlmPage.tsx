@@ -1,5 +1,5 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
   AlertTriangle,
@@ -15,62 +15,78 @@ import {
   ShieldAlert,
   Sparkles,
   XCircle,
-} from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { errorMessage } from '@/api/client';
-import { api } from '@/api/endpoints';
-import { queryKeys, useLlmConfig, useLlmModels, useLlmStatus } from '@/api/queries';
-import type { LlmConfigDto, LlmConfigRequest, LlmTestResponse, LlmStatus } from '@/api/types';
-import { Button } from '@/components/Button';
-import { LoadingState, ErrorState } from '@/components/States';
-import { FieldGroup } from '@/components/FieldGroup';
-import { PageHeader } from '@/components/PageHeader';
-import { cn } from '@/lib/cn';
-import { llmSchema, type LlmFormValues } from '@/lib/validation';
-import { toast } from '@/state/toasts';
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { errorMessage } from "@/api/client";
+import { api } from "@/api/endpoints";
+import {
+  queryKeys,
+  useLlmConfig,
+  useLlmModels,
+  useLlmStatus,
+} from "@/api/queries";
+import type {
+  LlmConfigDto,
+  LlmConfigRequest,
+  LlmTestResponse,
+  LlmStatus,
+} from "@/api/types";
+import { Button } from "@/components/Button";
+import { LoadingState, ErrorState } from "@/components/States";
+import { FieldGroup } from "@/components/FieldGroup";
+import { PageHeader } from "@/components/PageHeader";
+import { cn } from "@/lib/cn";
+import { llmSchema, type LlmFormValues } from "@/lib/validation";
+import { toast } from "@/state/toasts";
 
-const STATUSES: Record<LlmStatus, { texte: string; classe: string; point: string; description: string }> = {
+const STATUSES: Record<
+  LlmStatus,
+  { texte: string; classe: string; point: string; description: string }
+> = {
   PRET: {
-    texte: 'Connecté',
-    classe: 'badge-accent',
-    point: 'bg-accent',
-    description: 'Le serveur Ollama et le modèle configuré sont disponibles.',
+    texte: "Connecté",
+    classe: "badge-accent",
+    point: "bg-accent",
+    description: "Le serveur Ollama et le modèle configuré sont disponibles.",
   },
   PRET_DISTANT: {
-    texte: 'Connecté — serveur distant',
-    classe: 'badge-avertissement',
-    point: 'bg-warning',
-    description: 'Ollama répond, mais l’URL n’est pas locale : les documents quittent cette machine.',
+    texte: "Connecté — serveur distant",
+    classe: "badge-avertissement",
+    point: "bg-warning",
+    description:
+      "Ollama répond, mais l’URL n’est pas locale : les documents quittent cette machine.",
   },
   MODELE_ABSENT: {
-    texte: 'Modèle absent',
-    classe: 'badge-avertissement',
-    point: 'bg-warning',
-    description: 'Ollama répond mais le modèle sélectionné n’est pas installé.',
+    texte: "Modèle absent",
+    classe: "badge-avertissement",
+    point: "bg-warning",
+    description: "Ollama répond mais le modèle sélectionné n’est pas installé.",
   },
   INJOIGNABLE: {
-    texte: 'Injoignable',
-    classe: 'badge-danger',
-    point: 'bg-danger',
-    description: 'Le serveur Ollama ne répond pas. La saisie manuelle reste disponible.',
+    texte: "Injoignable",
+    classe: "badge-danger",
+    point: "bg-danger",
+    description:
+      "Le serveur Ollama ne répond pas. La saisie manuelle reste disponible.",
   },
   DESACTIVE: {
-    texte: 'Désactivé',
-    classe: 'badge-neutre',
-    point: 'bg-ink-soft/60',
-    description: 'L’analyse IA est désactivée. Toute l’application reste utilisable manuellement.',
+    texte: "Désactivé",
+    classe: "badge-neutre",
+    point: "bg-ink-soft/60",
+    description:
+      "L’analyse IA est désactivée. Toute l’application reste utilisable manuellement.",
   },
 };
 
 function normalizeUrl(url: string): string {
-  return url.trim().replace(/\/+$/, '');
+  return url.trim().replace(/\/+$/, "");
 }
 
 function isValidUrl(url: string): boolean {
   try {
     const analysis = new URL(url);
-    return analysis.protocol === 'http:' || analysis.protocol === 'https:';
+    return analysis.protocol === "http:" || analysis.protocol === "https:";
   } catch {
     return false;
   }
@@ -80,11 +96,24 @@ function isLocalUrl(url: string): boolean {
   try {
     const host = new URL(url).hostname.toLowerCase();
     if (
-      ['localhost', '127.0.0.1', '::1', '[::1]', '0.0.0.0', 'host.docker.internal', 'ollama'].includes(host)
+      [
+        "localhost",
+        "127.0.0.1",
+        "::1",
+        "[::1]",
+        "0.0.0.0",
+        "host.docker.internal",
+        "ollama",
+      ].includes(host)
     ) {
       return true;
     }
-    if (/^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^169\.254\./.test(host)) {
+    if (
+      /^127\./.test(host) ||
+      /^10\./.test(host) ||
+      /^192\.168\./.test(host) ||
+      /^169\.254\./.test(host)
+    ) {
       return true;
     }
     return /^172\.(1[6-9]|2\d|3[01])\./.test(host);
@@ -96,15 +125,15 @@ function isLocalUrl(url: string): boolean {
 function valuesFromConfig(config: LlmConfigDto | undefined): LlmFormValues {
   return {
     actif: config?.active ?? false,
-    url: config?.url ?? 'http://host.docker.internal:11434',
-    modele: config?.model ?? '',
+    url: config?.url ?? "http://host.docker.internal:11434",
+    modele: config?.model ?? "",
     timeoutSeconds: config?.timeoutSeconds ?? 120,
-    temperature: config?.temperature ?? '0',
+    temperature: config?.temperature ?? "0",
     numCtx: config?.numCtx ?? 8192,
     pagesMax: config?.maxPages ?? 5,
     ocrActif: config?.ocrActive ?? false,
-    promptExtraction: config?.extractionPrompt ?? '',
-    cleApi: '',
+    promptExtraction: config?.extractionPrompt ?? "",
+    cleApi: "",
     supprimerCle: false,
   };
 }
@@ -112,11 +141,11 @@ function valuesFromConfig(config: LlmConfigDto | undefined): LlmFormValues {
 function requestBodyFromValues(values: LlmFormValues): LlmConfigRequest {
   const requestBody: LlmConfigRequest = {
     active: values.actif,
-    supplier: 'OLLAMA',
+    supplier: "OLLAMA",
     url: normalizeUrl(values.url),
     model: values.modele.trim(),
     timeoutSeconds: values.timeoutSeconds,
-    temperature: values.temperature.trim().replace(',', '.'),
+    temperature: values.temperature.trim().replace(",", "."),
     numCtx: values.numCtx,
     maxPages: values.pagesMax,
     ocrActive: values.ocrActif,
@@ -125,12 +154,18 @@ function requestBodyFromValues(values: LlmFormValues): LlmConfigRequest {
   if (values.cleApi.trim()) {
     requestBody.apiKey = values.cleApi.trim();
   } else if (values.supprimerCle) {
-    requestBody.apiKey = '';
+    requestBody.apiKey = "";
   }
   return requestBody;
 }
 
-function Switch({ actif: active, onChange }: { actif: boolean; onChange: () => void }) {
+function Switch({
+  actif: active,
+  onChange,
+}: {
+  actif: boolean;
+  onChange: () => void;
+}) {
   return (
     <button
       type="button"
@@ -140,14 +175,14 @@ function Switch({ actif: active, onChange }: { actif: boolean; onChange: () => v
       onClick={onChange}
       data-cy="switch-llm-actif"
       className={cn(
-        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors',
-        active ? 'bg-accent' : 'bg-line-forte',
+        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors",
+        active ? "bg-accent" : "bg-line-forte",
       )}
     >
       <span
         className={cn(
-          'inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform',
-          active ? 'translate-x-[22px]' : 'translate-x-0.5',
+          "inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
+          active ? "translate-x-[22px]" : "translate-x-0.5",
         )}
         aria-hidden="true"
       />
@@ -166,17 +201,17 @@ function StatusState() {
         <div className="flex items-start gap-3">
           <span
             className={cn(
-              'grid h-10 w-10 place-items-center rounded-xl',
-              key === 'PRET'
-                ? 'bg-accent-soft text-accent'
-                : key === 'DESACTIVE'
-                  ? 'bg-paper-deep text-ink-soft'
-                  : 'bg-warning-soft text-warning',
+              "grid h-10 w-10 place-items-center rounded-xl",
+              key === "PRET"
+                ? "bg-accent-soft text-accent"
+                : key === "DESACTIVE"
+                  ? "bg-paper-deep text-ink-soft"
+                  : "bg-warning-soft text-warning",
             )}
           >
-            {key === 'PRET' ? (
+            {key === "PRET" ? (
               <CheckCircle2 size={19} aria-hidden="true" />
-            ) : key === 'INJOIGNABLE' ? (
+            ) : key === "INJOIGNABLE" ? (
               <CloudOff size={19} aria-hidden="true" />
             ) : (
               <Activity size={19} aria-hidden="true" />
@@ -187,25 +222,42 @@ function StatusState() {
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <h2 className="text-lg text-ink">Connexion Ollama</h2>
               <span
-                className={cn('badge', info?.classe ?? 'badge-neutre')}
+                className={cn("badge", info?.classe ?? "badge-neutre")}
                 data-cy="badge-llm-statut-admin"
               >
                 <span
-                  className={cn('h-1.5 w-1.5 rounded-full', info?.point ?? 'bg-ink-soft/60')}
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    info?.point ?? "bg-ink-soft/60",
+                  )}
                   aria-hidden="true"
                 />
-                {status.isPending ? 'Vérification…' : status.isError ? 'Indisponible' : (info?.texte ?? 'Inconnu')}
+                {status.isPending
+                  ? "Vérification…"
+                  : status.isError
+                    ? "Indisponible"
+                    : (info?.texte ?? "Inconnu")}
               </span>
             </div>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-ink-soft">
-              {status.data?.message ?? info?.description ?? 'Interrogation du serveur Ollama…'}
+              {status.data?.message ??
+                info?.description ??
+                "Interrogation du serveur Ollama…"}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <span className="hidden text-[11px] text-ink-soft sm:inline">
-            {status.data?.reachable ? 'Serveur joignable' : status.data ? 'Serveur non joignable' : '—'}
-            {status.data?.active ? ' · IA activée' : status.data ? ' · IA désactivée' : ''}
+            {status.data?.reachable
+              ? "Serveur joignable"
+              : status.data
+                ? "Serveur non joignable"
+                : "—"}
+            {status.data?.active
+              ? " · IA activée"
+              : status.data
+                ? " · IA désactivée"
+                : ""}
           </span>
           <Button
             variante="secondaire"
@@ -226,7 +278,7 @@ export function AdminLlmPage() {
   const queryClient = useQueryClient();
   const config = useLlmConfig();
   const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
-  const [savedUrl, setSavedUrl] = useState('');
+  const [savedUrl, setSavedUrl] = useState("");
   const [manualMode, setManualMode] = useState(false);
   const [modelsError, setModelsError] = useState<string | null>(null);
   const [modelsLoading, setModelsLoading] = useState(false);
@@ -245,14 +297,14 @@ export function AdminLlmPage() {
     formState: { errors, isDirty },
   } = useForm<LlmFormValues>({
     resolver: zodResolver(llmSchema),
-    mode: 'onChange',
+    mode: "onChange",
     defaultValues: valuesFromConfig(undefined),
   });
 
   const values = watch();
   const active = values.actif;
   const removeKey = values.supprimerCle;
-  const remoteUrl = values.url.trim() !== '' && !isLocalUrl(values.url);
+  const remoteUrl = values.url.trim() !== "" && !isLocalUrl(values.url);
   const models = useLlmModels(loadedUrl);
 
   useEffect(() => {
@@ -260,14 +312,14 @@ export function AdminLlmPage() {
       return;
     }
     reset(valuesFromConfig(config.data));
-    const url = normalizeUrl(config.data.url ?? '');
+    const url = normalizeUrl(config.data.url ?? "");
     setSavedUrl(url);
     setLoadedUrl(url || null);
   }, [config.data, reset]);
 
   useEffect(() => {
     if (removeKey) {
-      setValue('cleApi', '', { shouldDirty: true });
+      setValue("cleApi", "", { shouldDirty: true });
     }
   }, [removeKey, setValue]);
 
@@ -278,16 +330,17 @@ export function AdminLlmPage() {
   }, [models.isError]);
 
   const save = useMutation({
-    mutationFn: (submittedValues: LlmFormValues) => api.llm.update(requestBodyFromValues(submittedValues)),
+    mutationFn: (submittedValues: LlmFormValues) =>
+      api.llm.update(requestBodyFromValues(submittedValues)),
     onSuccess: (payload) => {
       queryClient.setQueryData(queryKeys.llmConfig, payload);
-      const url = normalizeUrl(payload.url ?? '');
+      const url = normalizeUrl(payload.url ?? "");
       setSavedUrl(url);
       setLoadedUrl(url || null);
       setTestResult(null);
       setTestError(null);
       void queryClient.invalidateQueries({ queryKey: queryKeys.llmStatus });
-      toast.succes('Configuration IA enregistrée.');
+      toast.succes("Configuration IA enregistrée.");
     },
   });
 
@@ -297,7 +350,7 @@ export function AdminLlmPage() {
     }
     const url = normalizeUrl(values.url);
     if (!isValidUrl(url)) {
-      setModelsError('URL invalide : commencez par http:// ou https://.');
+      setModelsError("URL invalide : commencez par http:// ou https://.");
       return;
     }
     setModelsError(null);
@@ -331,11 +384,14 @@ export function AdminLlmPage() {
     try {
       const reply = await api.llm.defaultPrompt();
       if (!reply.prompt) {
-        toast.erreur('Le prompt par défaut est indisponible.');
+        toast.erreur("Le prompt par défaut est indisponible.");
         return;
       }
-      setValue('promptExtraction', reply.prompt, { shouldDirty: true, shouldValidate: true });
-      toast.info('Prompt par défaut chargé. Enregistrez pour l’appliquer.');
+      setValue("promptExtraction", reply.prompt, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      toast.info("Prompt par défaut chargé. Enregistrez pour l’appliquer.");
     } catch (error) {
       toast.erreur(errorMessage(error));
     } finally {
@@ -348,17 +404,19 @@ export function AdminLlmPage() {
     setTestResult(null);
     setTestError(null);
     try {
-      const payload = await api.llm.update(requestBodyFromValues(submittedValues));
+      const payload = await api.llm.update(
+        requestBodyFromValues(submittedValues),
+      );
       queryClient.setQueryData(queryKeys.llmConfig, payload);
-      const url = normalizeUrl(payload.url ?? '');
+      const url = normalizeUrl(payload.url ?? "");
       setSavedUrl(url);
       setLoadedUrl(url || null);
       const result = await api.llm.test();
       setTestResult(result);
       if (result.success) {
-        toast.succes('Test de connexion réussi.');
+        toast.succes("Test de connexion réussi.");
       } else {
-        toast.erreur(result.message ?? 'Le test de connexion a échoué.');
+        toast.erreur(result.message ?? "Le test de connexion a échoué.");
       }
       void queryClient.invalidateQueries({ queryKey: queryKeys.llmStatus });
     } catch (error) {
@@ -370,7 +428,10 @@ export function AdminLlmPage() {
 
   const modelOptions = useMemo(() => {
     const options = models.data ?? [];
-    if (values.modele && !options.some((model) => model.name === values.modele)) {
+    if (
+      values.modele &&
+      !options.some((model) => model.name === values.modele)
+    ) {
       return [
         {
           name: values.modele,
@@ -385,7 +446,9 @@ export function AdminLlmPage() {
     return options.map((model) => ({ ...model, configure: false }));
   }, [models.data, values.modele]);
 
-  const selectedModel = modelOptions.find((model) => model.name === values.modele);
+  const selectedModel = modelOptions.find(
+    (model) => model.name === values.modele,
+  );
   const listLoading = modelsLoading || models.isPending;
 
   if (config.isPending) {
@@ -401,7 +464,10 @@ export function AdminLlmPage() {
     return (
       <>
         <PageHeader surTitre="Réglages" titre="Admin IA" />
-        <ErrorState message={errorMessage(config.error)} onReessayer={() => void config.refetch()} />
+        <ErrorState
+          message={errorMessage(config.error)}
+          onReessayer={() => void config.refetch()}
+        />
       </>
     );
   }
@@ -445,13 +511,20 @@ export function AdminLlmPage() {
           role="alert"
           data-cy="alerte-llm-distante"
         >
-          <ShieldAlert size={18} className="mt-0.5 shrink-0 text-warning" aria-hidden="true" />
+          <ShieldAlert
+            size={18}
+            className="mt-0.5 shrink-0 text-warning"
+            aria-hidden="true"
+          />
           <div className="text-xs leading-relaxed text-warning">
-            <p className="font-semibold">Les justificatifs seront envoyés à un serveur distant.</p>
+            <p className="font-semibold">
+              Les justificatifs seront envoyés à un serveur distant.
+            </p>
             <p className="mt-0.5">
-              L’URL configurée n’est ni <code className="font-mono">localhost</code>, ni{' '}
-              <code className="font-mono">host.docker.internal</code>, ni une IP privée. N’utilisez cette option que si
-              vous acceptez ce transfert.
+              L’URL configurée n’est ni{" "}
+              <code className="font-mono">localhost</code>, ni{" "}
+              <code className="font-mono">host.docker.internal</code>, ni une IP
+              privée. N’utilisez cette option que si vous acceptez ce transfert.
             </p>
           </div>
         </div>
@@ -460,7 +533,9 @@ export function AdminLlmPage() {
       <form
         id="form-llm"
         className="space-y-6"
-        onSubmit={handleSubmit((submittedValues) => save.mutate(submittedValues))}
+        onSubmit={handleSubmit((submittedValues) =>
+          save.mutate(submittedValues),
+        )}
         noValidate
       >
         <section className="carte overflow-hidden">
@@ -478,23 +553,38 @@ export function AdminLlmPage() {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-xs font-medium text-ink-soft">
-                {active ? 'Analyse IA activée' : 'Analyse IA désactivée'}
+                {active ? "Analyse IA activée" : "Analyse IA désactivée"}
               </span>
-              <Switch actif={active} onChange={() => setValue('actif', !active, { shouldDirty: true })} />
+              <Switch
+                actif={active}
+                onChange={() =>
+                  setValue("actif", !active, { shouldDirty: true })
+                }
+              />
             </div>
           </div>
 
           <div className="carte-corps space-y-5">
             {!active ? (
               <div className="flex items-start gap-2 rounded-xl border border-line bg-paper/45 p-3 text-xs leading-relaxed text-ink-soft">
-                <AlertTriangle size={15} className="mt-0.5 shrink-0 text-warning" aria-hidden="true" />
-                Quand l’IA est désactivée, aucun justificatif n’est envoyé. Toute la saisie manuelle reste disponible.
+                <AlertTriangle
+                  size={15}
+                  className="mt-0.5 shrink-0 text-warning"
+                  aria-hidden="true"
+                />
+                Quand l’IA est désactivée, aucun justificatif n’est envoyé.
+                Toute la saisie manuelle reste disponible.
               </div>
             ) : null}
 
             <div className="grid gap-4 lg:grid-cols-2">
               <FieldGroup id="llm-fournisseur" label="Fournisseur">
-                <select id="llm-fournisseur" className="champ" value="OLLAMA" disabled>
+                <select
+                  id="llm-fournisseur"
+                  className="champ"
+                  value="OLLAMA"
+                  disabled
+                >
                   <option value="OLLAMA">Ollama (local)</option>
                   <option value="OPENAI" disabled>
                     Compatible OpenAI — phase 2
@@ -511,11 +601,11 @@ export function AdminLlmPage() {
                 <div className="flex gap-2">
                   <input
                     id="llm-url"
-                    className={cn('champ mt-1.5', errors.url && 'champ-erreur')}
+                    className={cn("champ mt-1.5", errors.url && "champ-erreur")}
                     placeholder="http://host.docker.internal:11434"
                     autoComplete="off"
                     spellCheck={false}
-                    {...register('url')}
+                    {...register("url")}
                     onBlur={() => {
                       const url = normalizeUrl(values.url);
                       if (isValidUrl(url) && url !== savedUrl) {
@@ -527,7 +617,12 @@ export function AdminLlmPage() {
                   <Button
                     variante="secondaire"
                     className="mt-1.5 shrink-0"
-                    icone={<RefreshCw size={15} className={cn(listLoading && 'animate-spin')} />}
+                    icone={
+                      <RefreshCw
+                        size={15}
+                        className={cn(listLoading && "animate-spin")}
+                      />
+                    }
                     disabled={listLoading}
                     onClick={() => void refreshModels(true)}
                     aria-label="Actualiser la liste des modèles"
@@ -546,35 +641,40 @@ export function AdminLlmPage() {
                 erreur={errors.modele?.message}
                 aide={
                   selectedModel
-                    ? `${selectedModel.family || 'Famille inconnue'}${selectedModel.parameters ? ` · ${selectedModel.parameters}` : ''}${selectedModel.vision ? ' · accepte les images' : ''}`
-                    : 'La liste est chargée depuis /api/tags. Vous pouvez saisir un nom manuellement si Ollama est injoignable.'
+                    ? `${selectedModel.family || "Famille inconnue"}${selectedModel.parameters ? ` · ${selectedModel.parameters}` : ""}${selectedModel.vision ? " · accepte les images" : ""}`
+                    : "La liste est chargée depuis /api/tags. Vous pouvez saisir un nom manuellement si Ollama est injoignable."
                 }
               >
                 {!manualMode ? (
                   <select
                     id="llm-modele"
-                    className={cn('champ', errors.modele && 'champ-erreur')}
+                    className={cn("champ", errors.modele && "champ-erreur")}
                     value={values.modele}
                     onChange={(event) => {
                       const choice = event.target.value;
-                      if (choice === '__manuel__') {
+                      if (choice === "__manuel__") {
                         setManualMode(true);
                         return;
                       }
-                      setValue('modele', choice, { shouldDirty: true, shouldValidate: true });
+                      setValue("modele", choice, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
                     }}
                     disabled={listLoading && modelOptions.length === 0}
                     data-cy="select-llm-model"
                   >
                     <option value="" disabled>
-                      {listLoading && modelOptions.length === 0 ? 'Chargement des modèles…' : 'Sélectionnez un modèle'}
+                      {listLoading && modelOptions.length === 0
+                        ? "Chargement des modèles…"
+                        : "Sélectionnez un modèle"}
                     </option>
                     {modelOptions.map((model) => (
                       <option key={model.name} value={model.name}>
                         {model.name}
-                        {model.vision ? ' · vision' : ''}
-                        {model.parameters ? ` · ${model.parameters}` : ''}
-                        {model.configure ? ' (configuré)' : ''}
+                        {model.vision ? " · vision" : ""}
+                        {model.parameters ? ` · ${model.parameters}` : ""}
+                        {model.configure ? " (configuré)" : ""}
                       </option>
                     ))}
                     <option value="__manuel__">Saisie manuelle…</option>
@@ -585,11 +685,14 @@ export function AdminLlmPage() {
                   <div className="mt-1.5">
                     <input
                       id="llm-modele"
-                      className={cn('champ mt-0', errors.modele && 'champ-erreur')}
+                      className={cn(
+                        "champ mt-0",
+                        errors.modele && "champ-erreur",
+                      )}
                       placeholder="qwen2.5:7b"
                       autoComplete="off"
                       spellCheck={false}
-                      {...register('modele')}
+                      {...register("modele")}
                       data-cy="input-llm-modele"
                     />
                     {models.data && models.data.length > 0 ? (
@@ -613,51 +716,84 @@ export function AdminLlmPage() {
                   </p>
                   <p className="mt-1 text-[11.5px] leading-relaxed text-ink-soft">
                     {selectedModel?.vision
-                      ? 'Ce modèle accepte les images : les photos et scans peuvent être analysés.'
-                      : 'Ce modèle n’est pas signalé comme multimodal. Les PDF texte restent analysables ; les images nécessitent un modèle vision ou l’OCR.'}
+                      ? "Ce modèle accepte les images : les photos et scans peuvent être analysés."
+                      : "Ce modèle n’est pas signalé comme multimodal. Les PDF texte restent analysables ; les images nécessitent un modèle vision ou l’OCR."}
                   </p>
                 </div>
                 {selectedModel && selectedModel.configure ? (
                   <p className="text-[11px] text-warning">
-                    Ce modèle configuré n’apparaît pas dans la liste du serveur. Vérifiez qu’il est installé.
+                    Ce modèle configuré n’apparaît pas dans la liste du serveur.
+                    Vérifiez qu’il est installé.
                   </p>
                 ) : null}
               </div>
             </div>
 
             {modelsError || models.isError ? (
-              <div className="rounded-xl border border-warning/25 bg-warning-soft/70 p-3 text-xs text-warning" role="alert">
+              <div
+                className="rounded-xl border border-warning/25 bg-warning-soft/70 p-3 text-xs text-warning"
+                role="alert"
+              >
                 <p className="font-semibold">Liste des modèles indisponible.</p>
-                <p className="mt-0.5">{modelsError ?? errorMessage(models.error)}</p>
-                <p className="mt-1">Saisissez le nom du modèle manuellement, puis testez la connexion.</p>
+                <p className="mt-0.5">
+                  {modelsError ?? errorMessage(models.error)}
+                </p>
+                <p className="mt-1">
+                  Saisissez le nom du modèle manuellement, puis testez la
+                  connexion.
+                </p>
               </div>
             ) : null}
 
             <div className="rounded-xl border border-line bg-paper/35 p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="flex items-start gap-2">
-                  <KeyRound size={16} className="mt-0.5 text-accent" aria-hidden="true" />
+                  <KeyRound
+                    size={16}
+                    className="mt-0.5 text-accent"
+                    aria-hidden="true"
+                  />
                   <div>
-                    <p className="text-sm font-semibold text-ink">Clé API (facultative)</p>
+                    <p className="text-sm font-semibold text-ink">
+                      Clé API (facultative)
+                    </p>
                     <p className="text-[11.5px] text-ink-soft">
-                      Jamais renvoyée par le serveur ni réaffichée. Laissez vide pour conserver la clé enregistrée.
+                      Jamais renvoyée par le serveur ni réaffichée. Laissez vide
+                      pour conserver la clé enregistrée.
                     </p>
                   </div>
                 </div>
-                <span className={cn('badge', config.data?.apiKeyConfigured ? 'badge-accent' : 'badge-neutre')}>
-                  {config.data?.apiKeyConfigured ? 'Clé configurée' : 'Aucune clé'}
+                <span
+                  className={cn(
+                    "badge",
+                    config.data?.apiKeyConfigured
+                      ? "badge-accent"
+                      : "badge-neutre",
+                  )}
+                >
+                  {config.data?.apiKeyConfigured
+                    ? "Clé configurée"
+                    : "Aucune clé"}
                 </span>
               </div>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <FieldGroup id="llm-cle-api" label="Nouvelle clé API" erreur={errors.cleApi?.message}>
+                <FieldGroup
+                  id="llm-cle-api"
+                  label="Nouvelle clé API"
+                  erreur={errors.cleApi?.message}
+                >
                   <input
                     id="llm-cle-api"
                     type="password"
                     autoComplete="new-password"
                     className="champ"
-                    placeholder={config.data?.apiKeyConfigured ? 'Clé enregistrée — laisser vide' : 'Aucune clé enregistrée'}
+                    placeholder={
+                      config.data?.apiKeyConfigured
+                        ? "Clé enregistrée — laisser vide"
+                        : "Aucune clé enregistrée"
+                    }
                     disabled={removeKey}
-                    {...register('cleApi')}
+                    {...register("cleApi")}
                     data-cy="input-llm-cle-api"
                   />
                 </FieldGroup>
@@ -666,13 +802,16 @@ export function AdminLlmPage() {
                     <input
                       type="checkbox"
                       className="mt-0.5 h-4 w-4 rounded border-line accent-[#1b5b49]"
-                      {...register('supprimerCle')}
+                      {...register("supprimerCle")}
                       data-cy="checkbox-supprimer-cle"
                     />
                     <span>
-                      <span className="block font-medium text-ink">Supprimer la clé enregistrée</span>
+                      <span className="block font-medium text-ink">
+                        Supprimer la clé enregistrée
+                      </span>
                       <span className="mt-0.5 block text-[11px]">
-                        Envoie explicitement une clé vide. Sans cette case, une clé vide n’est jamais transmise.
+                        Envoie explicitement une clé vide. Sans cette case, une
+                        clé vide n’est jamais transmise.
                       </span>
                     </span>
                   </label>
@@ -682,7 +821,8 @@ export function AdminLlmPage() {
 
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4">
               <p className="text-[11px] text-ink-soft">
-                « Tester la connexion » enregistre d’abord les réglages affichés, puis interroge le serveur.
+                « Tester la connexion » enregistre d’abord les réglages
+                affichés, puis interroge le serveur.
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -708,7 +848,10 @@ export function AdminLlmPage() {
             </div>
 
             {testError ? (
-              <p className="rounded-lg border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger" role="alert">
+              <p
+                className="rounded-lg border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger"
+                role="alert"
+              >
                 {testError}
               </p>
             ) : null}
@@ -716,28 +859,49 @@ export function AdminLlmPage() {
             {testResult ? (
               <div
                 className={cn(
-                  'rounded-xl border p-4',
-                  testResult.success ? 'border-accent/20 bg-accent-soft/50' : 'border-danger/20 bg-danger-soft/50',
+                  "rounded-xl border p-4",
+                  testResult.success
+                    ? "border-accent/20 bg-accent-soft/50"
+                    : "border-danger/20 bg-danger-soft/50",
                 )}
-                role={testResult.success ? 'status' : 'alert'}
+                role={testResult.success ? "status" : "alert"}
                 data-cy="resultat-test-llm"
               >
                 <div className="flex items-center gap-2">
                   {testResult.success ? (
-                    <CheckCircle2 size={17} className="text-accent" aria-hidden="true" />
+                    <CheckCircle2
+                      size={17}
+                      className="text-accent"
+                      aria-hidden="true"
+                    />
                   ) : (
-                    <XCircle size={17} className="text-danger" aria-hidden="true" />
+                    <XCircle
+                      size={17}
+                      className="text-danger"
+                      aria-hidden="true"
+                    />
                   )}
-                  <p className={cn('text-sm font-semibold', testResult.success ? 'text-accent' : 'text-danger')}>
-                    {testResult.success ? 'Connexion réussie' : 'Test échoué'}
-                    {typeof testResult.durationMs === 'number' ? ` en ${(testResult.durationMs / 1000).toFixed(1)} s` : ''}
+                  <p
+                    className={cn(
+                      "text-sm font-semibold",
+                      testResult.success ? "text-accent" : "text-danger",
+                    )}
+                  >
+                    {testResult.success ? "Connexion réussie" : "Test échoué"}
+                    {typeof testResult.durationMs === "number"
+                      ? ` en ${(testResult.durationMs / 1000).toFixed(1)} s`
+                      : ""}
                   </p>
                 </div>
-                <p className="mt-1 text-xs text-ink-soft">{testResult.message}</p>
+                <p className="mt-1 text-xs text-ink-soft">
+                  {testResult.message}
+                </p>
                 {testResult.detectedAmount ? (
                   <p className="mt-2 text-xs text-ink">
-                    Montant détecté sur le document de test :{' '}
-                    <span className="font-mono font-semibold">{testResult.detectedAmount} €</span>
+                    Montant détecté sur le document de test :{" "}
+                    <span className="font-mono font-semibold">
+                      {testResult.detectedAmount} €
+                    </span>
                   </p>
                 ) : null}
               </div>
@@ -754,12 +918,17 @@ export function AdminLlmPage() {
               <div>
                 <h2 className="text-xl text-ink">Paramètres avancés</h2>
                 <p className="mt-0.5 text-xs text-ink-soft">
-                  Délai, température, contexte, pages analysées, OCR et prompt d’extraction.
+                  Délai, température, contexte, pages analysées, OCR et prompt
+                  d’extraction.
                 </p>
               </div>
             </div>
-            <span className="text-xs font-medium text-ink-soft group-open:hidden">Afficher</span>
-            <span className="hidden text-xs font-medium text-ink-soft group-open:inline">Masquer</span>
+            <span className="text-xs font-medium text-ink-soft group-open:hidden">
+              Afficher
+            </span>
+            <span className="hidden text-xs font-medium text-ink-soft group-open:inline">
+              Masquer
+            </span>
           </summary>
 
           <div className="carte-corps space-y-5 border-t border-line">
@@ -775,8 +944,11 @@ export function AdminLlmPage() {
                   min={5}
                   max={600}
                   step={1}
-                  className={cn('champ', errors.timeoutSeconds && 'champ-erreur')}
-                  {...register('timeoutSeconds', { valueAsNumber: true })}
+                  className={cn(
+                    "champ",
+                    errors.timeoutSeconds && "champ-erreur",
+                  )}
+                  {...register("timeoutSeconds", { valueAsNumber: true })}
                 />
               </FieldGroup>
               <FieldGroup
@@ -787,31 +959,39 @@ export function AdminLlmPage() {
               >
                 <input
                   id="llm-temperature"
-                  className={cn('champ', errors.temperature && 'champ-erreur')}
+                  className={cn("champ", errors.temperature && "champ-erreur")}
                   inputMode="decimal"
-                  {...register('temperature')}
+                  {...register("temperature")}
                 />
               </FieldGroup>
-              <FieldGroup id="llm-numctx" label="Contexte (num_ctx)" erreur={errors.numCtx?.message}>
+              <FieldGroup
+                id="llm-numctx"
+                label="Contexte (num_ctx)"
+                erreur={errors.numCtx?.message}
+              >
                 <input
                   id="llm-numctx"
                   type="number"
                   min={1024}
                   max={131072}
                   step={1024}
-                  className={cn('champ', errors.numCtx && 'champ-erreur')}
-                  {...register('numCtx', { valueAsNumber: true })}
+                  className={cn("champ", errors.numCtx && "champ-erreur")}
+                  {...register("numCtx", { valueAsNumber: true })}
                 />
               </FieldGroup>
-              <FieldGroup id="llm-pages" label="Pages max analysées" erreur={errors.pagesMax?.message}>
+              <FieldGroup
+                id="llm-pages"
+                label="Pages max analysées"
+                erreur={errors.pagesMax?.message}
+              >
                 <input
                   id="llm-pages"
                   type="number"
                   min={1}
                   max={20}
                   step={1}
-                  className={cn('champ', errors.pagesMax && 'champ-erreur')}
-                  {...register('pagesMax', { valueAsNumber: true })}
+                  className={cn("champ", errors.pagesMax && "champ-erreur")}
+                  {...register("pagesMax", { valueAsNumber: true })}
                 />
               </FieldGroup>
             </div>
@@ -820,13 +1000,15 @@ export function AdminLlmPage() {
               <input
                 type="checkbox"
                 className="mt-0.5 h-4 w-4 rounded border-line accent-[#1b5b49]"
-                {...register('ocrActif')}
+                {...register("ocrActif")}
               />
               <span>
-                <span className="block text-sm font-medium text-ink">OCR Tesseract en secours</span>
+                <span className="block text-sm font-medium text-ink">
+                  OCR Tesseract en secours
+                </span>
                 <span className="mt-0.5 block text-[11.5px] leading-relaxed text-ink-soft">
-                  À activer si Tesseract est installé sur le serveur : extrait le texte des justificatifs image ou
-                  scannés avant l’analyse.
+                  À activer si Tesseract est installé sur le serveur : extrait
+                  le texte des justificatifs image ou scannés avant l’analyse.
                 </span>
               </span>
             </label>
@@ -851,8 +1033,11 @@ export function AdminLlmPage() {
                 id="llm-prompt"
                 rows={12}
                 spellCheck={false}
-                className={cn('champ resize-y font-mono text-[12.5px] leading-relaxed', errors.promptExtraction && 'champ-erreur')}
-                {...register('promptExtraction')}
+                className={cn(
+                  "champ resize-y font-mono text-[12.5px] leading-relaxed",
+                  errors.promptExtraction && "champ-erreur",
+                )}
+                {...register("promptExtraction")}
                 data-cy="input-llm-prompt"
               />
               {errors.promptExtraction ? (
@@ -861,31 +1046,42 @@ export function AdminLlmPage() {
                 </p>
               ) : (
                 <p className="aide">
-                  Le prompt système interdit au modèle d’obéir aux instructions contenues dans un document et impose un
-                  JSON validé par le serveur. Le modèle ne calcule jamais de montant.
+                  Le prompt système interdit au modèle d’obéir aux instructions
+                  contenues dans un document et impose un JSON validé par le
+                  serveur. Le modèle ne calcule jamais de montant.
                 </p>
               )}
             </div>
 
             <div className="flex items-start gap-2 rounded-xl border border-line bg-paper/30 p-3 text-[11.5px] leading-relaxed text-ink-soft">
-              <Server size={15} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
+              <Server
+                size={15}
+                className="mt-0.5 shrink-0 text-accent"
+                aria-hidden="true"
+              />
               <p>
-                Les valeurs par défaut conviennent à un usage local : 120 s, température 0, contexte 8 192 et 5 pages.
-                Un délai trop court interrompt l’analyse sans bloquer la saisie manuelle.
+                Les valeurs par défaut conviennent à un usage local : 120 s,
+                température 0, contexte 8 192 et 5 pages. Un délai trop court
+                interrompt l’analyse sans bloquer la saisie manuelle.
               </p>
             </div>
           </div>
         </details>
 
         {save.isError ? (
-          <p className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-sm text-danger" role="alert">
+          <p
+            className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-sm text-danger"
+            role="alert"
+          >
             {errorMessage(save.error)}
           </p>
         ) : null}
 
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface/80 px-4 py-3">
           <p className="text-xs text-ink-soft" aria-live="polite">
-            {isDirty ? 'Modifications non enregistrées.' : 'Configuration à jour.'}
+            {isDirty
+              ? "Modifications non enregistrées."
+              : "Configuration à jour."}
           </p>
           <Button
             variante="primaire"
