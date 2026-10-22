@@ -37,7 +37,7 @@ class ApiIntegrationTest {
 
     @Test
     @DisplayName("Parcourt le flux complet : paramètres, quittance, note de frais, justificatif, templates, LLM")
-    void fluxComplet() throws Exception {
+    void fluxComplete() throws Exception {
         mockMvc.perform(get("/api/parametres"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.prorataBase").value("35.71"))
@@ -47,7 +47,7 @@ class ApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(6));
 
-        String quittance = mockMvc.perform(post("/api/quittances")
+        String rentReceipt = mockMvc.perform(post("/api/quittances")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"mois":"2026-11"}
@@ -59,9 +59,9 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.periodeDebut").value("2026-11-01"))
                 .andExpect(jsonPath("$.periodeFin").value("2026-11-30"))
                 .andReturn().getResponse().getContentAsString();
-        long quittanceId = ((Number) JsonPath.read(quittance, "$.id")).longValue();
+        long rentReceiptId = ((Number) JsonPath.read(rentReceipt, "$.id")).longValue();
 
-        MvcResult pdf = mockMvc.perform(get("/api/quittances/{id}/pdf", quittanceId))
+        MvcResult pdf = mockMvc.perform(get("/api/quittances/{id}/pdf", rentReceiptId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_PDF))
                 .andExpect(header().string("Content-Disposition",
@@ -80,19 +80,19 @@ class ApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
 
-        MockMultipartFile fichier = new MockMultipartFile("fichier", "facture-gaz.txt", "text/plain",
+        MockMultipartFile file = new MockMultipartFile("fichier", "facture-gaz.txt", "text/plain",
                 "EDF - Gaz\nTotal TTC : 78,00 EUR\n".getBytes(StandardCharsets.UTF_8));
-        String justificatif = mockMvc.perform(multipart("/api/justificatifs").file(fichier))
+        String receipt = mockMvc.perform(multipart("/api/justificatifs").file(file))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.nomFichier").value("facture-gaz.txt"))
                 .andReturn().getResponse().getContentAsString();
-        long justificatifId = ((Number) JsonPath.read(justificatif, "$.id")).longValue();
+        long receiptId = ((Number) JsonPath.read(receipt, "$.id")).longValue();
 
-        mockMvc.perform(get("/api/justificatifs/{id}/fichier", justificatifId))
+        mockMvc.perform(get("/api/justificatifs/{id}/fichier", receiptId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_PLAIN));
 
-        String noteJson = """
+        String statementJson = """
                 {
                   "mois":"2026-11",
                   "lignes":[
@@ -100,11 +100,11 @@ class ApiIntegrationTest {
                     {"posteCode":"gaz","montantTtc":"80.00","prorataPct":"35,71","justificatifId":%d}
                   ]
                 }
-                """.formatted(justificatifId);
+                """.formatted(receiptId);
 
         mockMvc.perform(post("/api/notes-frais/calcul")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(noteJson))
+                        .content(statementJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value("978.57"))
                 .andExpect(jsonPath("$.lignes[1].montantRetenu").value("28.57"))
@@ -123,25 +123,25 @@ class ApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_PDF));
 
-        String note = mockMvc.perform(post("/api/notes-frais")
+        String statement = mockMvc.perform(post("/api/notes-frais")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(noteJson))
+                        .content(statementJson))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.numero").value("NF-2026-11"))
                 .andExpect(jsonPath("$.total").value("978.57"))
                 .andExpect(jsonPath("$.pdfCompletDisponible").value(true))
                 .andReturn().getResponse().getContentAsString();
-        long noteId = ((Number) JsonPath.read(note, "$.id")).longValue();
+        long statementId = ((Number) JsonPath.read(statement, "$.id")).longValue();
 
-        MvcResult complet = mockMvc.perform(get("/api/notes-frais/{id}/pdf", noteId)
+        MvcResult complete = mockMvc.perform(get("/api/notes-frais/{id}/pdf", statementId)
                         .param("complet", "true"))
                 .andExpect(status().isOk())
                 .andReturn();
-        try (PDDocument document = PDDocument.load(complet.getResponse().getContentAsByteArray())) {
+        try (PDDocument document = PDDocument.load(complete.getResponse().getContentAsByteArray())) {
             assertThat(document.getNumberOfPages()).isGreaterThanOrEqualTo(3);
         }
 
-        mockMvc.perform(delete("/api/justificatifs/{id}", justificatifId))
+        mockMvc.perform(delete("/api/justificatifs/{id}", receiptId))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value(
                         "Ce justificatif est utilisé par une note de frais et ne peut pas être supprimé."));

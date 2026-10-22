@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import fr.hkof.homeofficeexpenses.domain.FournisseurLlm;
+import fr.hkof.homeofficeexpenses.domain.LlmProvider;
 import fr.hkof.homeofficeexpenses.domain.LlmConfig;
 import fr.hkof.homeofficeexpenses.repository.LlmConfigRepository;
 import fr.hkof.homeofficeexpenses.service.BusinessException;
@@ -45,39 +45,39 @@ public class LlmConfigService {
     }
 
     @Transactional(readOnly = true)
-    public LlmConfig entite() {
+    public LlmConfig entity() {
         return repository.findById(1L)
                 .orElseThrow(() -> new NotFoundException("Configuration LLM introuvable."));
     }
 
     @Transactional(readOnly = true)
     public LlmConfigDto obtenir() {
-        return versDto(entite());
+        return versDto(entity());
     }
 
     @Transactional
     public LlmConfigDto mettreAJour(LlmConfigRequest request) {
-        LlmConfig config = entite();
-        if (request.actif() != null) {
-            config.setActif(request.actif());
+        LlmConfig config = entity();
+        if (request.active() != null) {
+            config.setActive(request.active());
         }
-        if (request.fournisseur() != null && !request.fournisseur().isBlank()) {
-            FournisseurLlm fournisseur;
+        if (request.supplier() != null && !request.supplier().isBlank()) {
+            LlmProvider supplier;
             try {
-                fournisseur = FournisseurLlm.valueOf(request.fournisseur().trim().toUpperCase(Locale.ROOT));
+                supplier = LlmProvider.valueOf(request.supplier().trim().toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException ex) {
                 throw new BusinessException("Fournisseur LLM inconnu.");
             }
-            if (fournisseur != FournisseurLlm.OLLAMA) {
+            if (supplier != LlmProvider.OLLAMA) {
                 throw new BusinessException("Seul Ollama est pris en charge pour le moment.");
             }
-            config.setFournisseur(fournisseur);
+            config.setSupplier(supplier);
         }
         if (request.url() != null) {
             config.setUrl(normaliserUrl(request.url()));
         }
-        if (request.modele() != null) {
-            config.setModele(request.modele().trim());
+        if (request.model() != null) {
+            config.setModel(request.model().trim());
         }
         if (request.timeoutSeconds() != null) {
             if (request.timeoutSeconds() < 5 || request.timeoutSeconds() > 600) {
@@ -103,48 +103,48 @@ public class LlmConfigService {
             }
             config.setNumCtx(request.numCtx());
         }
-        if (request.pagesMax() != null) {
-            if (request.pagesMax() < 1 || request.pagesMax() > 20) {
+        if (request.maxPages() != null) {
+            if (request.maxPages() < 1 || request.maxPages() > 20) {
                 throw new BusinessException("Le nombre de pages maximum doit être compris entre 1 et 20.");
             }
-            config.setPagesMax(request.pagesMax());
+            config.setMaxPages(request.maxPages());
         }
-        if (request.ocrActif() != null) {
-            config.setOcrActif(request.ocrActif());
+        if (request.ocrActive() != null) {
+            config.setOcrActive(request.ocrActive());
         }
-        if (request.promptExtraction() != null) {
-            if (request.promptExtraction().isBlank()) {
+        if (request.extractionPrompt() != null) {
+            if (request.extractionPrompt().isBlank()) {
                 throw new BusinessException("Le prompt d'extraction ne peut pas être vide.");
             }
-            config.setPromptExtraction(request.promptExtraction().trim());
+            config.setExtractionPrompt(request.extractionPrompt().trim());
         }
-        if (request.cleApi() != null) {
-            config.setCleApi(request.cleApi().isBlank() ? null : request.cleApi().trim());
+        if (request.apiKey() != null) {
+            config.setApiKey(request.apiKey().isBlank() ? null : request.apiKey().trim());
         }
         config.setUpdatedAt(Instant.now(clock));
         return versDto(repository.save(config));
     }
 
-    public List<LlmModelDto> modeles() {
-        return ollamaClient.modeles(entite());
+    public List<LlmModelDto> models() {
+        return ollamaClient.models(entity());
     }
 
-    public LlmStatusDto statut() {
-        LlmConfig config = entite();
-        if (!config.isActif()) {
+    public LlmStatusDto status() {
+        LlmConfig config = entity();
+        if (!config.isActive()) {
             return new LlmStatusDto("DESACTIVE", false, false, false,
                     "Analyse IA désactivée : la saisie manuelle reste disponible.");
         }
         try {
-            List<LlmModelDto> modeles = ollamaClient.modeles(config);
-            boolean present = config.getModele() != null && modeles.stream()
-                    .anyMatch(m -> m.nom().equals(config.getModele())
-                            || m.nom().startsWith(config.getModele() + ":"));
+            List<LlmModelDto> models = ollamaClient.models(config);
+            boolean present = config.getModel() != null && models.stream()
+                    .anyMatch(m -> m.name().equals(config.getModel())
+                            || m.name().startsWith(config.getModel() + ":"));
             if (!present) {
                 return new LlmStatusDto("MODELE_ABSENT", true, true, false,
-                        "Ollama est joignable mais le modèle « " + config.getModele() + " » n'est pas installé.");
+                        "Ollama est joignable mais le modèle « " + config.getModel() + " » n'est pas installé.");
             }
-            if (urlDistante(config.getUrl())) {
+            if (remoteUrl(config.getUrl())) {
                 return new LlmStatusDto("PRET_DISTANT", true, true, true,
                         "Ollama est joignable. Attention : l'URL configurée n'est pas locale, les documents quittent votre machine.");
             }
@@ -155,9 +155,9 @@ public class LlmConfigService {
     }
 
     public LlmTestResponse tester() {
-        LlmConfig config = entite();
+        LlmConfig config = entity();
         long debut = System.currentTimeMillis();
-        String texte = """
+        String text = """
                 Facture EDF - Gaz naturel
                 Client : HKOF
                 Période du 01/09/2026 au 30/09/2026
@@ -166,40 +166,40 @@ public class LlmConfigService {
                 Total TTC : 42,00 €
                 """;
         try {
-            var resultat = extractionPipeline.extraireDepuisTexte(config, texte, List.of());
+            var result = extractionPipeline.extraireDepuisText(config, text, List.of());
             long duree = System.currentTimeMillis() - debut;
-            String montant = resultat.montantTtc();
-            String message = montant == null
+            String amount = result.amountInclVat();
+            String message = amount == null
                     ? "Le modèle a répondu mais aucun montant exploitable n'a été détecté."
                     : "Réponse reçue et validée par le serveur.";
-            return new LlmTestResponse(true, duree, message, montant);
+            return new LlmTestResponse(true, duree, message, amount);
         } catch (BusinessException ex) {
             return new LlmTestResponse(false, System.currentTimeMillis() - debut, ex.getMessage(), null);
         }
     }
 
     public LlmConfigDto versDto(LlmConfig config) {
-        boolean distante = urlDistante(config.getUrl());
-        String avertissement = distante
+        boolean distante = remoteUrl(config.getUrl());
+        String warning = distante
                 ? "Attention : cette URL n'est pas locale. Les justificatifs analysés seront envoyés à un service externe."
                 : null;
         return new LlmConfigDto(
-                config.isActif(),
-                config.getFournisseur().name(),
+                config.isActive(),
+                config.getSupplier().name(),
                 config.getUrl(),
-                config.getModele(),
+                config.getModel(),
                 config.getTimeoutSeconds(),
                 config.getTemperature() == null ? "0" : config.getTemperature().stripTrailingZeros().toPlainString(),
                 config.getNumCtx(),
-                config.getPagesMax(),
-                config.isOcrActif(),
-                config.getPromptExtraction(),
-                config.getCleApi() != null && !config.getCleApi().isBlank(),
+                config.getMaxPages(),
+                config.isOcrActive(),
+                config.getExtractionPrompt(),
+                config.getApiKey() != null && !config.getApiKey().isBlank(),
                 distante,
-                avertissement);
+                warning);
     }
 
-    public static boolean urlDistante(String url) {
+    public static boolean remoteUrl(String url) {
         if (url == null || url.isBlank()) {
             return true;
         }

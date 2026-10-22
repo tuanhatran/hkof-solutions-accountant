@@ -9,34 +9,34 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import fr.hkof.homeofficeexpenses.domain.FormatTemplate;
-import fr.hkof.homeofficeexpenses.domain.FournisseurLlm;
+import fr.hkof.homeofficeexpenses.domain.TemplateFormat;
+import fr.hkof.homeofficeexpenses.domain.LlmProvider;
 import fr.hkof.homeofficeexpenses.domain.LlmConfig;
-import fr.hkof.homeofficeexpenses.domain.Parametres;
-import fr.hkof.homeofficeexpenses.domain.Poste;
+import fr.hkof.homeofficeexpenses.domain.Settings;
+import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
-import fr.hkof.homeofficeexpenses.domain.TypeTemplate;
+import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.repository.LlmConfigRepository;
-import fr.hkof.homeofficeexpenses.repository.ParametresRepository;
-import fr.hkof.homeofficeexpenses.repository.PosteRepository;
+import fr.hkof.homeofficeexpenses.repository.SettingsRepository;
+import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
 import fr.hkof.homeofficeexpenses.repository.TemplateDocumentRepository;
 import fr.hkof.homeofficeexpenses.service.llm.DefaultPrompt;
 
 @Component
 public class DataInitializer implements ApplicationRunner {
 
-    private final ParametresRepository parametresRepository;
-    private final PosteRepository posteRepository;
+    private final SettingsRepository parametersRepository;
+    private final ExpenseItemRepository expenseItemRepository;
     private final TemplateDocumentRepository templateRepository;
     private final LlmConfigRepository llmConfigRepository;
     private final AppProperties properties;
     private final Clock clock;
 
-    public DataInitializer(ParametresRepository parametresRepository, PosteRepository posteRepository,
+    public DataInitializer(SettingsRepository parametersRepository, ExpenseItemRepository expenseItemRepository,
             TemplateDocumentRepository templateRepository, LlmConfigRepository llmConfigRepository,
             AppProperties properties, Clock clock) {
-        this.parametresRepository = parametresRepository;
-        this.posteRepository = posteRepository;
+        this.parametersRepository = parametersRepository;
+        this.expenseItemRepository = expenseItemRepository;
         this.templateRepository = templateRepository;
         this.llmConfigRepository = llmConfigRepository;
         this.properties = properties;
@@ -46,87 +46,87 @@ public class DataInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        initialiserParametres();
-        initialiserPostes();
+        initialiserSettings();
+        initialiserItems();
         initialiserTemplates();
         initialiserLlm();
     }
 
-    private void initialiserParametres() {
-        if (parametresRepository.existsById(1L)) {
+    private void initialiserSettings() {
+        if (parametersRepository.existsById(1L)) {
             return;
         }
-        Parametres p = new Parametres();
+        Settings p = new Settings();
         p.setId(1L);
-        p.setRaisonSociale("HKOF");
-        p.setFormeJuridique("EURL");
+        p.setCompanyName("HKOF");
+        p.setLegalForm("EURL");
         p.setSiren("000 000 000");
-        p.setSocieteAdresse("12 rue de la République, 75000 Paris");
-        p.setGerant("Gérant");
-        p.setLogementAdresse("12 rue de la République, 75000 Paris");
-        p.setSurfaceTotale(new BigDecimal("70.00"));
-        p.setSurfacePro(new BigDecimal("25.00"));
-        p.setBailleurNom("Nom du bailleur");
-        p.setBailleurAdresse("Adresse du bailleur");
-        p.setLocataireNom("Nom du locataire");
-        p.setLocataireAdresse("Adresse du locataire");
-        p.setLoyerHc(new BigDecimal("900.00"));
-        p.setProvisionCharges(new BigDecimal("50.00"));
-        p.setLieuEmission("Paris");
+        p.setCompanyAddress("12 rue de la République, 75000 Paris");
+        p.setManagerName("Gérant");
+        p.setHomeAddress("12 rue de la République, 75000 Paris");
+        p.setTotalArea(new BigDecimal("70.00"));
+        p.setBusinessArea(new BigDecimal("25.00"));
+        p.setLandlordName("Nom du bailleur");
+        p.setLandlordAddress("Adresse du bailleur");
+        p.setTenantName("Nom du locataire");
+        p.setTenantAddress("Adresse du locataire");
+        p.setRentExclCharges(new BigDecimal("900.00"));
+        p.setChargesAdvance(new BigDecimal("50.00"));
+        p.setIssuePlace("Paris");
         p.setUpdatedAt(Instant.now(clock));
-        parametresRepository.save(p);
+        parametersRepository.save(p);
     }
 
-    private void initialiserPostes() {
-        creerPosteSiAbsent("loyer", "Quittance de loyer", null, "100.00", "MENSUELLE", 10);
-        creerPosteSiAbsent("gaz", "Gaz", "EDF", "35.71", "BIMESTRIELLE", 20);
-        creerPosteSiAbsent("electricite", "Électricité", "Primeo", "35.71", "BIMESTRIELLE", 30);
-        creerPosteSiAbsent("assurance", "Assurance habitation", null, "35.71", "ANNUELLE", 40);
-        creerPosteSiAbsent("telephone", "Téléphone", null, "35.71", "MENSUELLE", 50);
-        creerPosteSiAbsent("fibre", "Fibre internet", null, "35.71", "MENSUELLE", 60);
+    private void initialiserItems() {
+        creerExpenseItemSiAbsent("loyer", "Quittance de loyer", null, "100.00", "MENSUELLE", 10);
+        creerExpenseItemSiAbsent("gaz", "Gaz", "EDF", "35.71", "BIMESTRIELLE", 20);
+        creerExpenseItemSiAbsent("electricite", "Électricité", "Primeo", "35.71", "BIMESTRIELLE", 30);
+        creerExpenseItemSiAbsent("assurance", "Assurance habitation", null, "35.71", "ANNUELLE", 40);
+        creerExpenseItemSiAbsent("telephone", "Téléphone", null, "35.71", "MENSUELLE", 50);
+        creerExpenseItemSiAbsent("fibre", "Fibre internet", null, "35.71", "MENSUELLE", 60);
     }
 
-    private void creerPosteSiAbsent(String code, String libelle, String fournisseur, String prorata,
-            String periodicite, int ordre) {
-        if (posteRepository.findFirstByCode(code).isPresent()) {
+    private void creerExpenseItemSiAbsent(String code, String label, String supplier, String prorata,
+            String periodicity, int sortOrder) {
+        if (expenseItemRepository.findFirstByCode(code).isPresent()) {
             return;
         }
-        Poste poste = new Poste();
-        poste.setCode(code);
-        poste.setLibelle(libelle);
-        poste.setFournisseur(fournisseur);
-        poste.setProrataPct(new BigDecimal(prorata));
-        poste.setPeriodicite(fr.hkof.homeofficeexpenses.domain.Periodicite.valueOf(periodicite));
-        poste.setActif(true);
-        poste.setOrdre(ordre);
-        poste.setPlusieursLignesAutorisees(false);
-        poste.setSupprime(false);
-        posteRepository.save(poste);
+        ExpenseItem expenseItem = new ExpenseItem();
+        expenseItem.setCode(code);
+        expenseItem.setLabel(label);
+        expenseItem.setSupplier(supplier);
+        expenseItem.setProRataPct(new BigDecimal(prorata));
+        expenseItem.setPeriodicity(fr.hkof.homeofficeexpenses.domain.Periodicity.valueOf(periodicity));
+        expenseItem.setActive(true);
+        expenseItem.setSortOrder(sortOrder);
+        expenseItem.setMultipleLinesAllowed(false);
+        expenseItem.setDeleted(false);
+        expenseItemRepository.save(expenseItem);
     }
 
     private void initialiserTemplates() {
-        for (TypeTemplate type : TypeTemplate.values()) {
-            TemplateDocument integre = templateRepository.findFirstByTypeAndIntegreTrueAndSupprimeFalse(type)
+        for (TemplateType type : TemplateType.values()) {
+            TemplateDocument builtIn = templateRepository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(type)
                     .orElseGet(() -> {
                         TemplateDocument t = new TemplateDocument();
                         t.setType(type);
-                        t.setNom(type == TypeTemplate.QUITTANCE
+                        t.setName(type == TemplateType.QUITTANCE
                                 ? "Quittance — modèle intégré"
                                 : "Note de frais — modèle intégré");
                         t.setVersion(1);
-                        t.setFormat(FormatTemplate.HTML);
-                        t.setChemin(type == TypeTemplate.QUITTANCE
+                        t.setFormat(TemplateFormat.HTML);
+                        t.setPath(type == TemplateType.QUITTANCE
                                 ? "classpath:templates/defaut/quittance.html"
                                 : "classpath:templates/defaut/note-frais.html");
-                        t.setIntegre(true);
-                        t.setSupprime(false);
-                        t.setActif(false);
+                        t.setBuiltIn(true);
+                        t.setDeleted(false);
+                        t.setActive(false);
                         t.setCreatedAt(Instant.now(clock));
                         return templateRepository.save(t);
                     });
-            if (templateRepository.findFirstByTypeAndActifTrueAndSupprimeFalse(type).isEmpty()) {
-                integre.setActif(true);
-                templateRepository.save(integre);
+            if (templateRepository.findFirstByTypeAndActiveTrueAndDeletedFalse(type).isEmpty()) {
+                builtIn.setActive(true);
+                templateRepository.save(builtIn);
             }
         }
     }
@@ -137,16 +137,16 @@ public class DataInitializer implements ApplicationRunner {
         }
         LlmConfig config = new LlmConfig();
         config.setId(1L);
-        config.setActif(true);
-        config.setFournisseur(FournisseurLlm.OLLAMA);
+        config.setActive(true);
+        config.setSupplier(LlmProvider.OLLAMA);
         config.setUrl(properties.llm().defaultUrl());
-        config.setModele(properties.llm().defaultModel());
+        config.setModel(properties.llm().defaultModel());
         config.setTimeoutSeconds(120);
         config.setTemperature(BigDecimal.ZERO);
         config.setNumCtx(8192);
-        config.setPagesMax(5);
-        config.setOcrActif(false);
-        config.setPromptExtraction(DefaultPrompt.SYSTEM);
+        config.setMaxPages(5);
+        config.setOcrActive(false);
+        config.setExtractionPrompt(DefaultPrompt.SYSTEM);
         config.setUpdatedAt(Instant.now(clock));
         llmConfigRepository.save(config);
     }

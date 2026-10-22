@@ -25,16 +25,16 @@ import org.springframework.web.multipart.MultipartFile;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
 
-import fr.hkof.homeofficeexpenses.domain.FormatTemplate;
+import fr.hkof.homeofficeexpenses.domain.TemplateFormat;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
-import fr.hkof.homeofficeexpenses.domain.TypeTemplate;
+import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.repository.TemplateDocumentRepository;
 import fr.hkof.homeofficeexpenses.service.BusinessException;
 import fr.hkof.homeofficeexpenses.service.FileTypeDetector;
 import fr.hkof.homeofficeexpenses.service.NotFoundException;
 import fr.hkof.homeofficeexpenses.service.PdfService;
-import fr.hkof.homeofficeexpenses.service.StockageService;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.RapportValidationDto;
+import fr.hkof.homeofficeexpenses.service.StorageService;
+import fr.hkof.homeofficeexpenses.web.dto.Dtos.ValidationReportDto;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.TemplateDto;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.TemplateVariableDto;
 import tools.jackson.databind.ObjectMapper;
@@ -47,13 +47,13 @@ public class TemplateService {
     private static final Pattern CSS_DISTANT = Pattern.compile("url\\(\\s*['\"]?\\s*(https?:|//|file:)", Pattern.CASE_INSENSITIVE);
 
     private final TemplateDocumentRepository repository;
-    private final StockageService stockage;
+    private final StorageService stockage;
     private final PdfService pdfService;
     private final FileTypeDetector detector;
     private final ObjectMapper objectMapper;
     private final Clock clock;
 
-    public TemplateService(TemplateDocumentRepository repository, StockageService stockage, PdfService pdfService,
+    public TemplateService(TemplateDocumentRepository repository, StorageService stockage, PdfService pdfService,
             FileTypeDetector detector, ObjectMapper objectMapper, Clock clock) {
         this.repository = repository;
         this.stockage = stockage;
@@ -64,70 +64,70 @@ public class TemplateService {
     }
 
     @Transactional(readOnly = true)
-    public List<TemplateDto> lister(TypeTemplate type) {
-        return repository.findByTypeAndSupprimeFalseOrderByVersionDesc(type).stream()
+    public List<TemplateDto> lister(TemplateType type) {
+        return repository.findByTypeAndDeletedFalseOrderByVersionDesc(type).stream()
                 .map(this::versDto)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public TemplateDocument actif(TypeTemplate type) {
-        return repository.findFirstByTypeAndActifTrueAndSupprimeFalse(type)
-                .or(() -> repository.findFirstByTypeAndIntegreTrueAndSupprimeFalse(type))
+    public TemplateDocument active(TemplateType type) {
+        return repository.findFirstByTypeAndActiveTrueAndDeletedFalse(type)
+                .or(() -> repository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(type))
                 .orElseThrow(() -> new NotFoundException("Aucun template actif pour " + type));
     }
 
     @Transactional(readOnly = true)
     public TemplateDocument parId(Long id) {
         return repository.findById(id)
-                .filter(t -> !t.isSupprime())
+                .filter(t -> !t.isDeleted())
                 .orElseThrow(() -> new NotFoundException("Template introuvable."));
     }
 
-    public String rendre(TemplateDocument template, Map<String, Object> donnees) {
-        String contenu = new String(stockage.lire(template.getChemin()), StandardCharsets.UTF_8);
+    public String rendre(TemplateDocument template, Map<String, Object> data) {
+        String content = new String(stockage.lire(template.getPath()), StandardCharsets.UTF_8);
         try {
             Template mustache = Mustache.compiler()
                     .defaultValue("")
                     .escapeHTML(true)
-                    .compile(contenu);
-            return mustache.execute(donnees);
+                    .compile(content);
+            return mustache.execute(data);
         } catch (RuntimeException ex) {
-            throw new BusinessException("Le template « " + template.getNom() + " » n'a pas pu être rendu : " + ex.getMessage());
+            throw new BusinessException("Le template « " + template.getName() + " » n'a pas pu être rendu : " + ex.getMessage());
         }
     }
 
-    public RapportValidationDto valider(TypeTemplate type, String contenu) {
+    public ValidationReportDto valider(TemplateType type, String content) {
         List<String> reconnues = new ArrayList<>();
-        List<String> inconnues = new ArrayList<>();
-        List<String> manquantes = new ArrayList<>();
-        List<String> erreurs = new ArrayList<>();
-        Set<String> autorisees = TemplateCatalog.nomsAutorises(type);
+        List<String> unknown = new ArrayList<>();
+        List<String> missing = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+        Set<String> allowed = TemplateCatalog.nomsAllowed(type);
         Set<String> obligatoires = TemplateCatalog.obligatoires(type);
         Set<String> presentes = new TreeSet<>();
 
-        Matcher matcher = VARIABLE.matcher(contenu);
-        int profondeurLignes = 0;
+        Matcher matcher = VARIABLE.matcher(content);
+        int profondeurLines = 0;
         while (matcher.find()) {
             String prefixe = matcher.group(1);
-            String nom = matcher.group(2).trim();
+            String name = matcher.group(2).trim();
             if ("!".equals(prefixe)) {
                 continue;
             }
             if ("/".equals(prefixe)) {
-                if ("lignes".equals(nom)) {
-                    profondeurLignes = Math.max(0, profondeurLignes - 1);
+                if ("lignes".equals(name)) {
+                    profondeurLines = Math.max(0, profondeurLines - 1);
                 }
                 continue;
             }
-            String canonique = nom;
-            if (!autorisees.contains(canonique) && profondeurLignes > 0
-                    && autorisees.contains("lignes." + nom)) {
-                canonique = "lignes." + nom;
+            String canonique = name;
+            if (!allowed.contains(canonique) && profondeurLines > 0
+                    && allowed.contains("lignes." + name)) {
+                canonique = "lignes." + name;
             }
-            if (!autorisees.contains(canonique)) {
-                if (!inconnues.contains(nom)) {
-                    inconnues.add(nom);
+            if (!allowed.contains(canonique)) {
+                if (!unknown.contains(name)) {
+                    unknown.add(name);
                 }
                 continue;
             }
@@ -135,57 +135,57 @@ public class TemplateService {
             if (!reconnues.contains(canonique)) {
                 reconnues.add(canonique);
             }
-            if ("#".equals(prefixe) && "lignes".equals(nom)) {
-                profondeurLignes++;
+            if ("#".equals(prefixe) && "lignes".equals(name)) {
+                profondeurLines++;
             }
         }
-        for (String obligatoire : obligatoires) {
-            if (!presentes.contains(obligatoire)) {
-                manquantes.add(obligatoire);
+        for (String required : obligatoires) {
+            if (!presentes.contains(required)) {
+                missing.add(required);
             }
         }
 
-        erreurs.addAll(controlerSecurite(contenu));
+        errors.addAll(controlerSecurite(content));
         try {
-            Mustache.compiler().compile(contenu);
+            Mustache.compiler().compile(content);
         } catch (RuntimeException ex) {
-            erreurs.add("Structure Mustache invalide : " + ex.getMessage());
+            errors.add("Structure Mustache invalide : " + ex.getMessage());
         }
-        if (!inconnues.isEmpty()) {
-            erreurs.add("Variables inconnues : " + String.join(", ", inconnues));
+        if (!unknown.isEmpty()) {
+            errors.add("Variables inconnues : " + String.join(", ", unknown));
         }
-        return new RapportValidationDto(reconnues, inconnues, manquantes, erreurs.isEmpty(), erreurs);
+        return new ValidationReportDto(reconnues, unknown, missing, errors.isEmpty(), errors);
     }
 
     @Transactional
-    public TemplateDto uploader(TypeTemplate type, String nom, MultipartFile fichier) {
-        if (nom == null || nom.isBlank()) {
+    public TemplateDto uploader(TemplateType type, String name, MultipartFile file) {
+        if (name == null || name.isBlank()) {
             throw new BusinessException("Le nom du template est obligatoire.");
         }
-        byte[] contenu;
+        byte[] content;
         try {
-            contenu = fichier.getBytes();
+            content = file.getBytes();
         } catch (IOException ex) {
             throw new BusinessException("Impossible de lire le fichier template.");
         }
-        detector.validerTemplateHtml(fichier.getOriginalFilename(), contenu);
-        String html = new String(contenu, StandardCharsets.UTF_8);
-        RapportValidationDto rapport = valider(type, html);
-        if (!rapport.structureValide()) {
-            throw new BusinessException(String.join(" ; ", rapport.erreurs()));
+        detector.validerTemplateHtml(file.getOriginalFilename(), content);
+        String html = new String(content, StandardCharsets.UTF_8);
+        ValidationReportDto report = valider(type, html);
+        if (!report.structureValid()) {
+            throw new BusinessException(String.join(" ; ", report.errors()));
         }
         int version = repository.findTopByTypeOrderByVersionDesc(type).map(t -> t.getVersion() + 1).orElse(1);
-        String chemin = stockage.stockerTemplate(contenu, type.name(), version);
+        String path = stockage.stockerTemplate(content, type.name(), version);
         TemplateDocument template = new TemplateDocument();
         template.setType(type);
-        template.setNom(nom.trim());
+        template.setName(name.trim());
         template.setVersion(version);
-        template.setFormat(FormatTemplate.HTML);
-        template.setChemin(chemin);
-        template.setActif(false);
-        template.setIntegre(false);
-        template.setSupprime(false);
-        template.setRapportValidation(objectMapper.writeValueAsString(rapport));
+        template.setFormat(TemplateFormat.HTML);
+        template.setPath(path);
+        template.setActive(false);
+        template.setBuiltIn(false);
+        template.setDeleted(false);
+        template.setValidationReport(objectMapper.writeValueAsString(report));
         template.setCreatedAt(Instant.now(clock));
         return versDto(repository.save(template));
     }
@@ -193,107 +193,107 @@ public class TemplateService {
     @Transactional
     public TemplateDto activer(Long id) {
         TemplateDocument template = parId(id);
-        for (TemplateDocument autre : repository.findByTypeAndActifTrueAndSupprimeFalse(template.getType())) {
-            autre.setActif(false);
+        for (TemplateDocument autre : repository.findByTypeAndActiveTrueAndDeletedFalse(template.getType())) {
+            autre.setActive(false);
             repository.save(autre);
         }
-        template.setActif(true);
+        template.setActive(true);
         return versDto(repository.save(template));
     }
 
     @Transactional
-    public void supprimer(Long id) {
+    public void delete(Long id) {
         TemplateDocument template = parId(id);
-        if (template.isIntegre()) {
+        if (template.isBuiltIn()) {
             throw new BusinessException("Le modèle intégré ne peut pas être supprimé.");
         }
-        if (template.isActif()) {
+        if (template.isActive()) {
             throw new BusinessException("Le template actif ne peut pas être supprimé. Activez d'abord un autre modèle.");
         }
-        template.setSupprime(true);
+        template.setDeleted(true);
         repository.save(template);
     }
 
     @Transactional
-    public TemplateDto reinitialiser(TypeTemplate type) {
-        TemplateDocument integre = repository.findFirstByTypeAndIntegreTrueAndSupprimeFalse(type)
+    public TemplateDto reinitialiser(TemplateType type) {
+        TemplateDocument builtIn = repository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(type)
                 .orElseThrow(() -> new NotFoundException("Modèle intégré introuvable."));
-        return activer(integre.getId());
+        return activer(builtIn.getId());
     }
 
-    public byte[] fichier(Long id) {
-        return stockage.lire(parId(id).getChemin());
+    public byte[] file(Long id) {
+        return stockage.lire(parId(id).getPath());
     }
 
-    public byte[] fichierDefaut(TypeTemplate type) {
-        String chemin = type == TypeTemplate.QUITTANCE
+    public byte[] fileDefaut(TemplateType type) {
+        String path = type == TemplateType.QUITTANCE
                 ? "classpath:templates/defaut/quittance.html"
                 : "classpath:templates/defaut/note-frais.html";
-        return stockage.lire(chemin);
+        return stockage.lire(path);
     }
 
-    public List<TemplateVariableDto> variables(TypeTemplate type) {
+    public List<TemplateVariableDto> variables(TemplateType type) {
         return TemplateCatalog.variables(type);
     }
 
-    public byte[] apercu(Long id, Map<String, Object> donneesExemple) {
+    public byte[] apercu(Long id, Map<String, Object> dataExample) {
         TemplateDocument template = parId(id);
-        String html = rendre(template, donneesExemple);
-        return pdfService.ajouterFiligrane(pdfService.rendreHtmlEnPdf(html));
+        String html = rendre(template, dataExample);
+        return pdfService.addWatermark(pdfService.rendreHtmlEnPdf(html));
     }
 
     public TemplateDto versDto(TemplateDocument t) {
-        RapportValidationDto rapport = null;
-        if (t.getRapportValidation() != null && !t.getRapportValidation().isBlank()) {
+        ValidationReportDto report = null;
+        if (t.getValidationReport() != null && !t.getValidationReport().isBlank()) {
             try {
-                rapport = objectMapper.readValue(t.getRapportValidation(), RapportValidationDto.class);
+                report = objectMapper.readValue(t.getValidationReport(), ValidationReportDto.class);
             } catch (RuntimeException ignored) {
-                rapport = null;
+                report = null;
             }
         }
-        return new TemplateDto(t.getId(), t.getType().name(), t.getNom(), t.getVersion(), t.getFormat().name(),
-                t.isActif(), t.isIntegre(), t.getCreatedAt(), rapport);
+        return new TemplateDto(t.getId(), t.getType().name(), t.getName(), t.getVersion(), t.getFormat().name(),
+                t.isActive(), t.isBuiltIn(), t.getCreatedAt(), report);
     }
 
-    private List<String> controlerSecurite(String contenu) {
-        List<String> erreurs = new ArrayList<>();
-        String minuscule = contenu.toLowerCase(Locale.ROOT);
+    private List<String> controlerSecurite(String content) {
+        List<String> errors = new ArrayList<>();
+        String minuscule = content.toLowerCase(Locale.ROOT);
         if (minuscule.contains("{{{") || minuscule.contains("{{&")) {
-            erreurs.add("Les expressions non échappées ({{{...}}} ou {{&...}}) sont interdites.");
+            errors.add("Les expressions non échappées ({{{...}}} ou {{&...}}) sont interdites.");
         }
         if (minuscule.contains("#{") || minuscule.contains("<%")) {
-            erreurs.add("Les expressions exécutables (Thymeleaf, JSP) sont interdites.");
+            errors.add("Les expressions exécutables (Thymeleaf, JSP) sont interdites.");
         }
         if (minuscule.contains("javascript:")) {
-            erreurs.add("Les liens JavaScript sont interdits.");
+            errors.add("Les liens JavaScript sont interdits.");
         }
-        if (CSS_DISTANT.matcher(contenu).find()) {
-            erreurs.add("Les ressources distantes sont interdites.");
+        if (CSS_DISTANT.matcher(content).find()) {
+            errors.add("Les ressources distantes sont interdites.");
         }
-        Document document = Jsoup.parse(contenu);
+        Document document = Jsoup.parse(content);
         for (String balise : BALISES_INTERDITES) {
             if (!document.select(balise).isEmpty()) {
-                erreurs.add("La balise <" + balise + "> est interdite.");
+                errors.add("La balise <" + balise + "> est interdite.");
             }
         }
         for (Element element : document.getAllElements()) {
             for (Attribute attribut : element.attributes()) {
                 String cle = attribut.getKey().toLowerCase(Locale.ROOT);
-                String valeur = attribut.getValue().toLowerCase(Locale.ROOT).trim();
+                String value = attribut.getValue().toLowerCase(Locale.ROOT).trim();
                 if (cle.startsWith("on")) {
-                    erreurs.add("Les attributs d'événement (« " + cle + " ») sont interdits.");
+                    errors.add("Les attributs d'événement (« " + cle + " ») sont interdits.");
                 }
                 if (cle.startsWith("th:") || cle.startsWith("data-th-")) {
-                    erreurs.add("Les expressions exécutables (Thymeleaf, JSP) sont interdites.");
+                    errors.add("Les expressions exécutables (Thymeleaf, JSP) sont interdites.");
                 }
-                if (cle.equals("href") && !valeur.startsWith("#")) {
-                    erreurs.add("Les liens externes sont interdits dans un template.");
+                if (cle.equals("href") && !value.startsWith("#")) {
+                    errors.add("Les liens externes sont interdits dans un template.");
                 }
-                if ((cle.equals("src") || cle.equals("data")) && !valeur.startsWith("data:image/")) {
-                    erreurs.add("Les images doivent être intégrées en data URI.");
+                if ((cle.equals("src") || cle.equals("data")) && !value.startsWith("data:image/")) {
+                    errors.add("Les images doivent être intégrées en data URI.");
                 }
             }
         }
-        return erreurs.stream().distinct().toList();
+        return errors.stream().distinct().toList();
     }
 }

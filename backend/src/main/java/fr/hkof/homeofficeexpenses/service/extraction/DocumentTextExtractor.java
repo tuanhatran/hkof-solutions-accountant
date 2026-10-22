@@ -38,28 +38,28 @@ public class DocumentTextExtractor {
     private static final int LONGUEUR_MAX = 24_000;
     private static final int PAGES_MAX_TEXTE = 20;
 
-    public Extraction extraire(Path chemin, String typeMime, int pagesMaxVision) {
+    public Extraction extraire(Path path, String mimeType, int maxPagesVision) {
         try {
-            byte[] contenu = Files.readAllBytes(chemin);
-            String mime = typeMime == null ? "" : typeMime;
-            if (mime.equals("application/pdf") || chemin.toString().toLowerCase().endsWith(".pdf")) {
-                return extrairePdf(contenu, pagesMaxVision);
+            byte[] content = Files.readAllBytes(path);
+            String mime = mimeType == null ? "" : mimeType;
+            if (mime.equals("application/pdf") || path.toString().toLowerCase().endsWith(".pdf")) {
+                return extrairePdf(content, maxPagesVision);
             }
-            if (mime.contains("wordprocessingml") || chemin.toString().toLowerCase().endsWith(".docx")) {
-                return texteSeul(extraireDocx(contenu));
+            if (mime.contains("wordprocessingml") || path.toString().toLowerCase().endsWith(".docx")) {
+                return textSeul(extraireDocx(content));
             }
             if (mime.contains("spreadsheetml") || mime.equals("application/vnd.ms-excel")
-                    || chemin.toString().toLowerCase().endsWith(".xlsx")
-                    || chemin.toString().toLowerCase().endsWith(".xls")) {
-                return texteSeul(extraireTableur(contenu));
+                    || path.toString().toLowerCase().endsWith(".xlsx")
+                    || path.toString().toLowerCase().endsWith(".xls")) {
+                return textSeul(extraireTableur(content));
             }
             if (mime.equals("text/csv") || mime.equals("text/plain")
-                    || chemin.toString().toLowerCase().endsWith(".csv")
-                    || chemin.toString().toLowerCase().endsWith(".txt")) {
-                return texteSeul(tronquer(new String(contenu, StandardCharsets.UTF_8)));
+                    || path.toString().toLowerCase().endsWith(".csv")
+                    || path.toString().toLowerCase().endsWith(".txt")) {
+                return textSeul(tronquer(new String(content, StandardCharsets.UTF_8)));
             }
             if (mime.startsWith("image/")) {
-                return new Extraction("", List.of(Base64.getEncoder().encodeToString(contenu)), true, 1);
+                return new Extraction("", List.of(Base64.getEncoder().encodeToString(content)), true, 1);
             }
             throw new BusinessException("Format de document non pris en charge pour l'analyse.");
         } catch (IOException ex) {
@@ -67,18 +67,18 @@ public class DocumentTextExtractor {
         }
     }
 
-    private Extraction extrairePdf(byte[] contenu, int pagesMaxVision) throws IOException {
-        try (PDDocument document = PDDocument.load(contenu)) {
+    private Extraction extrairePdf(byte[] content, int maxPagesVision) throws IOException {
+        try (PDDocument document = PDDocument.load(content)) {
             int pages = document.getNumberOfPages();
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setEndPage(Math.min(pages, PAGES_MAX_TEXTE));
-            String texte = stripper.getText(document).trim();
-            if (texte.length() >= 20) {
-                return texteSeul(tronquer(texte));
+            String text = stripper.getText(document).trim();
+            if (text.length() >= 20) {
+                return textSeul(tronquer(text));
             }
             List<String> images = new ArrayList<>();
             PDFRenderer renderer = new PDFRenderer(document);
-            int limite = Math.min(pages, Math.max(1, pagesMaxVision));
+            int limite = Math.min(pages, Math.max(1, maxPagesVision));
             for (int i = 0; i < limite; i++) {
                 BufferedImage image = renderer.renderImageWithDPI(i, 150, ImageType.RGB);
                 ByteArrayOutputStream png = new ByteArrayOutputStream();
@@ -89,64 +89,64 @@ public class DocumentTextExtractor {
         }
     }
 
-    private Extraction texteSeul(String texte) {
-        return new Extraction(texte, List.of(), false, 0);
+    private Extraction textSeul(String text) {
+        return new Extraction(text, List.of(), false, 0);
     }
 
-    private String extraireDocx(byte[] contenu) throws IOException {
-        try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(contenu))) {
-            StringBuilder texte = new StringBuilder();
+    private String extraireDocx(byte[] content) throws IOException {
+        try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(content))) {
+            StringBuilder text = new StringBuilder();
             for (XWPFParagraph paragraphe : document.getParagraphs()) {
                 if (!paragraphe.getText().isBlank()) {
-                    texte.append(paragraphe.getText()).append('\n');
+                    text.append(paragraphe.getText()).append('\n');
                 }
             }
             for (XWPFTable table : document.getTables()) {
-                for (XWPFTableRow ligne : table.getRows()) {
+                for (XWPFTableRow line : table.getRows()) {
                     List<String> cellules = new ArrayList<>();
-                    for (XWPFTableCell cellule : ligne.getTableCells()) {
+                    for (XWPFTableCell cellule : line.getTableCells()) {
                         cellules.add(cellule.getText());
                     }
-                    texte.append(String.join(" | ", cellules)).append('\n');
+                    text.append(String.join(" | ", cellules)).append('\n');
                 }
             }
-            return tronquer(texte.toString());
+            return tronquer(text.toString());
         }
     }
 
-    private String extraireTableur(byte[] contenu) throws IOException {
-        try (Workbook classeur = WorkbookFactory.create(new ByteArrayInputStream(contenu))) {
+    private String extraireTableur(byte[] content) throws IOException {
+        try (Workbook classeur = WorkbookFactory.create(new ByteArrayInputStream(content))) {
             DataFormatter formatter = new DataFormatter(java.util.Locale.FRANCE);
-            StringBuilder texte = new StringBuilder();
+            StringBuilder text = new StringBuilder();
             for (int i = 0; i < classeur.getNumberOfSheets(); i++) {
                 Sheet feuille = classeur.getSheetAt(i);
-                texte.append("Feuille : ").append(feuille.getSheetName()).append('\n');
-                int limiteLignes = Math.min(feuille.getLastRowNum(), 2000);
-                for (int j = 0; j <= limiteLignes; j++) {
-                    Row ligne = feuille.getRow(j);
-                    if (ligne == null) {
+                text.append("Feuille : ").append(feuille.getSheetName()).append('\n');
+                int limiteLines = Math.min(feuille.getLastRowNum(), 2000);
+                for (int j = 0; j <= limiteLines; j++) {
+                    Row line = feuille.getRow(j);
+                    if (line == null) {
                         continue;
                     }
-                    List<String> valeurs = new ArrayList<>();
-                    int derniere = Math.min(ligne.getLastCellNum(), 50);
-                    for (int k = 0; k < derniere; k++) {
-                        Cell cellule = ligne.getCell(k);
-                        valeurs.add(cellule == null ? "" : formatter.formatCellValue(cellule));
+                    List<String> values = new ArrayList<>();
+                    int last = Math.min(line.getLastCellNum(), 50);
+                    for (int k = 0; k < last; k++) {
+                        Cell cellule = line.getCell(k);
+                        values.add(cellule == null ? "" : formatter.formatCellValue(cellule));
                     }
-                    if (valeurs.stream().anyMatch(v -> !v.isBlank())) {
-                        texte.append(String.join(" | ", valeurs)).append('\n');
+                    if (values.stream().anyMatch(v -> !v.isBlank())) {
+                        text.append(String.join(" | ", values)).append('\n');
                     }
                 }
             }
-            return tronquer(texte.toString());
+            return tronquer(text.toString());
         }
     }
 
-    public String tronquer(String texte) {
-        if (texte == null) {
+    public String tronquer(String text) {
+        if (text == null) {
             return "";
         }
-        String propre = texte.replaceAll("[\\t\\r]+", " ").replaceAll(" {2,}", " ").trim();
+        String propre = text.replaceAll("[\\t\\r]+", " ").replaceAll(" {2,}", " ").trim();
         if (propre.length() <= LONGUEUR_MAX) {
             return propre;
         }
@@ -155,6 +155,6 @@ public class DocumentTextExtractor {
         return propre.substring(0, debut) + "\n[…]\n" + propre.substring(propre.length() - fin);
     }
 
-    public record Extraction(String texte, List<String> imagesBase64, boolean imageSeule, int nombrePages) {
+    public record Extraction(String text, List<String> imagesBase64, boolean imageSeule, int pageCount) {
     }
 }

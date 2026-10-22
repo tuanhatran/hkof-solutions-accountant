@@ -16,7 +16,7 @@ import fr.hkof.homeofficeexpenses.web.dto.Dtos.LlmConfigRequest;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.LlmModelDto;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.LlmStatusDto;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.LlmTestResponse;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.PromptDefautDto;
+import fr.hkof.homeofficeexpenses.web.dto.Dtos.DefaultPromptDto;
 
 @RestController
 @RequestMapping("/api/admin/llm")
@@ -39,8 +39,8 @@ public class AdminLlmController {
     }
 
     @GetMapping("/models")
-    public List<LlmModelDto> modeles() {
-        return service.modeles();
+    public List<LlmModelDto> models() {
+        return service.models();
     }
 
     @PostMapping("/test")
@@ -49,12 +49,12 @@ public class AdminLlmController {
     }
 
     @GetMapping("/status")
-    public LlmStatusDto statut() {
-        return service.statut();
+    public LlmStatusDto status() {
+        return service.status();
     }
 
     @GetMapping("/prompt-defaut")
-    public PromptDefautDto promptDefaut() {
-        return new PromptDefautDto(DefaultPrompt.SYSTEM);
+    public DefaultPromptDto promptDefaut() {
+        return new DefaultPromptDto(DefaultPrompt.SYSTEM);
     }
 }

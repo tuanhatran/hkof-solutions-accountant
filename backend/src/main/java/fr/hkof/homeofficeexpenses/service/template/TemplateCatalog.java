@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import fr.hkof.homeofficeexpenses.domain.TypeTemplate;
+import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.TemplateVariableDto;
 
 public final class TemplateCatalog {
@@ -54,32 +54,32 @@ public final class TemplateCatalog {
     private TemplateCatalog() {
     }
 
-    private static void variable(Map<String, TemplateVariableDto> cible, String nom, String description,
-            boolean obligatoire, String exemple) {
-        cible.put(nom, new TemplateVariableDto(nom, description, obligatoire, exemple));
+    private static void variable(Map<String, TemplateVariableDto> cible, String name, String description,
+            boolean required, String example) {
+        cible.put(name, new TemplateVariableDto(name, description, required, example));
     }
 
-    public static List<TemplateVariableDto> variables(TypeTemplate type) {
+    public static List<TemplateVariableDto> variables(TemplateType type) {
         return List.copyOf(catalogue(type).values());
     }
 
-    public static Set<String> nomsAutorises(TypeTemplate type) {
+    public static Set<String> nomsAllowed(TemplateType type) {
         return catalogue(type).keySet();
     }
 
-    public static Set<String> obligatoires(TypeTemplate type) {
+    public static Set<String> obligatoires(TemplateType type) {
         return catalogue(type).values().stream()
-                .filter(TemplateVariableDto::obligatoire)
-                .map(TemplateVariableDto::nom)
+                .filter(TemplateVariableDto::required)
+                .map(TemplateVariableDto::name)
                 .collect(java.util.stream.Collectors.toUnmodifiableSet());
     }
 
-    public static String description(TypeTemplate type, String nom) {
-        TemplateVariableDto variable = catalogue(type).get(nom);
+    public static String description(TemplateType type, String name) {
+        TemplateVariableDto variable = catalogue(type).get(name);
         return variable == null ? null : variable.description();
     }
 
-    private static Map<String, TemplateVariableDto> catalogue(TypeTemplate type) {
-        return type == TypeTemplate.QUITTANCE ? QUITTANCE : NOTE;
+    private static Map<String, TemplateVariableDto> catalogue(TemplateType type) {
+        return type == TemplateType.QUITTANCE ? QUITTANCE : NOTE;
     }
 }

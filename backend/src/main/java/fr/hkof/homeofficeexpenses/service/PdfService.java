@@ -45,27 +45,27 @@ public class PdfService {
         }
     }
 
-    public byte[] ajouterFiligrane(byte[] pdf) {
+    public byte[] addWatermark(byte[] pdf) {
         try (PDDocument document = PDDocument.load(pdf)) {
             PDType1Font police = PDType1Font.HELVETICA_BOLD;
             for (PDPage page : document.getPages()) {
-                PDRectangle taille = page.getMediaBox();
-                String texte = "APERÇU";
-                float taillePolice = 92f;
-                float largeurTexte = police.getStringWidth(texte) / 1000f * taillePolice;
-                float x = (taille.getWidth() - largeurTexte * 0.707f) / 2f;
-                float y = (taille.getHeight() - largeurTexte * 0.707f) / 2f;
-                PDExtendedGraphicsState etat = new PDExtendedGraphicsState();
-                etat.setNonStrokingAlphaConstant(0.13f);
-                try (PDPageContentStream contenu = new PDPageContentStream(
+                PDRectangle size = page.getMediaBox();
+                String text = "APERÇU";
+                float sizePolice = 92f;
+                float largeurText = police.getStringWidth(text) / 1000f * sizePolice;
+                float x = (size.getWidth() - largeurText * 0.707f) / 2f;
+                float y = (size.getHeight() - largeurText * 0.707f) / 2f;
+                PDExtendedGraphicsState state = new PDExtendedGraphicsState();
+                state.setNonStrokingAlphaConstant(0.13f);
+                try (PDPageContentStream content = new PDPageContentStream(
                         document, page, AppendMode.APPEND, true, true)) {
-                    contenu.setGraphicsStateParameters(etat);
-                    contenu.setNonStrokingColor(new Color(120, 120, 120));
-                    contenu.beginText();
-                    contenu.setFont(police, taillePolice);
-                    contenu.setTextMatrix(Matrix.getRotateInstance(Math.toRadians(45), x, y));
-                    contenu.showText(texte);
-                    contenu.endText();
+                    content.setGraphicsStateParameters(state);
+                    content.setNonStrokingColor(new Color(120, 120, 120));
+                    content.beginText();
+                    content.setFont(police, sizePolice);
+                    content.setTextMatrix(Matrix.getRotateInstance(Math.toRadians(45), x, y));
+                    content.showText(text);
+                    content.endText();
                 }
             }
             ByteArrayOutputStream sortie = new ByteArrayOutputStream();
@@ -92,11 +92,11 @@ public class PdfService {
         }
     }
 
-    public byte[] imageVersPdf(byte[] image, String nom) {
+    public byte[] imageVersPdf(byte[] image, String name) {
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
-            PDImageXObject imagePdf = PDImageXObject.createFromByteArray(document, image, nom);
+            PDImageXObject imagePdf = PDImageXObject.createFromByteArray(document, image, name);
             float marge = 36f;
             float largeurMax = page.getMediaBox().getWidth() - 2 * marge;
             float hauteurMax = page.getMediaBox().getHeight() - 2 * marge;
@@ -105,8 +105,8 @@ public class PdfService {
             float hauteur = imagePdf.getHeight() * ratio;
             float x = (page.getMediaBox().getWidth() - largeur) / 2f;
             float y = (page.getMediaBox().getHeight() - hauteur) / 2f;
-            try (PDPageContentStream contenu = new PDPageContentStream(document, page)) {
-                contenu.drawImage(imagePdf, x, y, largeur, hauteur);
+            try (PDPageContentStream content = new PDPageContentStream(document, page)) {
+                content.drawImage(imagePdf, x, y, largeur, hauteur);
             }
             ByteArrayOutputStream sortie = new ByteArrayOutputStream();
             document.save(sortie);
@@ -116,8 +116,8 @@ public class PdfService {
         }
     }
 
-    public byte[] pageTexte(String titre, String texte) {
-        String contenu = (texte == null ? "" : texte)
+    public byte[] pageText(String titre, String text) {
+        String content = (text == null ? "" : text)
                 .replace("&", "&amp;")
                 .replace("<", "&lt;")
                 .replace(">", "&gt;");
@@ -132,16 +132,16 @@ public class PdfService {
                 </style></head>
                 <body><h1>%s</h1><pre>%s</pre></body>
                 </html>
-                """.formatted(contenuTitre(titre), contenu);
+                """.formatted(contentTitre(titre), content);
         return rendreHtmlEnPdf(html);
     }
 
-    public boolean estPdf(byte[] contenu) {
-        return contenu != null && contenu.length >= 5
-                && contenu[0] == '%' && contenu[1] == 'P' && contenu[2] == 'D' && contenu[3] == 'F';
+    public boolean estPdf(byte[] content) {
+        return content != null && content.length >= 5
+                && content[0] == '%' && content[1] == 'P' && content[2] == 'D' && content[3] == 'F';
     }
 
-    private String contenuTitre(String titre) {
+    private String contentTitre(String titre) {
         return titre.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 

@@ -32,14 +32,14 @@ public class ExtractionPipeline {
         this.objectMapper = objectMapper;
     }
 
-    public ExtractionDto extraire(LlmConfig config, String texte, List<String> imagesBase64) {
-        String contenu = texte == null ? "" : texte.trim();
+    public ExtractionDto extraire(LlmConfig config, String text, List<String> imagesBase64) {
+        String content = text == null ? "" : text.trim();
         List<String> images = imagesBase64 == null ? List.of() : imagesBase64;
-        if (contenu.length() < 20 && images.isEmpty()) {
+        if (content.length() < 20 && images.isEmpty()) {
             throw new BusinessException("Document illisible : aucun texte exploitable. Saisissez le montant manuellement.");
         }
-        if (contenu.length() < 20 && !images.isEmpty()
-                && !ollamaClient.supporteVision(config, config.getModele())) {
+        if (content.length() < 20 && !images.isEmpty()
+                && !ollamaClient.supporteVision(config, config.getModel())) {
             throw new BusinessException("Document sans texte exploitable et le modèle configuré ne gère pas les images. "
                     + "Choisissez un modèle de vision ou saisissez le montant manuellement.");
         }
@@ -50,14 +50,14 @@ public class ExtractionPipeline {
                 <document>
                 %s
                 </document>
-                """.formatted(contenu);
+                """.formatted(content);
 
-        String reponse = ollamaClient.chat(config, config.getPromptExtraction(), messageUtilisateur, images);
-        return interpreter(reponse, contenu, images.size());
+        String response = ollamaClient.chat(config, config.getExtractionPrompt(), messageUtilisateur, images);
+        return interpreter(response, content, images.size());
     }
 
-    public ExtractionDto extraireDepuisTexte(LlmConfig config, String texte, List<String> imagesBase64) {
-        return extraire(config, texte, imagesBase64);
+    public ExtractionDto extraireDepuisText(LlmConfig config, String text, List<String> imagesBase64) {
+        return extraire(config, text, imagesBase64);
     }
 
     public String versJson(ExtractionDto extraction) {
@@ -75,8 +75,8 @@ public class ExtractionPipeline {
         }
     }
 
-    ExtractionDto interpreter(String reponseBrute, String texteDocument, int nombreImages) {
-        String json = isolerJson(reponseBrute);
+    ExtractionDto interpreter(String rawResponse, String textDocument, int imageCount) {
+        String json = isolerJson(rawResponse);
         JsonNode racine;
         try {
             racine = objectMapper.readTree(json);
@@ -86,45 +86,45 @@ public class ExtractionPipeline {
         if (racine == null || !racine.isObject()) {
             throw new BusinessException("La réponse du modèle n'est pas un objet JSON conforme. La saisie manuelle reste disponible.");
         }
-        verifierChamps(racine);
+        verifierFields(racine);
 
-        String confiance = nettoyer(racine, "confiance", 20);
-        if (confiance == null || !confianceValide(confiance)) {
-            confiance = "basse";
+        String confidence = nettoyer(racine, "confiance", 20);
+        if (confidence == null || !confidenceValide(confidence)) {
+            confidence = "basse";
         } else {
-            confiance = confiance.toLowerCase(Locale.ROOT);
+            confidence = confidence.toLowerCase(Locale.ROOT);
         }
 
-        String montantTtc = montant(racine, "montant_ttc");
-        String montantHt = montant(racine, "montant_ht");
+        String amountInclVat = amount(racine, "montant_ttc");
+        String amountExclVat = amount(racine, "montant_ht");
         String extrait = nettoyer(racine, "extrait_source", 500);
-        String documentNormalise = normaliserPourRecherche(texteDocument);
+        String documentNormalise = normaliserPourRecherche(textDocument);
         String extraitNormalise = normaliserPourRecherche(extrait);
-        if (montantTtc != null && (!presentDansDocument(montantTtc, documentNormalise)
-                || !presentDansDocument(montantTtc, extraitNormalise))) {
-            montantTtc = null;
-            confiance = "basse";
+        if (amountInclVat != null && (!presentDansDocument(amountInclVat, documentNormalise)
+                || !presentDansDocument(amountInclVat, extraitNormalise))) {
+            amountInclVat = null;
+            confidence = "basse";
         }
-        if (montantHt != null && !presentDansDocument(montantHt, documentNormalise)) {
-            montantHt = null;
+        if (amountExclVat != null && !presentDansDocument(amountExclVat, documentNormalise)) {
+            amountExclVat = null;
         }
-        if (montantTtc == null) {
-            confiance = "basse";
+        if (amountInclVat == null) {
+            confidence = "basse";
         }
 
         String type = normaliserType(nettoyer(racine, "type_suggere", 40));
-        String dateFacture = date(racine, "date_facture");
-        String periodeDebut = date(racine, "periode_debut");
-        String periodeFin = date(racine, "periode_fin");
-        if (periodeDebut != null && periodeFin != null && LocalDate.parse(periodeFin).isBefore(LocalDate.parse(periodeDebut))) {
-            periodeDebut = null;
-            periodeFin = null;
+        String invoiceDate = date(racine, "date_facture");
+        String periodStart = date(racine, "periode_debut");
+        String periodEnd = date(racine, "periode_fin");
+        if (periodStart != null && periodEnd != null && LocalDate.parse(periodEnd).isBefore(LocalDate.parse(periodStart))) {
+            periodStart = null;
+            periodEnd = null;
         }
-        String devise = nettoyer(racine, "devise", 8);
-        if (devise == null) {
-            devise = "EUR";
+        String currency = nettoyer(racine, "devise", 8);
+        if (currency == null) {
+            currency = "EUR";
         }
-        if (extrait != null && nombreImages > 0 && texteDocument.isBlank()) {
+        if (extrait != null && imageCount > 0 && textDocument.isBlank()) {
             extrait = null;
         }
 
@@ -132,70 +132,70 @@ public class ExtractionPipeline {
                 type,
                 nettoyer(racine, "fournisseur", 160),
                 nettoyer(racine, "numero_facture", 80),
-                dateFacture,
-                periodeDebut,
-                periodeFin,
-                montantTtc,
-                montantHt,
-                devise.toUpperCase(Locale.ROOT),
+                invoiceDate,
+                periodStart,
+                periodEnd,
+                amountInclVat,
+                amountExclVat,
+                currency.toUpperCase(Locale.ROOT),
                 extrait,
-                confiance);
+                confidence);
     }
 
-    private void verifierChamps(JsonNode racine) {
-        Set<String> autorises = Set.of("type_suggere", "fournisseur", "numero_facture", "date_facture",
+    private void verifierFields(JsonNode racine) {
+        Set<String> allowed = Set.of("type_suggere", "fournisseur", "numero_facture", "date_facture",
                 "periode_debut", "periode_fin", "montant_ttc", "montant_ht", "devise", "extrait_source", "confiance");
-        for (String champ : racine.propertyNames()) {
-            if (!autorises.contains(champ)) {
-                throw new BusinessException("La réponse du modèle contient un champ non autorisé (« " + champ
+        for (String field : racine.propertyNames()) {
+            if (!allowed.contains(field)) {
+                throw new BusinessException("La réponse du modèle contient un champ non autorisé (« " + field
                         + " »). La saisie manuelle reste disponible.");
             }
         }
-        for (String champ : autorises) {
-            JsonNode valeur = racine.get(champ);
-            if (valeur == null) {
+        for (String field : allowed) {
+            JsonNode value = racine.get(field);
+            if (value == null) {
                 throw new BusinessException("La réponse du modèle ne respecte pas le schéma attendu (champ « "
-                        + champ + " » absent).");
+                        + field + " » absent).");
             }
-            if (!valeur.isNull() && !valeur.isString() && !valeur.isNumber()) {
+            if (!value.isNull() && !value.isString() && !value.isNumber()) {
                 throw new BusinessException("La réponse du modèle ne respecte pas le schéma attendu (champ « "
-                        + champ + " »).");
+                        + field + " »).");
             }
         }
     }
 
-    private String isolerJson(String reponse) {
-        String texte = reponse == null ? "" : reponse.trim();
-        if (texte.startsWith("```")) {
-            int debut = texte.indexOf('\n');
-            int fin = texte.lastIndexOf("```");
+    private String isolerJson(String response) {
+        String text = response == null ? "" : response.trim();
+        if (text.startsWith("```")) {
+            int debut = text.indexOf('\n');
+            int fin = text.lastIndexOf("```");
             if (debut >= 0 && fin > debut) {
-                texte = texte.substring(debut + 1, fin).trim();
+                text = text.substring(debut + 1, fin).trim();
             }
         }
-        int debut = texte.indexOf('{');
-        int fin = texte.lastIndexOf('}');
+        int debut = text.indexOf('{');
+        int fin = text.lastIndexOf('}');
         if (debut < 0 || fin <= debut) {
             throw new BusinessException("La réponse du modèle ne contient pas d'objet JSON. La saisie manuelle reste disponible.");
         }
-        return texte.substring(debut, fin + 1);
+        return text.substring(debut, fin + 1);
     }
 
-    private String nettoyer(JsonNode racine, String champ, int longueurMax) {
-        JsonNode noeud = racine.get(champ);
+    private String nettoyer(JsonNode racine, String field, int longueurMax) {
+        JsonNode noeud = racine.get(field);
         if (noeud == null || noeud.isNull()) {
             return null;
         }
-        String valeur = noeud.isNumber() ? noeud.asString() : noeud.asString("");
-        valeur = valeur == null ? "" : valeur.trim().replaceAll("\\s+", " ");
-        if (valeur.isBlank()) {
+        String value = noeud.isNumber() ? noeud.asString() : noeud.asString("");
+        value = value == null ? "" : value.trim().replaceAll("\\s+", " ");
+        if (value.isBlank()) {
             return null;
         }
-        return valeur.length() > longueurMax ? valeur.substring(0, longueurMax) : valeur;
+        return value.length() > longueurMax ? value.substring(0, longueurMax) : value;
     }
 
-    private String montant(JsonNode racine, String champ) {
-        String brut = nettoyer(racine, champ, 40);
+    private String amount(JsonNode racine, String field) {
+        String brut = nettoyer(racine, field, 40);
         if (brut == null) {
             return null;
         }
@@ -205,20 +205,20 @@ public class ExtractionPipeline {
         if (!nettoye.matches("\\d{1,9}(\\.\\d{1,4})?")) {
             return null;
         }
-        BigDecimal valeur = new BigDecimal(nettoye);
-        if (valeur.signum() <= 0) {
+        BigDecimal value = new BigDecimal(nettoye);
+        if (value.signum() <= 0) {
             return null;
         }
-        return valeur.setScale(2, RoundingMode.HALF_UP).toPlainString();
+        return value.setScale(2, RoundingMode.HALF_UP).toPlainString();
     }
 
-    private String date(JsonNode racine, String champ) {
-        String valeur = nettoyer(racine, champ, 20);
-        if (valeur == null) {
+    private String date(JsonNode racine, String field) {
+        String value = nettoyer(racine, field, 20);
+        if (value == null) {
             return null;
         }
         try {
-            return LocalDate.parse(valeur).toString();
+            return LocalDate.parse(value).toString();
         } catch (DateTimeParseException ex) {
             return null;
         }
@@ -235,27 +235,27 @@ public class ExtractionPipeline {
         return TYPES_ACCEPTES.contains(sansAccent) ? sansAccent : null;
     }
 
-    private boolean confianceValide(String confiance) {
-        return CONFIANCES.contains(confiance.toLowerCase(Locale.ROOT));
+    private boolean confidenceValide(String confidence) {
+        return CONFIANCES.contains(confidence.toLowerCase(Locale.ROOT));
     }
 
-    private boolean presentDansDocument(String montant, String documentNormalise) {
-        String candidat = montant.replace(",", ".");
+    private boolean presentDansDocument(String amount, String documentNormalise) {
+        String candidat = amount.replace(",", ".");
         if (documentNormalise.contains(candidat)) {
             return true;
         }
-        BigDecimal valeur = new BigDecimal(candidat);
-        if (valeur.stripTrailingZeros().scale() <= 0) {
-            return documentNormalise.contains(valeur.toPlainString());
+        BigDecimal value = new BigDecimal(candidat);
+        if (value.stripTrailingZeros().scale() <= 0) {
+            return documentNormalise.contains(value.toPlainString());
         }
         return false;
     }
 
-    private String normaliserPourRecherche(String texte) {
-        if (texte == null) {
+    private String normaliserPourRecherche(String text) {
+        if (text == null) {
             return "";
         }
-        return texte
+        return text
                 .replace('\u00A0', ' ')
                 .replace('\u202F', ' ')
                 .replace("€", "")

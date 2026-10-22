@@ -6,17 +6,17 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
-import fr.hkof.homeofficeexpenses.domain.TypeTemplate;
+import fr.hkof.homeofficeexpenses.domain.TemplateType;
 
 public interface TemplateDocumentRepository extends JpaRepository<TemplateDocument, Long> {
 
-    List<TemplateDocument> findByTypeAndSupprimeFalseOrderByVersionDesc(TypeTemplate type);
+    List<TemplateDocument> findByTypeAndDeletedFalseOrderByVersionDesc(TemplateType type);
 
-    List<TemplateDocument> findByTypeAndActifTrueAndSupprimeFalse(TypeTemplate type);
+    List<TemplateDocument> findByTypeAndActiveTrueAndDeletedFalse(TemplateType type);
 
-    Optional<TemplateDocument> findFirstByTypeAndActifTrueAndSupprimeFalse(TypeTemplate type);
+    Optional<TemplateDocument> findFirstByTypeAndActiveTrueAndDeletedFalse(TemplateType type);
 
-    Optional<TemplateDocument> findFirstByTypeAndIntegreTrueAndSupprimeFalse(TypeTemplate type);
+    Optional<TemplateDocument> findFirstByTypeAndBuiltInTrueAndDeletedFalse(TemplateType type);
 
-    Optional<TemplateDocument> findTopByTypeOrderByVersionDesc(TypeTemplate type);
+    Optional<TemplateDocument> findTopByTypeOrderByVersionDesc(TemplateType type);
 }

@@ -8,149 +8,149 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
-import fr.hkof.homeofficeexpenses.domain.NoteFrais;
-import fr.hkof.homeofficeexpenses.domain.Parametres;
-import fr.hkof.homeofficeexpenses.domain.Quittance;
-import fr.hkof.homeofficeexpenses.service.CalculService;
-import fr.hkof.homeofficeexpenses.service.Montants;
-import fr.hkof.homeofficeexpenses.service.NombreEnLettres;
-import fr.hkof.homeofficeexpenses.service.ParametresService;
+import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
+import fr.hkof.homeofficeexpenses.domain.Settings;
+import fr.hkof.homeofficeexpenses.domain.RentReceipt;
+import fr.hkof.homeofficeexpenses.service.CalculationService;
+import fr.hkof.homeofficeexpenses.service.Amounts;
+import fr.hkof.homeofficeexpenses.service.NumberToWords;
+import fr.hkof.homeofficeexpenses.service.SettingsService;
 
 @Service
 public class TemplateDataService {
 
-    private final ParametresService parametresService;
+    private final SettingsService parametersService;
 
-    public TemplateDataService(ParametresService parametresService) {
-        this.parametresService = parametresService;
+    public TemplateDataService(SettingsService parametersService) {
+        this.parametersService = parametersService;
     }
 
-    public Map<String, Object> donneesQuittance(Parametres p, Quittance quittance) {
-        Map<String, Object> donnees = new LinkedHashMap<>();
-        donnees.put("bailleur", Map.of(
-                "nom", texte(p.getBailleurNom()),
-                "adresse", texte(p.getBailleurAdresse())));
-        donnees.put("locataire", Map.of(
-                "nom", texte(p.getLocataireNom()),
-                "adresse", texte(p.getLocataireAdresse())));
-        donnees.put("logement", Map.of("adresse", texte(p.getLogementAdresse())));
-        donnees.put("mois_libelle", Montants.formatMois(java.time.YearMonth.parse(quittance.getMois())));
-        donnees.put("periode", Map.of(
-                "debut", Montants.formatDate(quittance.getPeriodeDebut()),
-                "fin", Montants.formatDate(quittance.getPeriodeFin())));
-        donnees.put("loyer_hc", Montants.formatEUR(quittance.getLoyerHc()));
-        donnees.put("charges", Montants.formatEUR(quittance.getCharges()));
-        donnees.put("total", Montants.formatEUR(quittance.getTotal()));
-        donnees.put("total_en_lettres", NombreEnLettres.enLettres(quittance.getTotal()));
-        donnees.put("date_paiement", Montants.formatDate(quittance.getDatePaiement()));
-        donnees.put("date_emission", Montants.formatDate(quittance.getDateEmission()));
-        donnees.put("lieu", texte(p.getLieuEmission()));
-        return donnees;
+    public Map<String, Object> dataRentReceipt(Settings p, RentReceipt rentReceipt) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("bailleur", Map.of(
+                "nom", text(p.getLandlordName()),
+                "adresse", text(p.getLandlordAddress())));
+        data.put("locataire", Map.of(
+                "nom", text(p.getTenantName()),
+                "adresse", text(p.getTenantAddress())));
+        data.put("logement", Map.of("adresse", text(p.getHomeAddress())));
+        data.put("mois_libelle", Amounts.formatMonth(java.time.YearMonth.parse(rentReceipt.getMonth())));
+        data.put("periode", Map.of(
+                "debut", Amounts.formatDate(rentReceipt.getPeriodStart()),
+                "fin", Amounts.formatDate(rentReceipt.getPeriodEnd())));
+        data.put("loyer_hc", Amounts.formatEUR(rentReceipt.getRentExclCharges()));
+        data.put("charges", Amounts.formatEUR(rentReceipt.getCharges()));
+        data.put("total", Amounts.formatEUR(rentReceipt.getTotal()));
+        data.put("total_en_lettres", NumberToWords.enLettres(rentReceipt.getTotal()));
+        data.put("date_paiement", Amounts.formatDate(rentReceipt.getPaymentDate()));
+        data.put("date_emission", Amounts.formatDate(rentReceipt.getIssueDate()));
+        data.put("lieu", text(p.getIssuePlace()));
+        return data;
     }
 
-    public Map<String, Object> donneesNote(Parametres p, NoteFrais note, boolean complete) {
-        Map<String, Object> donnees = new LinkedHashMap<>();
-        donnees.put("societe", Map.of(
-                "raison_sociale", texte(p.getRaisonSociale()),
-                "siren", texte(p.getSiren()),
-                "adresse", texte(p.getSocieteAdresse())));
-        donnees.put("gerant", texte(p.getGerant()));
-        donnees.put("mois_libelle", Montants.formatMois(java.time.YearMonth.parse(note.getMois())));
-        donnees.put("numero", texte(note.getNumero()));
-        List<Map<String, Object>> lignes = new ArrayList<>();
-        for (var ligne : note.getLignes()) {
+    public Map<String, Object> dataStatement(Settings p, ExpenseStatement statement, boolean complete) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("societe", Map.of(
+                "raison_sociale", text(p.getCompanyName()),
+                "siren", text(p.getSiren()),
+                "adresse", text(p.getCompanyAddress())));
+        data.put("gerant", text(p.getManagerName()));
+        data.put("mois_libelle", Amounts.formatMonth(java.time.YearMonth.parse(statement.getMonth())));
+        data.put("numero", text(statement.getNumber()));
+        List<Map<String, Object>> lines = new ArrayList<>();
+        for (var line : statement.getLines()) {
             Map<String, Object> item = new LinkedHashMap<>();
-            item.put("poste", ligne.getPoste().getLibelle());
-            item.put("fournisseur", texte(ligne.getPoste().getFournisseur()));
-            item.put("periode", periode(ligne.getPeriodeDebut(), ligne.getPeriodeFin()));
-            item.put("montant_ttc", Montants.formatEUR(ligne.getMontantTtc()));
-            item.put("prorata", Montants.formatPourcentage(ligne.getProrataPct()));
-            item.put("montant_retenu", Montants.formatEUR(ligne.getMontantRetenu()));
-            lignes.add(item);
+            item.put("poste", line.getExpenseItem().getLabel());
+            item.put("fournisseur", text(line.getExpenseItem().getSupplier()));
+            item.put("periode", period(line.getPeriodStart(), line.getPeriodEnd()));
+            item.put("montant_ttc", Amounts.formatEUR(line.getAmountInclVat()));
+            item.put("prorata", Amounts.formatPourcentage(line.getProRataPct()));
+            item.put("montant_retenu", Amounts.formatEUR(line.getClaimedAmount()));
+            lines.add(item);
         }
-        donnees.put("lignes", lignes);
-        donnees.put("total", Montants.formatEUR(note.getTotal()));
-        donnees.put("total_en_lettres", NombreEnLettres.enLettres(note.getTotal()));
-        donnees.put("base_prorata", detailProrata(p));
-        donnees.put("date_emission", Montants.formatDate(java.time.LocalDate.now()));
-        donnees.put("lieu", texte(p.getLieuEmission()));
-        donnees.put("complete", complete);
-        return donnees;
+        data.put("lignes", lines);
+        data.put("total", Amounts.formatEUR(statement.getTotal()));
+        data.put("total_en_lettres", NumberToWords.enLettres(statement.getTotal()));
+        data.put("base_prorata", detailProrata(p));
+        data.put("date_emission", Amounts.formatDate(java.time.LocalDate.now()));
+        data.put("lieu", text(p.getIssuePlace()));
+        data.put("complete", complete);
+        return data;
     }
 
-    public Map<String, Object> donneesExemple(fr.hkof.homeofficeexpenses.domain.TypeTemplate type) {
-        Parametres p = parametresService.entite();
-        if (type == fr.hkof.homeofficeexpenses.domain.TypeTemplate.QUITTANCE) {
-            Quittance q = new Quittance();
-            q.setMois("2026-10");
-            q.setPeriodeDebut(java.time.LocalDate.of(2026, 10, 1));
-            q.setPeriodeFin(java.time.LocalDate.of(2026, 10, 31));
-            q.setLoyerHc(p.getLoyerHc() == null ? new BigDecimal("900.00") : p.getLoyerHc());
-            q.setCharges(p.getProvisionCharges() == null ? new BigDecimal("50.00") : p.getProvisionCharges());
-            q.setTotal(CalculService.totalQuittance(q.getLoyerHc(), q.getCharges()));
-            q.setDatePaiement(java.time.LocalDate.of(2026, 10, 5));
-            q.setDateEmission(java.time.LocalDate.of(2026, 10, 1));
-            return donneesQuittance(p, q);
+    public Map<String, Object> dataExample(fr.hkof.homeofficeexpenses.domain.TemplateType type) {
+        Settings p = parametersService.entity();
+        if (type == fr.hkof.homeofficeexpenses.domain.TemplateType.QUITTANCE) {
+            RentReceipt q = new RentReceipt();
+            q.setMonth("2026-10");
+            q.setPeriodStart(java.time.LocalDate.of(2026, 10, 1));
+            q.setPeriodEnd(java.time.LocalDate.of(2026, 10, 31));
+            q.setRentExclCharges(p.getRentExclCharges() == null ? new BigDecimal("900.00") : p.getRentExclCharges());
+            q.setCharges(p.getChargesAdvance() == null ? new BigDecimal("50.00") : p.getChargesAdvance());
+            q.setTotal(CalculationService.totalRentReceipt(q.getRentExclCharges(), q.getCharges()));
+            q.setPaymentDate(java.time.LocalDate.of(2026, 10, 5));
+            q.setIssueDate(java.time.LocalDate.of(2026, 10, 1));
+            return dataRentReceipt(p, q);
         }
-        NoteFrais n = new NoteFrais();
-        n.setMois("2026-10");
-        n.setNumero("NF-2026-10");
+        ExpenseStatement n = new ExpenseStatement();
+        n.setMonth("2026-10");
+        n.setNumber("NF-2026-10");
         n.setTotal(new BigDecimal("364.96"));
-        donneesNoteExemple(p, n, true);
-        return donneesNoteExemple(p, n, true);
+        dataStatementExample(p, n, true);
+        return dataStatementExample(p, n, true);
     }
 
-    private Map<String, Object> donneesNoteExemple(Parametres p, NoteFrais note, boolean complete) {
-        Map<String, Object> donnees = new LinkedHashMap<>();
-        donnees.put("societe", Map.of(
-                "raison_sociale", texte(p.getRaisonSociale()),
-                "siren", texte(p.getSiren()),
-                "adresse", texte(p.getSocieteAdresse())));
-        donnees.put("gerant", texte(p.getGerant()));
-        donnees.put("mois_libelle", "Octobre 2026");
-        donnees.put("numero", note.getNumero());
-        List<Map<String, Object>> lignes = new ArrayList<>();
-        lignes.add(ligne("Loyer", "", "01/10/2026 au 31/10/2026", "950,00 €", "100,00 %", "950,00 €"));
-        lignes.add(ligne("Gaz", "EDF", "01/09/2026 au 31/10/2026", "120,00 €", "35,71 %", "21,42 €"));
-        lignes.add(ligne("Électricité", "Primeo", "01/09/2026 au 31/10/2026", "85,00 €", "35,71 %", "15,18 €"));
-        lignes.add(ligne("Téléphone", "Opérateur", "01/10/2026 au 31/10/2026", "29,99 €", "35,71 %", "10,71 €"));
-        lignes.add(ligne("Fibre internet", "Opérateur", "01/10/2026 au 31/10/2026", "39,99 €", "35,71 %", "14,28 €"));
-        lignes.add(ligne("Assurance habitation", "Assureur", "01/10/2026 au 31/10/2026", "180,00 €", "35,71 %", "64,28 €"));
-        donnees.put("lignes", lignes);
-        donnees.put("total", "1 075,87 €");
-        donnees.put("total_en_lettres", "mille soixante-quinze euros et quatre-vingt-sept centimes");
-        donnees.put("base_prorata", detailProrata(p));
-        donnees.put("date_emission", Montants.formatDate(java.time.LocalDate.now()));
-        donnees.put("lieu", texte(p.getLieuEmission()));
-        donnees.put("complete", complete);
-        return donnees;
+    private Map<String, Object> dataStatementExample(Settings p, ExpenseStatement statement, boolean complete) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("societe", Map.of(
+                "raison_sociale", text(p.getCompanyName()),
+                "siren", text(p.getSiren()),
+                "adresse", text(p.getCompanyAddress())));
+        data.put("gerant", text(p.getManagerName()));
+        data.put("mois_libelle", "Octobre 2026");
+        data.put("numero", statement.getNumber());
+        List<Map<String, Object>> lines = new ArrayList<>();
+        lines.add(line("Loyer", "", "01/10/2026 au 31/10/2026", "950,00 €", "100,00 %", "950,00 €"));
+        lines.add(line("Gaz", "EDF", "01/09/2026 au 31/10/2026", "120,00 €", "35,71 %", "21,42 €"));
+        lines.add(line("Électricité", "Primeo", "01/09/2026 au 31/10/2026", "85,00 €", "35,71 %", "15,18 €"));
+        lines.add(line("Téléphone", "Opérateur", "01/10/2026 au 31/10/2026", "29,99 €", "35,71 %", "10,71 €"));
+        lines.add(line("Fibre internet", "Opérateur", "01/10/2026 au 31/10/2026", "39,99 €", "35,71 %", "14,28 €"));
+        lines.add(line("Assurance habitation", "Assureur", "01/10/2026 au 31/10/2026", "180,00 €", "35,71 %", "64,28 €"));
+        data.put("lignes", lines);
+        data.put("total", "1 075,87 €");
+        data.put("total_en_lettres", "mille soixante-quinze euros et quatre-vingt-sept centimes");
+        data.put("base_prorata", detailProrata(p));
+        data.put("date_emission", Amounts.formatDate(java.time.LocalDate.now()));
+        data.put("lieu", text(p.getIssuePlace()));
+        data.put("complete", complete);
+        return data;
     }
 
-    private Map<String, Object> ligne(String poste, String fournisseur, String periode, String ttc, String prorata,
+    private Map<String, Object> line(String expenseItem, String supplier, String period, String ttc, String prorata,
             String retenu) {
         Map<String, Object> item = new LinkedHashMap<>();
-        item.put("poste", poste);
-        item.put("fournisseur", fournisseur);
-        item.put("periode", periode);
+        item.put("poste", expenseItem);
+        item.put("fournisseur", supplier);
+        item.put("periode", period);
         item.put("montant_ttc", ttc);
         item.put("prorata", prorata);
         item.put("montant_retenu", retenu);
         return item;
     }
 
-    private String periode(java.time.LocalDate debut, java.time.LocalDate fin) {
+    private String period(java.time.LocalDate debut, java.time.LocalDate fin) {
         if (debut == null || fin == null) {
             return "";
         }
-        return Montants.formatDate(debut) + " au " + Montants.formatDate(fin);
+        return Amounts.formatDate(debut) + " au " + Amounts.formatDate(fin);
     }
 
-    public String detailProrata(Parametres p) {
-        BigDecimal base = CalculService.prorataBase(p.getSurfacePro(), p.getSurfaceTotale());
-        return parametresService.detailProrata(p, base);
+    public String detailProrata(Settings p) {
+        BigDecimal base = CalculationService.proRataBase(p.getBusinessArea(), p.getTotalArea());
+        return parametersService.detailProrata(p, base);
     }
 
-    private String texte(String valeur) {
-        return valeur == null ? "" : valeur;
+    private String text(String value) {
+        return value == null ? "" : value;
     }
 }

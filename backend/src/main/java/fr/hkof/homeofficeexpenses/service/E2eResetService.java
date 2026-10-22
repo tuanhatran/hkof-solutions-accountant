@@ -13,14 +13,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import fr.hkof.homeofficeexpenses.config.DataInitializer;
-import fr.hkof.homeofficeexpenses.repository.AnalyseDocumentRepository;
-import fr.hkof.homeofficeexpenses.repository.JustificatifRepository;
-import fr.hkof.homeofficeexpenses.repository.LigneFraisRepository;
+import fr.hkof.homeofficeexpenses.repository.AnalysisDocumentRepository;
+import fr.hkof.homeofficeexpenses.repository.ReceiptRepository;
+import fr.hkof.homeofficeexpenses.repository.ExpenseLineRepository;
 import fr.hkof.homeofficeexpenses.repository.LlmConfigRepository;
-import fr.hkof.homeofficeexpenses.repository.NoteFraisRepository;
-import fr.hkof.homeofficeexpenses.repository.ParametresRepository;
-import fr.hkof.homeofficeexpenses.repository.PosteRepository;
-import fr.hkof.homeofficeexpenses.repository.QuittanceRepository;
+import fr.hkof.homeofficeexpenses.repository.ExpenseStatementRepository;
+import fr.hkof.homeofficeexpenses.repository.SettingsRepository;
+import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
+import fr.hkof.homeofficeexpenses.repository.RentReceiptRepository;
 import fr.hkof.homeofficeexpenses.repository.TemplateDocumentRepository;
 
 @Service
@@ -29,31 +29,31 @@ public class E2eResetService {
 
     private static final List<String> DOSSIERS = List.of("justificatifs", "sorties", "templates");
 
-    private final AnalyseDocumentRepository analyses;
-    private final LigneFraisRepository lignes;
-    private final NoteFraisRepository notes;
-    private final QuittanceRepository quittances;
-    private final JustificatifRepository justificatifs;
+    private final AnalysisDocumentRepository analyses;
+    private final ExpenseLineRepository lines;
+    private final ExpenseStatementRepository statements;
+    private final RentReceiptRepository rentReceipts;
+    private final ReceiptRepository receipts;
     private final TemplateDocumentRepository templates;
     private final LlmConfigRepository llmConfigs;
-    private final PosteRepository postes;
-    private final ParametresRepository parametres;
-    private final StockageService stockage;
+    private final ExpenseItemRepository items;
+    private final SettingsRepository parameters;
+    private final StorageService stockage;
     private final DataInitializer initializer;
 
-    public E2eResetService(AnalyseDocumentRepository analyses, LigneFraisRepository lignes,
-            NoteFraisRepository notes, QuittanceRepository quittances, JustificatifRepository justificatifs,
-            TemplateDocumentRepository templates, LlmConfigRepository llmConfigs, PosteRepository postes,
-            ParametresRepository parametres, StockageService stockage, DataInitializer initializer) {
+    public E2eResetService(AnalysisDocumentRepository analyses, ExpenseLineRepository lines,
+            ExpenseStatementRepository statements, RentReceiptRepository rentReceipts, ReceiptRepository receipts,
+            TemplateDocumentRepository templates, LlmConfigRepository llmConfigs, ExpenseItemRepository items,
+            SettingsRepository parameters, StorageService stockage, DataInitializer initializer) {
         this.analyses = analyses;
-        this.lignes = lignes;
-        this.notes = notes;
-        this.quittances = quittances;
-        this.justificatifs = justificatifs;
+        this.lines = lines;
+        this.statements = statements;
+        this.rentReceipts = rentReceipts;
+        this.receipts = receipts;
         this.templates = templates;
         this.llmConfigs = llmConfigs;
-        this.postes = postes;
-        this.parametres = parametres;
+        this.items = items;
+        this.parameters = parameters;
         this.stockage = stockage;
         this.initializer = initializer;
     }
@@ -61,27 +61,27 @@ public class E2eResetService {
     @Transactional
     public void reinitialiser() {
         analyses.deleteAllInBatch();
-        lignes.deleteAllInBatch();
-        notes.deleteAllInBatch();
-        quittances.deleteAllInBatch();
-        justificatifs.deleteAllInBatch();
+        lines.deleteAllInBatch();
+        statements.deleteAllInBatch();
+        rentReceipts.deleteAllInBatch();
+        receipts.deleteAllInBatch();
         templates.deleteAllInBatch();
         llmConfigs.deleteAllInBatch();
-        postes.deleteAllInBatch();
-        parametres.deleteAllInBatch();
-        nettoyerFichiers();
+        items.deleteAllInBatch();
+        parameters.deleteAllInBatch();
+        nettoyerFiles();
         initializer.run(new DefaultApplicationArguments(new String[0]));
     }
 
-    private void nettoyerFichiers() {
-        for (String dossier : DOSSIERS) {
-            Path racine = stockage.racine().resolve(dossier);
+    private void nettoyerFiles() {
+        for (String folder : DOSSIERS) {
+            Path racine = stockage.racine().resolve(folder);
             try {
                 if (Files.exists(racine)) {
                     try (Stream<Path> chemins = Files.walk(racine)) {
-                        List<Path> aSupprimer = chemins.sorted(Comparator.reverseOrder()).toList();
-                        for (Path chemin : aSupprimer) {
-                            Files.deleteIfExists(chemin);
+                        List<Path> toDelete = chemins.sorted(Comparator.reverseOrder()).toList();
+                        for (Path path : toDelete) {
+                            Files.deleteIfExists(path);
                         }
                     }
                 }

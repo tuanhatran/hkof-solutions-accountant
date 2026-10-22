@@ -51,12 +51,12 @@ class E2eResetIntegrationTest {
                                 """))
                 .andExpect(status().isCreated());
 
-        MockMultipartFile fichier = new MockMultipartFile("fichier", "note.txt", "text/plain",
+        MockMultipartFile file = new MockMultipartFile("fichier", "note.txt", "text/plain",
                 "Justificatif de test e2e avec un contenu suffisant.".getBytes());
-        String justificatif = mockMvc.perform(multipart("/api/justificatifs").file(fichier))
+        String receipt = mockMvc.perform(multipart("/api/justificatifs").file(file))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        int justificatifId = JsonPath.read(justificatif, "$.id");
+        int receiptId = JsonPath.read(receipt, "$.id");
 
         mockMvc.perform(post("/api/e2e/reset"))
                 .andExpect(status().isNoContent());
@@ -69,7 +69,7 @@ class E2eResetIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(6))
                 .andExpect(jsonPath("$[?(@.code == 'test-e2e')]").isEmpty());
-        mockMvc.perform(get("/api/justificatifs/" + justificatifId))
+        mockMvc.perform(get("/api/justificatifs/" + receiptId))
                 .andExpect(status().isNotFound());
     }
 }

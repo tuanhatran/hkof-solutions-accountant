@@ -32,6 +32,6 @@ export type RapportValidationDto = Schemas['RapportValidationDto'];
 export type TypeTemplate = 'QUITTANCE' | 'NOTE_FRAIS';
 export type StatutAnalyse = 'EN_ATTENTE' | 'EN_COURS' | 'TERMINEE' | 'ECHEC' | 'ANNULEE';
 export type ConfianceIa = 'haute' | 'moyenne' | 'basse';
-export type SourceMontant = 'MANUEL' | 'IA';
+export type SourceMontant = 'MANUAL' | 'AI';
 export type Periodicite = 'MENSUELLE' | 'BIMESTRIELLE' | 'TRIMESTRIELLE' | 'ANNUELLE';
 export type StatutLlm = 'PRET' | 'PRET_DISTANT' | 'MODELE_ABSENT' | 'INJOIGNABLE' | 'DESACTIVE';

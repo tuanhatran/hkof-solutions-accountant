@@ -21,32 +21,32 @@ public class TemplateDocument {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private TypeTemplate type;
+    private TemplateType type;
 
     @Column(name = "name", nullable = false)
-    private String nom;
+    private String name;
 
     @Column(nullable = false)
     private int version;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
-    private FormatTemplate format;
+    private TemplateFormat format;
 
     @Column(name = "file_path", nullable = false)
-    private String chemin;
+    private String path;
 
     @Column(name = "active", nullable = false)
-    private boolean actif;
+    private boolean active;
 
     @Column(name = "built_in", nullable = false)
-    private boolean integre;
+    private boolean builtIn;
 
     @Column(name = "deleted", nullable = false)
-    private boolean supprime;
+    private boolean deleted;
 
     @Column(name = "validation_report", columnDefinition = "text")
-    private String rapportValidation;
+    private String validationReport;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -59,20 +59,20 @@ public class TemplateDocument {
         this.id = id;
     }
 
-    public TypeTemplate getType() {
+    public TemplateType getType() {
         return type;
     }
 
-    public void setType(TypeTemplate type) {
+    public void setType(TemplateType type) {
         this.type = type;
     }
 
-    public String getNom() {
-        return nom;
+    public String getName() {
+        return name;
     }
 
-    public void setNom(String nom) {
-        this.nom = nom;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public int getVersion() {
@@ -83,52 +83,52 @@ public class TemplateDocument {
         this.version = version;
     }
 
-    public FormatTemplate getFormat() {
+    public TemplateFormat getFormat() {
         return format;
     }
 
-    public void setFormat(FormatTemplate format) {
+    public void setFormat(TemplateFormat format) {
         this.format = format;
     }
 
-    public String getChemin() {
-        return chemin;
+    public String getPath() {
+        return path;
     }
 
-    public void setChemin(String chemin) {
-        this.chemin = chemin;
+    public void setPath(String path) {
+        this.path = path;
     }
 
-    public boolean isActif() {
-        return actif;
+    public boolean isActive() {
+        return active;
     }
 
-    public void setActif(boolean actif) {
-        this.actif = actif;
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
-    public boolean isIntegre() {
-        return integre;
+    public boolean isBuiltIn() {
+        return builtIn;
     }
 
-    public void setIntegre(boolean integre) {
-        this.integre = integre;
+    public void setBuiltIn(boolean builtIn) {
+        this.builtIn = builtIn;
     }
 
-    public boolean isSupprime() {
-        return supprime;
+    public boolean isDeleted() {
+        return deleted;
     }
 
-    public void setSupprime(boolean supprime) {
-        this.supprime = supprime;
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 
-    public String getRapportValidation() {
-        return rapportValidation;
+    public String getValidationReport() {
+        return validationReport;
     }
 
-    public void setRapportValidation(String rapportValidation) {
-        this.rapportValidation = rapportValidation;
+    public void setValidationReport(String validationReport) {
+        this.validationReport = validationReport;
     }
 
     public Instant getCreatedAt() {

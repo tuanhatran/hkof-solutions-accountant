@@ -20,7 +20,7 @@ function ligne(partiel: Partial<LigneBrouillon> = {}): LigneBrouillon {
     montantMoisSurcharge: '',
     justificatifId: 12,
     justificatifNom: 'facture.pdf',
-    sourceMontant: 'MANUEL',
+    sourceMontant: 'MANUAL',
     montantDetecteIa: null,
     confianceIa: null,
     fournisseurDetecte: null,
@@ -30,7 +30,7 @@ function ligne(partiel: Partial<LigneBrouillon> = {}): LigneBrouillon {
 
 describe('versLigneRequest', () => {
   it('normalise les montants et conserve les métadonnées', () => {
-    const requete = versLigneRequest(ligne({ sourceMontant: 'IA', montantDetecteIa: '120.00', confianceIa: 'haute' }));
+    const requete = versLigneRequest(ligne({ sourceMontant: 'AI', montantDetecteIa: '120.00', confianceIa: 'haute' }));
     expect(requete).toMatchObject({
       posteCode: 'gaz',
       montantTtc: '120.00',
@@ -38,7 +38,7 @@ describe('versLigneRequest', () => {
       periodeDebut: '2026-09-01',
       periodeFin: '2026-10-31',
       justificatifId: 12,
-      sourceMontant: 'IA',
+      sourceMontant: 'AI',
       montantDetecteIa: '120.00',
       confianceIa: 'haute',
     });
@@ -103,13 +103,13 @@ describe('brouillon de loyer', () => {
       periodeFin: '2026-10-31',
       justificatifId: 4,
       justificatifNom: 'facture.pdf',
-      sourceMontant: 'IA',
+      sourceMontant: 'AI',
       montantDetecteIa: '120.00',
       confianceIa: 'haute',
     });
     expect(rechargee.posteCode).toBe('gaz');
     expect(rechargee.justificatifNom).toBe('facture.pdf');
-    expect(rechargee.sourceMontant).toBe('IA');
+    expect(rechargee.sourceMontant).toBe('AI');
     expect(rechargee.cle).not.toHaveLength(0);
   });
 });

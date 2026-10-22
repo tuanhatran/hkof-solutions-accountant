@@ -11,69 +11,69 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 
-import fr.hkof.homeofficeexpenses.domain.TypeTemplate;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.RapportValidationDto;
+import fr.hkof.homeofficeexpenses.domain.TemplateType;
+import fr.hkof.homeofficeexpenses.web.dto.Dtos.ValidationReportDto;
 
 class TemplateServiceValidationTest {
 
     private final TemplateService service = new TemplateService(null, null, null, null, null, Clock.systemUTC());
 
-    private String ressource(String chemin) throws IOException {
-        try (InputStream in = new ClassPathResource(chemin).getInputStream()) {
+    private String ressource(String path) throws IOException {
+        try (InputStream in = new ClassPathResource(path).getInputStream()) {
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         }
     }
 
     @Test
     @DisplayName("Les modèles intégrés passent la validation, y compris la boucle des lignes")
-    void modelesIntegresValides() throws IOException {
-        RapportValidationDto note = service.valider(TypeTemplate.NOTE_FRAIS, ressource("templates/defaut/note-frais.html"));
-        assertThat(note.structureValide()).isTrue();
-        assertThat(note.variablesInconnues()).isEmpty();
-        assertThat(note.variablesManquantes()).isEmpty();
-        assertThat(note.variablesReconnues()).contains("lignes", "lignes.poste", "lignes.montant_retenu");
+    void modelsIntegresValides() throws IOException {
+        ValidationReportDto statement = service.valider(TemplateType.NOTE_FRAIS, ressource("templates/defaut/note-frais.html"));
+        assertThat(statement.structureValid()).isTrue();
+        assertThat(statement.unknownVariables()).isEmpty();
+        assertThat(statement.missingVariables()).isEmpty();
+        assertThat(statement.recognizedVariables()).contains("lignes", "lignes.poste", "lignes.montant_retenu");
 
-        RapportValidationDto quittance = service.valider(TypeTemplate.QUITTANCE,
+        ValidationReportDto rentReceipt = service.valider(TemplateType.QUITTANCE,
                 ressource("templates/defaut/quittance.html"));
-        assertThat(quittance.structureValide()).isTrue();
-        assertThat(quittance.variablesInconnues()).isEmpty();
-        assertThat(quittance.variablesManquantes()).isEmpty();
+        assertThat(rentReceipt.structureValid()).isTrue();
+        assertThat(rentReceipt.unknownVariables()).isEmpty();
+        assertThat(rentReceipt.missingVariables()).isEmpty();
     }
 
     @Test
     @DisplayName("Une variable inconnue dans la boucle reste une erreur explicite")
-    void variableInconnueSignalee() {
-        RapportValidationDto rapport = service.valider(TypeTemplate.NOTE_FRAIS, """
+    void variableUnknownSignalee() {
+        ValidationReportDto report = service.valider(TemplateType.NOTE_FRAIS, """
                 <html><body>
                 {{#lignes}}<p>{{poste}} {{montant_retenu}} {{inconnue}}</p>{{/lignes}}
                 </body></html>
                 """);
-        assertThat(rapport.structureValide()).isFalse();
-        assertThat(rapport.variablesInconnues()).containsExactly("inconnue");
-        assertThat(rapport.variablesReconnues()).contains("lignes.poste", "lignes.montant_retenu");
-        assertThat(rapport.erreurs()).anyMatch(erreur -> erreur.contains("Variables inconnues"));
+        assertThat(report.structureValid()).isFalse();
+        assertThat(report.unknownVariables()).containsExactly("inconnue");
+        assertThat(report.recognizedVariables()).contains("lignes.poste", "lignes.montant_retenu");
+        assertThat(report.errors()).anyMatch(error -> error.contains("Variables inconnues"));
     }
 
     @Test
     @DisplayName("Les variables obligatoires manquantes sont un avertissement, pas un blocage")
-    void variablesManquantesSignalees() {
-        RapportValidationDto rapport = service.valider(TypeTemplate.QUITTANCE,
+    void missingVariablesSignalees() {
+        ValidationReportDto report = service.valider(TemplateType.QUITTANCE,
                 "<html><body>{{bailleur.nom}}</body></html>");
-        assertThat(rapport.structureValide()).isTrue();
-        assertThat(rapport.variablesManquantes()).contains("locataire.nom", "total");
+        assertThat(report.structureValid()).isTrue();
+        assertThat(report.missingVariables()).contains("locataire.nom", "total");
     }
 
     @Test
     @DisplayName("Un script ou une expression exécutable invalide le template")
     void securiteRefusee() {
-        RapportValidationDto script = service.valider(TypeTemplate.QUITTANCE,
+        ValidationReportDto script = service.valider(TemplateType.QUITTANCE,
                 "<html><body><script>alert(1)</script>{{bailleur.nom}}</body></html>");
-        assertThat(script.structureValide()).isFalse();
-        assertThat(script.erreurs()).anyMatch(erreur -> erreur.contains("script"));
+        assertThat(script.structureValid()).isFalse();
+        assertThat(script.errors()).anyMatch(error -> error.contains("script"));
 
-        RapportValidationDto thymeleaf = service.valider(TypeTemplate.QUITTANCE,
+        ValidationReportDto thymeleaf = service.valider(TemplateType.QUITTANCE,
                 "<html><body><p th:text=\"${danger}\">{{bailleur.nom}}</p></body></html>");
-        assertThat(thymeleaf.structureValide()).isFalse();
-        assertThat(thymeleaf.erreurs()).anyMatch(erreur -> erreur.contains("Thymeleaf"));
+        assertThat(thymeleaf.structureValid()).isFalse();
+        assertThat(thymeleaf.errors()).anyMatch(error -> error.contains("Thymeleaf"));
     }
 }

@@ -38,7 +38,7 @@ class OllamaClientTest {
         client = new OllamaClient(JsonMapper.shared());
         config = new LlmConfig();
         config.setUrl(serveur.baseUrl());
-        config.setModele("llama-test:latest");
+        config.setModel("llama-test:latest");
         config.setTimeoutSeconds(5);
         config.setTemperature(java.math.BigDecimal.ZERO);
         config.setNumCtx(4096);
@@ -51,7 +51,7 @@ class OllamaClientTest {
 
     @Test
     @DisplayName("Liste les modèles installés via /api/tags")
-    void modeles() {
+    void models() {
         serveur.stubFor(get(urlEqualTo("/api/tags")).willReturn(okJson("""
                 {"models":[
                   {"name":"llama-test:latest","details":{"family":"llama","parameter_size":"8B"}},
@@ -59,12 +59,12 @@ class OllamaClientTest {
                 ]}
                 """)));
 
-        var modeles = client.modeles(config);
+        var models = client.models(config);
 
-        assertThat(modeles).hasSize(2);
-        assertThat(modeles.get(0).nom()).isEqualTo("llama-test:latest");
-        assertThat(modeles.get(0).parametres()).isEqualTo("8B");
-        assertThat(modeles.get(1).vision()).isTrue();
+        assertThat(models).hasSize(2);
+        assertThat(models.get(0).name()).isEqualTo("llama-test:latest");
+        assertThat(models.get(0).parameters()).isEqualTo("8B");
+        assertThat(models.get(1).vision()).isTrue();
     }
 
     @Test
@@ -74,10 +74,10 @@ class OllamaClientTest {
                 {"message":{"role":"assistant","content":"{\\"montant_ttc\\":\\"78.00\\"}"},"done":true}
                 """)));
 
-        String contenu = client.chat(config, "Prompt système", "Contenu du document",
+        String content = client.chat(config, "Prompt système", "Contenu du document",
                 List.of("aW1hZ2U="));
 
-        assertThat(contenu).contains("78.00");
+        assertThat(content).contains("78.00");
         serveur.verify(postRequestedFor(urlEqualTo("/api/chat"))
                 .withRequestBody(matchingJsonPath("$.model", equalTo("llama-test:latest")))
                 .withRequestBody(matchingJsonPath("$.stream", equalTo("false")))
@@ -108,7 +108,7 @@ class OllamaClientTest {
 
     @Test
     @DisplayName("Traduit une erreur Ollama en message français")
-    void erreurServeur() {
+    void serverError() {
         serveur.stubFor(post(urlEqualTo("/api/chat")).willReturn(aResponse().withStatus(500)
                 .withHeader("Content-Type", "application/json")
                 .withBody("{\"error\":\"model not found\"}")));
@@ -123,7 +123,7 @@ class OllamaClientTest {
     void serveurInjoignable() {
         config.setUrl("http://127.0.0.1:1");
 
-        assertThatThrownBy(() -> client.modeles(config))
+        assertThatThrownBy(() -> client.models(config))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("injoignable")
                 .hasMessageContaining("saisissez le montant manuellement");

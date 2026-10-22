@@ -18,17 +18,17 @@ public class LlmConfig {
     private Long id;
 
     @Column(name = "active", nullable = false)
-    private boolean actif = true;
+    private boolean active = true;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "provider", nullable = false, length = 20)
-    private FournisseurLlm fournisseur = FournisseurLlm.OLLAMA;
+    private LlmProvider supplier = LlmProvider.OLLAMA;
 
     @Column(nullable = false)
     private String url;
 
     @Column(name = "model")
-    private String modele;
+    private String model;
 
     @Column(name = "timeout_seconds", nullable = false)
     private int timeoutSeconds = 120;
@@ -40,16 +40,16 @@ public class LlmConfig {
     private int numCtx = 8192;
 
     @Column(name = "pages_max", nullable = false)
-    private int pagesMax = 5;
+    private int maxPages = 5;
 
     @Column(name = "ocr_enabled", nullable = false)
-    private boolean ocrActif;
+    private boolean ocrActive;
 
     @Column(name = "extraction_prompt", nullable = false, columnDefinition = "text")
-    private String promptExtraction;
+    private String extractionPrompt;
 
     @Column(name = "api_key", columnDefinition = "text")
-    private String cleApi;
+    private String apiKey;
 
     @Column(name = "updated_at")
     private Instant updatedAt;
@@ -62,20 +62,20 @@ public class LlmConfig {
         this.id = id;
     }
 
-    public boolean isActif() {
-        return actif;
+    public boolean isActive() {
+        return active;
     }
 
-    public void setActif(boolean actif) {
-        this.actif = actif;
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
-    public FournisseurLlm getFournisseur() {
-        return fournisseur;
+    public LlmProvider getSupplier() {
+        return supplier;
     }
 
-    public void setFournisseur(FournisseurLlm fournisseur) {
-        this.fournisseur = fournisseur;
+    public void setSupplier(LlmProvider supplier) {
+        this.supplier = supplier;
     }
 
     public String getUrl() {
@@ -86,12 +86,12 @@ public class LlmConfig {
         this.url = url;
     }
 
-    public String getModele() {
-        return modele;
+    public String getModel() {
+        return model;
     }
 
-    public void setModele(String modele) {
-        this.modele = modele;
+    public void setModel(String model) {
+        this.model = model;
     }
 
     public int getTimeoutSeconds() {
@@ -118,36 +118,36 @@ public class LlmConfig {
         this.numCtx = numCtx;
     }
 
-    public int getPagesMax() {
-        return pagesMax;
+    public int getMaxPages() {
+        return maxPages;
     }
 
-    public void setPagesMax(int pagesMax) {
-        this.pagesMax = pagesMax;
+    public void setMaxPages(int maxPages) {
+        this.maxPages = maxPages;
     }
 
-    public boolean isOcrActif() {
-        return ocrActif;
+    public boolean isOcrActive() {
+        return ocrActive;
     }
 
-    public void setOcrActif(boolean ocrActif) {
-        this.ocrActif = ocrActif;
+    public void setOcrActive(boolean ocrActive) {
+        this.ocrActive = ocrActive;
     }
 
-    public String getPromptExtraction() {
-        return promptExtraction;
+    public String getExtractionPrompt() {
+        return extractionPrompt;
     }
 
-    public void setPromptExtraction(String promptExtraction) {
-        this.promptExtraction = promptExtraction;
+    public void setExtractionPrompt(String extractionPrompt) {
+        this.extractionPrompt = extractionPrompt;
     }
 
-    public String getCleApi() {
-        return cleApi;
+    public String getApiKey() {
+        return apiKey;
     }
 
-    public void setCleApi(String cleApi) {
-        this.cleApi = cleApi;
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
     }
 
     public Instant getUpdatedAt() {

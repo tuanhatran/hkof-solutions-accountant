@@ -532,7 +532,7 @@ export function GenererNoteFraisPage() {
     setPeriodeVisible(Boolean(ligne.periodeDebut || ligne.periodeFin || ligne.montantMoisSurcharge));
     setIa({
       type: false,
-      montant: ligne.sourceMontant === 'IA',
+      montant: ligne.sourceMontant === 'AI',
       periode: false,
       montantDetecte: ligne.montantDetecteIa,
       fournisseur: ligne.fournisseurDetecte,
@@ -598,7 +598,7 @@ export function GenererNoteFraisPage() {
       montantMoisSurcharge: surcharge ?? '',
       justificatifId: ligneLoyer ? null : justificatif?.id ?? null,
       justificatifNom: ligneLoyer ? null : justificatif?.nom ?? null,
-      sourceMontant: ia.montant ? 'IA' : 'MANUEL',
+      sourceMontant: ia.montant ? 'AI' : 'MANUAL',
       montantDetecteIa: ia.montantDetecte,
       confianceIa: ia.confiance,
       fournisseurDetecte: ia.fournisseur,
@@ -1344,7 +1344,7 @@ export function GenererNoteFraisPage() {
                               <span className="nombre font-semibold text-ink">
                                 {formatEUR(ligne.montantTtc)}
                               </span>
-                              {ligne.sourceMontant === 'IA' ? (
+                              {ligne.sourceMontant === 'AI' ? (
                                 <span className="ml-2 inline-flex align-middle">
                                   <BadgeIA />
                                 </span>

@@ -32,17 +32,17 @@ class PdfServiceTest {
                 """);
 
         assertThat(pdfService.estPdf(pdf)).isTrue();
-        String texte = texte(pdf);
-        assertThat(texte).contains("QUITTANCE", "1 234,56", "Électricité");
+        String text = text(pdf);
+        assertThat(text).contains("QUITTANCE", "1 234,56", "Électricité");
     }
 
     @Test
     @DisplayName("Appose le filigrane APERÇU sur chaque page")
-    void filigrane() throws Exception {
+    void watermark() throws Exception {
         byte[] pdf = pdfService.rendreHtmlEnPdf("<html><body><p>Document</p></body></html>");
-        byte[] filigrane = pdfService.ajouterFiligrane(pdf);
+        byte[] watermark = pdfService.addWatermark(pdf);
 
-        assertThat(texte(filigrane)).contains("APERÇU");
+        assertThat(text(watermark)).contains("APERÇU");
     }
 
     @Test
@@ -59,8 +59,8 @@ class PdfServiceTest {
         ImageIO.write(image, "png", png);
 
         byte[] imagePdf = pdfService.imageVersPdf(png.toByteArray(), "justificatif.png");
-        byte[] note = pdfService.rendreHtmlEnPdf("<html><body><p>Note de frais</p></body></html>");
-        byte[] fusion = pdfService.fusionner(List.of(note, imagePdf));
+        byte[] statement = pdfService.rendreHtmlEnPdf("<html><body><p>Note de frais</p></body></html>");
+        byte[] fusion = pdfService.fusionner(List.of(statement, imagePdf));
 
         try (PDDocument document = PDDocument.load(fusion)) {
             assertThat(document.getNumberOfPages()).isEqualTo(2);
@@ -69,12 +69,12 @@ class PdfServiceTest {
 
     @Test
     @DisplayName("Rend une page texte avec du contenu échappé")
-    void pageTexte() throws Exception {
-        byte[] pdf = pdfService.pageTexte("Annexe <test>", "Ligne 1 & ligne 2\nAccents : éàçù");
-        assertThat(texte(pdf)).contains("Annexe", "Ligne 1", "Accents");
+    void pageText() throws Exception {
+        byte[] pdf = pdfService.pageText("Annexe <test>", "Ligne 1 & ligne 2\nAccents : éàçù");
+        assertThat(text(pdf)).contains("Annexe", "Ligne 1", "Accents");
     }
 
-    private String texte(byte[] pdf) throws Exception {
+    private String text(byte[] pdf) throws Exception {
         try (PDDocument document = PDDocument.load(pdf)) {
             return new PDFTextStripper().getText(document);
         }

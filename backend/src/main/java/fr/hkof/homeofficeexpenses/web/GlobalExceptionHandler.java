@@ -30,78 +30,78 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ProblemDetail> introuvable(NotFoundException ex) {
-        return reponse(HttpStatus.NOT_FOUND, "Ressource introuvable", ex.getMessage());
+        return response(HttpStatus.NOT_FOUND, "Ressource introuvable", ex.getMessage());
     }
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ProblemDetail> regleMetier(BusinessException ex) {
-        return reponse(HttpStatus.BAD_REQUEST, "Requête invalide", ex.getMessage());
+        return response(HttpStatus.BAD_REQUEST, "Requête invalide", ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ProblemDetail> validation(MethodArgumentNotValidException ex) {
-        Map<String, String> champs = new LinkedHashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(erreur ->
-                champs.putIfAbsent(erreur.getField(), erreur.getDefaultMessage()));
+        Map<String, String> fields = new LinkedHashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                fields.putIfAbsent(error.getField(), error.getDefaultMessage()));
         ProblemDetail probleme = probleme(HttpStatus.BAD_REQUEST, "Requête invalide",
                 "Certains champs sont invalides.");
-        probleme.setProperty("champs", champs);
+        probleme.setProperty("champs", fields);
         return ResponseEntity.badRequest().body(probleme);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ProblemDetail> contraintes(ConstraintViolationException ex) {
-        return reponse(HttpStatus.BAD_REQUEST, "Requête invalide", ex.getMessage());
+        return response(HttpStatus.BAD_REQUEST, "Requête invalide", ex.getMessage());
     }
 
     @ExceptionHandler(HandlerMethodValidationException.class)
-    public ResponseEntity<ProblemDetail> validationParametres(HandlerMethodValidationException ex) {
-        return reponse(HttpStatus.BAD_REQUEST, "Requête invalide",
+    public ResponseEntity<ProblemDetail> validationSettings(HandlerMethodValidationException ex) {
+        return response(HttpStatus.BAD_REQUEST, "Requête invalide",
                 "Un paramètre de la requête est invalide.");
     }
 
     @ExceptionHandler({MissingServletRequestParameterException.class, MethodArgumentTypeMismatchException.class})
     public ResponseEntity<ProblemDetail> parametreInvalide(Exception ex) {
-        return reponse(HttpStatus.BAD_REQUEST, "Requête invalide",
+        return response(HttpStatus.BAD_REQUEST, "Requête invalide",
                 "Un paramètre de la requête est manquant ou invalide.");
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ProblemDetail> corpsIllisible(HttpMessageNotReadableException ex) {
-        return reponse(HttpStatus.BAD_REQUEST, "Requête invalide",
+        return response(HttpStatus.BAD_REQUEST, "Requête invalide",
                 "Le corps de la requête est absent ou mal formé.");
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<ProblemDetail> fichierTropVolumineux(MaxUploadSizeExceededException ex) {
-        return reponse(HttpStatus.PAYLOAD_TOO_LARGE, "Fichier trop volumineux",
+    public ResponseEntity<ProblemDetail> fileTropVolumineux(MaxUploadSizeExceededException ex) {
+        return response(HttpStatus.PAYLOAD_TOO_LARGE, "Fichier trop volumineux",
                 "Le fichier dépasse la taille maximale autorisée (10 Mo pour un justificatif, 5 Mo pour un template).");
     }
 
     @ExceptionHandler(MultipartException.class)
     public ResponseEntity<ProblemDetail> multipartInvalide(MultipartException ex) {
-        return reponse(HttpStatus.BAD_REQUEST, "Fichier invalide",
+        return response(HttpStatus.BAD_REQUEST, "Fichier invalide",
                 "Le fichier n'a pas pu être reçu. Vérifiez son format et sa taille.");
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<ProblemDetail> routeInconnue(NoResourceFoundException ex) {
-        return reponse(HttpStatus.NOT_FOUND, "Ressource introuvable", "Cette adresse n'existe pas.");
+    public ResponseEntity<ProblemDetail> routeUnknown(NoResourceFoundException ex) {
+        return response(HttpStatus.NOT_FOUND, "Ressource introuvable", "Cette adresse n'existe pas.");
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> inattendue(Exception ex) {
         LOG.error("Erreur inattendue", ex);
-        return reponse(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur interne",
+        return response(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur interne",
                 "Une erreur inattendue est survenue. Consultez les journaux du serveur.");
     }
 
-    private ResponseEntity<ProblemDetail> reponse(HttpStatus statut, String titre, String detail) {
-        return ResponseEntity.status(statut).body(probleme(statut, titre, detail));
+    private ResponseEntity<ProblemDetail> response(HttpStatus status, String titre, String detail) {
+        return ResponseEntity.status(status).body(probleme(status, titre, detail));
     }
 
-    private ProblemDetail probleme(HttpStatus statut, String titre, String detail) {
-        ProblemDetail probleme = ProblemDetail.forStatusAndDetail(statut, detail);
+    private ProblemDetail probleme(HttpStatus status, String titre, String detail) {
+        ProblemDetail probleme = ProblemDetail.forStatusAndDetail(status, detail);
         probleme.setTitle(titre);
         return probleme;
     }

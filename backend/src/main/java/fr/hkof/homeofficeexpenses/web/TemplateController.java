@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import fr.hkof.homeofficeexpenses.domain.TypeTemplate;
+import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.service.template.TemplateDataService;
 import fr.hkof.homeofficeexpenses.service.template.TemplateService;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.TemplateDto;
@@ -35,20 +35,20 @@ public class TemplateController {
     }
 
     @GetMapping
-    public List<TemplateDto> lister(@RequestParam TypeTemplate type) {
+    public List<TemplateDto> lister(@RequestParam TemplateType type) {
         return service.lister(type);
     }
 
     @GetMapping("/variables")
-    public List<TemplateVariableDto> variables(@RequestParam TypeTemplate type) {
+    public List<TemplateVariableDto> variables(@RequestParam TemplateType type) {
         return service.variables(type);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public TemplateDto uploader(@RequestParam TypeTemplate type, @RequestParam String nom,
-            @RequestParam("fichier") MultipartFile fichier) {
-        return service.uploader(type, nom, fichier);
+    public TemplateDto uploader(@RequestParam TemplateType type, @RequestParam String name,
+            @RequestParam("fichier") MultipartFile file) {
+        return service.uploader(type, name, file);
     }
 
     @PostMapping("/{id}/activer")
@@ -57,35 +57,35 @@ public class TemplateController {
     }
 
     @GetMapping("/{id}/fichier")
-    public ResponseEntity<byte[]> fichier(@PathVariable Long id) {
+    public ResponseEntity<byte[]> file(@PathVariable Long id) {
         TemplateDto template = service.versDto(service.parId(id));
-        return ReponsesPdf.fichier(service.fichier(id), "text/html;charset=UTF-8",
-                template.nom() + "_v" + template.version() + ".html");
+        return PdfResponses.file(service.file(id), "text/html;charset=UTF-8",
+                template.name() + "_v" + template.version() + ".html");
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void supprimer(@PathVariable Long id) {
-        service.supprimer(id);
+    public void delete(@PathVariable Long id) {
+        service.delete(id);
     }
 
     @GetMapping("/defaut/{type}")
-    public ResponseEntity<byte[]> defaut(@PathVariable TypeTemplate type) {
+    public ResponseEntity<byte[]> defaut(@PathVariable TemplateType type) {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("text/html;charset=UTF-8"))
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
-                .body(service.fichierDefaut(type));
+                .body(service.fileDefaut(type));
     }
 
     @PostMapping("/defaut/{type}")
-    public TemplateDto reinitialiser(@PathVariable TypeTemplate type) {
+    public TemplateDto reinitialiser(@PathVariable TemplateType type) {
         return service.reinitialiser(type);
     }
 
     @PostMapping("/{id}/apercu")
     public ResponseEntity<byte[]> apercu(@PathVariable Long id) {
         TemplateDto template = service.versDto(service.parId(id));
-        byte[] pdf = service.apercu(id, dataService.donneesExemple(TypeTemplate.valueOf(template.type())));
-        return ReponsesPdf.pdf(pdf, "apercu_template.pdf");
+        byte[] pdf = service.apercu(id, dataService.dataExample(TemplateType.valueOf(template.type())));
+        return PdfResponses.pdf(pdf, "apercu_template.pdf");
     }
 }

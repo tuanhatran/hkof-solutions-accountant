@@ -31,32 +31,32 @@ public class OllamaClient {
         this.objectMapper = objectMapper;
     }
 
-    public List<LlmModelDto> modeles(LlmConfig config) {
+    public List<LlmModelDto> models(LlmConfig config) {
         JsonNode racine = appeler(config, JsonNode.class, "GET", "/api/tags", null);
         JsonNode liste = racine.path("models");
-        List<LlmModelDto> resultat = new ArrayList<>();
+        List<LlmModelDto> result = new ArrayList<>();
         if (liste.isArray()) {
-            for (JsonNode modele : liste) {
-                String nom = modele.path("name").asString("");
-                if (nom.isBlank()) {
-                    nom = modele.path("model").asString("");
+            for (JsonNode model : liste) {
+                String name = model.path("name").asString("");
+                if (name.isBlank()) {
+                    name = model.path("model").asString("");
                 }
-                JsonNode details = modele.path("details");
-                String famille = details.path("family").asString("");
-                String parametres = details.path("parameter_size").asString("");
-                resultat.add(new LlmModelDto(nom, famille, parametres, nomSuggereVision(nom)));
+                JsonNode details = model.path("details");
+                String family = details.path("family").asString("");
+                String parameters = details.path("parameter_size").asString("");
+                result.add(new LlmModelDto(name, family, parameters, nameSuggereVision(name)));
             }
         }
-        return resultat;
+        return result;
     }
 
-    public boolean supporteVision(LlmConfig config, String modele) {
-        if (modele == null || modele.isBlank()) {
+    public boolean supporteVision(LlmConfig config, String model) {
+        if (model == null || model.isBlank()) {
             return false;
         }
         try {
             JsonNode racine = appeler(config, JsonNode.class, "POST", "/api/show",
-                    Map.of("model", modele));
+                    Map.of("model", model));
             JsonNode capacites = racine.path("capabilities");
             if (capacites.isArray()) {
                 for (JsonNode capacite : capacites) {
@@ -69,21 +69,21 @@ public class OllamaClient {
         } catch (BusinessException ignored) {
             // Les anciennes versions d'Ollama ne renvoient pas les capacités.
         }
-        return nomSuggereVision(modele);
+        return nameSuggereVision(model);
     }
 
-    public String chat(LlmConfig config, String promptSysteme, String contenuUtilisateur, List<String> imagesBase64) {
-        if (config.getModele() == null || config.getModele().isBlank()) {
+    public String chat(LlmConfig config, String promptSysteme, String contentUtilisateur, List<String> imagesBase64) {
+        if (config.getModel() == null || config.getModel().isBlank()) {
             throw new BusinessException("Aucun modèle LLM n'est configuré. Renseignez-le dans Admin ou saisissez le montant manuellement.");
         }
         Map<String, Object> messageUtilisateur = new LinkedHashMap<>();
         messageUtilisateur.put("role", "user");
-        messageUtilisateur.put("content", contenuUtilisateur);
+        messageUtilisateur.put("content", contentUtilisateur);
         if (imagesBase64 != null && !imagesBase64.isEmpty()) {
             messageUtilisateur.put("images", imagesBase64);
         }
         Map<String, Object> charge = new LinkedHashMap<>();
-        charge.put("model", config.getModele());
+        charge.put("model", config.getModel());
         charge.put("messages", List.of(
                 Map.of("role", "system", "content", promptSysteme),
                 messageUtilisateur));
@@ -95,14 +95,14 @@ public class OllamaClient {
         charge.put("options", options);
 
         JsonNode racine = appeler(config, JsonNode.class, "POST", "/api/chat", charge);
-        String contenu = racine.path("message").path("content").asString("");
-        if (contenu.isBlank()) {
+        String content = racine.path("message").path("content").asString("");
+        if (content.isBlank()) {
             throw new BusinessException("Le modèle LLM n'a renvoyé aucun contenu exploitable.");
         }
-        return contenu;
+        return content;
     }
 
-    private <T> T appeler(LlmConfig config, Class<T> type, String methode, String chemin, Object corps) {
+    private <T> T appeler(LlmConfig config, Class<T> type, String methode, String path, Object corps) {
         if (config.getUrl() == null || config.getUrl().isBlank()) {
             throw new BusinessException("L'URL du service LLM n'est pas configurée.");
         }
@@ -112,13 +112,13 @@ public class OllamaClient {
         RestClient.Builder builder = RestClient.builder()
                 .baseUrl(config.getUrl().replaceAll("/+$", ""))
                 .requestFactory(requetes);
-        if (config.getCleApi() != null && !config.getCleApi().isBlank()) {
-            builder.defaultHeader("Authorization", "Bearer " + config.getCleApi());
+        if (config.getApiKey() != null && !config.getApiKey().isBlank()) {
+            builder.defaultHeader("Authorization", "Bearer " + config.getApiKey());
         }
         RestClient client = builder.build();
         try {
             RestClient.RequestBodySpec requete = client.method(org.springframework.http.HttpMethod.valueOf(methode))
-                    .uri(chemin)
+                    .uri(path)
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON);
             if (corps != null) {
@@ -138,11 +138,11 @@ public class OllamaClient {
         }
     }
 
-    private boolean nomSuggereVision(String nom) {
-        if (nom == null) {
+    private boolean nameSuggereVision(String name) {
+        if (name == null) {
             return false;
         }
-        String minuscule = nom.toLowerCase();
+        String minuscule = name.toLowerCase();
         return MODELES_VISION.stream().anyMatch(minuscule::contains);
     }
 }
