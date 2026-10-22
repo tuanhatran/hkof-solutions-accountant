@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>fr.hkof</groupId>
-	<artifactId>fraisocc-backend</artifactId>
+	<artifactId>homeofficeexpenses-backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>fraisocc-backend</name>
-	<description>FraisOcc - quittances et notes de frais</description>
+	<name>homeofficeexpenses-backend</name>
+	<description>HomeOfficeExpenses - quittances et notes de frais</description>
 	<url/>
 	<licenses>
 		<license/>

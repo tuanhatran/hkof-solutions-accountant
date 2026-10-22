@@ -1,8 +1,8 @@
 {
-  "name": "fraisocc-mock-ollama",
+  "name": "homeofficeexpenses-mock-ollama",
   "version": "1.0.0",
   "private": true,
-  "description": "Serveur Ollama déterministe pour les tests E2E de FraisOcc",
+  "description": "Serveur Ollama déterministe pour les tests E2E de HomeOfficeExpenses",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

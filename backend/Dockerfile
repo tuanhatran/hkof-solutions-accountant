@@ -14,15 +14,15 @@ RUN apt-get update \
          apt-get install -y --no-install-recommends libreoffice-writer fonts-dejavu-core; \
        fi \
     && rm -rf /var/lib/apt/lists/* \
-    && groupadd --gid 10001 fraisocc \
-    && useradd --uid 10001 --gid fraisocc --create-home --shell /usr/sbin/nologin fraisocc \
+    && groupadd --gid 10001 homeofficeexpenses \
+    && useradd --uid 10001 --gid homeofficeexpenses --create-home --shell /usr/sbin/nologin homeofficeexpenses \
     && mkdir -p /app/data \
-    && chown -R fraisocc:fraisocc /app
+    && chown -R homeofficeexpenses:homeofficeexpenses /app
 
 WORKDIR /app
-COPY --from=build --chown=fraisocc:fraisocc /build/target/fraisocc-backend-*.jar /app/app.jar
+COPY --from=build --chown=homeofficeexpenses:homeofficeexpenses /build/target/homeofficeexpenses-backend-*.jar /app/app.jar
 
 ENV APP_DATA_DIR=/app/data
 EXPOSE 8080
-USER fraisocc
+USER homeofficeexpenses
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

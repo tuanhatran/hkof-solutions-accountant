@@ -18,7 +18,7 @@ function PageIntrouvable() {
       <p className="eyebrow mt-5">Erreur 404</p>
       <h1 className="mt-2 text-3xl text-ink">Page introuvable</h1>
       <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-        Cette adresse ne correspond à aucune page de FraisOcc. Vos brouillons restent conservés pendant la session.
+        Cette adresse ne correspond à aucune page de HomeOfficeExpenses. Vos brouillons restent conservés pendant la session.
       </p>
       <Link to="/generer/quittance" className="mt-6">
         <Bouton variante="primaire" icone={<ArrowLeft size={15} />}>
@@ -39,7 +39,7 @@ function ErreurApplication() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 text-center">
-      <p className="eyebrow">FraisOcc</p>
+      <p className="eyebrow">HomeOfficeExpenses</p>
       <h1 className="mt-2 text-4xl text-ink">L’application a rencontré une erreur</h1>
       <p className="mt-3 max-w-lg text-sm leading-relaxed text-ink-soft">{message}</p>
       <p className="mt-2 max-w-lg text-xs text-ink-soft">
@@ -47,7 +47,7 @@ function ErreurApplication() {
         restent dans le stockage local du navigateur.
       </p>
       <Bouton variante="primaire" className="mt-6" onClick={() => window.location.assign('/')}>
-        Recharger FraisOcc
+        Recharger HomeOfficeExpenses
       </Bouton>
     </div>
   );

@@ -86,7 +86,7 @@ export const useQuittanceDraft = create<QuittanceDraftState>()(
       marquerGenere: () => set({ dirty: false }),
     }),
     {
-      name: 'fraisocc.quittance-draft',
+      name: 'homeofficeexpenses.quittance-draft',
       version: 1,
       storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({

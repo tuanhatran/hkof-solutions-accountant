@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: FraisOcc API
+  title: HomeOfficeExpenses API
   description: API locale de génération de quittances et de notes de frais d'occupation.
   version: 1.0.0
 servers:

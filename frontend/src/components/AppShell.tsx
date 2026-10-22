@@ -52,7 +52,7 @@ function Marque({ compact = false }: { compact?: boolean }) {
       </span>
       <div>
         <p className={cn('font-display font-semibold tracking-tight text-white', compact ? 'text-lg' : 'text-xl')}>
-          FraisOcc
+          HomeOfficeExpenses
         </p>
         {!compact ? <p className="text-[11px] text-white/50">Quittances &amp; frais d’occupation</p> : null}
       </div>
@@ -136,7 +136,7 @@ export function AppShell() {
             <LlmBadge sombre />
           </div>
         </div>
-        <p className="mt-5 px-2 text-[10px] text-white/25">FraisOcc · usage personnel</p>
+        <p className="mt-5 px-2 text-[10px] text-white/25">HomeOfficeExpenses · usage personnel</p>
       </aside>
 
       <div className="min-w-0">

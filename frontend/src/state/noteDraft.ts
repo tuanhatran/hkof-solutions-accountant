@@ -112,7 +112,7 @@ export const useNoteDraft = create<NoteDraftState>()(
       },
     }),
     {
-      name: 'fraisocc.note-draft',
+      name: 'homeofficeexpenses.note-draft',
       version: 1,
       storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({

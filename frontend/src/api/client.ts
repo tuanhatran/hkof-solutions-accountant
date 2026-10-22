@@ -44,7 +44,7 @@ export async function requete<T>(chemin: string, init?: RequestInit): Promise<T>
       throw error;
     }
     throw new ApiError(
-      "Le serveur est injoignable. Vérifiez que l'application FraisOcc est démarrée.",
+      "Le serveur est injoignable. Vérifiez que l'application HomeOfficeExpenses est démarrée.",
       null,
     );
   }
@@ -99,7 +99,7 @@ export async function requeteBlob(chemin: string, init?: RequestInit): Promise<R
       throw error;
     }
     throw new ApiError(
-      "Le serveur est injoignable. Vérifiez que l'application FraisOcc est démarrée.",
+      "Le serveur est injoignable. Vérifiez que l'application HomeOfficeExpenses est démarrée.",
       null,
     );
   }

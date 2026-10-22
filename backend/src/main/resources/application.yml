@@ -1,10 +1,10 @@
 spring:
   application:
-    name: fraisocc
+    name: homeofficeexpenses
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/fraisocc}
-    username: ${SPRING_DATASOURCE_USERNAME:fraisocc}
-    password: ${SPRING_DATASOURCE_PASSWORD:fraisocc}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/homeofficeexpenses}
+    username: ${SPRING_DATASOURCE_USERNAME:homeofficeexpenses}
+    password: ${SPRING_DATASOURCE_PASSWORD:homeofficeexpenses}
   jpa:
     open-in-view: false
     hibernate:
@@ -55,4 +55,4 @@ app:
 
 logging:
   level:
-    fr.hkof.fraisocc: INFO
+    fr.hkof.homeofficeexpenses: INFO

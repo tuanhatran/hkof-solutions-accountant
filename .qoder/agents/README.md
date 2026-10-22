@@ -1,33 +1,33 @@
-# Agents FraisOcc
+# HomeOfficeExpenses agents
 
-Découpage issu de « Méthode de travail pour les agents » (`product_prompt.md`). Sept agents, un par bloc, plus un orchestrateur implicite (l'agent principal).
+Breakdown derived from "Working method for agents" (`product_prompt.md`). Seven agents, one per block, plus an implicit orchestrator (the main agent).
 
-| Ordre | Agent | Périmètre | Dépend de |
+| Order | Agent | Scope | Depends on |
 |---|---|---|---|
-| 0 | `fraisocc-orchestrateur` | plan, contrat OpenAPI, arbitrages | — |
-| 1 | `fraisocc-infra` | Compose, Dockerfiles, CI, Makefile | contrat |
-| 2 | `fraisocc-domaine` | entités, Flyway, calculs, tests | contrat |
-| 3 | `fraisocc-pdf-templates` | rendu, validation, aperçu, fusion | domaine |
-| 4 | `fraisocc-llm` | Ollama, extraction, jobs, admin LLM | domaine |
-| 5 | `fraisocc-front-generer` | page Générer, aperçu PDF, IA | contrat + backend |
-| 6 | `fraisocc-front-admin` | Admin, Templates, Configuration, Historique | contrat + backend |
-| 7 | `fraisocc-e2e` | Cypress, mock-ollama, fixtures | tout |
+| 0 | `homeofficeexpenses-orchestrateur` | plan, OpenAPI contract, decisions | — |
+| 1 | `homeofficeexpenses-infra` | Compose, Dockerfiles, CI, Makefile | contract |
+| 2 | `homeofficeexpenses-domaine` | entities, Flyway, calculations, tests | contract |
+| 3 | `homeofficeexpenses-pdf-templates` | rendering, validation, preview, merge | domain |
+| 4 | `homeofficeexpenses-llm` | Ollama, extraction, jobs, LLM admin | domain |
+| 5 | `homeofficeexpenses-front-generer` | Generate page, PDF preview, AI | contract + backend |
+| 6 | `homeofficeexpenses-front-admin` | Admin, Templates, Configuration, History | contract + backend |
+| 7 | `homeofficeexpenses-e2e` | Cypress, mock-ollama, fixtures | everything |
 
-## Contrat
+## Contract
 
-- `openapi/openapi.yaml` est la source de vérité entre backend et frontend.
-- Les types frontend sont produits par `npm run gen:api` (`openapi-typescript`).
-- Le backend ne modifie pas silencieusement le contrat : tout écart est signalé et répercuté dans le YAML et les types générés.
-- Les montants sont des chaînes décimales (`"123.45"`) ou des centimes entiers, jamais des flottants JSON.
+- `openapi/openapi.yaml` is the source of truth between backend and frontend.
+- Frontend types are produced by `npm run gen:api` (`openapi-typescript`).
+- The backend does not silently change the contract: any deviation is reported and carried through to the YAML and the generated types.
+- Amounts are decimal strings (`"123.45"`) or integer cents, never JSON floats.
 
-## Utilisation
+## Usage
 
-Chaque fichier `.md` est autonome : il peut être chargé comme prompt d'un sous-agent. L'agent principal orchestre, vérifie les interfaces et exécute les tests d'intégration. Les agents n'accèdent jamais au LLM réel dans les tests automatisés : `mock-ollama` est déterministe.
+Each `.md` file is self-contained: it can be loaded as the prompt of a sub-agent. The main agent orchestrates, checks interfaces and runs integration tests. Agents never access the real LLM in automated tests: `mock-ollama` is deterministic.
 
-## Décisions d'implémentation partagées
+## Shared implementation decisions
 
-- Package backend : `fr.hkof.fraisocc`.
-- Un seul template actif par type ; une seule version active par mois et par document.
-- Date/heure en `Europe/Paris` pour l'affichage, stockage `Instant`/`LocalDate`.
-- Les PDF d'aperçu ne touchent jamais la base (aucune écriture) et portent le filigrane « APERÇU ».
-- Les templates intégrés sont livrés en HTML + CSS, rendus par Mustache (logic-less) et OpenHTMLToPDF.
+- Backend package: `fr.hkof.homeofficeexpenses`.
+- A single active template per type; a single active version per month and per document.
+- Date/time in `Europe/Paris` for display, storage as `Instant`/`LocalDate`.
+- Preview PDFs never touch the database (no writes) and carry the watermark "APERÇU" (PREVIEW).
+- Built-in templates are delivered as HTML + CSS, rendered by Mustache (logic-less) and OpenHTMLToPDF.
