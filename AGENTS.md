@@ -30,15 +30,25 @@ The `.opencode/` directory is the OpenCode entry point for this project:
 
 - `opencode.json` — instructions glob, the `.qoder/skills` source, and git guards.
 - `instructions/` — detailed rules loaded alongside this file.
-- `agents/` — the orchestrator, planner, coder, tester and reviewer workflow, mirroring
-  `.qoder/agents/`.
+- `agents/` — the lead, builder and reviewer workflow, mirroring `.qoder/agents/`.
 - `skills/` — project skills for contract changes, backend, frontend, PDF, LLM and E2E.
 - `commands/` — `/verify`, `/contract`, `/review`.
 
-`.qoder/agents/*.md` remains the source of truth. The same five agents are mirrored to
+`.qoder/agents/*.md` remains the source of truth. The same three agents are mirrored to
 `.opencode/agents/*.md` and `.github/agents/*.agent.md`; when a workflow rule changes,
 update all three so they do not diverge. Task handoffs live in the shared `.handoff/tasks/`
 tree, so a task continues unchanged whichever configuration runs it.
+
+- `lead` sizes the task (`S`, `M`, `L`), creates the branch, discovers the context files
+  with CodeGraph, writes the compact handoff, routes the work and reports. It edits only
+  `.handoff/`.
+- `builder` implements and tests in one loop (failing test first, then code, then the gates)
+  and returns per-command evidence.
+- `reviewer` is a read-only, diff-scoped gate that reports blockers only.
+
+`S` tasks run builder only; `M` adds one review; `L` allows at most two review rounds. Any
+diff touching money, `openapi/openapi.yaml`, a migration, the template sandbox, the LLM path
+or secrets is reviewed whatever its size.
 
 ## File graph
 

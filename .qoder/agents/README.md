@@ -1,26 +1,31 @@
 # HomeOfficeExpenses agents
 
-Five workflow agents drive one task at a time through a handoff file. The workflow is
+Three workflow agents drive one task at a time through a handoff file. The workflow is
 adapted from the rag-support-assistant agent set to this project's contract, monetary,
 template and git rules.
 
-| Order | Agent          | Scope                                                                   |
-| ----- | -------------- | ----------------------------------------------------------------------- |
-| 0     | `orchestrator` | reads the handoff, routes one stage at a time, reports. Edits no file.   |
-| 1     | `planner`      | scopes the task, acceptance criteria, context files, contract impact.    |
-| 2     | `coder`        | implements the task with its tests, contract first.                      |
-| 3     | `tester`       | runs focused then full gates, records real evidence.                     |
-| 4     | `reviewer`     | read-only correctness and security review.                               |
+| Order | Agent      | Scope                                                                        |
+| ----- | ---------- | ---------------------------------------------------------------------------- |
+| 0     | `lead`     | sizes the task, creates the branch, finds the context files, writes the compact handoff, routes, reports. Edits only `.handoff/`. |
+| 1     | `builder`  | implements and tests in one loop: failing test, code, targeted tests, gates, self-fix. |
+| 2     | `reviewer` | read-only, diff-scoped review. Blockers only, no style, no full-suite re-run. |
+
+`lead` absorbs the former orchestrator and planner; `builder` absorbs the former coder and
+tester. Pipeline by size: `S` = builder only, `M` = builder + one review, `L` = builder + at
+most two review rounds. Money, contract, migration, template sandbox, LLM path or secrets in
+the diff forces a review whatever the size.
 
 ## Handoff
 
 One file per task: `.handoff/tasks/<TASK-ID>.md`, created from `.handoff/TEMPLATE.md`.
 The tree is shared by the `.github/`, `.qoder/` and `.opencode/` agent configurations, so a
 task continues unchanged when the user switches tools. `<TASK-ID>` is a short uppercase
-slug such as `PREVIEW-DEBOUNCE`.
+slug such as `PREVIEW-DEBOUNCE`. Keep it compact: goal, files (context versus writable),
+constraints, acceptance criteria, commands, evidence. 25 lines maximum, 6 for `S`.
 
-Statuses: `READY_FOR_CODE` → `READY_FOR_TEST` → `READY_FOR_REVIEW` → `DONE`, with
-`CHANGES_REQUESTED`, `BLOCKED` and `USER_CHANGES_REQUESTED` as branches.
+Statuses: `TODO` → `REVIEW` → `DONE`, with `CHANGES_REQUESTED` as the way back to `builder`
+and `BLOCKED` carrying the single decision the user must make. Evidence lines are appended,
+never rewritten.
 
 ## File graph
 
@@ -31,7 +36,7 @@ change.
 
 ## Mirrors
 
-The same five agents exist in three formats:
+The same three agents exist in three formats:
 
 | Directory                  | Format                  | Role             |
 | -------------------------- | ----------------------- | ---------------- |
@@ -43,8 +48,8 @@ When a workflow rule changes, update the source first, then the two mirrors.
 
 ## Git rules
 
-Each task runs on one dedicated branch, created by the orchestrator or planner after the
-user agrees on a name (`git switch -c`, validated with `git check-ref-format --branch`).
+Each task runs on one dedicated branch, created by the lead after the user agrees on a name
+(`git switch -c`, validated with `git check-ref-format --branch`).
 Resumed tasks reuse the branch recorded in their handoff. Dirty or staged changes are
 preserved: agents never reset, clean, stash or overwrite them, and report a deviation if
 Git refuses a switch.

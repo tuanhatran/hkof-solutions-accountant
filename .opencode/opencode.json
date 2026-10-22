@@ -11,6 +11,11 @@
     ".qoder/skills"
   ],
 
+  // The lead dispatches builder and reviewer, which is one level below the primary session.
+  "experimental": {
+    "subagent_depth": 2
+  },
+
   // Absolute project rules: never commit, push, reset, clean, stash or create worktrees.
   "permissions": [
     { "action": "shell", "resource": "*git commit*", "effect": "deny" },

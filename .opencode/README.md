@@ -15,7 +15,7 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
 │   ├── 30-frontend.md
 │   ├── 40-verification.md
 │   └── 50-security-data.md
-├── agents/                    # orchestrator, planner, coder, tester, reviewer
+├── agents/                    # lead, builder, reviewer
 ├── skills/                    # project skills (English)
 │   ├── openapi-contract/
 │   ├── backend-delivery/
@@ -33,10 +33,12 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
 - `.qoder/skills` is registered as an extra skill source, so the vendored Superpowers
   skills remain the single copy.
 - `.opencode/skills/*/SKILL.md` are project skills, advertised by their `description`.
-- `.opencode/agents/*.md` are subagents, available through the `subagent` tool. The
-  orchestrator uses `mode: all` so it can dispatch the other four; planner, coder, tester
-  and reviewer use `mode: subagent`. Task handoffs live in the shared `.handoff/tasks/`
-  tree, also used by the Qoder and Copilot agents.
+- `.opencode/agents/*.md` are agents available through the `subagent` tool. All three use
+  `mode: all` so they can also be invoked directly. `lead` dispatches `builder` and
+  `reviewer`, which needs `experimental.subagent_depth: 2` in `opencode.json`. Pipeline by
+  size: `S` = builder only, `M` = builder + one review, `L` = builder + at most two review
+  rounds. Task handoffs live in the shared `.handoff/tasks/` tree, also used by the Qoder and
+  Copilot agents.
 - Global permissions in `opencode.json` deny `git commit`, `push`, `reset`, `clean`,
   `stash`, `worktree` and branch deletion.
 
