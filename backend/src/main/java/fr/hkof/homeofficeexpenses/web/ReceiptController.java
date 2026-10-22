@@ -33,17 +33,17 @@ public class ReceiptController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ReceiptDto uploadReceipt(@RequestParam("file") MultipartFile file) {
-        return service.uploader(file);
+        return service.upload(file);
     }
 
     @GetMapping("/{id}")
     public ReceiptDto getReceipt(@PathVariable Long id) {
-        return service.obtenir(id);
+        return service.get(id);
     }
 
     @GetMapping("/{id}/file")
     public ResponseEntity<byte[]> getReceiptFile(@PathVariable Long id) {
-        ReceiptDto receipt = service.obtenir(id);
+        ReceiptDto receipt = service.get(id);
         return PdfResponses.file(service.file(id), receipt.mimeType(), receipt.fileName());
     }
 
@@ -56,7 +56,7 @@ public class ReceiptController {
     @PostMapping("/{id}/analysis")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public AnalysisStartResponse startReceiptAnalysis(@PathVariable Long id) {
-        AnalysisDto analysis = analysisJobService.lancer(id);
+        AnalysisDto analysis = analysisJobService.launch(id);
         return new AnalysisStartResponse(analysis.id(), analysis.status());
     }
 }

@@ -30,12 +30,12 @@ public class AdminLlmController {
 
     @GetMapping
     public LlmConfigDto getLlmConfig() {
-        return service.obtenir();
+        return service.get();
     }
 
     @PutMapping
     public LlmConfigDto updateLlmConfig(@RequestBody LlmConfigRequest request) {
-        return service.mettreAJour(request);
+        return service.update(request);
     }
 
     @GetMapping("/models")
@@ -45,7 +45,7 @@ public class AdminLlmController {
 
     @PostMapping("/test")
     public LlmTestResponse testLlm() {
-        return service.tester();
+        return service.testConnection();
     }
 
     @GetMapping("/status")

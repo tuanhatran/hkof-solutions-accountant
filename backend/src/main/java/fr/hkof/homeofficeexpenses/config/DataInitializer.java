@@ -46,13 +46,13 @@ public class DataInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        initialiserSettings();
-        initialiserItems();
-        initialiserTemplates();
-        initialiserLlm();
+        initSettings();
+        initItems();
+        initTemplates();
+        initLlm();
     }
 
-    private void initialiserSettings() {
+    private void initSettings() {
         if (parametersRepository.existsById(1L)) {
             return;
         }
@@ -70,23 +70,23 @@ public class DataInitializer implements ApplicationRunner {
         p.setLandlordAddress("Adresse du bailleur");
         p.setTenantName("Nom du locataire");
         p.setTenantAddress("Adresse du locataire");
-        p.setRentExclCharges(new BigDecimal("900.00"));
-        p.setChargesAdvance(new BigDecimal("50.00"));
+        p.setRentExclCharges(new BigDecimal("1300.00"));
+        p.setChargesAdvance(new BigDecimal("0.00"));
         p.setIssuePlace("Paris");
         p.setUpdatedAt(Instant.now(clock));
         parametersRepository.save(p);
     }
 
-    private void initialiserItems() {
-        creerExpenseItemSiAbsent("loyer", "Quittance de loyer", null, "100.00", "MONTHLY", 10);
-        creerExpenseItemSiAbsent("gaz", "Gaz", "EDF", "35.71", "BIMONTHLY", 20);
-        creerExpenseItemSiAbsent("electricite", "Électricité", "Primeo", "35.71", "BIMONTHLY", 30);
-        creerExpenseItemSiAbsent("assurance", "Assurance habitation", null, "35.71", "ANNUAL", 40);
-        creerExpenseItemSiAbsent("telephone", "Téléphone", null, "35.71", "MONTHLY", 50);
-        creerExpenseItemSiAbsent("fibre", "Fibre internet", null, "35.71", "MONTHLY", 60);
+    private void initItems() {
+        createExpenseItemIfAbsent("loyer", "Quittance de loyer", null, "100.00", "MONTHLY", 10);
+        createExpenseItemIfAbsent("gaz", "Gaz", "EDF", "35.71", "MONTHLY", 20);
+        createExpenseItemIfAbsent("electricite", "Électricité", "Primeo", "35.71", "MONTHLY", 30);
+        createExpenseItemIfAbsent("assurance", "Assurance habitation", null, "35.71", "ANNUAL", 40);
+        createExpenseItemIfAbsent("telephone", "Téléphone", null, "35.71", "MONTHLY", 50);
+        createExpenseItemIfAbsent("fibre", "Fibre internet", null, "35.71", "MONTHLY", 60);
     }
 
-    private void creerExpenseItemSiAbsent(String code, String label, String supplier, String prorata,
+    private void createExpenseItemIfAbsent(String code, String label, String supplier, String prorata,
             String periodicity, int sortOrder) {
         if (expenseItemRepository.findFirstByCode(code).isPresent()) {
             return;
@@ -104,7 +104,7 @@ public class DataInitializer implements ApplicationRunner {
         expenseItemRepository.save(expenseItem);
     }
 
-    private void initialiserTemplates() {
+    private void initTemplates() {
         for (TemplateType type : TemplateType.values()) {
             TemplateDocument builtIn = templateRepository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(type)
                     .orElseGet(() -> {
@@ -131,7 +131,7 @@ public class DataInitializer implements ApplicationRunner {
         }
     }
 
-    private void initialiserLlm() {
+    private void initLlm() {
         if (llmConfigRepository.existsById(1L)) {
             return;
         }

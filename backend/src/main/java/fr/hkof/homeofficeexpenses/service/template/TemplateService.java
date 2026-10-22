@@ -43,8 +43,8 @@ import tools.jackson.databind.ObjectMapper;
 public class TemplateService {
 
     private static final Pattern VARIABLE = Pattern.compile("\\{\\{\\s*([#\\^/!]?)\\s*([^{}]+?)\\s*\\}\\}");
-    private static final List<String> BALISES_INTERDITES = List.of("script", "iframe", "object", "embed", "form", "base");
-    private static final Pattern CSS_DISTANT = Pattern.compile("url\\(\\s*['\"]?\\s*(https?:|//|file:)", Pattern.CASE_INSENSITIVE);
+    private static final List<String> FORBIDDEN_TAGS = List.of("script", "iframe", "object", "embed", "form", "base");
+    private static final Pattern REMOTE_CSS_URL = Pattern.compile("url\\(\\s*['\"]?\\s*(https?:|//|file:)", Pattern.CASE_INSENSITIVE);
 
     private final TemplateDocumentRepository repository;
     private final StorageService stockage;
@@ -64,9 +64,9 @@ public class TemplateService {
     }
 
     @Transactional(readOnly = true)
-    public List<TemplateDto> lister(TemplateType type) {
+    public List<TemplateDto> list(TemplateType type) {
         return repository.findByTypeAndDeletedFalseOrderByVersionDesc(type).stream()
-                .map(this::versDto)
+                .map(this::toDto)
                 .toList();
     }
 
@@ -78,14 +78,14 @@ public class TemplateService {
     }
 
     @Transactional(readOnly = true)
-    public TemplateDocument parId(Long id) {
+    public TemplateDocument byId(Long id) {
         return repository.findById(id)
                 .filter(t -> !t.isDeleted())
                 .orElseThrow(() -> new NotFoundException("Template introuvable."));
     }
 
-    public String rendre(TemplateDocument template, Map<String, Object> data) {
-        String content = new String(stockage.lire(template.getPath()), StandardCharsets.UTF_8);
+    public String render(TemplateDocument template, Map<String, Object> data) {
+        String content = new String(stockage.read(template.getPath()), StandardCharsets.UTF_8);
         try {
             Template mustache = Mustache.compiler()
                     .defaultValue("")
@@ -97,17 +97,17 @@ public class TemplateService {
         }
     }
 
-    public ValidationReportDto valider(TemplateType type, String content) {
+    public ValidationReportDto validate(TemplateType type, String content) {
         List<String> reconnues = new ArrayList<>();
         List<String> unknown = new ArrayList<>();
         List<String> missing = new ArrayList<>();
         List<String> errors = new ArrayList<>();
-        Set<String> allowed = TemplateCatalog.nomsAllowed(type);
-        Set<String> obligatoires = TemplateCatalog.obligatoires(type);
+        Set<String> allowed = TemplateCatalog.allowedNames(type);
+        Set<String> requires = TemplateCatalog.requiredNames(type);
         Set<String> presentes = new TreeSet<>();
 
         Matcher matcher = VARIABLE.matcher(content);
-        int profondeurLines = 0;
+        int lineDepth = 0;
         while (matcher.find()) {
             String prefixe = matcher.group(1);
             String name = matcher.group(2).trim();
@@ -116,12 +116,12 @@ public class TemplateService {
             }
             if ("/".equals(prefixe)) {
                 if ("lignes".equals(name)) {
-                    profondeurLines = Math.max(0, profondeurLines - 1);
+                    lineDepth = Math.max(0, lineDepth - 1);
                 }
                 continue;
             }
             String canonique = name;
-            if (!allowed.contains(canonique) && profondeurLines > 0
+            if (!allowed.contains(canonique) && lineDepth > 0
                     && allowed.contains("lignes." + name)) {
                 canonique = "lignes." + name;
             }
@@ -136,16 +136,16 @@ public class TemplateService {
                 reconnues.add(canonique);
             }
             if ("#".equals(prefixe) && "lignes".equals(name)) {
-                profondeurLines++;
+                lineDepth++;
             }
         }
-        for (String required : obligatoires) {
+        for (String required : requires) {
             if (!presentes.contains(required)) {
                 missing.add(required);
             }
         }
 
-        errors.addAll(controlerSecurite(content));
+        errors.addAll(checkSecurity(content));
         try {
             Mustache.compiler().compile(content);
         } catch (RuntimeException ex) {
@@ -158,7 +158,7 @@ public class TemplateService {
     }
 
     @Transactional
-    public TemplateDto uploader(TemplateType type, String name, MultipartFile file) {
+    public TemplateDto upload(TemplateType type, String name, MultipartFile file) {
         if (name == null || name.isBlank()) {
             throw new BusinessException("Le nom du template est obligatoire.");
         }
@@ -168,14 +168,14 @@ public class TemplateService {
         } catch (IOException ex) {
             throw new BusinessException("Impossible de lire le fichier template.");
         }
-        detector.validerTemplateHtml(file.getOriginalFilename(), content);
+        detector.validateTemplateHtml(file.getOriginalFilename(), content);
         String html = new String(content, StandardCharsets.UTF_8);
-        ValidationReportDto report = valider(type, html);
+        ValidationReportDto report = validate(type, html);
         if (!report.structureValid()) {
             throw new BusinessException(String.join(" ; ", report.errors()));
         }
         int version = repository.findTopByTypeOrderByVersionDesc(type).map(t -> t.getVersion() + 1).orElse(1);
-        String path = stockage.stockerTemplate(content, type.name(), version);
+        String path = stockage.storeTemplate(content, type.name(), version);
         TemplateDocument template = new TemplateDocument();
         template.setType(type);
         template.setName(name.trim());
@@ -187,23 +187,23 @@ public class TemplateService {
         template.setDeleted(false);
         template.setValidationReport(objectMapper.writeValueAsString(report));
         template.setCreatedAt(Instant.now(clock));
-        return versDto(repository.save(template));
+        return toDto(repository.save(template));
     }
 
     @Transactional
-    public TemplateDto activer(Long id) {
-        TemplateDocument template = parId(id);
+    public TemplateDto activate(Long id) {
+        TemplateDocument template = byId(id);
         for (TemplateDocument autre : repository.findByTypeAndActiveTrueAndDeletedFalse(template.getType())) {
             autre.setActive(false);
             repository.save(autre);
         }
         template.setActive(true);
-        return versDto(repository.save(template));
+        return toDto(repository.save(template));
     }
 
     @Transactional
     public void delete(Long id) {
-        TemplateDocument template = parId(id);
+        TemplateDocument template = byId(id);
         if (template.isBuiltIn()) {
             throw new BusinessException("Le modèle intégré ne peut pas être supprimé.");
         }
@@ -215,34 +215,34 @@ public class TemplateService {
     }
 
     @Transactional
-    public TemplateDto reinitialiser(TemplateType type) {
+    public TemplateDto reset(TemplateType type) {
         TemplateDocument builtIn = repository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(type)
                 .orElseThrow(() -> new NotFoundException("Modèle intégré introuvable."));
-        return activer(builtIn.getId());
+        return activate(builtIn.getId());
     }
 
     public byte[] file(Long id) {
-        return stockage.lire(parId(id).getPath());
+        return stockage.read(byId(id).getPath());
     }
 
-    public byte[] fileDefaut(TemplateType type) {
+    public byte[] defaultFile(TemplateType type) {
         String path = type == TemplateType.RENT_RECEIPT
                 ? "classpath:templates/defaut/quittance.html"
                 : "classpath:templates/defaut/note-frais.html";
-        return stockage.lire(path);
+        return stockage.read(path);
     }
 
     public List<TemplateVariableDto> variables(TemplateType type) {
         return TemplateCatalog.variables(type);
     }
 
-    public byte[] apercu(Long id, Map<String, Object> dataExample) {
-        TemplateDocument template = parId(id);
-        String html = rendre(template, dataExample);
-        return pdfService.addWatermark(pdfService.rendreHtmlEnPdf(html));
+    public byte[] preview(Long id, Map<String, Object> dataExample) {
+        TemplateDocument template = byId(id);
+        String html = render(template, dataExample);
+        return pdfService.addWatermark(pdfService.renderHtmlToPdf(html));
     }
 
-    public TemplateDto versDto(TemplateDocument t) {
+    public TemplateDto toDto(TemplateDocument t) {
         ValidationReportDto report = null;
         if (t.getValidationReport() != null && !t.getValidationReport().isBlank()) {
             try {
@@ -255,7 +255,7 @@ public class TemplateService {
                 t.isActive(), t.isBuiltIn(), t.getCreatedAt(), report);
     }
 
-    private List<String> controlerSecurite(String content) {
+    private List<String> checkSecurity(String content) {
         List<String> errors = new ArrayList<>();
         String minuscule = content.toLowerCase(Locale.ROOT);
         if (minuscule.contains("{{{") || minuscule.contains("{{&")) {
@@ -267,11 +267,11 @@ public class TemplateService {
         if (minuscule.contains("javascript:")) {
             errors.add("Les liens JavaScript sont interdits.");
         }
-        if (CSS_DISTANT.matcher(content).find()) {
+        if (REMOTE_CSS_URL.matcher(content).find()) {
             errors.add("Les ressources distantes sont interdites.");
         }
         Document document = Jsoup.parse(content);
-        for (String balise : BALISES_INTERDITES) {
+        for (String balise : FORBIDDEN_TAGS) {
             if (!document.select(balise).isEmpty()) {
                 errors.add("La balise <" + balise + "> est interdite.");
             }

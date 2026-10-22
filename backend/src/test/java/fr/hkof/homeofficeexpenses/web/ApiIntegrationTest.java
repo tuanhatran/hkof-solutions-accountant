@@ -37,11 +37,11 @@ class ApiIntegrationTest {
 
     @Test
     @DisplayName("Parcourt le flux complet : paramètres, quittance, note de frais, justificatif, templates, LLM")
-    void fluxComplete() throws Exception {
+    void fullFlow() throws Exception {
         mockMvc.perform(get("/api/settings"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.proRataBase").value("35.71"))
-                .andExpect(jsonPath("$.rentExclCharges").value("900.00"));
+                .andExpect(jsonPath("$.rentExclCharges").value("1300.00"));
 
         mockMvc.perform(get("/api/expense-items"))
                 .andExpect(status().isOk())
@@ -55,7 +55,7 @@ class ApiIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.version").value(1))
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
-                .andExpect(jsonPath("$.total").value("950.00"))
+                .andExpect(jsonPath("$.total").value("1300.00"))
                 .andExpect(jsonPath("$.periodStart").value("2026-11-01"))
                 .andExpect(jsonPath("$.periodEnd").value("2026-11-30"))
                 .andReturn().getResponse().getContentAsString();

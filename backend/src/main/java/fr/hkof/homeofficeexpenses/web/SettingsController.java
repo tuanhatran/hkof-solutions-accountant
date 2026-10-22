@@ -22,11 +22,11 @@ public class SettingsController {
 
     @GetMapping
     public SettingsDto getSettings() {
-        return service.obtenir();
+        return service.get();
     }
 
     @PutMapping
     public SettingsDto updateSettings(@RequestBody SettingsRequest request) {
-        return service.mettreAJour(request);
+        return service.update(request);
     }
 }

@@ -23,12 +23,12 @@ public class AnalysisController {
 
     @GetMapping("/{id}")
     public AnalysisDto getAnalysis(@PathVariable Long id) {
-        return service.obtenir(id);
+        return service.get(id);
     }
 
     @GetMapping(value = "/{id}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamAnalysisEvents(@PathVariable Long id) {
-        return service.evenements(id);
+        return service.events(id);
     }
 
     @DeleteMapping("/{id}")

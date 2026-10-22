@@ -20,9 +20,9 @@ import tools.jackson.databind.ObjectMapper;
 @Service
 public class ExtractionPipeline {
 
-    private static final Set<String> TYPES_ACCEPTES = Set.of(
+    private static final Set<String> ACCEPTED_TYPES = Set.of(
             "gaz", "electricite", "loyer", "telephone", "assurance", "fibre", "autre");
-    private static final Set<String> CONFIANCES = Set.of("haute", "moyenne", "basse");
+    private static final Set<String> CONFIDENCE_LEVELS = Set.of("haute", "moyenne", "basse");
 
     private final OllamaClient ollamaClient;
     private final ObjectMapper objectMapper;
@@ -32,14 +32,14 @@ public class ExtractionPipeline {
         this.objectMapper = objectMapper;
     }
 
-    public ExtractionDto extraire(LlmConfig config, String text, List<String> imagesBase64) {
+    public ExtractionDto extract(LlmConfig config, String text, List<String> imagesBase64) {
         String content = text == null ? "" : text.trim();
         List<String> images = imagesBase64 == null ? List.of() : imagesBase64;
         if (content.length() < 20 && images.isEmpty()) {
             throw new BusinessException("Document illisible : aucun texte exploitable. Saisissez le montant manuellement.");
         }
         if (content.length() < 20 && !images.isEmpty()
-                && !ollamaClient.supporteVision(config, config.getModel())) {
+                && !ollamaClient.supportsVision(config, config.getModel())) {
             throw new BusinessException("Document sans texte exploitable et le modèle configuré ne gère pas les images. "
                     + "Choisissez un modèle de vision ou saisissez le montant manuellement.");
         }
@@ -53,18 +53,18 @@ public class ExtractionPipeline {
                 """.formatted(content);
 
         String response = ollamaClient.chat(config, config.getExtractionPrompt(), messageUtilisateur, images);
-        return interpreter(response, content, images.size());
+        return interpret(response, content, images.size());
     }
 
-    public ExtractionDto extraireDepuisText(LlmConfig config, String text, List<String> imagesBase64) {
-        return extraire(config, text, imagesBase64);
+    public ExtractionDto extractFromText(LlmConfig config, String text, List<String> imagesBase64) {
+        return extract(config, text, imagesBase64);
     }
 
-    public String versJson(ExtractionDto extraction) {
+    public String toJson(ExtractionDto extraction) {
         return objectMapper.writeValueAsString(extraction);
     }
 
-    public ExtractionDto depuisJson(String json) {
+    public ExtractionDto fromJson(String json) {
         if (json == null || json.isBlank()) {
             return null;
         }
@@ -75,8 +75,8 @@ public class ExtractionPipeline {
         }
     }
 
-    ExtractionDto interpreter(String rawResponse, String textDocument, int imageCount) {
-        String json = isolerJson(rawResponse);
+    ExtractionDto interpret(String rawResponse, String textDocument, int imageCount) {
+        String json = isolateJson(rawResponse);
         JsonNode racine;
         try {
             racine = objectMapper.readTree(json);
@@ -86,10 +86,10 @@ public class ExtractionPipeline {
         if (racine == null || !racine.isObject()) {
             throw new BusinessException("La réponse du modèle n'est pas un objet JSON conforme. La saisie manuelle reste disponible.");
         }
-        verifierFields(racine);
+        checkFields(racine);
 
-        String confidence = nettoyer(racine, "confiance", 20);
-        if (confidence == null || !confidenceValide(confidence)) {
+        String confidence = clean(racine, "confiance", 20);
+        if (confidence == null || !confidenceValid(confidence)) {
             confidence = "basse";
         } else {
             confidence = confidence.toLowerCase(Locale.ROOT);
@@ -97,22 +97,22 @@ public class ExtractionPipeline {
 
         String amountInclVat = amount(racine, "montant_ttc");
         String amountExclVat = amount(racine, "montant_ht");
-        String extrait = nettoyer(racine, "extrait_source", 500);
-        String documentNormalise = normaliserPourRecherche(textDocument);
-        String extraitNormalise = normaliserPourRecherche(extrait);
-        if (amountInclVat != null && (!presentDansDocument(amountInclVat, documentNormalise)
-                || !presentDansDocument(amountInclVat, extraitNormalise))) {
+        String extrait = clean(racine, "extrait_source", 500);
+        String documentNormalise = normalizeForSearch(textDocument);
+        String extraitNormalise = normalizeForSearch(extrait);
+        if (amountInclVat != null && (!presentInDocument(amountInclVat, documentNormalise)
+                || !presentInDocument(amountInclVat, extraitNormalise))) {
             amountInclVat = null;
             confidence = "basse";
         }
-        if (amountExclVat != null && !presentDansDocument(amountExclVat, documentNormalise)) {
+        if (amountExclVat != null && !presentInDocument(amountExclVat, documentNormalise)) {
             amountExclVat = null;
         }
         if (amountInclVat == null) {
             confidence = "basse";
         }
 
-        String type = normaliserType(nettoyer(racine, "type_suggere", 40));
+        String type = normalizeType(clean(racine, "type_suggere", 40));
         String invoiceDate = date(racine, "date_facture");
         String periodStart = date(racine, "periode_debut");
         String periodEnd = date(racine, "periode_fin");
@@ -120,7 +120,7 @@ public class ExtractionPipeline {
             periodStart = null;
             periodEnd = null;
         }
-        String currency = nettoyer(racine, "devise", 8);
+        String currency = clean(racine, "devise", 8);
         if (currency == null) {
             currency = "EUR";
         }
@@ -130,8 +130,8 @@ public class ExtractionPipeline {
 
         return new ExtractionDto(
                 type,
-                nettoyer(racine, "fournisseur", 160),
-                nettoyer(racine, "numero_facture", 80),
+                clean(racine, "fournisseur", 160),
+                clean(racine, "numero_facture", 80),
                 invoiceDate,
                 periodStart,
                 periodEnd,
@@ -142,7 +142,7 @@ public class ExtractionPipeline {
                 confidence);
     }
 
-    private void verifierFields(JsonNode racine) {
+    private void checkFields(JsonNode racine) {
         Set<String> allowed = Set.of("type_suggere", "fournisseur", "numero_facture", "date_facture",
                 "periode_debut", "periode_fin", "montant_ttc", "montant_ht", "devise", "extrait_source", "confiance");
         for (String field : racine.propertyNames()) {
@@ -164,7 +164,7 @@ public class ExtractionPipeline {
         }
     }
 
-    private String isolerJson(String response) {
+    private String isolateJson(String response) {
         String text = response == null ? "" : response.trim();
         if (text.startsWith("```")) {
             int debut = text.indexOf('\n');
@@ -181,7 +181,7 @@ public class ExtractionPipeline {
         return text.substring(debut, fin + 1);
     }
 
-    private String nettoyer(JsonNode racine, String field, int longueurMax) {
+    private String clean(JsonNode racine, String field, int longueurMax) {
         JsonNode noeud = racine.get(field);
         if (noeud == null || noeud.isNull()) {
             return null;
@@ -195,7 +195,7 @@ public class ExtractionPipeline {
     }
 
     private String amount(JsonNode racine, String field) {
-        String brut = nettoyer(racine, field, 40);
+        String brut = clean(racine, field, 40);
         if (brut == null) {
             return null;
         }
@@ -213,7 +213,7 @@ public class ExtractionPipeline {
     }
 
     private String date(JsonNode racine, String field) {
-        String value = nettoyer(racine, field, 20);
+        String value = clean(racine, field, 20);
         if (value == null) {
             return null;
         }
@@ -224,7 +224,7 @@ public class ExtractionPipeline {
         }
     }
 
-    private String normaliserType(String type) {
+    private String normalizeType(String type) {
         if (type == null) {
             return null;
         }
@@ -232,14 +232,14 @@ public class ExtractionPipeline {
                 .replaceAll("\\p{M}", "")
                 .toLowerCase(Locale.ROOT)
                 .trim();
-        return TYPES_ACCEPTES.contains(sansAccent) ? sansAccent : null;
+        return ACCEPTED_TYPES.contains(sansAccent) ? sansAccent : null;
     }
 
-    private boolean confidenceValide(String confidence) {
-        return CONFIANCES.contains(confidence.toLowerCase(Locale.ROOT));
+    private boolean confidenceValid(String confidence) {
+        return CONFIDENCE_LEVELS.contains(confidence.toLowerCase(Locale.ROOT));
     }
 
-    private boolean presentDansDocument(String amount, String documentNormalise) {
+    private boolean presentInDocument(String amount, String documentNormalise) {
         String candidat = amount.replace(",", ".");
         if (documentNormalise.contains(candidat)) {
             return true;
@@ -251,7 +251,7 @@ public class ExtractionPipeline {
         return false;
     }
 
-    private String normaliserPourRecherche(String text) {
+    private String normalizeForSearch(String text) {
         if (text == null) {
             return "";
         }

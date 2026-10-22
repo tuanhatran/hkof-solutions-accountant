@@ -29,8 +29,8 @@ public class ReceiptService {
     }
 
     @Transactional
-    public ReceiptDto uploader(MultipartFile file) {
-        StorageService.StoredFile stocke = stockage.stockerReceipt(file);
+    public ReceiptDto upload(MultipartFile file) {
+        StorageService.StoredFile stocke = stockage.storeReceipt(file);
         Receipt receipt = new Receipt();
         receipt.setFileName(stocke.fileName());
         receipt.setMimeType(stocke.mimeType());
@@ -39,7 +39,7 @@ public class ReceiptService {
         receipt.setHashSha256(stocke.hashSha256());
         receipt.setCreatedAt(Instant.now(clock));
         receipt.setDeleted(false);
-        return versDto(repository.save(receipt));
+        return toDto(repository.save(receipt));
     }
 
     @Transactional(readOnly = true)
@@ -50,12 +50,12 @@ public class ReceiptService {
     }
 
     @Transactional(readOnly = true)
-    public ReceiptDto obtenir(Long id) {
-        return versDto(entity(id));
+    public ReceiptDto get(Long id) {
+        return toDto(entity(id));
     }
 
     public byte[] file(Long id) {
-        return stockage.lire(entity(id).getPath());
+        return stockage.read(entity(id).getPath());
     }
 
     @Transactional
@@ -68,7 +68,7 @@ public class ReceiptService {
         repository.save(receipt);
     }
 
-    public ReceiptDto versDto(Receipt j) {
+    public ReceiptDto toDto(Receipt j) {
         return new ReceiptDto(j.getId(), j.getFileName(), j.getMimeType(), j.getSize(), j.getCreatedAt());
     }
 }

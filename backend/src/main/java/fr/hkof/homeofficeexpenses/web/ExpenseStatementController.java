@@ -44,37 +44,37 @@ public class ExpenseStatementController {
 
     @PostMapping("/preview")
     public ResponseEntity<byte[]> previewStatement(@RequestBody StatementPreviewRequest request) {
-        return PdfResponses.pdf(service.apercu(request), "note_frais_apercu.pdf");
+        return PdfResponses.pdf(service.preview(request), "note_frais_apercu.pdf");
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public StatementDto createExpenseStatement(@RequestBody StatementGenerationRequest request) {
-        return service.generer(request);
+        return service.generate(request);
     }
 
     @GetMapping
     public List<StatementDto> listExpenseStatements(@RequestParam(required = false) String month) {
-        return service.lister(month);
+        return service.list(month);
     }
 
     @GetMapping("/active")
     public ResponseEntity<StatementDto> getActiveExpenseStatement(@RequestParam String month) {
-        ExpenseStatement statement = service.activePourMonth(month);
+        ExpenseStatement statement = service.activeForMonth(month);
         return statement == null
                 ? ResponseEntity.noContent().build()
-                : ResponseEntity.ok(service.versDto(statement));
+                : ResponseEntity.ok(service.toDto(statement));
     }
 
     @GetMapping("/{id}")
     public StatementDto getExpenseStatement(@PathVariable Long id) {
-        return service.obtenir(id);
+        return service.get(id);
     }
 
     @GetMapping("/{id}/pdf")
     public ResponseEntity<byte[]> getExpenseStatementPdf(@PathVariable Long id,
             @RequestParam(defaultValue = "false") boolean complete) {
-        StatementDto statement = service.obtenir(id);
+        StatementDto statement = service.get(id);
         String name = "note_frais_" + statement.month() + (complete ? "_complet" : "") + ".pdf";
         return PdfResponses.pdf(service.pdf(id, complete), name);
     }

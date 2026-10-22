@@ -5,18 +5,18 @@ import java.math.RoundingMode;
 
 public final class NumberToWords {
 
-    private static final String[] UNITES = {
+    private static final String[] UNITS = {
             "zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf",
             "dix", "onze", "douze", "treize", "quatorze", "quinze", "seize"
     };
-    private static final String[] DIZAINES = {
+    private static final String[] TENS = {
             "", "", "vingt", "trente", "quarante", "cinquante", "soixante"
     };
 
     private NumberToWords() {
     }
 
-    public static String enLettres(BigDecimal amount) {
+    public static String toWords(BigDecimal amount) {
         if (amount == null) {
             return "";
         }
@@ -30,18 +30,18 @@ public final class NumberToWords {
         if (negatif) {
             result.append("moins ");
         }
-        result.append(enLettresEntier(euros));
+        result.append(wholeToWords(euros));
         result.append(euros == 1 ? " euro" : " euros");
         if (centimes > 0) {
-            result.append(" et ").append(enLettresEntier(centimes));
+            result.append(" et ").append(wholeToWords(centimes));
             result.append(centimes == 1 ? " centime" : " centimes");
         }
         return result.toString();
     }
 
-    public static String enLettresEntier(long count) {
+    public static String wholeToWords(long count) {
         if (count == 0) {
-            return UNITES[0];
+            return UNITS[0];
         }
         if (count < 0) {
             throw new IllegalArgumentException("Nombre négatif");
@@ -53,16 +53,16 @@ public final class NumberToWords {
         long reste = count % 1_000L;
 
         if (milliards > 0) {
-            add(mots, enLettresMilliers(milliards) + " milliard" + (milliards > 1 ? "s" : ""));
+            add(mots, thousandsToWords(milliards) + " milliard" + (milliards > 1 ? "s" : ""));
         }
         if (millions > 0) {
-            add(mots, enLettresMilliers(millions) + " million" + (millions > 1 ? "s" : ""));
+            add(mots, thousandsToWords(millions) + " million" + (millions > 1 ? "s" : ""));
         }
         if (milliers > 0) {
             if (milliers == 1) {
                 add(mots, "mille");
             } else {
-                String base = enLettresCentaines((int) milliers);
+                String base = hundredsToWords((int) milliers);
                 if (base.endsWith("cents")) {
                     base = base.substring(0, base.length() - 1);
                 } else if (base.endsWith("vingts")) {
@@ -72,21 +72,21 @@ public final class NumberToWords {
             }
         }
         if (reste > 0) {
-            add(mots, enLettresCentaines((int) reste));
+            add(mots, hundredsToWords((int) reste));
         }
         return mots.toString();
     }
 
-    private static String enLettresMilliers(long count) {
+    private static String thousandsToWords(long count) {
         if (count == 1) {
             return "un";
         }
-        return enLettresCentaines((int) count);
+        return hundredsToWords((int) count);
     }
 
-    private static String enLettresCentaines(int count) {
+    private static String hundredsToWords(int count) {
         if (count < 100) {
-            return enLettresDizaines(count);
+            return tensToWords(count);
         }
         int centaines = count / 100;
         int reste = count % 100;
@@ -94,46 +94,46 @@ public final class NumberToWords {
         if (centaines == 1) {
             mots.append("cent");
         } else {
-            mots.append(UNITES[centaines]).append(" cent");
+            mots.append(UNITS[centaines]).append(" cent");
             if (reste == 0) {
                 mots.append('s');
             }
         }
         if (reste > 0) {
-            mots.append(' ').append(enLettresDizaines(reste));
+            mots.append(' ').append(tensToWords(reste));
         }
         return mots.toString();
     }
 
-    private static String enLettresDizaines(int count) {
+    private static String tensToWords(int count) {
         if (count < 17) {
-            return UNITES[count];
+            return UNITS[count];
         }
         if (count < 20) {
-            return "dix-" + UNITES[count - 10];
+            return "dix-" + UNITS[count - 10];
         }
         if (count < 70) {
             int dizaine = count / 10;
             int unite = count % 10;
             if (unite == 0) {
-                return DIZAINES[dizaine];
+                return TENS[dizaine];
             }
             if (unite == 1) {
-                return DIZAINES[dizaine] + " et un";
+                return TENS[dizaine] + " et un";
             }
-            return DIZAINES[dizaine] + "-" + UNITES[unite];
+            return TENS[dizaine] + "-" + UNITS[unite];
         }
         if (count < 80) {
             if (count == 71) {
                 return "soixante et onze";
             }
-            return "soixante-" + enLettresDizaines(count - 60);
+            return "soixante-" + tensToWords(count - 60);
         }
         if (count == 80) {
             return "quatre-vingts";
         }
         if (count < 100) {
-            return "quatre-vingt-" + enLettresDizaines(count - 80);
+            return "quatre-vingt-" + tensToWords(count - 80);
         }
         throw new IllegalArgumentException("Nombre hors plage : " + count);
     }

@@ -31,35 +31,35 @@ public class RentReceiptController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public RentReceiptDto createRentReceipt(@RequestBody RentReceiptRequest request) {
-        return service.generer(request);
+        return service.generate(request);
     }
 
     @GetMapping
     public List<RentReceiptDto> listRentReceipts(@RequestParam(required = false) String month) {
-        return service.lister(month);
+        return service.list(month);
     }
 
     @GetMapping("/active")
     public ResponseEntity<RentReceiptDto> getActiveRentReceipt(@RequestParam String month) {
-        RentReceipt rentReceipt = service.activePourMonth(month);
+        RentReceipt rentReceipt = service.activeForMonth(month);
         return rentReceipt == null
                 ? ResponseEntity.noContent().build()
-                : ResponseEntity.ok(service.versDto(rentReceipt));
+                : ResponseEntity.ok(service.toDto(rentReceipt));
     }
 
     @GetMapping("/{id}")
     public RentReceiptDto getRentReceipt(@PathVariable Long id) {
-        return service.obtenir(id);
+        return service.get(id);
     }
 
     @GetMapping("/{id}/pdf")
     public ResponseEntity<byte[]> getRentReceiptPdf(@PathVariable Long id) {
-        RentReceiptDto rentReceipt = service.obtenir(id);
+        RentReceiptDto rentReceipt = service.get(id);
         return PdfResponses.pdf(service.pdf(id), "quittance_" + rentReceipt.month() + ".pdf");
     }
 
     @PostMapping("/preview")
     public ResponseEntity<byte[]> previewRentReceipt(@RequestBody RentReceiptRequest request) {
-        return PdfResponses.pdf(service.apercu(request), "quittance_apercu.pdf");
+        return PdfResponses.pdf(service.preview(request), "quittance_apercu.pdf");
     }
 }

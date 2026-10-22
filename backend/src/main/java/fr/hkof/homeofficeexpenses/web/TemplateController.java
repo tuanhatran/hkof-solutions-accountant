@@ -36,7 +36,7 @@ public class TemplateController {
 
     @GetMapping
     public List<TemplateDto> listTemplates(@RequestParam TemplateType type) {
-        return service.lister(type);
+        return service.list(type);
     }
 
     @GetMapping("/variables")
@@ -48,17 +48,17 @@ public class TemplateController {
     @ResponseStatus(HttpStatus.CREATED)
     public TemplateDto uploadTemplate(@RequestParam TemplateType type, @RequestParam String name,
             @RequestParam("file") MultipartFile file) {
-        return service.uploader(type, name, file);
+        return service.upload(type, name, file);
     }
 
     @PostMapping("/{id}/activate")
     public TemplateDto activateTemplate(@PathVariable Long id) {
-        return service.activer(id);
+        return service.activate(id);
     }
 
     @GetMapping("/{id}/file")
     public ResponseEntity<byte[]> getTemplateFile(@PathVariable Long id) {
-        TemplateDto template = service.versDto(service.parId(id));
+        TemplateDto template = service.toDto(service.byId(id));
         return PdfResponses.file(service.file(id), "text/html;charset=UTF-8",
                 template.name() + "_v" + template.version() + ".html");
     }
@@ -74,18 +74,18 @@ public class TemplateController {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("text/html;charset=UTF-8"))
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
-                .body(service.fileDefaut(type));
+                .body(service.defaultFile(type));
     }
 
     @PostMapping("/default/{type}")
     public TemplateDto resetDefaultTemplate(@PathVariable TemplateType type) {
-        return service.reinitialiser(type);
+        return service.reset(type);
     }
 
     @PostMapping("/{id}/preview")
     public ResponseEntity<byte[]> previewTemplate(@PathVariable Long id) {
-        TemplateDto template = service.versDto(service.parId(id));
-        byte[] pdf = service.apercu(id, dataService.dataExample(TemplateType.valueOf(template.type())));
+        TemplateDto template = service.toDto(service.byId(id));
+        byte[] pdf = service.preview(id, dataService.dataExample(TemplateType.valueOf(template.type())));
         return PdfResponses.pdf(pdf, "apercu_template.pdf");
     }
 }

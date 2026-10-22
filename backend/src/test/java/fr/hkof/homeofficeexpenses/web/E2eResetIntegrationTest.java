@@ -29,7 +29,7 @@ class E2eResetIntegrationTest {
 
     @Test
     @DisplayName("Le profil e2e remet la base et les fichiers dans leur état initial")
-    void reinitialisation() throws Exception {
+    void resetsData() throws Exception {
         mockMvc.perform(put("/api/settings")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -64,7 +64,7 @@ class E2eResetIntegrationTest {
         mockMvc.perform(get("/api/settings"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.companyName").value("HKOF"))
-                .andExpect(jsonPath("$.rentExclCharges").value("900.00"));
+                .andExpect(jsonPath("$.rentExclCharges").value("1300.00"));
         mockMvc.perform(get("/api/expense-items"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(6))

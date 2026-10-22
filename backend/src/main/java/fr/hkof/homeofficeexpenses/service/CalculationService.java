@@ -16,7 +16,7 @@ public final class CalculationService {
     private CalculationService() {
     }
 
-    public static BigDecimal ventilerSurMonth(BigDecimal amountInclVat, LocalDate debut, LocalDate fin, YearMonth month) {
+    public static BigDecimal allocateToMonth(BigDecimal amountInclVat, LocalDate debut, LocalDate fin, YearMonth month) {
         if (amountInclVat == null) {
             throw new BusinessException("Le montant TTC est obligatoire.");
         }

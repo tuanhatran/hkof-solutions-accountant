@@ -30,13 +30,13 @@ import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 @Service
 public class PdfService {
 
-    public byte[] rendreHtmlEnPdf(String html) {
+    public byte[] renderHtmlToPdf(String html) {
         try (ByteArrayOutputStream sortie = new ByteArrayOutputStream()) {
             PdfRendererBuilder builder = new PdfRendererBuilder();
             builder.useFastMode();
             builder.useFont(fontSupplier("/fonts/DejaVuSans.ttf"), "DejaVu Sans");
             builder.useFont(fontSupplier("/fonts/DejaVuSans-Bold.ttf"), "DejaVu Sans", 700, FontStyle.NORMAL, true);
-            builder.withHtmlContent(normaliserXhtml(html), null);
+            builder.withHtmlContent(normalizeXhtml(html), null);
             builder.toStream(sortie);
             builder.run();
             return sortie.toByteArray();
@@ -76,7 +76,7 @@ public class PdfService {
         }
     }
 
-    public byte[] fusionner(List<byte[]> pdfs) {
+    public byte[] merge(List<byte[]> pdfs) {
         try (ByteArrayOutputStream sortie = new ByteArrayOutputStream()) {
             PDFMergerUtility merger = new PDFMergerUtility();
             merger.setDestinationStream(sortie);
@@ -92,7 +92,7 @@ public class PdfService {
         }
     }
 
-    public byte[] imageVersPdf(byte[] image, String name) {
+    public byte[] imageToPdf(byte[] image, String name) {
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
@@ -132,16 +132,16 @@ public class PdfService {
                 </style></head>
                 <body><h1>%s</h1><pre>%s</pre></body>
                 </html>
-                """.formatted(contentTitre(titre), content);
-        return rendreHtmlEnPdf(html);
+                """.formatted(contentTitle(titre), content);
+        return renderHtmlToPdf(html);
     }
 
-    public boolean estPdf(byte[] content) {
+    public boolean isPdf(byte[] content) {
         return content != null && content.length >= 5
                 && content[0] == '%' && content[1] == 'P' && content[2] == 'D' && content[3] == 'F';
     }
 
-    private String contentTitre(String titre) {
+    private String contentTitle(String titre) {
         return titre.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
@@ -149,7 +149,7 @@ public class PdfService {
         return () -> PdfService.class.getResourceAsStream(ressource);
     }
 
-    private String normaliserXhtml(String html) {
+    private String normalizeXhtml(String html) {
         Document document = Jsoup.parse(html == null ? "" : html);
         document.outputSettings()
                 .syntax(Document.OutputSettings.Syntax.xml)

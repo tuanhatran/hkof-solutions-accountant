@@ -35,28 +35,28 @@ import fr.hkof.homeofficeexpenses.service.BusinessException;
 @Service
 public class DocumentTextExtractor {
 
-    private static final int LONGUEUR_MAX = 24_000;
-    private static final int PAGES_MAX_TEXTE = 20;
+    private static final int MAX_LENGTH = 24_000;
+    private static final int MAX_TEXT_PAGES = 20;
 
-    public Extraction extraire(Path path, String mimeType, int maxPagesVision) {
+    public Extraction extract(Path path, String mimeType, int maxPagesVision) {
         try {
             byte[] content = Files.readAllBytes(path);
             String mime = mimeType == null ? "" : mimeType;
             if (mime.equals("application/pdf") || path.toString().toLowerCase().endsWith(".pdf")) {
-                return extrairePdf(content, maxPagesVision);
+                return extractPdf(content, maxPagesVision);
             }
             if (mime.contains("wordprocessingml") || path.toString().toLowerCase().endsWith(".docx")) {
-                return textSeul(extraireDocx(content));
+                return textOnly(extractDocx(content));
             }
             if (mime.contains("spreadsheetml") || mime.equals("application/vnd.ms-excel")
                     || path.toString().toLowerCase().endsWith(".xlsx")
                     || path.toString().toLowerCase().endsWith(".xls")) {
-                return textSeul(extraireTableur(content));
+                return textOnly(extractSpreadsheet(content));
             }
             if (mime.equals("text/csv") || mime.equals("text/plain")
                     || path.toString().toLowerCase().endsWith(".csv")
                     || path.toString().toLowerCase().endsWith(".txt")) {
-                return textSeul(tronquer(new String(content, StandardCharsets.UTF_8)));
+                return textOnly(truncate(new String(content, StandardCharsets.UTF_8)));
             }
             if (mime.startsWith("image/")) {
                 return new Extraction("", List.of(Base64.getEncoder().encodeToString(content)), true, 1);
@@ -67,14 +67,14 @@ public class DocumentTextExtractor {
         }
     }
 
-    private Extraction extrairePdf(byte[] content, int maxPagesVision) throws IOException {
+    private Extraction extractPdf(byte[] content, int maxPagesVision) throws IOException {
         try (PDDocument document = PDDocument.load(content)) {
             int pages = document.getNumberOfPages();
             PDFTextStripper stripper = new PDFTextStripper();
-            stripper.setEndPage(Math.min(pages, PAGES_MAX_TEXTE));
+            stripper.setEndPage(Math.min(pages, MAX_TEXT_PAGES));
             String text = stripper.getText(document).trim();
             if (text.length() >= 20) {
-                return textSeul(tronquer(text));
+                return textOnly(truncate(text));
             }
             List<String> images = new ArrayList<>();
             PDFRenderer renderer = new PDFRenderer(document);
@@ -89,11 +89,11 @@ public class DocumentTextExtractor {
         }
     }
 
-    private Extraction textSeul(String text) {
+    private Extraction textOnly(String text) {
         return new Extraction(text, List.of(), false, 0);
     }
 
-    private String extraireDocx(byte[] content) throws IOException {
+    private String extractDocx(byte[] content) throws IOException {
         try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(content))) {
             StringBuilder text = new StringBuilder();
             for (XWPFParagraph paragraphe : document.getParagraphs()) {
@@ -110,11 +110,11 @@ public class DocumentTextExtractor {
                     text.append(String.join(" | ", cellules)).append('\n');
                 }
             }
-            return tronquer(text.toString());
+            return truncate(text.toString());
         }
     }
 
-    private String extraireTableur(byte[] content) throws IOException {
+    private String extractSpreadsheet(byte[] content) throws IOException {
         try (Workbook classeur = WorkbookFactory.create(new ByteArrayInputStream(content))) {
             DataFormatter formatter = new DataFormatter(java.util.Locale.FRANCE);
             StringBuilder text = new StringBuilder();
@@ -138,23 +138,23 @@ public class DocumentTextExtractor {
                     }
                 }
             }
-            return tronquer(text.toString());
+            return truncate(text.toString());
         }
     }
 
-    public String tronquer(String text) {
+    public String truncate(String text) {
         if (text == null) {
             return "";
         }
         String propre = text.replaceAll("[\\t\\r]+", " ").replaceAll(" {2,}", " ").trim();
-        if (propre.length() <= LONGUEUR_MAX) {
+        if (propre.length() <= MAX_LENGTH) {
             return propre;
         }
-        int debut = LONGUEUR_MAX / 2;
-        int fin = LONGUEUR_MAX - debut;
+        int debut = MAX_LENGTH / 2;
+        int fin = MAX_LENGTH - debut;
         return propre.substring(0, debut) + "\n[…]\n" + propre.substring(propre.length() - fin);
     }
 
-    public record Extraction(String text, List<String> imagesBase64, boolean imageSeule, int pageCount) {
+    public record Extraction(String text, List<String> imagesBase64, boolean imageOnly, int pageCount) {
     }
 }

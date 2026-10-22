@@ -15,8 +15,8 @@ class CalculationServiceTest {
 
     @Test
     @DisplayName("Ventile une facture de 80 € du 01/09 au 31/10 sur octobre : 31 jours sur 61")
-    void ventileSurMonth() {
-        BigDecimal result = CalculationService.ventilerSurMonth(
+    void allocatesToMonth() {
+        BigDecimal result = CalculationService.allocateToMonth(
                 new BigDecimal("80.00"),
                 LocalDate.of(2026, 9, 1),
                 LocalDate.of(2026, 10, 31),
@@ -27,19 +27,19 @@ class CalculationServiceTest {
 
     @Test
     @DisplayName("Ventile 18 jours sur 61 à 23,61 € pour le mois de septembre")
-    void ventilePartieDeMonth() {
+    void allocatesPartialMonth() {
         LocalDate debut = LocalDate.of(2026, 9, 13);
         LocalDate fin = LocalDate.of(2026, 11, 12);
-        assertThat(CalculationService.ventilerSurMonth(new BigDecimal("80.00"), debut, fin, YearMonth.of(2026, 9)))
+        assertThat(CalculationService.allocateToMonth(new BigDecimal("80.00"), debut, fin, YearMonth.of(2026, 9)))
                 .isEqualByComparingTo("23.61");
-        assertThat(CalculationService.ventilerSurMonth(new BigDecimal("80.00"), debut, fin, YearMonth.of(2026, 10)))
+        assertThat(CalculationService.allocateToMonth(new BigDecimal("80.00"), debut, fin, YearMonth.of(2026, 10)))
                 .isEqualByComparingTo("40.66");
     }
 
     @Test
     @DisplayName("Une période hors du mois demandé donne zéro")
-    void periodHorsMonth() {
-        BigDecimal result = CalculationService.ventilerSurMonth(
+    void periodOutsideMonth() {
+        BigDecimal result = CalculationService.allocateToMonth(
                 new BigDecimal("50.00"),
                 LocalDate.of(2026, 1, 1),
                 LocalDate.of(2026, 1, 31),
@@ -49,8 +49,8 @@ class CalculationServiceTest {
 
     @Test
     @DisplayName("Sans période, le montant du mois est le montant TTC")
-    void sansPeriod() {
-        assertThat(CalculationService.ventilerSurMonth(new BigDecimal("80.5"), null, null, YearMonth.of(2026, 10)))
+    void withoutPeriod() {
+        assertThat(CalculationService.allocateToMonth(new BigDecimal("80.5"), null, null, YearMonth.of(2026, 10)))
                 .isEqualByComparingTo("80.50");
     }
 
@@ -67,7 +67,7 @@ class CalculationServiceTest {
 
     @Test
     @DisplayName("Le total additionne des lignes déjà arrondies")
-    void totalLinesArrondies() {
+    void totalLinesRounded() {
         assertThat(CalculationService.total(List.of(
                 new BigDecimal("28.57"),
                 new BigDecimal("41.66"),
@@ -83,8 +83,8 @@ class CalculationServiceTest {
 
     @Test
     @DisplayName("Les entrées invalides sont refusées avec un message français")
-    void entreesInvalides() {
-        assertThatThrownBy(() -> CalculationService.ventilerSurMonth(
+    void invalidInputs() {
+        assertThatThrownBy(() -> CalculationService.allocateToMonth(
                 new BigDecimal("10"), LocalDate.of(2026, 10, 31), LocalDate.of(2026, 10, 1),
                 YearMonth.of(2026, 10)))
                 .isInstanceOf(BusinessException.class)

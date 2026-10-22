@@ -41,7 +41,7 @@ public class TemplateDataService {
         data.put("loyer_hc", Amounts.formatEUR(rentReceipt.getRentExclCharges()));
         data.put("charges", Amounts.formatEUR(rentReceipt.getCharges()));
         data.put("total", Amounts.formatEUR(rentReceipt.getTotal()));
-        data.put("total_en_lettres", NumberToWords.enLettres(rentReceipt.getTotal()));
+        data.put("total_en_lettres", NumberToWords.toWords(rentReceipt.getTotal()));
         data.put("date_paiement", Amounts.formatDate(rentReceipt.getPaymentDate()));
         data.put("date_emission", Amounts.formatDate(rentReceipt.getIssueDate()));
         data.put("lieu", text(p.getIssuePlace()));
@@ -64,14 +64,14 @@ public class TemplateDataService {
             item.put("fournisseur", text(line.getExpenseItem().getSupplier()));
             item.put("periode", period(line.getPeriodStart(), line.getPeriodEnd()));
             item.put("montant_ttc", Amounts.formatEUR(line.getAmountInclVat()));
-            item.put("prorata", Amounts.formatPourcentage(line.getProRataPct()));
+            item.put("prorata", Amounts.formatPercentage(line.getProRataPct()));
             item.put("montant_retenu", Amounts.formatEUR(line.getClaimedAmount()));
             lines.add(item);
         }
         data.put("lignes", lines);
         data.put("total", Amounts.formatEUR(statement.getTotal()));
-        data.put("total_en_lettres", NumberToWords.enLettres(statement.getTotal()));
-        data.put("base_prorata", detailProrata(p));
+        data.put("total_en_lettres", NumberToWords.toWords(statement.getTotal()));
+        data.put("base_prorata", proRataDetail(p));
         data.put("date_emission", Amounts.formatDate(java.time.LocalDate.now()));
         data.put("lieu", text(p.getIssuePlace()));
         data.put("complete", complete);
@@ -119,7 +119,7 @@ public class TemplateDataService {
         data.put("lignes", lines);
         data.put("total", "1 075,87 €");
         data.put("total_en_lettres", "mille soixante-quinze euros et quatre-vingt-sept centimes");
-        data.put("base_prorata", detailProrata(p));
+        data.put("base_prorata", proRataDetail(p));
         data.put("date_emission", Amounts.formatDate(java.time.LocalDate.now()));
         data.put("lieu", text(p.getIssuePlace()));
         data.put("complete", complete);
@@ -145,9 +145,9 @@ public class TemplateDataService {
         return Amounts.formatDate(debut) + " au " + Amounts.formatDate(fin);
     }
 
-    public String detailProrata(Settings p) {
+    public String proRataDetail(Settings p) {
         BigDecimal base = CalculationService.proRataBase(p.getBusinessArea(), p.getTotalArea());
-        return parametersService.detailProrata(p, base);
+        return parametersService.proRataDetail(p, base);
     }
 
     private String text(String value) {

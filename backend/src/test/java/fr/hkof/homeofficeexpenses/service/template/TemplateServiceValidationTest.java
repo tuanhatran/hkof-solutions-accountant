@@ -18,7 +18,7 @@ class TemplateServiceValidationTest {
 
     private final TemplateService service = new TemplateService(null, null, null, null, null, Clock.systemUTC());
 
-    private String ressource(String path) throws IOException {
+    private String resource(String path) throws IOException {
         try (InputStream in = new ClassPathResource(path).getInputStream()) {
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         }
@@ -26,15 +26,15 @@ class TemplateServiceValidationTest {
 
     @Test
     @DisplayName("Les modèles intégrés passent la validation, y compris la boucle des lignes")
-    void modelsIntegresValides() throws IOException {
-        ValidationReportDto statement = service.valider(TemplateType.EXPENSE_STATEMENT, ressource("templates/defaut/note-frais.html"));
+    void bundledModelsValid() throws IOException {
+        ValidationReportDto statement = service.validate(TemplateType.EXPENSE_STATEMENT, resource("templates/defaut/note-frais.html"));
         assertThat(statement.structureValid()).isTrue();
         assertThat(statement.unknownVariables()).isEmpty();
         assertThat(statement.missingVariables()).isEmpty();
         assertThat(statement.recognizedVariables()).contains("lignes", "lignes.poste", "lignes.montant_retenu");
 
-        ValidationReportDto rentReceipt = service.valider(TemplateType.RENT_RECEIPT,
-                ressource("templates/defaut/quittance.html"));
+        ValidationReportDto rentReceipt = service.validate(TemplateType.RENT_RECEIPT,
+                resource("templates/defaut/quittance.html"));
         assertThat(rentReceipt.structureValid()).isTrue();
         assertThat(rentReceipt.unknownVariables()).isEmpty();
         assertThat(rentReceipt.missingVariables()).isEmpty();
@@ -42,8 +42,8 @@ class TemplateServiceValidationTest {
 
     @Test
     @DisplayName("Une variable inconnue dans la boucle reste une erreur explicite")
-    void variableUnknownSignalee() {
-        ValidationReportDto report = service.valider(TemplateType.EXPENSE_STATEMENT, """
+    void reportsUnknownVariable() {
+        ValidationReportDto report = service.validate(TemplateType.EXPENSE_STATEMENT, """
                 <html><body>
                 {{#lignes}}<p>{{poste}} {{montant_retenu}} {{inconnue}}</p>{{/lignes}}
                 </body></html>
@@ -56,8 +56,8 @@ class TemplateServiceValidationTest {
 
     @Test
     @DisplayName("Les variables obligatoires manquantes sont un avertissement, pas un blocage")
-    void missingVariablesSignalees() {
-        ValidationReportDto report = service.valider(TemplateType.RENT_RECEIPT,
+    void reportsMissingVariables() {
+        ValidationReportDto report = service.validate(TemplateType.RENT_RECEIPT,
                 "<html><body>{{bailleur.nom}}</body></html>");
         assertThat(report.structureValid()).isTrue();
         assertThat(report.missingVariables()).contains("locataire.nom", "total");
@@ -65,13 +65,13 @@ class TemplateServiceValidationTest {
 
     @Test
     @DisplayName("Un script ou une expression exécutable invalide le template")
-    void securiteRefusee() {
-        ValidationReportDto script = service.valider(TemplateType.RENT_RECEIPT,
+    void securityRefused() {
+        ValidationReportDto script = service.validate(TemplateType.RENT_RECEIPT,
                 "<html><body><script>alert(1)</script>{{bailleur.nom}}</body></html>");
         assertThat(script.structureValid()).isFalse();
         assertThat(script.errors()).anyMatch(error -> error.contains("script"));
 
-        ValidationReportDto thymeleaf = service.valider(TemplateType.RENT_RECEIPT,
+        ValidationReportDto thymeleaf = service.validate(TemplateType.RENT_RECEIPT,
                 "<html><body><p th:text=\"${danger}\">{{bailleur.nom}}</p></body></html>");
         assertThat(thymeleaf.structureValid()).isFalse();
         assertThat(thymeleaf.errors()).anyMatch(error -> error.contains("Thymeleaf"));

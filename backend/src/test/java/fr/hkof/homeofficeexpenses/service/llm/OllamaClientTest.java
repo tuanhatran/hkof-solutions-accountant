@@ -32,7 +32,7 @@ class OllamaClientTest {
     private LlmConfig config;
 
     @BeforeEach
-    void demarrer() {
+    void start() {
         serveur = new WireMockServer(WireMockConfiguration.options().dynamicPort());
         serveur.start();
         client = new OllamaClient(JsonMapper.shared());
@@ -45,7 +45,7 @@ class OllamaClientTest {
     }
 
     @AfterEach
-    void arreter() {
+    void stop() {
         serveur.stop();
     }
 
@@ -93,17 +93,17 @@ class OllamaClientTest {
                 {"capabilities":["completion","vision"]}
                 """)));
 
-        assertThat(client.supporteVision(config, "modele-vision")).isTrue();
+        assertThat(client.supportsVision(config, "modele-vision")).isTrue();
     }
 
     @Test
     @DisplayName("Un modèle texte ne gère pas les images")
-    void sansVision() {
+    void withoutVision() {
         serveur.stubFor(post(urlEqualTo("/api/show")).willReturn(okJson("""
                 {"capabilities":["completion"]}
                 """)));
 
-        assertThat(client.supporteVision(config, "llama-test:latest")).isFalse();
+        assertThat(client.supportsVision(config, "llama-test:latest")).isFalse();
     }
 
     @Test
@@ -120,7 +120,7 @@ class OllamaClientTest {
 
     @Test
     @DisplayName("Un Ollama injoignable donne un message actionnable")
-    void serveurInjoignable() {
+    void serverUnreachable() {
         config.setUrl("http://127.0.0.1:1");
 
         assertThatThrownBy(() -> client.models(config))

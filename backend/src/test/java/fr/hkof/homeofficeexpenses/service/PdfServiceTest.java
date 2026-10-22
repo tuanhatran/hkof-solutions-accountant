@@ -21,8 +21,8 @@ class PdfServiceTest {
 
     @Test
     @DisplayName("Rend du HTML en PDF avec les polices, accents et montants français")
-    void renduHtml() throws Exception {
-        byte[] pdf = pdfService.rendreHtmlEnPdf("""
+    void rendersHtml() throws Exception {
+        byte[] pdf = pdfService.renderHtmlToPdf("""
                 <!DOCTYPE html>
                 <html lang="fr"><head><meta charset="utf-8"><style>
                   body { font-family: 'DejaVu Sans'; }
@@ -31,7 +31,7 @@ class PdfServiceTest {
                 <body><h1>QUITTANCE DE LÖYER</h1><p>Total : 1 234,56 € — Électricité</p></body></html>
                 """);
 
-        assertThat(pdfService.estPdf(pdf)).isTrue();
+        assertThat(pdfService.isPdf(pdf)).isTrue();
         String text = text(pdf);
         assertThat(text).contains("QUITTANCE", "1 234,56", "Électricité");
     }
@@ -39,7 +39,7 @@ class PdfServiceTest {
     @Test
     @DisplayName("Appose le filigrane APERÇU sur chaque page")
     void watermark() throws Exception {
-        byte[] pdf = pdfService.rendreHtmlEnPdf("<html><body><p>Document</p></body></html>");
+        byte[] pdf = pdfService.renderHtmlToPdf("<html><body><p>Document</p></body></html>");
         byte[] watermark = pdfService.addWatermark(pdf);
 
         assertThat(text(watermark)).contains("APERÇU");
@@ -47,7 +47,7 @@ class PdfServiceTest {
 
     @Test
     @DisplayName("Convertit une image en page A4 et fusionne les PDF")
-    void imageEtFusion() throws Exception {
+    void imageAndMerge() throws Exception {
         BufferedImage image = new BufferedImage(200, 100, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphique = image.createGraphics();
         graphique.setColor(Color.WHITE);
@@ -58,9 +58,9 @@ class PdfServiceTest {
         ByteArrayOutputStream png = new ByteArrayOutputStream();
         ImageIO.write(image, "png", png);
 
-        byte[] imagePdf = pdfService.imageVersPdf(png.toByteArray(), "justificatif.png");
-        byte[] statement = pdfService.rendreHtmlEnPdf("<html><body><p>Note de frais</p></body></html>");
-        byte[] fusion = pdfService.fusionner(List.of(statement, imagePdf));
+        byte[] imagePdf = pdfService.imageToPdf(png.toByteArray(), "justificatif.png");
+        byte[] statement = pdfService.renderHtmlToPdf("<html><body><p>Note de frais</p></body></html>");
+        byte[] fusion = pdfService.merge(List.of(statement, imagePdf));
 
         try (PDDocument document = PDDocument.load(fusion)) {
             assertThat(document.getNumberOfPages()).isEqualTo(2);

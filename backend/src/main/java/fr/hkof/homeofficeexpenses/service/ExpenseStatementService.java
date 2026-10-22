@@ -42,7 +42,7 @@ import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementGenerationRequest;
 @Service
 public class ExpenseStatementService {
 
-    private static final List<String> CONFIANCE = List.of("haute", "moyenne", "basse");
+    private static final List<String> CONFIDENCE_LEVELS = List.of("haute", "moyenne", "basse");
 
     private final ExpenseStatementRepository repository;
     private final SettingsService parametersService;
@@ -80,18 +80,18 @@ public class ExpenseStatementService {
         Settings p = parametersService.entity();
         BigDecimal total = CalculationService.total(lines.stream().map(CalculatedLine::claimedAmount).toList());
         return new CalculationResponse(
-                lines.stream().map(this::versDto).toList(),
+                lines.stream().map(this::toDto).toList(),
                 Amounts.apiValue(total),
-                NumberToWords.enLettres(total),
+                NumberToWords.toWords(total),
                 Amounts.apiValue(CalculationService.proRataBase(p.getBusinessArea(), p.getTotalArea())),
-                templateDataService.detailProrata(p));
+                templateDataService.proRataDetail(p));
     }
 
     @Transactional(readOnly = true)
     public DraftDto draft(String monthText) {
         YearMonth month = Amounts.month(monthText);
         Settings p = parametersService.entity();
-        RentReceipt rentReceipt = rentReceiptService.activePourMonth(month.toString());
+        RentReceipt rentReceipt = rentReceiptService.activeForMonth(month.toString());
         List<ExpenseLineDto> lines = new ArrayList<>();
         if (rentReceipt != null) {
             ExpenseItem loyer = expenseItemService.entity("loyer");
@@ -103,69 +103,69 @@ public class ExpenseStatementService {
                     Amounts.apiValue(rentReceipt.getTotal()),
                     null, null, AmountSource.MANUAL.name(), null, null));
         }
-        List<String> missing = expenseItemService.lister(false).stream()
+        List<String> missing = expenseItemService.list(false).stream()
                 .filter(expenseItem -> !expenseItem.code().equals("loyer"))
                 .map(expenseItem -> expenseItem.label().toLowerCase(Locale.FRENCH))
                 .toList();
         return new DraftDto(
                 month.toString(),
-                rentReceipt == null ? null : rentReceiptService.versDto(rentReceipt),
+                rentReceipt == null ? null : rentReceiptService.toDto(rentReceipt),
                 lines,
                 Amounts.apiValue(CalculationService.proRataBase(p.getBusinessArea(), p.getTotalArea())),
-                templateDataService.detailProrata(p),
+                templateDataService.proRataDetail(p),
                 missing);
     }
 
     @Transactional(readOnly = true)
-    public byte[] apercu(StatementPreviewRequest request) {
+    public byte[] preview(StatementPreviewRequest request) {
         YearMonth month = Amounts.month(request.month());
         List<CalculatedLine> lines = calculateLines(request.lines(), month);
         Settings p = parametersService.entity();
-        ExpenseStatement statement = construireStatement(month, lines, null, null);
+        ExpenseStatement statement = buildStatement(month, lines, null, null);
         boolean complete = Boolean.TRUE.equals(request.complete());
-        TemplateDocument template = templatePourStatement(request.templateId());
-        String html = templateService.rendre(template, templateDataService.dataStatement(p, statement, complete));
-        byte[] pdf = pdfService.rendreHtmlEnPdf(html);
+        TemplateDocument template = templateForStatement(request.templateId());
+        String html = templateService.render(template, templateDataService.dataStatement(p, statement, complete));
+        byte[] pdf = pdfService.renderHtmlToPdf(html);
         if (complete) {
-            pdf = pdfService.fusionner(avecAnnexes(pdf, statement, month));
+            pdf = pdfService.merge(withAttachments(pdf, statement, month));
         }
         return pdfService.addWatermark(pdf);
     }
 
     @Transactional
-    public StatementDto generer(StatementGenerationRequest request) {
+    public StatementDto generate(StatementGenerationRequest request) {
         YearMonth month = Amounts.month(request.month());
         List<CalculatedLine> lines = calculateLines(request.lines(), month);
         if (lines.isEmpty()) {
             throw new BusinessException("Ajoutez au moins un frais avant de générer la note.");
         }
         Settings p = parametersService.entity();
-        TemplateDocument template = templatePourStatement(request.templateId());
+        TemplateDocument template = templateForStatement(request.templateId());
         int version = repository.findFirstByMonthOrderByVersionDesc(month.toString())
                 .map(n -> n.getVersion() + 1)
                 .orElse(1);
-        archiver(month.toString());
-        ExpenseStatement statement = construireStatement(month, lines, version, template);
-        String html = templateService.rendre(template, templateDataService.dataStatement(p, statement, true));
-        byte[] pdf = pdfService.rendreHtmlEnPdf(html);
-        byte[] pdfComplete = pdfService.fusionner(avecAnnexes(pdf, statement, month));
-        statement.setPdfPath(stockage.stockerPdf("note_frais_" + month + "_v" + version + ".pdf", pdf));
-        statement.setFullPdfPath(stockage.stockerPdf("note_frais_" + month + "_v" + version + "_complet.pdf", pdfComplete));
+        archive(month.toString());
+        ExpenseStatement statement = buildStatement(month, lines, version, template);
+        String html = templateService.render(template, templateDataService.dataStatement(p, statement, true));
+        byte[] pdf = pdfService.renderHtmlToPdf(html);
+        byte[] pdfComplete = pdfService.merge(withAttachments(pdf, statement, month));
+        statement.setPdfPath(stockage.storePdf("note_frais_" + month + "_v" + version + ".pdf", pdf));
+        statement.setFullPdfPath(stockage.storePdf("note_frais_" + month + "_v" + version + "_complet.pdf", pdfComplete));
         ExpenseStatement saved = repository.saveAndFlush(statement);
-        return versDto(saved);
+        return toDto(saved);
     }
 
     @Transactional(readOnly = true)
-    public List<StatementDto> lister(String month) {
+    public List<StatementDto> list(String month) {
         List<ExpenseStatement> statements = month == null || month.isBlank()
                 ? repository.findAllByOrderByMonthDescVersionDesc()
                 : repository.findByMonthOrderByVersionDesc(Amounts.month(month).toString());
-        return statements.stream().map(this::versDto).toList();
+        return statements.stream().map(this::toDto).toList();
     }
 
     @Transactional(readOnly = true)
-    public StatementDto obtenir(Long id) {
-        return versDto(entity(id));
+    public StatementDto get(Long id) {
+        return toDto(entity(id));
     }
 
     @Transactional(readOnly = true)
@@ -175,7 +175,7 @@ public class ExpenseStatementService {
     }
 
     @Transactional(readOnly = true)
-    public ExpenseStatement activePourMonth(String month) {
+    public ExpenseStatement activeForMonth(String month) {
         return repository.findFirstByMonthAndStatusOrderByVersionDesc(month, DocumentStatus.ACTIVE).orElse(null);
     }
 
@@ -185,7 +185,7 @@ public class ExpenseStatementService {
         if (path == null) {
             throw new NotFoundException("Le PDF demandé est introuvable.");
         }
-        return stockage.lire(path);
+        return stockage.read(path);
     }
 
     private List<CalculatedLine> calculateLines(List<ExpenseLineRequest> demandes, YearMonth month) {
@@ -203,21 +203,21 @@ public class ExpenseStatementService {
                 throw new BusinessException("Le type « " + expenseItem.getLabel() + " » ne peut être ajouté qu'une fois.");
             }
             BigDecimal amountInclVat = Amounts.decimal(request.amountInclVat(), "montant TTC", true);
-            BigDecimal prorata = Amounts.pourcentage(request.proRataPct());
-            LocalDate debut = Amounts.dateOptionnelle(request.periodStart(), "début de période");
-            LocalDate fin = Amounts.dateOptionnelle(request.periodEnd(), "fin de période");
+            BigDecimal prorata = Amounts.percentage(request.proRataPct());
+            LocalDate debut = Amounts.optionalDate(request.periodStart(), "début de période");
+            LocalDate fin = Amounts.optionalDate(request.periodEnd(), "fin de période");
             if ((debut == null) != (fin == null)) {
                 throw new BusinessException("Renseignez les deux dates de la période facturée, ou aucune.");
             }
             BigDecimal monthlyAmount = request.monthlyAmountOverride() == null || request.monthlyAmountOverride().isBlank()
-                    ? CalculationService.ventilerSurMonth(amountInclVat, debut, fin, month)
+                    ? CalculationService.allocateToMonth(amountInclVat, debut, fin, month)
                     : Amounts.decimal(request.monthlyAmountOverride(), "montant du mois", false);
             BigDecimal retenu = CalculationService.claimedAmount(monthlyAmount, prorata);
             Receipt receipt = request.receiptId() == null
                     ? null
                     : receiptService.entity(request.receiptId());
             AmountSource source = amountSource(request.amountSource());
-            BigDecimal detectedAmount = Amounts.decimalOptionnel(request.aiDetectedAmount(), "montant détecté par IA");
+            BigDecimal detectedAmount = Amounts.optionalDecimal(request.aiDetectedAmount(), "montant détecté par IA");
             String confidence = confidence(request.aiConfidence());
             result.add(new CalculatedLine(expenseItem, amountInclVat, debut, fin, monthlyAmount, prorata, retenu,
                     receipt, source, detectedAmount, confidence));
@@ -225,7 +225,7 @@ public class ExpenseStatementService {
         return result;
     }
 
-    private ExpenseStatement construireStatement(YearMonth month, List<CalculatedLine> lines, Integer version,
+    private ExpenseStatement buildStatement(YearMonth month, List<CalculatedLine> lines, Integer version,
             TemplateDocument template) {
         ExpenseStatement statement = new ExpenseStatement();
         statement.setMonth(month.toString());
@@ -261,12 +261,12 @@ public class ExpenseStatementService {
         return statement;
     }
 
-    private List<byte[]> avecAnnexes(byte[] statementPdf, ExpenseStatement statement, YearMonth month) {
+    private List<byte[]> withAttachments(byte[] statementPdf, ExpenseStatement statement, YearMonth month) {
         List<byte[]> pdfs = new ArrayList<>();
         pdfs.add(statementPdf);
-        RentReceipt rentReceipt = rentReceiptService.activePourMonth(month.toString());
+        RentReceipt rentReceipt = rentReceiptService.activeForMonth(month.toString());
         if (rentReceipt != null && rentReceipt.getPdfPath() != null) {
-            pdfs.add(stockage.lire(rentReceipt.getPdfPath()));
+            pdfs.add(stockage.read(rentReceipt.getPdfPath()));
         }
         Set<Long> deja = new HashSet<>();
         for (ExpenseLine line : statement.getLines()) {
@@ -274,14 +274,14 @@ public class ExpenseStatementService {
             if (receipt == null || !deja.add(receipt.getId())) {
                 continue;
             }
-            byte[] content = stockage.lire(receipt.getPath());
+            byte[] content = stockage.read(receipt.getPath());
             if (receipt.getMimeType().equals("application/pdf")) {
                 pdfs.add(content);
             } else if (receipt.getMimeType().startsWith("image/")) {
-                pdfs.add(pdfService.imageVersPdf(content, receipt.getFileName()));
+                pdfs.add(pdfService.imageToPdf(content, receipt.getFileName()));
             } else {
-                DocumentTextExtractor.Extraction extraction = extracteur.extraire(
-                        Path.of(stockage.pathTemporaire(receipt.getFileName(), content)),
+                DocumentTextExtractor.Extraction extraction = extracteur.extract(
+                        Path.of(stockage.temporaryPath(receipt.getFileName(), content)),
                         receipt.getMimeType(), 1);
                 pdfs.add(pdfService.pageText("Justificatif — " + receipt.getFileName(), extraction.text()));
             }
@@ -289,17 +289,17 @@ public class ExpenseStatementService {
         return pdfs;
     }
 
-    private TemplateDocument templatePourStatement(Long templateId) {
+    private TemplateDocument templateForStatement(Long templateId) {
         TemplateDocument template = templateId == null
                 ? templateService.active(TemplateType.EXPENSE_STATEMENT)
-                : templateService.parId(templateId);
+                : templateService.byId(templateId);
         if (template.getType() != TemplateType.EXPENSE_STATEMENT) {
             throw new BusinessException("Le template sélectionné n'est pas un template de note de frais.");
         }
         return template;
     }
 
-    private void archiver(String month) {
+    private void archive(String month) {
         List<ExpenseStatement> existantes = repository.findByMonthOrderByVersionDesc(month);
         boolean modifie = false;
         for (ExpenseStatement existante : existantes) {
@@ -330,13 +330,13 @@ public class ExpenseStatementService {
             return null;
         }
         String normalisee = value.trim().toLowerCase(Locale.ROOT);
-        if (!CONFIANCE.contains(normalisee)) {
+        if (!CONFIDENCE_LEVELS.contains(normalisee)) {
             throw new BusinessException("Niveau de confiance IA invalide : " + value);
         }
         return normalisee;
     }
 
-    public ExpenseLineDto versDto(CalculatedLine line) {
+    public ExpenseLineDto toDto(CalculatedLine line) {
         return new ExpenseLineDto(
                 null,
                 line.expenseItem().getCode(),
@@ -355,7 +355,7 @@ public class ExpenseStatementService {
                 line.confidence());
     }
 
-    public StatementDto versDto(ExpenseStatement statement) {
+    public StatementDto toDto(ExpenseStatement statement) {
         List<ExpenseLineDto> lines = statement.getLines().stream()
                 .map(line -> new ExpenseLineDto(
                         line.getId(),

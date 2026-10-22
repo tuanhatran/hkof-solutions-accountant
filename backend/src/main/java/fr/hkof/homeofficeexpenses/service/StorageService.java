@@ -21,7 +21,7 @@ import fr.hkof.homeofficeexpenses.config.AppProperties;
 @Service
 public class StorageService {
 
-    private static final Set<String> NOMS_RESERVES = Set.of(
+    private static final Set<String> RESERVED_NAMES = Set.of(
             "CON", "PRN", "AUX", "NUL",
             "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
             "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9");
@@ -32,10 +32,10 @@ public class StorageService {
     public StorageService(AppProperties properties, FileTypeDetector detector) {
         this.racine = Path.of(properties.dataDir()).toAbsolutePath().normalize();
         this.detector = detector;
-        initialiser();
+        init();
     }
 
-    private void initialiser() {
+    private void init() {
         try {
             Files.createDirectories(racine.resolve("justificatifs"));
             Files.createDirectories(racine.resolve("sorties"));
@@ -45,14 +45,14 @@ public class StorageService {
         }
     }
 
-    public StoredFile stockerReceipt(MultipartFile file) {
+    public StoredFile storeReceipt(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException("Le fichier justificatif est obligatoire.");
         }
         try {
             byte[] content = file.getBytes();
-            FileTypeDetector.DetectedFile detecte = detector.detecterReceipt(file.getOriginalFilename(), content);
-            String name = assainirName(file.getOriginalFilename());
+            FileTypeDetector.DetectedFile detecte = detector.detectReceipt(file.getOriginalFilename(), content);
+            String name = sanitizeName(file.getOriginalFilename());
             String stocke = UUID.randomUUID() + "." + detecte.extension();
             Path cible = racine.resolve("justificatifs").resolve(stocke).normalize();
             Files.write(cible, content);
@@ -62,7 +62,7 @@ public class StorageService {
         }
     }
 
-    public String stockerTemplate(byte[] content, String type, int version) {
+    public String storeTemplate(byte[] content, String type, int version) {
         try {
             Path cible = racine.resolve("templates")
                     .resolve(type.toLowerCase() + "_v" + version + ".html")
@@ -74,10 +74,10 @@ public class StorageService {
         }
     }
 
-    public String stockerPdf(String nameRelatif, byte[] content) {
+    public String storePdf(String nameRelatif, byte[] content) {
         try {
             Path cible = racine.resolve("sorties").resolve(nameRelatif).normalize();
-            verifierInterne(cible);
+            checkInternal(cible);
             Files.createDirectories(cible.getParent());
             Files.write(cible, content);
             return cible.toString();
@@ -86,7 +86,7 @@ public class StorageService {
         }
     }
 
-    public byte[] lire(String path) {
+    public byte[] read(String path) {
         if (path == null || path.isBlank()) {
             throw new NotFoundException("Fichier introuvable.");
         }
@@ -98,7 +98,7 @@ public class StorageService {
                 }
             }
             Path file = Path.of(path).toAbsolutePath().normalize();
-            verifierInterne(file);
+            checkInternal(file);
             if (!Files.exists(file)) {
                 throw new NotFoundException("Fichier introuvable.");
             }
@@ -108,10 +108,10 @@ public class StorageService {
         }
     }
 
-    public String pathTemporaire(String fileName, byte[] content) {
+    public String temporaryPath(String fileName, byte[] content) {
         try {
             Path folder = Files.createTempDirectory("homeofficeexpenses-");
-            Path cible = folder.resolve(assainirName(fileName));
+            Path cible = folder.resolve(sanitizeName(fileName));
             Files.copy(new java.io.ByteArrayInputStream(content), cible, StandardCopyOption.REPLACE_EXISTING);
             cible.toFile().deleteOnExit();
             folder.toFile().deleteOnExit();
@@ -121,17 +121,17 @@ public class StorageService {
         }
     }
 
-    public Path racine() {
+    public Path root() {
         return racine;
     }
 
-    private void verifierInterne(Path file) {
+    private void checkInternal(Path file) {
         if (!file.startsWith(racine)) {
             throw new BusinessException("Accès fichier refusé.");
         }
     }
 
-    static String assainirName(String name) {
+    static String sanitizeName(String name) {
         // Strip both separators so Windows-style names are handled on every OS.
         String base = name == null
                 ? "fichier"
@@ -143,7 +143,7 @@ public class StorageService {
         }
         int point = propre.lastIndexOf('.');
         String radical = point > 0 ? propre.substring(0, point) : propre;
-        if (NOMS_RESERVES.contains(radical.toUpperCase(Locale.ROOT))) {
+        if (RESERVED_NAMES.contains(radical.toUpperCase(Locale.ROOT))) {
             propre = "_" + propre;
         }
         if (propre.length() > 180) {

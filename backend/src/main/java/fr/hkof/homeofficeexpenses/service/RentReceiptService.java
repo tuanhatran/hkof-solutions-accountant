@@ -45,11 +45,11 @@ public class RentReceiptService {
     }
 
     @Transactional
-    public RentReceiptDto generer(RentReceiptRequest request) {
+    public RentReceiptDto generate(RentReceiptRequest request) {
         YearMonth month = Amounts.month(request.month());
         Settings parameters = parametersService.entity();
-        LocalDate debut = dateOu(request.periodStart(), month.atDay(1));
-        LocalDate fin = dateOu(request.periodEnd(), month.atEndOfMonth());
+        LocalDate debut = dateOr(request.periodStart(), month.atDay(1));
+        LocalDate fin = dateOr(request.periodEnd(), month.atEndOfMonth());
         if (fin.isBefore(debut)) {
             throw new BusinessException("La fin de période ne peut pas précéder le début.");
         }
@@ -63,12 +63,12 @@ public class RentReceiptService {
                 ? (parameters.getChargesAdvance() == null ? BigDecimal.ZERO : parameters.getChargesAdvance())
                 : Amounts.decimal(request.charges(), "provision pour charges", false);
         BigDecimal total = CalculationService.totalRentReceipt(loyer, charges);
-        LocalDate emission = dateOu(request.issueDate(), LocalDate.now(clock));
-        LocalDate paiement = dateOu(request.paymentDate(), LocalDate.now(clock));
+        LocalDate emission = dateOr(request.issueDate(), LocalDate.now(clock));
+        LocalDate paiement = dateOr(request.paymentDate(), LocalDate.now(clock));
 
         TemplateDocument template = templateService.active(TemplateType.RENT_RECEIPT);
         if (request.templateId() != null) {
-            template = templateService.parId(request.templateId());
+            template = templateService.byId(request.templateId());
             if (template.getType() != TemplateType.RENT_RECEIPT) {
                 throw new BusinessException("Le template sélectionné n'est pas un template de quittance.");
             }
@@ -77,7 +77,7 @@ public class RentReceiptService {
         int version = repository.findFirstByMonthOrderByVersionDesc(month.toString())
                 .map(q -> q.getVersion() + 1)
                 .orElse(1);
-        archiver(month.toString());
+        archive(month.toString());
 
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setMonth(month.toString());
@@ -95,19 +95,19 @@ public class RentReceiptService {
         rentReceipt.setTemplateVersion(template.getVersion());
         rentReceipt.setCreatedAt(Instant.now(clock));
 
-        String html = templateService.rendre(template, templateDataService.dataRentReceipt(parameters, rentReceipt));
-        byte[] pdf = pdfService.rendreHtmlEnPdf(html);
-        String path = stockage.stockerPdf("quittance_" + month + "_v" + version + ".pdf", pdf);
+        String html = templateService.render(template, templateDataService.dataRentReceipt(parameters, rentReceipt));
+        byte[] pdf = pdfService.renderHtmlToPdf(html);
+        String path = stockage.storePdf("quittance_" + month + "_v" + version + ".pdf", pdf);
         rentReceipt.setPdfPath(path);
-        return versDto(repository.save(rentReceipt));
+        return toDto(repository.save(rentReceipt));
     }
 
     @Transactional(readOnly = true)
-    public byte[] apercu(RentReceiptRequest request) {
+    public byte[] preview(RentReceiptRequest request) {
         YearMonth month = Amounts.month(request.month());
         Settings parameters = parametersService.entity();
-        LocalDate debut = dateOu(request.periodStart(), month.atDay(1));
-        LocalDate fin = dateOu(request.periodEnd(), month.atEndOfMonth());
+        LocalDate debut = dateOr(request.periodStart(), month.atDay(1));
+        LocalDate fin = dateOr(request.periodEnd(), month.atEndOfMonth());
         if (fin.isBefore(debut)) {
             throw new BusinessException("La fin de période ne peut pas précéder le début.");
         }
@@ -127,29 +127,29 @@ public class RentReceiptService {
         rentReceipt.setRentExclCharges(loyer);
         rentReceipt.setCharges(charges);
         rentReceipt.setTotal(CalculationService.totalRentReceipt(loyer, charges));
-        rentReceipt.setIssueDate(dateOu(request.issueDate(), LocalDate.now(clock)));
-        rentReceipt.setPaymentDate(dateOu(request.paymentDate(), LocalDate.now(clock)));
+        rentReceipt.setIssueDate(dateOr(request.issueDate(), LocalDate.now(clock)));
+        rentReceipt.setPaymentDate(dateOr(request.paymentDate(), LocalDate.now(clock)));
         TemplateDocument template = request.templateId() == null
                 ? templateService.active(TemplateType.RENT_RECEIPT)
-                : templateService.parId(request.templateId());
+                : templateService.byId(request.templateId());
         if (template.getType() != TemplateType.RENT_RECEIPT) {
             throw new BusinessException("Le template sélectionné n'est pas un template de quittance.");
         }
-        String html = templateService.rendre(template, templateDataService.dataRentReceipt(parameters, rentReceipt));
-        return pdfService.addWatermark(pdfService.rendreHtmlEnPdf(html));
+        String html = templateService.render(template, templateDataService.dataRentReceipt(parameters, rentReceipt));
+        return pdfService.addWatermark(pdfService.renderHtmlToPdf(html));
     }
 
     @Transactional(readOnly = true)
-    public List<RentReceiptDto> lister(String month) {
+    public List<RentReceiptDto> list(String month) {
         List<RentReceipt> rentReceipts = month == null || month.isBlank()
                 ? repository.findAllByOrderByMonthDescVersionDesc()
                 : repository.findByMonthOrderByVersionDesc(Amounts.month(month).toString());
-        return rentReceipts.stream().map(this::versDto).toList();
+        return rentReceipts.stream().map(this::toDto).toList();
     }
 
     @Transactional(readOnly = true)
-    public RentReceiptDto obtenir(Long id) {
-        return versDto(entity(id));
+    public RentReceiptDto get(Long id) {
+        return toDto(entity(id));
     }
 
     @Transactional(readOnly = true)
@@ -159,7 +159,7 @@ public class RentReceiptService {
     }
 
     @Transactional(readOnly = true)
-    public RentReceipt activePourMonth(String month) {
+    public RentReceipt activeForMonth(String month) {
         return repository.findFirstByMonthAndStatusOrderByVersionDesc(month, DocumentStatus.ACTIVE).orElse(null);
     }
 
@@ -168,10 +168,10 @@ public class RentReceiptService {
         if (rentReceipt.getPdfPath() == null) {
             throw new NotFoundException("Le PDF de cette quittance est introuvable.");
         }
-        return stockage.lire(rentReceipt.getPdfPath());
+        return stockage.read(rentReceipt.getPdfPath());
     }
 
-    private void archiver(String month) {
+    private void archive(String month) {
         List<RentReceipt> existantes = repository.findByMonthOrderByVersionDesc(month);
         boolean modifie = false;
         for (RentReceipt existante : existantes) {
@@ -186,12 +186,12 @@ public class RentReceiptService {
         }
     }
 
-    private LocalDate dateOu(String date, LocalDate defaut) {
-        LocalDate parsee = Amounts.dateOptionnelle(date, "date");
+    private LocalDate dateOr(String date, LocalDate defaut) {
+        LocalDate parsee = Amounts.optionalDate(date, "date");
         return parsee == null ? defaut : parsee;
     }
 
-    public RentReceiptDto versDto(RentReceipt q) {
+    public RentReceiptDto toDto(RentReceipt q) {
         return new RentReceiptDto(
                 q.getId(),
                 q.getMonth(),

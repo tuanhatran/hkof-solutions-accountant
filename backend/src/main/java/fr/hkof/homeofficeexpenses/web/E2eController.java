@@ -23,6 +23,6 @@ public class E2eController {
     @PostMapping("/reset")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void resetE2eData() {
-        service.reinitialiser();
+        service.reset();
     }
 }

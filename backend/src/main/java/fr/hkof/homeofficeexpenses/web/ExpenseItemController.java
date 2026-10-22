@@ -30,18 +30,18 @@ public class ExpenseItemController {
 
     @GetMapping
     public List<ExpenseItemDto> listExpenseItems(@RequestParam(defaultValue = "false") boolean all) {
-        return service.lister(all);
+        return service.list(all);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ExpenseItemDto createExpenseItem(@RequestBody ExpenseItemRequest request) {
-        return service.creer(request);
+        return service.create(request);
     }
 
     @PutMapping("/{id}")
     public ExpenseItemDto updateExpenseItem(@PathVariable Long id, @RequestBody ExpenseItemRequest request) {
-        return service.mettreAJour(id, request);
+        return service.update(id, request);
     }
 
     @DeleteMapping("/{id}")

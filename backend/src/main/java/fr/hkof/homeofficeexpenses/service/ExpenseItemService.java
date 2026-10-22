@@ -23,11 +23,11 @@ public class ExpenseItemService {
     }
 
     @Transactional(readOnly = true)
-    public List<ExpenseItemDto> lister(boolean tous) {
+    public List<ExpenseItemDto> list(boolean tous) {
         List<ExpenseItem> items = tous
                 ? repository.findByDeletedFalseOrderBySortOrderAsc()
                 : repository.findByDeletedFalseAndActiveTrueOrderBySortOrderAsc();
-        return items.stream().map(this::versDto).toList();
+        return items.stream().map(this::toDto).toList();
     }
 
     @Transactional(readOnly = true)
@@ -37,30 +37,30 @@ public class ExpenseItemService {
     }
 
     @Transactional
-    public ExpenseItemDto creer(ExpenseItemRequest request) {
+    public ExpenseItemDto create(ExpenseItemRequest request) {
         if (request.label() == null || request.label().isBlank()) {
             throw new BusinessException("Le libellé du poste est obligatoire.");
         }
         String code = request.code() == null || request.code().isBlank()
-                ? genererCode(request.label())
-                : normaliserCode(request.code());
+                ? generateCode(request.label())
+                : normalizeCode(request.code());
         if (repository.existsByCode(code)) {
             throw new BusinessException("Un poste avec le code « " + code + " » existe déjà.");
         }
         ExpenseItem expenseItem = new ExpenseItem();
         expenseItem.setCode(code);
-        appliquer(expenseItem, request);
+        apply(expenseItem, request);
         expenseItem.setDeleted(false);
-        return versDto(repository.save(expenseItem));
+        return toDto(repository.save(expenseItem));
     }
 
     @Transactional
-    public ExpenseItemDto mettreAJour(Long id, ExpenseItemRequest request) {
+    public ExpenseItemDto update(Long id, ExpenseItemRequest request) {
         ExpenseItem expenseItem = repository.findById(id)
                 .filter(p -> !p.isDeleted())
                 .orElseThrow(() -> new NotFoundException("Poste introuvable."));
-        appliquer(expenseItem, request);
-        return versDto(repository.save(expenseItem));
+        apply(expenseItem, request);
+        return toDto(repository.save(expenseItem));
     }
 
     @Transactional
@@ -73,13 +73,13 @@ public class ExpenseItemService {
         repository.save(expenseItem);
     }
 
-    private void appliquer(ExpenseItem expenseItem, ExpenseItemRequest request) {
+    private void apply(ExpenseItem expenseItem, ExpenseItemRequest request) {
         if (request.label() == null || request.label().isBlank()) {
             throw new BusinessException("Le libellé du poste est obligatoire.");
         }
         expenseItem.setLabel(request.label().trim());
         expenseItem.setSupplier(request.supplier() == null ? null : request.supplier().trim());
-        expenseItem.setProRataPct(Amounts.pourcentage(request.proRataPct()));
+        expenseItem.setProRataPct(Amounts.percentage(request.proRataPct()));
         expenseItem.setPeriodicity(periodicity(request.periodicity()));
         expenseItem.setActive(request.active() == null || request.active());
         expenseItem.setSortOrder(request.sortOrder() == null ? 0 : request.sortOrder());
@@ -97,7 +97,7 @@ public class ExpenseItemService {
         }
     }
 
-    private String normaliserCode(String value) {
+    private String normalizeCode(String value) {
         String code = Normalizer.normalize(value.trim(), Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "")
                 .replaceAll("[^a-zA-Z0-9]+", "_")
@@ -109,11 +109,11 @@ public class ExpenseItemService {
         return code;
     }
 
-    private String genererCode(String label) {
-        return normaliserCode(label);
+    private String generateCode(String label) {
+        return normalizeCode(label);
     }
 
-    public ExpenseItemDto versDto(ExpenseItem p) {
+    public ExpenseItemDto toDto(ExpenseItem p) {
         return new ExpenseItemDto(
                 p.getId(),
                 p.getCode(),

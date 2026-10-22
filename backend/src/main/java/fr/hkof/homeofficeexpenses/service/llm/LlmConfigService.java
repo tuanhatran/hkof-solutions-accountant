@@ -26,9 +26,9 @@ import fr.hkof.homeofficeexpenses.web.dto.Dtos.LlmTestResponse;
 @Service
 public class LlmConfigService {
 
-    private static final Set<String> HOTES_LOCAUX = Set.of(
+    private static final Set<String> LOCAL_HOSTS = Set.of(
             "localhost", "127.0.0.1", "::1", "[::1]", "0.0.0.0", "host.docker.internal", "ollama");
-    private static final Pattern IP_PRIVEE = Pattern.compile(
+    private static final Pattern PRIVATE_IP = Pattern.compile(
             "^(10\\.|127\\.|192\\.168\\.|169\\.254\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.).*");
 
     private final LlmConfigRepository repository;
@@ -51,12 +51,12 @@ public class LlmConfigService {
     }
 
     @Transactional(readOnly = true)
-    public LlmConfigDto obtenir() {
-        return versDto(entity());
+    public LlmConfigDto get() {
+        return toDto(entity());
     }
 
     @Transactional
-    public LlmConfigDto mettreAJour(LlmConfigRequest request) {
+    public LlmConfigDto update(LlmConfigRequest request) {
         LlmConfig config = entity();
         if (request.active() != null) {
             config.setActive(request.active());
@@ -74,7 +74,7 @@ public class LlmConfigService {
             config.setSupplier(supplier);
         }
         if (request.url() != null) {
-            config.setUrl(normaliserUrl(request.url()));
+            config.setUrl(normalizeUrl(request.url()));
         }
         if (request.model() != null) {
             config.setModel(request.model().trim());
@@ -122,7 +122,7 @@ public class LlmConfigService {
             config.setApiKey(request.apiKey().isBlank() ? null : request.apiKey().trim());
         }
         config.setUpdatedAt(Instant.now(clock));
-        return versDto(repository.save(config));
+        return toDto(repository.save(config));
     }
 
     public List<LlmModelDto> models() {
@@ -144,7 +144,7 @@ public class LlmConfigService {
                 return new LlmStatusDto("MODELE_ABSENT", true, true, false,
                         "Ollama est joignable mais le modèle « " + config.getModel() + " » n'est pas installé.");
             }
-            if (remoteUrl(config.getUrl())) {
+            if (isRemoteUrl(config.getUrl())) {
                 return new LlmStatusDto("PRET_DISTANT", true, true, true,
                         "Ollama est joignable. Attention : l'URL configurée n'est pas locale, les documents quittent votre machine.");
             }
@@ -154,7 +154,7 @@ public class LlmConfigService {
         }
     }
 
-    public LlmTestResponse tester() {
+    public LlmTestResponse testConnection() {
         LlmConfig config = entity();
         long debut = System.currentTimeMillis();
         String text = """
@@ -166,7 +166,7 @@ public class LlmConfigService {
                 Total TTC : 42,00 €
                 """;
         try {
-            var result = extractionPipeline.extraireDepuisText(config, text, List.of());
+            var result = extractionPipeline.extractFromText(config, text, List.of());
             long duree = System.currentTimeMillis() - debut;
             String amount = result.amountInclVat();
             String message = amount == null
@@ -178,8 +178,8 @@ public class LlmConfigService {
         }
     }
 
-    public LlmConfigDto versDto(LlmConfig config) {
-        boolean distante = remoteUrl(config.getUrl());
+    public LlmConfigDto toDto(LlmConfig config) {
+        boolean distante = isRemoteUrl(config.getUrl());
         String warning = distante
                 ? "Attention : cette URL n'est pas locale. Les justificatifs analysés seront envoyés à un service externe."
                 : null;
@@ -199,7 +199,7 @@ public class LlmConfigService {
                 warning);
     }
 
-    public static boolean remoteUrl(String url) {
+    public static boolean isRemoteUrl(String url) {
         if (url == null || url.isBlank()) {
             return true;
         }
@@ -213,15 +213,15 @@ public class LlmConfigService {
             String sansCrochets = normalise.startsWith("[") && normalise.endsWith("]")
                     ? normalise.substring(1, normalise.length() - 1)
                     : normalise;
-            boolean prive = IP_PRIVEE.matcher(sansCrochets).matches()
+            boolean prive = PRIVATE_IP.matcher(sansCrochets).matches()
                     || sansCrochets.matches("^f[cd][0-9a-f]{2}:.*");
-            return !HOTES_LOCAUX.contains(normalise) && !prive;
+            return !LOCAL_HOSTS.contains(normalise) && !prive;
         } catch (IllegalArgumentException ex) {
             return true;
         }
     }
 
-    private String normaliserUrl(String url) {
+    private String normalizeUrl(String url) {
         String propre = url == null ? "" : url.trim().replaceAll("/+$", "");
         if (propre.isBlank()) {
             throw new BusinessException("L'URL du service LLM est obligatoire.");

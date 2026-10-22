@@ -27,7 +27,7 @@ import fr.hkof.homeofficeexpenses.repository.TemplateDocumentRepository;
 @Profile("e2e")
 public class E2eResetService {
 
-    private static final List<String> DOSSIERS = List.of("justificatifs", "sorties", "templates");
+    private static final List<String> FOLDERS = List.of("justificatifs", "sorties", "templates");
 
     private final AnalysisDocumentRepository analyses;
     private final ExpenseLineRepository lines;
@@ -59,7 +59,7 @@ public class E2eResetService {
     }
 
     @Transactional
-    public void reinitialiser() {
+    public void reset() {
         analyses.deleteAllInBatch();
         lines.deleteAllInBatch();
         statements.deleteAllInBatch();
@@ -69,25 +69,25 @@ public class E2eResetService {
         llmConfigs.deleteAllInBatch();
         items.deleteAllInBatch();
         parameters.deleteAllInBatch();
-        nettoyerFiles();
+        cleanFiles();
         initializer.run(new DefaultApplicationArguments(new String[0]));
     }
 
-    private void nettoyerFiles() {
-        for (String folder : DOSSIERS) {
-            Path racine = stockage.racine().resolve(folder);
+    private void cleanFiles() {
+        for (String folder : FOLDERS) {
+            Path rootPath = stockage.root().resolve(folder);
             try {
-                if (Files.exists(racine)) {
-                    try (Stream<Path> chemins = Files.walk(racine)) {
+                if (Files.exists(rootPath)) {
+                    try (Stream<Path> chemins = Files.walk(rootPath)) {
                         List<Path> toDelete = chemins.sorted(Comparator.reverseOrder()).toList();
                         for (Path path : toDelete) {
                             Files.deleteIfExists(path);
                         }
                     }
                 }
-                Files.createDirectories(racine);
+                Files.createDirectories(rootPath);
             } catch (IOException ex) {
-                throw new IllegalStateException("Impossible de nettoyer le dossier e2e " + racine, ex);
+                throw new IllegalStateException("Impossible to clean e2e folder " + rootPath, ex);
             }
         }
     }
