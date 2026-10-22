@@ -30,12 +30,22 @@ The `.opencode/` directory is the OpenCode entry point for this project:
 
 - `opencode.json` — instructions glob, the `.qoder/skills` source, and git guards.
 - `instructions/` — detailed rules loaded alongside this file.
-- `agents/` — one subagent per delivery block, mirroring `.qoder/agents/`.
+- `agents/` — the orchestrator, planner, coder, tester and reviewer workflow, mirroring
+  `.qoder/agents/`.
 - `skills/` — project skills for contract changes, backend, frontend, PDF, LLM and E2E.
 - `commands/` — `/verify`, `/contract`, `/review`.
 
-`.qoder/agents/*.md` remains the source of truth for the block breakdown. When a block
-changes, update both agent directories so they do not diverge.
+`.qoder/agents/*.md` remains the source of truth. The same five agents are mirrored to
+`.opencode/agents/*.md` and `.github/agents/*.agent.md`; when a workflow rule changes,
+update all three so they do not diverge. Task handoffs live in the shared `.handoff/tasks/`
+tree, so a task continues unchanged whichever configuration runs it.
+
+## File graph
+
+The repository file graph is the local CodeGraph index in `.codegraph/` (SQLite,
+gitignored), not a hand-maintained document. Use the `codegraph` CLI (`context`, `files`,
+`query`, `node`, `impact`, `affected`, `sync`) to locate code and affected tests. Never
+commit or hand-edit `.codegraph/`.
 
 ## Language policy
 
@@ -50,9 +60,12 @@ changes, update both agent directories so they do not diverge.
 
 ## Project precedence
 
-The absolute rules below and the role protocol in `.qoder/agents/` and
-`.opencode/agents/` take precedence over Superpowers skills. In particular:
+The absolute rules below and the role protocol in `.qoder/agents/`,
+`.opencode/agents/` and `.github/agents/` take precedence over Superpowers skills. In particular:
 
+- Each development task runs on one dedicated branch, created after the user agrees on a
+  name. Resumed tasks reuse the branch recorded in their handoff. Never create a second
+  branch for the same task.
 - Never commit, push, reset, clean, or stash. Do not create worktrees or finish
   branches (`using-git-worktrees`, `finishing-a-development-branch`) unless the
   user explicitly asks.
@@ -79,7 +92,9 @@ Java 25, Spring Boot 4.1.x, Maven, PostgreSQL 17 + Flyway, OpenHTMLToPDF/PDFBox,
 
 1. Break down before coding; one block = one testable deliverable.
 2. Backend first, against the contract, then frontend generated from `openapi-typescript`.
-3. Each agent documents its assumptions in `README.md` (section "Assumptions") or in its task report.
+3. Each agent records its assumptions in the task handoff
+   (`.handoff/tasks/<TASK-ID>.md`) and, when the product changes, in `README.md` section
+   "Assumptions".
 4. Never modify a file belonging to another block without reporting it. Shared contracts are: `openapi/openapi.yaml`, backend DTOs, generated frontend types.
 5. Verify before concluding: compilation, unit tests, frontend build, and UI walkthrough if available.
 6. Forbidden to add `any`, to compute an authoritative amount on the client side, or to bypass a test failure.
@@ -94,5 +109,5 @@ make dev       # db + backend + vite
 make e2e
 ```
 
-Agents are described in `.qoder/agents/` (source of truth) and `.opencode/agents/`
-(OpenCode mirror).
+Agents are described in `.qoder/agents/` (source of truth), `.opencode/agents/` (OpenCode
+mirror) and `.github/agents/` (GitHub Copilot mirror).

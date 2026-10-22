@@ -1,6 +1,6 @@
 # HomeOfficeExpenses: Copilot instructions
 
-Personal, local, single-user app. It generates French rent receipts (quittances de loyer) and home-office expense statements (notes de frais d'occupation). Full specification: `product_prompt.md`. Agent protocol: `AGENTS.md`, `.qoder/agents/` and `.opencode/agents/`. Read them before any non-trivial change.
+Personal, local, single-user app. It generates French rent receipts (quittances de loyer) and home-office expense statements (notes de frais d'occupation). Full specification: `product_prompt.md`. Agent protocol: `AGENTS.md`, `.github/agents/`, `.qoder/agents/` and `.opencode/agents/`; task handoffs live in the shared `.handoff/tasks/` tree. Read them before any non-trivial change.
 
 ## Language
 
@@ -76,13 +76,16 @@ make up / make down
 
 ## Workflow
 
+- Agent workflow: `orchestrator` → `planner` → `coder` → `tester` → `reviewer`, one task per shared handoff in `.handoff/tasks/<TASK-ID>.md`.
+- Each task runs on one dedicated branch, created after the user agrees on a name; a resumed task reuses its recorded branch. Never create a second branch for the same task.
+- File graph: query the local CodeGraph index in `.codegraph/` (`codegraph context`, `affected`, `impact`, `sync`); never commit or hand-edit it.
 - Behavior change: write the failing test first.
 - Bug or unexpected result: investigate the root cause before changing code.
 - Tests ship with the code. A feature whose specification requires tests is not done without them.
 - Before claiming completion, run the relevant commands above and report the actual results.
 - Never commit, push, reset, clean, or stash. Do not create worktrees or finish branches unless the user asks.
 - Do not modify files that belong to another block without reporting it.
-- Record assumptions in `README.md`, section "Assumptions".
+- Record assumptions in the task handoff and, when the product changes, in `README.md`, section "Assumptions".
 - Write code and comments in English; keep user-facing messages in French.
 
 ## Data and privacy

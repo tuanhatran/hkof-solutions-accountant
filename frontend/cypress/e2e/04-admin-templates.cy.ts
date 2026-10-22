@@ -1,5 +1,7 @@
 import {
   MONTHS,
+  SEED_RENT,
+  SEED_TOTAL,
   addExpense,
   addRent,
   waitForSelectedFile,
@@ -100,6 +102,8 @@ describe("AI admin and templates", () => {
     );
     waitForSelectedFile("facture-gaz.txt");
 
+    // The form is reset after addRent(), so the type must be selected again.
+    cy.get('[data-cy="select-type-frais"]').select("gaz");
     cy.get('[data-cy="input-montant-ttc"]').clear().type("120.00");
     cy.get('[data-cy="btn-ajouter-frais"]').should("not.be.disabled").click();
     waitForAmount('[data-cy="total-retenu"]', "992,85");
@@ -148,7 +152,7 @@ describe("AI admin and templates", () => {
 
     cy.intercept("POST", "/api/rent-receipts/preview").as("preview");
     cy.get('[data-cy="tab-quittance"]').click();
-    waitForValue("#quittance-loyer", "900.00");
+    waitForValue("#quittance-loyer", SEED_RENT);
     cy.wait("@preview", { timeout: 30_000 });
     cy.waitForPreview();
     cy.get('[data-cy="select-template"] option:selected', {
@@ -176,7 +180,7 @@ describe("AI admin and templates", () => {
       (text) => {
         expect(text).to.contain("QUITTANCE TEST E2E");
         expect(text).to.contain("Janvier 2026");
-        expect(text).to.contain("950,00 €");
+        expect(text).to.contain(SEED_TOTAL);
         expect(text).not.to.contain("APERÇU");
       },
     );

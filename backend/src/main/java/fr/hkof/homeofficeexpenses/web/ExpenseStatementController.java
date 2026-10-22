@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
 import fr.hkof.homeofficeexpenses.service.ExpenseStatementService;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.DraftDto;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.CalculationResponse;
@@ -60,10 +59,9 @@ public class ExpenseStatementController {
 
     @GetMapping("/active")
     public ResponseEntity<StatementDto> getActiveExpenseStatement(@RequestParam String month) {
-        ExpenseStatement statement = service.activeForMonth(month);
-        return statement == null
-                ? ResponseEntity.noContent().build()
-                : ResponseEntity.ok(service.toDto(statement));
+        return service.activeDtoForMonth(month)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @GetMapping("/{id}")

@@ -15,7 +15,7 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
 │   ├── 30-frontend.md
 │   ├── 40-verification.md
 │   └── 50-security-data.md
-├── agents/                    # one subagent per delivery block
+├── agents/                    # orchestrator, planner, coder, tester, reviewer
 ├── skills/                    # project skills (English)
 │   ├── openapi-contract/
 │   ├── backend-delivery/
@@ -34,7 +34,9 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
   skills remain the single copy.
 - `.opencode/skills/*/SKILL.md` are project skills, advertised by their `description`.
 - `.opencode/agents/*.md` are subagents, available through the `subagent` tool. The
-  orchestrator uses `mode: all`; the others use `mode: subagent`.
+  orchestrator uses `mode: all` so it can dispatch the other four; planner, coder, tester
+  and reviewer use `mode: subagent`. Task handoffs live in the shared `.handoff/tasks/`
+  tree, also used by the Qoder and Copilot agents.
 - Global permissions in `opencode.json` deny `git commit`, `push`, `reset`, `clean`,
   `stash`, `worktree` and branch deletion.
 
@@ -46,12 +48,14 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
 | Root rules | `AGENTS.md` | loaded directly |
 | Copilot guidance | `.github/copilot-instructions.md` | same conventions |
 | Superpowers skills | `.qoder/skills` | registered in `opencode.json` |
-| Delivery blocks | `.qoder/agents/*.md` | `.opencode/agents/*.md` |
+| Agent workflow | `.qoder/agents/*.md` | `.opencode/agents/*.md` |
+| Task handoffs | `.handoff/tasks/*.md` | same shared tree |
+| File graph | CodeGraph index in `.codegraph/` | `codegraph` CLI, shared |
 | Detailed rules | this directory | instructions |
 
 When a rule changes, update the source of truth first, then mirror it here. Do not let
-`.qoder/agents` and `.opencode/agents` diverge: the same block, scope and exit criteria
-must appear in both.
+`.qoder/agents`, `.opencode/agents` and `.github/agents` diverge: the same agents, scope
+and exit criteria must appear in all three.
 
 ## Language policy
 

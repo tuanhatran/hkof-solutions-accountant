@@ -21,6 +21,7 @@ import { useNavigate } from "react-router-dom";
 import { isCancellation, errorMessage, downloadBlob } from "@/api/client";
 import { api } from "@/api/endpoints";
 import {
+  queryKeys,
   useActiveStatement,
   useSettings,
   useExpenseItems,
@@ -45,6 +46,7 @@ import { SelectedFile, FileDropzone } from "@/components/FileDropzone";
 import { FieldGroup } from "@/components/FieldGroup";
 import { PageHeader } from "@/components/PageHeader";
 import { PdfViewer } from "@/components/PdfViewer";
+import { ProRataInput } from "@/components/ProRataInput";
 import {
   isAnalysisRunning,
   useAnalysis,
@@ -860,7 +862,9 @@ export function GenerateExpenseStatementPage() {
       const statement = await api.expenseStatements.create(requestBody);
       setResult(statement);
       draft.markGenerated();
-      await queryClient.invalidateQueries({ queryKey: ["notes"] });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.statementsAll,
+      });
       toast.success(
         `Note de ${formatMonth(month)} générée en version ${statement.version ?? 1}.`,
       );
@@ -1640,35 +1644,11 @@ export function GenerateExpenseStatementPage() {
                               ) : null}
                             </td>
                             <td>
-                              <div className="relative w-[92px]">
-                                <input
-                                  inputMode="decimal"
-                                  className={cn(
-                                    "field mt-0 px-2 py-1 pr-6 text-xs",
-                                    parsePercentage(line.proRataPct) === null &&
-                                      "field-error",
-                                  )}
-                                  value={line.proRataPct}
-                                  onChange={(event) =>
-                                    changeProRata(line, event.target.value)
-                                  }
-                                  onBlur={(event) => {
-                                    const normalized = parsePercentage(
-                                      event.target.value,
-                                    );
-                                    if (normalized !== null) {
-                                      changeProRata(line, normalized);
-                                    }
-                                  }}
-                                  aria-label={`Prorata de ${expenseItem?.label ?? line.itemCode}`}
-                                  aria-invalid={
-                                    parsePercentage(line.proRataPct) === null
-                                  }
-                                />
-                                <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-[11px] text-ink-soft">
-                                  %
-                                </span>
-                              </div>
+                              <ProRataInput
+                                label={`Prorata de ${expenseItem?.label ?? line.itemCode}`}
+                                value={line.proRataPct}
+                                onChange={(next) => changeProRata(line, next)}
+                              />
                             </td>
                             <td className="whitespace-nowrap text-right">
                               {dto?.claimedAmount ? (

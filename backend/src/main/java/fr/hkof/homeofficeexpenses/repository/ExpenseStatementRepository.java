@@ -25,5 +25,6 @@ public interface ExpenseStatementRepository extends JpaRepository<ExpenseStateme
 
     Optional<ExpenseStatement> findFirstByMonthOrderByVersionDesc(String month);
 
+    @EntityGraph(attributePaths = {"lines", "lines.expenseItem", "lines.receipt"})
     Optional<ExpenseStatement> findFirstByMonthAndStatusOrderByVersionDesc(String month, DocumentStatus status);
 }

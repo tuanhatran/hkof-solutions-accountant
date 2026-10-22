@@ -55,9 +55,12 @@ truth; re-read them before acting when in doubt.
 ## Quality and security
 
 - TypeScript strict, never `any`. Never bypass a failing test.
+- The file graph is the local CodeGraph index in `.codegraph/`; query it with the
+  `codegraph` CLI and never commit or hand-edit it.
 - Tests ship with the code; a feature without its tests is not delivered.
 - Never log or hand off a secret value (LLM key, database password). The LLM key is
   never returned by a `GET`.
 - Personal documents in `data/` are never committed, pasted into logs or sent off the machine.
-- Never commit, push, reset, clean or stash. No worktree or branch finishing without an
-  explicit user request.
+- Never commit, push, reset, clean or stash. One dedicated branch per task is created after
+  the user agrees on a name; a resumed task reuses its recorded branch. No worktree or
+  branch finishing without an explicit user request.
