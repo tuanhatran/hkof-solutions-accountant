@@ -21,6 +21,10 @@ frontend/npm-debug.log*
 # Mock Ollama
 mock-ollama/node_modules/
 
+# Local configuration and runtime data (Docker bind mount)
+.env
+/data/
+
 # Logs
 *.log
 

@@ -1,0 +1,83 @@
+name: homeofficeexpenses
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:?Copy .env.example to .env first}
+      POSTGRES_USER: ${DB_USER:?Copy .env.example to .env first}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Copy .env.example to .env first}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Gives the non-root backend user (uid 10001) write access to ./data.
+  data-init:
+    image: busybox:1.37
+    restart: "no"
+    command: sh -c "mkdir -p /data/justificatifs /data/sorties /data/templates && chown -R 10001:10001 /data"
+    volumes:
+      - ./data:/data
+
+  backend:
+    build:
+      context: ./backend
+      args:
+        WITH_LIBREOFFICE: ${WITH_LIBREOFFICE:-false}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      data-init:
+        condition: service_completed_successfully
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
+      APP_DATA_DIR: /app/data
+    volumes:
+      - ./data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 60s
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+
+  # Optional local Ollama: docker compose --profile ollama up -d
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ollama"]
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    # GPU (NVIDIA): uncomment to reserve all GPUs
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+volumes:
+  pgdata:
+  ollama_data:

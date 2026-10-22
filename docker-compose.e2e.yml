@@ -1,0 +1,51 @@
+# E2E overlay: ephemeral Postgres (tmpfs), deterministic mock-ollama, Cypress runner.
+# Never mounts ./data or the pgdata volume. Run it with `make e2e`.
+services:
+  db:
+    volumes: !reset []
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  # Disabled here so the real ./data directory is never touched.
+  data-init:
+    profiles: ["e2e-disabled"]
+
+  backend:
+    depends_on: !override
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: e2e
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      OLLAMA_BASE_URL: http://mock-ollama:11434
+      OLLAMA_MODEL: mock-extract:latest
+      APP_DATA_DIR: /tmp/e2e-data
+    volumes: !reset []
+
+  frontend:
+    ports: !reset []
+
+  mock-ollama:
+    build: ./mock-ollama
+
+  cypress:
+    image: cypress/included:16.2.0
+    working_dir: /e2e
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["npm ci --no-audit --no-fund && cypress run"]
+    environment:
+      CYPRESS_BASE_URL: http://frontend:80
+      CYPRESS_INSTALL_BINARY: "0"
+    volumes:
+      - ./frontend:/e2e
+      - cypress_node_modules:/e2e/node_modules
+    depends_on:
+      frontend:
+        condition: service_healthy
+      mock-ollama:
+        condition: service_healthy
+
+volumes:
+  cypress_node_modules:
