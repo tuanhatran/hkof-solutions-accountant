@@ -9,7 +9,7 @@ RUN mvn -B -q -DskipTests package
 FROM eclipse-temurin:25-jre-noble
 ARG WITH_LIBREOFFICE=false
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends curl poppler-utils tesseract-ocr tesseract-ocr-fra \
     && if [ "$WITH_LIBREOFFICE" = "true" ]; then \
          apt-get install -y --no-install-recommends libreoffice-writer fonts-dejavu-core; \
        fi \

@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,35 @@ class TemplateServiceValidationTest {
         assertThat(rentReceipt.structureValid()).isTrue();
         assertThat(rentReceipt.unknownVariables()).isEmpty();
         assertThat(rentReceipt.missingVariables()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Bundled note de frais no longer renders a Période column")
+    void bundledExpenseStatementHasNoPeriodColumn() throws IOException {
+        String template = resource("templates/defaut/note-frais.html");
+
+        assertThat(template).doesNotContain("Période");
+        assertThat(template).doesNotContain("{{periode}}");
+        assertThat(headerCellCount(template)).isEqualTo(5);
+        assertThat(headerWidthsSumTo100(template)).isTrue();
+    }
+
+    private int headerCellCount(String template) {
+        Matcher matcher = Pattern.compile("<th[\\s>]").matcher(template);
+        int count = 0;
+        while (matcher.find()) {
+            count++;
+        }
+        return count;
+    }
+
+    private boolean headerWidthsSumTo100(String template) {
+        Matcher matcher = Pattern.compile("<th[^>]*width:\\s*(\\d+)%").matcher(template);
+        int total = 0;
+        while (matcher.find()) {
+            total += Integer.parseInt(matcher.group(1));
+        }
+        return total == 100;
     }
 
     @Test

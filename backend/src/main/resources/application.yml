@@ -53,6 +53,16 @@ app:
     default-url: ${OLLAMA_BASE_URL:http://localhost:11434}
     default-model: ${OLLAMA_MODEL:qwen2.5:7b}
 
+analysis:
+  pdftext:
+    command: ${ANALYSIS_PDFTEXT_COMMAND:pdftotext}
+    timeout: ${ANALYSIS_PDFTEXT_TIMEOUT:15s}
+  ocr:
+    enabled: ${ANALYSIS_OCR_ENABLED:true}
+    command: ${ANALYSIS_OCR_COMMAND:tesseract}
+    language: ${ANALYSIS_OCR_LANGUAGE:fra}
+    timeout-per-page: ${ANALYSIS_OCR_TIMEOUT_PER_PAGE:30s}
+
 logging:
   level:
     fr.hkof.homeofficeexpenses: INFO

@@ -6,6 +6,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -221,6 +222,9 @@ public class ExpenseStatementService {
             calculatedLines.add(new CalculatedLine(expenseItem, amountInclVat, monthlyAmount, proRataPct, claimedAmount,
                     receipt, source, detectedAmount, confidence));
         }
+        // The configured display order is authoritative, stable for equal sortOrder
+        // and for a repeated item. Amounts stay attached to their own line.
+        calculatedLines.sort(Comparator.comparingInt(line -> line.expenseItem().getSortOrder()));
         return calculatedLines;
     }
 

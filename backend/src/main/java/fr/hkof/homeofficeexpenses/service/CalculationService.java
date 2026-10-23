@@ -56,4 +56,25 @@ public final class CalculationService {
     public static BigDecimal totalRentReceipt(BigDecimal rentExclCharges, BigDecimal charges) {
         return rentExclCharges.add(charges).setScale(2, RoundingMode.HALF_UP);
     }
+
+    /**
+     * Returns the tax-inclusive amount from a tax-exclusive amount and a VAT rate
+     * expressed in percent: {@code net × (1 + vatRatePct / 100)}.
+     */
+    public static BigDecimal grossFromNet(BigDecimal net, BigDecimal vatRatePct) {
+        if (net == null) {
+            throw new BusinessException("Le montant HT est obligatoire.");
+        }
+        if (net.signum() < 0) {
+            throw new BusinessException("Le montant HT ne peut pas être négatif.");
+        }
+        if (vatRatePct == null) {
+            throw new BusinessException("Le taux de TVA est obligatoire.");
+        }
+        if (vatRatePct.signum() < 0 || vatRatePct.compareTo(BigDecimal.valueOf(100)) > 0) {
+            throw new BusinessException("Le taux de TVA doit être compris entre 0 et 100 %.");
+        }
+        return net.multiply(BigDecimal.valueOf(100).add(vatRatePct))
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+    }
 }
