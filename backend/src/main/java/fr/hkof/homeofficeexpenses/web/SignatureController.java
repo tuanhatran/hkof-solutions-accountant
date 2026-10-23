@@ -35,9 +35,10 @@ public class SignatureController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public SignatureDto createSignature(@RequestParam SignatureType type, @RequestParam String name,
+    public SignatureDto createSignature(@RequestParam SignatureType type,
+            @RequestParam(required = false) Long landlordId, @RequestParam String name,
             @RequestParam("file") MultipartFile file) {
-        return service.create(type, name, file);
+        return service.create(type, landlordId, name, file);
     }
 
     @DeleteMapping("/{id}")

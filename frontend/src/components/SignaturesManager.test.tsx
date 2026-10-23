@@ -3,11 +3,14 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
-import type { SignatureDto } from "@/api/types";
+import type { LandlordDto, SignatureDto } from "@/api/types";
 import { SignaturesManager } from "./SignaturesManager";
 
 vi.mock("@/api/endpoints", () => ({
   api: {
+    landlords: {
+      list: vi.fn(),
+    },
     signatures: {
       list: vi.fn(),
       create: vi.fn(),
@@ -18,6 +21,12 @@ vi.mock("@/api/endpoints", () => ({
 }));
 
 const CREATED_AT = "2026-10-23T10:00:00Z";
+
+const LANDLORD: LandlordDto = {
+  id: 1,
+  name: "M. Bailleur",
+  address: "1 avenue du Parc, 75011 Paris",
+};
 
 function pngFixture(name = "signature-bailleur.png"): File {
   return new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], name, {
@@ -32,11 +41,14 @@ function signature(overrides: Partial<SignatureDto> = {}): SignatureDto {
     name: "Signature du bailleur",
     mimeType: "image/png",
     createdAt: CREATED_AT,
+    landlordId: 1,
+    landlordName: "M. Bailleur",
     ...overrides,
   };
 }
 
 let stored: SignatureDto[] = [];
+let landlords: LandlordDto[] = [];
 
 function renderManager() {
   const queryClient = new QueryClient({
@@ -52,16 +64,26 @@ function renderManager() {
 describe("SignaturesManager", () => {
   beforeEach(() => {
     stored = [];
+    landlords = [LANDLORD];
+    vi.mocked(api.landlords.list).mockImplementation(async () => landlords);
     vi.mocked(api.signatures.list).mockImplementation(async () => stored);
+    vi.mocked(api.signatures.create).mockReset();
     vi.mocked(api.signatures.remove).mockResolvedValue(undefined);
     URL.createObjectURL = vi.fn(() => "blob:signature-preview");
     URL.revokeObjectURL = vi.fn();
   });
 
-  it("creates a signature from a PNG image and lists it", async () => {
+  it("creates a landlord signature linked to the selected bailleur and lists it", async () => {
     vi.mocked(api.signatures.create).mockImplementation(
-      async (type, name, file) => {
-        const created = signature({ id: 7, type, name, mimeType: file.type });
+      async (type, name, file, landlordId) => {
+        const created = signature({
+          id: 7,
+          type,
+          name,
+          mimeType: file.type,
+          landlordId,
+          landlordName: landlordId === 1 ? "M. Bailleur" : null,
+        });
         stored = [created];
         return created;
       },
@@ -74,6 +96,10 @@ describe("SignaturesManager", () => {
     );
 
     await user.type(screen.getByLabelText("Nom"), "Signature du bailleur");
+    await user.selectOptions(
+      screen.getByLabelText("Bailleur de la signature"),
+      "1",
+    );
     await user.upload(
       screen.getByLabelText("Choisir une image de signature"),
       pngFixture(),
@@ -92,18 +118,48 @@ describe("SignaturesManager", () => {
       "LANDLORD",
       "Signature du bailleur",
       expect.any(File),
+      1,
     );
     expect(await screen.findByText("Signature du bailleur")).toBeInTheDocument();
     expect(
       screen.getByAltText("Signature Signature du bailleur"),
     ).toBeInTheDocument();
     expect(screen.getByText("Ajoutée le 23/10/2026")).toBeInTheDocument();
+    expect(screen.getByText("M. Bailleur")).toBeInTheDocument();
     await waitFor(() => expect(api.signatures.list).toHaveBeenCalledTimes(2));
   });
 
-  it("keeps the ENTREPRISE_CEO type when chosen", async () => {
+  it("requires a bailleur for a landlord signature", async () => {
+    renderManager();
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("button", { name: /Ajouter une signature/ }),
+    );
+
+    await user.type(screen.getByLabelText("Nom"), "Sans bailleur");
+    await user.upload(
+      screen.getByLabelText("Choisir une image de signature"),
+      pngFixture(),
+    );
+    await user.click(
+      screen.getByRole("button", { name: /Ajouter la signature/ }),
+    );
+
+    expect(
+      await screen.findByText("Le bailleur de la signature est obligatoire."),
+    ).toBeInTheDocument();
+    expect(api.signatures.create).not.toHaveBeenCalled();
+  });
+
+  it("keeps the ENTREPRISE_CEO type without a bailleur", async () => {
     vi.mocked(api.signatures.create).mockResolvedValue(
-      signature({ id: 9, type: "ENTREPRISE_CEO", name: "Gérant" }),
+      signature({
+        id: 9,
+        type: "ENTREPRISE_CEO",
+        name: "Gérant",
+        landlordId: null,
+        landlordName: null,
+      }),
     );
 
     renderManager();
@@ -116,6 +172,9 @@ describe("SignaturesManager", () => {
       screen.getByLabelText("Type de signature"),
       "ENTREPRISE_CEO",
     );
+    expect(
+      screen.queryByLabelText("Bailleur de la signature"),
+    ).not.toBeInTheDocument();
     await user.type(screen.getByLabelText("Nom"), "Gérant");
     await user.upload(
       screen.getByLabelText("Choisir une image de signature"),
@@ -130,7 +189,23 @@ describe("SignaturesManager", () => {
       "ENTREPRISE_CEO",
       "Gérant",
       expect.any(File),
+      null,
     );
+  });
+
+  it("shows a legacy signature as not linked", async () => {
+    stored = [
+      signature({
+        id: 8,
+        name: "Ancienne signature",
+        landlordId: null,
+        landlordName: null,
+      }),
+    ];
+    renderManager();
+
+    expect(await screen.findByText("Ancienne signature")).toBeInTheDocument();
+    expect(screen.getByText("Non liée")).toBeInTheDocument();
   });
 
   it("refuses an image over 2 MB and refuses to submit without a name", async () => {

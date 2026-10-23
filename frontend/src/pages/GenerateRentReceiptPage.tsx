@@ -10,7 +10,7 @@ import {
   RotateCcw,
   Sparkles,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, Link } from "react-router-dom";
 import { errorMessage } from "@/api/client";
@@ -26,7 +26,6 @@ import {
 } from "@/api/queries";
 import type { RentReceiptDto, RentReceiptRequest } from "@/api/types";
 import { Button } from "@/components/Button";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ErrorState } from "@/components/States";
 import { FieldGroup } from "@/components/FieldGroup";
 import { PageHeader } from "@/components/PageHeader";
@@ -81,28 +80,17 @@ export function GenerateRentReceiptPage() {
   const draft = useRentReceiptDraft();
   const mobile = useMediaQuery("(max-width: 1023px)");
   const [mobilePanel, setMobilePanel] = useState<"saisie" | "apercu">("saisie");
-  const [regenerationDialog, setRegenerationDialog] = useState(false);
   const [generationInProgress, setGenerationInProgress] = useState(false);
   const [result, setResult] = useState<RentReceiptDto | null>(null);
-  const pendingValues = useRef<RentReceiptFormValues | null>(null);
+  const [chosenSignatureId, setChosenSignatureId] = useState<number | null>(
+    null,
+  );
 
   const landlords = useLandlords();
   const tenants = useTenants();
   const leases = useLeases();
   const templates = useTemplates("RENT_RECEIPT");
   const signatures = useSignatures();
-  const activeRentReceipt = useActiveRentReceipt(draft.month);
-
-  const signatureList = signatures.data ?? [];
-  const [chosenSignatureId, setChosenSignatureId] = useState<number | null>(
-    null,
-  );
-  const defaultSignature =
-    signatureList.find((candidate) => candidate.type === "LANDLORD") ??
-    signatureList[0] ??
-    null;
-  const selectedSignatureId = chosenSignatureId ?? defaultSignature?.id ?? null;
-  const signatureAvailable = signatureList.length > 0;
 
   const {
     register,
@@ -129,6 +117,49 @@ export function GenerateRentReceiptPage() {
   const values = watch();
   const validation = rentReceiptSchema.safeParse(values);
 
+  const selectedLandlordId = values.landlordId
+    ? Number(values.landlordId)
+    : null;
+  const selectedTenantId = values.tenantId ? Number(values.tenantId) : null;
+  const activeRentReceipt = useActiveRentReceipt(
+    draft.month,
+    selectedLandlordId,
+    selectedTenantId,
+  );
+
+  const signatureList = signatures.data ?? [];
+  const linkedSignatures = signatureList.filter(
+    (candidate) =>
+      candidate.type === "LANDLORD" &&
+      selectedLandlordId !== null &&
+      candidate.landlordId === selectedLandlordId,
+  );
+  const legacySignatures = signatureList.filter(
+    (candidate) =>
+      candidate.type === "LANDLORD" &&
+      (candidate.landlordId === null || candidate.landlordId === undefined),
+  );
+  const availableSignatures =
+    selectedLandlordId === null
+      ? signatureList.filter((candidate) => candidate.type === "LANDLORD")
+      : [...linkedSignatures, ...legacySignatures];
+  const chosenSignatureAvailable = availableSignatures.some(
+    (candidate) => candidate.id === chosenSignatureId,
+  );
+  const selectedSignatureId = chosenSignatureAvailable
+    ? chosenSignatureId
+    : (availableSignatures[0]?.id ?? null);
+  const signatureAvailable = availableSignatures.length > 0;
+  const landlordWithoutSignature =
+    selectedLandlordId !== null &&
+    signatureList.length > 0 &&
+    !signatures.isPending &&
+    !signatureAvailable;
+
+  useEffect(() => {
+    setChosenSignatureId(null);
+  }, [selectedLandlordId]);
+
   const models = templates.data ?? [];
   const activeModel = models.find((model) => model.active) ?? null;
   const selectedModel = draft.templateId ?? activeModel?.id ?? null;
@@ -143,6 +174,13 @@ export function GenerateRentReceiptPage() {
         String(lease.landlordId) === values.landlordId &&
         String(lease.tenantId) === values.tenantId,
     ) ?? null;
+  // Without a full pair the hook falls back to the month-scoped query, whose
+  // receipt belongs to no identifiable pair: never surface it on this page.
+  const pairSelected =
+    selectedLandlordId !== null && selectedTenantId !== null;
+  const activePairReceipt = pairSelected
+    ? (activeRentReceipt.data ?? null)
+    : null;
   const request =
     validation.success && selectedLease
       ? requestFromValues(validation.data, selectedModel, selectedSignatureId)
@@ -231,11 +269,7 @@ export function GenerateRentReceiptPage() {
   }
 
   function submit(submittedValues: RentReceiptFormValues) {
-    pendingValues.current = submittedValues;
-    if (activeRentReceipt.data) {
-      setRegenerationDialog(true);
-      return;
-    }
+    // Unlimited ACTIVE receipts: every generation creates a new one, no dialog.
     void runGeneration(submittedValues);
   }
 
@@ -304,11 +338,11 @@ export function GenerateRentReceiptPage() {
     setValue("periodEnd", period.end, { shouldValidate: true });
   }
 
-  const activeVersion = activeRentReceipt.data?.version;
+  const activeVersion = activePairReceipt?.version;
   const displayedTotal = result
     ? formatEUR(result.total)
-    : activeRentReceipt.data
-      ? formatEUR(activeRentReceipt.data.total)
+    : activePairReceipt
+      ? formatEUR(activePairReceipt.total)
       : null;
 
   return (
@@ -396,7 +430,7 @@ export function GenerateRentReceiptPage() {
             mobile && mobilePanel !== "saisie" && "hidden",
           )}
         >
-          {activeRentReceipt.data && !result ? (
+          {activePairReceipt && selectedLease && !result ? (
             <div className="card flex flex-wrap items-center justify-between gap-3 border-accent/20 bg-accent-soft/45 p-4">
               <div className="flex items-start gap-3">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-surface text-accent">
@@ -404,18 +438,18 @@ export function GenerateRentReceiptPage() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-ink">
-                    {formatMonth(activeRentReceipt.data.month)} — version{" "}
-                    {activeVersion} déjà active
+                    Quittance déjà active pour ce bailleur et ce locataire
                   </p>
                   <p className="text-xs text-ink-soft">
-                    Total {displayedTotal}. Générer à nouveau créera la version{" "}
-                    {(activeVersion ?? 0) + 1}.
+                    Total {displayedTotal}, version {activeVersion}. Générer à
+                    nouveau crée une nouvelle quittance active (version{" "}
+                    {(activeVersion ?? 0) + 1}).
                   </p>
                 </div>
               </div>
-              {activeRentReceipt.data.id ? (
+              {activePairReceipt.id ? (
                 <a
-                  href={api.rentReceipts.pdfUrl(activeRentReceipt.data.id)}
+                  href={api.rentReceipts.pdfUrl(activePairReceipt.id)}
                   target="_blank"
                   rel="noreferrer"
                   className="btn btn-secondary btn-small"
@@ -656,13 +690,13 @@ export function GenerateRentReceiptPage() {
                         )
                       }
                       disabled={
-                        signatures.isPending || signatureList.length === 0
+                        signatures.isPending || availableSignatures.length === 0
                       }
                     >
-                      {signatureList.length === 0 ? (
+                      {availableSignatures.length === 0 ? (
                         <option value="">Aucune signature</option>
                       ) : null}
-                      {signatureList.map((candidate) => (
+                      {availableSignatures.map((candidate) => (
                         <option key={candidate.id} value={candidate.id}>
                           {candidate.name} — {signatureTypeLabel(candidate.type)}
                         </option>
@@ -681,7 +715,7 @@ export function GenerateRentReceiptPage() {
                     Les signatures n’ont pas pu être chargées :{" "}
                     {errorMessage(signatures.error)}
                   </p>
-                ) : !signatureAvailable && !signatures.isPending ? (
+                ) : signatureList.length === 0 && !signatures.isPending ? (
                   <p
                     className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger"
                     role="alert"
@@ -689,6 +723,19 @@ export function GenerateRentReceiptPage() {
                   >
                     Aucune signature trouvée. Configurez une signature dans la
                     page{" "}
+                    <Link to="/configuration" className="link">
+                      Paramètres
+                    </Link>
+                    .
+                  </p>
+                ) : landlordWithoutSignature ? (
+                  <p
+                    className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger"
+                    role="alert"
+                    data-cy="alerte-signature-bailleur"
+                  >
+                    Aucune signature pour ce bailleur. Ajoutez une signature
+                    liée à ce bailleur dans la page{" "}
                     <Link to="/configuration" className="link">
                       Paramètres
                     </Link>
@@ -880,9 +927,9 @@ export function GenerateRentReceiptPage() {
                     Reprendre le bail
                   </Button>
                 </div>
-                {activeRentReceipt.data ? (
+                {activePairReceipt ? (
                   <p className="text-[11px] text-ink-soft">
-                    Version active : v{activeVersion} → v
+                    Dernière version : v{activeVersion} → v
                     {(activeVersion ?? 0) + 1} à la génération.
                   </p>
                 ) : (
@@ -954,28 +1001,6 @@ export function GenerateRentReceiptPage() {
           </p>
         </div>
       </div>
-
-      <ConfirmDialog
-        open={regenerationDialog}
-        title="Générer une nouvelle version ?"
-        message={
-          <>
-            Une quittance active existe déjà pour {formatMonth(draft.month)}{" "}
-            (version {activeVersion}). La version {(activeVersion ?? 0) + 1}{" "}
-            sera créée et l’ancienne restera consultable dans l’historique.
-          </>
-        }
-        confirmLabel="Créer la nouvelle version"
-        onConfirm={() => {
-          setRegenerationDialog(false);
-          const submittedValues = pendingValues.current;
-          if (submittedValues) {
-            void runGeneration(submittedValues);
-          }
-        }}
-        onCancel={() => setRegenerationDialog(false)}
-        dataCy="dialogue-regeneration-quittance"
-      />
     </>
   );
 }

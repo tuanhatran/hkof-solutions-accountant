@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { Accept } from "react-dropzone";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
-import { queryKeys, useSignatures } from "@/api/queries";
+import { queryKeys, useLandlords, useSignatures } from "@/api/queries";
 import type { SignatureDto, SignatureType } from "@/api/types";
 import { Button } from "@/components/Button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -49,12 +49,16 @@ function imageError(candidate: File): string | null {
 
 function SignatureForm({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
+  const landlords = useLandlords();
   const [type, setType] = useState<SignatureType>("LANDLORD");
   const [name, setName] = useState("");
+  const [landlordId, setLandlordId] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
+  const [landlordError, setLandlordError] = useState<string | null>(null);
   const [fileErrorText, setFileErrorText] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
+  const landlordRows = landlords.data ?? [];
 
   const previewUrl = useMemo(
     () => (file ? URL.createObjectURL(file) : null),
@@ -70,15 +74,27 @@ function SignatureForm({ onClose }: { onClose: () => void }) {
   }, [previewUrl]);
 
   const create = useMutation({
-    mutationFn: (input: { type: SignatureType; name: string; file: File }) =>
-      api.signatures.create(input.type, input.name, input.file),
+    mutationFn: (input: {
+      type: SignatureType;
+      name: string;
+      file: File;
+      landlordId: number | null;
+    }) =>
+      api.signatures.create(
+        input.type,
+        input.name,
+        input.file,
+        input.landlordId,
+      ),
     onSuccess: (created) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.signatures });
       toast.success(`Signature « ${created.name ?? name} » ajoutée.`);
       setType("LANDLORD");
       setName("");
+      setLandlordId("");
       setFile(null);
       setNameError(null);
+      setLandlordError(null);
       setFileErrorText(null);
       setRequestError(null);
       onClose();
@@ -111,7 +127,17 @@ function SignatureForm({ onClose }: { onClose: () => void }) {
       return;
     }
     setFileErrorText(null);
-    create.mutate({ type, name: trimmedName, file });
+    if (type === "LANDLORD" && !landlordId) {
+      setLandlordError("Le bailleur de la signature est obligatoire.");
+      return;
+    }
+    setLandlordError(null);
+    create.mutate({
+      type,
+      name: trimmedName,
+      file,
+      landlordId: type === "LANDLORD" ? Number(landlordId) : null,
+    });
   }
 
   return (
@@ -169,6 +195,33 @@ function SignatureForm({ onClose }: { onClose: () => void }) {
           />
         </FieldGroup>
       </div>
+
+      {type === "LANDLORD" ? (
+        <div className="mt-3">
+          <FieldGroup
+            id="signature-bailleur"
+            label="Bailleur de la signature"
+            error={landlordError ?? undefined}
+            help="La signature n’est proposée que pour les quittances de ce bailleur."
+          >
+            <select
+              id="signature-bailleur"
+              className={landlordError ? "field field-error" : "field"}
+              value={landlordId}
+              onChange={(event) => setLandlordId(event.target.value)}
+              disabled={landlords.isPending}
+              data-cy="select-bailleur-signature"
+            >
+              <option value="">Sélectionnez un bailleur</option>
+              {landlordRows.map((landlord) => (
+                <option key={landlord.id} value={landlord.id}>
+                  {landlord.name}
+                </option>
+              ))}
+            </select>
+          </FieldGroup>
+        </div>
+      ) : null}
 
       <div className="mt-3">
         <FileDropzone
@@ -343,6 +396,16 @@ export function SignaturesManager() {
                   <span className="badge badge-neutral mt-1">
                     {signatureTypeLabel(signature.type)}
                   </span>
+                  <p className="mt-1 text-[11px] text-ink-soft">
+                    {signature.type === "LANDLORD" ? (
+                      <>
+                        Bailleur :{" "}
+                        <span>{signature.landlordName ?? "Non liée"}</span>
+                      </>
+                    ) : (
+                      "Signature du gérant"
+                    )}
+                  </p>
                   <p className="mt-1 text-[11px] text-ink-soft">
                     Ajoutée le {formatDate(signature.createdAt)}
                   </p>

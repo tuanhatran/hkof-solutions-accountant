@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import fr.hkof.homeofficeexpenses.config.DataInitializer;
+import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Signature;
 import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.repository.AnalysisDocumentRepository;
@@ -101,13 +102,20 @@ public class E2eResetService {
 
     private void seedSignatures() {
         Instant now = Instant.now();
-        saveSignature(SignatureType.LANDLORD, "Signature du bailleur (e2e)", "signature-bailleur-e2e.png", now);
-        saveSignature(SignatureType.ENTREPRISE_CEO, "Signature du gérant (e2e)", "signature-gerant-e2e.png", now);
+        Long landlordId = landlords.findFirstByDeletedFalseOrderByNameAsc()
+                .map(Landlord::getId)
+                .orElse(null);
+        saveSignature(SignatureType.LANDLORD, landlordId, "Signature du bailleur (e2e)",
+                "signature-bailleur-e2e.png", now);
+        saveSignature(SignatureType.ENTREPRISE_CEO, null, "Signature du gérant (e2e)",
+                "signature-gerant-e2e.png", now);
     }
 
-    private void saveSignature(SignatureType type, String name, String fileName, Instant createdAt) {
+    private void saveSignature(SignatureType type, Long landlordId, String name, String fileName,
+            Instant createdAt) {
         Signature signature = new Signature();
         signature.setType(type);
+        signature.setLandlordId(landlordId);
         signature.setName(name);
         signature.setMimeType("image/png");
         signature.setFileName(fileName);

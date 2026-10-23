@@ -705,6 +705,9 @@ export interface components {
             mimeType?: string;
             /** Format: date-time */
             createdAt?: string;
+            /** Format: int64 */
+            landlordId?: number | null;
+            landlordName?: string | null;
         };
         SettingsRequest: {
             companyName?: string;
@@ -1757,6 +1760,8 @@ export interface operations {
         parameters: {
             query: {
                 month: string;
+                landlordId?: number;
+                tenantId?: number;
             };
             header?: never;
             path?: never;
@@ -2086,6 +2091,8 @@ export interface operations {
                     /** @enum {string} */
                     type: "LANDLORD" | "ENTREPRISE_CEO";
                     name: string;
+                    /** Format: int64 */
+                    landlordId?: number;
                     /** Format: binary */
                     file: string;
                 };

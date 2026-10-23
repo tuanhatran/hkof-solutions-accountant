@@ -101,7 +101,8 @@ public class ExpenseStatementService {
     public DraftDto draft(String monthText) {
         YearMonth month = Amounts.month(monthText);
         Settings settings = parametersService.entity();
-        RentReceipt rentReceipt = rentReceiptService.activeForMonth(month.toString());
+        // Expense statements keep a month-scoped rent receipt: pair selection is out of scope.
+        RentReceipt rentReceipt = rentReceiptService.activeForMonth(month.toString(), null, null);
         List<ExpenseLineDto> lines = new ArrayList<>();
         if (rentReceipt != null) {
             ExpenseItem rentItem = expenseItemService.entity("loyer");
@@ -220,7 +221,7 @@ public class ExpenseStatementService {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream();
                 ZipOutputStream zip = new ZipOutputStream(out, StandardCharsets.UTF_8)) {
             addEntry(zip, "note_frais_" + month + ".pdf", storage.read(statement.getPdfPath()));
-            RentReceipt rentReceipt = rentReceiptService.activeForMonth(month);
+            RentReceipt rentReceipt = rentReceiptService.activeForMonth(month, null, null);
             if (rentReceipt != null && rentReceipt.getPdfPath() != null
                     && !rentReceipt.getPdfPath().isBlank()) {
                 addEntry(zip, "quittance_" + month + ".pdf", storage.read(rentReceipt.getPdfPath()));
@@ -323,7 +324,8 @@ public class ExpenseStatementService {
     private List<byte[]> withAttachments(byte[] statementPdf, ExpenseStatement statement, YearMonth month) {
         List<byte[]> pdfs = new ArrayList<>();
         pdfs.add(statementPdf);
-        RentReceipt rentReceipt = rentReceiptService.activeForMonth(month.toString());
+        // Expense statements keep a month-scoped rent receipt: pair selection is out of scope.
+        RentReceipt rentReceipt = rentReceiptService.activeForMonth(month.toString(), null, null);
         if (rentReceipt != null && rentReceipt.getPdfPath() != null) {
             pdfs.add(storage.read(rentReceipt.getPdfPath()));
         }

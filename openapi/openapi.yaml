@@ -585,6 +585,18 @@ paths:
         required: true
         schema:
           type: string
+      - name: landlordId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+      - name: tenantId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
       responses:
         "200":
           description: OK
@@ -849,6 +861,9 @@ paths:
                   - ENTREPRISE_CEO
                 name:
                   type: string
+                landlordId:
+                  type: integer
+                  format: int64
                 file:
                   type: string
                   format: binary
@@ -1262,6 +1277,15 @@ components:
         createdAt:
           type: string
           format: date-time
+        landlordId:
+          type:
+          - integer
+          - "null"
+          format: int64
+        landlordName:
+          type:
+          - string
+          - "null"
     SettingsRequest:
       type: object
       properties:

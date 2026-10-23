@@ -13,4 +13,10 @@ public interface SignatureRepository extends JpaRepository<Signature, Long> {
     List<Signature> findByDeletedFalseOrderByTypeAscNameAscIdAsc();
 
     Optional<Signature> findFirstByTypeAndDeletedFalseOrderByNameAscIdAsc(SignatureType type);
+
+    Optional<Signature> findFirstByTypeAndDeletedFalseAndLandlordIdOrderByNameAscIdAsc(
+            SignatureType type, Long landlordId);
+
+    Optional<Signature> findFirstByTypeAndDeletedFalseAndLandlordIdIsNullOrderByNameAscIdAsc(
+            SignatureType type);
 }
