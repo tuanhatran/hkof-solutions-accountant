@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import {
@@ -20,6 +20,7 @@ import {
   useSettings,
   useActiveRentReceipt,
   useTemplates,
+  useSignatures,
 } from "@/api/queries";
 import type { RentReceiptDto, RentReceiptRequest } from "@/api/types";
 import { Button } from "@/components/Button";
@@ -28,6 +29,7 @@ import { ErrorState } from "@/components/States";
 import { FieldGroup } from "@/components/FieldGroup";
 import { PageHeader } from "@/components/PageHeader";
 import { PdfViewer } from "@/components/PdfViewer";
+import { signatureTypeLabel } from "@/components/SignaturesManager";
 import { downloadBlob } from "@/api/client";
 import { usePdfPreview } from "@/hooks/usePdfPreview";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -45,6 +47,7 @@ import {
 function requestFromValues(
   values: RentReceiptFormValues,
   templateId: number | null,
+  signatureId: number | null,
 ): RentReceiptRequest {
   const request: RentReceiptRequest = {
     month: values.month,
@@ -62,6 +65,9 @@ function requestFromValues(
   if (templateId !== null) {
     request.templateId = templateId;
   }
+  if (signatureId !== null) {
+    request.signatureId = signatureId;
+  }
   return request;
 }
 
@@ -78,7 +84,19 @@ export function GenerateRentReceiptPage() {
 
   const settings = useSettings();
   const templates = useTemplates("RENT_RECEIPT");
+  const signatures = useSignatures();
   const activeRentReceipt = useActiveRentReceipt(draft.month);
+
+  const signatureList = signatures.data ?? [];
+  const [chosenSignatureId, setChosenSignatureId] = useState<number | null>(
+    null,
+  );
+  const defaultSignature =
+    signatureList.find((candidate) => candidate.type === "LANDLORD") ??
+    signatureList[0] ??
+    null;
+  const selectedSignatureId = chosenSignatureId ?? defaultSignature?.id ?? null;
+  const signatureAvailable = signatureList.length > 0;
 
   const {
     register,
@@ -108,7 +126,7 @@ export function GenerateRentReceiptPage() {
   const activeModel = models.find((model) => model.active) ?? null;
   const selectedModel = draft.templateId ?? activeModel?.id ?? null;
   const request = validation.success
-    ? requestFromValues(validation.data, selectedModel)
+    ? requestFromValues(validation.data, selectedModel, selectedSignatureId)
     : null;
   const signature = JSON.stringify(request ?? values);
 
@@ -120,7 +138,7 @@ export function GenerateRentReceiptPage() {
             new DOMException("Formulaire incomplet", "AbortError"),
           ),
     signature,
-    { active: validation.success, debounceMs: 400 },
+    { active: validation.success && signatureAvailable, debounceMs: 400 },
   );
 
   useEffect(() => {
@@ -154,7 +172,11 @@ export function GenerateRentReceiptPage() {
     if (!validation.success) {
       return;
     }
-    const requestBody = requestFromValues(submittedValues, selectedModel);
+    const requestBody = requestFromValues(
+      submittedValues,
+      selectedModel,
+      selectedSignatureId,
+    );
     setGenerationInProgress(true);
     try {
       const rentReceipt = await api.rentReceipts.create(requestBody);
@@ -465,6 +487,68 @@ export function GenerateRentReceiptPage() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FieldGroup
+                    id="quittance-signature"
+                    label="Signature"
+                    help="Image apposée au bas du PDF généré."
+                    badge={
+                      <span className="badge badge-neutral">PNG / JPEG</span>
+                    }
+                  >
+                    <select
+                      id="quittance-signature"
+                      className="field"
+                      data-cy="select-signature"
+                      value={selectedSignatureId ?? ""}
+                      onChange={(event) =>
+                        setChosenSignatureId(
+                          event.target.value
+                            ? Number(event.target.value)
+                            : null,
+                        )
+                      }
+                      disabled={
+                        signatures.isPending || signatureList.length === 0
+                      }
+                    >
+                      {signatureList.length === 0 ? (
+                        <option value="">Aucune signature</option>
+                      ) : null}
+                      {signatureList.map((candidate) => (
+                        <option key={candidate.id} value={candidate.id}>
+                          {candidate.name} — {signatureTypeLabel(candidate.type)}
+                        </option>
+                      ))}
+                    </select>
+                  </FieldGroup>
+                </div>
+
+                {signatures.isError ? (
+                  <p
+                    className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger"
+                    role="alert"
+                    aria-live="polite"
+                    data-cy="alerte-signatures-erreur"
+                  >
+                    Les signatures n’ont pas pu être chargées :{" "}
+                    {errorMessage(signatures.error)}
+                  </p>
+                ) : !signatureAvailable && !signatures.isPending ? (
+                  <p
+                    className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger"
+                    role="alert"
+                    data-cy="alerte-signature-manquante"
+                  >
+                    Aucune signature trouvée. Configurez une signature dans la
+                    page{" "}
+                    <Link to="/configuration" className="link">
+                      Paramètres
+                    </Link>
+                    .
+                  </p>
+                ) : null}
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FieldGroup
                     id="quittance-debut"
                     label="Début de période"
                     error={errors.periodStart?.message}
@@ -628,7 +712,8 @@ export function GenerateRentReceiptPage() {
                     disabled={
                       !isValid ||
                       activeRentReceipt.isPending ||
-                      templates.isPending
+                      templates.isPending ||
+                      !signatureAvailable
                     }
                     data-cy="btn-generer-quittance"
                   >
@@ -680,7 +765,9 @@ export function GenerateRentReceiptPage() {
             error={
               !validation.success
                 ? "Complétez les champs de la quittance pour actualiser l’aperçu."
-                : preview.error
+                : !signatureAvailable
+                  ? "Configurez une signature pour afficher l’aperçu."
+                  : preview.error
             }
             updatedAt={preview.updatedAt}
             onDownload={preview.download}

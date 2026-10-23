@@ -798,8 +798,156 @@ paths:
       responses:
         "204":
           description: No Content
+  /api/signatures:
+    get:
+      tags:
+      - signature-controller
+      operationId: listSignatures
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SignatureDto"
+    post:
+      tags:
+      - signature-controller
+      operationId: createSignature
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                  - LANDLORD
+                  - ENTREPRISE_CEO
+                name:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+              required:
+              - type
+              - name
+              - file
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SignatureDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  title:
+                    type: string
+                  status:
+                    type: integer
+                  detail:
+                    type: string
+  /api/signatures/{id}:
+    delete:
+      tags:
+      - signature-controller
+      operationId: deleteSignature
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  title:
+                    type: string
+                  status:
+                    type: integer
+                  detail:
+                    type: string
+  /api/signatures/{id}/image:
+    get:
+      tags:
+      - signature-controller
+      operationId: getSignatureImage
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  title:
+                    type: string
+                  status:
+                    type: integer
+                  detail:
+                    type: string
 components:
   schemas:
+    SignatureDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        type:
+          type: string
+          enum:
+          - LANDLORD
+          - ENTREPRISE_CEO
+        name:
+          type: string
+        mimeType:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
     SettingsRequest:
       type: object
       properties:
@@ -1041,6 +1189,9 @@ components:
         templateId:
           type: integer
           format: int64
+        signatureId:
+          type: integer
+          format: int64
     RentReceiptDto:
       type: object
       properties:
@@ -1135,6 +1286,9 @@ components:
         templateId:
           type: integer
           format: int64
+        signatureId:
+          type: integer
+          format: int64
         lines:
           type: array
           items:
@@ -1212,6 +1366,9 @@ components:
         month:
           type: string
         templateId:
+          type: integer
+          format: int64
+        signatureId:
           type: integer
           format: int64
         complete:

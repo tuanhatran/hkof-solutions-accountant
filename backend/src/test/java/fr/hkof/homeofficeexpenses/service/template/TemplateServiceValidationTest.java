@@ -95,6 +95,26 @@ class TemplateServiceValidationTest {
     }
 
     @Test
+    @DisplayName("The {{signature}} mustache expression is accepted as an embedded image source")
+    void signatureVariableAcceptedAsImageSource() {
+        ValidationReportDto report = service.validate(TemplateType.RENT_RECEIPT,
+                "<html><body>{{bailleur.nom}}<img src=\" {{signature}} \" alt=\"Signature\"></body></html>");
+        assertThat(report.errors()).noneMatch(error -> error.contains("data URI"));
+        assertThat(report.unknownVariables()).doesNotContain("signature");
+    }
+
+    @Test
+    @DisplayName("Every other non data-uri image source stays rejected")
+    void nonDataImageSourcesRejected() {
+        for (String source : new String[]{"{{other}}", "http://exemple.fr/logo.png", "file:///etc/passwd"}) {
+            ValidationReportDto report = service.validate(TemplateType.RENT_RECEIPT,
+                    "<html><body>{{bailleur.nom}}<img src=\"" + source + "\" alt=\"Logo\"></body></html>");
+            assertThat(report.structureValid()).as(source).isFalse();
+            assertThat(report.errors()).as(source).anyMatch(error -> error.contains("data URI"));
+        }
+    }
+
+    @Test
     @DisplayName("A script or executable expression invalidates the template")
     void securityRefused() {
         ValidationReportDto script = service.validate(TemplateType.RENT_RECEIPT,

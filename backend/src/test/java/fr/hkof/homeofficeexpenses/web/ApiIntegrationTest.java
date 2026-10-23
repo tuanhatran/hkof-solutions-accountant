@@ -12,9 +12,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +37,29 @@ class ApiIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    private static final byte[] PNG = Base64.getDecoder().decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=");
+
+    @BeforeEach
+    void ensureSignatures() throws Exception {
+        ensureSignature("LANDLORD", "Signature bailleur");
+        ensureSignature("ENTREPRISE_CEO", "Signature gérant");
+    }
+
+    private void ensureSignature(String type, String name) throws Exception {
+        String list = mockMvc.perform(get("/api/signatures"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<?> existing = JsonPath.read(list, "$[?(@.type == '" + type + "')]");
+        if (existing.isEmpty()) {
+            mockMvc.perform(multipart("/api/signatures")
+                            .file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
+                            .param("type", type)
+                            .param("name", name))
+                    .andExpect(status().isCreated());
+        }
+    }
 
     @Test
     @DisplayName("Covers the full flow: settings, rent receipt, expense statement, receipt, templates, LLM")

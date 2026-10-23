@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la .qoder && find \"$HOME/.qoder\" -maxdepth 2 -type f 2>/dev/null | head -50)",
+      "Bash(git check-ignore -v .qoder/settings.local.json .qoder/settings.json 2>/dev/null; echo \"---\"; git ls-files .qoder | head -30)",
+      "Bash(cat \"$HOME/.qoder/.models/default\" 2>/dev/null | head -c 4000; echo; echo \"--- settings.json ---\"; cat \"$HOME/.qoder/settings.json\" 2>/dev/null | head -c 3000)",
+      "Bash(git diff --no-index --stat .opencode/agents .qoder/agents 2>/dev/null; echo \"---\"; for f in lead builder reviewer; do echo \"=== $f ===\"; diff <\\(sed -n '1,/^---$/p' .opencode/agents/$f.md\\) <\\(sed -n '1,/^---$/p' .qoder/agents/$f.md\\) || true; done)",
+      "Bash(qoder agents list 2>&1 | head -60)",
+      "Bash(qoder agents --help 2>&1 | head -40; echo \"---\"; qoder agents list --help 2>&1 | head -40)",
+      "Bash(echo \"=== user only ===\"; qoder agents list --setting-sources user 2>&1 | head -12; echo \"=== project only ===\"; qoder agents list --setting-sources project 2>&1 | head -20; echo \"=== local only ===\"; qoder agents list --setting-sources local 2>&1 | head -12)",
+      "Bash(set -e\nrm -rf /tmp/qoder-agent-test && mkdir -p /tmp/qoder-agent-test/.qoder/agents\ncp .qoder/agents/lead.md /tmp/qoder-agent-test/.qoder/agents/\ncd /tmp/qoder-agent-test\necho \"=== copy as-is \\(no name\\) ===\"; qoder agents list 2>&1 | head -8\nprintf '\\\\n--- add name via sed ---\\\\n'\nsed -i '2i name: lead' .qoder/agents/lead.md\nsed -n '1,8p' .qoder/agents/lead.md\necho \"=== with name ===\"; qoder agents list 2>&1 | head -10)",
+      "Bash(mv .qoder/agents/README.md .qoder/README.md && ls -la .qoder .qoder/agents)",
+      "Bash(qoder agents list 2>&1 | head -30)",
+      "Bash(python3 - <<'PY'\nimport json, pathlib, sys\njson.load\\(open\\('.qoder/settings.json'\\)\\)\nprint\\('settings.json: valid JSON'\\)\ntry:\n    import yaml\nexcept ImportError:\n    print\\('PyYAML not installed; skipping frontmatter parse'\\)\n    sys.exit\\(0\\)\nfor p in sorted\\(pathlib.Path\\('.qoder/agents'\\).glob\\('*.md'\\)\\):\n    text = p.read_text\\(\\).split\\('---'\\)\n    data = yaml.safe_load\\(text[1]\\)\n    print\\(f\"{p.name}: name={data.get\\('name'\\)!r} tools={data.get\\('tools'\\)!r} disallowedTools={data.get\\('disallowedTools'\\)!r} permissionMode={data.get\\('permissionMode'\\)!r}\"\\)\nPY)",
+      "Bash(python3 - <<'PY'\nimport yaml, pathlib, json\nfor name in \\('lead','builder','reviewer'\\):\n    oc = yaml.safe_load\\(pathlib.Path\\(f'.opencode/agents/{name}.md'\\).read_text\\(\\).split\\('---'\\)[1]\\)\n    qd = yaml.safe_load\\(pathlib.Path\\(f'.qoder/agents/{name}.md'\\).read_text\\(\\).split\\('---'\\)[1]\\)\n    print\\(f'== {name} =='\\)\n    print\\('  opencode:', sorted\\(oc\\)\\)\n    print\\('  qoder   :', sorted\\(qd\\)\\)\nprint\\('== .qoder/settings.json =='\\)\nprint\\(json.load\\(open\\('.qoder/settings.json'\\)\\)\\)\nPY)",
+      "Bash(qoder --help 2>&1 | head -80)",
+      "Bash(grep -Rin --exclude-dir=logs --exclude-dir=sessions --exclude-dir=shell-snapshots -E 'deepseek|dfmodel|flash' \"$HOME/.qoder\" 2>/dev/null | head -40)",
+      "Bash(qoder --list-models 2>&1 | head -60)",
+      "Bash(python3 - <<'PY'\nimport json\np='/home/thtran/.qoder/settings.json'\nd=json.load\\(open\\(p\\)\\)\nprint\\(json.dumps\\(d, indent=2\\)\\)\nPY)"
+    ]
+  }
+}

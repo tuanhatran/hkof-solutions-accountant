@@ -17,20 +17,38 @@ the diff forces a review whatever the size.
 
 ## Models
 
-OpenCode pins two tiers — a different family for review on purpose:
+All three agents use DeepSeek Flash:
 
-| Agent       | Model (OpenCode)                    | Role                       |
-| ----------- | ----------------------------------- | -------------------------- |
-| `lead`      | `opencode/deepseek-v4.1-flash-free` | sizing, handoff, routing   |
-| `builder`   | `opencode/deepseek-v4.1-flash-free` | implementation and tests   |
-| `reviewer`  | `opencode/glm-5.3-flash-free`       | blocker-only diff review   |
+| Agent       | Model (OpenCode)                    | Model (Qoder)    | Role                       |
+| ----------- | ----------------------------------- | ---------------- | -------------------------- |
+| `lead`      | `opencode/deepseek-v4.1-flash-free` | `DeepSeek-Flash` | sizing, handoff, routing   |
+| `builder`   | `opencode/deepseek-v4.1-flash-free` | `DeepSeek-Flash` | implementation and tests   |
+| `reviewer`  | `opencode/deepseek-v4.1-flash-free` | `DeepSeek-Flash` | blocker-only diff review   |
 
-- `.opencode/agents/*.md` pins this ID in frontmatter. It is an OpenCode provider ID and
-  means nothing to another runtime.
-- `.qoder/agents/*.md` keeps the model binding as a comment only: Qoder decides its own.
+- `.opencode/agents/*.md` pins `opencode/deepseek-v4.1-flash-free` in frontmatter.
+- `.qoder/agents/*.md` pins Qoder's own model name, `DeepSeek-Flash`.
 - `.github/agents/*.agent.md` carries no model: Copilot selects its own.
 
-Do not copy an OpenCode model ID into a Qoder or Copilot agent.
+Do not copy an OpenCode provider ID into a Qoder agent; use the Qoder model name.
+
+## Runtime settings
+
+OpenCode settings live in `.opencode/opencode.json`; the Qoder equivalents live in
+`.qoder/settings.json` and in the agent frontmatter:
+
+| OpenCode | Qoder equivalent |
+| --- | --- |
+| `default_agent: lead` | `"agent": "lead"` in `.qoder/settings.json` (restart required) |
+| `lead`/`builder`/`reviewer` model pin | `model: DeepSeek-Flash` in every agent file |
+| `reviewer` edit/shell/execute deny | `disallowedTools: [Write, Edit, NotebookEdit, Bash, Agent]` + `permissionMode: dontAsk` |
+| `experimental.subagent_depth: 2` | Nested dispatch works while the `Agent` tool stays enabled |
+| `skills: [".qoder/skills"]` | Default discovery; no setting needed |
+| Git guards in `permissions` | `permissions.deny` with `Bash(git ...)` rules |
+| `instructions: [".opencode/instructions/*.md"]` | No glob loader; the agents read these files on demand |
+
+Qoder frontmatter requires `name` and `description`; a file without them is reported as a
+load error. The agent README lives at `.qoder/README.md`, not under `.qoder/agents/`, because
+Qoder parses every `.md` file in that directory as an agent.
 
 ## Handoff
 

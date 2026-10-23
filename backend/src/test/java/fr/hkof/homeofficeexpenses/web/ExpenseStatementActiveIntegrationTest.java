@@ -1,18 +1,26 @@
 package fr.hkof.homeofficeexpenses.web;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Base64;
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.jayway.jsonpath.JsonPath;
 
 /**
  * Regression guard for the active statement endpoint: the DTO is mapped outside the
@@ -26,6 +34,24 @@ class ExpenseStatementActiveIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    private static final byte[] PNG = Base64.getDecoder().decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=");
+
+    @BeforeEach
+    void ensureSignature() throws Exception {
+        String list = mockMvc.perform(get("/api/signatures"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<?> existing = JsonPath.read(list, "$[?(@.type == 'ENTREPRISE_CEO')]");
+        if (existing.isEmpty()) {
+            mockMvc.perform(multipart("/api/signatures")
+                            .file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
+                            .param("type", "ENTREPRISE_CEO")
+                            .param("name", "Signature gérant"))
+                    .andExpect(status().isCreated());
+        }
+    }
 
     @Test
     @DisplayName("Returns the active statement with its lines and amounts")

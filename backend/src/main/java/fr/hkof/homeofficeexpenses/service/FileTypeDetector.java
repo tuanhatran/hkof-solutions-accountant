@@ -15,6 +15,7 @@ public class FileTypeDetector {
 
     public static final long MAX_RECEIPT_SIZE = 10L * 1024 * 1024;
     public static final long MAX_TEMPLATE_SIZE = 5L * 1024 * 1024;
+    public static final long MAX_SIGNATURE_SIZE = 2L * 1024 * 1024;
 
     private static final Map<String, String> MIME_BY_EXTENSION = Map.of(
             "pdf", "application/pdf",
@@ -51,6 +52,37 @@ public class FileTypeDetector {
         };
         if (!valid) {
             throw new BusinessException("Le contenu du fichier ne correspond pas à son extension (« ." + extension + " »).");
+        }
+        return new DetectedFile(fileName, extension, mime);
+    }
+
+    /**
+     * Detects a signature image: PNG or JPEG only, checked by magic bytes and capped at
+     * {@link #MAX_SIGNATURE_SIZE}.
+     */
+    public DetectedFile detectSignature(String fileName, byte[] content) {
+        if (content == null || content.length == 0) {
+            throw new BusinessException("Le fichier est vide.");
+        }
+        if (content.length > MAX_SIGNATURE_SIZE) {
+            throw new BusinessException("Image trop volumineuse (maximum 2 Mo).");
+        }
+        String extension = extension(fileName);
+        String mime = switch (extension) {
+            case "png" -> "image/png";
+            case "jpg", "jpeg" -> "image/jpeg";
+            default -> null;
+        };
+        if (mime == null) {
+            throw new BusinessException("La signature doit être une image PNG ou JPEG.");
+        }
+        boolean valid = switch (extension) {
+            case "jpg", "jpeg" -> startsWithBytes(content, new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF});
+            case "png" -> startsWithBytes(content, new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A});
+            default -> false;
+        };
+        if (!valid) {
+            throw new BusinessException("La signature doit être une image PNG ou JPEG.");
         }
         return new DetectedFile(fileName, extension, mime);
     }

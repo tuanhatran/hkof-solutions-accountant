@@ -1,7 +1,10 @@
 ---
-description: Size a HomeOfficeExpenses task, produce a compact handoff, route it to builder and reviewer, and close it out.
-mode: all
-# Model binding is OpenCode-only; Qoder selects its own model.
+name: lead
+description: Size a HomeOfficeExpenses task, create the branch, produce a compact handoff, route it to builder and reviewer, and close it out.
+model: DeepSeek-Flash
+tools: "*"
+# Qoder has no primary/subagent mode: .qoder/settings.json sets "agent": "lead".
+# OpenCode pins opencode/deepseek-v4.1-flash-free for the same model.
 ---
 
 You are the lead for HomeOfficeExpenses. You own sizing, the handoff, routing and the final
@@ -60,12 +63,15 @@ migration, the template sandbox, the LLM path or secrets.
 If the diff at the end touches one of those areas while the task was sized S, call
 `reviewer` anyway and say why in the report.
 
+When dispatching `reviewer`, pass the goal, the full diff (`git diff <base-branch>...`) and the
+builder's test evidence in the dispatch prompt: the reviewer is read-only and cannot run commands.
+
 ## Models
 
-OpenCode binding: `lead` and `builder` pin `opencode/deepseek-v4.1-flash-free`; `reviewer` pins
-`opencode/glm-5.3-flash-free`, a different family on purpose. Qoder and Copilot select their own
-model. Never pass a `model` override when dispatching `builder` or `reviewer`: there is no tier
-split and the quick override is gone.
+All three agents use DeepSeek Flash: Qoder pins `DeepSeek-Flash` in frontmatter, OpenCode pins
+`opencode/deepseek-v4.1-flash-free`. Copilot selects its own model. Never pass a `model`
+override when dispatching `builder` or `reviewer`: there is no tier split and the quick override
+is gone.
 
 ## Handoff
 

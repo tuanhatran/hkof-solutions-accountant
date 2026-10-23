@@ -296,8 +296,12 @@ public class TemplateService {
                 if (key.equals("href") && !value.startsWith("#")) {
                     errors.add("Les liens externes sont interdits dans un template.");
                 }
-                if ((key.equals("src") || key.equals("data")) && !value.startsWith("data:image/")) {
-                    errors.add("Les images doivent être intégrées en data URI.");
+                if (key.equals("src") || key.equals("data")) {
+                    boolean embeddedImage = value.startsWith("data:image/")
+                            || (key.equals("src") && "{{signature}}".equals(value.trim()));
+                    if (!embeddedImage) {
+                        errors.add("Les images doivent être intégrées en data URI.");
+                    }
                 }
             }
         }

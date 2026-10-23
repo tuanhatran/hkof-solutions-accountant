@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import fr.hkof.homeofficeexpenses.domain.Settings;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
+import fr.hkof.homeofficeexpenses.domain.Signature;
+import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
@@ -28,17 +30,19 @@ public class RentReceiptService {
     private final SettingsService parametersService;
     private final TemplateService templateService;
     private final TemplateDataService templateDataService;
+    private final SignatureService signatureService;
     private final PdfService pdfService;
     private final StorageService storage;
     private final Clock clock;
 
     public RentReceiptService(RentReceiptRepository repository, SettingsService parametersService,
-            TemplateService templateService, TemplateDataService templateDataService, PdfService pdfService,
-            StorageService storage, Clock clock) {
+            TemplateService templateService, TemplateDataService templateDataService, SignatureService signatureService,
+            PdfService pdfService, StorageService storage, Clock clock) {
         this.repository = repository;
         this.parametersService = parametersService;
         this.templateService = templateService;
         this.templateDataService = templateDataService;
+        this.signatureService = signatureService;
         this.pdfService = pdfService;
         this.storage = storage;
         this.clock = clock;
@@ -65,6 +69,7 @@ public class RentReceiptService {
         BigDecimal total = CalculationService.totalRentReceipt(rentExclCharges, charges);
         LocalDate issueDate = dateOr(request.issueDate(), LocalDate.now(clock));
         LocalDate paymentDate = dateOr(request.paymentDate(), LocalDate.now(clock));
+        String signature = signatureDataUri(request.signatureId(), SignatureType.LANDLORD);
 
         TemplateDocument template = templateService.active(TemplateType.RENT_RECEIPT);
         if (request.templateId() != null) {
@@ -95,7 +100,7 @@ public class RentReceiptService {
         rentReceipt.setTemplateVersion(template.getVersion());
         rentReceipt.setCreatedAt(Instant.now(clock));
 
-        String html = templateService.render(template, templateDataService.dataRentReceipt(parameters, rentReceipt));
+        String html = templateService.render(template, templateDataService.dataRentReceipt(parameters, rentReceipt, signature));
         byte[] pdf = pdfService.renderHtmlToPdf(html);
         String path = storage.storePdf("quittance_" + month + "_v" + version + ".pdf", pdf);
         rentReceipt.setPdfPath(path);
@@ -129,13 +134,14 @@ public class RentReceiptService {
         rentReceipt.setTotal(CalculationService.totalRentReceipt(rentExclCharges, charges));
         rentReceipt.setIssueDate(dateOr(request.issueDate(), LocalDate.now(clock)));
         rentReceipt.setPaymentDate(dateOr(request.paymentDate(), LocalDate.now(clock)));
+        String signature = signatureDataUri(request.signatureId(), SignatureType.LANDLORD);
         TemplateDocument template = request.templateId() == null
                 ? templateService.active(TemplateType.RENT_RECEIPT)
                 : templateService.byId(request.templateId());
         if (template.getType() != TemplateType.RENT_RECEIPT) {
             throw new BusinessException("Le template sélectionné n'est pas un template de quittance.");
         }
-        String html = templateService.render(template, templateDataService.dataRentReceipt(parameters, rentReceipt));
+        String html = templateService.render(template, templateDataService.dataRentReceipt(parameters, rentReceipt, signature));
         return pdfService.addWatermark(pdfService.renderHtmlToPdf(html));
     }
 
@@ -189,6 +195,13 @@ public class RentReceiptService {
     private LocalDate dateOr(String date, LocalDate fallback) {
         LocalDate parsed = Amounts.optionalDate(date, "date");
         return parsed == null ? fallback : parsed;
+    }
+
+    private String signatureDataUri(Long requestedId, SignatureType defaultType) {
+        Signature signature = signatureService.resolve(requestedId, defaultType)
+                .orElseThrow(() -> new BusinessException(
+                        "Aucune signature configurée. Configurez une signature dans la page Paramètres."));
+        return signatureService.dataUri(signature.getId());
     }
 
     public RentReceiptDto toDto(RentReceipt rentReceipt) {

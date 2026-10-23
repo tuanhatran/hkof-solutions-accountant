@@ -42,8 +42,7 @@ Before opening anything, list the files you will read.
 
 ## Models
 
-- `lead` and `builder`: `opencode/deepseek-v4.1-flash-free`.
-- `reviewer`: `opencode/glm-5.3-flash-free`, a different family on purpose.
+- `lead`, `builder` and `reviewer`: `opencode/deepseek-v4.1-flash-free`.
 - Never pass a `model` override when dispatching `builder` or `reviewer`.
 
 ## Handoff

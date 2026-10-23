@@ -26,11 +26,13 @@ export type LlmConfigRequest = Schemas["LlmConfigRequest"];
 export type LlmModelDto = Schemas["LlmModelDto"];
 export type LlmStatusDto = Schemas["LlmStatusDto"];
 export type LlmTestResponse = Schemas["LlmTestResponse"];
+export type SignatureDto = Schemas["SignatureDto"];
 export type TemplateDto = Schemas["TemplateDto"];
 export type TemplateVariableDto = Schemas["TemplateVariableDto"];
 export type ValidationReportDto = Schemas["ValidationReportDto"];
 
 export type TemplateType = "RENT_RECEIPT" | "EXPENSE_STATEMENT";
+export type SignatureType = "LANDLORD" | "ENTREPRISE_CEO";
 export type AnalysisStatus =
   "PENDING" | "RUNNING" | "DONE" | "FAILED" | "CANCELLED";
 export type AiConfidence = "haute" | "moyenne" | "basse";

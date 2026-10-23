@@ -11,21 +11,32 @@ import org.springframework.stereotype.Service;
 import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
 import fr.hkof.homeofficeexpenses.domain.Settings;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
+import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.service.CalculationService;
 import fr.hkof.homeofficeexpenses.service.Amounts;
 import fr.hkof.homeofficeexpenses.service.NumberToWords;
 import fr.hkof.homeofficeexpenses.service.SettingsService;
+import fr.hkof.homeofficeexpenses.service.SignatureService;
 
 @Service
 public class TemplateDataService {
 
-    private final SettingsService settingsService;
+    /**
+     * Preview-only fallback for the admin template preview: a 1x1 transparent PNG so the
+     * rendered document always contains an image even when no signature is configured.
+     */
+    private static final String PREVIEW_SIGNATURE =
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=";
 
-    public TemplateDataService(SettingsService settingsService) {
+    private final SettingsService settingsService;
+    private final SignatureService signatureService;
+
+    public TemplateDataService(SettingsService settingsService, SignatureService signatureService) {
         this.settingsService = settingsService;
+        this.signatureService = signatureService;
     }
 
-    public Map<String, Object> dataRentReceipt(Settings settings, RentReceipt rentReceipt) {
+    public Map<String, Object> dataRentReceipt(Settings settings, RentReceipt rentReceipt, String signature) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("bailleur", Map.of(
                 "nom", text(settings.getLandlordName()),
@@ -45,10 +56,11 @@ public class TemplateDataService {
         data.put("date_paiement", Amounts.formatDate(rentReceipt.getPaymentDate()));
         data.put("date_emission", Amounts.formatDate(rentReceipt.getIssueDate()));
         data.put("lieu", text(settings.getIssuePlace()));
+        data.put("signature", text(signature));
         return data;
     }
 
-    public Map<String, Object> dataStatement(Settings settings, ExpenseStatement statement, boolean complete) {
+    public Map<String, Object> dataStatement(Settings settings, ExpenseStatement statement, boolean complete, String signature) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("societe", Map.of(
                 "raison_sociale", text(settings.getCompanyName()),
@@ -75,11 +87,19 @@ public class TemplateDataService {
         data.put("date_emission", Amounts.formatDate(java.time.LocalDate.now()));
         data.put("lieu", text(settings.getIssuePlace()));
         data.put("complete", complete);
+        data.put("signature", text(signature));
         return data;
     }
 
     public Map<String, Object> dataExample(fr.hkof.homeofficeexpenses.domain.TemplateType type) {
         Settings settings = settingsService.entity();
+        SignatureType defaultType = type == fr.hkof.homeofficeexpenses.domain.TemplateType.RENT_RECEIPT
+                ? SignatureType.LANDLORD
+                : SignatureType.ENTREPRISE_CEO;
+        String signature = signatureService.resolve(null, defaultType)
+                .map(stored -> signatureService.dataUri(stored.getId()))
+                .orElse(null);
+        String effectiveSignature = signature == null || signature.isBlank() ? PREVIEW_SIGNATURE : signature;
         if (type == fr.hkof.homeofficeexpenses.domain.TemplateType.RENT_RECEIPT) {
             RentReceipt rentReceipt = new RentReceipt();
             rentReceipt.setMonth("2026-10");
@@ -90,17 +110,17 @@ public class TemplateDataService {
             rentReceipt.setTotal(CalculationService.totalRentReceipt(rentReceipt.getRentExclCharges(), rentReceipt.getCharges()));
             rentReceipt.setPaymentDate(java.time.LocalDate.of(2026, 10, 5));
             rentReceipt.setIssueDate(java.time.LocalDate.of(2026, 10, 1));
-            return dataRentReceipt(settings, rentReceipt);
+            return dataRentReceipt(settings, rentReceipt, effectiveSignature);
         }
         ExpenseStatement statement = new ExpenseStatement();
         statement.setMonth("2026-10");
         statement.setNumber("NF-2026-10");
         statement.setTotal(new BigDecimal("364.96"));
-        dataStatementExample(settings, statement, true);
-        return dataStatementExample(settings, statement, true);
+        return dataStatementExample(settings, statement, true, effectiveSignature);
     }
 
-    private Map<String, Object> dataStatementExample(Settings settings, ExpenseStatement statement, boolean complete) {
+    private Map<String, Object> dataStatementExample(Settings settings, ExpenseStatement statement, boolean complete,
+            String signature) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("societe", Map.of(
                 "raison_sociale", text(settings.getCompanyName()),
@@ -123,6 +143,7 @@ public class TemplateDataService {
         data.put("date_emission", Amounts.formatDate(java.time.LocalDate.now()));
         data.put("lieu", text(settings.getIssuePlace()));
         data.put("complete", complete);
+        data.put("signature", text(signature));
         return data;
     }
 

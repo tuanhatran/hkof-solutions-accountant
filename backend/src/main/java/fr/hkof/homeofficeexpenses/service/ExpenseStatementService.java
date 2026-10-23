@@ -23,6 +23,8 @@ import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
 import fr.hkof.homeofficeexpenses.domain.Settings;
 import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
+import fr.hkof.homeofficeexpenses.domain.Signature;
+import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.domain.AmountSource;
 import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
@@ -52,6 +54,7 @@ public class ExpenseStatementService {
     private final ReceiptService receiptService;
     private final TemplateService templateService;
     private final TemplateDataService templateDataService;
+    private final SignatureService signatureService;
     private final PdfService pdfService;
     private final StorageService storage;
     private final DocumentTextExtractor textExtractor;
@@ -59,8 +62,8 @@ public class ExpenseStatementService {
 
     public ExpenseStatementService(ExpenseStatementRepository repository, SettingsService parametersService,
             ExpenseItemService expenseItemService, RentReceiptService rentReceiptService, ReceiptService receiptService,
-            TemplateService templateService, TemplateDataService templateDataService, PdfService pdfService,
-            StorageService storage, DocumentTextExtractor textExtractor, Clock clock) {
+            TemplateService templateService, TemplateDataService templateDataService, SignatureService signatureService,
+            PdfService pdfService, StorageService storage, DocumentTextExtractor textExtractor, Clock clock) {
         this.repository = repository;
         this.parametersService = parametersService;
         this.expenseItemService = expenseItemService;
@@ -68,6 +71,7 @@ public class ExpenseStatementService {
         this.receiptService = receiptService;
         this.templateService = templateService;
         this.templateDataService = templateDataService;
+        this.signatureService = signatureService;
         this.pdfService = pdfService;
         this.storage = storage;
         this.textExtractor = textExtractor;
@@ -124,8 +128,9 @@ public class ExpenseStatementService {
         Settings settings = parametersService.entity();
         ExpenseStatement statement = buildStatement(month, lines, null, null);
         boolean complete = Boolean.TRUE.equals(request.complete());
+        String signature = signatureDataUri(request.signatureId(), SignatureType.ENTREPRISE_CEO);
         TemplateDocument template = templateForStatement(request.templateId());
-        String html = templateService.render(template, templateDataService.dataStatement(settings, statement, complete));
+        String html = templateService.render(template, templateDataService.dataStatement(settings, statement, complete, signature));
         byte[] pdf = pdfService.renderHtmlToPdf(html);
         if (complete) {
             pdf = pdfService.merge(withAttachments(pdf, statement, month));
@@ -141,13 +146,14 @@ public class ExpenseStatementService {
             throw new BusinessException("Ajoutez au moins un frais avant de générer la note.");
         }
         Settings settings = parametersService.entity();
+        String signature = signatureDataUri(request.signatureId(), SignatureType.ENTREPRISE_CEO);
         TemplateDocument template = templateForStatement(request.templateId());
         int version = repository.findFirstByMonthOrderByVersionDesc(month.toString())
                 .map(n -> n.getVersion() + 1)
                 .orElse(1);
         archive(month.toString());
         ExpenseStatement statement = buildStatement(month, lines, version, template);
-        String html = templateService.render(template, templateDataService.dataStatement(settings, statement, true));
+        String html = templateService.render(template, templateDataService.dataStatement(settings, statement, true, signature));
         byte[] pdf = pdfService.renderHtmlToPdf(html);
         byte[] pdfComplete = pdfService.merge(withAttachments(pdf, statement, month));
         statement.setPdfPath(storage.storePdf("note_frais_" + month + "_v" + version + ".pdf", pdf));
@@ -288,6 +294,13 @@ public class ExpenseStatementService {
             }
         }
         return pdfs;
+    }
+
+    private String signatureDataUri(Long requestedId, SignatureType defaultType) {
+        Signature signature = signatureService.resolve(requestedId, defaultType)
+                .orElseThrow(() -> new BusinessException(
+                        "Aucune signature configurée. Configurez une signature dans la page Paramètres."));
+        return signatureService.dataUri(signature.getId());
     }
 
     private TemplateDocument templateForStatement(Long templateId) {

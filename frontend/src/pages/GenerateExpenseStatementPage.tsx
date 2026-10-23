@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { isCancellation, errorMessage, downloadBlob } from "@/api/client";
 import { api } from "@/api/endpoints";
 import {
@@ -26,6 +26,7 @@ import {
   useExpenseItems,
   useActiveRentReceipt,
   useTemplates,
+  useSignatures,
 } from "@/api/queries";
 import type {
   CalculationResponse,
@@ -47,6 +48,7 @@ import { FieldGroup } from "@/components/FieldGroup";
 import { PageHeader } from "@/components/PageHeader";
 import { PdfViewer } from "@/components/PdfViewer";
 import { ProRataInput } from "@/components/ProRataInput";
+import { signatureTypeLabel } from "@/components/SignaturesManager";
 import {
   isAnalysisRunning,
   useAnalysis,
@@ -264,6 +266,18 @@ export function GenerateExpenseStatementPage() {
   const templates = useTemplates("EXPENSE_STATEMENT");
   const rentReceipt = useActiveRentReceipt(month);
   const activeStatement = useActiveStatement(month);
+  const signatures = useSignatures();
+
+  const signatureList = signatures.data ?? [];
+  const [chosenSignatureId, setChosenSignatureId] = useState<number | null>(
+    null,
+  );
+  const defaultSignature =
+    signatureList.find((candidate) => candidate.type === "ENTREPRISE_CEO") ??
+    signatureList[0] ??
+    null;
+  const selectedSignatureId = chosenSignatureId ?? defaultSignature?.id ?? null;
+  const signatureAvailable = signatureList.length > 0;
 
   const expenseItems = useMemo<ExpenseItemDto[]>(
     () =>
@@ -801,8 +815,18 @@ export function GenerateExpenseStatementPage() {
     if (selectedTemplate !== null) {
       requestBody.templateId = selectedTemplate;
     }
+    if (selectedSignatureId !== null) {
+      requestBody.signatureId = selectedSignatureId;
+    }
     return requestBody;
-  }, [month, complete, selectedTemplate, requests, orderedLines.length]);
+  }, [
+    month,
+    complete,
+    selectedTemplate,
+    selectedSignatureId,
+    requests,
+    orderedLines.length,
+  ]);
 
   const preview = usePdfPreview(
     (signal) =>
@@ -810,7 +834,7 @@ export function GenerateExpenseStatementPage() {
         ? api.expenseStatements.preview(previewRequest, signal)
         : Promise.reject(new DOMException("Aperçu inactif", "AbortError")),
     JSON.stringify(previewRequest ?? { inactive: true }),
-    { active: previewRequest !== null, debounceMs: 400 },
+    { active: previewRequest !== null && signatureAvailable, debounceMs: 400 },
   );
 
   function goToRentReceipt() {
@@ -819,7 +843,12 @@ export function GenerateExpenseStatementPage() {
   }
 
   async function generateStatement() {
-    if (!requests.values || orderedLines.length === 0 || !calculationUpToDate) {
+    if (
+      !requests.values ||
+      orderedLines.length === 0 ||
+      !calculationUpToDate ||
+      !signatureAvailable
+    ) {
       return;
     }
     setGenerationInProgress(true);
@@ -830,6 +859,9 @@ export function GenerateExpenseStatementPage() {
       };
       if (selectedTemplate !== null) {
         requestBody.templateId = selectedTemplate;
+      }
+      if (selectedSignatureId !== null) {
+        requestBody.signatureId = selectedSignatureId;
       }
       const statement = await api.expenseStatements.create(requestBody);
       setResult(statement);
@@ -1572,12 +1604,71 @@ export function GenerateExpenseStatementPage() {
                 </p>
               ) : null}
 
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FieldGroup
+                  id="note-signature"
+                  label="Signature"
+                  help="Image apposée au bas de la note de frais générée."
+                  badge={<span className="badge badge-neutral">PNG / JPEG</span>}
+                >
+                  <select
+                    id="note-signature"
+                    className="field"
+                    data-cy="select-signature"
+                    value={selectedSignatureId ?? ""}
+                    onChange={(event) =>
+                      setChosenSignatureId(
+                        event.target.value ? Number(event.target.value) : null,
+                      )
+                    }
+                    disabled={signatures.isPending || signatureList.length === 0}
+                  >
+                    {signatureList.length === 0 ? (
+                      <option value="">Aucune signature</option>
+                    ) : null}
+                    {signatureList.map((candidate) => (
+                      <option key={candidate.id} value={candidate.id}>
+                        {candidate.name} — {signatureTypeLabel(candidate.type)}
+                      </option>
+                    ))}
+                  </select>
+                </FieldGroup>
+                {signatures.isError ? (
+                  <p
+                    className="self-end rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger"
+                    role="alert"
+                    aria-live="polite"
+                    data-cy="alerte-signatures-erreur"
+                  >
+                    Les signatures n’ont pas pu être chargées :{" "}
+                    {errorMessage(signatures.error)}
+                  </p>
+                ) : !signatureAvailable && !signatures.isPending ? (
+                  <p
+                    className="self-end rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger"
+                    role="alert"
+                    data-cy="alerte-signature-manquante"
+                  >
+                    Aucune signature trouvée. Configurez une signature dans la
+                    page{" "}
+                    <Link to="/configuration" className="link">
+                      Paramètres
+                    </Link>
+                    .
+                  </p>
+                ) : null}
+              </div>
+
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <Button
                   variant="primary"
                   icon={<FileCheck2 size={16} />}
                   loading={generationInProgress}
-                  disabled={orderedLines.length === 0 || !calculationUpToDate}
+                  disabled={
+                    orderedLines.length === 0 ||
+                    !calculationUpToDate ||
+                    !signatureAvailable
+                  }
                   onClick={requestGeneration}
                   data-cy="btn-generer-note"
                 >
@@ -1586,11 +1677,13 @@ export function GenerateExpenseStatementPage() {
                 <p className="max-w-[300px] text-[11px] leading-snug text-ink-soft">
                   {orderedLines.length === 0
                     ? "Ajoutez au moins un frais pour générer la note."
-                    : !calculationUpToDate
-                      ? "En attente du calcul backend à jour…"
-                      : activeStatement.data
-                        ? `Une version ${activeVersion} existe : la version ${(activeVersion ?? 0) + 1} sera créée.`
-                        : "Le PDF définitif sera enregistré dans l’historique."}
+                    : !signatureAvailable
+                      ? "Configurez une signature pour générer la note."
+                      : !calculationUpToDate
+                        ? "En attente du calcul backend à jour…"
+                        : activeStatement.data
+                          ? `Une version ${activeVersion} existe : la version ${(activeVersion ?? 0) + 1} sera créée.`
+                          : "Le PDF définitif sera enregistré dans l’historique."}
                 </p>
               </div>
             </div>
@@ -1662,14 +1755,16 @@ export function GenerateExpenseStatementPage() {
           )}
         >
           <PdfViewer
-            url={previewRequest ? preview.url : null}
+            url={previewRequest && signatureAvailable ? preview.url : null}
             loading={preview.loading}
             error={
               requests.error
                 ? "Corrigez les lignes en rouge pour actualiser l’aperçu."
                 : orderedLines.length === 0
                   ? "Ajoutez un frais pour voir l’aperçu de la note."
-                  : preview.error
+                  : !signatureAvailable
+                    ? "Configurez une signature pour afficher l’aperçu."
+                    : preview.error
             }
             updatedAt={preview.updatedAt}
             onDownload={preview.download}
