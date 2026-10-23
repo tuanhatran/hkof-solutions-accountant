@@ -24,6 +24,7 @@ public class ExtractionPipeline {
     private static final Set<String> ACCEPTED_TYPES = Set.of(
             "gaz", "electricite", "loyer", "telephone", "assurance", "fibre", "autre");
     private static final Set<String> CONFIDENCE_LEVELS = Set.of("haute", "moyenne", "basse");
+    private static final Set<String> EUR_SPELLINGS = Set.of("EUR", "€", "EURO", "EUROS");
 
     private final OllamaClient ollamaClient;
     private final ObjectMapper objectMapper;
@@ -115,10 +116,7 @@ public class ExtractionPipeline {
 
         String type = normalizeType(clean(root, "type_suggere", 40));
         String invoiceDate = date(root, "date_facture");
-        String currency = clean(root, "devise", 8);
-        if (currency == null) {
-            currency = "EUR";
-        }
+        String currency = normalizeCurrency(clean(root, "devise", 8));
         if (sourceExcerpt != null && imageCount > 0 && textDocument.isBlank()) {
             sourceExcerpt = null;
         }
@@ -218,6 +216,22 @@ public class ExtractionPipeline {
         } catch (DateTimeParseException ex) {
             return null;
         }
+    }
+
+    /**
+     * The model may spell the currency as a code or as a symbol/word (EUR, €,
+     * euro, euros). Every euro spelling is normalized to EUR so the amount can
+     * be proposed; a genuinely foreign code is preserved untouched.
+     */
+    private String normalizeCurrency(String currency) {
+        if (currency == null) {
+            return "EUR";
+        }
+        String code = currency.trim().toUpperCase(Locale.ROOT);
+        if (code.isEmpty() || EUR_SPELLINGS.contains(code)) {
+            return "EUR";
+        }
+        return code;
     }
 
     private String normalizeType(String type) {

@@ -92,6 +92,25 @@ export function formatEUR(value: string | number | null | undefined): string {
   return EURO_NUMBER.format(numberValue);
 }
 
+/**
+ * True when the currency is a euro spelling (code, symbol or word), including
+ * a missing currency, which the extraction treats as euro. A genuinely foreign
+ * currency returns false so its amount is never proposed as an amount in euros.
+ */
+export function isEuroCurrency(value: string | null | undefined): boolean {
+  if (value === null || value === undefined) {
+    return true;
+  }
+  const normalized = value.trim().toUpperCase();
+  return (
+    normalized === "" ||
+    normalized === "EUR" ||
+    normalized === "€" ||
+    normalized === "EURO" ||
+    normalized === "EUROS"
+  );
+}
+
 export function formatPercentage(
   value: string | number | null | undefined,
 ): string {

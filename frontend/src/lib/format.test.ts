@@ -3,6 +3,7 @@ import {
   formatEUR,
   formatMonth,
   estimatedRetainedAmount,
+  isEuroCurrency,
   parseAmount,
   parsePercentage,
 } from "./format";
@@ -66,5 +67,28 @@ describe("estimatedRetainedAmount", () => {
       "950,00 €",
     );
     expect(estimatedRetainedAmount("", "35,71")).toBe("—");
+  });
+});
+
+describe("isEuroCurrency", () => {
+  it("accepts every euro spelling with spaces or case variations", () => {
+    expect(isEuroCurrency("EUR")).toBe(true);
+    expect(isEuroCurrency("€")).toBe(true);
+    expect(isEuroCurrency("euro")).toBe(true);
+    expect(isEuroCurrency(" euros ")).toBe(true);
+    expect(isEuroCurrency(" Eur ")).toBe(true);
+  });
+
+  it("treats a missing currency as euro", () => {
+    expect(isEuroCurrency(null)).toBe(true);
+    expect(isEuroCurrency(undefined)).toBe(true);
+    expect(isEuroCurrency("")).toBe(true);
+    expect(isEuroCurrency("   ")).toBe(true);
+  });
+
+  it("rejects a genuinely foreign currency", () => {
+    expect(isEuroCurrency("USD")).toBe(false);
+    expect(isEuroCurrency("CHF")).toBe(false);
+    expect(isEuroCurrency("usd")).toBe(false);
   });
 });

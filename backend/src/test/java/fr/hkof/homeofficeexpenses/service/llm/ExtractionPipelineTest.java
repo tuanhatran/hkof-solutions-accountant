@@ -102,6 +102,34 @@ class ExtractionPipelineTest {
     }
 
     @Test
+    @DisplayName("Normalizes every euro spelling returned by the model to EUR")
+    void euroSpellingsNormalized() {
+        assertThat(currencyFor("\"€\"")).isEqualTo("EUR");
+        assertThat(currencyFor("\"euro\"")).isEqualTo("EUR");
+        assertThat(currencyFor("\" euros \"")).isEqualTo("EUR");
+        assertThat(currencyFor("\"EUROS\"")).isEqualTo("EUR");
+        assertThat(currencyFor("\"   \"")).isEqualTo("EUR");
+        assertThat(currencyFor("null")).isEqualTo("EUR");
+    }
+
+    @Test
+    @DisplayName("Preserves a genuinely foreign currency code")
+    void foreignCurrencyPreserved() {
+        assertThat(currencyFor("\"USD\"")).isEqualTo("USD");
+        assertThat(currencyFor("\"chf\"")).isEqualTo("CHF");
+    }
+
+    private String currencyFor(String deviseJson) {
+        ExtractionDto result = pipeline.interpret("""
+                {"type_suggere":"gaz","fournisseur":"EDF","numero_facture":null,
+                 "date_facture":null,
+                 "montant_ttc":"78.00","montant_ht":null,"devise":%s,
+                 "extrait_source":"Total TTC : 78,00 EUR","confiance":"haute"}
+                """.formatted(deviseJson), DOCUMENT, 0);
+        return result.currency();
+    }
+
+    @Test
     @DisplayName("Digit boundaries: 174,6 and 74,65 never validate a 74.60 candidate")
     void similarAmountsRejected() {
         String document = """

@@ -83,6 +83,9 @@ function extract(content) {
   const expenseType = /Type(?:\s+de\s+frais)?\s*:\s*([^\r\n]+)/i.exec(text);
   const end = /Fin\s*:\s*(\d{4}-\d{2}-\d{2})/i.exec(text);
   const start = /Début\s*:\s*(\d{4}-\d{2}-\d{2})/i.exec(text);
+  // The real model echoes the currency it reads in the document; the euro sign
+  // is a common answer and must still pre-fill the amount.
+  const currency = text.includes('€') ? '€' : 'EUR';
   const result = {
     type_suggere: expenseType ? expenseType[1].trim().toLowerCase() : null,
     fournisseur: supplier ? supplier[1].trim() : null,
@@ -92,7 +95,7 @@ function extract(content) {
     periode_fin: end ? end[1] : iso(lastDayOfMonth()),
     montant_ttc: amount,
     montant_ht: null,
-    devise: 'EUR',
+    devise: currency,
     extrait_source: rawAmount ? rawAmount[0].trim() : null,
     confiance: amount ? 'haute' : 'basse',
   };

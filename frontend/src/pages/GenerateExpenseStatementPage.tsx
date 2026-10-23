@@ -60,6 +60,7 @@ import {
   formatEUR,
   formatMonth,
   estimatedRetainedAmount,
+  isEuroCurrency,
   parseAmount,
   parsePercentage,
 } from "@/lib/format";
@@ -448,12 +449,11 @@ export function GenerateExpenseStatementPage() {
     let appliedType = false;
     let appliedAmount = false;
 
-    const suggestedAmount =
-      extraction.currency && extraction.currency.toUpperCase() !== "EUR"
-        ? null
-        : extraction.amountInclVat
-          ? parseAmount(extraction.amountInclVat)
-          : null;
+    const suggestedAmount = !isEuroCurrency(extraction.currency)
+      ? null
+      : extraction.amountInclVat
+        ? parseAmount(extraction.amountInclVat)
+        : null;
 
     // The detected amount always replaces the current value; the rent amount
     // stays locked to the receipt of the month.

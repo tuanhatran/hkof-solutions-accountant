@@ -241,6 +241,24 @@ describe("Expense statement — entry and preview", () => {
     waitForAmount('[data-cy="total-retenu"]', "994,82");
   });
 
+  it("pre-fills the amount when the model answers the euro sign", () => {
+    createRentReceipt();
+    cy.visit("/generer/note-frais");
+    cy.chooseMonth(MONTHS);
+    cy.get('[data-cy="select-type-frais"]').should("not.be.disabled");
+    addRent();
+
+    uploadReceipt("facture-fibre-74-6.txt");
+    cy.get('[data-cy="analyse-statut"]', { timeout: 35_000 }).should(
+      "contain.text",
+      "Analyse terminée",
+    );
+    waitForSelectedFile("facture-fibre-74-6.txt");
+
+    waitForValue('[data-cy="input-montant-ttc"]', "74.60");
+    cy.get('[data-cy="btn-confirmer-montant"]').should("be.visible");
+  });
+
   it("overwrites a typed amount with the AI proposal and requires confirmation", () => {
     createRentReceipt();
     cy.visit("/generer/note-frais");

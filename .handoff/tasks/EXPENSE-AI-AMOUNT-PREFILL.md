@@ -1,9 +1,9 @@
 # EXPENSE-AI-AMOUNT-PREFILL
 
-Status: TODO
-Branch: feat/confirm-ai-amount (same feature branch, reused; no second branch)
+Status: DONE
+Branch: main (deviation: recorded `feat/confirm-ai-amount` was merged as `40a5f4c`; user checked out `main` and asked to continue there. No second branch created.)
 Size: M
-Round: 0/2
+Round: 1/2
 
 ## Goal
 
@@ -44,3 +44,17 @@ Keep as-is: analysis-panel sentence already corrected.
 ## Evidence
 
 <!-- append only -->
+
+- `2026-10-23 lead:` resumed on `main` — recorded branch already merged (`40a5f4c`); `presentInDocument` one-decimal fix present; remaining gaps = currency normalization (backend + `isEuroCurrency`), `mock-ollama` `devise: "€"`, Cypress `74,6 €` case.
+- `2026-10-23 builder:` red backend → `ExtractionPipelineTest.euroSpellingsNormalized` expected: "EUR" but was: "€" (line 107).
+- `2026-10-23 builder:` red frontend → `src/lib/format.test.ts` `TypeError: isEuroCurrency is not a function` (3 tests failed, 7 passed).
+- `2026-10-23 builder:` `cd backend && ./mvnw -B test` Tests run: 68, Failures: 0, Errors: 0, Skipped: 1 (TemplateActivationPostgresTest, pre-existing) PASS.
+- `2026-10-23 builder:` `cd frontend && npm run typecheck` PASS (no output, exit 0).
+- `2026-10-23 builder:` `cd frontend && npm test` Test Files 10 passed, Tests 55 passed PASS.
+- `2026-10-23 builder:` `cd frontend && npm run build` built in 493 ms PASS (chunk-size warning only).
+- `2026-10-23 builder:` `npx tsc --noEmit -p cypress/tsconfig.json` PASS.
+- `2026-10-23 builder:` `mock-ollama` smoke: `74,6 €` → `devise:"€"`, `120,00 EUR` → `devise:"EUR"` PASS.
+- `2026-10-23 builder:` e2e NOT RUN — `docker` unavailable in this WSL 2 distro; new Cypress `€` case and existing AI cases stay unverified until Docker is available.
+- `2026-10-23 reviewer:` `VERDICT: PASS` (round 1), no blocker; notes: E2E still to run, `mock-ollama` checks `€` on the whole message, euro spellings duplicated backend/frontend.
+- `2026-10-23 lead:` re-ran gates — backend `Tests run: 68, Failures: 0, Errors: 0, Skipped: 1`; frontend typecheck OK, `Tests 55 passed (55)`, build OK.
+- `2026-10-23 lead:` `DONE — user accepted`
