@@ -80,6 +80,9 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.rentExclCharges").doesNotExist())
                 .andExpect(jsonPath("$.landlordName").doesNotExist())
                 .andExpect(jsonPath("$.tenantName").doesNotExist());
+                .andExpect(jsonPath("$.rentExclCharges").doesNotExist())
+                .andExpect(jsonPath("$.landlordName").doesNotExist())
+                .andExpect(jsonPath("$.tenantName").doesNotExist());
 
         mockMvc.perform(get("/api/expense-items"))
                 .andExpect(status().isOk())

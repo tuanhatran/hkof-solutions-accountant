@@ -3,6 +3,7 @@ import {
   SEED_RENT,
   SEED_TOTAL,
   waitForText,
+  waitForText,
   waitForValue,
   downloadAndReadPdf,
 } from "../support/helpers";
@@ -48,6 +49,9 @@ describe("Rent receipt", () => {
         expect(text).to.contain("01/01/2026");
         expect(text).to.contain("31/01/2026");
         expect(text).to.contain(SEED_TOTAL);
+        expect(text).to.contain("Nom du bailleur");
+        expect(text).to.contain("Nom du locataire");
+        expect(text).to.contain("12 rue de la République");
         expect(text).to.contain("Nom du bailleur");
         expect(text).to.contain("Nom du locataire");
         expect(text).to.contain("12 rue de la République");

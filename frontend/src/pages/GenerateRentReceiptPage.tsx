@@ -18,8 +18,8 @@ import { api } from "@/api/endpoints";
 import {
   queryKeys,
   useActiveRentReceipt,
-  useLandlords,
   useLeases,
+  useLandlords,
   useTemplates,
   useSignatures,
   useTenants,
