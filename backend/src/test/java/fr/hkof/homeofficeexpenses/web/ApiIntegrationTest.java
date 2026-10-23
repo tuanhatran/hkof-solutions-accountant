@@ -74,21 +74,46 @@ class ApiIntegrationTest {
         mockMvc.perform(get("/api/settings"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.proRataBase").value("35.71"))
-                .andExpect(jsonPath("$.rentExclCharges").value("1300.00"));
+                .andExpect(jsonPath("$.rentExclCharges").doesNotExist())
+                .andExpect(jsonPath("$.landlordName").doesNotExist())
+                .andExpect(jsonPath("$.tenantName").doesNotExist());
 
         mockMvc.perform(get("/api/expense-items"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(6));
 
+        mockMvc.perform(get("/api/landlords"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name").value("Nom du bailleur"));
+        mockMvc.perform(get("/api/tenants"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name").value("Nom du locataire"));
+        mockMvc.perform(get("/api/leases"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].landlordName").value("Nom du bailleur"))
+                .andExpect(jsonPath("$[0].tenantName").value("Nom du locataire"))
+                .andExpect(jsonPath("$[0].propertyAddress").value("12 rue de la République, 75000 Paris"))
+                .andExpect(jsonPath("$[0].rentExclCharges").value("1300.00"))
+                .andExpect(jsonPath("$[0].charges").value("0.00"));
+        long landlordId = seededId("/api/landlords");
+        long tenantId = seededId("/api/tenants");
+
         String rentReceipt = mockMvc.perform(post("/api/rent-receipts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"month":"2026-11"}
-                                """))
+                                {"month":"2026-11","landlordId":%d,"tenantId":%d}
+                                """.formatted(landlordId, tenantId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.version").value(1))
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.total").value("1300.00"))
+                .andExpect(jsonPath("$.landlordId").value(landlordId))
+                .andExpect(jsonPath("$.tenantId").value(tenantId))
+                .andExpect(jsonPath("$.landlordName").value("Nom du bailleur"))
+                .andExpect(jsonPath("$.tenantName").value("Nom du locataire"))
                 .andExpect(jsonPath("$.periodStart").value("2026-11-01"))
                 .andExpect(jsonPath("$.periodEnd").value("2026-11-30"))
                 .andReturn().getResponse().getContentAsString();
@@ -105,8 +130,8 @@ class ApiIntegrationTest {
         mockMvc.perform(post("/api/rent-receipts/preview")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"month":"2026-12"}
-                                """))
+                                {"month":"2026-12","landlordId":%d,"tenantId":%d}
+                                """.formatted(landlordId, tenantId)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_PDF));
         mockMvc.perform(get("/api/rent-receipts").param("month", "2026-12"))
@@ -285,11 +310,13 @@ class ApiIntegrationTest {
     @Test
     @DisplayName("The complete ZIP bundles the note, the active rent receipt and each original justificatif once")
     void expenseStatementZipBundlesDocuments() throws Exception {
+        long landlordId = seededId("/api/landlords");
+        long tenantId = seededId("/api/tenants");
         mockMvc.perform(post("/api/rent-receipts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"month":"2027-05"}
-                                """))
+                                {"month":"2027-05","landlordId":%d,"tenantId":%d}
+                                """.formatted(landlordId, tenantId)))
                 .andExpect(status().isCreated());
 
         byte[] originalReceipt = "EDF - Gaz\nTotal TTC : 78,00 EUR\n".getBytes(StandardCharsets.UTF_8);
@@ -350,6 +377,128 @@ class ApiIntegrationTest {
                 .andReturn();
         assertThat(entries.get("note_frais_2027-05.pdf"))
                 .isNotEqualTo(complete.getResponse().getContentAsByteArray());
+    }
+
+    @Test
+    @DisplayName("Landlord, tenant and lease CRUD enforces logical deletion and one active lease per pair")
+    void rentConfigurationCrud() throws Exception {
+        String landlord = mockMvc.perform(post("/api/landlords")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Bailleur secondaire","address":"2 rue du Test, 75001 Paris"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Bailleur secondaire"))
+                .andReturn().getResponse().getContentAsString();
+        long newLandlordId = ((Number) JsonPath.read(landlord, "$.id")).longValue();
+
+        mockMvc.perform(put("/api/landlords/{id}", newLandlordId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Bailleur secondaire","address":"4 rue du Test, 75001 Paris"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.address").value("4 rue du Test, 75001 Paris"));
+
+        mockMvc.perform(post("/api/tenants")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Locataire secondaire","address":"5 rue du Test, 75001 Paris"}
+                                """))
+                .andExpect(status().isCreated());
+        long newTenantId = seededId("/api/tenants", "Locataire secondaire");
+
+        mockMvc.perform(post("/api/leases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"landlordId":999999,"tenantId":%d,"propertyAddress":"3 rue du Bail",
+                                 "rentExclCharges":"1000.00","charges":"80.00"}
+                                """.formatted(newTenantId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.detail").value("Bailleur introuvable."));
+
+        String lease = mockMvc.perform(post("/api/leases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"landlordId":%d,"tenantId":%d,"propertyAddress":"3 rue du Bail, 75002 Paris",
+                                 "rentExclCharges":"1000.00","charges":"80.00"}
+                                """.formatted(newLandlordId, newTenantId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.propertyAddress").value("3 rue du Bail, 75002 Paris"))
+                .andExpect(jsonPath("$.rentExclCharges").value("1000.00"))
+                .andExpect(jsonPath("$.charges").value("80.00"))
+                .andReturn().getResponse().getContentAsString();
+        long leaseId = ((Number) JsonPath.read(lease, "$.id")).longValue();
+
+        mockMvc.perform(post("/api/leases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"landlordId":%d,"tenantId":%d,"propertyAddress":"Autre bien",
+                                 "rentExclCharges":"1200.00"}
+                                """.formatted(newLandlordId, newTenantId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(
+                        "Un bail actif existe déjà pour ce bailleur et ce locataire."));
+
+        mockMvc.perform(delete("/api/landlords/{id}", newLandlordId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(
+                        "Ce bailleur est utilisé par un bail actif et ne peut pas être supprimé."));
+        mockMvc.perform(delete("/api/tenants/{id}", newTenantId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(
+                        "Ce locataire est utilisé par un bail actif et ne peut pas être supprimé."));
+
+        mockMvc.perform(delete("/api/leases/{id}", leaseId))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(post("/api/rent-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"month":"2027-08","landlordId":%d,"tenantId":%d}
+                                """.formatted(newLandlordId, newTenantId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(
+                        "Aucun bail actif pour ce bailleur et ce locataire. Créez un bail dans la page Configuration."));
+        mockMvc.perform(post("/api/rent-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"month":"2027-08"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Sélectionnez un bailleur et un locataire."));
+
+        mockMvc.perform(delete("/api/landlords/{id}", newLandlordId))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/tenants/{id}", newTenantId))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/landlords/{id}", newLandlordId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.detail").value("Bailleur introuvable."));
+
+        mockMvc.perform(get("/api/landlords"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.name == 'Bailleur secondaire')]").isEmpty());
+        mockMvc.perform(get("/api/tenants"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.name == 'Locataire secondaire')]").isEmpty());
+        mockMvc.perform(get("/api/leases"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.propertyAddress == '3 rue du Bail, 75002 Paris')]").isEmpty());
+    }
+
+    private long seededId(String path) throws Exception {
+        String body = mockMvc.perform(get(path))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return ((Number) JsonPath.read(body, "$[0].id")).longValue();
+    }
+
+    private long seededId(String path, String name) throws Exception {
+        String body = mockMvc.perform(get(path))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<Map<String, Object>> matches = JsonPath.read(body, "$[?(@.name == '" + name + "')]");
+        return ((Number) matches.get(0).get("id")).longValue();
     }
 
     private static Map<String, byte[]> unzip(byte[] archive) throws IOException {

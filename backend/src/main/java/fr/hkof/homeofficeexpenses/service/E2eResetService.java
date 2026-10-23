@@ -22,10 +22,13 @@ import fr.hkof.homeofficeexpenses.repository.ReceiptRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseLineRepository;
 import fr.hkof.homeofficeexpenses.repository.LlmConfigRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseStatementRepository;
+import fr.hkof.homeofficeexpenses.repository.LandlordRepository;
+import fr.hkof.homeofficeexpenses.repository.LeaseRepository;
 import fr.hkof.homeofficeexpenses.repository.SettingsRepository;
 import fr.hkof.homeofficeexpenses.repository.SignatureRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
 import fr.hkof.homeofficeexpenses.repository.RentReceiptRepository;
+import fr.hkof.homeofficeexpenses.repository.TenantRepository;
 import fr.hkof.homeofficeexpenses.repository.TemplateDocumentRepository;
 
 @Service
@@ -47,6 +50,9 @@ public class E2eResetService {
     private final LlmConfigRepository llmConfigs;
     private final ExpenseItemRepository items;
     private final SettingsRepository settings;
+    private final LeaseRepository leases;
+    private final TenantRepository tenants;
+    private final LandlordRepository landlords;
     private final SignatureRepository signatures;
     private final StorageService storage;
     private final DataInitializer initializer;
@@ -54,8 +60,8 @@ public class E2eResetService {
     public E2eResetService(AnalysisDocumentRepository analyses, ExpenseLineRepository lines,
             ExpenseStatementRepository statements, RentReceiptRepository rentReceipts, ReceiptRepository receipts,
             TemplateDocumentRepository templates, LlmConfigRepository llmConfigs, ExpenseItemRepository items,
-            SettingsRepository settings, SignatureRepository signatures, StorageService storage,
-            DataInitializer initializer) {
+            SettingsRepository settings, LeaseRepository leases, TenantRepository tenants, LandlordRepository landlords,
+            SignatureRepository signatures, StorageService storage, DataInitializer initializer) {
         this.analyses = analyses;
         this.lines = lines;
         this.statements = statements;
@@ -65,6 +71,9 @@ public class E2eResetService {
         this.llmConfigs = llmConfigs;
         this.items = items;
         this.settings = settings;
+        this.leases = leases;
+        this.tenants = tenants;
+        this.landlords = landlords;
         this.signatures = signatures;
         this.storage = storage;
         this.initializer = initializer;
@@ -81,6 +90,9 @@ public class E2eResetService {
         templates.deleteAllInBatch();
         llmConfigs.deleteAllInBatch();
         items.deleteAllInBatch();
+        leases.deleteAllInBatch();
+        tenants.deleteAllInBatch();
+        landlords.deleteAllInBatch();
         settings.deleteAllInBatch();
         cleanFiles();
         initializer.run(new DefaultApplicationArguments(new String[0]));

@@ -24,6 +24,12 @@ public class RentReceipt {
     @Column(name = "billing_month", nullable = false, length = 7)
     private String month;
 
+    @Column(name = "landlord_id")
+    private Long landlordId;
+
+    @Column(name = "tenant_id")
+    private Long tenantId;
+
     @Column(name = "period_start", nullable = false)
     private LocalDate periodStart;
 
@@ -81,6 +87,22 @@ public class RentReceipt {
 
     public void setMonth(String month) {
         this.month = month;
+    }
+
+    public Long getLandlordId() {
+        return landlordId;
+    }
+
+    public void setLandlordId(Long landlordId) {
+        this.landlordId = landlordId;
+    }
+
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
     }
 
     public LocalDate getPeriodStart() {

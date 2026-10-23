@@ -5,6 +5,9 @@ import {
   settingsSchema,
   expenseItemSchema,
   rentReceiptSchema,
+  landlordSchema,
+  tenantSchema,
+  leaseSchema,
 } from "./validation";
 
 const VALID_EXPENSE = {
@@ -22,12 +25,6 @@ const VALID_SETTINGS = {
   homeAddress: "12 rue des Lilas, 75011 Paris",
   totalArea: "70,00",
   businessArea: "25,00",
-  landlordName: "Propriétaire",
-  landlordAddress: "1 avenue du Parc, 75011 Paris",
-  tenantName: "Locataire",
-  tenantAddress: "12 rue des Lilas, 75011 Paris",
-  rentExclCharges: "900,00",
-  chargesAdvance: "50,00",
   issuePlace: "Paris",
 };
 
@@ -61,6 +58,8 @@ describe("expenseSchema", () => {
 describe("rentReceiptSchema", () => {
   const VALID = {
     month: "2026-10",
+    landlordId: "1",
+    tenantId: "2",
     periodStart: "2026-10-01",
     periodEnd: "2026-10-31",
     rentExclCharges: "900,00",
@@ -71,6 +70,15 @@ describe("rentReceiptSchema", () => {
 
   it("accepts the month period and empty optional dates", () => {
     expect(rentReceiptSchema.safeParse(VALID).success).toBe(true);
+  });
+
+  it("requires a selected landlord and tenant", () => {
+    expect(
+      rentReceiptSchema.safeParse({ ...VALID, landlordId: "" }).success,
+    ).toBe(false);
+    expect(
+      rentReceiptSchema.safeParse({ ...VALID, tenantId: "" }).success,
+    ).toBe(false);
   });
 
   it("rejects a reversed period and an invalid month", () => {
@@ -87,6 +95,19 @@ describe("rentReceiptSchema", () => {
 describe("settingsSchema", () => {
   it("accepts a complete configuration", () => {
     expect(settingsSchema.safeParse(VALID_SETTINGS).success).toBe(true);
+  });
+
+  it("no longer carries the landlord, tenant and rent fields", () => {
+    expect(Object.keys(settingsSchema.shape)).not.toEqual(
+      expect.arrayContaining([
+        "landlordName",
+        "landlordAddress",
+        "tenantName",
+        "tenantAddress",
+        "rentExclCharges",
+        "chargesAdvance",
+      ]),
+    );
   });
 
   it("rejects a professional area larger than the total area", () => {
@@ -132,6 +153,52 @@ describe("expenseItemSchema", () => {
     expect(
       expenseItemSchema.safeParse({ ...VALID, code: "gaz/ville" }).success,
     ).toBe(false);
+  });
+});
+
+describe("directory schemas", () => {
+  it("requires a landlord and a tenant name", () => {
+    expect(landlordSchema.safeParse({ name: " ", address: "" }).success).toBe(
+      false,
+    );
+    expect(tenantSchema.safeParse({ name: "", address: "" }).success).toBe(
+      false,
+    );
+    expect(
+      landlordSchema.safeParse({
+        name: "M. Bailleur",
+        address: "1 avenue du Parc",
+      }).success,
+    ).toBe(true);
+    expect(
+      tenantSchema.safeParse({ name: "Mme Locataire", address: "" }).success,
+    ).toBe(true);
+  });
+
+  it("requires a pair, a property address and valid lease amounts", () => {
+    const valid = {
+      landlordId: "1",
+      tenantId: "2",
+      propertyAddress: "12 rue de la République, 75000 Paris",
+      rentExclCharges: "1300,00",
+      charges: "0,00",
+    };
+    expect(leaseSchema.safeParse(valid).success).toBe(true);
+    expect(leaseSchema.safeParse({ ...valid, landlordId: "" }).success).toBe(
+      false,
+    );
+    expect(leaseSchema.safeParse({ ...valid, tenantId: "" }).success).toBe(
+      false,
+    );
+    expect(
+      leaseSchema.safeParse({ ...valid, propertyAddress: " " }).success,
+    ).toBe(false);
+    expect(leaseSchema.safeParse({ ...valid, rentExclCharges: "" }).success).toBe(
+      false,
+    );
+    expect(leaseSchema.safeParse({ ...valid, charges: "-1" }).success).toBe(
+      false,
+    );
   });
 });
 

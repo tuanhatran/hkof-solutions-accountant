@@ -23,6 +23,31 @@ describe("expense item query invalidation", () => {
   });
 });
 
+describe("rent configuration query invalidation", () => {
+  it("keeps the landlord, tenant and lease directories independent", () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(queryKeys.landlords, []);
+    queryClient.setQueryData(queryKeys.tenants, []);
+    queryClient.setQueryData(queryKeys.leases, []);
+    queryClient.setQueryData(queryKeys.settings, {});
+
+    void queryClient.invalidateQueries({ queryKey: queryKeys.leases });
+
+    expect(queryClient.getQueryState(queryKeys.leases)?.isInvalidated).toBe(
+      true,
+    );
+    expect(queryClient.getQueryState(queryKeys.landlords)?.isInvalidated).toBe(
+      false,
+    );
+    expect(queryClient.getQueryState(queryKeys.tenants)?.isInvalidated).toBe(
+      false,
+    );
+    expect(queryClient.getQueryState(queryKeys.settings)?.isInvalidated).toBe(
+      false,
+    );
+  });
+});
+
 describe("generated document query invalidation", () => {
   const month = "2026-01";
 

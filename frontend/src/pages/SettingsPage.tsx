@@ -4,14 +4,11 @@ import {
   Building2,
   Check,
   Home,
-  Landmark,
   PencilLine,
   Plus,
   ReceiptText,
   Save,
   Trash2,
-  UserRound,
-  UsersRound,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -27,12 +24,12 @@ import type {
 import { Button } from "@/components/Button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { LoadingState, ErrorState } from "@/components/States";
+import { RentReceiptSettings } from "@/components/RentReceiptSettings";
 import { SignaturesManager } from "@/components/SignaturesManager";
 import { FieldGroup } from "@/components/FieldGroup";
 import { PageHeader } from "@/components/PageHeader";
 import { cn } from "@/lib/cn";
 import {
-  formatEUR,
   formatPercentage,
   parseAmount,
   parsePercentage,
@@ -69,19 +66,8 @@ function valuesFromSettings(
     homeAddress: settings?.homeAddress ?? "",
     totalArea: decimalFormatter(settings?.totalArea),
     businessArea: decimalFormatter(settings?.businessArea),
-    landlordName: settings?.landlordName ?? "",
-    landlordAddress: settings?.landlordAddress ?? "",
-    tenantName: settings?.tenantName ?? "",
-    tenantAddress: settings?.tenantAddress ?? "",
-    rentExclCharges: decimalFormatter(settings?.rentExclCharges),
-    chargesAdvance: decimalFormatter(settings?.chargesAdvance),
     issuePlace: settings?.issuePlace ?? "",
   };
-}
-
-function cents(value: string): number {
-  const normalized = parseAmount(value);
-  return normalized === null ? 0 : Math.round(Number(normalized) * 100);
 }
 
 function SectionHeader({
@@ -578,6 +564,7 @@ function ExpenseItemsManager({
 export function SettingsPage() {
   const queryClient = useQueryClient();
   const settings = useSettings();
+  const [tab, setTab] = useState<"entreprise" | "quittances">("entreprise");
   const {
     register,
     handleSubmit,
@@ -597,8 +584,6 @@ export function SettingsPage() {
   }, [settings.data, reset]);
 
   const values = watch();
-  const rentReceiptTotal =
-    cents(values.rentExclCharges) + cents(values.chargesAdvance);
   const displayedProRata = useMemo(() => {
     const proArea = parseAmount(values.businessArea);
     const totalArea = parseAmount(values.totalArea);
@@ -619,14 +604,6 @@ export function SettingsPage() {
         homeAddress: submittedValues.homeAddress.trim(),
         totalArea: parseAmount(submittedValues.totalArea) ?? undefined,
         businessArea: parseAmount(submittedValues.businessArea) ?? undefined,
-        landlordName: submittedValues.landlordName.trim(),
-        landlordAddress: submittedValues.landlordAddress.trim(),
-        tenantName: submittedValues.tenantName.trim(),
-        tenantAddress: submittedValues.tenantAddress.trim(),
-        rentExclCharges:
-          parseAmount(submittedValues.rentExclCharges) ?? undefined,
-        chargesAdvance:
-          parseAmount(submittedValues.chargesAdvance) ?? undefined,
         issuePlace: submittedValues.issuePlace.trim(),
       };
       return api.settings.update(requestBody);
@@ -646,21 +623,61 @@ export function SettingsPage() {
         title="Configuration"
         description="Ces informations alimentent les quittances, les notes de frais et les valeurs par défaut. Les calculs restent effectués par le backend."
         actions={
-          <Button
-            variant="primary"
-            type="submit"
-            form="form-parametres"
-            formNoValidate
-            icon={<Save size={15} />}
-            loading={save.isPending}
-            data-cy="btn-enregistrer-configuration"
-          >
-            Enregistrer
-          </Button>
+          tab === "entreprise" ? (
+            <Button
+              variant="primary"
+              type="submit"
+              form="form-parametres"
+              formNoValidate
+              icon={<Save size={15} />}
+              loading={save.isPending}
+              data-cy="btn-enregistrer-configuration"
+            >
+              Enregistrer
+            </Button>
+          ) : null
         }
       />
 
-      {settings.isError ? (
+      <div
+        className="segmented mb-6 w-full max-w-sm"
+        role="tablist"
+        aria-label="Sections de la configuration"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "entreprise"}
+          onClick={() => setTab("entreprise")}
+          className={cn(
+            "segmented-item flex-1",
+            tab === "entreprise" && "segmented-item-active",
+          )}
+          data-cy="onglet-entreprise"
+        >
+          Entreprise
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "quittances"}
+          onClick={() => setTab("quittances")}
+          className={cn(
+            "segmented-item flex-1",
+            tab === "quittances" && "segmented-item-active",
+          )}
+          data-cy="onglet-quittances"
+        >
+          Quittances
+        </button>
+      </div>
+
+      {tab === "quittances" ? (
+        <div className="space-y-6">
+          <RentReceiptSettings />
+          <SignaturesManager />
+        </div>
+      ) : settings.isError ? (
         <ErrorState
           message={errorMessage(settings.error)}
           onRetry={() => void settings.refetch()}
@@ -668,7 +685,8 @@ export function SettingsPage() {
       ) : settings.isPending ? (
         <LoadingState message="Chargement de la configuration…" />
       ) : (
-        <form
+        <>
+          <form
           id="form-parametres"
           className="space-y-6"
           onSubmit={handleSubmit((submittedValues) =>
@@ -841,141 +859,6 @@ export function SettingsPage() {
             </div>
           </section>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <section className="card overflow-hidden">
-              <SectionHeader
-                icon={Landmark}
-                title="Bailleur"
-                description="Propriétaire du logement, crédité dans la quittance."
-              />
-              <div className="card-body grid gap-4">
-                <FieldGroup
-                  id="param-bailleur-nom"
-                  label="Nom du bailleur"
-                  error={errors.landlordName?.message}
-                >
-                  <input
-                    id="param-bailleur-nom"
-                    className={cn(
-                      "field",
-                      errors.landlordName && "field-error",
-                    )}
-                    {...register("landlordName")}
-                  />
-                </FieldGroup>
-                <FieldGroup
-                  id="param-bailleur-adresse"
-                  label="Adresse du bailleur"
-                  error={errors.landlordAddress?.message}
-                >
-                  <textarea
-                    id="param-bailleur-adresse"
-                    rows={2}
-                    className={cn(
-                      "field resize-y",
-                      errors.landlordAddress && "field-error",
-                    )}
-                    {...register("landlordAddress")}
-                  />
-                </FieldGroup>
-              </div>
-            </section>
-
-            <section className="card overflow-hidden">
-              <SectionHeader
-                icon={UsersRound}
-                title="Locataire"
-                description="Occupant du logement, débiteur de la quittance."
-              />
-              <div className="card-body grid gap-4">
-                <FieldGroup
-                  id="param-locataire-nom"
-                  label="Nom du locataire"
-                  error={errors.tenantName?.message}
-                >
-                  <input
-                    id="param-locataire-nom"
-                    className={cn("field", errors.tenantName && "field-error")}
-                    {...register("tenantName")}
-                  />
-                </FieldGroup>
-                <FieldGroup
-                  id="param-locataire-adresse"
-                  label="Adresse du locataire"
-                  error={errors.tenantAddress?.message}
-                >
-                  <textarea
-                    id="param-locataire-adresse"
-                    rows={2}
-                    className={cn(
-                      "field resize-y",
-                      errors.tenantAddress && "field-error",
-                    )}
-                    {...register("tenantAddress")}
-                  />
-                </FieldGroup>
-              </div>
-            </section>
-          </div>
-
-          <section className="card overflow-hidden">
-            <SectionHeader
-              icon={UserRound}
-              title="Loyer et charges"
-              description="Valeurs pré-remplies dans l’onglet Quittance ; elles restent modifiables ponctuellement."
-            />
-            <div className="card-body grid gap-4 sm:grid-cols-3">
-              <FieldGroup
-                id="param-loyer-hc"
-                label="Loyer hors charges (€)"
-                error={errors.rentExclCharges?.message}
-              >
-                <input
-                  id="param-loyer-hc"
-                  className={cn(
-                    "field",
-                    errors.rentExclCharges && "field-error",
-                  )}
-                  inputMode="decimal"
-                  placeholder="900,00"
-                  {...register("rentExclCharges")}
-                  data-cy="input-loyer-hc"
-                />
-              </FieldGroup>
-              <FieldGroup
-                id="param-provision"
-                label="Provision pour charges (€)"
-                error={errors.chargesAdvance?.message}
-              >
-                <input
-                  id="param-provision"
-                  className={cn(
-                    "field",
-                    errors.chargesAdvance && "field-error",
-                  )}
-                  inputMode="decimal"
-                  placeholder="50,00"
-                  {...register("chargesAdvance")}
-                  data-cy="input-provision-charges"
-                />
-              </FieldGroup>
-              <div className="flex flex-col justify-center rounded-xl border border-line bg-paper/45 px-4 py-3">
-                <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-ink-soft">
-                  Total quittance
-                </p>
-                <p
-                  className="mt-1 font-display text-2xl text-ink"
-                  data-cy="total-quittance-config"
-                >
-                  {formatEUR(rentReceiptTotal / 100)}
-                </p>
-                <p className="text-[10.5px] text-ink-soft">
-                  Loyer + provision, recalculé par le backend.
-                </p>
-              </div>
-            </div>
-          </section>
-
           {save.isError ? (
             <p
               className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-sm text-danger"
@@ -1002,12 +885,11 @@ export function SettingsPage() {
             </Button>
           </div>
         </form>
+          <ExpenseItemsManager
+            defaultProRata={settings.data?.proRataBase ?? "100.00"}
+          />
+        </>
       )}
-
-      <ExpenseItemsManager
-        defaultProRata={settings.data?.proRataBase ?? "100.00"}
-      />
-      <SignaturesManager />
     </>
   );
 }

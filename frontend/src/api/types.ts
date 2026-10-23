@@ -4,6 +4,12 @@ type Schemas = components["schemas"];
 
 export type SettingsDto = Schemas["SettingsDto"];
 export type SettingsRequest = Schemas["SettingsRequest"];
+export type LandlordDto = Schemas["LandlordDto"];
+export type LandlordRequest = Schemas["LandlordRequest"];
+export type TenantDto = Schemas["TenantDto"];
+export type TenantRequest = Schemas["TenantRequest"];
+export type LeaseDto = Schemas["LeaseDto"];
+export type LeaseRequest = Schemas["LeaseRequest"];
 export type ExpenseItemDto = Schemas["ExpenseItemDto"];
 export type ExpenseItemRequest = Schemas["ExpenseItemRequest"];
 export type RentReceiptDto = Schemas["RentReceiptDto"];

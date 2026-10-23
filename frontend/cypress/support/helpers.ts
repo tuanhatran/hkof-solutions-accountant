@@ -2,9 +2,11 @@ export const MONTHS = "2026-01";
 export const FEBRUARY = "2026-02";
 export const MONTH_LABELS = "Janvier 2026";
 
-// Seed values returned by DataInitializer.initSettings(): rent 1300.00, charges 0.00,
-// areas 70/25 (35,71 %). The E2E reset replays that initializer, so specs must match it.
+// Seed values returned by DataInitializer.initSettings()/initRentConfiguration():
+// lease rent 1300.00, charges 0.00, areas 70/25 (35,71 %). The E2E reset replays
+// that initializer, so specs must match it.
 export const SEED_RENT = "1300.00";
+export const SEED_RENT_INPUT = "1300,00";
 export const SEED_CHARGES = "0.00";
 export const SEED_TOTAL = "1 300,00 €";
 export const SEED_PRORATA = "35,71 %";
@@ -60,20 +62,39 @@ function endOfMonth(month: string): string {
   return new Date(Date.UTC(year, monthNumber, 0)).toISOString().slice(0, 10);
 }
 
+export interface LeaseSummary {
+  id?: number;
+  landlordId?: number;
+  tenantId?: number;
+  propertyAddress?: string;
+}
+
+/** Reads the seeded active lease; the E2E reset recreates exactly one. */
+export function seededLease(): Cypress.Chainable<LeaseSummary> {
+  return cy.request<LeaseSummary[]>("/api/leases").then(({ body }) => {
+    expect(body, "seeded leases").to.have.length.greaterThan(0);
+    return body[0];
+  });
+}
+
 export function createRentReceipt(month: string = MONTHS): void {
-  cy.request({
-    method: "POST",
-    url: "/api/rent-receipts",
-    body: {
-      month,
-      periodStart: `${month}-01`,
-      periodEnd: endOfMonth(month),
-      rentExclCharges: "900.00",
-      charges: "50.00",
-    },
-  })
-    .its("status")
-    .should("eq", 201);
+  seededLease().then((lease) => {
+    cy.request({
+      method: "POST",
+      url: "/api/rent-receipts",
+      body: {
+        month,
+        landlordId: lease.landlordId,
+        tenantId: lease.tenantId,
+        periodStart: `${month}-01`,
+        periodEnd: endOfMonth(month),
+        rentExclCharges: "900.00",
+        charges: "50.00",
+      },
+    })
+      .its("status")
+      .should("eq", 201);
+  });
 }
 
 export interface LlmConfig {

@@ -16,6 +16,12 @@ import type {
   StatementGenerationRequest,
   SettingsDto,
   SettingsRequest,
+  LandlordDto,
+  LandlordRequest,
+  TenantDto,
+  TenantRequest,
+  LeaseDto,
+  LeaseRequest,
   ExpenseItemDto,
   ExpenseItemRequest,
   RentReceiptDto,
@@ -41,6 +47,54 @@ export const api = {
         "/api/settings",
         json({ method: "PUT", body: JSON.stringify(requestBody) }),
       ),
+  },
+
+  landlords: {
+    list: () => request<LandlordDto[]>("/api/landlords"),
+    create: (requestBody: LandlordRequest) =>
+      request<LandlordDto>(
+        "/api/landlords",
+        json({ method: "POST", body: JSON.stringify(requestBody) }),
+      ),
+    update: (id: number, requestBody: LandlordRequest) =>
+      request<LandlordDto>(
+        `/api/landlords/${id}`,
+        json({ method: "PUT", body: JSON.stringify(requestBody) }),
+      ),
+    delete: (id: number) =>
+      request<void>(`/api/landlords/${id}`, { method: "DELETE" }),
+  },
+
+  tenants: {
+    list: () => request<TenantDto[]>("/api/tenants"),
+    create: (requestBody: TenantRequest) =>
+      request<TenantDto>(
+        "/api/tenants",
+        json({ method: "POST", body: JSON.stringify(requestBody) }),
+      ),
+    update: (id: number, requestBody: TenantRequest) =>
+      request<TenantDto>(
+        `/api/tenants/${id}`,
+        json({ method: "PUT", body: JSON.stringify(requestBody) }),
+      ),
+    delete: (id: number) =>
+      request<void>(`/api/tenants/${id}`, { method: "DELETE" }),
+  },
+
+  leases: {
+    list: () => request<LeaseDto[]>("/api/leases"),
+    create: (requestBody: LeaseRequest) =>
+      request<LeaseDto>(
+        "/api/leases",
+        json({ method: "POST", body: JSON.stringify(requestBody) }),
+      ),
+    update: (id: number, requestBody: LeaseRequest) =>
+      request<LeaseDto>(
+        `/api/leases/${id}`,
+        json({ method: "PUT", body: JSON.stringify(requestBody) }),
+      ),
+    delete: (id: number) =>
+      request<void>(`/api/leases/${id}`, { method: "DELETE" }),
   },
 
   expenseItems: {

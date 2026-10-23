@@ -5,12 +5,20 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
-import type { SignatureDto } from "@/api/types";
+import type {
+  LandlordDto,
+  LeaseDto,
+  SignatureDto,
+  TenantDto,
+} from "@/api/types";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { GenerateRentReceiptPage } from "./GenerateRentReceiptPage";
 
 let signatureList: SignatureDto[] = [];
 let signatureError: Error | null = null;
+let landlordList: LandlordDto[] = [];
+let tenantList: TenantDto[] = [];
+let leaseList: LeaseDto[] = [];
 let lastPreviewLoader:
   | ((signal: AbortSignal) => Promise<unknown>)
   | null = null;
@@ -47,16 +55,25 @@ vi.mock("@/api/queries", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/queries")>();
   return {
     ...actual,
-    useSettings: () => ({
-      data: {
-        companyName: "HKOF",
-        legalForm: "SASU",
-        rentExclCharges: "1300.00",
-        chargesAdvance: "0.00",
-      },
+    useLandlords: () => ({
+      data: landlordList,
+      isPending: false,
       isError: false,
       error: null,
+      refetch: vi.fn(),
+    }),
+    useTenants: () => ({
+      data: tenantList,
       isPending: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    }),
+    useLeases: () => ({
+      data: leaseList,
+      isPending: false,
+      isError: false,
+      error: null,
       refetch: vi.fn(),
     }),
     useTemplates: () => ({ data: [], isPending: false }),
@@ -81,6 +98,29 @@ const LANDLORD: SignatureDto = {
   createdAt: "2026-10-23T10:00:00Z",
 };
 
+const LANDLORD_ROW: LandlordDto = {
+  id: 1,
+  name: "M. Bailleur",
+  address: "1 avenue du Parc, 75011 Paris",
+};
+
+const TENANT_ROW: TenantDto = {
+  id: 2,
+  name: "Mme Locataire",
+  address: "12 rue de la République, 75000 Paris",
+};
+
+const LEASE: LeaseDto = {
+  id: 10,
+  landlordId: 1,
+  tenantId: 2,
+  landlordName: "M. Bailleur",
+  tenantName: "Mme Locataire",
+  propertyAddress: "12 rue de la République, 75000 Paris",
+  rentExclCharges: "1300.00",
+  charges: "0.00",
+};
+
 function renderPage() {
   const queryClient = new QueryClient();
   queryClient.setQueryData(queryKeys.rentReceiptActive(MONTH), null);
@@ -102,6 +142,9 @@ describe("GenerateRentReceiptPage", () => {
     lastPreviewLoader = null;
     signatureList = [LANDLORD];
     signatureError = null;
+    landlordList = [LANDLORD_ROW];
+    tenantList = [TENANT_ROW];
+    leaseList = [LEASE];
     vi.mocked(api.rentReceipts.create).mockReset();
     vi.mocked(api.rentReceipts.preview).mockReset();
     vi.mocked(api.rentReceipts.preview).mockResolvedValue({
@@ -117,6 +160,8 @@ describe("GenerateRentReceiptPage", () => {
       paymentDate: "2026-01-05",
       issueDate: "2026-01-05",
       templateId: null,
+      landlordId: 1,
+      tenantId: 2,
       initialized: true,
       dirty: false,
     });
@@ -152,7 +197,109 @@ describe("GenerateRentReceiptPage", () => {
     ).toBe(true);
   });
 
-  it("preselects the LANDLORD signature and sends signatureId to the preview and the generation", async () => {
+  it("auto-selects the only active lease and prefills the pair, amounts and property", async () => {
+    useRentReceiptDraft.setState({
+      landlordId: null,
+      tenantId: null,
+      rentExclCharges: "",
+      charges: "",
+      initialized: false,
+    });
+    vi.mocked(api.rentReceipts.create).mockResolvedValue({
+      id: 1,
+      month: MONTH,
+      version: 1,
+      total: "1300.00",
+    });
+
+    renderPage();
+
+    expect(await screen.findByLabelText("Bailleur")).toHaveValue("1");
+    expect(screen.getByLabelText("Locataire")).toHaveValue("2");
+    expect(screen.getByLabelText("Loyer hors charges")).toHaveValue("1300.00");
+    expect(screen.getByLabelText("Provision pour charges")).toHaveValue("0.00");
+    expect(screen.getByText(/12 rue de la République/)).toBeInTheDocument();
+
+    await userEvent
+      .setup()
+      .click(
+        await screen.findByRole("button", { name: /Générer la quittance/ }),
+      );
+
+    await waitFor(() =>
+      expect(api.rentReceipts.create).toHaveBeenCalledWith(
+        expect.objectContaining({ landlordId: 1, tenantId: 2 }),
+      ),
+    );
+  });
+
+  it("prefills the amounts of the newly selected pair", async () => {
+    const otherLandlord: LandlordDto = {
+      id: 3,
+      name: "Mme Propriétaire",
+      address: "5 rue du Marché, 69001 Lyon",
+    };
+    const otherTenant: TenantDto = {
+      id: 4,
+      name: "M. Occupant",
+      address: "5 rue du Marché, 69001 Lyon",
+    };
+    const otherLease: LeaseDto = {
+      id: 11,
+      landlordId: 3,
+      tenantId: 4,
+      landlordName: "Mme Propriétaire",
+      tenantName: "M. Occupant",
+      propertyAddress: "5 rue du Marché, 69001 Lyon",
+      rentExclCharges: "900.00",
+      charges: "50.00",
+    };
+    landlordList = [LANDLORD_ROW, otherLandlord];
+    tenantList = [TENANT_ROW, otherTenant];
+    leaseList = [LEASE, otherLease];
+
+    renderPage();
+
+    const user = userEvent.setup();
+    await user.selectOptions(await screen.findByLabelText("Bailleur"), "3");
+    await user.selectOptions(screen.getByLabelText("Locataire"), "4");
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Loyer hors charges")).toHaveValue(
+        "900.00",
+      ),
+    );
+    expect(screen.getByLabelText("Provision pour charges")).toHaveValue(
+      "50.00",
+    );
+    expect(screen.getByText(/5 rue du Marché/)).toBeInTheDocument();
+  });
+
+  it("shows a French message and blocks generation when the pair has no lease", async () => {
+    const otherTenant: TenantDto = {
+      id: 4,
+      name: "M. Occupant",
+      address: "5 rue du Marché, 69001 Lyon",
+    };
+    tenantList = [TENANT_ROW, otherTenant];
+
+    renderPage();
+
+    const user = userEvent.setup();
+    await user.selectOptions(await screen.findByLabelText("Locataire"), "4");
+
+    expect(await screen.findByRole("alert")).toHaveAttribute(
+      "data-cy",
+      "alerte-bail-manquant",
+    );
+    expect(screen.getByText(/Aucun bail actif/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Générer la quittance/ }),
+    ).toBeDisabled();
+    expect(api.rentReceipts.create).not.toHaveBeenCalled();
+  });
+
+  it("preselects the LANDLORD signature and sends the pair and signatureId to the preview and the generation", async () => {
     signatureList = [
       {
         id: 8,
@@ -178,7 +325,11 @@ describe("GenerateRentReceiptPage", () => {
     await waitFor(() => expect(lastPreviewLoader).not.toBeNull());
     await lastPreviewLoader?.(new AbortController().signal);
     expect(api.rentReceipts.preview).toHaveBeenCalledWith(
-      expect.objectContaining({ signatureId: 7 }),
+      expect.objectContaining({
+        landlordId: 1,
+        tenantId: 2,
+        signatureId: 7,
+      }),
       expect.anything(),
     );
 
@@ -190,7 +341,11 @@ describe("GenerateRentReceiptPage", () => {
 
     await waitFor(() =>
       expect(api.rentReceipts.create).toHaveBeenCalledWith(
-        expect.objectContaining({ signatureId: 7 }),
+        expect.objectContaining({
+          landlordId: 1,
+          tenantId: 2,
+          signatureId: 7,
+        }),
       ),
     );
   });
