@@ -79,7 +79,8 @@ public final class Dtos {
             String charges,
             String paymentDate,
             String issueDate,
-            Long templateId) {
+            Long templateId,
+            Long signatureId) {
     }
 
     public record RentReceiptDto(
@@ -138,10 +139,10 @@ public final class Dtos {
     public record StatementCalculationRequest(String month, List<ExpenseLineRequest> lines) {
     }
 
-    public record StatementGenerationRequest(String month, Long templateId, List<ExpenseLineRequest> lines) {
+    public record StatementGenerationRequest(String month, Long templateId, List<ExpenseLineRequest> lines, Long signatureId) {
     }
 
-    public record StatementPreviewRequest(String month, Long templateId, Boolean complete, List<ExpenseLineRequest> lines) {
+    public record StatementPreviewRequest(String month, Long templateId, Boolean complete, List<ExpenseLineRequest> lines, Long signatureId) {
     }
 
     public record CalculationResponse(
@@ -276,5 +277,13 @@ public final class Dtos {
     }
 
     public record TemplateVariableDto(String name, String description, boolean required, String example) {
+    }
+
+    public record SignatureDto(
+            Long id,
+            String type,
+            String name,
+            String mimeType,
+            Instant createdAt) {
     }
 }

@@ -6,9 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -25,7 +24,9 @@ import fr.hkof.homeofficeexpenses.service.PdfService;
 
 class BundledTemplateSignatureTest {
 
-    private static final Pattern DATA_URI = Pattern.compile("data:image/png;base64,([A-Za-z0-9+/=]+)");
+    private static final List<String> TEMPLATES = List.of(
+            "templates/defaut/quittance.html",
+            "templates/defaut/note-frais.html");
 
     private String resourceText(String path) throws IOException {
         try (InputStream in = new ClassPathResource(path).getInputStream()) {
@@ -39,29 +40,26 @@ class BundledTemplateSignatureTest {
         }
     }
 
-    private byte[] embeddedSignature(String templatePath) throws IOException {
-        Matcher matcher = DATA_URI.matcher(resourceText(templatePath));
-        assertThat(matcher.find()).as("embedded PNG data URI in %s", templatePath).isTrue();
-        return Base64.getDecoder().decode(matcher.group(1));
+    @Test
+    @DisplayName("Built-in templates use the {{signature}} variable and embed no base64 literal")
+    void builtInTemplatesUseSignatureVariable() throws IOException {
+        for (String path : TEMPLATES) {
+            String template = resourceText(path);
+            assertThat(template).as(path).contains("src=\"{{signature}}\"");
+            assertThat(template).as(path).doesNotContain("data:image/png;base64");
+        }
     }
 
     @Test
-    @DisplayName("Built-in templates embed the committed signature PNG bytes")
-    void builtInTemplatesEmbedSignaturePng() throws IOException {
-        assertThat(embeddedSignature("templates/defaut/quittance.html"))
-                .isEqualTo(resourceBytes("templates/Signature_Bailleur.png"));
-        assertThat(embeddedSignature("templates/defaut/note-frais.html"))
-                .isEqualTo(resourceBytes("templates/Signature_TRAN.png"));
-    }
-
-    @Test
-    @DisplayName("The embedded signature rasterizes into the rendered quittance PDF")
+    @DisplayName("A configured signature rasterizes into the rendered quittance PDF")
     void quittanceSignatureRasterizesInPdf() throws IOException {
+        byte[] signaturePng = resourceBytes("templates/Signature_Bailleur.png");
+        String dataUri = "data:image/png;base64," + Base64.getEncoder().encodeToString(signaturePng);
         String html = Mustache.compiler()
                 .defaultValue("")
                 .escapeHTML(true)
                 .compile(resourceText("templates/defaut/quittance.html"))
-                .execute(Map.of());
+                .execute(Map.of("signature", dataUri));
         byte[] pdf = new PdfService().renderHtmlToPdf(html);
 
         try (PDDocument document = PDDocument.load(pdf)) {

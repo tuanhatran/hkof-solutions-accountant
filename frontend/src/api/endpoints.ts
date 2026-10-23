@@ -20,6 +20,8 @@ import type {
   ExpenseItemRequest,
   RentReceiptDto,
   RentReceiptRequest,
+  SignatureDto,
+  SignatureType,
   TemplateDto,
   TemplateVariableDto,
   TemplateType,
@@ -130,6 +132,28 @@ export const api = {
       blobRequest(`/api/expense-statements/${id}/pdf?complete=${complete}`),
     pdfUrl: (id: number, complete: boolean) =>
       `/api/expense-statements/${id}/pdf?complete=${complete}`,
+  },
+
+  signatures: {
+    list: () => request<SignatureDto[]>("/api/signatures"),
+    // The browser must set the multipart boundary: never set Content-Type here.
+    create: (
+      type: SignatureType,
+      name: string,
+      file: File,
+    ): Promise<SignatureDto> => {
+      const payload = new FormData();
+      payload.append("type", type);
+      payload.append("name", name);
+      payload.append("file", file);
+      return request<SignatureDto>("/api/signatures", {
+        method: "POST",
+        body: payload,
+      });
+    },
+    remove: (id: number) =>
+      request<void>(`/api/signatures/${id}`, { method: "DELETE" }),
+    imageUrl: (id: number) => `/api/signatures/${id}/image`,
   },
 
   receipts: {

@@ -9,6 +9,7 @@ export const queryKeys = {
   templates: (type: TemplateType) => ["templates", type] as const,
   variables: (type: TemplateType) => ["templates", type, "variables"] as const,
   llmConfig: ["llm", "config"] as const,
+  signatures: ["signatures"] as const,
   llmStatus: ["llm", "status"] as const,
   llmModels: ["llm", "models"] as const,
   rentReceiptActive: (month: string) =>
@@ -49,6 +50,14 @@ export function useTemplateVariables(type: TemplateType) {
     queryKey: queryKeys.variables(type),
     queryFn: () => api.templates.variables(type),
     staleTime: 5 * 60_000,
+  });
+}
+
+export function useSignatures() {
+  return useQuery({
+    queryKey: queryKeys.signatures,
+    queryFn: () => api.signatures.list(),
+    staleTime: 30_000,
   });
 }
 

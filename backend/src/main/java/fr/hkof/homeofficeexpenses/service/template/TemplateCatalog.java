@@ -29,6 +29,7 @@ public final class TemplateCatalog {
         variable(RENT_RECEIPT_VARIABLES, "date_paiement", "Date de paiement", false, "05/10/2026");
         variable(RENT_RECEIPT_VARIABLES, "date_emission", "Date d'émission", true, "01/10/2026");
         variable(RENT_RECEIPT_VARIABLES, "lieu", "Lieu d'émission", true, "Paris");
+        variable(RENT_RECEIPT_VARIABLES, "signature", "Signature (image intégrée)", false, "data:image/png;base64,...");
 
         variable(EXPENSE_STATEMENT_VARIABLES, "societe.raison_sociale", "Raison sociale", true, "HKOF");
         variable(EXPENSE_STATEMENT_VARIABLES, "societe.siren", "SIREN", false, "000 000 000");
@@ -49,6 +50,7 @@ public final class TemplateCatalog {
         variable(EXPENSE_STATEMENT_VARIABLES, "date_emission", "Date d'émission", true, "22/10/2026");
         variable(EXPENSE_STATEMENT_VARIABLES, "lieu", "Lieu d'émission", true, "Paris");
         variable(EXPENSE_STATEMENT_VARIABLES, "complete", "Vrai si le document inclut les annexes", false, "true");
+        variable(EXPENSE_STATEMENT_VARIABLES, "signature", "Signature (image intégrée)", false, "data:image/png;base64,...");
     }
 
     private TemplateCatalog() {

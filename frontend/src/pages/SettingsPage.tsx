@@ -27,6 +27,7 @@ import type {
 import { Button } from "@/components/Button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { LoadingState, ErrorState } from "@/components/States";
+import { SignaturesManager } from "@/components/SignaturesManager";
 import { FieldGroup } from "@/components/FieldGroup";
 import { PageHeader } from "@/components/PageHeader";
 import { cn } from "@/lib/cn";
@@ -1006,6 +1007,7 @@ export function SettingsPage() {
       <ExpenseItemsManager
         defaultProRata={settings.data?.proRataBase ?? "100.00"}
       />
+      <SignaturesManager />
     </>
   );
 }
