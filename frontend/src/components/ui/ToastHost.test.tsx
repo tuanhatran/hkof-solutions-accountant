@@ -29,17 +29,15 @@ describe("ToastHost", () => {
       ]),
     );
 
-    const successToast = screen.getByText("Quittance générée").closest(
-      '[data-cy="toast-success"]',
-    );
+    const successToast = screen
+      .getByText("Quittance générée")
+      .closest('[data-cy="toast-success"]');
     expect(successToast).not.toBeNull();
-    await userEvent
-      .setup()
-      .click(
-        within(successToast as HTMLElement).getByRole("button", {
-          name: "Fermer la notification",
-        }),
-      );
+    await userEvent.setup().click(
+      within(successToast as HTMLElement).getByRole("button", {
+        name: "Fermer la notification",
+      }),
+    );
     expect(screen.queryByText("Quittance générée")).toBeNull();
     expect(useToasts.getState().toasts).toHaveLength(2);
   });

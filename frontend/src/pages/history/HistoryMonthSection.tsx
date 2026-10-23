@@ -45,9 +45,7 @@ export function HistoryMonthSection({
                 : "non générée"}
           </span>
           <span
-            className={
-              statement ? "badge badge-accent" : "badge badge-neutral"
-            }
+            className={statement ? "badge badge-accent" : "badge badge-neutral"}
           >
             Note {statement ? `v${statement.version ?? 1}` : "non générée"}
           </span>

@@ -8,7 +8,9 @@ export function confidenceValid(
     : null;
 }
 
-export function confidenceLabel(confidence: AiConfidence | null): string | null {
+export function confidenceLabel(
+  confidence: AiConfidence | null,
+): string | null {
   if (confidence === "haute") {
     return "Confiance élevée";
   }

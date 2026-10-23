@@ -21,9 +21,7 @@ export function ExpenseResultCard({
           <FileCheck2 size={19} aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-accent">
-            Note de frais générée
-          </p>
+          <p className="text-sm font-bold text-accent">Note de frais générée</p>
           <p className="mt-0.5 text-sm text-ink">
             {formatMonth(result.month)} · version {result.version ?? 1} ·{" "}
             {formatEUR(result.total)}
@@ -31,8 +29,7 @@ export function ExpenseResultCard({
           <p className="mt-0.5 text-xs text-ink-soft">
             Enregistrée avec le template «{" "}
             {result.templateName ?? c.currentTemplate} » v
-            {result.templateVersion ?? 1} le{" "}
-            {formatDateTime(result.createdAt)}.
+            {result.templateVersion ?? 1} le {formatDateTime(result.createdAt)}.
           </p>
         </div>
       </div>

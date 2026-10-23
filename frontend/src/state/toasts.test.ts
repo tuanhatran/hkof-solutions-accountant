@@ -15,7 +15,10 @@ describe("toasts", () => {
     useToasts.getState().add("Document généré.");
 
     const [entry] = useToasts.getState().toasts;
-    expect(entry).toMatchObject({ type: "success", message: "Document généré." });
+    expect(entry).toMatchObject({
+      type: "success",
+      message: "Document généré.",
+    });
   });
 
   it("removes a toast by id", () => {

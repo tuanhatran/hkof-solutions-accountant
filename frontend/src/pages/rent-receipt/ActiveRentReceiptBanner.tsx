@@ -3,11 +3,7 @@ import { api } from "@/api/endpoints";
 import type { RentReceiptController } from "./useRentReceiptPage";
 
 /** Banner of the receipt already active for the selected pair and month. */
-export function ActiveRentReceiptBanner({
-  c,
-}: {
-  c: RentReceiptController;
-}) {
+export function ActiveRentReceiptBanner({ c }: { c: RentReceiptController }) {
   const activePairReceipt = c.activePairReceipt;
   if (!activePairReceipt || !c.selectedLease || c.result) {
     return null;

@@ -11,9 +11,16 @@ import { Button } from "@/components/ui/Button";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
 import { parsePercentage } from "@/lib/format";
-import { expenseItemSchema, type ExpenseItemFormValues } from "@/lib/validation";
+import {
+  expenseItemSchema,
+  type ExpenseItemFormValues,
+} from "@/lib/validation";
 import { toast } from "@/state/toasts";
-import { decimalFormatter, PERIODICITIES, type Periodicity } from "./settingsValues";
+import {
+  decimalFormatter,
+  PERIODICITIES,
+  type Periodicity,
+} from "./settingsValues";
 
 function SwitchField({
   id,

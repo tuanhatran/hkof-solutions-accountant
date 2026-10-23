@@ -66,7 +66,9 @@ describe("useMediaQuery", () => {
   it("removes its listener on unmount", () => {
     const { removeEventListener } = stubMatchMedia(true);
 
-    const { result, unmount } = renderHook(() => useMediaQuery("(min-width: 1px)"));
+    const { result, unmount } = renderHook(() =>
+      useMediaQuery("(min-width: 1px)"),
+    );
     expect(result.current).toBe(true);
 
     unmount();
@@ -90,10 +92,9 @@ describe("useMediaQuery", () => {
   it("re-registers when the request changes", () => {
     const { matchMedia } = stubMatchMedia(false);
 
-    const { rerender } = renderHook(
-      ({ request }) => useMediaQuery(request),
-      { initialProps: { request: "(max-width: 1023px)" } },
-    );
+    const { rerender } = renderHook(({ request }) => useMediaQuery(request), {
+      initialProps: { request: "(max-width: 1023px)" },
+    });
     rerender({ request: "(min-width: 1024px)" });
 
     expect(matchMedia).toHaveBeenCalledWith("(min-width: 1024px)");

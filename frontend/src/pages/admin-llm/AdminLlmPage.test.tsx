@@ -3,11 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
-import type {
-  LlmConfigDto,
-  LlmModelDto,
-  LlmStatusDto,
-} from "@/api/types";
+import type { LlmConfigDto, LlmModelDto, LlmStatusDto } from "@/api/types";
 import { useToasts } from "@/state/toasts";
 import { AdminLlmPage } from "./AdminLlmPage";
 
@@ -146,14 +142,19 @@ describe("AdminLlmPage", () => {
     unmount();
 
     const refetch = vi.fn();
-    configState = { ...failedQuery(new Error("Serveur indisponible")), refetch };
+    configState = {
+      ...failedQuery(new Error("Serveur indisponible")),
+      refetch,
+    };
     renderPage();
     expect(
       await screen.findByText("Impossible de charger les données"),
     ).toBeInTheDocument();
     expect(screen.getByText("Serveur indisponible")).toBeInTheDocument();
 
-    await userEvent.setup().click(screen.getByRole("button", { name: "Réessayer" }));
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Réessayer" }));
     expect(refetch).toHaveBeenCalled();
   });
 
@@ -168,13 +169,17 @@ describe("AdminLlmPage", () => {
       screen.getByRole("switch", { name: "Activer l’analyse par IA" }),
     );
     expect(screen.getByText("Analyse IA désactivée")).toBeInTheDocument();
-    expect(screen.getByText("Modifications non enregistrées.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Modifications non enregistrées."),
+    ).toBeInTheDocument();
 
     const urlInput = screen.getByLabelText("URL du serveur Ollama");
     await user.clear(urlInput);
     await user.type(urlInput, "https://llm.example.com/");
     expect(
-      screen.getByText("Les justificatifs seront envoyés à un serveur distant."),
+      screen.getByText(
+        "Les justificatifs seront envoyés à un serveur distant.",
+      ),
     ).toBeInTheDocument();
 
     vi.mocked(api.llm.update).mockResolvedValue({
@@ -286,11 +291,17 @@ describe("AdminLlmPage", () => {
     renderPage();
     await screen.findByText("Analyse IA activée");
 
-    await user.click(screen.getAllByRole("button", { name: "Tester la connexion" })[0]);
+    await user.click(
+      screen.getAllByRole("button", { name: "Tester la connexion" })[0],
+    );
 
-    expect(await screen.findByText("Connexion réussie en 1.5 s")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Connexion réussie en 1.5 s"),
+    ).toBeInTheDocument();
     expect(screen.getByText("80.00 €")).toBeInTheDocument();
-    await waitFor(() => expect(toastMessages()).toContain("Test de connexion réussi."));
+    await waitFor(() =>
+      expect(toastMessages()).toContain("Test de connexion réussi."),
+    );
   });
 
   it("shows the failed test payload and a transport error", async () => {
@@ -302,7 +313,9 @@ describe("AdminLlmPage", () => {
     const user = userEvent.setup();
     renderPage();
     await screen.findByText("Analyse IA activée");
-    await user.click(screen.getAllByRole("button", { name: "Tester la connexion" })[0]);
+    await user.click(
+      screen.getAllByRole("button", { name: "Tester la connexion" })[0],
+    );
 
     expect(await screen.findByText("Test échoué")).toBeInTheDocument();
     expect(screen.getByText("Modèle introuvable.")).toBeInTheDocument();
@@ -311,7 +324,9 @@ describe("AdminLlmPage", () => {
     );
 
     vi.mocked(api.llm.test).mockRejectedValue(new Error("Ollama injoignable"));
-    await user.click(screen.getAllByRole("button", { name: "Tester la connexion" })[0]);
+    await user.click(
+      screen.getAllByRole("button", { name: "Tester la connexion" })[0],
+    );
     expect(await screen.findByText("Ollama injoignable")).toBeInTheDocument();
   });
 
@@ -327,7 +342,9 @@ describe("AdminLlmPage", () => {
       screen.getByRole("button", { name: "Actualiser la liste des modèles" }),
     );
     expect(
-      await screen.findByText("URL invalide : commencez par http:// ou https://."),
+      await screen.findByText(
+        "URL invalide : commencez par http:// ou https://.",
+      ),
     ).toBeInTheDocument();
     expect(api.llm.update).not.toHaveBeenCalled();
   });
@@ -386,7 +403,9 @@ describe("AdminLlmPage", () => {
     expect(manualInput).toHaveValue("qwen2.5:7b");
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "Choisir dans la liste" }));
+    await user.click(
+      screen.getByRole("button", { name: "Choisir dans la liste" }),
+    );
     expect(screen.getByLabelText("Modèle").tagName).toBe("SELECT");
   });
 
@@ -427,7 +446,9 @@ describe("AdminLlmPage", () => {
     await screen.findByText("Analyse IA activée");
 
     await user.click(
-      screen.getByRole("button", { name: "Réinitialiser le prompt par défaut" }),
+      screen.getByRole("button", {
+        name: "Réinitialiser le prompt par défaut",
+      }),
     );
 
     await waitFor(() =>
@@ -447,17 +468,23 @@ describe("AdminLlmPage", () => {
 
     vi.mocked(api.llm.defaultPrompt).mockResolvedValue({});
     await user.click(
-      screen.getByRole("button", { name: "Réinitialiser le prompt par défaut" }),
+      screen.getByRole("button", {
+        name: "Réinitialiser le prompt par défaut",
+      }),
     );
     await waitFor(() =>
-      expect(toastMessages()).toContain("Le prompt par défaut est indisponible."),
+      expect(toastMessages()).toContain(
+        "Le prompt par défaut est indisponible.",
+      ),
     );
 
     vi.mocked(api.llm.defaultPrompt).mockRejectedValue(
       new Error("Service indisponible"),
     );
     await user.click(
-      screen.getByRole("button", { name: "Réinitialiser le prompt par défaut" }),
+      screen.getByRole("button", {
+        name: "Réinitialiser le prompt par défaut",
+      }),
     );
     await waitFor(() =>
       expect(toastMessages()).toContain("Service indisponible"),
@@ -484,9 +511,13 @@ describe("AdminLlmPage", () => {
       await screen.findByText("Connecté — serveur distant"),
     ).toBeInTheDocument();
     expect(screen.getByText("Serveur distant joignable.")).toBeInTheDocument();
-    expect(screen.getByText("Serveur joignable · IA activée")).toBeInTheDocument();
     expect(
-      screen.getByText("Les justificatifs seront envoyés à un serveur distant."),
+      screen.getByText("Serveur joignable · IA activée"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Les justificatifs seront envoyés à un serveur distant.",
+      ),
     ).toBeInTheDocument();
 
     await userEvent
@@ -506,7 +537,9 @@ describe("AdminLlmPage", () => {
 
     expect(await screen.findByText("Indisponible")).toBeInTheDocument();
     expect(
-      screen.getByText(/Quand l’IA est désactivée, aucun justificatif n’est envoyé/),
+      screen.getByText(
+        /Quand l’IA est désactivée, aucun justificatif n’est envoyé/,
+      ),
     ).toBeInTheDocument();
   });
 });

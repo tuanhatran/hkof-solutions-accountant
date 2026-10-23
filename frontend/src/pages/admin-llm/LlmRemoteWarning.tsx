@@ -18,10 +18,9 @@ export function LlmRemoteWarning() {
           Les justificatifs seront envoyés à un serveur distant.
         </p>
         <p className="mt-0.5">
-          L’URL configurée n’est ni{" "}
-          <code className="font-mono">localhost</code>, ni{" "}
-          <code className="font-mono">host.docker.internal</code>, ni une IP
-          privée. N’utilisez cette option que si vous acceptez ce transfert.
+          L’URL configurée n’est ni <code className="font-mono">localhost</code>
+          , ni <code className="font-mono">host.docker.internal</code>, ni une
+          IP privée. N’utilisez cette option que si vous acceptez ce transfert.
         </p>
       </div>
     </div>

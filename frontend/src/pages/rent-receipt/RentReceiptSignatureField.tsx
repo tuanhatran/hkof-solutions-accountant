@@ -5,11 +5,7 @@ import { signatureTypeLabel } from "@/components/signatures/signatureConstants";
 import type { RentReceiptController } from "./useRentReceiptPage";
 
 /** Signature picker plus its three possible alerts. */
-export function RentReceiptSignatureField({
-  c,
-}: {
-  c: RentReceiptController;
-}) {
+export function RentReceiptSignatureField({ c }: { c: RentReceiptController }) {
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -55,8 +51,7 @@ export function RentReceiptSignatureField({
           Les signatures n’ont pas pu être chargées :{" "}
           {errorMessage(c.signatures.error)}
         </p>
-      ) : (c.signatures.data ?? []).length === 0 &&
-        !c.signatures.isPending ? (
+      ) : (c.signatures.data ?? []).length === 0 && !c.signatures.isPending ? (
         <p
           className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger"
           role="alert"

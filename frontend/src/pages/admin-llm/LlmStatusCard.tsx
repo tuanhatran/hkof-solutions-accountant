@@ -1,9 +1,4 @@
-import {
-  Activity,
-  CheckCircle2,
-  CloudOff,
-  RefreshCw,
-} from "lucide-react";
+import { Activity, CheckCircle2, CloudOff, RefreshCw } from "lucide-react";
 import { useLlmStatus } from "@/api/queries";
 import type { LlmStatus } from "@/api/types";
 import { Button } from "@/components/ui/Button";

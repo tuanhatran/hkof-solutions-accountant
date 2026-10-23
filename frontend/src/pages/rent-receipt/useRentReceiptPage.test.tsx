@@ -31,9 +31,8 @@ let templatesState: QueryLike<{ id: number; active?: boolean }[]>;
 let signaturesState: QueryLike<SignatureDto[]>;
 let activeReceiptState: QueryLike<{ id: number; total: string } | null>;
 let mediaMobile = false;
-let lastPreviewLoader:
-  | ((signal: AbortSignal) => Promise<unknown>)
-  | null = null;
+let lastPreviewLoader: ((signal: AbortSignal) => Promise<unknown>) | null =
+  null;
 let lastPreviewOptions: { active: boolean } | null = null;
 const navigateMock = vi.fn();
 
@@ -369,7 +368,11 @@ describe("useRentReceiptPage signatures and money", () => {
 
     act(() => result.current.selectPair("3", "4"));
     act(() => result.current.resumeLease());
-    expect(toastMessages().filter((text) => text === "Montants repris depuis le bail.")).toHaveLength(1);
+    expect(
+      toastMessages().filter(
+        (text) => text === "Montants repris depuis le bail.",
+      ),
+    ).toHaveLength(1);
   });
 
   it("changes month and ignores an empty month", () => {

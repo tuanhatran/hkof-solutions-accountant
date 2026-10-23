@@ -76,7 +76,11 @@ describe("LlmBadge", () => {
     expect(screen.getByText("IA indisponible")).toBeVisible();
     expect(document.querySelector(".bg-danger")).not.toBeNull();
 
-    statusState = { data: { status: "INCONNU" }, isPending: false, isError: false };
+    statusState = {
+      data: { status: "INCONNU" },
+      isPending: false,
+      isError: false,
+    };
     rerender(
       <MemoryRouter>
         <LlmBadge withLink={false} />

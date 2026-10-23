@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import type { ReactNode } from "react";
@@ -33,9 +39,8 @@ const landlordRefetch = vi.fn();
 const tenantRefetch = vi.fn();
 const leaseRefetch = vi.fn();
 const signatureRefetch = vi.fn();
-let lastPreviewLoader:
-  | ((signal: AbortSignal) => Promise<unknown>)
-  | null = null;
+let lastPreviewLoader: ((signal: AbortSignal) => Promise<unknown>) | null =
+  null;
 
 vi.mock("@/components/pdf/PdfViewer", () => ({
   PdfViewer: ({ actions }: { actions?: ReactNode }) => <div>{actions}</div>,
@@ -333,9 +338,7 @@ describe("GenerateRentReceiptPage", () => {
     await user.selectOptions(screen.getByLabelText("Locataire"), "4");
 
     await waitFor(() =>
-      expect(screen.getByLabelText("Loyer hors charges")).toHaveValue(
-        "900.00",
-      ),
+      expect(screen.getByLabelText("Loyer hors charges")).toHaveValue("900.00"),
     );
     expect(screen.getByLabelText("Provision pour charges")).toHaveValue(
       "50.00",
@@ -683,9 +686,9 @@ describe("GenerateRentReceiptPage", () => {
     renderPage();
 
     expect(await screen.findByText("Baux indisponibles")).toBeInTheDocument();
-    await userEvent.setup().click(
-      screen.getByRole("button", { name: "Réessayer" }),
-    );
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Réessayer" }));
     expect(landlordRefetch).toHaveBeenCalledTimes(1);
     expect(tenantRefetch).toHaveBeenCalledTimes(1);
     expect(leaseRefetch).toHaveBeenCalledTimes(1);
@@ -777,9 +780,7 @@ describe("GenerateRentReceiptPage", () => {
     expect(
       screen.getAllByRole("option", { name: "Modèle inactif — v1" }),
     ).toHaveLength(2);
-    expect(
-      screen.queryByRole("option", { name: "Modèle intégré" }),
-    ).toBeNull();
+    expect(screen.queryByRole("option", { name: "Modèle intégré" })).toBeNull();
 
     await user.selectOptions(partySelect, "4");
     expect(partySelect).toHaveValue("4");
@@ -812,9 +813,7 @@ describe("GenerateRentReceiptPage", () => {
   });
 
   it("prefills empty amounts from a lease without amounts and resumes it", async () => {
-    leaseList = [
-      { ...LEASE, rentExclCharges: undefined, charges: undefined },
-    ];
+    leaseList = [{ ...LEASE, rentExclCharges: undefined, charges: undefined }];
     useRentReceiptDraft.setState({
       rentExclCharges: "",
       charges: "",

@@ -152,7 +152,11 @@ describe("orderLinesByExpenseItem", () => {
       ],
       expenseItems,
     );
-    expect(ordered.map((entry) => entry.key)).toEqual(["gaz", "tel-2", "tel-1"]);
+    expect(ordered.map((entry) => entry.key)).toEqual([
+      "gaz",
+      "tel-2",
+      "tel-1",
+    ]);
   });
 
   it("sorts unknown item codes last and keeps their relative order", () => {

@@ -1,19 +1,24 @@
 # NOTE-COMPLETE-ZIP
+
 Status: DONE · Branch: feat/note-complete-zip · Size: L · Round: 2/2
 
 ## Goal
+
 "Télécharger la note complète (ZIP)" downloads a ZIP with the generated note PDF, the month's rent-receipt PDF and every expense justificatif in its original format; "note seule" stays the note-only PDF. User decision: prorata stays read-only in the added-expenses row, so align E2E spec 02 and `product_prompt.md` with that UI; do not restore the inline editor. Out of scope: merged full-PDF generation (kept for Ouvrir/complete preview), money, DB, migrations, template sandbox.
 
 ## Files
+
 Context (read only): `backend/src/main/java/fr/hkof/homeofficeexpenses/service/StorageService.java` (`read`, `sanitizeName`), `backend/src/main/java/fr/hkof/homeofficeexpenses/service/RentReceiptService.java` (`activeForMonth`), `backend/src/main/java/fr/hkof/homeofficeexpenses/domain/{ExpenseStatement,RentReceipt,Receipt}.java`, `frontend/src/api/client.ts` (`blobRequest`, `downloadBlob`).
 Writable: `openapi/openapi.yaml`, `product_prompt.md`, `backend/src/main/java/fr/hkof/homeofficeexpenses/web/{ExpenseStatementController,PdfResponses}.java`, `backend/src/main/java/fr/hkof/homeofficeexpenses/service/ExpenseStatementService.java`, `backend/src/test/java/fr/hkof/homeofficeexpenses/web/ApiIntegrationTest.java`, `frontend/src/api/{endpoints.ts,schema.ts}`, `frontend/src/pages/{GenerateExpenseStatementPage,HistoryPage}.tsx`, `frontend/src/pages/GenerateExpenseStatementPage.test.tsx`, `frontend/cypress/e2e/{02-expense-statement,03-statement-finalization}.cy.ts`, `frontend/cypress/support/helpers.ts`, `frontend/cypress.config.ts`, `frontend/package.json` + `frontend/package-lock.json` (only if a ZIP reader is added).
 Routes/symbols: new `GET /api/expense-statements/{id}/zip` in `ExpenseStatementController`; new `ExpenseStatementService.zip` beside `withAttachments`/`generate`/`pdf`; new `PdfResponses` attachment helper; `api.expenseStatements.zip`/`zipUrl`; `downloadStatement` (Generate page) and `ActionsPdf` (History).
 Affected tests (`codegraph affected`): `ApiIntegrationTest`, `ExpenseStatementActiveIntegrationTest`, `SignatureControllerIntegrationTest`, `queries.test.ts`, `SignaturesManager.test.tsx`, `GenerateExpenseStatementPage.test.tsx`, `GenerateRentReceiptPage.test.tsx`; E2E `03-statement-finalization.cy.ts`.
 
 ## Constraints
+
 Contract: `openapi/openapi.yaml#/paths/~1api~1expense-statements~1{id}~1zip` (new GET, `200 application/zip`, `format: binary`); YAML first, then `npm run gen:api`; existing `/pdf` untouched. ZIP entries: `note_frais_<YYYY-MM>.pdf` (stored statement PDF), `quittance_<YYYY-MM>.pdf` (active receipt, omit if none), `justificatifs/<NN>_<sanitized original name>` (statement line order, dedupe by receipt id, UTF-8, no traversal); attachment `note_frais_<YYYY-MM>_complet.zip`. Merged full PDF stays for Ouvrir/complete preview. Money: none · UI French · no `any` · no commit/push/reset/clean/stash.
 
 ## Acceptance
+
 - [x] Red first backend: `ApiIntegrationTest` unzips the response and finds the note PDF, quittance PDF and original `facture-gaz.txt`; a duplicated receipt appears once; note-only PDF still has no annexes.
 - [x] "Télécharger la note seule" → `note_frais_<month>.pdf` (no annexes); "Télécharger la note complète (ZIP)" → `note_frais_<month>_complet.zip`; History "Note complète (ZIP)" downloads the ZIP while "Ouvrir" still opens the merged PDF; complete preview unchanged.
 - [x] Contract YAML first, `npm run gen:api` regenerates `schema.ts`, and `product_prompt.md` describes the ZIP download; French label exact.
@@ -21,9 +26,11 @@ Contract: `openapi/openapi.yaml#/paths/~1api~1expense-statements~1{id}~1zip` (ne
 - [x] Backend, frontend and full E2E gates green with exact counts; E2E reads the ZIP entries; no test passes only on a retry.
 
 ## Commands
+
 - backend: `cd backend && ./mvnw -B test` · frontend: `cd frontend && npm run gen:api && npm run typecheck && npm test && npm run build` · e2e: `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress`
 
 ## Evidence
+
 - 2026-10-23 builder: files — `openapi/openapi.yaml`, `product_prompt.md`, `PdfResponses`, `ExpenseStatementController`, `ExpenseStatementService`, `ApiIntegrationTest`, `frontend/src/api/{endpoints.ts,schema.ts}`, `GenerateExpenseStatementPage(.test).tsx`, `HistoryPage.tsx`, `cypress.config.ts`, `cypress/support/helpers.ts`, `03-statement-finalization.cy.ts`, `package.json`+lock (`yauzl`, `@types/yauzl`).
 - RED backend `./mvnw -B -Dtest=ApiIntegrationTest#expenseStatementZipBundlesDocuments test`: 404, Tests run 1, Failures 1. GREEN after implementation: 1/1.
 - RED frontend `npx vitest run src/pages/GenerateExpenseStatementPage.test.tsx`: fallback `note_frais_2026-01_v1.pdf` != `note_frais_2026-01.pdf`; GREEN: 5/5 in file.

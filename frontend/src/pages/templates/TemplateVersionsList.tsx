@@ -17,8 +17,7 @@ export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
       <ul className="mt-2 divide-y divide-line rounded-xl border border-line">
         {c.versions.map((template) => {
           const isTemplateActive = Boolean(template.active);
-          const deletionBlocked =
-            isTemplateActive || Boolean(template.builtIn);
+          const deletionBlocked = isTemplateActive || Boolean(template.builtIn);
           return (
             <li
               key={template.id}

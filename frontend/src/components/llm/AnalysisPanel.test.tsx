@@ -30,7 +30,11 @@ describe("AnalysisPanel", () => {
     ).toBeVisible();
 
     rerender(
-      <AnalysisPanel state={{ status: "idle" }} hasFile={false} onCancel={vi.fn()} />,
+      <AnalysisPanel
+        state={{ status: "idle" }}
+        hasFile={false}
+        onCancel={vi.fn()}
+      />,
     );
     expect(
       screen.getByText(
@@ -59,9 +63,7 @@ describe("AnalysisPanel", () => {
   it("summarises a successful analysis with duration, supplier, confidence and excerpt", () => {
     render(<AnalysisPanel state={DONE} hasFile onCancel={vi.fn()} />);
 
-    expect(
-      screen.getByText(/Analyse terminée en 2.4 s/),
-    ).toBeVisible();
+    expect(screen.getByText(/Analyse terminée en 2.4 s/)).toBeVisible();
     expect(screen.getByText("Détecté par IA")).toBeVisible();
     expect(screen.getByText("Fournisseur détecté : EDF")).toBeVisible();
     expect(screen.getByText("Confiance élevée")).toBeVisible();

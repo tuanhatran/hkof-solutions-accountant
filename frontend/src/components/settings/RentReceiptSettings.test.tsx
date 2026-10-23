@@ -270,11 +270,11 @@ describe("RentReceiptSettings", () => {
       screen.getByRole("button", { name: "Modifier M. Bailleur" }),
     );
     expect(
-      screen.getByRole("heading", { name: "Modifier le bailleur « M. Bailleur »" }),
+      screen.getByRole("heading", {
+        name: "Modifier le bailleur « M. Bailleur »",
+      }),
     ).toBeVisible();
-    expect(screen.getByLabelText("Nom du bailleur")).toHaveValue(
-      "M. Bailleur",
-    );
+    expect(screen.getByLabelText("Nom du bailleur")).toHaveValue("M. Bailleur");
     await user.click(
       screen.getByRole("button", { name: "Enregistrer le bailleur" }),
     );
@@ -324,8 +324,12 @@ describe("RentReceiptSettings", () => {
     renderSettings();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Modifier le bail 10" }));
-    expect(screen.getByRole("heading", { name: "Modifier le bail" })).toBeVisible();
+    await user.click(
+      screen.getByRole("button", { name: "Modifier le bail 10" }),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Modifier le bail" }),
+    ).toBeVisible();
     const form = screen.getByLabelText("Bailleur du bail").closest("form");
     if (!form) {
       throw new Error("Lease form not found");
@@ -336,9 +340,9 @@ describe("RentReceiptSettings", () => {
     expect(within(form).getByLabelText("Loyer hors charges (€)")).toHaveValue(
       "1300,00",
     );
-    expect(within(form).getByLabelText("Provision pour charges (€)")).toHaveValue(
-      "0,00",
-    );
+    expect(
+      within(form).getByLabelText("Provision pour charges (€)"),
+    ).toHaveValue("0,00");
 
     await user.click(
       within(form).getByRole("button", { name: "Enregistrer le bail" }),
@@ -567,8 +571,12 @@ describe("RentReceiptSettings", () => {
     const landlordForm = screen
       .getByRole("button", { name: "Ajouter un bailleur" })
       .closest("section");
-    await user.click(screen.getByRole("button", { name: "Ajouter un bailleur" }));
-    await user.click(screen.getByRole("button", { name: "Ajouter le bailleur" }));
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter un bailleur" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter le bailleur" }),
+    );
     expect(
       await screen.findByText("Le nom du bailleur est obligatoire."),
     ).toBeVisible();
@@ -586,9 +594,7 @@ describe("RentReceiptSettings", () => {
 
     await user.click(screen.getByRole("button", { name: "Ajouter un bail" }));
     await user.click(screen.getByRole("button", { name: "Ajouter le bail" }));
-    expect(
-      await screen.findByText("Sélectionnez un bailleur."),
-    ).toBeVisible();
+    expect(await screen.findByText("Sélectionnez un bailleur.")).toBeVisible();
     expect(screen.getByText("Sélectionnez un locataire.")).toBeVisible();
     expect(
       screen.getByText("L'adresse du bien est obligatoire."),
@@ -612,10 +618,16 @@ describe("RentReceiptSettings", () => {
     renderSettings();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Ajouter un bailleur" }));
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter un bailleur" }),
+    );
     await user.type(screen.getByLabelText("Nom du bailleur"), "M. Refusé");
-    await user.click(screen.getByRole("button", { name: "Ajouter le bailleur" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Bailleur refusé.");
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter le bailleur" }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Bailleur refusé.",
+    );
 
     await user.click(
       screen.getByRole("button", { name: "Ajouter un locataire" }),
@@ -653,8 +665,6 @@ describe("RentReceiptSettings", () => {
     await user.click(
       within(form).getByRole("button", { name: "Ajouter le bail" }),
     );
-    await waitFor(() =>
-      expect(screen.getByText("Bail refusé.")).toBeVisible(),
-    );
+    await waitFor(() => expect(screen.getByText("Bail refusé.")).toBeVisible());
   });
 });

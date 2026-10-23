@@ -32,9 +32,7 @@ describe("FileDropzone", () => {
     );
 
     const input = screen.getByLabelText("Choisir un fichier justificatif");
-    await userEvent
-      .setup()
-      .upload(input, pdfFile("enorme.pdf", 2048));
+    await userEvent.setup().upload(input, pdfFile("enorme.pdf", 2048));
 
     expect(onFile).not.toHaveBeenCalled();
     expect(
@@ -49,10 +47,7 @@ describe("FileDropzone", () => {
     const input = screen.getByLabelText("Choisir un fichier justificatif");
     await userEvent
       .setup({ applyAccept: false })
-      .upload(
-        input,
-        new File(["<html>"], "page.html", { type: "text/html" }),
-      );
+      .upload(input, new File(["<html>"], "page.html", { type: "text/html" }));
 
     expect(onFile).not.toHaveBeenCalled();
     expect(
@@ -77,7 +72,9 @@ describe("FileDropzone", () => {
     expect(screen.getByText("Déposez ici")).toBeVisible();
     expect(screen.getByText("Justificatif obligatoire.")).toBeVisible();
     expect(
-      screen.getByLabelText("Déposer le justificatif").closest("[aria-disabled]"),
+      screen
+        .getByLabelText("Déposer le justificatif")
+        .closest("[aria-disabled]"),
     ).toHaveAttribute("aria-disabled", "true");
   });
 });
@@ -120,9 +117,7 @@ describe("SelectedFile", () => {
   });
 
   it("renders a table icon for a spreadsheet and hides removal without handler", () => {
-    render(
-      <SelectedFile name="notes.csv" mimeType="text/csv" size={100} />,
-    );
+    render(<SelectedFile name="notes.csv" mimeType="text/csv" size={100} />);
 
     expect(screen.getByText("notes.csv")).toBeVisible();
     expect(

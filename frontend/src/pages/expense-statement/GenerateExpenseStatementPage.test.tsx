@@ -27,9 +27,8 @@ let activeStatementData: {
   version?: number;
   total?: string;
 } | null = null;
-let lastPreviewLoader:
-  | ((signal: AbortSignal) => Promise<unknown>)
-  | null = null;
+let lastPreviewLoader: ((signal: AbortSignal) => Promise<unknown>) | null =
+  null;
 
 vi.mock("@/components/pdf/PdfViewer", () => ({
   PdfViewer: ({ actions }: { actions?: ReactNode }) => (

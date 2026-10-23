@@ -197,7 +197,9 @@ export function downloadAndReadZip(
   cy.task("clearDownloads");
   cy.get(trigger).click();
   cy.task<string>("waitForDownload", fileName)
-    .then((filePath) => cy.task<Record<string, string>>("readZipText", filePath))
+    .then((filePath) =>
+      cy.task<Record<string, string>>("readZipText", filePath),
+    )
     .then((entries) => {
       const normalized: Record<string, string> = {};
       for (const [name, text] of Object.entries(entries)) {

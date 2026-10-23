@@ -139,8 +139,12 @@ export function useExpenseStatementPage() {
   const isRent = values.itemCode === "loyer";
   const availableRent = Boolean(rentReceipt.data?.id);
 
-  const { state: analysisPhase, start, cancel, reset: resetStatement } =
-    useAnalysis();
+  const {
+    state: analysisPhase,
+    start,
+    cancel,
+    reset: resetStatement,
+  } = useAnalysis();
   const [receipt, setReceipt] = useState<AttachedFile | null>(null);
   const [uploading, setUploading] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);

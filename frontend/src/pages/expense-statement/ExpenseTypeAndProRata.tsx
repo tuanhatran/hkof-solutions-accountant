@@ -15,9 +15,7 @@ export function ExpenseTypeAndProRata({
         id="frais-type"
         label="Type de frais"
         error={c.errors.itemCode?.message}
-        badge={
-          c.ai.type ? <AiBadge label="Type suggéré par IA" /> : undefined
-        }
+        badge={c.ai.type ? <AiBadge label="Type suggéré par IA" /> : undefined}
         help={
           c.ai.supplier
             ? `Fournisseur détecté : ${c.ai.supplier}`
@@ -59,10 +57,7 @@ export function ExpenseTypeAndProRata({
           <input
             id="frais-prorata"
             inputMode="decimal"
-            className={cn(
-              "field pr-9",
-              c.errors.proRataPct && "field-error",
-            )}
+            className={cn("field pr-9", c.errors.proRataPct && "field-error")}
             data-cy="input-prorata"
             aria-invalid={Boolean(c.errors.proRataPct)}
             {...c.register("proRataPct")}

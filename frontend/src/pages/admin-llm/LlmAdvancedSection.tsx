@@ -42,10 +42,7 @@ export function LlmAdvancedSection({ c }: { c: AdminLlmController }) {
               min={5}
               max={600}
               step={1}
-              className={cn(
-                "field",
-                c.errors.timeoutSeconds && "field-error",
-              )}
+              className={cn("field", c.errors.timeoutSeconds && "field-error")}
               {...c.register("timeoutSeconds", { valueAsNumber: true })}
             />
           </FieldGroup>

@@ -1,8 +1,4 @@
-import type {
-  LlmConfigDto,
-  LlmConfigRequest,
-  LlmStatus,
-} from "@/api/types";
+import type { LlmConfigDto, LlmConfigRequest, LlmStatus } from "@/api/types";
 import type { LlmFormValues } from "@/lib/validation";
 
 export const STATUSES: Record<
@@ -105,9 +101,7 @@ export function valuesFromConfig(
   };
 }
 
-export function requestBodyFromValues(
-  values: LlmFormValues,
-): LlmConfigRequest {
+export function requestBodyFromValues(values: LlmFormValues): LlmConfigRequest {
   const requestBody: LlmConfigRequest = {
     active: values.active,
     supplier: "OLLAMA",

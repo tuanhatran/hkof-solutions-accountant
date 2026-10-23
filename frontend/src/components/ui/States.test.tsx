@@ -1,12 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import {
-  EmptyState,
-  ErrorState,
-  LoadingState,
-  Spinner,
-} from "./States";
+import { EmptyState, ErrorState, LoadingState, Spinner } from "./States";
 
 describe("States", () => {
   it("renders the default loading message and a custom one", () => {
@@ -59,7 +54,9 @@ describe("States", () => {
     );
     expect(screen.getByTestId("custom-icon")).toBeInTheDocument();
     expect(screen.getByText("Créez un bail pour commencer.")).toBeVisible();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Créer" }));
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Créer" }));
     expect(onAction).toHaveBeenCalledTimes(1);
   });
 });

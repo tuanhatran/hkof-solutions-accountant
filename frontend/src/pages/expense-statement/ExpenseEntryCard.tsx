@@ -41,7 +41,11 @@ export function ExpenseEntryCard({
         </div>
       </div>
 
-      <form ref={c.formCardRef} onSubmit={c.handleSubmit(c.saveExpense)} noValidate>
+      <form
+        ref={c.formCardRef}
+        onSubmit={c.handleSubmit(c.saveExpense)}
+        noValidate
+      >
         <div className="card-body space-y-5">
           <ExpenseTypeAndProRata controller={c} />
 
@@ -68,11 +72,7 @@ export function ExpenseEntryCard({
               type="submit"
               variant="primary"
               icon={
-                c.lineBeingEdited ? (
-                  <Pencil size={15} />
-                ) : (
-                  <Plus size={16} />
-                )
+                c.lineBeingEdited ? <Pencil size={15} /> : <Plus size={16} />
               }
               disabled={
                 !c.isValid ||

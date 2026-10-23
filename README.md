@@ -34,14 +34,14 @@ To stop the stack: `docker compose down` (or `make down`). Data is kept in the `
 
 All settings live in `.env` (git-ignored). The template is [.env.example](.env.example).
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `FRONTEND_PORT` | `8080` | Host port of the web application |
-| `DB_NAME`, `DB_USER`, `DB_PASSWORD` | (required) | PostgreSQL credentials; compose refuses to start if unset |
-| `OLLAMA_BASE_URL` | `http://host.docker.internal:11434` | Ollama endpoint as seen from the backend container |
-| `OLLAMA_MODEL` | `qwen2.5:7b` | Model used for extraction |
-| `WITH_LIBREOFFICE` | `false` | Build the backend image with LibreOffice (DOCX templates, phase 2) |
-| `BACKEND_PORT`, `DB_PORT` | `8081`, `5432` | Host ports, used by the development overlay only |
+| Variable                            | Default                             | Purpose                                                            |
+| ----------------------------------- | ----------------------------------- | ------------------------------------------------------------------ |
+| `FRONTEND_PORT`                     | `8080`                              | Host port of the web application                                   |
+| `DB_NAME`, `DB_USER`, `DB_PASSWORD` | (required)                          | PostgreSQL credentials; compose refuses to start if unset          |
+| `OLLAMA_BASE_URL`                   | `http://host.docker.internal:11434` | Ollama endpoint as seen from the backend container                 |
+| `OLLAMA_MODEL`                      | `qwen2.5:7b`                        | Model used for extraction                                          |
+| `WITH_LIBREOFFICE`                  | `false`                             | Build the backend image with LibreOffice (DOCX templates, phase 2) |
+| `BACKEND_PORT`, `DB_PORT`           | `8081`, `5432`                      | Host ports, used by the development overlay only                   |
 
 ## Ollama configuration
 
@@ -106,11 +106,11 @@ The e2e run uses its own Compose project (`homeofficeexpenses-e2e`), never touch
 
 ## Backup and restore
 
-| Data | Location | Backup |
-| --- | --- | --- |
-| Database | `pgdata` volume | `docker compose exec -T db pg_dump -U "$DB_USER" "$DB_NAME" > backup-$(date +%F).sql` |
-| Justificatifs, statements, templates | `./data` | `tar czf data-$(date +%F).tar.gz data/` |
-| Ollama models (optional) | `ollama_data` volume | Re-pull with `ollama pull`, or back up the volume |
+| Data                                 | Location             | Backup                                                                                |
+| ------------------------------------ | -------------------- | ------------------------------------------------------------------------------------- |
+| Database                             | `pgdata` volume      | `docker compose exec -T db pg_dump -U "$DB_USER" "$DB_NAME" > backup-$(date +%F).sql` |
+| Justificatifs, statements, templates | `./data`             | `tar czf data-$(date +%F).tar.gz data/`                                               |
+| Ollama models (optional)             | `ollama_data` volume | Re-pull with `ollama pull`, or back up the volume                                     |
 
 Restore the database with `docker compose exec -T db psql -U "$DB_USER" "$DB_NAME" < backup.sql` on a fresh stack. Restore `./data` by extracting the archive at the repository root while the stack is stopped.
 

@@ -4,11 +4,7 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { downloadBlob } from "@/api/client";
 import { api } from "@/api/endpoints";
-import type {
-  ExpenseItemDto,
-  SignatureDto,
-  TemplateDto,
-} from "@/api/types";
+import type { ExpenseItemDto, SignatureDto, TemplateDto } from "@/api/types";
 import type { DraftLine } from "@/lib/lines";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft } from "@/state/statementDraft";
@@ -32,9 +28,8 @@ let activeStatementState: QueryLike<{ id: number; version: number }>;
 let signaturesState: QueryLike<SignatureDto[]>;
 let analysisState: AnalysisState;
 let mediaMobile = false;
-let lastPreviewLoader:
-  | ((signal: AbortSignal) => Promise<unknown>)
-  | null = null;
+let lastPreviewLoader: ((signal: AbortSignal) => Promise<unknown>) | null =
+  null;
 let lastPreviewOptions: { active: boolean } | null = null;
 const startMock = vi.fn();
 const cancelMock = vi.fn();
@@ -214,7 +209,9 @@ beforeEach(() => {
   itemsState = readyQuery(ITEMS);
   templatesState = readyQuery(TEMPLATES);
   rentReceiptState = readyQuery({ id: 7, total: "1300.00" });
-  activeStatementState = readyQuery(null as unknown as { id: number; version: number });
+  activeStatementState = readyQuery(
+    null as unknown as { id: number; version: number },
+  );
   signaturesState = readyQuery([LANDLORD, CEO]);
   analysisState = { status: "idle" };
   mediaMobile = false;
@@ -330,7 +327,9 @@ describe("useExpenseStatementPage form and upload", () => {
   });
 
   it("leaves the amount empty when no rent receipt exists", () => {
-    rentReceiptState = readyQuery(null as unknown as { id: number; total: string });
+    rentReceiptState = readyQuery(
+      null as unknown as { id: number; total: string },
+    );
     const { result } = renderController();
 
     act(() => result.current.changeType("loyer"));
@@ -433,7 +432,11 @@ describe("useExpenseStatementPage form and upload", () => {
     ]);
     const { result } = renderController();
 
-    act(() => result.current.editLine(useStatementDraft.getState().linesByMonth[MONTH][0]));
+    act(() =>
+      result.current.editLine(
+        useStatementDraft.getState().linesByMonth[MONTH][0],
+      ),
+    );
     expect(result.current.lineBeingEdited).toBe("edit-me");
     expect(result.current.receipt).toEqual({
       id: 55,
@@ -570,9 +573,7 @@ describe("useExpenseStatementPage analysis", () => {
     };
     rerender();
 
-    await waitFor(() =>
-      expect(result.current.ai.detectedAmount).toBeNull(),
-    );
+    await waitFor(() => expect(result.current.ai.detectedAmount).toBeNull());
     expect(result.current.values.itemCode).toBe("eau");
     expect(result.current.values.amountInclVat).toBe("");
     expect(result.current.ai.confidence).toBeNull();
@@ -638,7 +639,9 @@ describe("useExpenseStatementPage analysis", () => {
     };
     rerender();
 
-    await waitFor(() => expect(result.current.values.amountInclVat).toBe("55.00"));
+    await waitFor(() =>
+      expect(result.current.values.amountInclVat).toBe("55.00"),
+    );
     expect(result.current.values.itemCode).toBe("eau");
     expect(result.current.values.proRataPct).toBe("0");
     expect(result.current.ai.type).toBe(false);
@@ -721,7 +724,11 @@ describe("useExpenseStatementPage save", () => {
       analysis: {
         id: 16,
         receiptId: 9,
-        result: { suggestedType: "gaz", amountInclVat: "80.00", currency: "EUR" },
+        result: {
+          suggestedType: "gaz",
+          amountInclVat: "80.00",
+          currency: "EUR",
+        },
       },
     };
     rerender();

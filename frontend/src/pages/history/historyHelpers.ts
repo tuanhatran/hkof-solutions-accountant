@@ -7,7 +7,9 @@ export interface MonthGroup {
 }
 
 /** Preferred document of a list: the active version, else the first one. */
-export function current<T extends { status?: string }>(documents: T[]): T | null {
+export function current<T extends { status?: string }>(
+  documents: T[],
+): T | null {
   return (
     documents.find((document) => document.status === "ACTIVE") ??
     documents[0] ??
@@ -26,7 +28,9 @@ export function sortRentReceiptsDesc(
 }
 
 /** Latest receipt of a month, whatever landlord+tenant pairs coexist. */
-export function latestReceipt(documents: RentReceiptDto[]): RentReceiptDto | null {
+export function latestReceipt(
+  documents: RentReceiptDto[],
+): RentReceiptDto | null {
   return sortRentReceiptsDesc(documents)[0] ?? null;
 }
 

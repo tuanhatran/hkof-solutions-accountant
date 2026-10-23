@@ -43,8 +43,7 @@ export function LeaseForm({
     resolver: zodResolver(leaseSchema),
     mode: "onChange",
     defaultValues: {
-      landlordId:
-        item?.landlordId === undefined ? "" : String(item.landlordId),
+      landlordId: item?.landlordId === undefined ? "" : String(item.landlordId),
       tenantId: item?.tenantId === undefined ? "" : String(item.tenantId),
       propertyAddress: item?.propertyAddress ?? "",
       rentExclCharges: decimalFormatter(item?.rentExclCharges),
@@ -137,10 +136,7 @@ export function LeaseForm({
         >
           <input
             id="bail-adresse"
-            className={cn(
-              "field",
-              errors.propertyAddress && "field-error",
-            )}
+            className={cn("field", errors.propertyAddress && "field-error")}
             placeholder="12 rue de la République, 75000 Paris"
             {...register("propertyAddress")}
             data-cy="input-bail-adresse"
@@ -154,10 +150,7 @@ export function LeaseForm({
           <input
             id="bail-loyer"
             inputMode="decimal"
-            className={cn(
-              "field",
-              errors.rentExclCharges && "field-error",
-            )}
+            className={cn("field", errors.rentExclCharges && "field-error")}
             placeholder="900,00"
             {...register("rentExclCharges")}
             data-cy="input-bail-loyer"

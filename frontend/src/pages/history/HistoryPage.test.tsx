@@ -136,9 +136,7 @@ function renderPage() {
 }
 
 function currentPath(): string | null {
-  return (
-    document.querySelector('[data-cy="location"]')?.textContent ?? null
-  );
+  return document.querySelector('[data-cy="location"]')?.textContent ?? null;
 }
 
 function toastMessages(): string[] {
@@ -250,9 +248,9 @@ describe("HistoryPage", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText("Notes indisponibles")).toBeNull();
 
-    await userEvent.setup().click(
-      screen.getByRole("button", { name: "Réessayer" }),
-    );
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Réessayer" }));
     expect(receiptsRefetch).toHaveBeenCalled();
     expect(statementsRefetch).toHaveBeenCalled();
   });
@@ -283,21 +281,23 @@ describe("HistoryPage", () => {
     expect(monthHeadings[0]).toBe("Février 2026");
     expect(monthHeadings[1]).toBe("Janvier 2026");
 
-    const jan = screen.getByRole("heading", { name: "Janvier 2026" }).closest(
-      "section",
-    );
+    const jan = screen
+      .getByRole("heading", { name: "Janvier 2026" })
+      .closest("section");
     if (!jan) {
       throw new Error("January section not found");
     }
     expect(within(jan).getByText("Quittance (2)")).toBeInTheDocument();
     expect(within(jan).getByText("Note v2")).toBeInTheDocument();
-    expect(within(jan).getAllByText("M. Bailleur → Mme Locataire").length).toBeGreaterThan(0);
+    expect(
+      within(jan).getAllByText("M. Bailleur → Mme Locataire").length,
+    ).toBeGreaterThan(0);
     expect(within(jan).getAllByText(/1\s300,00/).length).toBeGreaterThan(0);
     expect(within(jan).getByText(/Version 2 .* Modele v1/)).toBeInTheDocument();
 
-    const feb = screen.getByRole("heading", { name: "Février 2026" }).closest(
-      "section",
-    );
+    const feb = screen
+      .getByRole("heading", { name: "Février 2026" })
+      .closest("section");
     if (!feb) {
       throw new Error("February section not found");
     }
@@ -310,18 +310,11 @@ describe("HistoryPage", () => {
     await screen.findByText("2 mois suivis");
 
     expect(
-      document.querySelector(
-        '[data-cy="btn-telecharger-quittance-2026-01"]',
-      ),
+      document.querySelector('[data-cy="btn-telecharger-quittance-2026-01"]'),
     ).toHaveAttribute("href", "/api/rent-receipts/11/pdf");
     expect(
-      document.querySelector(
-        '[data-cy="btn-telecharger-note-2026-01"]',
-      ),
-    ).toHaveAttribute(
-      "href",
-      "/api/expense-statements/21/pdf?complete=false",
-    );
+      document.querySelector('[data-cy="btn-telecharger-note-2026-01"]'),
+    ).toHaveAttribute("href", "/api/expense-statements/21/pdf?complete=false");
     expect(
       document.querySelector(
         '[data-cy="btn-telecharger-note-complete-2026-01"]',
@@ -332,9 +325,7 @@ describe("HistoryPage", () => {
       .getAllByRole("link", { name: "Ouvrir" })
       .map((link) => link.getAttribute("href"));
     expect(openHrefs).toContain("/api/rent-receipts/11/pdf");
-    expect(openHrefs).toContain(
-      "/api/expense-statements/21/pdf?complete=true",
-    );
+    expect(openHrefs).toContain("/api/expense-statements/21/pdf?complete=true");
   });
 
   it("lists every archived version and lets users load one", async () => {
@@ -351,7 +342,9 @@ describe("HistoryPage", () => {
     if (!janReceipt) {
       throw new Error("Archived rent receipt row not found");
     }
-    expect(within(janReceipt as HTMLElement).getByText("v1 · archivée")).toBeInTheDocument();
+    expect(
+      within(janReceipt as HTMLElement).getByText("v1 · archivée"),
+    ).toBeInTheDocument();
     expect(
       within(janReceipt as HTMLElement).getByRole("link", { name: "PDF" }),
     ).toHaveAttribute("href", "/api/rent-receipts/10/pdf");
@@ -365,9 +358,7 @@ describe("HistoryPage", () => {
     expect(dialog).toHaveTextContent(
       /Les lignes de la version 1 de Janvier 2026 remplaceront/,
     );
-    await user.click(
-      within(dialog).getByRole("button", { name: "Annuler" }),
-    );
+    await user.click(within(dialog).getByRole("button", { name: "Annuler" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(useStatementDraft.getState().month).toBe("2025-12");
   });
@@ -440,7 +431,9 @@ describe("HistoryPage", () => {
 
     expect(await screen.findByText("2 mois suivis")).toBeInTheDocument();
     expect(
-      screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent),
+      screen
+        .getAllByRole("heading", { level: 2 })
+        .map((heading) => heading.textContent),
     ).toEqual(["Février 2026", "Janvier 2026"]);
     expect(screen.getAllByText(/Version 1/).length).toBe(2);
   });

@@ -56,9 +56,11 @@ describe("query hooks", () => {
     const tenants = renderHook(() => useTenants(), { wrapper });
     const leases = renderHook(() => useLeases(), { wrapper });
 
-    await waitFor(() => expect(settings.result.current.data).toEqual({
-      companyName: "HKOF",
-    }));
+    await waitFor(() =>
+      expect(settings.result.current.data).toEqual({
+        companyName: "HKOF",
+      }),
+    );
     await waitFor(() =>
       expect([
         landlords.result.current.isSuccess,
@@ -92,12 +94,8 @@ describe("query hooks", () => {
       { wrapper },
     );
 
-    await waitFor(() =>
-      expect(templates.result.current.isSuccess).toBe(true),
-    );
-    await waitFor(() =>
-      expect(variables.result.current.isSuccess).toBe(true),
-    );
+    await waitFor(() => expect(templates.result.current.isSuccess).toBe(true));
+    await waitFor(() => expect(variables.result.current.isSuccess).toBe(true));
     expect(api.templates.list).toHaveBeenCalledWith("RENT_RECEIPT");
     expect(api.templates.variables).toHaveBeenCalledWith("EXPENSE_STATEMENT");
   });
@@ -155,11 +153,7 @@ describe("query hooks", () => {
         statement.result.current.isSuccess,
       ]).toEqual([true, true]),
     );
-    expect(api.rentReceipts.active).toHaveBeenCalledWith(
-      "2026-10",
-      null,
-      null,
-    );
+    expect(api.rentReceipts.active).toHaveBeenCalledWith("2026-10", null, null);
     expect(api.expenseStatements.active).toHaveBeenCalledWith("2026-10");
   });
 
@@ -171,7 +165,9 @@ describe("query hooks", () => {
       wrapper,
     });
 
-    await waitFor(() => expect(receipt.result.current.fetchStatus).toBe("idle"));
+    await waitFor(() =>
+      expect(receipt.result.current.fetchStatus).toBe("idle"),
+    );
     expect(statement.result.current.fetchStatus).toBe("idle");
     expect(api.rentReceipts.active).not.toHaveBeenCalled();
     expect(api.expenseStatements.active).not.toHaveBeenCalled();

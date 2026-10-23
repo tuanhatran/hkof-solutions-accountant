@@ -132,7 +132,8 @@ export function useAdminLlmPage() {
     }
   }
 
-  async function resetPrompt() {    setPromptInProgress(true);
+  async function resetPrompt() {
+    setPromptInProgress(true);
     try {
       const reply = await api.llm.defaultPrompt();
       if (!reply.prompt) {

@@ -58,7 +58,9 @@ async function zipEntryText(zipFile: ZipFile, entry: Entry): Promise<string> {
     : data.toString("utf8");
 }
 
-async function readZipEntries(filePath: string): Promise<Record<string, string>> {
+async function readZipEntries(
+  filePath: string,
+): Promise<Record<string, string>> {
   const absolutePath = filePath.startsWith(ROOT)
     ? filePath
     : resolvePath(filePath);

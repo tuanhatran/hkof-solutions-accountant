@@ -8,7 +8,6 @@ Personal, local, single-user app. It generates French rent receipts (quittances 
 - User-facing strings only: French (UI, generated documents, toasts, validation and API error messages).
 - Domain names fixed by `product_prompt.md` (`Quittance`, `NoteFrais`, `LigneFrais`, `Justificatif`, `Parametres`, `Poste`) stay French in the UI, documents and routes. Code identifiers use the English equivalents (`RentReceipt`, `ExpenseStatement`, `ExpenseLine`, `Receipt`, `Settings`, `ExpenseItem`).
 
-
 ## Response Style
 
 Respond terse like smart caveman. All technical substance stay. Only fluff die.

@@ -201,7 +201,9 @@ describe("TemplatesPage", () => {
     renderPage();
 
     const rent = cardFor("Quittance de loyer");
-    expect(within(rent).getAllByText("Quittance 2026").length).toBeGreaterThan(0);
+    expect(within(rent).getAllByText("Quittance 2026").length).toBeGreaterThan(
+      0,
+    );
     expect(within(rent).getAllByText("v3").length).toBeGreaterThan(0);
     expect(within(rent).getAllByText("intégré").length).toBeGreaterThan(0);
     expect(within(rent).getByText("3 versions")).toBeInTheDocument();
@@ -212,7 +214,9 @@ describe("TemplatesPage", () => {
     expect(within(rent).getByText("requis")).toBeInTheDocument();
 
     const expense = cardFor("Note de frais d’occupation");
-    expect(within(expense).getByText("Aucune version précédente archivée.")).toBeInTheDocument();
+    expect(
+      within(expense).getByText("Aucune version précédente archivée."),
+    ).toBeInTheDocument();
     expect(within(expense).getByText("1 version")).toBeInTheDocument();
   });
 
@@ -234,9 +238,9 @@ describe("TemplatesPage", () => {
     ).toBe(2);
     expect(screen.getAllByText("Service indisponible").length).toBe(2);
 
-    await userEvent.setup().click(
-      screen.getAllByRole("button", { name: "Réessayer" })[0],
-    );
+    await userEvent
+      .setup()
+      .click(screen.getAllByRole("button", { name: "Réessayer" })[0]);
     expect(refetch).toHaveBeenCalled();
   });
 
@@ -298,9 +302,7 @@ describe("TemplatesPage", () => {
     await user.click(
       within(dialog).getByRole("button", { name: "Activer ce modèle" }),
     );
-    await waitFor(() =>
-      expect(api.templates.activate).toHaveBeenCalledWith(2),
-    );
+    await waitFor(() => expect(api.templates.activate).toHaveBeenCalledWith(2));
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
@@ -372,11 +374,15 @@ describe("TemplatesPage", () => {
         file,
       ),
     );
-    expect(await within(rent).findByText("Rapport de validation")).toBeInTheDocument();
+    expect(
+      await within(rent).findByText("Rapport de validation"),
+    ).toBeInTheDocument();
     expect(within(rent).getByText("Structure valide")).toBeInTheDocument();
     expect(within(rent).getByText("inconnu")).toBeInTheDocument();
     expect(within(rent).getByText("locataire")).toBeInTheDocument();
-    expect(within(rent).getByText("Balise script interdite.")).toBeInTheDocument();
+    expect(
+      within(rent).getByText("Balise script interdite."),
+    ).toBeInTheDocument();
     expect(toastMessages()).toContain(
       "Version v4 importée. Vérifiez l’aperçu puis activez-la.",
     );
@@ -417,9 +423,7 @@ describe("TemplatesPage", () => {
     await user.click(
       within(rent).getByRole("button", { name: "Aperçu de la version v5" }),
     );
-    await waitFor(() =>
-      expect(api.templates.preview).toHaveBeenCalledWith(21),
-    );
+    await waitFor(() => expect(api.templates.preview).toHaveBeenCalledWith(21));
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
   });
 
@@ -479,17 +483,27 @@ describe("TemplatesPage", () => {
 
     const rent = cardFor("Quittance de loyer");
     const rows = within(rent).getAllByRole("listitem");
-    const activeRow = rows.find((row) => row.textContent?.includes("Quittance 2026"));
-    const builtInRow = rows.find((row) => row.textContent?.includes("Quittance intégrée"));
+    const activeRow = rows.find((row) =>
+      row.textContent?.includes("Quittance 2026"),
+    );
+    const builtInRow = rows.find((row) =>
+      row.textContent?.includes("Quittance intégrée"),
+    );
     if (!activeRow || !builtInRow) {
       throw new Error("Version rows not found");
     }
-    expect(within(activeRow).getByRole("button", { name: "Supprimer" })).toBeDisabled();
-    expect(within(builtInRow).getByRole("button", { name: "Supprimer" })).toBeDisabled();
+    expect(
+      within(activeRow).getByRole("button", { name: "Supprimer" }),
+    ).toBeDisabled();
+    expect(
+      within(builtInRow).getByRole("button", { name: "Supprimer" }),
+    ).toBeDisabled();
   });
 
   it("reports a deletion failure through a toast and closes the dialog", async () => {
-    vi.mocked(api.templates.delete).mockRejectedValue(new Error("Suppression refusée"));
+    vi.mocked(api.templates.delete).mockRejectedValue(
+      new Error("Suppression refusée"),
+    );
     const user = userEvent.setup();
     renderPage();
 
@@ -504,7 +518,9 @@ describe("TemplatesPage", () => {
       }),
     );
 
-    await waitFor(() => expect(toastMessages()).toContain("Suppression refusée"));
+    await waitFor(() =>
+      expect(toastMessages()).toContain("Suppression refusée"),
+    );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
@@ -519,12 +535,16 @@ describe("TemplatesPage", () => {
 
     const rent = cardFor("Quittance de loyer");
     await user.click(
-      within(rent).getByRole("button", { name: "Revenir au modèle par défaut" }),
+      within(rent).getByRole("button", {
+        name: "Revenir au modèle par défaut",
+      }),
     );
     const dialog = screen.getByRole("dialog", {
       name: "Revenir au modèle par défaut ?",
     });
-    expect(dialog).toHaveTextContent(/Le modèle intégré « Quittance intégrée »/);
+    expect(dialog).toHaveTextContent(
+      /Le modèle intégré « Quittance intégrée »/,
+    );
     await user.click(
       within(dialog).getByRole("button", { name: "Restaurer le modèle" }),
     );
@@ -584,7 +604,9 @@ describe("TemplatesPage", () => {
   });
 
   it("reports a version download failure", async () => {
-    vi.mocked(api.templates.file).mockRejectedValue(new Error("PDF indisponible"));
+    vi.mocked(api.templates.file).mockRejectedValue(
+      new Error("PDF indisponible"),
+    );
     const user = userEvent.setup();
     renderPage();
 
@@ -611,9 +633,7 @@ describe("TemplatesPage", () => {
         name: "Copier la variable montant",
       }),
     );
-    await waitFor(() =>
-      expect(writeText).toHaveBeenCalledWith("{{montant}}"),
-    );
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith("{{montant}}"));
     expect(toastMessages()).toContain(
       "{{montant}} copié dans le presse-papiers.",
     );
@@ -658,7 +678,9 @@ describe("TemplatesPage", () => {
       within(rent).getByRole("button", { name: "Valider et importer" }),
     );
 
-    expect(await within(rent).findByText("Structure invalide")).toBeInTheDocument();
+    expect(
+      await within(rent).findByText("Structure invalide"),
+    ).toBeInTheDocument();
     expect(
       within(rent).getByText(/le modèle sera accepté, mais les champs/),
     ).toBeInTheDocument();

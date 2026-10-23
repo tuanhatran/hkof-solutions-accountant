@@ -91,7 +91,9 @@ describe("PdfViewer", () => {
 
     rerender(<PdfViewer url={null} loading />);
     expect(screen.getByText("Préparation de l’aperçu…")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Page suivante" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Page suivante" }),
+    ).toBeDisabled();
     expect(
       screen.getByRole("button", { name: "Agrandir le zoom" }),
     ).toBeDisabled();
@@ -105,9 +107,7 @@ describe("PdfViewer", () => {
       "data-file",
       "blob:preview",
     );
-    expect(
-      document.querySelector('[data-cy="apercu-maj"]'),
-    ).toHaveTextContent(
+    expect(document.querySelector('[data-cy="apercu-maj"]')).toHaveTextContent(
       `Mis à jour à ${formatDateTime(updatedAt.toISOString())}`,
     );
     expect(screen.getByTestId("page")).toHaveAttribute("data-page", "1");
@@ -129,7 +129,9 @@ describe("PdfViewer", () => {
     await user.click(screen.getByRole("button", { name: "Page suivante" }));
     await user.click(screen.getByRole("button", { name: "Page suivante" }));
     expect(screen.getByTestId("page")).toHaveAttribute("data-page", "3");
-    expect(screen.getByRole("button", { name: "Page suivante" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Page suivante" }),
+    ).toBeDisabled();
   });
 
   it("clamps the zoom between 70 % and 175 %", async () => {
@@ -219,16 +221,16 @@ describe("PdfViewer", () => {
 
     await userEvent
       .setup()
-      .click(
-        screen.getByRole("button", { name: "Télécharger l’aperçu" }),
-      );
+      .click(screen.getByRole("button", { name: "Télécharger l’aperçu" }));
     expect(onDownload).toHaveBeenCalledTimes(1);
 
     rerender(<PdfViewer url={null} onDownload={onDownload} />);
     expect(
       screen.getByRole("button", { name: "Télécharger l’aperçu" }),
     ).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Télécharger l’aperçu" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Télécharger l’aperçu" }),
+    ).toBeVisible();
 
     rerender(<PdfViewer url="blob:preview" />);
     expect(

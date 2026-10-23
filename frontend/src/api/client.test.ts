@@ -40,7 +40,8 @@ function fakeResponse(options: FakeOptions = {}): Response {
       }
       return body;
     },
-    json: async () => (options.json !== undefined ? options.json : JSON.parse(body)),
+    json: async () =>
+      options.json !== undefined ? options.json : JSON.parse(body),
     clone: () => ({
       text: async () => body,
     }),
@@ -94,10 +95,7 @@ describe("request", () => {
 
   it("formats a French ApiError from a JSON problem detail", async () => {
     fetchMock.mockResolvedValue(
-      jsonResponse(
-        { detail: "Le bail est introuvable.", status: 404 },
-        404,
-      ),
+      jsonResponse({ detail: "Le bail est introuvable.", status: 404 }, 404),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -301,12 +299,8 @@ describe("errorMessage and isCancellation", () => {
   it("reads the message of an ApiError or a standard error", () => {
     expect(errorMessage(new ApiError("Refusé", 409))).toBe("Refusé");
     expect(errorMessage(new Error("Boom"))).toBe("Boom");
-    expect(errorMessage("texte")).toBe(
-      "Une erreur inattendue est survenue.",
-    );
-    expect(errorMessage(undefined)).toBe(
-      "Une erreur inattendue est survenue.",
-    );
+    expect(errorMessage("texte")).toBe("Une erreur inattendue est survenue.");
+    expect(errorMessage(undefined)).toBe("Une erreur inattendue est survenue.");
   });
 
   it("detects only abort DOMExceptions as cancellation", () => {

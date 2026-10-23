@@ -79,7 +79,9 @@ describe("ExpenseItemForm", () => {
     );
     expect(screen.getByLabelText("Ordre d’affichage")).toHaveValue(4);
     expect(screen.getByLabelText(/Poste actif/)).toBeChecked();
-    expect(screen.getByLabelText(/Plusieurs lignes autorisées/)).not.toBeChecked();
+    expect(
+      screen.getByLabelText(/Plusieurs lignes autorisées/),
+    ).not.toBeChecked();
     expect(
       screen.getByRole("button", { name: "Ajouter le poste" }),
     ).toBeInTheDocument();
@@ -136,10 +138,7 @@ describe("ExpenseItemForm", () => {
     await user.type(screen.getByLabelText("Fournisseur"), " EDF ");
     await user.clear(screen.getByLabelText("Prorata par défaut (%)"));
     await user.type(screen.getByLabelText("Prorata par défaut (%)"), "12,5");
-    await user.selectOptions(
-      screen.getByLabelText("Périodicité"),
-      "ANNUAL",
-    );
+    await user.selectOptions(screen.getByLabelText("Périodicité"), "ANNUAL");
     await user.click(screen.getByLabelText(/Plusieurs lignes autorisées/));
     await user.click(screen.getByLabelText(/Poste actif/));
     await user.click(screen.getByRole("button", { name: "Ajouter le poste" }));

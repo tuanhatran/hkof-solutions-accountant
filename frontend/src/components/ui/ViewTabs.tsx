@@ -17,12 +17,7 @@ interface ViewTabsProps {
 }
 
 /** Two-panel switcher shown below 1024 px on the generation pages. */
-export function ViewTabs({
-  ariaLabel,
-  tabs,
-  active,
-  onChange,
-}: ViewTabsProps) {
+export function ViewTabs({ ariaLabel, tabs, active, onChange }: ViewTabsProps) {
   return (
     <div className="segmented w-full" role="tablist" aria-label={ariaLabel}>
       {tabs.map((tab) => (

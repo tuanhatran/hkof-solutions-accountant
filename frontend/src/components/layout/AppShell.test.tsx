@@ -69,9 +69,7 @@ describe("AppShell", () => {
     expect(adminLink.querySelector(".bg-\\[\\#e7b98f\\]")).toBeNull();
 
     expect(screen.getByText("Contenu de la page")).toBeVisible();
-    expect(
-      screen.getByText("Quittances & frais d’occupation"),
-    ).toBeVisible();
+    expect(screen.getByText("Quittances & frais d’occupation")).toBeVisible();
     expect(
       screen.getByText("HomeOfficeExpenses · usage personnel"),
     ).toBeVisible();
@@ -92,7 +90,9 @@ describe("AppShell", () => {
 
     const badges = screen.getAllByTestId("llm-badge");
     expect(badges).toHaveLength(2);
-    badges.forEach((badge) => expect(badge).toHaveAttribute("data-dark", "true"));
+    badges.forEach((badge) =>
+      expect(badge).toHaveAttribute("data-dark", "true"),
+    );
   });
 
   it("renders the mobile navigation with every section link", () => {

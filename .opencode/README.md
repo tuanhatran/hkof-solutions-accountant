@@ -52,16 +52,16 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
 
 ## Relation to the other configuration directories
 
-| Concern | Source of truth | OpenCode mirror |
-| --- | --- | --- |
-| Product spec | `product_prompt.md` | read directly |
-| Root rules | `AGENTS.md` | loaded directly |
-| Copilot guidance | `.github/copilot-instructions.md` | same conventions |
-| Superpowers skills | `.qoder/skills` | registered in `opencode.json` |
-| Agent workflow | `.qoder/agents/*.md` | `.opencode/agents/*.md` |
-| Task handoffs | `.handoff/tasks/*.md` | same shared tree |
-| File graph | CodeGraph index in `.codegraph/` | `codegraph` CLI, shared |
-| Detailed rules | this directory | instructions |
+| Concern            | Source of truth                   | OpenCode mirror               |
+| ------------------ | --------------------------------- | ----------------------------- |
+| Product spec       | `product_prompt.md`               | read directly                 |
+| Root rules         | `AGENTS.md`                       | loaded directly               |
+| Copilot guidance   | `.github/copilot-instructions.md` | same conventions              |
+| Superpowers skills | `.qoder/skills`                   | registered in `opencode.json` |
+| Agent workflow     | `.qoder/agents/*.md`              | `.opencode/agents/*.md`       |
+| Task handoffs      | `.handoff/tasks/*.md`             | same shared tree              |
+| File graph         | CodeGraph index in `.codegraph/`  | `codegraph` CLI, shared       |
+| Detailed rules     | this directory                    | instructions                  |
 
 When a rule changes, update the source of truth first, then mirror it here. Do not let
 `.qoder/agents`, `.opencode/agents` and `.github/agents` diverge: the same agents, scope

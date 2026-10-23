@@ -94,15 +94,16 @@ that status back to `planner`.
   (`00` 2/2, `01` 1/1, `02` 10/10, `03` 1/1, `04` 5/5), no retry and no `attempt 2` in the log.
   Baseline before the fixes (planning commit `ece9e53`) was exit **8**, 11/19 passing:
 
-  | Spec | Tests | Baseline | Final | Baseline failure (verbatim) |
-  | --- | --- | --- | --- | --- |
-  | `00-settings.cy.ts` | 2 | 1 | 2 | `[data-cy="total-quittance-config"]: expected '1 300,00 €' to include '950,00 €'` |
-  | `01-rent-receipt.cy.ts` | 1 | 0 | 1 | `waitForValue #quittance-loyer`: actual `1300.00`, expected `900.00` |
-  | `02-expense-statement.cy.ts` | 10 | 9 | 10 | `[data-cy="total-retenu"]: expected '950,00 €' to include '1 010,00 €'` (after editing the Gaz pro-rata to 50) |
-  | `03-statement-finalization.cy.ts` | 1 | 0 | 1 | `Expected to find content: 'note version 1 déjà active' but never did` |
-  | `04-admin-templates.cy.ts` | 5 | 1 | 5 | (a) `[data-cy="alerte-llm-distante"]` continuously found, (b) same warning, (c) `btn-ajouter-frais` stays `disabled`, (d) list item never shows `active`; `POST /api/templates/58/activate` returned **500** |
+  | Spec                              | Tests | Baseline | Final | Baseline failure (verbatim)                                                                                                                                                                                  |
+  | --------------------------------- | ----- | -------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+  | `00-settings.cy.ts`               | 2     | 1        | 2     | `[data-cy="total-quittance-config"]: expected '1 300,00 €' to include '950,00 €'`                                                                                                                            |
+  | `01-rent-receipt.cy.ts`           | 1     | 0        | 1     | `waitForValue #quittance-loyer`: actual `1300.00`, expected `900.00`                                                                                                                                         |
+  | `02-expense-statement.cy.ts`      | 10    | 9        | 10    | `[data-cy="total-retenu"]: expected '950,00 €' to include '1 010,00 €'` (after editing the Gaz pro-rata to 50)                                                                                               |
+  | `03-statement-finalization.cy.ts` | 1     | 0        | 1     | `Expected to find content: 'note version 1 déjà active' but never did`                                                                                                                                       |
+  | `04-admin-templates.cy.ts`        | 5     | 1        | 5     | (a) `[data-cy="alerte-llm-distante"]` continuously found, (b) same warning, (c) `btn-ajouter-frais` stays `disabled`, (d) list item never shows `active`; `POST /api/templates/58/activate` returned **500** |
 
   Diagnosis evidence per root cause is in the blocks and the implementation report below.
+
 - Notes:
   - `make` is missing from this environment (`/bin/bash: line 1: make: command not found`);
     the Compose command above is the exact equivalent of the `e2e` Makefile target and of
@@ -390,16 +391,16 @@ All blocks are implemented; the whole suite is green (19/19, 5/5 specs). No cont
 
 Exact commands and real results (all run from the repository root unless stated):
 
-| Command | Result |
-| --- | --- |
-| `cd backend && ./mvnw -B test` | exit 0 — `Tests run: 61, Failures: 0, Errors: 0, Skipped: 1`; the skip is `TemplateActivationPostgresTest`, skipped by `disabledWithoutDocker` because Testcontainers' default Docker API version (1.32) is rejected by Docker 29.8.2 |
-| `cd backend && DOCKER_API_VERSION=1.44 ./mvnw -B -Dtest=TemplateActivationPostgresTest -Dapi.version=1.44 test` | exit 0 — `Tests run: 1, Failures: 0, Errors: 0, Skipped: 0` (before the fix: `duplicate key value violates unique constraint "ux_template_active"`) |
-| `cd backend && ./mvnw -B -Dtest=ExpenseStatementActiveIntegrationTest test` | red before the fix (`Status expected:<200> but was:<500>`, `LazyInitializationException`), green after (`Tests run: 1, Failures: 0, Errors: 0, Skipped: 0`) |
-| `cd frontend && npm run typecheck` | exit 0 |
-| `cd frontend && npx vitest run` | exit 0 — 7 files, 45 tests passed |
-| `cd frontend && npm run build` | exit 0 (only the pre-existing chunk-size warning) |
-| `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress` | exit 0 — 19/19 tests, 5/5 specs, 0 retries |
-| `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml down -v --remove-orphans` | containers, network and volumes removed |
+| Command                                                                                                                                                  | Result                                                                                                                                                                                                                                |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cd backend && ./mvnw -B test`                                                                                                                           | exit 0 — `Tests run: 61, Failures: 0, Errors: 0, Skipped: 1`; the skip is `TemplateActivationPostgresTest`, skipped by `disabledWithoutDocker` because Testcontainers' default Docker API version (1.32) is rejected by Docker 29.8.2 |
+| `cd backend && DOCKER_API_VERSION=1.44 ./mvnw -B -Dtest=TemplateActivationPostgresTest -Dapi.version=1.44 test`                                          | exit 0 — `Tests run: 1, Failures: 0, Errors: 0, Skipped: 0` (before the fix: `duplicate key value violates unique constraint "ux_template_active"`)                                                                                   |
+| `cd backend && ./mvnw -B -Dtest=ExpenseStatementActiveIntegrationTest test`                                                                              | red before the fix (`Status expected:<200> but was:<500>`, `LazyInitializationException`), green after (`Tests run: 1, Failures: 0, Errors: 0, Skipped: 0`)                                                                           |
+| `cd frontend && npm run typecheck`                                                                                                                       | exit 0                                                                                                                                                                                                                                |
+| `cd frontend && npx vitest run`                                                                                                                          | exit 0 — 7 files, 45 tests passed                                                                                                                                                                                                     |
+| `cd frontend && npm run build`                                                                                                                           | exit 0 (only the pre-existing chunk-size warning)                                                                                                                                                                                     |
+| `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress` | exit 0 — 19/19 tests, 5/5 specs, 0 retries                                                                                                                                                                                            |
+| `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml down -v --remove-orphans`                                      | containers, network and volumes removed                                                                                                                                                                                               |
 
 Deviations and notes for the tester:
 
@@ -424,16 +425,16 @@ Deviations and notes for the tester:
 Independently re-run on `fix/e2e-tests` (worktree never reset, cleaned or stashed; nothing
 committed or pushed). Docker 29.8.2 / Compose v5.5.1.
 
-| Command | Real result |
-| --- | --- |
-| `cd backend && ./mvnw -B test` | exit 0 — `Tests run: 61, Failures: 0, Errors: 0, Skipped: 1`; the skip is `TemplateActivationPostgresTest` (Testcontainers `disabledWithoutDocker`, Docker API 1.32 rejected) |
-| `cd backend && DOCKER_API_VERSION=1.44 ./mvnw -B -Dtest=TemplateActivationPostgresTest -Dapi.version=1.44 test` | exit 0 — `Tests run: 1, Failures: 0, Errors: 0, Skipped: 0` |
-| `cd frontend && npm run typecheck` | exit 0 |
-| `cd frontend && npx vitest run` | exit 0 — 9 files, 48 tests passed (was 7/45 before the tester additions) |
-| `cd frontend && npm run build` | exit 0 (only the pre-existing chunk-size warning) |
+| Command                                                                                                                                                  | Real result                                                                                                                                                                                             |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cd backend && ./mvnw -B test`                                                                                                                           | exit 0 — `Tests run: 61, Failures: 0, Errors: 0, Skipped: 1`; the skip is `TemplateActivationPostgresTest` (Testcontainers `disabledWithoutDocker`, Docker API 1.32 rejected)                           |
+| `cd backend && DOCKER_API_VERSION=1.44 ./mvnw -B -Dtest=TemplateActivationPostgresTest -Dapi.version=1.44 test`                                          | exit 0 — `Tests run: 1, Failures: 0, Errors: 0, Skipped: 0`                                                                                                                                             |
+| `cd frontend && npm run typecheck`                                                                                                                       | exit 0                                                                                                                                                                                                  |
+| `cd frontend && npx vitest run`                                                                                                                          | exit 0 — 9 files, 48 tests passed (was 7/45 before the tester additions)                                                                                                                                |
+| `cd frontend && npm run build`                                                                                                                           | exit 0 (only the pre-existing chunk-size warning)                                                                                                                                                       |
 | `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress` | exit 0 — **19/19 tests, 5/5 specs** (`00` 2/2, `01` 1/1, `02` 10/10, `03` 1/1, `04` 5/5) in one run, `Failing: 0`, `Pending: 0`, `Skipped: 0`; no `attempt 2`, no `retrying`, no failed test in the log |
-| `docker compose … down -v --remove-orphans` | exit 0 — containers, network and volumes removed (0 containers left) |
-| `git diff --stat -- openapi/openapi.yaml frontend/src/api/schema.ts` | empty — contract and generated types untouched |
+| `docker compose … down -v --remove-orphans`                                                                                                              | exit 0 — containers, network and volumes removed (0 containers left)                                                                                                                                    |
+| `git diff --stat -- openapi/openapi.yaml frontend/src/api/schema.ts`                                                                                     | empty — contract and generated types untouched                                                                                                                                                          |
 
 Red-then-green re-verified independently in an isolated copy (`/tmp/opencode/redcheck`), so
 the worktree's implementation was never modified:
@@ -444,7 +445,7 @@ the worktree's implementation was never modified:
 - Controller/service/repository reverted to mapping outside the transaction (no
   `@EntityGraph`) → `Status expected:<200> but was:<500>` with
   `LazyInitializationException: Cannot lazily initialize collection of role
-  '…ExpenseStatement.lines'`. Green after the fix.
+'…ExpenseStatement.lines'`. Green after the fix.
 - Both generation pages reverted to `queryKey: ["notes"]` / `["quittances"]` → **the
   existing `queries.test.ts` cases still pass (3/3)**. The coder's claim that they "fail on a
   literal key" is therefore wrong: they only prove the `queryKeys.statementsAll` /
@@ -490,15 +491,15 @@ untouched.
 
 ### Independently re-run (reviewer, this environment)
 
-| Command | Real result |
-| --- | --- |
-| `cd backend && ./mvnw -B test` | exit 0 — `Tests run: 61, Failures: 0, Errors: 0, Skipped: 1`; the skip is `TemplateActivationPostgresTest` (see note 1) |
-| `cd frontend && npm run typecheck` | exit 0 |
-| `cd frontend && npx vitest run` | exit 0 — 9 files, 48 tests passed |
-| `cd frontend && npm run build` | exit 0 (only the pre-existing chunk-size warning) |
+| Command                                                                                                                                                  | Real result                                                                                                                                                                 |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cd backend && ./mvnw -B test`                                                                                                                           | exit 0 — `Tests run: 61, Failures: 0, Errors: 0, Skipped: 1`; the skip is `TemplateActivationPostgresTest` (see note 1)                                                     |
+| `cd frontend && npm run typecheck`                                                                                                                       | exit 0                                                                                                                                                                      |
+| `cd frontend && npx vitest run`                                                                                                                          | exit 0 — 9 files, 48 tests passed                                                                                                                                           |
+| `cd frontend && npm run build`                                                                                                                           | exit 0 (only the pre-existing chunk-size warning)                                                                                                                           |
 | `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress` | exit **0** — 19/19 tests, 5/5 specs (`00` 2, `01` 1, `02` 10, `03` 1, `04` 5), `Failing: 0`, `Pending: 0`, `Skipped: 0`, "All specs passed!", no `attempt 2` / `retry` line |
-| `docker compose … down -v --remove-orphans` | exit 0, containers/network/volumes removed |
-| `git diff main -- openapi/openapi.yaml frontend/src/api/schema.ts` | empty — contract and generated types untouched |
+| `docker compose … down -v --remove-orphans`                                                                                                              | exit 0, containers/network/volumes removed                                                                                                                                  |
+| `git diff main -- openapi/openapi.yaml frontend/src/api/schema.ts`                                                                                       | empty — contract and generated types untouched                                                                                                                              |
 
 ### Checks that passed
 

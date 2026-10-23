@@ -32,10 +32,7 @@ export function SettingsHomeSection({
         <textarea
           id="param-logement-adresse"
           rows={2}
-          className={cn(
-            "field resize-y",
-            errors.homeAddress && "field-error",
-          )}
+          className={cn("field resize-y", errors.homeAddress && "field-error")}
           {...register("homeAddress")}
           data-cy="input-logement-adresse"
         />
@@ -89,9 +86,7 @@ export function SettingsHomeSection({
           className="mt-1 font-display text-2xl text-accent-strong"
           data-cy="prorata-indicatif"
         >
-          {displayedProRata === null
-            ? "—"
-            : formatPercentage(displayedProRata)}
+          {displayedProRata === null ? "—" : formatPercentage(displayedProRata)}
         </p>
         <p className="text-[10.5px] text-ink-soft">
           Calculé et arrondi côté backend à l’enregistrement.

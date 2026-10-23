@@ -134,8 +134,7 @@ export function useRentReceiptPage() {
     ) ?? null;
   // Without a full pair the hook falls back to the month-scoped query, whose
   // receipt belongs to no identifiable pair: never surface it on this page.
-  const pairSelected =
-    selectedLandlordId !== null && selectedTenantId !== null;
+  const pairSelected = selectedLandlordId !== null && selectedTenantId !== null;
   const activePairReceipt = pairSelected
     ? (activeRentReceipt.data ?? null)
     : null;

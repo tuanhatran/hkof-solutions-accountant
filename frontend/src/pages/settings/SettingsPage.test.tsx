@@ -126,7 +126,9 @@ describe("SettingsPage tabs", () => {
       .setup()
       .click(screen.getByRole("tab", { name: "Quittances" }));
 
-    expect(await screen.findByRole("heading", { name: "Bailleurs" })).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: "Bailleurs" }),
+    ).toBeVisible();
     expect(screen.getByRole("heading", { name: "Locataires" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Baux" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Signatures" })).toBeVisible();
@@ -172,9 +174,7 @@ describe("SettingsPage tabs", () => {
     );
     await waitFor(() =>
       expect(
-        useToasts
-          .getState()
-          .toasts.map((element) => element.message),
+        useToasts.getState().toasts.map((element) => element.message),
       ).toContain(
         "Configuration enregistrée. Les prochains documents utiliseront ces valeurs.",
       ),
@@ -196,7 +196,9 @@ describe("SettingsPage tabs", () => {
     expect(
       await screen.findByText("La raison sociale est obligatoire."),
     ).toBeVisible();
-    expect(screen.getByText("La forme juridique est obligatoire.")).toBeVisible();
+    expect(
+      screen.getByText("La forme juridique est obligatoire."),
+    ).toBeVisible();
     expect(
       screen.getByText("L'adresse de la société est obligatoire."),
     ).toBeVisible();
@@ -230,9 +232,7 @@ describe("SettingsPage tabs", () => {
       screen.getByRole("button", { name: "Enregistrer la configuration" }),
     );
 
-    expect(
-      await screen.findByText("Enregistrement impossible."),
-    ).toBeVisible();
+    expect(await screen.findByText("Enregistrement impossible.")).toBeVisible();
   });
 
   it("shows the loading then error states of the settings", async () => {

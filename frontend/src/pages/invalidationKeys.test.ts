@@ -13,11 +13,7 @@ const PAGES = [
     expenseStatementSource,
     "queryKeys.statementsAll",
   ],
-  [
-    "useRentReceiptPage.ts",
-    rentReceiptSource,
-    "queryKeys.rentReceiptsAll",
-  ],
+  ["useRentReceiptPage.ts", rentReceiptSource, "queryKeys.rentReceiptsAll"],
 ] as const;
 
 describe("generation pages invalidation keys", () => {

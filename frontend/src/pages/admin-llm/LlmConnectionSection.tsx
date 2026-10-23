@@ -160,10 +160,7 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
               <div className="mt-1.5">
                 <input
                   id="llm-modele"
-                  className={cn(
-                    "field mt-0",
-                    c.errors.model && "field-error",
-                  )}
+                  className={cn("field mt-0", c.errors.model && "field-error")}
                   placeholder="qwen2.5:7b"
                   autoComplete="off"
                   spellCheck={false}

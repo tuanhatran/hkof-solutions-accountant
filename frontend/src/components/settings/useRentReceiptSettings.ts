@@ -43,8 +43,7 @@ export function useRentReceiptSettings() {
   });
 
   const removeTenant = useMutation({
-    mutationFn: (tenant: TenantDto) =>
-      api.tenants.delete(tenant.id as number),
+    mutationFn: (tenant: TenantDto) => api.tenants.delete(tenant.id as number),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.tenants });
       setTenantToDelete(null);

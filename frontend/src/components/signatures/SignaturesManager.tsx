@@ -63,9 +63,7 @@ export function SignaturesManager() {
       </div>
 
       <div className="card-body space-y-4">
-        {formOpen ? (
-          <SignatureForm onClose={() => setFormOpen(false)} />
-        ) : null}
+        {formOpen ? <SignatureForm onClose={() => setFormOpen(false)} /> : null}
 
         {signatures.isError ? (
           <ErrorState

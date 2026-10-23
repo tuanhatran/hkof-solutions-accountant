@@ -7,11 +7,7 @@ import { EmptyState, SectionHeader } from "./SettingsSection";
 import type { RentReceiptSettingsController } from "./useRentReceiptSettings";
 
 /** Landlords section: list, create/update form and delete triggers. */
-export function LandlordSection({
-  c,
-}: {
-  c: RentReceiptSettingsController;
-}) {
+export function LandlordSection({ c }: { c: RentReceiptSettingsController }) {
   return (
     <section className="card overflow-hidden">
       <SectionHeader

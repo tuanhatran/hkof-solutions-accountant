@@ -35,9 +35,9 @@ describe("historyHelpers", () => {
   });
 
   it("sorts rent receipts by descending creation date then id", () => {
-    expect(sortRentReceiptsDesc([RENT_A, RENT_B]).map((item) => item.id)).toEqual([
-      2, 1,
-    ]);
+    expect(
+      sortRentReceiptsDesc([RENT_A, RENT_B]).map((item) => item.id),
+    ).toEqual([2, 1]);
     expect(
       sortRentReceiptsDesc([
         { ...RENT_A, id: 3, createdAt: undefined },
@@ -55,8 +55,6 @@ describe("historyHelpers", () => {
     expect(pairLabel(RENT_A)).toBe("Bailleur → Locataire");
     expect(
       pairLabel({ ...RENT_B, landlordName: undefined, tenantName: undefined }),
-    ).toBe(
-      "Bailleur inconnu → Locataire inconnu",
-    );
+    ).toBe("Bailleur inconnu → Locataire inconnu");
   });
 });

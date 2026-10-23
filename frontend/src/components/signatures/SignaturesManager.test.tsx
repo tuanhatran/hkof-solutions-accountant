@@ -120,7 +120,9 @@ describe("SignaturesManager", () => {
       expect.any(File),
       1,
     );
-    expect(await screen.findByText("Signature du bailleur")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Signature du bailleur"),
+    ).toBeInTheDocument();
     expect(
       screen.getByAltText("Signature Signature du bailleur"),
     ).toBeInTheDocument();

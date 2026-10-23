@@ -1,33 +1,41 @@
 # 19 - FRONTEND-REFACTOR
+
 Status: DONE · Branch: refactor/frontend-structure-coverage · Size: L · Round: 2/2
 
 ## Goal
+
 Frontend-only, behavior-preserving refactor: feature subdirectories, colocated tests, page/component files ≤300 lines, 90% global Vitest coverage enforced. Out of scope: backend, contract, generated `api/schema.ts`, French copy.
 
 ## Files
+
 Context: `frontend/src/router.tsx`, `frontend/package.json`, `frontend/vitest.config.ts`, `.github/workflows/ci.yml`, `frontend/src/pages/invalidationKeys.test.ts`
 Writable: `frontend/src/{components,pages,hooks,lib,state,api}/**`, `frontend/package{,-lock}.json`, `frontend/vitest.config.ts`, `.github/workflows/ci.yml`
 Affected tests: `frontend/src/pages/{GenerateExpenseStatementPage,GenerateRentReceiptPage,SettingsPage}.test.tsx`, `frontend/src/components/{RentReceiptSettings,SignaturesManager}.test.tsx`
 
 ## Plan
+
 1. Move components to `components/{ui,layout,forms,pdf,llm,settings,signatures}/`; pages to `pages/{expense-statement,rent-receipt,settings,templates,history,admin-llm}/`; update imports and router.
 2. Split >300-line files (expense 1848, admin 1096, templates 1018, quittance 1006, settings form 912, settings page 895, history 550, signatures 450) into focused reusable components.
 3. Colocate every test with its target; add tests for untested modules; keep `invalidationKeys.test.ts` scanning the file that invalidates `statementsAll`/`rentReceiptsAll`.
 4. Add `@vitest/coverage-v8`, `test:coverage`, 90% thresholds (lines/statements/functions/branches; exclude `api/schema.ts`, `test/setup.ts`, `main.tsx`); CI runs coverage.
 
 ## Constraints
+
 Contract: none · Money display only, no client calculation · UI French · no `any` · no commit/push
 
 ## Acceptance
+
 - [ ] No component directly under `components/`; every test colocated; no page/component `.tsx` >300 lines
 - [ ] `npm run test:coverage` exits 0, all four metrics ≥90%
 - [ ] `npm run typecheck`, `npm test`, `npm run build` pass; full Cypress E2E green
 
 ## Commands
+
 - `cd frontend && npm install && npm run test:coverage && npm test && npm run typecheck && npm run build`
 - `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress`
 
 ## Evidence
+
 - `2026-10-24 lead:` sized L; branch `refactor/frontend-structure-coverage`; user chose global 90% enforced.
 - `2026-10-24 builder:` STALLED at 150-turn limit; status unchanged (TODO). Partial refactor left in worktree: 24 tracked files changed, 54 new files, no commit.
 - `2026-10-24 lead:` `cd frontend && npm run typecheck` PASS (exit 0).

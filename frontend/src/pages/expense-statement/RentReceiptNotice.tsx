@@ -66,11 +66,7 @@ export function RentReceiptNotice({
               </p>
             </div>
           </div>
-          <Button
-            variant="secondary"
-            small
-            onClick={c.goToRentReceipt}
-          >
+          <Button variant="secondary" small onClick={c.goToRentReceipt}>
             Générer la quittance
           </Button>
         </div>

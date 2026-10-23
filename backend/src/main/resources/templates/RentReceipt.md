@@ -2,15 +2,15 @@
 
 **Quittance de loyer du mois de Septembre 2026**
 
-*LE BA Mai Trang*
+_LE BA Mai Trang_
 
-*Flat C, 23/F, Tower 1B, The Wings 3A*
+_Flat C, 23/F, Tower 1B, The Wings 3A_
 
-*19 Tong Yin Street, Tseung Kwan O, Hong Kong*
+_19 Tong Yin Street, Tseung Kwan O, Hong Kong_
 
-*Tuan Ha TRAN*
+_Tuan Ha TRAN_
 
-*16T rue du Palis, 78500 Sartrouville*
+_16T rue du Palis, 78500 Sartrouville_
 
 Fait à Sartrouville, le 01/09/2026
 
@@ -30,4 +30,4 @@ Date du paiement : le 01/09/2026
 
 ![A blue line drawing of a graph  AI-generated content may be incorrect.](data:image/png;base64...)
 
-*(En bas de page)* Cette quittance annule tous les reçus qui auraient pu être établis précédemment en cas de paiement partiel du montant du présent terme. Elle est à conserver pendant trois ans par le locataire (loi n° 89-462 du 6 juillet 1989 : art. 7-1).
+_(En bas de page)_ Cette quittance annule tous les reçus qui auraient pu être établis précédemment en cas de paiement partiel du montant du présent terme. Elle est à conserver pendant trois ans par le locataire (loi n° 89-462 du 6 juillet 1989 : art. 7-1).

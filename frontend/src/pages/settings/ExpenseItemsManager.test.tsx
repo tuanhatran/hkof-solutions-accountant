@@ -178,9 +178,7 @@ describe("ExpenseItemsManager", () => {
     renderManager();
     const user = userEvent.setup();
 
-    await user.click(
-      screen.getAllByRole("button", { name: "Modifier" })[0],
-    );
+    await user.click(screen.getAllByRole("button", { name: "Modifier" })[0]);
 
     expect(
       screen.getByRole("heading", { name: "Modifier le poste « Loyer »" }),
@@ -200,23 +198,23 @@ describe("ExpenseItemsManager", () => {
     renderManager();
     const user = userEvent.setup();
 
-    await user.click(
-      screen.getAllByRole("button", { name: "Retirer" })[1],
-    );
+    await user.click(screen.getAllByRole("button", { name: "Retirer" })[1]);
     const dialog = screen.getByRole("dialog", {
       name: "Retirer ce type de frais ?",
     });
-    expect(within(dialog).getByText(/« Eau » ne sera plus proposé/)).toBeVisible();
+    expect(
+      within(dialog).getByText(/« Eau » ne sera plus proposé/),
+    ).toBeVisible();
     await user.click(
       within(dialog).getByRole("button", { name: "Retirer le poste" }),
     );
 
-    await waitFor(() => expect(api.expenseItems.delete).toHaveBeenCalledWith(2));
+    await waitFor(() =>
+      expect(api.expenseItems.delete).toHaveBeenCalledWith(2),
+    );
     await waitFor(() =>
       expect(
-        useToasts
-          .getState()
-          .toasts.map((element) => element.message),
+        useToasts.getState().toasts.map((element) => element.message),
       ).toContain("Poste désactivé et retiré de la liste des frais."),
     );
   });
@@ -244,9 +242,7 @@ describe("ExpenseItemsManager", () => {
 
     await waitFor(() =>
       expect(
-        useToasts
-          .getState()
-          .toasts.map((element) => element.message),
+        useToasts.getState().toasts.map((element) => element.message),
       ).toContain("Poste introuvable"),
     );
   });

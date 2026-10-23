@@ -53,11 +53,11 @@ Apply this rubric before anything else; when in doubt pick the larger size.
 
 ## Route
 
-| Size | Pipeline |
-| ---- | -------- |
+| Size | Pipeline                                                                                                      |
+| ---- | ------------------------------------------------------------------------------------------------------------- |
 | S    | `builder` only. No plan section, no `reviewer`. You skim `git diff` at the end, set `USER_REVIEW` and report. |
-| M    | compact handoff, `builder`, then `reviewer` once. |
-| L    | compact handoff, `builder`, then `reviewer`, maximum 2 review rounds. |
+| M    | compact handoff, `builder`, then `reviewer` once.                                                             |
+| L    | compact handoff, `builder`, then `reviewer`, maximum 2 review rounds.                                         |
 
 Mandatory `reviewer` regardless of size when the diff touches money, the contract, a
 migration, the template sandbox, the LLM path or secrets.

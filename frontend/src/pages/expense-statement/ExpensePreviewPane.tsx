@@ -68,8 +68,8 @@ export function ExpensePreviewPane({
         }
       />
       <p className="mt-2 px-1 text-[11px] leading-relaxed text-ink-soft">
-        L’aperçu est rendu par le backend à partir des mêmes lignes que le
-        total affiché. Il porte un filigrane et n’est jamais enregistré.
+        L’aperçu est rendu par le backend à partir des mêmes lignes que le total
+        affiché. Il porte un filigrane et n’est jamais enregistré.
       </p>
     </div>
   );

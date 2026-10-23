@@ -193,9 +193,9 @@ describe("directory schemas", () => {
     expect(
       leaseSchema.safeParse({ ...valid, propertyAddress: " " }).success,
     ).toBe(false);
-    expect(leaseSchema.safeParse({ ...valid, rentExclCharges: "" }).success).toBe(
-      false,
-    );
+    expect(
+      leaseSchema.safeParse({ ...valid, rentExclCharges: "" }).success,
+    ).toBe(false);
     expect(leaseSchema.safeParse({ ...valid, charges: "-1" }).success).toBe(
       false,
     );

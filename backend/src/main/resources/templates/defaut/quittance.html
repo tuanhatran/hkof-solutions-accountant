@@ -1,105 +1,225 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-<meta charset="utf-8" />
-<title>Quittance de loyer</title>
-<style>
-  @page { size: A4; margin: 20mm 18mm 18mm 18mm; }
-  * { box-sizing: border-box; }
-  body { font-family: 'DejaVu Sans', sans-serif; font-size: 10pt; color: #1f2937; line-height: 1.5; margin: 0; }
-  .bandeau { background: #0f766e; color: #ffffff; padding: 14px 18px; border-radius: 4px; }
-  .bandeau .titre { font-size: 19pt; font-weight: bold; letter-spacing: 1px; margin: 0; }
-  .bandeau .sous-titre { font-size: 10.5pt; margin-top: 3px; }
-  .parties { width: 100%; border-collapse: collapse; margin-top: 24px; }
-  .parties td { width: 50%; vertical-align: top; padding: 0 12px 0 0; }
-  .parties .bloc { border: 1px solid #d1d5db; border-radius: 4px; padding: 12px 14px; min-height: 92px; }
-  .label { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.8px; color: #6b7280; margin-bottom: 5px; }
-  .nom { font-weight: bold; font-size: 11pt; }
-  .adresse { color: #374151; white-space: pre-line; }
-  h2 { font-size: 11pt; color: #0f766e; margin: 26px 0 10px 0; border-bottom: 1px solid #99f6e4; padding-bottom: 4px; }
-  table.detail { width: 100%; border-collapse: collapse; }
-  table.detail th { background: #f0fdfa; color: #115e59; text-align: left; font-size: 9pt; padding: 8px 10px; border: 1px solid #cbd5e1; }
-  table.detail td { padding: 9px 10px; border: 1px solid #e5e7eb; }
-  table.detail .droite { text-align: right; }
-  table.detail tr.total td { background: #0f766e; color: #ffffff; font-weight: bold; font-size: 12pt; }
-  .mention { margin-top: 24px; padding: 14px 16px; background: #f8fafc; border-left: 3px solid #0f766e; font-size: 9.6pt; text-align: justify; }
-  .signature { margin-top: 34px; width: 100%; }
-  .signature td { vertical-align: top; }
-  .signature .cadre { width: 250px; height: 100px; border: 1px dashed #9ca3af; border-radius: 3px; padding: 8px; color: #6b7280; font-size: 8.5pt; }
-  .pied { margin-top: 30px; border-top: 1px solid #e5e7eb; padding-top: 8px; font-size: 8pt; color: #9ca3af; text-align: center; }
-</style>
-</head>
-<body>
-  <div class="bandeau">
-    <div class="titre">QUITTANCE DE LOYER</div>
-    <div class="sous-titre">Période du {{periode.debut}} au {{periode.fin}} — {{mois_libelle}}</div>
-  </div>
+  <head>
+    <meta charset="utf-8" />
+    <title>Quittance de loyer</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 20mm 18mm 18mm 18mm;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "DejaVu Sans", sans-serif;
+        font-size: 10pt;
+        color: #1f2937;
+        line-height: 1.5;
+        margin: 0;
+      }
+      .bandeau {
+        background: #0f766e;
+        color: #ffffff;
+        padding: 14px 18px;
+        border-radius: 4px;
+      }
+      .bandeau .titre {
+        font-size: 19pt;
+        font-weight: bold;
+        letter-spacing: 1px;
+        margin: 0;
+      }
+      .bandeau .sous-titre {
+        font-size: 10.5pt;
+        margin-top: 3px;
+      }
+      .parties {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 24px;
+      }
+      .parties td {
+        width: 50%;
+        vertical-align: top;
+        padding: 0 12px 0 0;
+      }
+      .parties .bloc {
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        padding: 12px 14px;
+        min-height: 92px;
+      }
+      .label {
+        font-size: 8pt;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: #6b7280;
+        margin-bottom: 5px;
+      }
+      .nom {
+        font-weight: bold;
+        font-size: 11pt;
+      }
+      .adresse {
+        color: #374151;
+        white-space: pre-line;
+      }
+      h2 {
+        font-size: 11pt;
+        color: #0f766e;
+        margin: 26px 0 10px 0;
+        border-bottom: 1px solid #99f6e4;
+        padding-bottom: 4px;
+      }
+      table.detail {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      table.detail th {
+        background: #f0fdfa;
+        color: #115e59;
+        text-align: left;
+        font-size: 9pt;
+        padding: 8px 10px;
+        border: 1px solid #cbd5e1;
+      }
+      table.detail td {
+        padding: 9px 10px;
+        border: 1px solid #e5e7eb;
+      }
+      table.detail .droite {
+        text-align: right;
+      }
+      table.detail tr.total td {
+        background: #0f766e;
+        color: #ffffff;
+        font-weight: bold;
+        font-size: 12pt;
+      }
+      .mention {
+        margin-top: 24px;
+        padding: 14px 16px;
+        background: #f8fafc;
+        border-left: 3px solid #0f766e;
+        font-size: 9.6pt;
+        text-align: justify;
+      }
+      .signature {
+        margin-top: 34px;
+        width: 100%;
+      }
+      .signature td {
+        vertical-align: top;
+      }
+      .signature .cadre {
+        width: 250px;
+        height: 100px;
+        border: 1px dashed #9ca3af;
+        border-radius: 3px;
+        padding: 8px;
+        color: #6b7280;
+        font-size: 8.5pt;
+      }
+      .pied {
+        margin-top: 30px;
+        border-top: 1px solid #e5e7eb;
+        padding-top: 8px;
+        font-size: 8pt;
+        color: #9ca3af;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bandeau">
+      <div class="titre">QUITTANCE DE LOYER</div>
+      <div class="sous-titre">
+        Période du {{periode.debut}} au {{periode.fin}} — {{mois_libelle}}
+      </div>
+    </div>
 
-  <table class="parties">
-    <tr>
-      <td>
-        <div class="bloc">
-          <div class="label">Bailleur</div>
-          <div class="nom">{{bailleur.nom}}</div>
-          <div class="adresse">{{bailleur.adresse}}</div>
-        </div>
-      </td>
-      <td>
-        <div class="bloc">
-          <div class="label">Locataire</div>
-          <div class="nom">{{locataire.nom}}</div>
-          <div class="adresse">{{locataire.adresse}}</div>
-        </div>
-      </td>
-    </tr>
-  </table>
-
-  <h2>Logement concerné</h2>
-  <div>{{logement.adresse}}</div>
-
-  <h2>Détail du loyer</h2>
-  <table class="detail">
-    <thead>
+    <table class="parties">
       <tr>
-        <th>Désignation</th>
-        <th class="droite" style="width: 30%;">Montant</th>
+        <td>
+          <div class="bloc">
+            <div class="label">Bailleur</div>
+            <div class="nom">{{bailleur.nom}}</div>
+            <div class="adresse">{{bailleur.adresse}}</div>
+          </div>
+        </td>
+        <td>
+          <div class="bloc">
+            <div class="label">Locataire</div>
+            <div class="nom">{{locataire.nom}}</div>
+            <div class="adresse">{{locataire.adresse}}</div>
+          </div>
+        </td>
       </tr>
-    </thead>
-    <tbody>
+    </table>
+
+    <h2>Logement concerné</h2>
+    <div>{{logement.adresse}}</div>
+
+    <h2>Détail du loyer</h2>
+    <table class="detail">
+      <thead>
+        <tr>
+          <th>Désignation</th>
+          <th class="droite" style="width: 30%">Montant</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Loyer hors charges</td>
+          <td class="droite">{{loyer_hc}}</td>
+        </tr>
+        <tr>
+          <td>Provision pour charges</td>
+          <td class="droite">{{charges}}</td>
+        </tr>
+        <tr class="total">
+          <td>Total</td>
+          <td class="droite">{{total}}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="mention">
+      Je soussigné <strong>{{bailleur.nom}}</strong>, propriétaire du logement
+      désigné ci-dessus, déclare avoir reçu de
+      <strong>{{locataire.nom}}</strong> la somme de
+      <strong>{{total}}</strong> (<strong>{{total_en_lettres}}</strong>) au
+      titre du loyer et des charges pour la période du
+      <strong>{{periode.debut}}</strong> au <strong>{{periode.fin}}</strong> et
+      lui en donne quittance, sous réserve de tous mes droits.
+    </div>
+
+    <table class="signature">
       <tr>
-        <td>Loyer hors charges</td>
-        <td class="droite">{{loyer_hc}}</td>
+        <td>
+          <div>
+            Fait à <strong>{{lieu}}</strong>, le
+            <strong>{{date_emission}}</strong>
+          </div>
+          <div style="margin-top: 6px; color: #6b7280; font-size: 9pt">
+            Date de paiement : {{date_paiement}}
+          </div>
+        </td>
+        <td style="text-align: right">
+          <div class="cadre">
+            Signature du bailleur<img
+              src="{{signature}}"
+              width="150"
+              alt="Signature"
+            />
+          </div>
+        </td>
       </tr>
-      <tr>
-        <td>Provision pour charges</td>
-        <td class="droite">{{charges}}</td>
-      </tr>
-      <tr class="total">
-        <td>Total</td>
-        <td class="droite">{{total}}</td>
-      </tr>
-    </tbody>
-  </table>
+    </table>
 
-  <div class="mention">
-    Je soussigné <strong>{{bailleur.nom}}</strong>, propriétaire du logement désigné ci-dessus, déclare avoir reçu de
-    <strong>{{locataire.nom}}</strong> la somme de <strong>{{total}}</strong> (<strong>{{total_en_lettres}}</strong>)
-    au titre du loyer et des charges pour la période du <strong>{{periode.debut}}</strong> au
-    <strong>{{periode.fin}}</strong> et lui en donne quittance, sous réserve de tous mes droits.
-  </div>
-
-  <table class="signature">
-    <tr>
-      <td>
-        <div>Fait à <strong>{{lieu}}</strong>, le <strong>{{date_emission}}</strong></div>
-        <div style="margin-top: 6px; color: #6b7280; font-size: 9pt;">Date de paiement : {{date_paiement}}</div>
-      </td>
-      <td style="text-align: right;">
-        <div class="cadre">Signature du bailleur<img src="{{signature}}" width="150" alt="Signature" /></div>
-      </td>
-    </tr>
-  </table>
-
-  <div class="pied">Document généré par HomeOfficeExpenses — quittance de loyer</div>
-</body>
+    <div class="pied">
+      Document généré par HomeOfficeExpenses — quittance de loyer
+    </div>
+  </body>
 </html>

@@ -4,7 +4,11 @@ import type { RentReceiptDto } from "@/api/types";
 import { Button } from "@/components/ui/Button";
 import { formatDateTime, formatEUR } from "@/lib/format";
 import { PdfActionLink, OpenPdfLink, VersionBadge } from "./HistoryActions";
-import { pairLabel, sortRentReceiptsDesc, type MonthGroup } from "./historyHelpers";
+import {
+  pairLabel,
+  sortRentReceiptsDesc,
+  type MonthGroup,
+} from "./historyHelpers";
 
 /** Rent receipt column of a month: latest version, actions and full history. */
 export function RentReceiptMonthPanel({

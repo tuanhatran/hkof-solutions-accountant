@@ -53,8 +53,12 @@ describe("useStatementDraft", () => {
 
   it("updates an existing line and ignores unknown keys", () => {
     useStatementDraft.getState().addLine(LINE);
-    useStatementDraft.getState().updateLine("line-1", { amountInclVat: "90.00" });
-    useStatementDraft.getState().updateLine("missing", { amountInclVat: "1.00" });
+    useStatementDraft
+      .getState()
+      .updateLine("line-1", { amountInclVat: "90.00" });
+    useStatementDraft
+      .getState()
+      .updateLine("missing", { amountInclVat: "1.00" });
 
     const lines = useStatementDraft.getState().linesByMonth[MONTH] ?? [];
     expect(lines).toHaveLength(1);
