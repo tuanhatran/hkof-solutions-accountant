@@ -122,4 +122,36 @@ describe("Settings", () => {
       "not.exist",
     );
   });
+
+  it("adds a landlord signature linked to the seeded bailleur", () => {
+    cy.visit("/configuration");
+    cy.get('[data-cy="onglet-quittances"]').click();
+
+    cy.request<{ id: number; name: string }[]>("/api/landlords").then(
+      ({ body }) => {
+        const landlord = body[0];
+        expect(landlord, "seeded landlord").to.exist;
+
+        cy.get('[data-cy="btn-ajouter-signature"]').click();
+        cy.get('[data-cy="formulaire-signature"]').should("be.visible");
+        cy.get('[data-cy="input-signature-nom"]').type(
+          "Signature E2E bailleur",
+        );
+        cy.get('[data-cy="select-bailleur-signature"]').select(
+          String(landlord.id),
+        );
+        cy.get('[data-cy="input-signature-image"]').selectFile(
+          "cypress/fixtures/signature-e2e.png",
+          { force: true },
+        );
+        cy.get('[data-cy="btn-enregistrer-signature"]').click();
+
+        cy.contains('[data-cy^="signature-"]', "Signature E2E bailleur", {
+          timeout: 15_000,
+        })
+          .should("be.visible")
+          .and("contain.text", `Bailleur : ${landlord.name}`);
+      },
+    );
+  });
 });

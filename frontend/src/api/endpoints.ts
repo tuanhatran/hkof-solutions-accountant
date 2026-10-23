@@ -119,9 +119,20 @@ export const api = {
       request<RentReceiptDto[]>(
         `/api/rent-receipts${month ? `?month=${encodeURIComponent(month)}` : ""}`,
       ),
-    active: async (month: string): Promise<RentReceiptDto | null> => {
+    active: async (
+      month: string,
+      landlordId?: number | null,
+      tenantId?: number | null,
+    ): Promise<RentReceiptDto | null> => {
+      const params = new URLSearchParams({ month });
+      if (landlordId !== null && landlordId !== undefined) {
+        params.set("landlordId", String(landlordId));
+      }
+      if (tenantId !== null && tenantId !== undefined) {
+        params.set("tenantId", String(tenantId));
+      }
       const result = await request<RentReceiptDto | undefined>(
-        `/api/rent-receipts/active?month=${encodeURIComponent(month)}`,
+        `/api/rent-receipts/active?${params.toString()}`,
       );
       return result ?? null;
     },
@@ -198,11 +209,15 @@ export const api = {
       type: SignatureType,
       name: string,
       file: File,
+      landlordId: number | null = null,
     ): Promise<SignatureDto> => {
       const payload = new FormData();
       payload.append("type", type);
       payload.append("name", name);
       payload.append("file", file);
+      if (landlordId !== null) {
+        payload.append("landlordId", String(landlordId));
+      }
       return request<SignatureDto>("/api/signatures", {
         method: "POST",
         body: payload,

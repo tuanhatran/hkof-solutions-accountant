@@ -15,8 +15,18 @@ export const queryKeys = {
   signatures: ["signatures"] as const,
   llmStatus: ["llm", "status"] as const,
   llmModels: ["llm", "models"] as const,
-  rentReceiptActive: (month: string) =>
-    ["rentReceipts", "active", month] as const,
+  rentReceiptActive: (
+    month: string,
+    landlordId?: number | null,
+    tenantId?: number | null,
+  ) =>
+    [
+      "rentReceipts",
+      "active",
+      month,
+      landlordId ?? null,
+      tenantId ?? null,
+    ] as const,
   statementActive: (month: string) => ["statements", "active", month] as const,
   rentReceiptsAll: ["rentReceipts"] as const,
   statementsAll: ["statements"] as const,
@@ -115,10 +125,14 @@ export function useLlmModels(url: string | null) {
   });
 }
 
-export function useActiveRentReceipt(month: string) {
+export function useActiveRentReceipt(
+  month: string,
+  landlordId: number | null = null,
+  tenantId: number | null = null,
+) {
   return useQuery({
-    queryKey: queryKeys.rentReceiptActive(month),
-    queryFn: () => api.rentReceipts.active(month),
+    queryKey: queryKeys.rentReceiptActive(month, landlordId, tenantId),
+    queryFn: () => api.rentReceipts.active(month, landlordId, tenantId),
     enabled: /^\d{4}-\d{2}$/.test(month),
     staleTime: 10_000,
   });

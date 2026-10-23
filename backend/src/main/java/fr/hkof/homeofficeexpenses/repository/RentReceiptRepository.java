@@ -10,11 +10,15 @@ import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
 
 public interface RentReceiptRepository extends JpaRepository<RentReceipt, Long> {
 
-    List<RentReceipt> findByMonthOrderByVersionDesc(String month);
+    List<RentReceipt> findByMonthOrderByVersionDescIdDesc(String month);
 
-    List<RentReceipt> findAllByOrderByMonthDescVersionDesc();
+    List<RentReceipt> findAllByOrderByMonthDescVersionDescIdDesc();
 
-    Optional<RentReceipt> findFirstByMonthAndStatusOrderByVersionDesc(String month, DocumentStatus status);
+    Optional<RentReceipt> findFirstByMonthAndStatusOrderByVersionDescIdDesc(String month, DocumentStatus status);
 
-    Optional<RentReceipt> findFirstByMonthOrderByVersionDesc(String month);
+    Optional<RentReceipt> findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
+            String month, Long landlordId, Long tenantId, DocumentStatus status);
+
+    Optional<RentReceipt> findFirstByMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc(
+            String month, Long landlordId, Long tenantId);
 }

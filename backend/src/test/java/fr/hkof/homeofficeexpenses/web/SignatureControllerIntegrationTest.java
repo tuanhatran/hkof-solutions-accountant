@@ -37,22 +37,26 @@ class SignatureControllerIntegrationTest {
 
     @BeforeEach
     void ensureSignatures() throws Exception {
-        ensureSignature("LANDLORD", "Signature bailleur");
-        ensureSignature("ENTREPRISE_CEO", "Signature gérant");
+        ensureSignature("LANDLORD", "Signature bailleur", firstId("/api/landlords"));
+        ensureSignature("ENTREPRISE_CEO", "Signature gérant", null);
     }
 
     @Test
     @DisplayName("Creates, lists, serves the image and logically deletes a signature")
     void crudSignature() throws Exception {
+        long landlordId = firstId("/api/landlords");
         String created = mockMvc.perform(multipart("/api/signatures")
                         .file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
                         .param("type", "LANDLORD")
+                        .param("landlordId", String.valueOf(landlordId))
                         .param("name", "Signature principale"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.type").value("LANDLORD"))
                 .andExpect(jsonPath("$.name").value("Signature principale"))
                 .andExpect(jsonPath("$.mimeType").value("image/png"))
                 .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.landlordId").value(landlordId))
+                .andExpect(jsonPath("$.landlordName").value("Nom du bailleur"))
                 .andReturn().getResponse().getContentAsString();
         long id = ((Number) JsonPath.read(created, "$.id")).longValue();
 
@@ -73,6 +77,34 @@ class SignatureControllerIntegrationTest {
         mockMvc.perform(get("/api/signatures"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.id == " + id + ")]").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Requires a landlord for a LANDLORD signature and forbids one for the CEO")
+    void enforcesSignatureLandlord() throws Exception {
+        mockMvc.perform(multipart("/api/signatures")
+                        .file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
+                        .param("type", "LANDLORD")
+                        .param("name", "Sans bailleur"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Le bailleur de la signature est obligatoire."));
+
+        mockMvc.perform(multipart("/api/signatures")
+                        .file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
+                        .param("type", "LANDLORD")
+                        .param("landlordId", "999999")
+                        .param("name", "Bailleur inconnu"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.detail").value("Bailleur introuvable."));
+
+        mockMvc.perform(multipart("/api/signatures")
+                        .file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
+                        .param("type", "ENTREPRISE_CEO")
+                        .param("landlordId", String.valueOf(firstId("/api/landlords")))
+                        .param("name", "Gérant lié"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(
+                        "Une signature de gérant ne peut pas être liée à un bailleur."));
     }
 
     @Test
@@ -136,17 +168,20 @@ class SignatureControllerIntegrationTest {
         return ids.stream().map(Number::longValue).toList();
     }
 
-    private void ensureSignature(String type, String name) throws Exception {
+    private void ensureSignature(String type, String name, Long landlordId) throws Exception {
         String list = mockMvc.perform(get("/api/signatures"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         List<?> existing = JsonPath.read(list, "$[?(@.type == '" + type + "')]");
         if (existing.isEmpty()) {
-            mockMvc.perform(multipart("/api/signatures")
-                            .file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
-                            .param("type", type)
-                            .param("name", name))
-                    .andExpect(status().isCreated());
+            var request = multipart("/api/signatures")
+                    .file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
+                    .param("type", type)
+                    .param("name", name);
+            if (landlordId != null) {
+                request.param("landlordId", String.valueOf(landlordId));
+            }
+            mockMvc.perform(request).andExpect(status().isCreated());
         }
     }
 }
