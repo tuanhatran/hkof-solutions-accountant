@@ -3,6 +3,7 @@ import type { ExpenseItemDto } from "@/api/types";
 import {
   buildRentLine,
   fromLineDto,
+  orderLinesByExpenseItem,
   typeAlreadyAdded,
   missingTypes,
   toLineRequest,
@@ -81,6 +82,82 @@ describe("expense type rules", () => {
   it("lists only missing non-multi-line types", () => {
     expect(missingTypes(expenseItems, [line()])).toEqual([]);
     expect(missingTypes(expenseItems, [])).toEqual(["gaz"]);
+  });
+});
+
+describe("orderLinesByExpenseItem", () => {
+  const expenseItems: ExpenseItemDto[] = [
+    { code: "loyer", label: "Quittance de loyer", sortOrder: 10 },
+    { code: "gaz", label: "Gaz", sortOrder: 20 },
+    { code: "electricite", label: "Électricité", sortOrder: 30 },
+    {
+      code: "telephone",
+      label: "Téléphone",
+      sortOrder: 40,
+      multipleLinesAllowed: true,
+    },
+  ];
+
+  it("sorts lines by the configured sortOrder", () => {
+    const ordered = orderLinesByExpenseItem(
+      [
+        line({ key: "elec", itemCode: "electricite" }),
+        line({ key: "gaz", itemCode: "gaz" }),
+      ],
+      expenseItems,
+    );
+    expect(ordered.map((entry) => entry.key)).toEqual(["gaz", "elec"]);
+  });
+
+  it("keeps the current relative order for equal sortOrder", () => {
+    const ordered = orderLinesByExpenseItem(
+      [
+        line({ key: "gaz-1", itemCode: "gaz" }),
+        line({ key: "gaz-2", itemCode: "gaz" }),
+        line({ key: "loyer", itemCode: "loyer" }),
+      ],
+      [
+        { code: "loyer", label: "Quittance de loyer", sortOrder: 10 },
+        { code: "gaz", label: "Gaz", sortOrder: 20 },
+      ],
+    );
+    expect(ordered.map((entry) => entry.key)).toEqual([
+      "loyer",
+      "gaz-1",
+      "gaz-2",
+    ]);
+  });
+
+  it("preserves the add order of a repeated multi-line item", () => {
+    const ordered = orderLinesByExpenseItem(
+      [
+        line({ key: "tel-2", itemCode: "telephone" }),
+        line({ key: "gaz", itemCode: "gaz" }),
+        line({ key: "tel-1", itemCode: "telephone" }),
+      ],
+      expenseItems,
+    );
+    expect(ordered.map((entry) => entry.key)).toEqual(["gaz", "tel-2", "tel-1"]);
+  });
+
+  it("sorts unknown item codes last and keeps their relative order", () => {
+    const ordered = orderLinesByExpenseItem(
+      [
+        line({ key: "unknown-1", itemCode: "inconnu" }),
+        line({ key: "loyer", itemCode: "loyer" }),
+      ],
+      expenseItems,
+    );
+    expect(ordered.map((entry) => entry.key)).toEqual(["loyer", "unknown-1"]);
+  });
+
+  it("does not mutate the input list", () => {
+    const input = [
+      line({ key: "gaz", itemCode: "gaz" }),
+      line({ key: "loyer", itemCode: "loyer" }),
+    ];
+    orderLinesByExpenseItem(input, expenseItems);
+    expect(input.map((entry) => entry.key)).toEqual(["gaz", "loyer"]);
   });
 });
 

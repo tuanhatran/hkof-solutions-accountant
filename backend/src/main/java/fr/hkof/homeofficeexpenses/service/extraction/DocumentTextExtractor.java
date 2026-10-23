@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -28,6 +30,7 @@ import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
 import org.apache.poi.xwpf.usermodel.XWPFTableRow;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import fr.hkof.homeofficeexpenses.service.BusinessException;
@@ -37,13 +40,31 @@ public class DocumentTextExtractor {
 
     private static final int MAX_LENGTH = 24_000;
     private static final int MAX_TEXT_PAGES = 20;
+    private static final int MINIMUM_TEXT_LENGTH = 20;
+    private static final int OCR_DPI = 300;
+
+    private final String pdftextCommand;
+    private final Duration pdftextTimeout;
+    private final boolean ocrEnabled;
+    private final OcrTextExtractor ocrTextExtractor;
+
+    public DocumentTextExtractor(
+            @Value("${analysis.pdftext.command:pdftotext}") String pdftextCommand,
+            @Value("${analysis.pdftext.timeout:15s}") Duration pdftextTimeout,
+            @Value("${analysis.ocr.enabled:true}") boolean ocrEnabled,
+            OcrTextExtractor ocrTextExtractor) {
+        this.pdftextCommand = pdftextCommand;
+        this.pdftextTimeout = pdftextTimeout;
+        this.ocrEnabled = ocrEnabled;
+        this.ocrTextExtractor = ocrTextExtractor;
+    }
 
     public Extraction extract(Path path, String mimeType, int maxPagesVision) {
         try {
             byte[] content = Files.readAllBytes(path);
             String mime = mimeType == null ? "" : mimeType;
             if (mime.equals("application/pdf") || path.toString().toLowerCase().endsWith(".pdf")) {
-                return extractPdf(content, maxPagesVision);
+                return extractPdf(path, content, maxPagesVision);
             }
             if (mime.contains("wordprocessingml") || path.toString().toLowerCase().endsWith(".docx")) {
                 return textOnly(extractDocx(content));
@@ -67,14 +88,24 @@ public class DocumentTextExtractor {
         }
     }
 
-    private Extraction extractPdf(byte[] content, int maxPagesVision) throws IOException {
+    private Extraction extractPdf(Path path, byte[] content, int maxPagesVision) throws IOException {
+        String externalText = extractWithPdftext(path);
+        if (externalText != null) {
+            return textOnly(externalText);
+        }
         try (PDDocument document = PDDocument.load(content)) {
             int pages = document.getNumberOfPages();
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setEndPage(Math.min(pages, MAX_TEXT_PAGES));
             String text = stripper.getText(document).trim();
-            if (text.length() >= 20) {
+            if (text.length() >= MINIMUM_TEXT_LENGTH) {
                 return textOnly(truncate(text));
+            }
+            if (ocrEnabled) {
+                String ocrText = ocrPages(document, pages, maxPagesVision);
+                if (ocrText.length() >= MINIMUM_TEXT_LENGTH) {
+                    return textOnly(ocrText);
+                }
             }
             List<String> images = new ArrayList<>();
             PDFRenderer renderer = new PDFRenderer(document);
@@ -87,6 +118,120 @@ public class DocumentTextExtractor {
             }
             return new Extraction("", images, true, pages);
         }
+    }
+
+    /**
+     * Extracts the first pages with {@code pdftotext -layout}. Returns {@code null} when the
+     * binary is missing, fails or times out, so the caller can use the PDFBox fallback.
+     */
+    private String extractWithPdftext(Path path) {
+        if (pdftextCommand == null || pdftextCommand.isBlank()) {
+            return null;
+        }
+        List<String> argv = List.of(
+                pdftextCommand,
+                "-q",
+                "-layout",
+                "-enc",
+                "UTF-8",
+                "-f",
+                "1",
+                "-l",
+                Integer.toString(MAX_TEXT_PAGES),
+                path.toAbsolutePath().normalize().toString(),
+                "-");
+        ExternalCommand.Result result = ExternalCommand.run(argv, pdftextTimeout, MAX_LENGTH);
+        if (result.timedOut() || result.exitCode() != 0) {
+            return null;
+        }
+        String text = layoutPreserving(result.stdout());
+        return text.length() >= MINIMUM_TEXT_LENGTH ? text : null;
+    }
+
+    /** Renders the first pages at {@value #OCR_DPI} dpi and joins their OCR text. */
+    private String ocrPages(PDDocument document, int pages, int maxPagesVision) {
+        PDFRenderer renderer = new PDFRenderer(document);
+        int limit = Math.min(pages, Math.max(1, maxPagesVision));
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < limit; i++) {
+            Path png = null;
+            try {
+                BufferedImage image = renderer.renderImageWithDPI(i, OCR_DPI, ImageType.RGB);
+                png = Files.createTempFile("hoe-ocr-", ".png");
+                restrictToOwner(png);
+                if (!ImageIO.write(image, "png", png.toFile())) {
+                    continue;
+                }
+                String pageText = ocrTextExtractor.recognize(png);
+                if (!pageText.isBlank()) {
+                    if (!text.isEmpty()) {
+                        text.append("\n\n");
+                    }
+                    text.append(pageText.strip());
+                }
+            } catch (IOException | RuntimeException ex) {
+                // OCR is best effort: fall back to the vision path when a page fails.
+            } finally {
+                deleteQuietly(png);
+            }
+        }
+        return layoutPreserving(text.toString());
+    }
+
+    private static void restrictToOwner(Path file) {
+        try {
+            Files.setPosixFilePermissions(file, PosixFilePermissions.fromString("rw-------"));
+        } catch (IOException | UnsupportedOperationException ignored) {
+            // Non-POSIX file system: temporary file permissions stay at the platform default.
+        }
+    }
+
+    private static void deleteQuietly(Path file) {
+        if (file == null) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException ignored) {
+            // Best-effort cleanup of a temporary rendering.
+        }
+    }
+
+    /**
+     * Normalizes line endings and caps the text while preserving the layout: inner spaces and
+     * blank lines are kept, unlike {@link #truncate(String)}.
+     */
+    private String layoutPreserving(String text) {
+        if (text == null) {
+            return "";
+        }
+        String normalized = text
+                .replace("\r\n", "\n")
+                .replace('\r', '\n')
+                .replace('\u000C', '\n');
+        String[] lines = normalized.split("\n", -1);
+        StringBuilder result = new StringBuilder(normalized.length());
+        for (int i = 0; i < lines.length; i++) {
+            if (i > 0) {
+                result.append('\n');
+            }
+            result.append(stripTrailingSpaces(lines[i]));
+        }
+        String trimmed = result.toString().trim();
+        if (trimmed.length() <= MAX_LENGTH) {
+            return trimmed;
+        }
+        int head = MAX_LENGTH / 2;
+        int tail = MAX_LENGTH - head;
+        return trimmed.substring(0, head) + "\n[…]\n" + trimmed.substring(trimmed.length() - tail);
+    }
+
+    private static String stripTrailingSpaces(String line) {
+        int end = line.length();
+        while (end > 0 && (line.charAt(end - 1) == ' ' || line.charAt(end - 1) == '\t')) {
+            end--;
+        }
+        return line.substring(0, end);
     }
 
     private Extraction textOnly(String text) {

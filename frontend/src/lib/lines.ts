@@ -77,6 +77,35 @@ export function linesToRequests(lines: DraftLine[]): LineRequest[] {
   return lines.map(toLineRequest);
 }
 
+/**
+ * Orders draft lines by the configured expense item order (`sortOrder`), matching
+ * the backend-authoritative rule so `calculation.lines[index]` still matches the
+ * rendered row. The sort is stable: equal `sortOrder` values and repeated lines of
+ * the same item keep their current (add) order. A line whose item code is unknown
+ * has no configured position and is sorted last, keeping its relative order.
+ */
+export function orderLinesByExpenseItem(
+  lines: DraftLine[],
+  expenseItems: ExpenseItemDto[],
+): DraftLine[] {
+  const sortOrderByCode = new Map<string, number>();
+  for (const expenseItem of expenseItems) {
+    if (expenseItem.code) {
+      sortOrderByCode.set(expenseItem.code, expenseItem.sortOrder ?? 0);
+    }
+  }
+  const rank = (line: DraftLine): number =>
+    sortOrderByCode.get(line.itemCode) ?? Number.POSITIVE_INFINITY;
+  return [...lines].sort((left, right) => {
+    const leftRank = rank(left);
+    const rightRank = rank(right);
+    if (leftRank === rightRank) {
+      return 0;
+    }
+    return leftRank < rightRank ? -1 : 1;
+  });
+}
+
 export function typeAlreadyAdded(
   lines: DraftLine[],
   expenseItemCode: string,

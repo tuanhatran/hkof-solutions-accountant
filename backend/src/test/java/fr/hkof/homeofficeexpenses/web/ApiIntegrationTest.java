@@ -216,4 +216,37 @@ class ApiIntegrationTest {
                     .andExpect(jsonPath("$.total").value("28.57"));
         }
     }
+
+    @Test
+    @DisplayName("Expense lines follow the configured expense item order, not the request order")
+    void expenseLinesFollowConfiguredOrder() throws Exception {
+        String statementJson = """
+                {
+                  "month":"2027-03",
+                  "lines":[
+                    {"itemCode":"gaz","amountInclVat":"80.00","proRataPct":"35,71"},
+                    {"itemCode":"loyer","amountInclVat":"950.00","proRataPct":"100"}
+                  ]
+                }
+                """;
+
+        mockMvc.perform(post("/api/expense-statements/calculation")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(statementJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lines[0].itemCode").value("loyer"))
+                .andExpect(jsonPath("$.lines[0].claimedAmount").value("950.00"))
+                .andExpect(jsonPath("$.lines[1].itemCode").value("gaz"))
+                .andExpect(jsonPath("$.lines[1].claimedAmount").value("28.57"))
+                .andExpect(jsonPath("$.total").value("978.57"));
+
+        mockMvc.perform(post("/api/expense-statements")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(statementJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.lines[0].itemCode").value("loyer"))
+                .andExpect(jsonPath("$.lines[0].claimedAmount").value("950.00"))
+                .andExpect(jsonPath("$.lines[1].itemCode").value("gaz"))
+                .andExpect(jsonPath("$.lines[1].claimedAmount").value("28.57"));
+    }
 }

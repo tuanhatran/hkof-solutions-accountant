@@ -146,3 +146,6 @@ Makefile                    Shortcuts: up, dev, test, e2e, down
 - The Cypress container runs as root, so files written to `frontend/cypress/screenshots` and `frontend/cypress/videos` may be owned by root on the host.
 - LibreOffice is not included by default (`WITH_LIBREOFFICE=false`) because DOCX templates belong to phase 2.
 - `openapi/openapi.yaml` is the API contract. Its changes are reported explicitly.
+- Text extraction prefers the external `pdftotext` (poppler) with `-layout`, so columns and amounts stay aligned for the LLM. OCR uses `tesseract` with the French language pack (`fra`) for PDFs without a text layer. The backend image installs `poppler-utils`, `tesseract-ocr` and `tesseract-ocr-fra`; a local `make dev` run uses the host binaries when they are present.
+- Missing external tools never fail an analysis: `pdftotext` failures, timeouts or empty output fall back to PDFBox, and a missing or failing OCR keeps the existing vision-image path sent to the LLM. The tools are configured by the `analysis.pdftext.*` and `analysis.ocr.*` properties (`ANALYSIS_PDFTEXT_COMMAND`, `ANALYSIS_PDFTEXT_TIMEOUT`, `ANALYSIS_OCR_ENABLED`, `ANALYSIS_OCR_COMMAND`, `ANALYSIS_OCR_LANGUAGE`, `ANALYSIS_OCR_TIMEOUT_PER_PAGE`).
+- Rebuild the backend image (`docker compose build backend` or `make up`) to pick up the new runtime packages.

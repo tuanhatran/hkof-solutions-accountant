@@ -117,6 +117,23 @@ public class ExtractionPipeline {
         String type = normalizeType(clean(root, "type_suggere", 40));
         String invoiceDate = date(root, "date_facture");
         String currency = normalizeCurrency(clean(root, "devise", 8));
+        if ("EUR".equals(currency)) {
+            TotalAmountResolver.Resolution resolution = TotalAmountResolver.resolve(textDocument);
+            if (resolution != null) {
+                if (amountInclVat == null) {
+                    amountInclVat = resolution.ttc();
+                    confidence = "moyenne";
+                    sourceExcerpt = resolution.excerpt();
+                } else if (!amountInclVat.equals(resolution.ttc())) {
+                    amountInclVat = resolution.ttc();
+                    confidence = "basse";
+                    sourceExcerpt = resolution.excerpt();
+                }
+                if (amountExclVat == null && resolution.ht() != null) {
+                    amountExclVat = resolution.ht();
+                }
+            }
+        }
         if (sourceExcerpt != null && imageCount > 0 && textDocument.isBlank()) {
             sourceExcerpt = null;
         }

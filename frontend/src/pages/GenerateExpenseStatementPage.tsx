@@ -66,6 +66,7 @@ import {
 } from "@/lib/format";
 import {
   newKey,
+  orderLinesByExpenseItem,
   typeAlreadyAdded,
   missingTypes,
   toLineRequest,
@@ -280,6 +281,14 @@ export function GenerateExpenseStatementPage() {
         ]),
       ),
     [expenseItems],
+  );
+
+  // The backend returns calculation lines in the configured order; the table and
+  // the submitted requests must use that same order so `calculation.lines[index]`
+  // keeps matching its row. The draft itself is never reordered.
+  const orderedLines = useMemo(
+    () => orderLinesByExpenseItem(lines, expenseItems),
+    [lines, expenseItems],
   );
 
   const models = templates.data ?? [];
@@ -709,7 +718,7 @@ export function GenerateExpenseStatementPage() {
     error: string | null;
   }>(() => {
     try {
-      return { values: lines.map(toLineRequest), error: null };
+      return { values: orderedLines.map(toLineRequest), error: null };
     } catch (error) {
       return {
         values: null,
@@ -719,7 +728,7 @@ export function GenerateExpenseStatementPage() {
             : "Les lignes contiennent une valeur invalide.",
       };
     }
-  }, [lines]);
+  }, [orderedLines]);
 
   const calculationSignature = useMemo(
     () => JSON.stringify({ month, lines: requests.values }),
@@ -781,7 +790,7 @@ export function GenerateExpenseStatementPage() {
     calculationError === null;
 
   const previewRequest = useMemo<StatementPreviewRequest | null>(() => {
-    if (!requests.values || lines.length === 0) {
+    if (!requests.values || orderedLines.length === 0) {
       return null;
     }
     const requestBody: StatementPreviewRequest = {
@@ -793,7 +802,7 @@ export function GenerateExpenseStatementPage() {
       requestBody.templateId = selectedTemplate;
     }
     return requestBody;
-  }, [month, complete, selectedTemplate, requests, lines.length]);
+  }, [month, complete, selectedTemplate, requests, orderedLines.length]);
 
   const preview = usePdfPreview(
     (signal) =>
@@ -810,7 +819,7 @@ export function GenerateExpenseStatementPage() {
   }
 
   async function generateStatement() {
-    if (!requests.values || lines.length === 0 || !calculationUpToDate) {
+    if (!requests.values || orderedLines.length === 0 || !calculationUpToDate) {
       return;
     }
     setGenerationInProgress(true);
@@ -1373,13 +1382,13 @@ export function GenerateExpenseStatementPage() {
                   </span>
                 ) : null}
                 <span className="badge badge-neutral">
-                  {lines.length} ligne{lines.length > 1 ? "s" : ""}
+                  {orderedLines.length} ligne{orderedLines.length > 1 ? "s" : ""}
                 </span>
               </div>
             </div>
 
             <div data-cy="liste-frais">
-              {lines.length === 0 ? (
+              {orderedLines.length === 0 ? (
                 <div className="flex flex-col items-center justify-center px-5 py-10 text-center">
                   <span className="grid h-11 w-11 place-items-center rounded-full bg-paper-deep/70 text-ink-soft">
                     <FileText size={20} aria-hidden="true" />
@@ -1412,7 +1421,7 @@ export function GenerateExpenseStatementPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {lines.map((line, index) => {
+                      {orderedLines.map((line, index) => {
                         const expenseItem = expenseItemByCode.get(
                           line.itemCode,
                         );
@@ -1568,14 +1577,14 @@ export function GenerateExpenseStatementPage() {
                   variant="primary"
                   icon={<FileCheck2 size={16} />}
                   loading={generationInProgress}
-                  disabled={lines.length === 0 || !calculationUpToDate}
+                  disabled={orderedLines.length === 0 || !calculationUpToDate}
                   onClick={requestGeneration}
                   data-cy="btn-generer-note"
                 >
                   Générer la note de frais
                 </Button>
                 <p className="max-w-[300px] text-[11px] leading-snug text-ink-soft">
-                  {lines.length === 0
+                  {orderedLines.length === 0
                     ? "Ajoutez au moins un frais pour générer la note."
                     : !calculationUpToDate
                       ? "En attente du calcul backend à jour…"
@@ -1658,7 +1667,7 @@ export function GenerateExpenseStatementPage() {
             error={
               requests.error
                 ? "Corrigez les lignes en rouge pour actualiser l’aperçu."
-                : lines.length === 0
+                : orderedLines.length === 0
                   ? "Ajoutez un frais pour voir l’aperçu de la note."
                   : preview.error
             }

@@ -73,4 +73,37 @@ class CalculationServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("surface");
     }
+
+    @Test
+    @DisplayName("The TTC amount is the HT amount plus VAT, rounded HALF_UP")
+    void grossFromNet() {
+        assertThat(CalculationService.grossFromNet(new BigDecimal("41.66"), new BigDecimal("20")))
+                .isEqualByComparingTo("49.99");
+        assertThat(CalculationService.grossFromNet(new BigDecimal("100"), new BigDecimal("5.5")))
+                .isEqualByComparingTo("105.50");
+        assertThat(CalculationService.grossFromNet(new BigDecimal("80"), BigDecimal.ZERO))
+                .isEqualByComparingTo("80.00");
+        assertThat(CalculationService.grossFromNet(new BigDecimal("100"), new BigDecimal("10")))
+                .isEqualByComparingTo("110.00");
+    }
+
+    @Test
+    @DisplayName("A negative HT amount is rejected with a French message")
+    void grossFromNetRejectsNegativeNet() {
+        assertThatThrownBy(() -> CalculationService.grossFromNet(new BigDecimal("-1.00"), new BigDecimal("20")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("négatif");
+    }
+
+    @Test
+    @DisplayName("A VAT rate outside 0..100 is rejected with a French message")
+    void grossFromNetRejectsInvalidRate() {
+        assertThatThrownBy(() -> CalculationService.grossFromNet(new BigDecimal("80"), new BigDecimal("101")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("taux");
+        assertThatThrownBy(() -> CalculationService.grossFromNet(null, new BigDecimal("20")))
+                .isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> CalculationService.grossFromNet(new BigDecimal("80"), null))
+                .isInstanceOf(BusinessException.class);
+    }
 }
