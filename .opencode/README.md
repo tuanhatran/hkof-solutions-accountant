@@ -37,9 +37,9 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
   edit `.handoff/` only, create the task branch with `git switch -c`, and launch `builder` and
   `reviewer` (needs `experimental.subagent_depth: 2`); `builder` is `mode: all` with full edit
   and shell; `reviewer` is `mode: subagent` and read-only.
-- Models pinned in frontmatter: `lead` `opencode/deepseek-v4.1-flash-free`, `builder`
-  `opencode/deepseek-v4.1-flash-free`, `reviewer` `opencode/glm-5.3-flash-free` (a different
-  family from the builder on purpose). Qoder and Copilot select their own models.
+- Models pinned in frontmatter: `lead`, `builder` and `reviewer`
+  `opencode/deepseek-v4.1-flash-free`. Qoder pins the equivalent `DeepSeek-Flash`; Copilot
+  selects its own model.
 - Sizing: `S` = 1-2 files, builder only; `M` = 3-5 files or some risk, builder then one review;
   `L` = 6+ files, new architecture or unclear requirements, parallel builders then one review
   on the combined diff. Money, contract, migration, template sandbox, LLM or secrets always

@@ -1,0 +1,15 @@
+{
+  "agent": "lead",
+  "permissions": {
+    "deny": [
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git clean:*)",
+      "Bash(git stash:*)",
+      "Bash(git worktree:*)",
+      "Bash(git branch -d:*)",
+      "Bash(git branch -D:*)"
+    ]
+  }
+}

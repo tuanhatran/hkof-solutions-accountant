@@ -25,6 +25,8 @@ mock-ollama/node_modules/
 .env
 /data/
 
+# Qooder
+.qoder/settings.local.json
 # Logs
 *.log
 

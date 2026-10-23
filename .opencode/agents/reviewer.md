@@ -1,7 +1,7 @@
 ---
 description: Reviews a diff only and reports blockers, with at most three optional notes.
 mode: subagent
-model: opencode/glm-5.3-flash-free
+model: opencode/deepseek-v4.1-flash-free
 permissions:
   - action: edit
     resource: "*"
