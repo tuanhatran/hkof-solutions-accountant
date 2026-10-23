@@ -948,6 +948,300 @@ paths:
                     type: integer
                   detail:
                     type: string
+  /api/landlords:
+    get:
+      tags:
+      - rent-configuration-controller
+      operationId: listLandlords
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LandlordDto"
+    post:
+      tags:
+      - rent-configuration-controller
+      operationId: createLandlord
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LandlordRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LandlordDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/landlords/{id}:
+    put:
+      tags:
+      - rent-configuration-controller
+      operationId: updateLandlord
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LandlordRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LandlordDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    delete:
+      tags:
+      - rent-configuration-controller
+      operationId: deleteLandlord
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/tenants:
+    get:
+      tags:
+      - rent-configuration-controller
+      operationId: listTenants
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TenantDto"
+    post:
+      tags:
+      - rent-configuration-controller
+      operationId: createTenant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TenantDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/tenants/{id}:
+    put:
+      tags:
+      - rent-configuration-controller
+      operationId: updateTenant
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TenantDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    delete:
+      tags:
+      - rent-configuration-controller
+      operationId: deleteTenant
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/leases:
+    get:
+      tags:
+      - rent-configuration-controller
+      operationId: listLeases
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaseDto"
+    post:
+      tags:
+      - rent-configuration-controller
+      operationId: createLease
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeaseRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LeaseDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/leases/{id}:
+    put:
+      tags:
+      - rent-configuration-controller
+      operationId: updateLease
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeaseRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LeaseDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    delete:
+      tags:
+      - rent-configuration-controller
+      operationId: deleteLease
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 components:
   schemas:
     SignatureDto:
@@ -987,18 +1281,6 @@ components:
           type: string
         businessArea:
           type: string
-        landlordName:
-          type: string
-        landlordAddress:
-          type: string
-        tenantName:
-          type: string
-        tenantAddress:
-          type: string
-        rentExclCharges:
-          type: string
-        chargesAdvance:
-          type: string
         issuePlace:
           type: string
     SettingsDto:
@@ -1027,19 +1309,91 @@ components:
           type: string
         proRataBaseDetail:
           type: string
-        landlordName:
+        issuePlace:
           type: string
-        landlordAddress:
+    LandlordRequest:
+      type: object
+      properties:
+        name:
           type: string
-        tenantName:
+        address:
           type: string
-        tenantAddress:
+    LandlordDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        address:
+          type: string
+    TenantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+    TenantDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        address:
+          type: string
+    LeaseRequest:
+      type: object
+      properties:
+        landlordId:
+          type: integer
+          format: int64
+        tenantId:
+          type: integer
+          format: int64
+        propertyAddress:
           type: string
         rentExclCharges:
           type: string
-        chargesAdvance:
+        charges:
           type: string
-        issuePlace:
+    LeaseDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        landlordId:
+          type: integer
+          format: int64
+        tenantId:
+          type: integer
+          format: int64
+        landlordName:
+          type: string
+        tenantName:
+          type: string
+        propertyAddress:
+          type: string
+        rentExclCharges:
+          type: string
+        charges:
+          type: string
+    ProblemDetail:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
           type: string
     ExpenseItemRequest:
       type: object
@@ -1191,9 +1545,18 @@ components:
             type: string
     RentReceiptRequest:
       type: object
+      required:
+      - landlordId
+      - tenantId
       properties:
         month:
           type: string
+        landlordId:
+          type: integer
+          format: int64
+        tenantId:
+          type: integer
+          format: int64
         periodStart:
           type: string
         periodEnd:
@@ -1219,6 +1582,16 @@ components:
           type: integer
           format: int64
         month:
+          type: string
+        landlordId:
+          type: integer
+          format: int64
+        tenantId:
+          type: integer
+          format: int64
+        landlordName:
+          type: string
+        tenantName:
           type: string
         periodStart:
           type: string

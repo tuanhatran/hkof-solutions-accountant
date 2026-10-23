@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import type { SettingsDto } from "@/api/types";
+import type { LeaseDto } from "@/api/types";
 import { todayDate, currentMonth, periodOfMonth } from "@/lib/dates";
 
 interface RentReceiptDraftState {
@@ -12,6 +12,8 @@ interface RentReceiptDraftState {
   paymentDate: string;
   issueDate: string;
   templateId: number | null;
+  landlordId: number | null;
+  tenantId: number | null;
   initialized: boolean;
   dirty: boolean;
   changeMonth: (month: string) => void;
@@ -29,8 +31,13 @@ interface RentReceiptDraftState {
     >,
   ) => void;
   setTemplate: (templateId: number | null) => void;
-  initializeFromSettings: (settings: SettingsDto) => void;
-  resumeFromSettings: (settings: SettingsDto) => void;
+  selectPair: (
+    landlordId: number | null,
+    tenantId: number | null,
+    lease: LeaseDto | null,
+  ) => void;
+  initializeFromLease: (lease: LeaseDto) => void;
+  resumeFromLease: (lease: LeaseDto) => void;
   markGenerated: () => void;
 }
 
@@ -49,6 +56,8 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
       paymentDate: today,
       issueDate: today,
       templateId: null,
+      landlordId: null,
+      tenantId: null,
       initialized: false,
       dirty: false,
 
@@ -69,22 +78,37 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
 
       setTemplate: (templateId) => set({ templateId, dirty: true }),
 
-      initializeFromSettings: (settings) => {
-        if (get().initialized) {
+      selectPair: (landlordId, tenantId, lease) => {
+        if (!lease) {
+          set({ landlordId, tenantId, initialized: true, dirty: true });
           return;
         }
         set({
-          rentExclCharges: settings.rentExclCharges ?? "",
-          charges: settings.chargesAdvance ?? "",
+          landlordId,
+          tenantId,
+          rentExclCharges: lease.rentExclCharges ?? "",
+          charges: lease.charges ?? "",
           initialized: true,
-          dirty: false,
+          dirty: true,
         });
       },
 
-      resumeFromSettings: (settings) =>
+      initializeFromLease: (lease) =>
         set({
-          rentExclCharges: settings.rentExclCharges ?? "",
-          charges: settings.chargesAdvance ?? "",
+          landlordId: lease.landlordId ?? null,
+          tenantId: lease.tenantId ?? null,
+          rentExclCharges: lease.rentExclCharges ?? "",
+          charges: lease.charges ?? "",
+          initialized: true,
+          dirty: false,
+        }),
+
+      resumeFromLease: (lease) =>
+        set({
+          landlordId: lease.landlordId ?? null,
+          tenantId: lease.tenantId ?? null,
+          rentExclCharges: lease.rentExclCharges ?? "",
+          charges: lease.charges ?? "",
           dirty: true,
         }),
 
@@ -92,7 +116,7 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
     }),
     {
       name: "homeofficeexpenses.receipt-draft",
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
         month: state.month,
@@ -103,6 +127,8 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
         paymentDate: state.paymentDate,
         issueDate: state.issueDate,
         templateId: state.templateId,
+        landlordId: state.landlordId,
+        tenantId: state.tenantId,
         initialized: state.initialized,
         dirty: state.dirty,
       }),

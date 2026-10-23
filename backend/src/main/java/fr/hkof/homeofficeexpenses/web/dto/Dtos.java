@@ -21,12 +21,6 @@ public final class Dtos {
             String businessArea,
             String proRataBase,
             String proRataBaseDetail,
-            String landlordName,
-            String landlordAddress,
-            String tenantName,
-            String tenantAddress,
-            String rentExclCharges,
-            String chargesAdvance,
             String issuePlace) {
     }
 
@@ -39,13 +33,48 @@ public final class Dtos {
             String homeAddress,
             String totalArea,
             String businessArea,
-            String landlordName,
-            String landlordAddress,
-            String tenantName,
-            String tenantAddress,
-            String rentExclCharges,
-            String chargesAdvance,
             String issuePlace) {
+    }
+
+    public record LandlordRequest(
+            String name,
+            String address) {
+    }
+
+    public record LandlordDto(
+            Long id,
+            String name,
+            String address) {
+    }
+
+    public record TenantRequest(
+            String name,
+            String address) {
+    }
+
+    public record TenantDto(
+            Long id,
+            String name,
+            String address) {
+    }
+
+    public record LeaseRequest(
+            Long landlordId,
+            Long tenantId,
+            String propertyAddress,
+            String rentExclCharges,
+            String charges) {
+    }
+
+    public record LeaseDto(
+            Long id,
+            Long landlordId,
+            Long tenantId,
+            String landlordName,
+            String tenantName,
+            String propertyAddress,
+            String rentExclCharges,
+            String charges) {
     }
 
     public record ExpenseItemDto(
@@ -73,6 +102,8 @@ public final class Dtos {
 
     public record RentReceiptRequest(
             String month,
+            Long landlordId,
+            Long tenantId,
             String periodStart,
             String periodEnd,
             String rentExclCharges,
@@ -86,6 +117,10 @@ public final class Dtos {
     public record RentReceiptDto(
             Long id,
             String month,
+            Long landlordId,
+            Long tenantId,
+            String landlordName,
+            String tenantName,
             LocalDate periodStart,
             LocalDate periodEnd,
             String rentExclCharges,

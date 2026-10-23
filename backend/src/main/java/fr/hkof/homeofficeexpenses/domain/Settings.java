@@ -38,24 +38,6 @@ public class Settings {
     @Column(name = "business_area", precision = 8, scale = 2)
     private BigDecimal businessArea;
 
-    @Column(name = "landlord_name")
-    private String landlordName;
-
-    @Column(name = "landlord_address")
-    private String landlordAddress;
-
-    @Column(name = "tenant_name")
-    private String tenantName;
-
-    @Column(name = "tenant_address")
-    private String tenantAddress;
-
-    @Column(name = "rent_excl_charges", precision = 12, scale = 2)
-    private BigDecimal rentExclCharges;
-
-    @Column(name = "charges_advance", precision = 12, scale = 2)
-    private BigDecimal chargesAdvance;
-
     @Column(name = "issue_place")
     private String issuePlace;
 
@@ -132,54 +114,6 @@ public class Settings {
 
     public void setBusinessArea(BigDecimal businessArea) {
         this.businessArea = businessArea;
-    }
-
-    public String getLandlordName() {
-        return landlordName;
-    }
-
-    public void setLandlordName(String landlordName) {
-        this.landlordName = landlordName;
-    }
-
-    public String getLandlordAddress() {
-        return landlordAddress;
-    }
-
-    public void setLandlordAddress(String landlordAddress) {
-        this.landlordAddress = landlordAddress;
-    }
-
-    public String getTenantName() {
-        return tenantName;
-    }
-
-    public void setTenantName(String tenantName) {
-        this.tenantName = tenantName;
-    }
-
-    public String getTenantAddress() {
-        return tenantAddress;
-    }
-
-    public void setTenantAddress(String tenantAddress) {
-        this.tenantAddress = tenantAddress;
-    }
-
-    public BigDecimal getRentExclCharges() {
-        return rentExclCharges;
-    }
-
-    public void setRentExclCharges(BigDecimal rentExclCharges) {
-        this.rentExclCharges = rentExclCharges;
-    }
-
-    public BigDecimal getChargesAdvance() {
-        return chargesAdvance;
-    }
-
-    public void setChargesAdvance(BigDecimal chargesAdvance) {
-        this.chargesAdvance = chargesAdvance;
     }
 
     public String getIssuePlace() {

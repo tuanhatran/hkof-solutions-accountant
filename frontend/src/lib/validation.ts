@@ -38,6 +38,8 @@ export type ExpenseFormValues = z.infer<typeof expenseSchema>;
 export const rentReceiptSchema = z
   .object({
     month: z.string().refine(isValidMonth, "Choisissez un mois valide."),
+    landlordId: z.string().min(1, "Sélectionnez un bailleur."),
+    tenantId: z.string().min(1, "Sélectionnez un locataire."),
     periodStart: z.string().refine(isValidDate, "Date de début invalide."),
     periodEnd: z.string().refine(isValidDate, "Date de fin invalide."),
     rentExclCharges: z
@@ -94,34 +96,6 @@ export const settingsSchema = z
         (value) => isValidAmount(value, true),
         "Surface professionnelle invalide.",
       ),
-    landlordName: z
-      .string()
-      .trim()
-      .min(1, "Le nom du bailleur est obligatoire."),
-    landlordAddress: z
-      .string()
-      .trim()
-      .min(1, "L'adresse du bailleur est obligatoire."),
-    tenantName: z
-      .string()
-      .trim()
-      .min(1, "Le nom du locataire est obligatoire."),
-    tenantAddress: z
-      .string()
-      .trim()
-      .min(1, "L'adresse du locataire est obligatoire."),
-    rentExclCharges: z
-      .string()
-      .refine(
-        (value) => isValidAmount(value, true),
-        "Loyer hors charges invalide.",
-      ),
-    chargesAdvance: z
-      .string()
-      .refine(
-        (value) => isValidAmount(value, false),
-        "Provision pour charges invalide.",
-      ),
     issuePlace: z.string().trim().min(1, "Le lieu d'émission est obligatoire."),
   })
   .refine(
@@ -141,6 +115,43 @@ export const settingsSchema = z
   );
 
 export type SettingsFormValues = z.infer<typeof settingsSchema>;
+
+export const landlordSchema = z.object({
+  name: z.string().trim().min(1, "Le nom du bailleur est obligatoire."),
+  address: z.string(),
+});
+
+export type LandlordFormValues = z.infer<typeof landlordSchema>;
+
+export const tenantSchema = z.object({
+  name: z.string().trim().min(1, "Le nom du locataire est obligatoire."),
+  address: z.string(),
+});
+
+export type TenantFormValues = z.infer<typeof tenantSchema>;
+
+export const leaseSchema = z.object({
+  landlordId: z.string().min(1, "Sélectionnez un bailleur."),
+  tenantId: z.string().min(1, "Sélectionnez un locataire."),
+  propertyAddress: z
+    .string()
+    .trim()
+    .min(1, "L'adresse du bien est obligatoire."),
+  rentExclCharges: z
+    .string()
+    .refine(
+      (value) => isValidAmount(value, false),
+      "Loyer hors charges invalide.",
+    ),
+  charges: z
+    .string()
+    .refine(
+      (value) => isValidAmount(value, false),
+      "Provision pour charges invalide.",
+    ),
+});
+
+export type LeaseFormValues = z.infer<typeof leaseSchema>;
 
 export const expenseItemSchema = z.object({
   code: z

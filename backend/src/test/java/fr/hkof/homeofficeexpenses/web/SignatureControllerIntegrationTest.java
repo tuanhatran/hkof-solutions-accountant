@@ -102,7 +102,8 @@ class SignatureControllerIntegrationTest {
 
         mockMvc.perform(post("/api/rent-receipts")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"month\":\"2030-01\"}"))
+                        .content("{\"month\":\"2030-01\",\"landlordId\":%d,\"tenantId\":%d}"
+                                .formatted(firstId("/api/landlords"), firstId("/api/tenants"))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value(
                         "Aucune signature configurée. Configurez une signature dans la page Paramètres."));
@@ -117,6 +118,14 @@ class SignatureControllerIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value(
                         "Aucune signature configurée. Configurez une signature dans la page Paramètres."));
+    }
+
+    private long firstId(String path) throws Exception {
+        String list = mockMvc.perform(get(path))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        Number id = JsonPath.read(list, "$[0].id");
+        return id.longValue();
     }
 
     private List<Long> signatureIds() throws Exception {

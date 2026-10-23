@@ -17,10 +17,12 @@ import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import {
   queryKeys,
-  useSettings,
   useActiveRentReceipt,
+  useLandlords,
+  useLeases,
   useTemplates,
   useSignatures,
+  useTenants,
 } from "@/api/queries";
 import type { RentReceiptDto, RentReceiptRequest } from "@/api/types";
 import { Button } from "@/components/Button";
@@ -51,6 +53,8 @@ function requestFromValues(
 ): RentReceiptRequest {
   const request: RentReceiptRequest = {
     month: values.month,
+    landlordId: Number(values.landlordId),
+    tenantId: Number(values.tenantId),
     periodStart: values.periodStart,
     periodEnd: values.periodEnd,
     rentExclCharges: parseAmount(values.rentExclCharges) ?? "",
@@ -82,7 +86,9 @@ export function GenerateRentReceiptPage() {
   const [result, setResult] = useState<RentReceiptDto | null>(null);
   const pendingValues = useRef<RentReceiptFormValues | null>(null);
 
-  const settings = useSettings();
+  const landlords = useLandlords();
+  const tenants = useTenants();
+  const leases = useLeases();
   const templates = useTemplates("RENT_RECEIPT");
   const signatures = useSignatures();
   const activeRentReceipt = useActiveRentReceipt(draft.month);
@@ -103,13 +109,14 @@ export function GenerateRentReceiptPage() {
     handleSubmit,
     watch,
     setValue,
-    getValues,
     formState: { errors, isValid },
   } = useForm<RentReceiptFormValues>({
     resolver: zodResolver(rentReceiptSchema),
     mode: "onChange",
     defaultValues: {
       month: draft.month,
+      landlordId: draft.landlordId === null ? "" : String(draft.landlordId),
+      tenantId: draft.tenantId === null ? "" : String(draft.tenantId),
       periodStart: draft.periodStart,
       periodEnd: draft.periodEnd,
       rentExclCharges: draft.rentExclCharges,
@@ -125,9 +132,21 @@ export function GenerateRentReceiptPage() {
   const models = templates.data ?? [];
   const activeModel = models.find((model) => model.active) ?? null;
   const selectedModel = draft.templateId ?? activeModel?.id ?? null;
-  const request = validation.success
-    ? requestFromValues(validation.data, selectedModel, selectedSignatureId)
-    : null;
+  const landlordRows = landlords.data ?? [];
+  const tenantRows = tenants.data ?? [];
+  const leaseRows = leases.data ?? [];
+  const selectedLease =
+    leaseRows.find(
+      (lease) =>
+        lease.landlordId !== undefined &&
+        lease.tenantId !== undefined &&
+        String(lease.landlordId) === values.landlordId &&
+        String(lease.tenantId) === values.tenantId,
+    ) ?? null;
+  const request =
+    validation.success && selectedLease
+      ? requestFromValues(validation.data, selectedModel, selectedSignatureId)
+      : null;
   const signature = JSON.stringify(request ?? values);
 
   const preview = usePdfPreview(
@@ -138,29 +157,45 @@ export function GenerateRentReceiptPage() {
             new DOMException("Formulaire incomplet", "AbortError"),
           ),
     signature,
-    { active: validation.success && signatureAvailable, debounceMs: 400 },
+    {
+      active:
+        validation.success && signatureAvailable && selectedLease !== null,
+      debounceMs: 400,
+    },
   );
 
   useEffect(() => {
-    if (!settings.data) {
+    if (leases.isPending || leases.isError || draft.initialized) {
       return;
     }
-    const initializedBefore = useRentReceiptDraft.getState().initialized;
-    draft.initializeFromSettings(settings.data);
-    if (!initializedBefore) {
-      const currentDraft = useRentReceiptDraft.getState();
-      if (!getValues("rentExclCharges")) {
-        setValue("rentExclCharges", currentDraft.rentExclCharges, {
-          shouldValidate: true,
-        });
-      }
-      if (!getValues("charges")) {
-        setValue("charges", currentDraft.charges, { shouldValidate: true });
-      }
+    const candidates = leases.data ?? [];
+    const matching =
+      candidates.find(
+        (lease) =>
+          lease.landlordId === draft.landlordId &&
+          lease.tenantId === draft.tenantId,
+      ) ?? (candidates.length === 1 ? candidates[0] : null);
+    if (!matching) {
+      return;
     }
-    // Initialization must only happen on the first settings load.
+    draft.initializeFromLease(matching);
+    setValue(
+      "landlordId",
+      matching.landlordId === undefined ? "" : String(matching.landlordId),
+      { shouldValidate: true },
+    );
+    setValue(
+      "tenantId",
+      matching.tenantId === undefined ? "" : String(matching.tenantId),
+      { shouldValidate: true },
+    );
+    setValue("rentExclCharges", matching.rentExclCharges ?? "", {
+      shouldValidate: true,
+    });
+    setValue("charges", matching.charges ?? "", { shouldValidate: true });
+    // Auto-selection must only happen once, when the lease directory loads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.data]);
+  }, [leases.data, leases.isPending, leases.isError, draft.initialized]);
 
   const estimatedTotal = (() => {
     const rent = parseAmount(values.rentExclCharges) ?? "0";
@@ -225,18 +260,38 @@ export function GenerateRentReceiptPage() {
     navigate("/generer/note-frais");
   }
 
-  function resumeConfiguration() {
-    if (!settings.data) {
+  function selectPair(nextLandlordId: string, nextTenantId: string) {
+    setValue("landlordId", nextLandlordId, { shouldValidate: true });
+    setValue("tenantId", nextTenantId, { shouldValidate: true });
+    const landlordId = nextLandlordId ? Number(nextLandlordId) : null;
+    const tenantId = nextTenantId ? Number(nextTenantId) : null;
+    const lease =
+      leaseRows.find(
+        (candidate) =>
+          candidate.landlordId === landlordId &&
+          candidate.tenantId === tenantId,
+      ) ?? null;
+    draft.selectPair(landlordId, tenantId, lease);
+    if (lease) {
+      setValue("rentExclCharges", lease.rentExclCharges ?? "", {
+        shouldValidate: true,
+      });
+      setValue("charges", lease.charges ?? "", { shouldValidate: true });
+    }
+  }
+
+  function resumeLease() {
+    if (!selectedLease) {
       return;
     }
-    draft.resumeFromSettings(settings.data);
-    setValue("rentExclCharges", settings.data.rentExclCharges ?? "", {
+    draft.resumeFromLease(selectedLease);
+    setValue("rentExclCharges", selectedLease.rentExclCharges ?? "", {
       shouldValidate: true,
     });
-    setValue("charges", settings.data.chargesAdvance ?? "", {
+    setValue("charges", selectedLease.charges ?? "", {
       shouldValidate: true,
     });
-    toast.info("Montants repris depuis la configuration.");
+    toast.info("Montants repris depuis le bail.");
   }
 
   function changeMonth(value: string) {
@@ -261,7 +316,7 @@ export function GenerateRentReceiptPage() {
       <PageHeader
         eyebrow="Générer · Quittance"
         title="Quittance de loyer"
-        description="Choisissez le mois : la période, les montants et les coordonnées sont pré-remplis depuis votre configuration. Ajustez si besoin, puis générez le document définitif."
+        description="Choisissez le mois et le bail : la période et les montants sont pré-remplis depuis le bail actif. Ajustez si besoin, puis générez le document définitif."
         actions={
           <>
             <Button
@@ -279,11 +334,17 @@ export function GenerateRentReceiptPage() {
         }
       />
 
-      {settings.isError ? (
+      {landlords.isError || tenants.isError || leases.isError ? (
         <div className="mb-4">
           <ErrorState
-            message={errorMessage(settings.error)}
-            onRetry={() => void settings.refetch()}
+            message={errorMessage(
+              leases.error ?? tenants.error ?? landlords.error,
+            )}
+            onRetry={() => {
+              void landlords.refetch();
+              void tenants.refetch();
+              void leases.refetch();
+            }}
           />
         </div>
       ) : null}
@@ -484,6 +545,94 @@ export function GenerateRentReceiptPage() {
                     </select>
                   </FieldGroup>
                 </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FieldGroup
+                    id="quittance-bailleur"
+                    label="Bailleur"
+                    error={errors.landlordId?.message}
+                    help="Bailleur du bail actif."
+                  >
+                    <select
+                      id="quittance-bailleur"
+                      className={cn(
+                        "field",
+                        errors.landlordId && "field-error",
+                      )}
+                      data-cy="select-bailleur"
+                      aria-invalid={Boolean(errors.landlordId)}
+                      disabled={landlords.isPending}
+                      {...register("landlordId", {
+                        onChange: (event) =>
+                          selectPair(event.target.value, values.tenantId),
+                      })}
+                    >
+                      <option value="">Sélectionnez un bailleur</option>
+                      {landlordRows.map((landlord) => (
+                        <option key={landlord.id} value={landlord.id}>
+                          {landlord.name}
+                        </option>
+                      ))}
+                    </select>
+                  </FieldGroup>
+
+                  <FieldGroup
+                    id="quittance-locataire"
+                    label="Locataire"
+                    error={errors.tenantId?.message}
+                    help="Locataire du bail actif."
+                  >
+                    <select
+                      id="quittance-locataire"
+                      className={cn("field", errors.tenantId && "field-error")}
+                      data-cy="select-locataire"
+                      aria-invalid={Boolean(errors.tenantId)}
+                      disabled={tenants.isPending}
+                      {...register("tenantId", {
+                        onChange: (event) =>
+                          selectPair(values.landlordId, event.target.value),
+                      })}
+                    >
+                      <option value="">Sélectionnez un locataire</option>
+                      {tenantRows.map((tenant) => (
+                        <option key={tenant.id} value={tenant.id}>
+                          {tenant.name}
+                        </option>
+                      ))}
+                    </select>
+                  </FieldGroup>
+                </div>
+
+                {values.landlordId && values.tenantId && !selectedLease && !leases.isPending ? (
+                  <p
+                    className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger"
+                    role="alert"
+                    data-cy="alerte-bail-manquant"
+                  >
+                    Aucun bail actif pour ce bailleur et ce locataire. Créez le
+                    bail dans la page{" "}
+                    <Link to="/configuration" className="link">
+                      Configuration
+                    </Link>
+                    .
+                  </p>
+                ) : null}
+
+                {selectedLease ? (
+                  <div
+                    className="rounded-xl border border-accent/15 bg-accent-soft/45 px-4 py-3"
+                    data-cy="detail-bail"
+                  >
+                    <p className="eyebrow text-accent">Bail sélectionné</p>
+                    <p className="mt-1 text-sm font-semibold text-ink">
+                      {selectedLease.landlordName} →{" "}
+                      {selectedLease.tenantName}
+                    </p>
+                    <p className="text-xs text-ink-soft">
+                      {selectedLease.propertyAddress}
+                    </p>
+                  </div>
+                ) : null}
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FieldGroup
@@ -690,7 +839,7 @@ export function GenerateRentReceiptPage() {
 
                 <p className="hint">
                   Les coordonnées du bailleur, du locataire et du logement
-                  proviennent de la{" "}
+                  proviennent du bail sélectionné. Gérez les baux dans la{" "}
                   <button
                     type="button"
                     className="link"
@@ -711,8 +860,10 @@ export function GenerateRentReceiptPage() {
                     icon={<ReceiptText size={16} />}
                     disabled={
                       !isValid ||
+                      !selectedLease ||
                       activeRentReceipt.isPending ||
                       templates.isPending ||
+                      leases.isPending ||
                       !signatureAvailable
                     }
                     data-cy="btn-generer-quittance"
@@ -723,10 +874,10 @@ export function GenerateRentReceiptPage() {
                     variant="ghost"
                     small
                     icon={<RotateCcw size={13} />}
-                    onClick={resumeConfiguration}
-                    disabled={!settings.data || generationInProgress}
+                    onClick={resumeLease}
+                    disabled={!selectedLease || generationInProgress}
                   >
-                    Reprendre la configuration
+                    Reprendre le bail
                   </Button>
                 </div>
                 {activeRentReceipt.data ? (
@@ -765,9 +916,11 @@ export function GenerateRentReceiptPage() {
             error={
               !validation.success
                 ? "Complétez les champs de la quittance pour actualiser l’aperçu."
-                : !signatureAvailable
-                  ? "Configurez une signature pour afficher l’aperçu."
-                  : preview.error
+                : !selectedLease
+                  ? "Sélectionnez un bailleur et un locataire liés par un bail actif."
+                  : !signatureAvailable
+                    ? "Configurez une signature pour afficher l’aperçu."
+                    : preview.error
             }
             updatedAt={preview.updatedAt}
             onDownload={preview.download}

@@ -2,14 +2,19 @@ import {
   MONTHS,
   SEED_RENT,
   SEED_TOTAL,
+  waitForText,
   waitForValue,
   downloadAndReadPdf,
 } from "../support/helpers";
 
 describe("Rent receipt", () => {
-  it("generates a receipt from the month, downloads the PDF, then creates a new version", () => {
+  it("generates a receipt from the selected lease, downloads the PDF, then creates a new version", () => {
     cy.visit("/generer/quittance");
     waitForValue("#quittance-loyer", SEED_RENT);
+
+    cy.get('[data-cy="select-bailleur"]').should("not.have.value", "");
+    cy.get('[data-cy="select-locataire"]').should("not.have.value", "");
+    waitForText('[data-cy="detail-bail"]', "12 rue de la République");
 
     cy.chooseMonth(MONTHS);
     waitForValue("#quittance-debut", "2026-01-01");
@@ -29,6 +34,9 @@ describe("Rent receipt", () => {
         expect(text).to.contain("01/01/2026");
         expect(text).to.contain("31/01/2026");
         expect(text).to.contain(SEED_TOTAL);
+        expect(text).to.contain("Nom du bailleur");
+        expect(text).to.contain("Nom du locataire");
+        expect(text).to.contain("12 rue de la République");
       },
     );
 

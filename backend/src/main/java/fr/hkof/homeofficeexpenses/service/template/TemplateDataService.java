@@ -7,14 +7,19 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
+import fr.hkof.homeofficeexpenses.domain.Landlord;
+import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.Settings;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
 import fr.hkof.homeofficeexpenses.domain.SignatureType;
+import fr.hkof.homeofficeexpenses.domain.Tenant;
 import fr.hkof.homeofficeexpenses.service.CalculationService;
 import fr.hkof.homeofficeexpenses.service.Amounts;
 import fr.hkof.homeofficeexpenses.service.NumberToWords;
+import fr.hkof.homeofficeexpenses.service.RentConfigurationService;
 import fr.hkof.homeofficeexpenses.service.SettingsService;
 import fr.hkof.homeofficeexpenses.service.SignatureService;
 
@@ -30,21 +35,26 @@ public class TemplateDataService {
 
     private final SettingsService settingsService;
     private final SignatureService signatureService;
+    private final RentConfigurationService rentConfigurationService;
 
-    public TemplateDataService(SettingsService settingsService, SignatureService signatureService) {
+    public TemplateDataService(SettingsService settingsService, SignatureService signatureService,
+            RentConfigurationService rentConfigurationService) {
         this.settingsService = settingsService;
         this.signatureService = signatureService;
+        this.rentConfigurationService = rentConfigurationService;
     }
 
-    public Map<String, Object> dataRentReceipt(Settings settings, RentReceipt rentReceipt, String signature) {
+    public Map<String, Object> dataRentReceipt(Settings settings, Landlord landlord, Tenant tenant, Lease lease,
+            RentReceipt rentReceipt, String signature) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("bailleur", Map.of(
-                "nom", text(settings.getLandlordName()),
-                "adresse", text(settings.getLandlordAddress())));
+                "nom", landlord == null ? "" : text(landlord.getName()),
+                "adresse", landlord == null ? "" : text(landlord.getAddress())));
         data.put("locataire", Map.of(
-                "nom", text(settings.getTenantName()),
-                "adresse", text(settings.getTenantAddress())));
-        data.put("logement", Map.of("adresse", text(settings.getHomeAddress())));
+                "nom", tenant == null ? "" : text(tenant.getName()),
+                "adresse", tenant == null ? "" : text(tenant.getAddress())));
+        data.put("logement", Map.of(
+                "adresse", lease == null ? text(settings.getHomeAddress()) : text(lease.getPropertyAddress())));
         data.put("mois_libelle", Amounts.formatMonth(java.time.YearMonth.parse(rentReceipt.getMonth())));
         data.put("periode", Map.of(
                 "debut", Amounts.formatDate(rentReceipt.getPeriodStart()),
@@ -91,6 +101,7 @@ public class TemplateDataService {
         return data;
     }
 
+    @Transactional(readOnly = true)
     public Map<String, Object> dataExample(fr.hkof.homeofficeexpenses.domain.TemplateType type) {
         Settings settings = settingsService.entity();
         SignatureType defaultType = type == fr.hkof.homeofficeexpenses.domain.TemplateType.RENT_RECEIPT
@@ -101,16 +112,20 @@ public class TemplateDataService {
                 .orElse(null);
         String effectiveSignature = signature == null || signature.isBlank() ? PREVIEW_SIGNATURE : signature;
         if (type == fr.hkof.homeofficeexpenses.domain.TemplateType.RENT_RECEIPT) {
+            Lease lease = rentConfigurationService.exampleLease();
             RentReceipt rentReceipt = new RentReceipt();
             rentReceipt.setMonth("2026-10");
             rentReceipt.setPeriodStart(java.time.LocalDate.of(2026, 10, 1));
             rentReceipt.setPeriodEnd(java.time.LocalDate.of(2026, 10, 31));
-            rentReceipt.setRentExclCharges(settings.getRentExclCharges() == null ? new BigDecimal("900.00") : settings.getRentExclCharges());
-            rentReceipt.setCharges(settings.getChargesAdvance() == null ? new BigDecimal("50.00") : settings.getChargesAdvance());
+            rentReceipt.setRentExclCharges(lease == null ? new BigDecimal("900.00") : lease.getRentExclCharges());
+            rentReceipt.setCharges(lease == null ? new BigDecimal("50.00") : lease.getCharges());
             rentReceipt.setTotal(CalculationService.totalRentReceipt(rentReceipt.getRentExclCharges(), rentReceipt.getCharges()));
             rentReceipt.setPaymentDate(java.time.LocalDate.of(2026, 10, 5));
             rentReceipt.setIssueDate(java.time.LocalDate.of(2026, 10, 1));
-            return dataRentReceipt(settings, rentReceipt, effectiveSignature);
+            return dataRentReceipt(settings,
+                    lease == null ? null : lease.getLandlord(),
+                    lease == null ? null : lease.getTenant(),
+                    lease, rentReceipt, effectiveSignature);
         }
         ExpenseStatement statement = new ExpenseStatement();
         statement.setMonth("2026-10");

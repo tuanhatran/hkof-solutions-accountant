@@ -39,12 +39,6 @@ public class SettingsService {
         settings.setHomeAddress(clean(request.homeAddress()));
         settings.setTotalArea(Amounts.optionalDecimal(request.totalArea(), "surface totale"));
         settings.setBusinessArea(Amounts.optionalDecimal(request.businessArea(), "surface professionnelle"));
-        settings.setLandlordName(clean(request.landlordName()));
-        settings.setLandlordAddress(clean(request.landlordAddress()));
-        settings.setTenantName(clean(request.tenantName()));
-        settings.setTenantAddress(clean(request.tenantAddress()));
-        settings.setRentExclCharges(Amounts.optionalDecimal(request.rentExclCharges(), "loyer hors charges"));
-        settings.setChargesAdvance(Amounts.optionalDecimal(request.chargesAdvance(), "provision pour charges"));
         settings.setIssuePlace(clean(request.issuePlace()));
         if (settings.getTotalArea() != null && settings.getBusinessArea() != null) {
             CalculationService.proRataBase(settings.getBusinessArea(), settings.getTotalArea());
@@ -73,12 +67,6 @@ public class SettingsService {
                 Amounts.apiValue(settings.getBusinessArea()),
                 Amounts.apiValue(proRataBase),
                 proRataDetail(settings, proRataBase),
-                settings.getLandlordName(),
-                settings.getLandlordAddress(),
-                settings.getTenantName(),
-                settings.getTenantAddress(),
-                Amounts.apiValue(settings.getRentExclCharges()),
-                Amounts.apiValue(settings.getChargesAdvance()),
                 settings.getIssuePlace());
     }
 

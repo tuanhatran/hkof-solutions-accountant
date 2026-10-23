@@ -4,6 +4,9 @@ import type { TemplateType } from "./types";
 
 export const queryKeys = {
   settings: ["settings"] as const,
+  landlords: ["landlords"] as const,
+  tenants: ["tenants"] as const,
+  leases: ["leases"] as const,
   expenseItemsAll: ["expenseItems"] as const,
   expenseItems: (all: boolean) => ["expenseItems", all] as const,
   templates: (type: TemplateType) => ["templates", type] as const,
@@ -25,6 +28,30 @@ export function useSettings() {
   return useQuery({
     queryKey: queryKeys.settings,
     queryFn: () => api.settings.get(),
+    staleTime: 30_000,
+  });
+}
+
+export function useLandlords() {
+  return useQuery({
+    queryKey: queryKeys.landlords,
+    queryFn: () => api.landlords.list(),
+    staleTime: 30_000,
+  });
+}
+
+export function useTenants() {
+  return useQuery({
+    queryKey: queryKeys.tenants,
+    queryFn: () => api.tenants.list(),
+    staleTime: 30_000,
+  });
+}
+
+export function useLeases() {
+  return useQuery({
+    queryKey: queryKeys.leases,
+    queryFn: () => api.leases.list(),
     staleTime: 30_000,
   });
 }
