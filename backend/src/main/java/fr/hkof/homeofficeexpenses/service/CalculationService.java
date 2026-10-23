@@ -12,17 +12,14 @@ public final class CalculationService {
     private CalculationService() {
     }
 
-    public static BigDecimal monthlyAmount(BigDecimal amountInclVat, BigDecimal monthlyAmountOverride) {
-        BigDecimal value = monthlyAmountOverride != null ? monthlyAmountOverride : amountInclVat;
-        if (value == null) {
+    public static BigDecimal monthlyAmount(BigDecimal amountInclVat) {
+        if (amountInclVat == null) {
             throw new BusinessException("Le montant TTC est obligatoire.");
         }
-        if (value.signum() < 0) {
-            throw new BusinessException(monthlyAmountOverride != null
-                    ? "Le montant du mois ne peut pas être négatif."
-                    : "Le montant TTC ne peut pas être négatif.");
+        if (amountInclVat.signum() < 0) {
+            throw new BusinessException("Le montant TTC ne peut pas être négatif.");
         }
-        return value.setScale(2, RoundingMode.HALF_UP);
+        return amountInclVat.setScale(2, RoundingMode.HALF_UP);
     }
 
     public static BigDecimal claimedAmount(BigDecimal monthlyAmount, BigDecimal proRataPct) {

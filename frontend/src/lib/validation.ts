@@ -31,12 +31,6 @@ export const expenseSchema = z.object({
       (value) => parsePercentage(value) !== null,
       "Prorata attendu entre 0 et 100 (2 décimales max).",
     ),
-  monthlyAmountOverride: z
-    .string()
-    .refine(
-      (value) => value === "" || isValidAmount(value, false),
-      "Le montant du mois doit être un montant positif.",
-    ),
 });
 
 export type ExpenseFormValues = z.infer<typeof expenseSchema>;

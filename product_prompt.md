@@ -135,14 +135,14 @@ API paths, query parameters and JSON field names are in English (code contracts,
 
 **Expense statements**
 - `POST /expense-statements/draft?month=YYYY-MM` → pre-filled lines (rent taken from the receipt, default pro-rata)
-- `POST /expense-statements/calculation` (body `month`, `lines: [{ itemCode, amountInclVat, proRataPct, monthlyAmountOverride? }]`) → per line `monthlyAmount`, `claimedAmount`, plus `total` and `totalInWords` (total in words)
+- `POST /expense-statements/calculation` (body `month`, `lines: [{ itemCode, amountInclVat, proRataPct }]`) → per line `monthlyAmount`, `claimedAmount`, plus `total` and `totalInWords` (total in words)
 - `POST /expense-statements/preview` (body `month`, `templateId?`, `complete?`, `lines`) → watermarked PDF, nothing is persisted
 - `POST /expense-statements` (body `month`, `templateId?`, `lines`) → saves and generates the PDFs
 - `GET /expense-statements?month=YYYY-MM` (month optional), `GET /expense-statements/active?month=YYYY-MM`, `GET /expense-statements/{id}`, `GET /expense-statements/{id}/pdf?complete=true|false`
 
 **AI analysis**
 - `POST /receipts/{id}/analysis` → `202` + `analysisId`
-- `GET /analyses/{id}` (polling every 1 to 2 s, or SSE `GET /analyses/{id}/events`)
+- `GET /analyses/{id}` (polling every 1 to 2 s)
 - `DELETE /analyses/{id}` (cancel)
 
 **LLM admin**
@@ -244,9 +244,7 @@ On each tab, the window is split into **two panels**: "Saisie" (input) on the le
    - Validation: between 0 and 100 inclusive, 2 decimals maximum, error message below the field.
    - Shows live: "Montant retenu estimé : 28,57 €" (estimated retained amount).
 
-5. **Montant du mois** (monthly amount, optional): manual override of the amount retained for the statement month. Empty by default: the full `Montant TTC` of the invoice is retained for the statement month, with no pro rata temporis.
-
-6. **"Ajouter ce frais"** (Add this expense): disabled while the form is invalid. On add, the line appears in the list, the form is reset and focus returns to "Type de frais".
+5. **"Ajouter ce frais"** (Add this expense): disabled while the form is invalid. On add, the line appears in the list, the form is reset and focus returns to "Type de frais".
 
 ### Special case: type "Quittance de loyer"
 - The drop zone is **replaced** by an information block (the receipt comes from tab 1).
@@ -262,7 +260,7 @@ On each tab, the window is split into **two panels**: "Saisie" (input) on the le
 - **"Générer la note de frais"** (Generate the expense statement): disabled if the list is empty. After generation: "Télécharger la note seule" (Download statement only), "Télécharger la note complète (avec annexes)" (Download full statement with annexes), "Ouvrir" (Open). If a statement already exists for this month: confirmation, then a new version.
 
 ### Calculation (backend only)
-1. **Monthly amount**: the amount incl. VAT of the invoice, or its manual override. No pro rata temporis: the full amount counts in the statement month.
+1. **Monthly amount**: the amount incl. VAT of the invoice. No pro rata temporis: the full amount counts in the statement month.
 2. **Per line**: `retained amount = monthly amount × pro-rata %`, rounded to the cent.
 3. **Total** = sum of the rounded lines.
 

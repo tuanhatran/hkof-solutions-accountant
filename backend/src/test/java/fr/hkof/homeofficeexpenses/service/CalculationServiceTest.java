@@ -12,30 +12,28 @@ import org.junit.jupiter.api.Test;
 class CalculationServiceTest {
 
     @Test
-    @DisplayName("Without an override, the monthly amount is the invoice amount including VAT")
+    @DisplayName("The monthly amount is the invoice amount including VAT")
     void monthlyAmountFromInvoice() {
-        assertThat(CalculationService.monthlyAmount(new BigDecimal("80.5"), null))
+        assertThat(CalculationService.monthlyAmount(new BigDecimal("80.5")))
                 .isEqualByComparingTo("80.50");
-        assertThat(CalculationService.monthlyAmount(new BigDecimal("80.00"), null))
+        assertThat(CalculationService.monthlyAmount(new BigDecimal("80.00")))
                 .isEqualByComparingTo("80.00");
     }
 
     @Test
-    @DisplayName("The monthly amount override wins over the invoice amount")
-    void monthlyAmountOverrideWins() {
-        assertThat(CalculationService.monthlyAmount(new BigDecimal("80.00"), new BigDecimal("60.98")))
-                .isEqualByComparingTo("60.98");
+    @DisplayName("A missing TTC amount is rejected with a French message")
+    void monthlyAmountRequiresAmount() {
+        assertThatThrownBy(() -> CalculationService.monthlyAmount(null))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Le montant TTC est obligatoire.");
     }
 
     @Test
     @DisplayName("A negative monthly amount is rejected with a French message")
     void monthlyAmountRejectsNegative() {
-        assertThatThrownBy(() -> CalculationService.monthlyAmount(new BigDecimal("-1.00"), null))
+        assertThatThrownBy(() -> CalculationService.monthlyAmount(new BigDecimal("-1.00")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("négatif");
-        assertThatThrownBy(() -> CalculationService.monthlyAmount(new BigDecimal("80.00"), new BigDecimal("-2.00")))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("négatif");
+                .hasMessage("Le montant TTC ne peut pas être négatif.");
     }
 
     @Test

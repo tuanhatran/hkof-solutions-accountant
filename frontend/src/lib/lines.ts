@@ -13,7 +13,6 @@ export interface DraftLine {
   itemCode: string;
   amountInclVat: string;
   proRataPct: string;
-  monthlyAmountOverride: string;
   receiptId: number | null;
   receiptName: string | null;
   amountSource: AmountSource;
@@ -38,7 +37,6 @@ export function fromLineDto(line: LineDto): DraftLine {
     itemCode: line.itemCode ?? "",
     amountInclVat: line.amountInclVat ?? "",
     proRataPct: line.proRataPct ?? "100",
-    monthlyAmountOverride: "",
     receiptId: line.receiptId ?? null,
     receiptName: line.receiptName ?? null,
     amountSource: (line.amountSource as AmountSource) ?? "MANUAL",
@@ -62,13 +60,6 @@ export function toLineRequest(line: DraftLine): LineRequest {
     amountInclVat,
     proRataPct,
   };
-  if (line.monthlyAmountOverride.trim() !== "") {
-    const override = parseAmount(line.monthlyAmountOverride);
-    if (override === null) {
-      throw new Error("Le montant du mois est invalide.");
-    }
-    request.monthlyAmountOverride = override;
-  }
   if (line.receiptId !== null) {
     request.receiptId = line.receiptId;
   }
@@ -118,7 +109,6 @@ export function buildRentLine(amount: string, proRataPct: string): DraftLine {
     itemCode: "loyer",
     amountInclVat: amount,
     proRataPct,
-    monthlyAmountOverride: "",
     receiptId: null,
     receiptName: null,
     amountSource: "MANUAL",
