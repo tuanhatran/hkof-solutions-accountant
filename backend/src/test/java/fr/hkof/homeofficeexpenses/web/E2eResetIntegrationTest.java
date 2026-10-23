@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Base64;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,11 @@ import com.jayway.jsonpath.JsonPath;
 @AutoConfigureMockMvc
 @ActiveProfiles({"test", "e2e"})
 class E2eResetIntegrationTest {
+
+    private static final byte[] PNG = Base64.getDecoder().decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=");
+
+    private static final String CUSTOM_SIGNATURE_NAME = "Signature personnalisée e2e";
 
     @Autowired
     private MockMvc mockMvc;
@@ -71,5 +78,26 @@ class E2eResetIntegrationTest {
                 .andExpect(jsonPath("$[?(@.code == 'test-e2e')]").isEmpty());
         mockMvc.perform(get("/api/receipts/" + receiptId))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("The e2e reset drops custom signatures and seeds one landlord and one CEO signature")
+    void resetSeedsDefaultSignatures() throws Exception {
+        mockMvc.perform(multipart("/api/signatures")
+                        .file(new MockMultipartFile("file", "signature-personnalisee.png", "image/png", PNG))
+                        .param("type", "LANDLORD")
+                        .param("name", CUSTOM_SIGNATURE_NAME))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/e2e/reset"))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/signatures"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[?(@.type == 'LANDLORD')]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.type == 'ENTREPRISE_CEO')]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.mimeType != 'image/png')]").isEmpty())
+                .andExpect(jsonPath("$[?(@.name == '" + CUSTOM_SIGNATURE_NAME + "')]").isEmpty());
     }
 }

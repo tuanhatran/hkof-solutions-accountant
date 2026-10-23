@@ -31,7 +31,10 @@ overwrite. Never create a second branch. Never commit or push.
 2. Implement the minimum that makes it green.
 3. Run the targeted test, then `codegraph affected <changed files>` to pick regression tests.
 4. Run the gate commands listed in the handoff, once, and capture the real counts.
-5. On a failure, find the root cause (`systematic-debugging` skill) before changing code.
+5. Run the full E2E suite once per task, in a single run, after the targeted and regression
+   tests: `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress`,
+   then the same command with `down -v --remove-orphans`.
+6. On a failure, find the root cause (`systematic-debugging` skill) before changing code.
    Self-fix up to 2 attempts per block. Still red: stop and report, never weaken it.
 
 ## Parallelism
@@ -56,11 +59,16 @@ serially.
 - UI, documents, toasts and error messages in French; code, identifiers, tests and reports in
   English. Amounts `1 234,56 €`, dates `DD/MM/YYYY`, API dates ISO.
 - TypeScript strict, no `any`. Never skip, weaken, disable or delete a failing test.
+- Full E2E suite on every task, every size (documentation and configuration included): all
+  specs and all tests green in one run, never report green while any test fails or passes
+  only on a retry. If the gate cannot run (for example Docker unavailable), report the
+  unverified gate as a blocker so the task stays `BLOCKED`; never done on partial evidence.
 - Run `codegraph sync` once after the code changes. Never commit or hand-edit `.codegraph/`.
 
 ## Deliverable
 
 Update the handoff with: files changed, one `PASS`/`FAIL` line per command with real counts, a
-red-then-green line per new test, deviations, contract impact. Set `REVIEW` for M/L or
-`USER_REVIEW` for S when the gates pass; never `DONE`, which only the lead sets after the user
-accepts. Keep it under 20 lines: evidence, not prose. Never log secrets or real personal data.
+red-then-green line per new test, the E2E evidence (exact command, exit code, spec and test
+counts), deviations, contract impact. Set `REVIEW` for M/L or `USER_REVIEW` for S when the
+gates pass; never `DONE`, which only the lead sets after the user accepts. Keep it under 20
+lines: evidence, not prose. Never log secrets or real personal data.

@@ -39,12 +39,20 @@ a specific claim looks wrong, and you must say why.
 6. `any`, swallowed error, skipped/disabled/weakened test, or a false green: a new test that
    would also pass without the fix.
 7. User-facing English text, wrong amount or date formatting.
+8. Missing or incomplete E2E evidence: no single full-suite run with every spec and every test
+   green. A failing test, or a test green only on a retry, is a false green and a blocker.
 
 ## False-green probe
 
 For each new test ask: would it fail on the pre-fix code? If the diff or the evidence does
 not prove it, that is a blocker: `no red-then-green evidence`. This check is the one the
 merged builder role is most likely to lose, so never skip it.
+
+Then check the E2E evidence in the handoff: one full-suite run on the task branch, with the
+exact command, the exit code and the spec/test counts, every spec and every test green. The
+rule applies to every task and every size, documentation and configuration included. A
+missing run, a partial run, or a suite green only because of a retry is a blocker; do not
+accept "not applicable" or "Docker unavailable" as a pass.
 
 ## Rounds
 

@@ -63,6 +63,11 @@ migration, the template sandbox, the LLM path or secrets.
 If the diff at the end touches one of those areas while the task was sized S, call
 `reviewer` anyway and say why in the report.
 
+Every size runs the E2E gate, including `S`: the S pipeline skips only the `reviewer`, never
+the E2E suite. The handoff must carry one full-suite run per task, with the exact command, the
+exit code and the spec/test counts; a run with a failing test, or a test green only on a
+retry, is not evidence.
+
 When dispatching `reviewer`, pass the goal, the full diff (`git diff <base-branch>...`) and the
 builder's test evidence in the dispatch prompt: the reviewer is read-only and cannot run commands.
 
@@ -88,6 +93,11 @@ Never rewrite evidence lines written by another agent; append only.
 
 - The pipeline stops at `USER_REVIEW`: `builder` (S) and `reviewer` (M/L) never set `DONE`.
   Report the result and ask the user to accept or request changes.
+- `DONE` requires the full green E2E evidence in the handoff: one run, every spec and every
+  test green, no test passing only on a retry, whatever the task and its size (documentation
+  and configuration included). Without that evidence, keep the task at `USER_REVIEW`; if the
+  gate cannot run (for example Docker unavailable), set `BLOCKED` and report the unverified
+  gate. Never mark a task done on partial evidence.
 - Explicit user acceptance: set `DONE` and append `lead: DONE — user accepted`.
 - User feedback before acceptance: set `USER_CHANGES_REQUESTED`, append the request to Goal
   and Acceptance, reset `Round:` to 0 and route back to `builder`. Never rewrite an existing
