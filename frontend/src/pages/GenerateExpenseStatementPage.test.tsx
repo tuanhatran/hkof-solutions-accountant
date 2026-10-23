@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { downloadBlob } from "@/api/client";
 import { api } from "@/api/endpoints";
 import type { SignatureDto } from "@/api/types";
 import { useStatementDraft } from "@/state/statementDraft";
@@ -32,14 +33,25 @@ vi.mock("@/hooks/usePdfPreview", () => ({
   },
 }));
 
+vi.mock("@/api/client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/api/client")>();
+  return {
+    ...actual,
+    downloadBlob: vi.fn(),
+  };
+});
+
 vi.mock("@/api/endpoints", () => ({
   api: {
     expenseStatements: {
       calculate: vi.fn(),
       preview: vi.fn(),
       create: vi.fn(),
+      pdf: vi.fn(),
       pdfUrl: (id: number, complete: boolean) =>
         `/api/expense-statements/${id}/pdf?complete=${complete}`,
+      zip: vi.fn(),
+      zipUrl: (id: number) => `/api/expense-statements/${id}/zip`,
     },
     receipts: {
       fileUrl: (id: number) => `/api/receipts/${id}/file`,
@@ -139,6 +151,17 @@ describe("GenerateExpenseStatementPage signatures", () => {
       version: 1,
       total: "80.00",
     });
+    vi.mocked(api.expenseStatements.pdf).mockReset();
+    vi.mocked(api.expenseStatements.pdf).mockResolvedValue({
+      blob: new Blob(),
+      fileName: null,
+    });
+    vi.mocked(api.expenseStatements.zip).mockReset();
+    vi.mocked(api.expenseStatements.zip).mockResolvedValue({
+      blob: new Blob(),
+      fileName: null,
+    });
+    vi.mocked(downloadBlob).mockReset();
 
     useStatementDraft.setState({
       month: MONTH,
@@ -255,5 +278,43 @@ describe("GenerateExpenseStatementPage signatures", () => {
       screen.getByRole("button", { name: /Générer la note de frais/ }),
     ).toBeDisabled();
     expect(api.expenseStatements.create).not.toHaveBeenCalled();
+  });
+
+  it("downloads the note-only PDF or the complete ZIP depending on the button", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const generate = await screen.findByRole("button", {
+      name: /Générer la note de frais/,
+    });
+    await waitFor(() => expect(generate).toBeEnabled());
+    await user.click(generate);
+    await screen.findByText("Note de frais générée");
+
+    await user.click(
+      screen.getByRole("button", { name: "Télécharger la note seule" }),
+    );
+    await waitFor(() =>
+      expect(api.expenseStatements.pdf).toHaveBeenCalledWith(12, false),
+    );
+    expect(api.expenseStatements.zip).not.toHaveBeenCalled();
+    expect(downloadBlob).toHaveBeenLastCalledWith(
+      expect.any(Blob),
+      "note_frais_2026-01.pdf",
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Télécharger la note complète (ZIP)",
+      }),
+    );
+    await waitFor(() =>
+      expect(api.expenseStatements.zip).toHaveBeenCalledWith(12),
+    );
+    expect(api.expenseStatements.pdf).toHaveBeenCalledTimes(1);
+    expect(downloadBlob).toHaveBeenLastCalledWith(
+      expect.any(Blob),
+      "note_frais_2026-01_complet.zip",
+    );
   });
 });

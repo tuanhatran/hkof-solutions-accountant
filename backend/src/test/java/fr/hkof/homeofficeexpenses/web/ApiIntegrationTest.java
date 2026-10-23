@@ -11,11 +11,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -273,5 +280,93 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.lines[0].claimedAmount").value("950.00"))
                 .andExpect(jsonPath("$.lines[1].itemCode").value("gaz"))
                 .andExpect(jsonPath("$.lines[1].claimedAmount").value("28.57"));
+    }
+
+    @Test
+    @DisplayName("The complete ZIP bundles the note, the active rent receipt and each original justificatif once")
+    void expenseStatementZipBundlesDocuments() throws Exception {
+        mockMvc.perform(post("/api/rent-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"month":"2027-05"}
+                                """))
+                .andExpect(status().isCreated());
+
+        byte[] originalReceipt = "EDF - Gaz\nTotal TTC : 78,00 EUR\n".getBytes(StandardCharsets.UTF_8);
+        MockMultipartFile file = new MockMultipartFile("file", "facture-gaz.txt", "text/plain", originalReceipt);
+        String receipt = mockMvc.perform(multipart("/api/receipts").file(file))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long receiptId = ((Number) JsonPath.read(receipt, "$.id")).longValue();
+
+        // The same receipt is attached to two lines: it must appear once in the archive.
+        String statementJson = """
+                {
+                  "month":"2027-05",
+                  "lines":[
+                    {"itemCode":"gaz","amountInclVat":"80.00","proRataPct":"35,71","receiptId":%d},
+                    {"itemCode":"electricite","amountInclVat":"50.00","proRataPct":"35,71","receiptId":%d}
+                  ]
+                }
+                """.formatted(receiptId, receiptId);
+        String statement = mockMvc.perform(post("/api/expense-statements")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(statementJson))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long statementId = ((Number) JsonPath.read(statement, "$.id")).longValue();
+
+        MvcResult zipResult = mockMvc.perform(get("/api/expense-statements/{id}/zip", statementId))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/zip"))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers
+                        .containsString("attachment; filename=\"note_frais_2027-05_complet.zip\"")))
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andReturn();
+
+        Map<String, byte[]> entries = unzip(zipResult.getResponse().getContentAsByteArray());
+        assertThat(entries).containsKeys(
+                "note_frais_2027-05.pdf",
+                "quittance_2027-05.pdf",
+                "justificatifs/01_facture-gaz.txt");
+        assertThat(entries.keySet().stream().filter(name -> name.startsWith("justificatifs/")).count()).isEqualTo(1);
+        assertThat(entries.get("note_frais_2027-05.pdf")).startsWith("%PDF".getBytes(StandardCharsets.US_ASCII));
+        assertThat(entries.get("quittance_2027-05.pdf")).startsWith("%PDF".getBytes(StandardCharsets.US_ASCII));
+        assertThat(entries.get("justificatifs/01_facture-gaz.txt")).isEqualTo(originalReceipt);
+        assertThat(pdfText(entries.get("note_frais_2027-05.pdf")))
+                .contains("NOTE DE FRAIS D'OCCUPATION")
+                .doesNotContain("QUITTANCE DE LOYER");
+        assertThat(pdfText(entries.get("quittance_2027-05.pdf"))).contains("QUITTANCE DE LOYER");
+
+        // The archive holds the note-only PDF, not the merged full PDF used by "Ouvrir".
+        MvcResult noteOnly = mockMvc.perform(get("/api/expense-statements/{id}/pdf", statementId))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(entries.get("note_frais_2027-05.pdf"))
+                .isEqualTo(noteOnly.getResponse().getContentAsByteArray());
+        MvcResult complete = mockMvc.perform(get("/api/expense-statements/{id}/pdf", statementId)
+                        .param("complete", "true"))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(entries.get("note_frais_2027-05.pdf"))
+                .isNotEqualTo(complete.getResponse().getContentAsByteArray());
+    }
+
+    private static Map<String, byte[]> unzip(byte[] archive) throws IOException {
+        Map<String, byte[]> entries = new LinkedHashMap<>();
+        try (ZipInputStream in = new ZipInputStream(new ByteArrayInputStream(archive), StandardCharsets.UTF_8)) {
+            ZipEntry entry = in.getNextEntry();
+            while (entry != null) {
+                entries.put(entry.getName(), in.readAllBytes());
+                entry = in.getNextEntry();
+            }
+        }
+        return entries;
+    }
+
+    private static String pdfText(byte[] pdf) throws IOException {
+        try (PDDocument document = PDDocument.load(pdf)) {
+            return new PDFTextStripper().getText(document);
+        }
     }
 }

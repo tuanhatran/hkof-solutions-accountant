@@ -337,7 +337,7 @@ describe("Expense statement — entry and preview", () => {
     waitForAmount('[data-cy="ligne-frais-telephone"]', "10,71");
   });
 
-  it("updates the preview on each add, pro-rata change and removal", () => {
+  it("updates the preview on each add and removal", () => {
     disableLlm();
     createRentReceipt();
     cy.intercept("POST", "/api/expense-statements/preview").as("preview");
@@ -362,11 +362,8 @@ describe("Expense statement — entry and preview", () => {
     waitForAmount('[data-cy="total-retenu"]', "992,85");
     verifyPreview("992,85");
 
-    cy.get('[aria-label="Prorata de Gaz"]').clear().type("50");
-    cy.wait("@preview", { timeout: 30_000 });
-    cy.waitForPreview();
-    waitForAmount('[data-cy="total-retenu"]', "1 010,00");
-    verifyPreview("1 010,00");
+    // Prorata stays read-only in the row: it is displayed, not editable inline.
+    cy.get('[data-cy="ligne-frais-gaz"]').should("contain.text", "35,71 %");
 
     cy.get('[data-cy="btn-supprimer-gaz"]').click();
     cy.get('[data-cy="dialogue-suppression-frais"]').should("be.visible");

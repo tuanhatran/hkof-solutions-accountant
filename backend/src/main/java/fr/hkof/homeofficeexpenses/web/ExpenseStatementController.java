@@ -76,4 +76,11 @@ public class ExpenseStatementController {
         String name = "note_frais_" + statement.month() + (complete ? "_complet" : "") + ".pdf";
         return PdfResponses.pdf(service.pdf(id, complete), name);
     }
+
+    @GetMapping("/{id}/zip")
+    public ResponseEntity<byte[]> getExpenseStatementZip(@PathVariable Long id) {
+        StatementDto statement = service.get(id);
+        String name = "note_frais_" + statement.month() + "_complet.zip";
+        return PdfResponses.attachment(service.zip(id), "application/zip", name);
+    }
 }

@@ -378,11 +378,8 @@ export function HistoryPage() {
                               dataCy={`btn-telecharger-note-${group.month}`}
                             />
                             <ActionsPdf
-                              href={api.expenseStatements.pdfUrl(
-                                statement.id,
-                                true,
-                              )}
-                              label="Note complète"
+                              href={api.expenseStatements.zipUrl(statement.id)}
+                              label="Note complète (ZIP)"
                               dataCy={`btn-telecharger-note-complete-${group.month}`}
                             />
                             <a

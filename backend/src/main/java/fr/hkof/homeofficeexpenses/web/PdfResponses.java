@@ -19,6 +19,15 @@ public final class PdfResponses {
                 .body(content);
     }
 
+    public static ResponseEntity<byte[]> attachment(byte[] content, String mimeType, String fileName) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(mimeType))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(fileName).build().toString())
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(content);
+    }
+
     public static ResponseEntity<byte[]> file(byte[] content, String mimeType, String fileName) {
         MediaType mediaType;
         try {

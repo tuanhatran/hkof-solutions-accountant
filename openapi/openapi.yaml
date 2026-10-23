@@ -690,6 +690,26 @@ paths:
               schema:
                 type: string
                 format: byte
+  /api/expense-statements/{id}/zip:
+    get:
+      tags:
+      - expense-statement-controller
+      operationId: getExpenseStatementZip
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
   /api/expense-statements/active:
     get:
       tags:

@@ -1,6 +1,9 @@
 package fr.hkof.homeofficeexpenses.service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -13,6 +16,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -199,6 +204,53 @@ public class ExpenseStatementService {
             throw new NotFoundException("Le PDF demandé est introuvable.");
         }
         return storage.read(path);
+    }
+
+    /**
+     * Builds the complete download archive: the generated note PDF, the active rent receipt of
+     * the month and every justificatif of the statement in its original format. Justificatifs are
+     * deduplicated by receipt id and kept in statement line order.
+     */
+    public byte[] zip(Long id) {
+        ExpenseStatement statement = entity(id);
+        if (statement.getPdfPath() == null) {
+            throw new NotFoundException("Le PDF demandé est introuvable.");
+        }
+        String month = statement.getMonth();
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+                ZipOutputStream zip = new ZipOutputStream(out, StandardCharsets.UTF_8)) {
+            addEntry(zip, "note_frais_" + month + ".pdf", storage.read(statement.getPdfPath()));
+            RentReceipt rentReceipt = rentReceiptService.activeForMonth(month);
+            if (rentReceipt != null && rentReceipt.getPdfPath() != null
+                    && !rentReceipt.getPdfPath().isBlank()) {
+                addEntry(zip, "quittance_" + month + ".pdf", storage.read(rentReceipt.getPdfPath()));
+            }
+            Set<Long> processedReceiptIds = new HashSet<>();
+            int index = 0;
+            for (ExpenseLine line : statement.getLines()) {
+                Receipt receipt = line.getReceipt();
+                if (receipt == null || !processedReceiptIds.add(receipt.getId())) {
+                    continue;
+                }
+                if (receipt.getPath() == null || receipt.getPath().isBlank()
+                        || receipt.getFileName() == null || receipt.getFileName().isBlank()) {
+                    continue;
+                }
+                index++;
+                addEntry(zip, "justificatifs/" + String.format(Locale.ROOT, "%02d", index) + "_"
+                        + StorageService.sanitizeName(receipt.getFileName()), storage.read(receipt.getPath()));
+            }
+            zip.finish();
+            return out.toByteArray();
+        } catch (IOException ex) {
+            throw new IllegalStateException("Impossible de générer l'archive ZIP.", ex);
+        }
+    }
+
+    private static void addEntry(ZipOutputStream zip, String name, byte[] content) throws IOException {
+        zip.putNextEntry(new ZipEntry(name));
+        zip.write(content);
+        zip.closeEntry();
     }
 
     private List<CalculatedLine> calculateLines(List<ExpenseLineRequest> requests) {

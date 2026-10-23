@@ -890,14 +890,14 @@ export function GenerateExpenseStatementPage() {
       return;
     }
     try {
-      const reply = await api.expenseStatements.pdf(
-        statement.id,
-        withAttachments,
-      );
+      const reply = withAttachments
+        ? await api.expenseStatements.zip(statement.id)
+        : await api.expenseStatements.pdf(statement.id, false);
+      const baseName = `note_frais_${statement.month ?? month}`;
       downloadBlob(
         reply.blob,
         reply.fileName ??
-          `note_frais_${statement.month ?? month}_v${statement.version ?? 1}${withAttachments ? "_complet" : ""}.pdf`,
+          (withAttachments ? `${baseName}_complet.zip` : `${baseName}.pdf`),
       );
     } catch (error) {
       toast.error(errorMessage(error));
@@ -1719,7 +1719,7 @@ export function GenerateExpenseStatementPage() {
                   onClick={() => void downloadStatement(result, true)}
                   data-cy="btn-telecharger-note-complete"
                 >
-                  Télécharger la note complète
+                  Télécharger la note complète (ZIP)
                 </Button>
                 {result.id ? (
                   <a
