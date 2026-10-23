@@ -47,7 +47,6 @@ import { SelectedFile, FileDropzone } from "@/components/FileDropzone";
 import { FieldGroup } from "@/components/FieldGroup";
 import { PageHeader } from "@/components/PageHeader";
 import { PdfViewer } from "@/components/PdfViewer";
-import { ProRataInput } from "@/components/ProRataInput";
 import { signatureTypeLabel } from "@/components/SignaturesManager";
 import {
   isAnalysisRunning,
@@ -61,6 +60,7 @@ import {
   formatDateTime,
   formatEUR,
   formatMonth,
+  formatPercentage,
   estimatedRetainedAmount,
   isEuroCurrency,
   parseAmount,
@@ -720,11 +720,6 @@ export function GenerateExpenseStatementPage() {
     setLineToRemove(null);
     setResult(null);
     toast.info("Frais supprimé.");
-  }
-
-  function changeProRata(line: DraftLine, value: string) {
-    draft.updateLine(line.key, { proRataPct: value });
-    setResult(null);
   }
 
   const requests = useMemo<{
@@ -1443,8 +1438,8 @@ export function GenerateExpenseStatementPage() {
                         <th scope="col" className="text-right">
                           Montant TTC
                         </th>
-                        <th scope="col">Prorata</th>
-                        <th scope="col" className="text-right">
+                        <th scope="col" className="text-right">Prorata</th>
+                        <th scope="col" className="w-px whitespace-nowrap text-right">
                           Montant retenu
                         </th>
                         <th scope="col" className="text-right">
@@ -1486,23 +1481,19 @@ export function GenerateExpenseStatementPage() {
                                 "—"}
                             </td>
                             <td className="whitespace-nowrap text-right">
-                              <span className="number font-semibold text-ink">
-                                {formatEUR(line.amountInclVat)}
-                              </span>
                               {line.amountSource === "AI" ? (
-                                <span className="ml-2 inline-flex align-middle">
-                                  <AiBadge />
+                                <span className="inline-flex align-middle">
+                                  <AiBadge label="AI" />
                                 </span>
                               ) : null}
+                              <span className="ml-2 number font-semibold text-ink">
+                                {formatEUR(line.amountInclVat)}
+                              </span>
                             </td>
-                            <td>
-                              <ProRataInput
-                                label={`Prorata de ${expenseItem?.label ?? line.itemCode}`}
-                                value={line.proRataPct}
-                                onChange={(next) => changeProRata(line, next)}
-                              />
+                            <td className="number w-px whitespace-nowrap text-right text-ink-soft">
+                              {formatPercentage(line.proRataPct)}
                             </td>
-                            <td className="whitespace-nowrap text-right">
+                            <td className="w-px whitespace-nowrap text-right">
                               {dto?.claimedAmount ? (
                                 <span className="number font-semibold text-accent-strong">
                                   {formatEUR(dto.claimedAmount)}
