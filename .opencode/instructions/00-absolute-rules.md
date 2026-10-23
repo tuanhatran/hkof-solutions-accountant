@@ -64,3 +64,9 @@ truth; re-read them before acting when in doubt.
 - Never commit, push, reset, clean or stash. One dedicated branch per task is created after
   the user agrees on a name; a resumed task reuses its recorded branch. No worktree or
   branch finishing without an explicit user request.
+
+## Settings folder ownership
+
+Touch only your own settings folder (agents, instructions, skills, commands): `.qoder/` for
+Qoder, `.opencode/` for OpenCode, `.github/` for Copilot. Never edit another configuration
+folder unless the user explicitly requests that cross-folder change.

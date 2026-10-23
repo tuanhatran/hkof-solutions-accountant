@@ -90,6 +90,10 @@ make up / make down
 - Record assumptions in the task handoff and, when the product changes, in `README.md`, section "Assumptions".
 - Write code and comments in English; keep user-facing messages in French.
 
+## Settings folder ownership
+
+Touch only your own settings folder (agents, instructions, skills, commands): `.qoder/` for Qoder, `.opencode/` for OpenCode, `.github/` for Copilot. Never edit another configuration folder unless the user explicitly requests that cross-folder change.
+
 ## Data and privacy
 
 - Personal documents in `data/` (justificatifs, sorties) must never be committed, pasted into logs or sent outside the machine.
