@@ -32,6 +32,7 @@ Each task has exactly one branch, agreed with the user and recorded in the hando
   pass on the combined diff.
 - Project exception: a diff touching money, `openapi/openapi.yaml`, a migration, the template
   sandbox, the LLM path or secrets is at least M and is always reviewed.
+- Every size runs the E2E gate before `DONE`; see Loop control.
 
 For every size you create the branch and write `.handoff/tasks/<TASK-ID>.md`: the builder never
 creates a branch and never invents the goal.
@@ -65,6 +66,12 @@ and give the user the single decision plus the failing evidence.
 
 - The pipeline stops at `USER_REVIEW`: `builder` (S) and `reviewer` (M/L) never set `DONE`.
 - Record the reviewer verdict in the handoff: the `reviewer` is read-only and returns it.
+- Every size runs the E2E gate, S included: S skips only the `reviewer`.
+- `DONE` requires the full green E2E evidence in the handoff: one run on the task branch, every
+  spec and every test green, no test passing only on a retry, every task and size
+  (documentation and configuration included). Without it keep the task at `USER_REVIEW`; if
+  the gate cannot run (for example Docker unavailable), set `BLOCKED` and report it. Never
+  done on partial evidence.
 - Explicit user acceptance: set `DONE` and append `lead: DONE — user accepted`.
 - User feedback before acceptance: set `USER_CHANGES_REQUESTED`, append the request to Goal and
   Acceptance, reset `Round:` to 0 and route back to `builder`.
@@ -72,6 +79,6 @@ and give the user the single decision plus the failing evidence.
 
 ## Final summary
 
-Under 10 lines: what changed, test status, open issues.
+Under 10 lines: what changed, test status including the full E2E counts, open issues.
 
 `AGENTS.md` and `.opencode/instructions/*.md` still apply.

@@ -22,6 +22,9 @@ cannot be judged without it.
 Report only:
 
 - BLOCKER: a bug, broken logic, a security problem, or missing tests for core behaviour.
+- BLOCKER: missing or incomplete E2E evidence, whatever the task and size — no single
+  full-suite run with every spec and every test green. A failing test, or a test green only
+  on a retry, is a false green.
 - NOTE: at most 3 optional points.
 
 Ignore style, naming and formatting unless they cause bugs. Point to `file:line` and describe

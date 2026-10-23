@@ -58,7 +58,9 @@ task continues unchanged when the user switches tools. `<TASK-ID>` is a short up
 slug such as `PREVIEW-DEBOUNCE`. Keep it compact: goal, files (context versus writable),
 constraints, acceptance criteria, commands, evidence. 25 lines maximum, 6 for `S`.
 
-Statuses: `TODO` → `REVIEW` → `USER_REVIEW` → `DONE`, gated by the user. `builder` ends at
+Statuses: `TODO` → `REVIEW` → `USER_REVIEW` → `DONE`, gated by the user and by the E2E gate.
+`DONE` requires the full green E2E evidence in the handoff; without it the lead keeps the task
+at `USER_REVIEW`, or sets `BLOCKED` when the suite cannot run. `builder` ends at
 `REVIEW` (M/L) or `USER_REVIEW` (S); `reviewer` sets `USER_REVIEW` on `VERDICT: PASS`. The
 lead reports and asks the user to accept: explicit acceptance sets `DONE`. User feedback
 before acceptance sets `USER_CHANGES_REQUESTED`, appends the request to Goal and Acceptance,
@@ -123,6 +125,14 @@ creates a second branch for the same task.
 
 - `cd backend && ./mvnw -B test`
 - `cd frontend && npm run typecheck && npm test && npm run build`
-- `make e2e` when a user flow changes and Docker is available.
+- Full E2E suite, once per task, on the task branch, in a single run:
+  `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress`,
+  then the same command with `down -v --remove-orphans`.
+
+A task is never `DONE` until the full E2E suite passes on its branch in a single run: every
+spec and every test green, with no test passing only on a retry. This applies to every task
+and every size, including documentation and configuration changes. If the E2E gate cannot run
+(for example Docker unavailable), the task stays `BLOCKED` and the unverified gate is
+reported; it is never marked done on partial evidence.
 
 Stage agents never call a real LLM in automated tests: `mock-ollama` is deterministic.
