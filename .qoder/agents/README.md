@@ -17,13 +17,13 @@ the diff forces a review whatever the size.
 
 ## Models
 
-All three runtimes share one OpenCode binding today, identical for every agent:
+OpenCode pins two tiers — a different family for review on purpose:
 
 | Agent       | Model (OpenCode)                    | Role                       |
 | ----------- | ----------------------------------- | -------------------------- |
 | `lead`      | `opencode/deepseek-v4.1-flash-free` | sizing, handoff, routing   |
 | `builder`   | `opencode/deepseek-v4.1-flash-free` | implementation and tests   |
-| `reviewer`  | `opencode/deepseek-v4.1-flash-free` | blocker-only diff review   |
+| `reviewer`  | `opencode/glm-5.3-flash-free`       | blocker-only diff review   |
 
 - `.opencode/agents/*.md` pins this ID in frontmatter. It is an OpenCode provider ID and
   means nothing to another runtime.

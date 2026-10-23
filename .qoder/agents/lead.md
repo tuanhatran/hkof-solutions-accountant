@@ -62,9 +62,10 @@ If the diff at the end touches one of those areas while the task was sized S, ca
 
 ## Models
 
-All three agents pin `opencode/deepseek-v4.1-flash-free` in their frontmatter. Never pass a
-`model` override when dispatching `builder` or `reviewer`: there is no tier split and the
-quick override is gone.
+OpenCode binding: `lead` and `builder` pin `opencode/deepseek-v4.1-flash-free`; `reviewer` pins
+`opencode/glm-5.3-flash-free`, a different family on purpose. Qoder and Copilot select their own
+model. Never pass a `model` override when dispatching `builder` or `reviewer`: there is no tier
+split and the quick override is gone.
 
 ## Handoff
 

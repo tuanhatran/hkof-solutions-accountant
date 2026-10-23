@@ -33,20 +33,20 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
 - `.qoder/skills` is registered as an extra skill source, so the vendored Superpowers
   skills remain the single copy.
 - `.opencode/skills/*/SKILL.md` are project skills, advertised by their `description`.
-- `.opencode/agents/*.md` define the workflow: `lead` (`mode: primary`, read-only: no `edit`,
-  `shell` or `execute`), `builder` (`mode: all`, full edit and shell) and `reviewer`
-  (`mode: subagent`, read-only). `opencode.json` sets `default_agent` to `lead`, and `lead`
-  launches `builder` and `reviewer`, which needs `experimental.subagent_depth: 2`.
-- Models pinned in frontmatter: `lead` `opencode/nemotron-3-ultra-free`, `builder`
+- `.opencode/agents/*.md` define the workflow: `lead` (`mode: primary`) is writable — it may
+  edit `.handoff/` only, create the task branch with `git switch -c`, and launch `builder` and
+  `reviewer` (needs `experimental.subagent_depth: 2`); `builder` is `mode: all` with full edit
+  and shell; `reviewer` is `mode: subagent` and read-only.
+- Models pinned in frontmatter: `lead` `opencode/deepseek-v4.1-flash-free`, `builder`
   `opencode/deepseek-v4.1-flash-free`, `reviewer` `opencode/glm-5.3-flash-free` (a different
   family from the builder on purpose). Qoder and Copilot select their own models.
 - Sizing: `S` = 1-2 files, builder only; `M` = 3-5 files or some risk, builder then one review;
   `L` = 6+ files, new architecture or unclear requirements, parallel builders then one review
   on the combined diff. Money, contract, migration, template sandbox, LLM or secrets always
   force a review.
-- Handoffs are messages (Goal, Files, Constraints, Expected output), not files: the read-only
-  lead cannot write the shared `.handoff/` tree. The status flow documented in
-  `.handoff/TEMPLATE.md` still governs the Qoder and Copilot mirrors.
+- Handoffs are files, `.handoff/tasks/<TASK-ID>.md` from `.handoff/TEMPLATE.md`, written by the
+  lead for every size (25 lines, 6 for S); the same tree is shared with the Qoder and Copilot
+  mirrors.
 - Global permissions in `opencode.json` deny `git commit`, `push`, `reset`, `clean`,
   `stash`, `worktree` and branch deletion.
 
