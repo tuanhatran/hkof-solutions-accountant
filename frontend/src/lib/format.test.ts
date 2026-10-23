@@ -1,10 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatBytes,
+  formatDate,
+  formatDateTime,
   formatEUR,
   formatMonth,
+  formatPercentage,
+  formatPeriod,
   estimatedRetainedAmount,
+  initials,
   isEuroCurrency,
   parseAmount,
+  parseDateIso,
   parsePercentage,
 } from "./format";
 
@@ -49,6 +56,8 @@ describe("French formatting", () => {
     expect(normalizeSpaces(formatEUR("1234.5"))).toBe("1 234,50 €");
     expect(normalizeSpaces(formatEUR(0))).toBe("0,00 €");
     expect(formatEUR(null)).toBe("—");
+    expect(formatEUR(undefined)).toBe("—");
+    expect(formatEUR("")).toBe("—");
   });
 
   it("formats months in French", () => {
@@ -67,6 +76,8 @@ describe("estimatedRetainedAmount", () => {
       "950,00 €",
     );
     expect(estimatedRetainedAmount("", "35,71")).toBe("—");
+    expect(estimatedRetainedAmount("120,00", "")).toBe("—");
+    expect(estimatedRetainedAmount(undefined, undefined)).toBe("—");
   });
 });
 
@@ -90,5 +101,66 @@ describe("isEuroCurrency", () => {
     expect(isEuroCurrency("USD")).toBe(false);
     expect(isEuroCurrency("CHF")).toBe(false);
     expect(isEuroCurrency("usd")).toBe(false);
+  });
+});
+
+describe("formatPercentage", () => {
+  it("formats percentages in French with up to two decimals", () => {
+    expect(normalizeSpaces(formatPercentage("35.71"))).toBe("35,71 %");
+    expect(normalizeSpaces(formatPercentage(12.5))).toBe("12,5 %");
+    expect(normalizeSpaces(formatPercentage("100"))).toBe("100 %");
+  });
+
+  it("falls back to a dash for missing or unusable values", () => {
+    expect(formatPercentage(null)).toBe("—");
+    expect(formatPercentage(undefined)).toBe("—");
+    expect(formatPercentage("")).toBe("—");
+    expect(formatPercentage("abc")).toBe("—");
+  });
+});
+
+describe("date formatting", () => {
+  it("parses an ISO date and rejects impossible or malformed values", () => {
+    expect(parseDateIso("2026-10-24")?.getDate()).toBe(24);
+    expect(parseDateIso("2026-02-31")).toBeNull();
+    expect(parseDateIso("24/10/2026")).toBeNull();
+    expect(parseDateIso("")).toBeNull();
+    expect(parseDateIso(null)).toBeNull();
+  });
+
+  it("formats dates and date-times in French", () => {
+    expect(formatDate("2026-10-24")).toBe("24/10/2026");
+    expect(formatDate("invalide")).toBe("—");
+    expect(formatDate(null)).toBe("—");
+    expect(formatDateTime("2026-10-24T08:30:00Z")).toMatch(
+      /^24\/10\/2026 \d{2}:\d{2}$/,
+    );
+    expect(formatDateTime("invalide")).toBe("—");
+    expect(formatDateTime(undefined)).toBe("—");
+  });
+
+  it("formats periods only when both bounds are valid", () => {
+    expect(formatPeriod("2026-10-01", "2026-10-31")).toBe(
+      "du 01/10/2026 au 31/10/2026",
+    );
+    expect(formatPeriod("2026-10-01", null)).toBe("—");
+    expect(formatPeriod(undefined, "2026-10-31")).toBe("—");
+  });
+
+  it("formats byte sizes in French units", () => {
+    expect(formatBytes(512)).toBe("512 o");
+    expect(normalizeSpaces(formatBytes(2048))).toBe("2 Ko");
+    expect(normalizeSpaces(formatBytes(2 * 1024 * 1024))).toBe("2 Mo");
+  });
+});
+
+describe("initials", () => {
+  it("builds up to two uppercase initials and falls back to FO", () => {
+    expect(initials("Camille Martin")).toBe("CM");
+    expect(initials("  camille   martin  ")).toBe("CM");
+    expect(initials("Camille")).toBe("C");
+    expect(initials("")).toBe("FO");
+    expect(initials("   ")).toBe("FO");
+    expect(initials(null)).toBe("FO");
   });
 });

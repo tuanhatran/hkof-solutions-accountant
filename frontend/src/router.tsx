@@ -6,14 +6,14 @@ import {
   isRouteErrorResponse,
   useRouteError,
 } from "react-router-dom";
-import { AppShell } from "@/components/AppShell";
-import { Button } from "@/components/Button";
-import { AdminLlmPage } from "@/pages/AdminLlmPage";
-import { SettingsPage } from "@/pages/SettingsPage";
-import { GenerateExpenseStatementPage } from "@/pages/GenerateExpenseStatementPage";
-import { GenerateRentReceiptPage } from "@/pages/GenerateRentReceiptPage";
-import { HistoryPage } from "@/pages/HistoryPage";
-import { TemplatesPage } from "@/pages/TemplatesPage";
+import { AppShell } from "@/components/layout/AppShell";
+import { Button } from "@/components/ui/Button";
+import { AdminLlmPage } from "@/pages/admin-llm/AdminLlmPage";
+import { SettingsPage } from "@/pages/settings/SettingsPage";
+import { GenerateExpenseStatementPage } from "@/pages/expense-statement/GenerateExpenseStatementPage";
+import { GenerateRentReceiptPage } from "@/pages/rent-receipt/GenerateRentReceiptPage";
+import { HistoryPage } from "@/pages/history/HistoryPage";
+import { TemplatesPage } from "@/pages/templates/TemplatesPage";
 
 function NotFoundPage() {
   return (

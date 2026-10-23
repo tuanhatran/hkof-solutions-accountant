@@ -1,9 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExpenseItemDto } from "@/api/types";
 import {
   buildRentLine,
   fromLineDto,
+  newKey,
   orderLinesByExpenseItem,
+  receiptName,
   typeAlreadyAdded,
   missingTypes,
   toLineRequest,
@@ -82,6 +84,19 @@ describe("expense type rules", () => {
   it("lists only missing non-multi-line types", () => {
     expect(missingTypes(expenseItems, [line()])).toEqual([]);
     expect(missingTypes(expenseItems, [])).toEqual(["gaz"]);
+  });
+
+  it("labels missing types with the code when no label is configured", () => {
+    expect(
+      missingTypes(
+        [
+          { code: "gaz", multipleLinesAllowed: false },
+          { code: "eau", label: "Eau", multipleLinesAllowed: false },
+          { label: "Sans code", multipleLinesAllowed: false },
+        ],
+        [],
+      ),
+    ).toEqual(["gaz", "eau"]);
   });
 });
 
@@ -187,4 +202,35 @@ describe("rent draft", () => {
     expect(reloaded.amountSource).toBe("AI");
     expect(reloaded.key).not.toHaveLength(0);
   });
+
+  it("reloads an incomplete DTO with the neutral defaults", () => {
+    const reloaded = fromLineDto({});
+
+    expect(reloaded).toMatchObject({
+      itemCode: "",
+      amountInclVat: "",
+      proRataPct: "100",
+      receiptId: null,
+      receiptName: null,
+      amountSource: "MANUAL",
+      aiDetectedAmount: null,
+      aiConfidence: null,
+      detectedSupplier: null,
+    });
+  });
+
+  it("falls back on a random key when crypto.randomUUID is unavailable", () => {
+    vi.stubGlobal("crypto", undefined);
+
+    expect(newKey()).toMatch(/^line-\d+-[a-z0-9]+$/);
+  });
+
+  it("reads the receipt file name, or null without a receipt", () => {
+    expect(receiptName({ fileName: "facture.pdf" })).toBe("facture.pdf");
+    expect(receiptName(null)).toBeNull();
+  });
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });

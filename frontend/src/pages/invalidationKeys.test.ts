@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import expenseStatementSource from "./GenerateExpenseStatementPage.tsx?raw";
-import rentReceiptSource from "./GenerateRentReceiptPage.tsx?raw";
+import expenseStatementSource from "./expense-statement/useExpenseStatementPage.ts?raw";
+import rentReceiptSource from "./rent-receipt/useRentReceiptPage.ts?raw";
 
 /**
  * Project rule: query invalidation goes through the `queryKeys` constants, never a
@@ -9,12 +9,12 @@ import rentReceiptSource from "./GenerateRentReceiptPage.tsx?raw";
  */
 const PAGES = [
   [
-    "GenerateExpenseStatementPage.tsx",
+    "useExpenseStatementPage.ts",
     expenseStatementSource,
     "queryKeys.statementsAll",
   ],
   [
-    "GenerateRentReceiptPage.tsx",
+    "useRentReceiptPage.ts",
     rentReceiptSource,
     "queryKeys.rentReceiptsAll",
   ],

@@ -3,7 +3,6 @@ import {
   SEED_RENT,
   SEED_TOTAL,
   waitForText,
-  waitForText,
   waitForValue,
   downloadAndReadPdf,
 } from "../support/helpers";
