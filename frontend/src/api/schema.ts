@@ -468,22 +468,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/analyses/{id}/events": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations["streamAnalysisEvents"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/api/admin/llm/status": {
     parameters: {
       query?: never;
@@ -726,7 +710,6 @@ export interface components {
       itemCode?: string;
       amountInclVat?: string;
       proRataPct?: string;
-      monthlyAmountOverride?: string;
       /** Format: int64 */
       receiptId?: number;
       amountSource?: string;
@@ -840,10 +823,6 @@ export interface components {
       currency?: string;
       sourceExcerpt?: string;
       confidence?: string;
-    };
-    SseEmitter: {
-      /** Format: int64 */
-      timeout?: number;
     };
     LlmStatusDto: {
       status?: string;
@@ -1745,28 +1724,6 @@ export interface operations {
         };
         content: {
           "*/*": components["schemas"]["AnalysisDto"];
-        };
-      };
-    };
-  };
-  streamAnalysisEvents: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "text/event-stream": components["schemas"]["SseEmitter"];
         };
       };
     };

@@ -5,10 +5,6 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import fr.hkof.homeofficeexpenses.domain.AnalysisDocument;
 import fr.hkof.homeofficeexpenses.domain.Receipt;
@@ -33,13 +28,11 @@ import fr.hkof.homeofficeexpenses.service.NotFoundException;
 import fr.hkof.homeofficeexpenses.service.extraction.DocumentTextExtractor;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.AnalysisDto;
 import fr.hkof.homeofficeexpenses.web.dto.Dtos.ExtractionDto;
-import jakarta.annotation.PreDestroy;
 
 @Service
 public class AnalysisJobService {
 
     private static final Logger LOG = LoggerFactory.getLogger(AnalysisJobService.class);
-    private static final long SSE_TIMEOUT_MS = 180_000L;
 
     private final AnalysisDocumentRepository repository;
     private final ReceiptService receiptService;
@@ -49,7 +42,6 @@ public class AnalysisJobService {
     private final ThreadPoolTaskExecutor executor;
     private final TransactionTemplate transactions;
     private final Clock clock;
-    private final ScheduledExecutorService scheduler;
 
     public AnalysisJobService(AnalysisDocumentRepository repository, ReceiptService receiptService,
             LlmConfigService llmConfigService, DocumentTextExtractor extractor, ExtractionPipeline pipeline,
@@ -63,12 +55,6 @@ public class AnalysisJobService {
         this.executor = executor;
         this.transactions = new TransactionTemplate(transactionManager);
         this.clock = clock;
-        ScheduledThreadPoolExecutor localScheduler = new ScheduledThreadPoolExecutor(2, task -> {
-            Thread thread = new Thread(task, "analysis-sse");
-            thread.setDaemon(true);
-            return thread;
-        });
-        this.scheduler = localScheduler;
     }
 
     public AnalysisDto launch(Long receiptId) {
@@ -208,44 +194,6 @@ public class AnalysisJobService {
         return toDto(repository.save(analysis));
     }
 
-    public SseEmitter events(Long id) {
-        get(id);
-        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
-        AtomicBoolean finished = new AtomicBoolean(false);
-        emitter.onCompletion(() -> finished.set(true));
-        emitter.onTimeout(() -> {
-            finished.set(true);
-            emitter.complete();
-        });
-        emitter.onError(ex -> finished.set(true));
-        long deadline = System.currentTimeMillis() + SSE_TIMEOUT_MS;
-        scheduler.schedule(() -> broadcast(id, emitter, finished, deadline), 0, TimeUnit.MILLISECONDS);
-        return emitter;
-    }
-
-    private void broadcast(Long id, SseEmitter emitter, AtomicBoolean finished, long deadline) {
-        if (finished.get()) {
-            return;
-        }
-        try {
-            AnalysisDto dto = get(id);
-            emitter.send(SseEmitter.event().name("analyse").data(dto));
-            if (AnalysisStatus.valueOf(dto.status()).isFinished() || System.currentTimeMillis() > deadline) {
-                finished.set(true);
-                emitter.complete();
-                return;
-            }
-            scheduler.schedule(() -> broadcast(id, emitter, finished, deadline), 900, TimeUnit.MILLISECONDS);
-        } catch (Exception ex) {
-            finished.set(true);
-            try {
-                emitter.completeWithError(ex);
-            } catch (RuntimeException ignored) {
-                // The client has already closed the connection.
-            }
-        }
-    }
-
     @EventListener(ApplicationReadyEvent.class)
     public void cleanInterruptedAnalyses() {
         transaction(() -> {
@@ -262,11 +210,6 @@ public class AnalysisJobService {
 
     private void transaction(Runnable action) {
         transactions.executeWithoutResult(status -> action.run());
-    }
-
-    @PreDestroy
-    void stop() {
-        scheduler.shutdownNow();
     }
 
     public AnalysisDto toDto(AnalysisDocument analysis) {

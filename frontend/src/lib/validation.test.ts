@@ -11,7 +11,6 @@ const VALID_EXPENSE = {
   itemCode: "gaz",
   amountInclVat: "120,00",
   proRataPct: "35,71",
-  monthlyAmountOverride: "",
 };
 
 const VALID_SETTINGS = {
@@ -55,24 +54,7 @@ describe("expenseSchema", () => {
       "itemCode",
       "amountInclVat",
       "proRataPct",
-      "monthlyAmountOverride",
     ]);
-  });
-
-  it("rejects a malformed monthly amount override", () => {
-    expect(expenseSchema.safeParse(VALID_EXPENSE).success).toBe(true);
-    expect(
-      expenseSchema.safeParse({
-        ...VALID_EXPENSE,
-        monthlyAmountOverride: "60,98",
-      }).success,
-    ).toBe(true);
-    expect(
-      expenseSchema.safeParse({
-        ...VALID_EXPENSE,
-        monthlyAmountOverride: "abc",
-      }).success,
-    ).toBe(false);
   });
 });
 

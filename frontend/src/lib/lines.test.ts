@@ -15,7 +15,6 @@ function line(partial: Partial<DraftLine> = {}): DraftLine {
     itemCode: "gaz",
     amountInclVat: "120,00",
     proRataPct: "35,71",
-    monthlyAmountOverride: "",
     receiptId: 12,
     receiptName: "facture.pdf",
     amountSource: "MANUAL",
@@ -53,19 +52,8 @@ describe("toLineRequest", () => {
   });
 
   it("omits unfilled optional fields", () => {
-    const request = toLineRequest(
-      line({
-        receiptId: null,
-        monthlyAmountOverride: "",
-      }),
-    );
+    const request = toLineRequest(line({ receiptId: null }));
     expect(request.receiptId).toBeUndefined();
-    expect(request.monthlyAmountOverride).toBeUndefined();
-  });
-
-  it("adds the month override when provided", () => {
-    const request = toLineRequest(line({ monthlyAmountOverride: "60,98" }));
-    expect(request.monthlyAmountOverride).toBe("60.98");
   });
 
   it("rejects invalid amounts and pro-rata values", () => {

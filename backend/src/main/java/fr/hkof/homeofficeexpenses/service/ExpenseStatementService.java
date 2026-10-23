@@ -210,8 +210,7 @@ public class ExpenseStatementService {
             }
             BigDecimal amountInclVat = Amounts.decimal(request.amountInclVat(), "montant TTC", true);
             BigDecimal proRataPct = Amounts.percentage(request.proRataPct());
-            BigDecimal monthlyAmountOverride = Amounts.optionalDecimal(request.monthlyAmountOverride(), "montant du mois");
-            BigDecimal monthlyAmount = CalculationService.monthlyAmount(amountInclVat, monthlyAmountOverride);
+            BigDecimal monthlyAmount = CalculationService.monthlyAmount(amountInclVat);
             BigDecimal claimedAmount = CalculationService.claimedAmount(monthlyAmount, proRataPct);
             Receipt receipt = request.receiptId() == null
                     ? null

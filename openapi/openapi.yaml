@@ -745,25 +745,6 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AnalysisDto"
-  /api/analyses/{id}/events:
-    get:
-      tags:
-      - analysis-controller
-      operationId: streamAnalysisEvents
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      responses:
-        "200":
-          description: OK
-          content:
-            text/event-stream:
-              schema:
-                $ref: "#/components/schemas/SseEmitter"
   /api/admin/llm/status:
     get:
       tags:
@@ -1137,8 +1118,6 @@ components:
           type: string
         proRataPct:
           type: string
-        monthlyAmountOverride:
-          type: string
         receiptId:
           type: integer
           format: int64
@@ -1353,12 +1332,6 @@ components:
           type: string
         confidence:
           type: string
-    SseEmitter:
-      type: object
-      properties:
-        timeout:
-          type: integer
-          format: int64
     LlmStatusDto:
       type: object
       properties:

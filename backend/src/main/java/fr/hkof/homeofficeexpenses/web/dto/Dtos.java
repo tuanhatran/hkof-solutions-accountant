@@ -113,7 +113,6 @@ public final class Dtos {
             String itemCode,
             String amountInclVat,
             String proRataPct,
-            String monthlyAmountOverride,
             Long receiptId,
             String amountSource,
             String aiDetectedAmount,

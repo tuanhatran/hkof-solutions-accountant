@@ -216,21 +216,4 @@ class ApiIntegrationTest {
                     .andExpect(jsonPath("$.total").value("28.57"));
         }
     }
-
-    @Test
-    @DisplayName("The monthly amount override still wins over the invoice amount")
-    void monthlyAmountOverrideWins() throws Exception {
-        mockMvc.perform(post("/api/expense-statements/calculation")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"month":"2026-11","lines":[
-                                  {"itemCode":"gaz","amountInclVat":"80.00","proRataPct":"35,71",
-                                   "monthlyAmountOverride":"60,98"}
-                                ]}
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.lines[0].monthlyAmount").value("60.98"))
-                .andExpect(jsonPath("$.lines[0].claimedAmount").value("21.78"))
-                .andExpect(jsonPath("$.total").value("21.78"));
-    }
 }

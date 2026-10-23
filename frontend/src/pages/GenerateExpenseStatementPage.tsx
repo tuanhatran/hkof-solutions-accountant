@@ -80,7 +80,6 @@ const INITIAL_VALUES: ExpenseFormValues = {
   itemCode: "",
   amountInclVat: "",
   proRataPct: "100",
-  monthlyAmountOverride: "",
 };
 
 interface AttachedFile {
@@ -538,7 +537,6 @@ export function GenerateExpenseStatementPage() {
       shouldValidate: true,
       shouldDirty: true,
     });
-    setValue("monthlyAmountOverride", "", { shouldDirty: true });
     setAi((previous) => ({ ...previous, type: false }));
 
     if (code === "loyer" && old !== "loyer") {
@@ -584,7 +582,6 @@ export function GenerateExpenseStatementPage() {
           ? rentReceipt.data.total
           : line.amountInclVat,
       proRataPct: line.proRataPct,
-      monthlyAmountOverride: line.monthlyAmountOverride,
     });
     setAi({
       type: false,
@@ -655,16 +652,12 @@ export function GenerateExpenseStatementPage() {
     if (amountInclVat === null || proRataPct === null) {
       return;
     }
-    const override = submittedValues.monthlyAmountOverride.trim()
-      ? parseAmount(submittedValues.monthlyAmountOverride)
-      : null;
 
     const line: DraftLine = {
       key: lineBeingEdited ?? newKey(),
       itemCode: expenseItem.code,
       amountInclVat: amountInclVat,
       proRataPct: proRataPct,
-      monthlyAmountOverride: override ?? "",
       receiptId: rentLine ? null : (receipt?.id ?? null),
       receiptName: rentLine ? null : (receipt?.name ?? null),
       amountSource: ai.amount ? "AI" : "MANUAL",
@@ -875,10 +868,7 @@ export function GenerateExpenseStatementPage() {
     }
   }
 
-  const typedOverride = values.monthlyAmountOverride.trim()
-    ? parseAmount(values.monthlyAmountOverride)
-    : null;
-  const estimatedMonthAmount = typedOverride ?? values.amountInclVat;
+  const estimatedMonthAmount = values.amountInclVat;
   const displayedRetainedAmount = estimatedRetainedAmount(
     estimatedMonthAmount,
     values.proRataPct,
@@ -1326,38 +1316,6 @@ export function GenerateExpenseStatementPage() {
                     frais.
                   </p>
                 ) : null}
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <FieldGroup
-                    id="frais-montant-mois"
-                    label="Montant du mois (optionnel)"
-                    error={errors.monthlyAmountOverride?.message}
-                    help="Laissez vide pour retenir le montant TTC de la facture."
-                  >
-                    <div className="relative">
-                      <input
-                        id="frais-montant-mois"
-                        inputMode="decimal"
-                        className={cn(
-                          "field pr-9",
-                          errors.monthlyAmountOverride && "field-error",
-                        )}
-                        data-cy="input-montant-mois"
-                        aria-invalid={Boolean(errors.monthlyAmountOverride)}
-                        {...register("monthlyAmountOverride")}
-                      />
-                      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">
-                        €
-                      </span>
-                    </div>
-                  </FieldGroup>
-                  <div className="flex flex-col justify-end">
-                    <p className="rounded-lg bg-surface px-3 py-2.5 text-xs leading-relaxed text-ink-soft">
-                      Montant retenu estimé pour {formatMonth(month)} :{" "}
-                      <span className="number">{displayedRetainedAmount}</span>
-                    </p>
-                  </div>
-                </div>
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-6">
