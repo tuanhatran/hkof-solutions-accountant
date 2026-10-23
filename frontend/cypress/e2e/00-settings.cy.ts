@@ -130,7 +130,9 @@ describe("Settings", () => {
     cy.request<{ id: number; name: string }[]>("/api/landlords").then(
       ({ body }) => {
         const landlord = body[0];
-        expect(landlord, "seeded landlord").to.exist;
+        if (!landlord) {
+          throw new Error("seeded landlord missing");
+        }
 
         cy.get('[data-cy="btn-ajouter-signature"]').click();
         cy.get('[data-cy="formulaire-signature"]').should("be.visible");

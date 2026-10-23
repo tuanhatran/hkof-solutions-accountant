@@ -29,3 +29,10 @@ if (typeof globalThis.ResizeObserver === "undefined") {
   globalThis.ResizeObserver =
     ResizeObserverTest as unknown as typeof ResizeObserver;
 }
+
+if (
+  typeof window !== "undefined" &&
+  !window.HTMLElement.prototype.scrollIntoView
+) {
+  window.HTMLElement.prototype.scrollIntoView = () => undefined;
+}

@@ -1,6 +1,8 @@
 /// <reference types="cypress" />
 
 declare global {
+  // Cypress extends its global namespace; ES module syntax cannot do this.
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Cypress {
     interface Chainable {
       resetState(): Chainable<void>;

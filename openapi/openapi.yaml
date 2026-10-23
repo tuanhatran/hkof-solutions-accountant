@@ -4,24 +4,24 @@ info:
   description: Local API for generating rent receipts and home-office expense statements.
   version: 1.0.0
 servers:
-- url: http://localhost:8080
-  description: Generated server url
+  - url: http://localhost:8080
+    description: Generated server url
 paths:
   /api/settings:
     get:
       tags:
-      - settings-controller
+        - settings-controller
       operationId: getSettings
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/SettingsDto"
     put:
       tags:
-      - settings-controller
+        - settings-controller
       operationId: updateSettings
       requestBody:
         content:
@@ -33,21 +33,21 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/SettingsDto"
   /api/expense-items/{id}:
     put:
       tags:
-      - expense-item-controller
+        - expense-item-controller
       operationId: updateExpenseItem
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       requestBody:
         content:
           application/json:
@@ -58,38 +58,38 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/ExpenseItemDto"
     delete:
       tags:
-      - expense-item-controller
+        - expense-item-controller
       operationId: deleteExpenseItem
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "204":
           description: No Content
   /api/admin/llm:
     get:
       tags:
-      - admin-llm-controller
+        - admin-llm-controller
       operationId: getLlmConfig
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/LlmConfigDto"
     put:
       tags:
-      - admin-llm-controller
+        - admin-llm-controller
       operationId: updateLlmConfig
       requestBody:
         content:
@@ -101,50 +101,50 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/LlmConfigDto"
   /api/templates:
     get:
       tags:
-      - template-controller
+        - template-controller
       operationId: listTemplates
       parameters:
-      - name: type
-        in: query
-        required: true
-        schema:
-          type: string
-          enum:
-          - RENT_RECEIPT
-          - EXPENSE_STATEMENT
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - RENT_RECEIPT
+              - EXPENSE_STATEMENT
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/TemplateDto"
     post:
       tags:
-      - template-controller
+        - template-controller
       operationId: uploadTemplate
       parameters:
-      - name: type
-        in: query
-        required: true
-        schema:
-          type: string
-          enum:
-          - RENT_RECEIPT
-          - EXPENSE_STATEMENT
-      - name: name
-        in: query
-        required: true
-        schema:
-          type: string
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - RENT_RECEIPT
+              - EXPENSE_STATEMENT
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
@@ -155,118 +155,118 @@ paths:
                   type: string
                   format: binary
               required:
-              - file
+                - file
       responses:
         "201":
           description: Created
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/TemplateDto"
   /api/templates/{id}/preview:
     post:
       tags:
-      - template-controller
+        - template-controller
       operationId: previewTemplate
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
                 format: byte
   /api/templates/{id}/activate:
     post:
       tags:
-      - template-controller
+        - template-controller
       operationId: activateTemplate
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/TemplateDto"
   /api/templates/default/{type}:
     get:
       tags:
-      - template-controller
+        - template-controller
       operationId: getDefaultTemplate
       parameters:
-      - name: type
-        in: path
-        required: true
-        schema:
-          type: string
-          enum:
-          - RENT_RECEIPT
-          - EXPENSE_STATEMENT
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - RENT_RECEIPT
+              - EXPENSE_STATEMENT
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
                 format: byte
     post:
       tags:
-      - template-controller
+        - template-controller
       operationId: resetDefaultTemplate
       parameters:
-      - name: type
-        in: path
-        required: true
-        schema:
-          type: string
-          enum:
-          - RENT_RECEIPT
-          - EXPENSE_STATEMENT
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - RENT_RECEIPT
+              - EXPENSE_STATEMENT
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/TemplateDto"
   /api/rent-receipts:
     get:
       tags:
-      - rent-receipt-controller
+        - rent-receipt-controller
       operationId: listRentReceipts
       parameters:
-      - name: month
-        in: query
-        required: false
-        schema:
-          type: string
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/RentReceiptDto"
     post:
       tags:
-      - rent-receipt-controller
+        - rent-receipt-controller
       operationId: createRentReceipt
       requestBody:
         content:
@@ -278,13 +278,13 @@ paths:
         "201":
           description: Created
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/RentReceiptDto"
   /api/rent-receipts/preview:
     post:
       tags:
-      - rent-receipt-controller
+        - rent-receipt-controller
       operationId: previewRentReceipt
       requestBody:
         content:
@@ -296,14 +296,14 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
                 format: byte
   /api/receipts:
     post:
       tags:
-      - receipt-controller
+        - receipt-controller
       operationId: uploadReceipt
       requestBody:
         content:
@@ -315,56 +315,56 @@ paths:
                   type: string
                   format: binary
               required:
-              - file
+                - file
       responses:
         "201":
           description: Created
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/ReceiptDto"
   /api/receipts/{id}/analysis:
     post:
       tags:
-      - receipt-controller
+        - receipt-controller
       operationId: startReceiptAnalysis
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "202":
           description: Accepted
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/AnalysisStartResponse"
   /api/expense-statements:
     get:
       tags:
-      - expense-statement-controller
+        - expense-statement-controller
       operationId: listExpenseStatements
       parameters:
-      - name: month
-        in: query
-        required: false
-        schema:
-          type: string
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/StatementDto"
     post:
       tags:
-      - expense-statement-controller
+        - expense-statement-controller
       operationId: createExpenseStatement
       requestBody:
         content:
@@ -376,13 +376,13 @@ paths:
         "201":
           description: Created
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/StatementDto"
   /api/expense-statements/preview:
     post:
       tags:
-      - expense-statement-controller
+        - expense-statement-controller
       operationId: previewStatement
       requestBody:
         content:
@@ -394,32 +394,32 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
                 format: byte
   /api/expense-statements/draft:
     post:
       tags:
-      - expense-statement-controller
+        - expense-statement-controller
       operationId: createStatementDraft
       parameters:
-      - name: month
-        in: query
-        required: true
-        schema:
-          type: string
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/DraftDto"
   /api/expense-statements/calculation:
     post:
       tags:
-      - expense-statement-controller
+        - expense-statement-controller
       operationId: calculateStatement
       requestBody:
         content:
@@ -431,33 +431,33 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/CalculationResponse"
   /api/expense-items:
     get:
       tags:
-      - expense-item-controller
+        - expense-item-controller
       operationId: listExpenseItems
       parameters:
-      - name: all
-        in: query
-        required: false
-        schema:
-          type: boolean
-          default: false
+        - name: all
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/ExpenseItemDto"
     post:
       tags:
-      - expense-item-controller
+        - expense-item-controller
       operationId: createExpenseItem
       requestBody:
         content:
@@ -469,13 +469,13 @@ paths:
         "201":
           description: Created
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/ExpenseItemDto"
   /api/e2e/reset:
     post:
       tags:
-      - e-2e-controller
+        - e-2e-controller
       operationId: resetE2eData
       responses:
         "204":
@@ -483,54 +483,54 @@ paths:
   /api/admin/llm/test:
     post:
       tags:
-      - admin-llm-controller
+        - admin-llm-controller
       operationId: testLlm
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/LlmTestResponse"
   /api/templates/{id}/file:
     get:
       tags:
-      - template-controller
+        - template-controller
       operationId: getTemplateFile
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
                 format: byte
   /api/templates/variables:
     get:
       tags:
-      - template-controller
+        - template-controller
       operationId: getTemplateVariables
       parameters:
-      - name: type
-        in: query
-        required: true
-        schema:
-          type: string
-          enum:
-          - RENT_RECEIPT
-          - EXPENSE_STATEMENT
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - RENT_RECEIPT
+              - EXPENSE_STATEMENT
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
@@ -538,182 +538,182 @@ paths:
   /api/rent-receipts/{id}:
     get:
       tags:
-      - rent-receipt-controller
+        - rent-receipt-controller
       operationId: getRentReceipt
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/RentReceiptDto"
   /api/rent-receipts/{id}/pdf:
     get:
       tags:
-      - rent-receipt-controller
+        - rent-receipt-controller
       operationId: getRentReceiptPdf
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
                 format: byte
   /api/rent-receipts/active:
     get:
       tags:
-      - rent-receipt-controller
+        - rent-receipt-controller
       operationId: getActiveRentReceipt
       parameters:
-      - name: month
-        in: query
-        required: true
-        schema:
-          type: string
-      - name: landlordId
-        in: query
-        required: false
-        schema:
-          type: integer
-          format: int64
-      - name: tenantId
-        in: query
-        required: false
-        schema:
-          type: integer
-          format: int64
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: landlordId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: tenantId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/RentReceiptDto"
   /api/receipts/{id}:
     get:
       tags:
-      - receipt-controller
+        - receipt-controller
       operationId: getReceipt
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/ReceiptDto"
     delete:
       tags:
-      - receipt-controller
+        - receipt-controller
       operationId: deleteReceipt
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "204":
           description: No Content
   /api/receipts/{id}/file:
     get:
       tags:
-      - receipt-controller
+        - receipt-controller
       operationId: getReceiptFile
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
                 format: byte
   /api/expense-statements/{id}:
     get:
       tags:
-      - expense-statement-controller
+        - expense-statement-controller
       operationId: getExpenseStatement
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/StatementDto"
   /api/expense-statements/{id}/pdf:
     get:
       tags:
-      - expense-statement-controller
+        - expense-statement-controller
       operationId: getExpenseStatementPdf
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      - name: complete
-        in: query
-        required: false
-        schema:
-          type: boolean
-          default: false
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: complete
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
                 format: byte
   /api/expense-statements/{id}/zip:
     get:
       tags:
-      - expense-statement-controller
+        - expense-statement-controller
       operationId: getExpenseStatementZip
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
@@ -725,80 +725,80 @@ paths:
   /api/expense-statements/active:
     get:
       tags:
-      - expense-statement-controller
+        - expense-statement-controller
       operationId: getActiveExpenseStatement
       parameters:
-      - name: month
-        in: query
-        required: true
-        schema:
-          type: string
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/StatementDto"
   /api/analyses/{id}:
     get:
       tags:
-      - analysis-controller
+        - analysis-controller
       operationId: getAnalysis
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/AnalysisDto"
     delete:
       tags:
-      - analysis-controller
+        - analysis-controller
       operationId: cancelAnalysis
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/AnalysisDto"
   /api/admin/llm/status:
     get:
       tags:
-      - admin-llm-controller
+        - admin-llm-controller
       operationId: getLlmStatus
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/LlmStatusDto"
   /api/admin/llm/models:
     get:
       tags:
-      - admin-llm-controller
+        - admin-llm-controller
       operationId: listLlmModels
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
@@ -806,47 +806,47 @@ paths:
   /api/admin/llm/default-prompt:
     get:
       tags:
-      - admin-llm-controller
+        - admin-llm-controller
       operationId: getDefaultLlmPrompt
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/DefaultPromptDto"
   /api/templates/{id}:
     delete:
       tags:
-      - template-controller
+        - template-controller
       operationId: deleteTemplate
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "204":
           description: No Content
   /api/signatures:
     get:
       tags:
-      - signature-controller
+        - signature-controller
       operationId: listSignatures
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/SignatureDto"
     post:
       tags:
-      - signature-controller
+        - signature-controller
       operationId: createSignature
       requestBody:
         content:
@@ -857,8 +857,8 @@ paths:
                 type:
                   type: string
                   enum:
-                  - LANDLORD
-                  - ENTREPRISE_CEO
+                    - LANDLORD
+                    - ENTREPRISE_CEO
                 name:
                   type: string
                 landlordId:
@@ -868,15 +868,15 @@ paths:
                   type: string
                   format: binary
               required:
-              - type
-              - name
-              - file
+                - type
+                - name
+                - file
         required: true
       responses:
         "201":
           description: Created
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/SignatureDto"
         "400":
@@ -897,15 +897,15 @@ paths:
   /api/signatures/{id}:
     delete:
       tags:
-      - signature-controller
+        - signature-controller
       operationId: deleteSignature
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "204":
           description: No Content
@@ -927,15 +927,15 @@ paths:
   /api/signatures/{id}/image:
     get:
       tags:
-      - signature-controller
+        - signature-controller
       operationId: getSignatureImage
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
@@ -966,20 +966,20 @@ paths:
   /api/landlords:
     get:
       tags:
-      - rent-configuration-controller
+        - rent-configuration-controller
       operationId: listLandlords
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/LandlordDto"
     post:
       tags:
-      - rent-configuration-controller
+        - rent-configuration-controller
       operationId: createLandlord
       requestBody:
         content:
@@ -991,7 +991,7 @@ paths:
         "201":
           description: Created
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/LandlordDto"
         "400":
@@ -1003,15 +1003,15 @@ paths:
   /api/landlords/{id}:
     put:
       tags:
-      - rent-configuration-controller
+        - rent-configuration-controller
       operationId: updateLandlord
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       requestBody:
         content:
           application/json:
@@ -1022,7 +1022,7 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/LandlordDto"
         "400":
@@ -1039,15 +1039,15 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
     delete:
       tags:
-      - rent-configuration-controller
+        - rent-configuration-controller
       operationId: deleteLandlord
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "204":
           description: No Content
@@ -1066,20 +1066,20 @@ paths:
   /api/tenants:
     get:
       tags:
-      - rent-configuration-controller
+        - rent-configuration-controller
       operationId: listTenants
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/TenantDto"
     post:
       tags:
-      - rent-configuration-controller
+        - rent-configuration-controller
       operationId: createTenant
       requestBody:
         content:
@@ -1091,7 +1091,7 @@ paths:
         "201":
           description: Created
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/TenantDto"
         "400":
@@ -1103,15 +1103,15 @@ paths:
   /api/tenants/{id}:
     put:
       tags:
-      - rent-configuration-controller
+        - rent-configuration-controller
       operationId: updateTenant
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       requestBody:
         content:
           application/json:
@@ -1122,7 +1122,7 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/TenantDto"
         "400":
@@ -1139,15 +1139,15 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
     delete:
       tags:
-      - rent-configuration-controller
+        - rent-configuration-controller
       operationId: deleteTenant
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "204":
           description: No Content
@@ -1166,20 +1166,20 @@ paths:
   /api/leases:
     get:
       tags:
-      - rent-configuration-controller
+        - rent-configuration-controller
       operationId: listLeases
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/LeaseDto"
     post:
       tags:
-      - rent-configuration-controller
+        - rent-configuration-controller
       operationId: createLease
       requestBody:
         content:
@@ -1191,7 +1191,7 @@ paths:
         "201":
           description: Created
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/LeaseDto"
         "400":
@@ -1203,15 +1203,15 @@ paths:
   /api/leases/{id}:
     put:
       tags:
-      - rent-configuration-controller
+        - rent-configuration-controller
       operationId: updateLease
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       requestBody:
         content:
           application/json:
@@ -1222,7 +1222,7 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 $ref: "#/components/schemas/LeaseDto"
         "400":
@@ -1239,15 +1239,15 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
     delete:
       tags:
-      - rent-configuration-controller
+        - rent-configuration-controller
       operationId: deleteLease
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "204":
           description: No Content
@@ -1268,8 +1268,8 @@ components:
         type:
           type: string
           enum:
-          - LANDLORD
-          - ENTREPRISE_CEO
+            - LANDLORD
+            - ENTREPRISE_CEO
         name:
           type: string
         mimeType:
@@ -1279,13 +1279,13 @@ components:
           format: date-time
         landlordId:
           type:
-          - integer
-          - "null"
+            - integer
+            - "null"
           format: int64
         landlordName:
           type:
-          - string
-          - "null"
+            - string
+            - "null"
     SettingsRequest:
       type: object
       properties:
@@ -1570,8 +1570,8 @@ components:
     RentReceiptRequest:
       type: object
       required:
-      - landlordId
-      - tenantId
+        - landlordId
+        - tenantId
       properties:
         month:
           type: string

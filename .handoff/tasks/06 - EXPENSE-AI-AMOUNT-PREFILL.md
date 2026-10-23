@@ -31,7 +31,7 @@ Keep as-is: analysis-panel sentence already corrected.
 ## Acceptance
 
 - [ ] Backend: one-decimal kept, `€` normalized to `EUR`, `USD` preserved, `174,6`/`74,65` still rejected (red first).
-- [ ] Frontend: `isEuroCurrency` accepts `EUR`, `€`, `euro`, ` EUR `, null and rejects `USD` (red first).
+- [ ] Frontend: `isEuroCurrency` accepts `EUR`, `€`, `euro`, `EUR`, null and rejects `USD` (red first).
 - [ ] Cypress: upload `facture-fibre-74-6.txt` (`74,6 €`) → box shows `74.60`, `btn-confirmer-montant` visible; existing 39,99 case still green.
 - [ ] Gates pass with real counts.
 

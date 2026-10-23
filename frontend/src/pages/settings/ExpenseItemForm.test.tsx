@@ -1,0 +1,244 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { api } from "@/api/endpoints";
+import { queryKeys } from "@/api/queries";
+import type { ExpenseItemDto } from "@/api/types";
+import { useToasts } from "@/state/toasts";
+import { ExpenseItemForm } from "./ExpenseItemForm";
+
+vi.mock("@/api/endpoints", () => ({
+  api: {
+    expenseItems: {
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+  },
+}));
+
+const ITEM: ExpenseItemDto = {
+  id: 9,
+  code: "gaz",
+  label: "Gaz",
+  supplier: "EDF",
+  proRataPct: "12.50",
+  periodicity: "ANNUAL",
+  sortOrder: 2,
+  active: false,
+  multipleLinesAllowed: true,
+};
+
+function renderForm(
+  props: Partial<Parameters<typeof ExpenseItemForm>[0]> = {},
+) {
+  const onClose = vi.fn();
+  const queryClient = new QueryClient({
+    defaultOptions: { mutations: { retry: false } },
+  });
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+  render(
+    <ExpenseItemForm
+      item={null}
+      defaultProRata="35.71"
+      defaultOrder={4}
+      onClose={onClose}
+      {...props}
+    />,
+    { wrapper },
+  );
+  return { onClose, queryClient };
+}
+
+function toastMessages(): string[] {
+  return useToasts.getState().toasts.map((element) => element.message);
+}
+
+beforeEach(() => {
+  vi.mocked(api.expenseItems.create).mockReset();
+  vi.mocked(api.expenseItems.update).mockReset();
+  vi.mocked(api.expenseItems.delete).mockReset();
+  useToasts.setState({ toasts: [] });
+});
+
+describe("ExpenseItemForm", () => {
+  it("defaults a new item from the provided prorata and order", () => {
+    renderForm();
+
+    expect(
+      screen.getByRole("heading", { name: "Ajouter un type de frais" }),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Code")).toBeEnabled();
+    expect(screen.getByLabelText("Code")).toHaveValue("");
+    expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
+      "35,71",
+    );
+    expect(screen.getByLabelText("Ordre d’affichage")).toHaveValue(4);
+    expect(screen.getByLabelText(/Poste actif/)).toBeChecked();
+    expect(
+      screen.getByLabelText(/Plusieurs lignes autorisées/),
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole("button", { name: "Ajouter le poste" }),
+    ).toBeInTheDocument();
+  });
+
+  it("rejects an empty label and an invalid prorata", async () => {
+    renderForm();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Ajouter le poste" }));
+    expect(
+      await screen.findByText("Le libellé est obligatoire."),
+    ).toBeVisible();
+    expect(api.expenseItems.create).not.toHaveBeenCalled();
+
+    await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
+    await user.clear(screen.getByLabelText("Prorata par défaut (%)"));
+    await user.type(screen.getByLabelText("Prorata par défaut (%)"), "120");
+    await user.click(screen.getByRole("button", { name: "Ajouter le poste" }));
+    expect(
+      await screen.findByText("Prorata attendu entre 0 et 100."),
+    ).toBeVisible();
+    expect(api.expenseItems.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid code", async () => {
+    renderForm();
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Code"), "bad code");
+    await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
+    await user.click(screen.getByRole("button", { name: "Ajouter le poste" }));
+
+    expect(
+      await screen.findByText(
+        "Code invalide : lettres, chiffres, tirets et underscores uniquement.",
+      ),
+    ).toBeVisible();
+    expect(api.expenseItems.create).not.toHaveBeenCalled();
+  });
+
+  it("creates an item with normalized values and closes", async () => {
+    vi.mocked(api.expenseItems.create).mockResolvedValue({
+      id: 1,
+      label: "Gaz",
+    });
+    const { onClose, queryClient } = renderForm();
+    queryClient.setQueryData(queryKeys.expenseItems(true), []);
+    queryClient.setQueryData(queryKeys.expenseItems(false), []);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Code"), "gaz-2");
+    await user.type(screen.getByLabelText("Libellé affiché"), "  Gaz  ");
+    await user.type(screen.getByLabelText("Fournisseur"), " EDF ");
+    await user.clear(screen.getByLabelText("Prorata par défaut (%)"));
+    await user.type(screen.getByLabelText("Prorata par défaut (%)"), "12,5");
+    await user.selectOptions(screen.getByLabelText("Périodicité"), "ANNUAL");
+    await user.click(screen.getByLabelText(/Plusieurs lignes autorisées/));
+    await user.click(screen.getByLabelText(/Poste actif/));
+    await user.click(screen.getByRole("button", { name: "Ajouter le poste" }));
+
+    await waitFor(() =>
+      expect(api.expenseItems.create).toHaveBeenCalledWith({
+        code: "gaz-2",
+        label: "Gaz",
+        supplier: "EDF",
+        proRataPct: "12.5",
+        periodicity: "ANNUAL",
+        sortOrder: 4,
+        active: false,
+        multipleLinesAllowed: true,
+      }),
+    );
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(toastMessages()).toContain(
+      "Poste « Gaz » ajouté à la liste des frais.",
+    );
+    expect(
+      queryClient.getQueryState(queryKeys.expenseItems(true))?.isInvalidated,
+    ).toBe(true);
+  });
+
+  it("omits an empty optional code", async () => {
+    vi.mocked(api.expenseItems.create).mockResolvedValue({
+      id: 2,
+      label: "Eau",
+    });
+    renderForm();
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Libellé affiché"), "Eau");
+    await user.click(screen.getByRole("button", { name: "Ajouter le poste" }));
+
+    await waitFor(() =>
+      expect(api.expenseItems.create).toHaveBeenCalledWith(
+        expect.objectContaining({ label: "Eau", proRataPct: "35.71" }),
+      ),
+    );
+    expect(
+      vi.mocked(api.expenseItems.create).mock.calls[0][0],
+    ).not.toHaveProperty("code");
+  });
+
+  it("edits an existing item without sending its immutable code", async () => {
+    vi.mocked(api.expenseItems.update).mockResolvedValue({
+      id: 9,
+      label: "Gaz",
+    });
+    const { onClose } = renderForm({ item: ITEM });
+
+    expect(
+      screen.getByRole("heading", { name: "Modifier le poste « Gaz »" }),
+    ).toBeVisible();
+    expect(screen.getByText("gaz")).toBeVisible();
+    expect(screen.getByLabelText("Code")).toBeDisabled();
+    expect(screen.getByLabelText("Code")).toHaveAttribute("readonly");
+    expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
+      "12,50",
+    );
+    expect(screen.getByLabelText("Périodicité")).toHaveValue("ANNUAL");
+    expect(screen.getByLabelText("Ordre d’affichage")).toHaveValue(2);
+    expect(screen.getByLabelText(/Poste actif/)).not.toBeChecked();
+    expect(screen.getByLabelText(/Plusieurs lignes autorisées/)).toBeChecked();
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Enregistrer le poste" }));
+
+    await waitFor(() =>
+      expect(api.expenseItems.update).toHaveBeenCalledWith(9, {
+        label: "Gaz",
+        supplier: "EDF",
+        proRataPct: "12.5",
+        periodicity: "ANNUAL",
+        sortOrder: 2,
+        active: false,
+        multipleLinesAllowed: true,
+      }),
+    );
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(toastMessages()).toContain("Poste « Gaz » mis à jour.");
+  });
+
+  it("surfaces a request error, clears it and closes with Annuler", async () => {
+    vi.mocked(api.expenseItems.create).mockRejectedValue(
+      new Error("Poste déjà existant"),
+    );
+    const { onClose } = renderForm();
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
+    await user.click(screen.getByRole("button", { name: "Ajouter le poste" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Poste déjà existant");
+
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});

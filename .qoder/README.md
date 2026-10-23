@@ -4,11 +4,11 @@ Three workflow agents drive one task at a time through a handoff file. The workf
 adapted from the rag-support-assistant agent set to this project's contract, monetary,
 template and git rules.
 
-| Order | Agent      | Scope                                                                        |
-| ----- | ---------- | ---------------------------------------------------------------------------- |
+| Order | Agent      | Scope                                                                                                                             |
+| ----- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | 0     | `lead`     | sizes the task, creates the branch, finds the context files, writes the compact handoff, routes, reports. Edits only `.handoff/`. |
-| 1     | `builder`  | implements and tests in one loop: failing test, code, targeted tests, gates, self-fix. |
-| 2     | `reviewer` | read-only, diff-scoped review. Blockers only, no style, no full-suite re-run. |
+| 1     | `builder`  | implements and tests in one loop: failing test, code, targeted tests, gates, self-fix.                                            |
+| 2     | `reviewer` | read-only, diff-scoped review. Blockers only, no style, no full-suite re-run.                                                     |
 
 `lead` absorbs the former orchestrator and planner; `builder` absorbs the former coder and
 tester. Pipeline by size: `S` = builder only, `M` = builder + one review, `L` = builder + at
@@ -19,11 +19,11 @@ the diff forces a review whatever the size.
 
 All three agents use DeepSeek Flash:
 
-| Agent       | Model (OpenCode)                    | Model (Qoder)    | Role                       |
-| ----------- | ----------------------------------- | ---------------- | -------------------------- |
-| `lead`      | `opencode/deepseek-v4.1-flash-free` | `DeepSeek-Flash` | sizing, handoff, routing   |
-| `builder`   | `opencode/deepseek-v4.1-flash-free` | `DeepSeek-Flash` | implementation and tests   |
-| `reviewer`  | `opencode/deepseek-v4.1-flash-free` | `DeepSeek-Flash` | blocker-only diff review   |
+| Agent      | Model (OpenCode)                    | Model (Qoder)    | Role                     |
+| ---------- | ----------------------------------- | ---------------- | ------------------------ |
+| `lead`     | `opencode/deepseek-v4.1-flash-free` | `DeepSeek-Flash` | sizing, handoff, routing |
+| `builder`  | `opencode/deepseek-v4.1-flash-free` | `DeepSeek-Flash` | implementation and tests |
+| `reviewer` | `opencode/deepseek-v4.1-flash-free` | `DeepSeek-Flash` | blocker-only diff review |
 
 - `.opencode/agents/*.md` pins `opencode/deepseek-v4.1-flash-free` in frontmatter.
 - `.qoder/agents/*.md` pins Qoder's own model name, `DeepSeek-Flash`.
@@ -36,15 +36,15 @@ Do not copy an OpenCode provider ID into a Qoder agent; use the Qoder model name
 OpenCode settings live in `.opencode/opencode.json`; the Qoder equivalents live in
 `.qoder/settings.json` and in the agent frontmatter:
 
-| OpenCode | Qoder equivalent |
-| --- | --- |
-| `default_agent: lead` | `"agent": "lead"` in `.qoder/settings.json` (restart required) |
-| `lead`/`builder`/`reviewer` model pin | `model: DeepSeek-Flash` in every agent file |
-| `reviewer` edit/shell/execute deny | `disallowedTools: [Write, Edit, NotebookEdit, Bash, Agent]` + `permissionMode: dontAsk` |
-| `experimental.subagent_depth: 2` | Nested dispatch works while the `Agent` tool stays enabled |
-| `skills: [".qoder/skills"]` | Default discovery; no setting needed |
-| Git guards in `permissions` | `permissions.deny` with `Bash(git ...)` rules |
-| `instructions: [".opencode/instructions/*.md"]` | No glob loader; the agents read these files on demand |
+| OpenCode                                        | Qoder equivalent                                                                        |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `default_agent: lead`                           | `"agent": "lead"` in `.qoder/settings.json` (restart required)                          |
+| `lead`/`builder`/`reviewer` model pin           | `model: DeepSeek-Flash` in every agent file                                             |
+| `reviewer` edit/shell/execute deny              | `disallowedTools: [Write, Edit, NotebookEdit, Bash, Agent]` + `permissionMode: dontAsk` |
+| `experimental.subagent_depth: 2`                | Nested dispatch works while the `Agent` tool stays enabled                              |
+| `skills: [".qoder/skills"]`                     | Default discovery; no setting needed                                                    |
+| Git guards in `permissions`                     | `permissions.deny` with `Bash(git ...)` rules                                           |
+| `instructions: [".opencode/instructions/*.md"]` | No glob loader; the agents read these files on demand                                   |
 
 Qoder frontmatter requires `name` and `description`; a file without them is reported as a
 load error. The agent README lives at `.qoder/README.md`, not under `.qoder/agents/`, because
@@ -80,11 +80,11 @@ change.
 
 The same three agents exist in three formats:
 
-| Directory                  | Format                  | Role             |
-| -------------------------- | ----------------------- | ---------------- |
-| `.qoder/agents/*.md`       | Qoder custom agents     | source of truth  |
-| `.opencode/agents/*.md`    | OpenCode subagents      | mirror           |
-| `.github/agents/*.agent.md`| GitHub Copilot agents   | mirror           |
+| Directory                   | Format                | Role            |
+| --------------------------- | --------------------- | --------------- |
+| `.qoder/agents/*.md`        | Qoder custom agents   | source of truth |
+| `.opencode/agents/*.md`     | OpenCode subagents    | mirror          |
+| `.github/agents/*.agent.md` | GitHub Copilot agents | mirror          |
 
 When a workflow rule changes, update the source first, then the two mirrors, and only when
 the user explicitly requests the cross-folder change.

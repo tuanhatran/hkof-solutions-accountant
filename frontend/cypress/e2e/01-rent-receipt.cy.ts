@@ -3,7 +3,6 @@ import {
   SEED_RENT,
   SEED_TOTAL,
   waitForText,
-  waitForText,
   waitForValue,
   downloadAndReadPdf,
 } from "../support/helpers";
@@ -68,26 +67,26 @@ describe("Rent receipt", () => {
     cy.get('[data-cy="dialogue-regeneration-quittance"]').should("not.exist");
     cy.contains("version 2", { timeout: 25_000 }).should("be.visible");
 
-    cy.request<RentReceiptSummary[]>(
-      `/api/rent-receipts?month=${MONTHS}`,
-    ).then(({ body }) => {
-      expect(body, "receipts of the month").to.have.length(2);
-      expect(body.map((receipt) => receipt.status)).to.deep.eq([
-        "ACTIVE",
-        "ACTIVE",
-      ]);
-      expect(body.map((receipt) => receipt.version)).to.deep.eq([2, 1]);
-      const pair = body[0];
-      expect(pair.landlordName).to.eq("Nom du bailleur");
-      expect(pair.tenantName).to.eq("Nom du locataire");
+    cy.request<RentReceiptSummary[]>(`/api/rent-receipts?month=${MONTHS}`).then(
+      ({ body }) => {
+        expect(body, "receipts of the month").to.have.length(2);
+        expect(body.map((receipt) => receipt.status)).to.deep.eq([
+          "ACTIVE",
+          "ACTIVE",
+        ]);
+        expect(body.map((receipt) => receipt.version)).to.deep.eq([2, 1]);
+        const pair = body[0];
+        expect(pair.landlordName).to.eq("Nom du bailleur");
+        expect(pair.tenantName).to.eq("Nom du locataire");
 
-      cy.request<RentReceiptSummary>(
-        `/api/rent-receipts/active?month=${MONTHS}&landlordId=${pair.landlordId}&tenantId=${pair.tenantId}`,
-      ).then(({ body: active }) => {
-        expect(active.version).to.eq(2);
-        expect(active.status).to.eq("ACTIVE");
-      });
-    });
+        cy.request<RentReceiptSummary>(
+          `/api/rent-receipts/active?month=${MONTHS}&landlordId=${pair.landlordId}&tenantId=${pair.tenantId}`,
+        ).then(({ body: active }) => {
+          expect(active.version).to.eq(2);
+          expect(active.status).to.eq("ACTIVE");
+        });
+      },
+    );
 
     cy.get('[data-cy="tab-historique"]').click();
     const group = '[data-cy="historique-mois-2026-01"]';

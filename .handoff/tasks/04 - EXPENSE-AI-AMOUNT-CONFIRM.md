@@ -60,4 +60,3 @@ Status: DONE
 ### Reviewer — 2026-10-22 (Round 1/2)
 
 VERDICT: PASS — confirmation is pending only while the box holds the AI proposal (typing, rent, manual and saved-line paths clear or pre-confirm it, and the Enter-key path is guarded in `saveExpense`), the new Cypress assertions fail on pre-fix code, and no money/contract/`any`/template defect is introduced in the reviewed files.
-

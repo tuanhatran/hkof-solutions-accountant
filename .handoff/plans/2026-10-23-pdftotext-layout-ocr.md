@@ -72,6 +72,7 @@
 **Interfaces:** `public static Resolution resolve(String text)` → `record Resolution(String ttc, String ht, String excerpt)`; `null` when no unique candidate.
 
 Rules:
+
 - Lines are scanned (max 400). A "total line" normalizes accents/lowercase and contains one of: `total a payer`, `net a payer`, `montant a payer`, `montant total`, `total ttc`, `total aupres`, `total facture`, `total de la facture`; it must not contain `total ht`, `total hors taxe`, `total tva`, `solde`, `cumul`.
 - Amounts per line: `\d{1,3}(?:[ \u00A0\u202F]\d{3})*[.,]\d{2}` converted to `"123.45"`.
 - For every total line holding ≥ 2 amounts, and for each rate in `{5.5, 10, 20}`: if `CalculationService.grossFromNet(a, rate)` equals `b`, record `(ht=a, ttc=b)`. Distinct TTC values: exactly 1 → resolution; ≥ 2 → `null`.
