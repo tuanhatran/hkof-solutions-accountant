@@ -55,7 +55,7 @@ Apply this rubric before anything else; when in doubt pick the larger size.
 
 | Size | Pipeline |
 | ---- | -------- |
-| S    | `builder` only. No plan section, no `reviewer`. You skim `git diff` at the end and report. |
+| S    | `builder` only. No plan section, no `reviewer`. You skim `git diff` at the end, set `USER_REVIEW` and report. |
 | M    | compact handoff, `builder`, then `reviewer` once. |
 | L    | compact handoff, `builder`, then `reviewer`, maximum 2 review rounds. |
 
@@ -67,12 +67,9 @@ If the diff at the end touches one of those areas while the task was sized S, ca
 
 ## Models
 
-- **best** (planning and coding): `opencode/glm-5.3-flash-free` — your pinned model and
-  `builder`'s default.
-- **medium** (blocker-only review): `opencode/big-pickle` — `reviewer`'s default.
-- **quick** (S tasks): `opencode/mimo-v2.6-flash-free` — dispatch `builder` with this model
-  through the `subagent` tool's `model` parameter. `M` and `L` keep the default. If the
-  override is unavailable, run the default and record it in the handoff.
+All three agents pin `opencode/deepseek-v4.1-flash-free` in their frontmatter. Never pass a
+`model` override when dispatching `builder` or `reviewer`: there is no tier split and the
+quick override is gone.
 
 ## Handoff
 
@@ -87,12 +84,19 @@ Never rewrite evidence lines written by another agent; append only.
 
 ## Loop control
 
+- The pipeline stops at `USER_REVIEW`: `builder` (S) and `reviewer` (M/L) never set `DONE`.
+  Report the result and ask the user to accept or request changes.
+- Explicit user acceptance: set `DONE` and append `lead: DONE — user accepted`.
+- User feedback before acceptance: set `USER_CHANGES_REQUESTED`, append the request to Goal
+  and Acceptance, reset `Round:` to 0 and route back to `builder`. Never rewrite an existing
+  evidence line.
 - Maximum 2 review rounds, counted in `Round:` inside the handoff. Round 2 is the last: if a
   blocker remains, set `BLOCKED` and give the user the single decision plus the failing
   evidence. Never a third round.
 - If a stage returns without changing the handoff status, do not re-dispatch it; name the
   stalled stage and stop.
-- Never reopen a `DONE` task; ask for a new task ID.
+- Never reopen a `DONE` task: a later requirement gets a new task ID, it is not a
+  `USER_CHANGES_REQUESTED`.
 - If nested dispatch is unavailable (for example a subagent depth limit), stop and tell the
   user which agent to run next and with which status; never collapse the roles silently.
 - Refuse any exception to the money, contract or template rules and escalate to the user.
@@ -101,5 +105,7 @@ Never rewrite evidence lines written by another agent; append only.
 ## Report
 
 Close with: task ID, branch, size, files changed, commands actually run with real results,
-contract impact (`none` or exact YAML paths), unresolved risks. English; user-facing excerpts
-keep their French wording. Never include secret values or real personal data.
+contract impact (`none` or exact YAML paths), unresolved risks, and the explicit question
+asking the user to accept or request changes. The task stays `USER_REVIEW` until that answer;
+set `DONE` only once the user has accepted. English; user-facing excerpts keep their French
+wording. Never include secret values or real personal data.

@@ -33,17 +33,20 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
 - `.qoder/skills` is registered as an extra skill source, so the vendored Superpowers
   skills remain the single copy.
 - `.opencode/skills/*/SKILL.md` are project skills, advertised by their `description`.
-- `.opencode/agents/*.md` are agents available through the `subagent` tool. All three use
-  `mode: all` so they can also be invoked directly. `lead` dispatches `builder` and
-  `reviewer`, which needs `experimental.subagent_depth: 2` in `opencode.json`. Pipeline by
-  size: `S` = builder only, `M` = builder + one review, `L` = builder + at most two review
-  rounds. Task handoffs live in the shared `.handoff/tasks/` tree, also used by the Qoder and
-  Copilot agents.
-- Model tiers, pinned in each agent's frontmatter: **best** `opencode/glm-5.3-flash-free`
-  (`lead`, `builder`), **medium** `opencode/big-pickle` (`reviewer`), **quick**
-  `opencode/mimo-v2.6-flash-free` (passed by `lead` as a model override when dispatching an
-  `S` task). These IDs belong to the OpenCode provider; Qoder and Copilot select their own
-  models separately (see `.qoder/agents/README.md`).
+- `.opencode/agents/*.md` define the workflow: `lead` (`mode: primary`, read-only: no `edit`,
+  `shell` or `execute`), `builder` (`mode: all`, full edit and shell) and `reviewer`
+  (`mode: subagent`, read-only). `opencode.json` sets `default_agent` to `lead`, and `lead`
+  launches `builder` and `reviewer`, which needs `experimental.subagent_depth: 2`.
+- Models pinned in frontmatter: `lead` `opencode/nemotron-3-ultra-free`, `builder`
+  `opencode/deepseek-v4.1-flash-free`, `reviewer` `opencode/glm-5.3-flash-free` (a different
+  family from the builder on purpose). Qoder and Copilot select their own models.
+- Sizing: `S` = 1-2 files, builder only; `M` = 3-5 files or some risk, builder then one review;
+  `L` = 6+ files, new architecture or unclear requirements, parallel builders then one review
+  on the combined diff. Money, contract, migration, template sandbox, LLM or secrets always
+  force a review.
+- Handoffs are messages (Goal, Files, Constraints, Expected output), not files: the read-only
+  lead cannot write the shared `.handoff/` tree. The status flow documented in
+  `.handoff/TEMPLATE.md` still governs the Qoder and Copilot mirrors.
 - Global permissions in `opencode.json` deny `git commit`, `push`, `reset`, `clean`,
   `stash`, `worktree` and branch deletion.
 

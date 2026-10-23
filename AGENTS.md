@@ -50,6 +50,11 @@ tree, so a task continues unchanged whichever configuration runs it.
 diff touching money, `openapi/openapi.yaml`, a migration, the template sandbox, the LLM path
 or secrets is reviewed whatever its size.
 
+The pipeline never sets `DONE` itself: `builder` ends at `REVIEW` (M/L) or `USER_REVIEW` (S),
+`reviewer` ends at `USER_REVIEW` on success. Only the lead sets `DONE`, after the user accepts.
+User feedback before acceptance sets `USER_CHANGES_REQUESTED` and routes back to `builder` with
+`Round` reset to 0. A `DONE` task is never reopened; a later requirement gets a new task ID.
+
 ## File graph
 
 The repository file graph is the local CodeGraph index in `.codegraph/` (SQLite,
