@@ -59,7 +59,7 @@ export async function request<T>(
   }
   if (!response.ok) {
     const message = await messageFromResponse(response);
-    let problem: ProblemDetail | null = null;
+    let problem: ProblemDetail | null;
     try {
       const text = await response.clone().text();
       problem = text ? (JSON.parse(text) as ProblemDetail) : null;
