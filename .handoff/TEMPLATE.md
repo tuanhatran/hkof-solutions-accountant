@@ -1,5 +1,11 @@
 # <TASK-ID>
 
+<!--
+File name: `.handoff/tasks/<NN> - <TASK-ID>.md`. `<NN>` is the next unused
+zero-padded two-digit number in that folder: if the last file is
+`14 - AGENT-E2E-DONE-RULE.md`, the next handoff file begins with `15 - `.
+-->
+
 Status: TODO
 Branch: <branch>
 Size: S | M | L
@@ -56,7 +62,8 @@ There is no IN_PROGRESS. A DONE task is never reopened: a later requirement gets
 task ID.
 
 Who writes what:
-- lead: Status, Branch, Size, Round, Goal, Files, Constraints, Acceptance, Commands;
+- lead: picks the next `<NN>` and writes `.handoff/tasks/<NN> - <TASK-ID>.md`;
+  Status, Branch, Size, Round, Goal, Files, Constraints, Acceptance, Commands;
   USER_REVIEW after the S diff skim, DONE on explicit user acceptance,
   USER_CHANGES_REQUESTED on user feedback.
 - builder: evidence lines, Status REVIEW (M/L) or USER_REVIEW (S) when its gates pass.
