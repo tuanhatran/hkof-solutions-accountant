@@ -168,6 +168,24 @@ export function downloadAndReadPdf(
     .then((text) => verify(normalize(text)));
 }
 
+export function downloadAndReadZip(
+  trigger: string,
+  fileName: string,
+  verify: (entries: Record<string, string>) => void,
+): void {
+  cy.task("clearDownloads");
+  cy.get(trigger).click();
+  cy.task<string>("waitForDownload", fileName)
+    .then((filePath) => cy.task<Record<string, string>>("readZipText", filePath))
+    .then((entries) => {
+      const normalized: Record<string, string> = {};
+      for (const [name, text] of Object.entries(entries)) {
+        normalized[name] = normalize(text);
+      }
+      verify(normalized);
+    });
+}
+
 export function waitForAnalysisText(
   text: string | RegExp,
   timeout = 35_000,

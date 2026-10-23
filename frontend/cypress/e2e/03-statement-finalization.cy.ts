@@ -6,6 +6,7 @@ import {
   createRentReceipt,
   disableLlm,
   downloadAndReadPdf,
+  downloadAndReadZip,
 } from "../support/helpers";
 
 const LINES = [
@@ -65,15 +66,29 @@ describe("Expense statement — finalization", () => {
       },
     );
 
-    downloadAndReadPdf(
+    downloadAndReadZip(
       '[data-cy="btn-telecharger-note-complete"]',
-      "note_frais_2026-01_complet.pdf",
-      (text) => {
-        expect(text).to.contain("NOTE DE FRAIS D'OCCUPATION");
-        expect(text).to.contain("QUITTANCE DE LOYER");
-        expect(text).to.contain("facture-gaz.txt");
-        expect(text).to.contain("1 124,33 €");
-        expect(text).not.to.contain("APERÇU");
+      "note_frais_2026-01_complet.zip",
+      (entries) => {
+        const names = Object.keys(entries);
+        expect(names).to.include("note_frais_2026-01.pdf");
+        expect(names).to.include("quittance_2026-01.pdf");
+        expect(names).to.include("justificatifs/01_facture-gaz.txt");
+        expect(
+          names.filter((name) => name.startsWith("justificatifs/")),
+        ).to.have.length(5);
+
+        const note = entries["note_frais_2026-01.pdf"];
+        expect(note).to.contain("NOTE DE FRAIS D'OCCUPATION");
+        expect(note).to.contain("1 124,33 €");
+        expect(note).not.to.contain("APERÇU");
+        expect(note).not.to.contain("QUITTANCE DE LOYER");
+        expect(entries["quittance_2026-01.pdf"]).to.contain(
+          "QUITTANCE DE LOYER",
+        );
+        expect(entries["justificatifs/01_facture-gaz.txt"]).to.contain(
+          "Facture de gaz naturel",
+        );
       },
     );
 

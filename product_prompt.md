@@ -139,6 +139,7 @@ API paths, query parameters and JSON field names are in English (code contracts,
 - `POST /expense-statements/preview` (body `month`, `templateId?`, `complete?`, `lines`) → watermarked PDF, nothing is persisted
 - `POST /expense-statements` (body `month`, `templateId?`, `lines`) → saves and generates the PDFs
 - `GET /expense-statements?month=YYYY-MM` (month optional), `GET /expense-statements/active?month=YYYY-MM`, `GET /expense-statements/{id}`, `GET /expense-statements/{id}/pdf?complete=true|false`
+- `GET /expense-statements/{id}/zip`: complete download archive `note_frais_YYYY-MM_complet.zip` containing the note PDF, the month's active rent-receipt PDF (omitted when none) and each justificatif in its original format under `justificatifs/`
 
 **AI analysis**
 - `POST /receipts/{id}/analysis` → `202` + `analysisId`
@@ -253,11 +254,11 @@ On each tab, the window is split into **two panels**: "Saisie" (input) on the le
 
 ### "Frais ajoutés" (Added expenses) list
 - Table: Type | Fournisseur (Supplier) | Montant TTC | Prorata % | Montant retenu (retained amount) | actions (edit, delete with confirmation, view the supporting document). "IA" badge on amounts coming from a detection.
-- Prorata editable directly in the row.
+- Prorata displayed in the row (read-only); it is set in the add form and changed through the line edit action.
 - **Total retenu** (total retained) in figures and in words, recalculated via `POST /notes-frais/calcul` (debounce 300 ms).
 - Reminder of the pro-rata basis ("Surface pro 25 m² / 70 m² = 35,71 %" = professional surface 25 m² / 70 m² = 35.71 %).
 - Non-blocking indicator of missing types ("Il manque : téléphone, fibre" = Missing: phone, fibre).
-- **"Générer la note de frais"** (Generate the expense statement): disabled if the list is empty. After generation: "Télécharger la note seule" (Download statement only), "Télécharger la note complète (avec annexes)" (Download full statement with annexes), "Ouvrir" (Open). If a statement already exists for this month: confirmation, then a new version.
+- **"Générer la note de frais"** (Generate the expense statement): disabled if the list is empty. After generation: "Télécharger la note seule" (Download statement only) saves `note_frais_YYYY-MM.pdf`; "Télécharger la note complète (ZIP)" downloads `note_frais_YYYY-MM_complet.zip` with the note PDF, the month's rent-receipt PDF and every justificatif in its original format; "Ouvrir" (Open) still opens the merged full PDF. If a statement already exists for this month: confirmation, then a new version.
 
 ### Calculation (backend only)
 1. **Monthly amount**: the amount incl. VAT of the invoice. No pro rata temporis: the full amount counts in the statement month.
@@ -269,8 +270,8 @@ On each tab, the window is split into **two panels**: "Saisie" (input) on the le
 - Table: Poste (item) | Fournisseur (supplier) | Période (statement month) | Montant TTC | Prorata % | Montant retenu.
 - Grand total in figures and in words; reminder of the pro-rata basis.
 - Reimbursement wording for the manager, date, signature.
-- **Annexes** (full version): the month's receipt, then each supporting document, merged in sequence (images converted to an A4 page).
-- Files: `note_frais_YYYY-MM.pdf` and `note_frais_YYYY-MM_complet.pdf`.
+- **Annexes** (merged full version, kept for "Ouvrir" and the complete preview): the month's receipt, then each supporting document, merged in sequence (images converted to an A4 page).
+- Files: `note_frais_YYYY-MM.pdf` (note only), `note_frais_YYYY-MM_complet.pdf` (merged full PDF) and `note_frais_YYYY-MM_complet.zip` (note PDF + month receipt PDF + original justificatifs under `justificatifs/`).
 
 # AUTOMATIC ANALYSIS OF SUPPORTING DOCUMENTS (LLM)
 
@@ -347,7 +348,7 @@ Two cards: **Quittance de loyer** (rent receipt) and **Note de frais d'occupatio
 
 # PAGES "HISTORIQUE" (HISTORY) AND "CONFIGURATION"
 
-**History**: list by month (most recent first) with the status of the receipt and the statement (not generated / generated vX), total, dates, version of the template used, PDF downloads, access to previous versions, "Rouvrir et modifier" (Reopen and edit) (reloads the lines into the expense statement tab).
+**History**: list by month (most recent first) with the status of the receipt and the statement (not generated / generated vX), total, dates, version of the template used, PDF downloads ("Note seule", "Note complète (ZIP)"), access to previous versions, "Rouvrir et modifier" (Reopen and edit) (reloads the lines into the expense statement tab). "Ouvrir" still opens the merged full PDF.
 
 **Configuration**: company, dwelling (surfaces), landlord, tenant, rent and provision, **management of expense items** (label, supplier, default pro-rata, periodicity, active, order, multiple lines allowed). Changes feed the dropdown and the default values.
 

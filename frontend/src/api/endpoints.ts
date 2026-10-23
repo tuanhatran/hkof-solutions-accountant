@@ -132,6 +132,9 @@ export const api = {
       blobRequest(`/api/expense-statements/${id}/pdf?complete=${complete}`),
     pdfUrl: (id: number, complete: boolean) =>
       `/api/expense-statements/${id}/pdf?complete=${complete}`,
+    zip: (id: number): Promise<ResponseBlob> =>
+      blobRequest(`/api/expense-statements/${id}/zip`),
+    zipUrl: (id: number) => `/api/expense-statements/${id}/zip`,
   },
 
   signatures: {

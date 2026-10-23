@@ -2,6 +2,7 @@ import { defineConfig } from "cypress";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { PDFParse } from "pdf-parse";
+import { openPromise, type Entry, type ZipFile } from "yauzl";
 
 const ROOT = process.cwd();
 const DOWNLOADS_DIR = path.resolve(ROOT, "cypress/downloads");
@@ -37,6 +38,52 @@ async function waitForDownload(
   throw new Error(`Download missing after ${timeoutMs} ms: ${name}`);
 }
 
+async function pdfText(data: Buffer): Promise<string> {
+  const parser = new PDFParse({ data });
+  const result = await parser.getText();
+  await parser.destroy();
+  return result.text;
+}
+
+async function zipEntryText(zipFile: ZipFile, entry: Entry): Promise<string> {
+  const stream = await zipFile.openReadStreamPromise(entry);
+  const data = await new Promise<Buffer>((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    stream.on("data", (chunk: Buffer) => chunks.push(chunk));
+    stream.on("end", () => resolve(Buffer.concat(chunks)));
+    stream.on("error", reject);
+  });
+  return entry.fileName.toLowerCase().endsWith(".pdf")
+    ? pdfText(data)
+    : data.toString("utf8");
+}
+
+async function readZipEntries(filePath: string): Promise<Record<string, string>> {
+  const absolutePath = filePath.startsWith(ROOT)
+    ? filePath
+    : resolvePath(filePath);
+  const zipFile = await openPromise(absolutePath, { lazyEntries: true });
+  const entries: Record<string, string> = {};
+  await new Promise<void>((resolve, reject) => {
+    zipFile.on("error", reject);
+    zipFile.on("end", resolve);
+    zipFile.on("entry", (entry: Entry) => {
+      if (entry.fileName.endsWith("/")) {
+        zipFile.readEntry();
+        return;
+      }
+      zipEntryText(zipFile, entry)
+        .then((text) => {
+          entries[entry.fileName] = text;
+          zipFile.readEntry();
+        })
+        .catch(reject);
+    });
+    zipFile.readEntry();
+  });
+  return entries;
+}
+
 export default defineConfig({
   e2e: {
     baseUrl: "http://localhost:8080",
@@ -59,11 +106,10 @@ export default defineConfig({
           const absolutePath = filePath.startsWith(ROOT)
             ? filePath
             : resolvePath(filePath);
-          const data = await fs.readFile(absolutePath);
-          const parser = new PDFParse({ data });
-          const result = await parser.getText();
-          await parser.destroy();
-          return result.text;
+          return pdfText(await fs.readFile(absolutePath));
+        },
+        async readZipText(filePath: string): Promise<Record<string, string>> {
+          return readZipEntries(filePath);
         },
         async fileSize(filePath: string): Promise<number> {
           const absolutePath = filePath.startsWith(ROOT)
