@@ -84,7 +84,14 @@ The same three agents exist in three formats:
 | `.opencode/agents/*.md`    | OpenCode subagents      | mirror           |
 | `.github/agents/*.agent.md`| GitHub Copilot agents   | mirror           |
 
-When a workflow rule changes, update the source first, then the two mirrors.
+When a workflow rule changes, update the source first, then the two mirrors, and only when
+the user explicitly requests the cross-folder change.
+
+## Settings folder ownership
+
+Touch only your own settings folder (agents, instructions, skills, commands): `.qoder/` for
+Qoder, `.opencode/` for OpenCode, `.github/` for Copilot. Never edit another configuration
+folder unless the user explicitly requests that cross-folder change.
 
 ## Git rules
 
