@@ -91,4 +91,25 @@ describe("generated document query invalidation", () => {
         ?.isInvalidated,
     ).toBe(false);
   });
+
+  it("keeps the active rent receipt pair-scoped and invalidates every pair", () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(queryKeys.rentReceiptActive(month, 1, 2), null);
+    queryClient.setQueryData(queryKeys.rentReceiptActive(month, 3, 4), null);
+
+    expect(queryKeys.rentReceiptActive(month, 1, 2)).not.toEqual(
+      queryKeys.rentReceiptActive(month, 3, 4),
+    );
+
+    void queryClient.invalidateQueries({ queryKey: queryKeys.rentReceiptsAll });
+
+    expect(
+      queryClient.getQueryState(queryKeys.rentReceiptActive(month, 1, 2))
+        ?.isInvalidated,
+    ).toBe(true);
+    expect(
+      queryClient.getQueryState(queryKeys.rentReceiptActive(month, 3, 4))
+        ?.isInvalidated,
+    ).toBe(true);
+  });
 });

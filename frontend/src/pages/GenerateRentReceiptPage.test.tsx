@@ -8,6 +8,7 @@ import { queryKeys } from "@/api/queries";
 import type {
   LandlordDto,
   LeaseDto,
+  RentReceiptDto,
   SignatureDto,
   TenantDto,
 } from "@/api/types";
@@ -16,6 +17,7 @@ import { GenerateRentReceiptPage } from "./GenerateRentReceiptPage";
 
 let signatureList: SignatureDto[] = [];
 let signatureError: Error | null = null;
+let activeReceipt: RentReceiptDto | null = null;
 let landlordList: LandlordDto[] = [];
 let tenantList: TenantDto[] = [];
 let leaseList: LeaseDto[] = [];
@@ -77,7 +79,7 @@ vi.mock("@/api/queries", async (importOriginal) => {
       refetch: vi.fn(),
     }),
     useTemplates: () => ({ data: [], isPending: false }),
-    useActiveRentReceipt: () => ({ data: null, isPending: false }),
+    useActiveRentReceipt: () => ({ data: activeReceipt, isPending: false }),
     useSignatures: () => ({
       data: signatureList,
       isPending: false,
@@ -96,6 +98,28 @@ const LANDLORD: SignatureDto = {
   name: "Bailleur",
   mimeType: "image/png",
   createdAt: "2026-10-23T10:00:00Z",
+  landlordId: 1,
+  landlordName: "M. Bailleur",
+};
+
+const LEGACY_LANDLORD: SignatureDto = {
+  id: 9,
+  type: "LANDLORD",
+  name: "Ancienne signature",
+  mimeType: "image/png",
+  createdAt: "2026-10-23T10:00:00Z",
+  landlordId: null,
+  landlordName: null,
+};
+
+const OTHER_LANDLORD_SIGNATURE: SignatureDto = {
+  id: 12,
+  type: "LANDLORD",
+  name: "Autre bailleur",
+  mimeType: "image/png",
+  createdAt: "2026-10-23T10:00:00Z",
+  landlordId: 3,
+  landlordName: "Mme Propriétaire",
 };
 
 const LANDLORD_ROW: LandlordDto = {
@@ -142,6 +166,7 @@ describe("GenerateRentReceiptPage", () => {
     lastPreviewLoader = null;
     signatureList = [LANDLORD];
     signatureError = null;
+    activeReceipt = null;
     landlordList = [LANDLORD_ROW];
     tenantList = [TENANT_ROW];
     leaseList = [LEASE];
@@ -348,6 +373,200 @@ describe("GenerateRentReceiptPage", () => {
         }),
       ),
     );
+  });
+
+  it("lists only the selected landlord's signatures and the legacy unlinked ones", async () => {
+    signatureList = [
+      {
+        id: 8,
+        type: "ENTREPRISE_CEO",
+        name: "Gérant",
+        mimeType: "image/jpeg",
+        createdAt: "2026-10-23T10:00:00Z",
+      },
+      LANDLORD,
+      LEGACY_LANDLORD,
+      OTHER_LANDLORD_SIGNATURE,
+    ];
+
+    renderPage();
+
+    const select = await screen.findByLabelText("Signature");
+    const options = Array.from(
+      select.querySelectorAll<HTMLOptionElement>("option"),
+    ).map((option) => option.value);
+    expect(options).toEqual(["7", "9"]);
+    expect(select).toHaveValue("7");
+  });
+
+  it("resets the signature choice when the landlord changes", async () => {
+    const otherLandlord: LandlordDto = {
+      id: 3,
+      name: "Mme Propriétaire",
+      address: "5 rue du Marché, 69001 Lyon",
+    };
+    const otherTenant: TenantDto = {
+      id: 4,
+      name: "M. Occupant",
+      address: "5 rue du Marché, 69001 Lyon",
+    };
+    const otherLease: LeaseDto = {
+      id: 11,
+      landlordId: 3,
+      tenantId: 4,
+      landlordName: "Mme Propriétaire",
+      tenantName: "M. Occupant",
+      propertyAddress: "5 rue du Marché, 69001 Lyon",
+      rentExclCharges: "900.00",
+      charges: "50.00",
+    };
+    landlordList = [LANDLORD_ROW, otherLandlord];
+    tenantList = [TENANT_ROW, otherTenant];
+    leaseList = [LEASE, otherLease];
+    signatureList = [LANDLORD, LEGACY_LANDLORD, OTHER_LANDLORD_SIGNATURE];
+
+    renderPage();
+
+    const user = userEvent.setup();
+    const signatureSelect = await screen.findByLabelText("Signature");
+    await user.selectOptions(signatureSelect, "9");
+    expect(signatureSelect).toHaveValue("9");
+
+    await user.selectOptions(screen.getByLabelText("Bailleur"), "3");
+
+    await waitFor(() => expect(signatureSelect).toHaveValue("12"));
+    const options = Array.from(
+      signatureSelect.querySelectorAll<HTMLOptionElement>("option"),
+    ).map((option) => option.value);
+    expect(options).toEqual(["12", "9"]);
+  });
+
+  it("warns and blocks generation when the selected landlord has no signature", async () => {
+    const otherLandlord: LandlordDto = {
+      id: 3,
+      name: "Mme Propriétaire",
+      address: "5 rue du Marché, 69001 Lyon",
+    };
+    const otherTenant: TenantDto = {
+      id: 4,
+      name: "M. Occupant",
+      address: "5 rue du Marché, 69001 Lyon",
+    };
+    const otherLease: LeaseDto = {
+      id: 11,
+      landlordId: 3,
+      tenantId: 4,
+      landlordName: "Mme Propriétaire",
+      tenantName: "M. Occupant",
+      propertyAddress: "5 rue du Marché, 69001 Lyon",
+      rentExclCharges: "900.00",
+      charges: "50.00",
+    };
+    landlordList = [LANDLORD_ROW, otherLandlord];
+    tenantList = [TENANT_ROW, otherTenant];
+    leaseList = [LEASE, otherLease];
+
+    renderPage();
+
+    const user = userEvent.setup();
+    await user.selectOptions(await screen.findByLabelText("Bailleur"), "3");
+    await user.selectOptions(screen.getByLabelText("Locataire"), "4");
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveAttribute("data-cy", "alerte-signature-bailleur");
+    expect(alert).toHaveTextContent(/Aucune signature pour ce bailleur/);
+    expect(screen.queryByText(/Aucune signature trouvée/)).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /Générer la quittance/ }),
+    ).toBeDisabled();
+    expect(api.rentReceipts.create).not.toHaveBeenCalled();
+  });
+
+  it("generates without the regeneration dialog when an active receipt already exists", async () => {
+    activeReceipt = {
+      id: 5,
+      month: MONTH,
+      version: 2,
+      total: "1300.00",
+      status: "ACTIVE",
+    };
+    vi.mocked(api.rentReceipts.create).mockResolvedValue({
+      id: 6,
+      month: MONTH,
+      version: 3,
+      total: "1300.00",
+    });
+
+    renderPage();
+
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole("button", { name: /Générer la quittance/ }),
+    );
+
+    await waitFor(() =>
+      expect(api.rentReceipts.create).toHaveBeenCalledTimes(1),
+    );
+    expect(
+      document.querySelector('[data-cy="dialogue-regeneration-quittance"]'),
+    ).toBeNull();
+  });
+
+  it("hides the active receipt panel and version hint while no pair is selected", async () => {
+    activeReceipt = {
+      id: 5,
+      month: MONTH,
+      version: 2,
+      total: "1300.00",
+      status: "ACTIVE",
+    };
+    useRentReceiptDraft.setState({
+      landlordId: null,
+      tenantId: null,
+      initialized: true,
+    });
+
+    renderPage();
+
+    expect(await screen.findByLabelText("Bailleur")).toHaveValue("");
+    expect(screen.getByLabelText("Locataire")).toHaveValue("");
+    expect(screen.queryByText(/Quittance déjà active/)).toBeNull();
+    expect(screen.queryByText(/Dernière version/)).toBeNull();
+    expect(
+      screen.getByText(/Le PDF définitif est enregistré/),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the active receipt panel once the pair is selected", async () => {
+    activeReceipt = {
+      id: 5,
+      month: MONTH,
+      version: 2,
+      total: "1300.00",
+      status: "ACTIVE",
+    };
+    useRentReceiptDraft.setState({
+      landlordId: null,
+      tenantId: null,
+      initialized: true,
+    });
+
+    renderPage();
+
+    const user = userEvent.setup();
+    await user.selectOptions(await screen.findByLabelText("Bailleur"), "1");
+    expect(screen.queryByText(/Quittance déjà active/)).toBeNull();
+    await user.selectOptions(screen.getByLabelText("Locataire"), "2");
+
+    expect(
+      await screen.findByText(
+        "Quittance déjà active pour ce bailleur et ce locataire",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Total .*version 2/)).toBeInTheDocument();
+    expect(
+      screen.getByText("Dernière version : v2 → v3 à la génération."),
+    ).toBeInTheDocument();
   });
 
   it("warns and blocks generation when no signature is configured", async () => {

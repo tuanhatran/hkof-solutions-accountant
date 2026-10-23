@@ -80,7 +80,7 @@ public class RentReceiptService {
         BigDecimal total = CalculationService.totalRentReceipt(rentExclCharges, charges);
         LocalDate issueDate = dateOr(request.issueDate(), LocalDate.now(clock));
         LocalDate paymentDate = dateOr(request.paymentDate(), LocalDate.now(clock));
-        String signature = signatureDataUri(request.signatureId(), SignatureType.LANDLORD);
+        String signature = signatureDataUri(request.signatureId(), lease.getLandlord().getId());
 
         TemplateDocument template = templateService.active(TemplateType.RENT_RECEIPT);
         if (request.templateId() != null) {
@@ -90,10 +90,12 @@ public class RentReceiptService {
             }
         }
 
-        int version = repository.findFirstByMonthOrderByVersionDesc(month.toString())
+        // Versions are per landlord and tenant pair: every generation is a new ACTIVE
+        // receipt, even for an identical month and pair.
+        int version = repository.findFirstByMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc(
+                month.toString(), lease.getLandlord().getId(), lease.getTenant().getId())
                 .map(existing -> existing.getVersion() + 1)
                 .orElse(1);
-        archive(month.toString());
 
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setMonth(month.toString());
@@ -116,7 +118,8 @@ public class RentReceiptService {
         String html = templateService.render(template, templateDataService.dataRentReceipt(
                 parameters, lease.getLandlord(), lease.getTenant(), lease, rentReceipt, signature));
         byte[] pdf = pdfService.renderHtmlToPdf(html);
-        String path = storage.storePdf("quittance_" + month + "_v" + version + ".pdf", pdf);
+        String path = storage.storePdf("quittance_" + month + "_l" + lease.getLandlord().getId()
+                + "_t" + lease.getTenant().getId() + "_v" + version + ".pdf", pdf);
         rentReceipt.setPdfPath(path);
         return toDto(repository.save(rentReceipt));
     }
@@ -148,7 +151,7 @@ public class RentReceiptService {
         rentReceipt.setTotal(CalculationService.totalRentReceipt(rentExclCharges, charges));
         rentReceipt.setIssueDate(dateOr(request.issueDate(), LocalDate.now(clock)));
         rentReceipt.setPaymentDate(dateOr(request.paymentDate(), LocalDate.now(clock)));
-        String signature = signatureDataUri(request.signatureId(), SignatureType.LANDLORD);
+        String signature = signatureDataUri(request.signatureId(), lease.getLandlord().getId());
         TemplateDocument template = request.templateId() == null
                 ? templateService.active(TemplateType.RENT_RECEIPT)
                 : templateService.byId(request.templateId());
@@ -163,8 +166,8 @@ public class RentReceiptService {
     @Transactional(readOnly = true)
     public List<RentReceiptDto> list(String month) {
         List<RentReceipt> rentReceipts = month == null || month.isBlank()
-                ? repository.findAllByOrderByMonthDescVersionDesc()
-                : repository.findByMonthOrderByVersionDesc(Amounts.month(month).toString());
+                ? repository.findAllByOrderByMonthDescVersionDescIdDesc()
+                : repository.findByMonthOrderByVersionDescIdDesc(Amounts.month(month).toString());
         return rentReceipts.stream().map(this::toDto).toList();
     }
 
@@ -179,9 +182,20 @@ public class RentReceiptService {
                 .orElseThrow(() -> new NotFoundException("Quittance introuvable."));
     }
 
+    /**
+     * Returns the latest ACTIVE receipt: for the pair when both identifiers are given,
+     * otherwise for the month. The order is deterministic: highest version, then highest id.
+     */
     @Transactional(readOnly = true)
-    public RentReceipt activeForMonth(String month) {
-        return repository.findFirstByMonthAndStatusOrderByVersionDesc(month, DocumentStatus.ACTIVE).orElse(null);
+    public RentReceipt activeForMonth(String month, Long landlordId, Long tenantId) {
+        if (landlordId != null && tenantId != null) {
+            return repository
+                    .findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
+                            month, landlordId, tenantId, DocumentStatus.ACTIVE)
+                    .orElse(null);
+        }
+        return repository.findFirstByMonthAndStatusOrderByVersionDescIdDesc(month, DocumentStatus.ACTIVE)
+                .orElse(null);
     }
 
     public byte[] pdf(Long id) {
@@ -192,28 +206,13 @@ public class RentReceiptService {
         return storage.read(rentReceipt.getPdfPath());
     }
 
-    private void archive(String month) {
-        List<RentReceipt> existingReceipts = repository.findByMonthOrderByVersionDesc(month);
-        boolean modified = false;
-        for (RentReceipt existingReceipt : existingReceipts) {
-            if (existingReceipt.getStatus() == DocumentStatus.ACTIVE) {
-                existingReceipt.setStatus(DocumentStatus.ARCHIVED);
-                modified = true;
-            }
-        }
-        if (modified) {
-            repository.saveAll(existingReceipts);
-            repository.flush();
-        }
-    }
-
     private LocalDate dateOr(String date, LocalDate fallback) {
         LocalDate parsed = Amounts.optionalDate(date, "date");
         return parsed == null ? fallback : parsed;
     }
 
-    private String signatureDataUri(Long requestedId, SignatureType defaultType) {
-        Signature signature = signatureService.resolve(requestedId, defaultType)
+    private String signatureDataUri(Long requestedId, Long landlordId) {
+        Signature signature = signatureService.resolveForLandlord(requestedId, landlordId)
                 .orElseThrow(() -> new BusinessException(
                         "Aucune signature configurée. Configurez une signature dans la page Paramètres."));
         return signatureService.dataUri(signature.getId());

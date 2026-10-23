@@ -37,6 +37,24 @@ function current<T extends { status?: string }>(documents: T[]): T | null {
   );
 }
 
+/** Latest receipt of a month, whatever landlord+tenant pairs coexist. */
+function latestReceipt(documents: RentReceiptDto[]): RentReceiptDto | null {
+  return (
+    [...documents].sort((left, right) => {
+      const byDate = (right.createdAt ?? "").localeCompare(
+        left.createdAt ?? "",
+      );
+      return byDate !== 0 ? byDate : (right.id ?? 0) - (left.id ?? 0);
+    })[0] ?? null
+  );
+}
+
+function pairLabel(document: RentReceiptDto): string {
+  return `${document.landlordName ?? "Bailleur inconnu"} → ${
+    document.tenantName ?? "Locataire inconnu"
+  }`;
+}
+
 function VersionBadge({
   version,
   active,
@@ -195,7 +213,17 @@ export function HistoryPage() {
       ) : (
         <div className="space-y-4" data-cy="historique">
           {groups.map((group) => {
-            const rentReceipt = current(group.rentReceipts);
+            const rentReceipt = latestReceipt(group.rentReceipts);
+            const rentReceiptHistory = [...group.rentReceipts].sort(
+              (left, right) => {
+                const byDate = (right.createdAt ?? "").localeCompare(
+                  left.createdAt ?? "",
+                );
+                return byDate !== 0
+                  ? byDate
+                  : (right.id ?? 0) - (left.id ?? 0);
+              },
+            );
             const statement = current(group.statements);
             return (
               <section
@@ -219,9 +247,11 @@ export function HistoryPage() {
                       }
                     >
                       Quittance{" "}
-                      {rentReceipt
-                        ? `v${rentReceipt.version ?? 1}`
-                        : "non générée"}
+                      {group.rentReceipts.length > 1
+                        ? `(${group.rentReceipts.length})`
+                        : rentReceipt
+                          ? `v${rentReceipt.version ?? 1}`
+                          : "non générée"}
                     </span>
                     <span
                       className={
@@ -246,10 +276,18 @@ export function HistoryPage() {
                             Quittance de loyer
                           </h3>
                           {rentReceipt ? (
-                            <p className="text-xs text-ink-soft">
-                              Version {rentReceipt.version ?? 1} ·{" "}
-                              {formatDateTime(rentReceipt.createdAt)}
-                            </p>
+                            <>
+                              <p className="text-xs text-ink-soft">
+                                Version {rentReceipt.version ?? 1} ·{" "}
+                                {formatDateTime(rentReceipt.createdAt)}
+                              </p>
+                              <p
+                                className="text-xs text-ink-soft"
+                                data-cy={`quittance-active-${group.month}`}
+                              >
+                                {pairLabel(rentReceipt)}
+                              </p>
+                            </>
                           ) : (
                             <p className="text-xs text-ink-soft">
                               Aucune version pour ce mois.
@@ -298,21 +336,29 @@ export function HistoryPage() {
                     )}
 
                     {group.rentReceipts.length > 1 ? (
-                      <details className="mt-4 rounded-xl border border-line bg-paper/35 px-3 py-2">
+                      <details
+                        className="mt-4 rounded-xl border border-line bg-paper/35 px-3 py-2"
+                        data-cy={`quittances-mois-${group.month}`}
+                      >
                         <summary className="cursor-pointer text-xs font-semibold text-ink-soft">
-                          Toutes les versions ({group.rentReceipts.length})
+                          Toutes les quittances du mois (
+                          {group.rentReceipts.length})
                         </summary>
                         <ul className="mt-2 space-y-1.5">
-                          {group.rentReceipts.map((version) => (
+                          {rentReceiptHistory.map((version) => (
                             <li
                               key={version.id}
                               className="flex flex-wrap items-center justify-between gap-2 rounded-lg px-1.5 py-1 text-xs"
+                              data-cy={`historique-quittance-${version.id}`}
                             >
-                              <span className="flex items-center gap-2">
+                              <span className="flex flex-wrap items-center gap-2">
                                 <VersionBadge
                                   version={version.version ?? 1}
                                   active={version.status === "ACTIVE"}
                                 />
+                                <span className="text-ink">
+                                  {pairLabel(version)}
+                                </span>
                                 <span className="text-ink-soft">
                                   {formatDateTime(version.createdAt)}
                                 </span>

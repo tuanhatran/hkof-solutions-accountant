@@ -1,5 +1,6 @@
 package fr.hkof.homeofficeexpenses.web;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -8,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Base64;
+import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -104,23 +106,36 @@ class E2eResetIntegrationTest {
     }
 
     @Test
-    @DisplayName("The e2e reset drops custom signatures and seeds one landlord and one CEO signature")
+    @DisplayName("The e2e reset drops custom signatures and seeds one linked landlord and one CEO signature")
     void resetSeedsDefaultSignatures() throws Exception {
+        String landlords = mockMvc.perform(get("/api/landlords"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long landlordId = ((Number) JsonPath.read(landlords, "$[0].id")).longValue();
+
         mockMvc.perform(multipart("/api/signatures")
                         .file(new MockMultipartFile("file", "signature-personnalisee.png", "image/png", PNG))
                         .param("type", "LANDLORD")
+                        .param("landlordId", String.valueOf(landlordId))
                         .param("name", CUSTOM_SIGNATURE_NAME))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/e2e/reset"))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/signatures"))
+        String signatures = mockMvc.perform(get("/api/signatures"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[?(@.type == 'LANDLORD')]").isNotEmpty())
                 .andExpect(jsonPath("$[?(@.type == 'ENTREPRISE_CEO')]").isNotEmpty())
                 .andExpect(jsonPath("$[?(@.mimeType != 'image/png')]").isEmpty())
-                .andExpect(jsonPath("$[?(@.name == '" + CUSTOM_SIGNATURE_NAME + "')]").isEmpty());
+                .andExpect(jsonPath("$[?(@.name == '" + CUSTOM_SIGNATURE_NAME + "')]").isEmpty())
+                .andReturn().getResponse().getContentAsString();
+
+        List<?> landlordSignatures = JsonPath.read(signatures,
+                "$[?(@.type == 'LANDLORD' && @.landlordName == 'Nom du bailleur')]");
+        assertThat(landlordSignatures).hasSize(1);
+        List<?> ceoSignatures = JsonPath.read(signatures, "$[?(@.type == 'ENTREPRISE_CEO')].landlordId");
+        assertThat(ceoSignatures).containsOnlyNulls();
     }
 }

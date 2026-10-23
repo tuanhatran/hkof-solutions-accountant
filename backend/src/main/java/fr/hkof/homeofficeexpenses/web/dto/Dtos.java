@@ -319,6 +319,8 @@ public final class Dtos {
             String type,
             String name,
             String mimeType,
-            Instant createdAt) {
+            Instant createdAt,
+            Long landlordId,
+            String landlordName) {
     }
 }
