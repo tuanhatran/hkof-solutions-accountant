@@ -2,7 +2,7 @@ COMPOSE := docker compose
 DEV := -f docker-compose.yml -f docker-compose.dev.yml
 E2E := -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml
 
-.PHONY: env up dev test e2e down
+.PHONY: env up dev back test e2e down
 
 env:
 	@test -f .env || (cp .env.example .env && echo "Created .env from .env.example")
