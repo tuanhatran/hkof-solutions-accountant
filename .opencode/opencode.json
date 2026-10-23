@@ -1,6 +1,9 @@
 {
   "$schema": "https://opencode.ai/config.json",
 
+  // New sessions start on the writable lead; it edits `.handoff/` only and asks builder to write code.
+  "default_agent": "lead",
+
   // Root AGENTS.md is loaded automatically. These files add the detailed rules.
   "instructions": [
     ".opencode/instructions/*.md"

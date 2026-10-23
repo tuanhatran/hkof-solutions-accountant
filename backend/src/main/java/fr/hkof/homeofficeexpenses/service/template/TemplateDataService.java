@@ -62,7 +62,7 @@ public class TemplateDataService {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("poste", line.getExpenseItem().getLabel());
             item.put("fournisseur", text(line.getExpenseItem().getSupplier()));
-            item.put("periode", period(line.getPeriodStart(), line.getPeriodEnd()));
+            item.put("periode", statementPeriod(statement.getMonth()));
             item.put("montant_ttc", Amounts.formatEUR(line.getAmountInclVat()));
             item.put("prorata", Amounts.formatPercentage(line.getProRataPct()));
             item.put("montant_retenu", Amounts.formatEUR(line.getClaimedAmount()));
@@ -111,14 +111,14 @@ public class TemplateDataService {
         data.put("numero", statement.getNumber());
         List<Map<String, Object>> lines = new ArrayList<>();
         lines.add(line("Loyer", "", "01/10/2026 au 31/10/2026", "950,00 €", "100,00 %", "950,00 €"));
-        lines.add(line("Gaz", "EDF", "01/09/2026 au 31/10/2026", "120,00 €", "35,71 %", "21,42 €"));
-        lines.add(line("Électricité", "Primeo", "01/09/2026 au 31/10/2026", "85,00 €", "35,71 %", "15,18 €"));
+        lines.add(line("Gaz", "EDF", "01/10/2026 au 31/10/2026", "120,00 €", "35,71 %", "42,85 €"));
+        lines.add(line("Électricité", "Primeo", "01/10/2026 au 31/10/2026", "85,00 €", "35,71 %", "30,35 €"));
         lines.add(line("Téléphone", "Opérateur", "01/10/2026 au 31/10/2026", "29,99 €", "35,71 %", "10,71 €"));
         lines.add(line("Fibre internet", "Opérateur", "01/10/2026 au 31/10/2026", "39,99 €", "35,71 %", "14,28 €"));
         lines.add(line("Assurance habitation", "Assureur", "01/10/2026 au 31/10/2026", "180,00 €", "35,71 %", "64,28 €"));
         data.put("lignes", lines);
-        data.put("total", "1 075,87 €");
-        data.put("total_en_lettres", "mille soixante-quinze euros et quatre-vingt-sept centimes");
+        data.put("total", "1 112,47 €");
+        data.put("total_en_lettres", "mille cent douze euros et quarante-sept centimes");
         data.put("base_prorata", proRataDetail(settings));
         data.put("date_emission", Amounts.formatDate(java.time.LocalDate.now()));
         data.put("lieu", text(settings.getIssuePlace()));
@@ -143,6 +143,11 @@ public class TemplateDataService {
             return "";
         }
         return Amounts.formatDate(start) + " au " + Amounts.formatDate(end);
+    }
+
+    private String statementPeriod(String month) {
+        java.time.YearMonth yearMonth = java.time.YearMonth.parse(month);
+        return period(yearMonth.atDay(1), yearMonth.atEndOfMonth());
     }
 
     public String proRataDetail(Settings settings) {

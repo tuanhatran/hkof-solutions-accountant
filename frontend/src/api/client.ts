@@ -120,9 +120,7 @@ export async function blobRequest(
   }
   return {
     blob: await response.blob(),
-    fileName: nameFromDisposition(
-      response.headers.get("content-disposition"),
-    ),
+    fileName: nameFromDisposition(response.headers.get("content-disposition")),
   };
 }
 

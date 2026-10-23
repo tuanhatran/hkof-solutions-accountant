@@ -38,19 +38,29 @@ Append one line per event; never rewrite a previous line.
 - `YYYY-MM-DD builder:` red → `<key assertion message>`
 - `YYYY-MM-DD builder:` `<command>` `<real counts>` PASS|FAIL
 - `YYYY-MM-DD reviewer:` `VERDICT` (round n)
+- `YYYY-MM-DD lead:` `USER_CHANGES_REQUESTED — <user request>` (Round reset to 0)
+- `YYYY-MM-DD lead:` `DONE — user accepted`
 
 <!--
 Compact handoff shared by .qoder/, .opencode/ and .github/ agents.
 Target 25 lines, 6 lines maximum for size S.
 
-Status flow: TODO -> REVIEW -> DONE, with CHANGES_REQUESTED (back to builder),
-BLOCKED (single decision for the user) as branches. There is no IN_PROGRESS and no
-USER_CHANGES_REQUESTED: a requirement change reopens the goal in TODO and resets Round.
+Status flow: TODO -> REVIEW -> USER_REVIEW -> DONE, gated by the user.
+- builder ends at REVIEW (M/L) or USER_REVIEW (S); reviewer ends at USER_REVIEW on PASS.
+- The lead reports and asks the user to accept; explicit acceptance sets DONE.
+- User feedback before acceptance: lead sets USER_CHANGES_REQUESTED, appends the request to
+  Goal and Acceptance, resets Round to 0 and routes back to builder.
+- Reviewer blockers: CHANGES_REQUESTED (Round incremented, back to builder).
+- Round 2 still blocked: BLOCKED, carrying the single decision for the user.
+There is no IN_PROGRESS. A DONE task is never reopened: a later requirement gets a new
+task ID.
 
 Who writes what:
-- lead: Status, Branch, Size, Round, Goal, Files, Constraints, Acceptance, Commands.
-- builder: evidence lines, Status REVIEW (M/L) or DONE (S, after the lead's diff skim).
-- reviewer: its VERDICT line and Status DONE | CHANGES_REQUESTED | BLOCKED.
+- lead: Status, Branch, Size, Round, Goal, Files, Constraints, Acceptance, Commands;
+  USER_REVIEW after the S diff skim, DONE on explicit user acceptance,
+  USER_CHANGES_REQUESTED on user feedback.
+- builder: evidence lines, Status REVIEW (M/L) or USER_REVIEW (S) when its gates pass.
+- reviewer: its VERDICT line and Status USER_REVIEW (PASS) | CHANGES_REQUESTED | BLOCKED.
 
 Routing by Size: S = builder only; M = builder then one review; L = builder then at most
 two review rounds. Money, contract, migration, template, LLM or secrets in the diff forces

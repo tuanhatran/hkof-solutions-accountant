@@ -726,8 +726,6 @@ export interface components {
       itemCode?: string;
       amountInclVat?: string;
       proRataPct?: string;
-      periodStart?: string;
-      periodEnd?: string;
       monthlyAmountOverride?: string;
       /** Format: int64 */
       receiptId?: number;
@@ -747,10 +745,6 @@ export interface components {
       itemCode?: string;
       itemLabel?: string;
       supplier?: string;
-      /** Format: date */
-      periodStart?: string;
-      /** Format: date */
-      periodEnd?: string;
       amountInclVat?: string;
       monthlyAmount?: string;
       proRataPct?: string;
@@ -841,8 +835,6 @@ export interface components {
       supplier?: string;
       invoiceNumber?: string;
       invoiceDate?: string;
-      periodStart?: string;
-      periodEnd?: string;
       amountInclVat?: string;
       amountExclVat?: string;
       currency?: string;

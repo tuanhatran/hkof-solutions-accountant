@@ -15,8 +15,6 @@ function line(partial: Partial<DraftLine> = {}): DraftLine {
     itemCode: "gaz",
     amountInclVat: "120,00",
     proRataPct: "35,71",
-    periodStart: "2026-09-01",
-    periodEnd: "2026-10-31",
     monthlyAmountOverride: "",
     receiptId: 12,
     receiptName: "facture.pdf",
@@ -41,8 +39,6 @@ describe("toLineRequest", () => {
       itemCode: "gaz",
       amountInclVat: "120.00",
       proRataPct: "35.71",
-      periodStart: "2026-09-01",
-      periodEnd: "2026-10-31",
       receiptId: 12,
       amountSource: "AI",
       aiDetectedAmount: "120.00",
@@ -50,17 +46,19 @@ describe("toLineRequest", () => {
     });
   });
 
+  it("never sends an invoice period", () => {
+    const request = toLineRequest(line());
+    expect(request).not.toHaveProperty("periodStart");
+    expect(request).not.toHaveProperty("periodEnd");
+  });
+
   it("omits unfilled optional fields", () => {
     const request = toLineRequest(
       line({
-        periodStart: "",
-        periodEnd: "",
         receiptId: null,
         monthlyAmountOverride: "",
       }),
     );
-    expect(request.periodStart).toBeUndefined();
-    expect(request.periodEnd).toBeUndefined();
     expect(request.receiptId).toBeUndefined();
     expect(request.monthlyAmountOverride).toBeUndefined();
   });
@@ -70,16 +68,13 @@ describe("toLineRequest", () => {
     expect(request.monthlyAmountOverride).toBe("60.98");
   });
 
-  it("rejects invalid amounts, pro-rata values and periods", () => {
+  it("rejects invalid amounts and pro-rata values", () => {
     expect(() => toLineRequest(line({ amountInclVat: "0" }))).not.toThrow();
     expect(() => toLineRequest(line({ amountInclVat: "abc" }))).toThrow(
       "Le montant TTC est invalide.",
     );
     expect(() => toLineRequest(line({ proRataPct: "150" }))).toThrow(
       "Le prorata est invalide.",
-    );
-    expect(() => toLineRequest(line({ periodStart: "2026-02-30" }))).toThrow(
-      "La période facturée est invalide.",
     );
   });
 });
@@ -116,8 +111,6 @@ describe("rent draft", () => {
       itemCode: "gaz",
       amountInclVat: "120.00",
       proRataPct: "35.71",
-      periodStart: "2026-09-01",
-      periodEnd: "2026-10-31",
       receiptId: 4,
       receiptName: "facture.pdf",
       amountSource: "AI",

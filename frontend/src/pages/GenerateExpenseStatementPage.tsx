@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   CalendarDays,
   CheckCircle2,
-  ChevronDown,
   Download,
   ExternalLink,
   FileCheck2,
@@ -39,6 +38,7 @@ import type {
   ExpenseItemDto,
 } from "@/api/types";
 import { AiBadge } from "@/components/AiBadge";
+import { AmountConfirmButton } from "@/components/AmountConfirmButton";
 import { Button } from "@/components/Button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ErrorState, Spinner } from "@/components/States";
@@ -54,13 +54,11 @@ import {
 } from "@/hooks/useAnalysis";
 import { usePdfPreview } from "@/hooks/usePdfPreview";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { periodInOrder, isValidDate } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import {
   formatDateTime,
   formatEUR,
   formatMonth,
-  formatPeriod,
   estimatedRetainedAmount,
   parseAmount,
   parsePercentage,
@@ -72,7 +70,6 @@ import {
   toLineRequest,
   type DraftLine,
 } from "@/lib/lines";
-import { estimateAllocation } from "@/lib/allocation";
 import { expenseSchema, type ExpenseFormValues } from "@/lib/validation";
 import { useStatementLines, useStatementDraft } from "@/state/statementDraft";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
@@ -82,8 +79,6 @@ const INITIAL_VALUES: ExpenseFormValues = {
   itemCode: "",
   amountInclVat: "",
   proRataPct: "100",
-  periodStart: "",
-  periodEnd: "",
   monthlyAmountOverride: "",
 };
 
@@ -97,7 +92,7 @@ interface AttachedFile {
 interface AiState {
   type: boolean;
   amount: boolean;
-  period: boolean;
+  amountConfirmed: boolean;
   detectedAmount: string | null;
   supplier: string | null;
   sourceExtract: string | null;
@@ -107,7 +102,7 @@ interface AiState {
 const AI_EMPTY: AiState = {
   type: false,
   amount: false,
-  period: false,
+  amountConfirmed: false,
   detectedAmount: null,
   supplier: null,
   sourceExtract: null,
@@ -193,8 +188,8 @@ function AnalysisPanel({
               className="text-copper"
               aria-hidden="true"
             />
-            Analyse terminée{duration ? ` en ${duration}` : ""} — les champs
-            vides ont été pré-remplis.
+            Analyse terminée{duration ? ` en ${duration}` : ""} — les champs ont
+            été pré-remplis et le montant détecté remplace la valeur saisie.
           </p>
           {result ? (
             <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-soft">
@@ -322,8 +317,9 @@ export function GenerateExpenseStatementPage() {
   const [uploading, setUploading] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
   const [ai, setAi] = useState<AiState>(AI_EMPTY);
+  // Confirmation is required only while the box still holds the AI proposal.
+  const amountConfirmationPending = !isRent && ai.amount && !ai.amountConfirmed;
   const [lineBeingEdited, setLineBeingEdited] = useState<string | null>(null);
-  const [periodVisible, setPeriodVisible] = useState(false);
   const [lineToRemove, setLineToRemove] = useState<DraftLine | null>(null);
   const [regenerationDialog, setRegenerationDialog] = useState(false);
   const [generationInProgress, setGenerationInProgress] = useState(false);
@@ -345,7 +341,6 @@ export function GenerateExpenseStatementPage() {
   function resetForm() {
     reset(INITIAL_VALUES);
     setAi(AI_EMPTY);
-    setPeriodVisible(false);
     setFileError(null);
     setLineBeingEdited(null);
     setReceipt(null);
@@ -449,11 +444,9 @@ export function GenerateExpenseStatementPage() {
     }
 
     const current = getValues();
-    const currentLines =
-      useStatementDraft.getState().linesByMonth[month] ?? [];
+    const currentLines = useStatementDraft.getState().linesByMonth[month] ?? [];
     let appliedType = false;
     let appliedAmount = false;
-    let appliedPeriod = false;
 
     const suggestedAmount =
       extraction.currency && extraction.currency.toUpperCase() !== "EUR"
@@ -462,22 +455,10 @@ export function GenerateExpenseStatementPage() {
           ? parseAmount(extraction.amountInclVat)
           : null;
 
-    if (!current.amountInclVat && suggestedAmount !== null) {
+    // The detected amount always replaces the current value; the rent amount
+    // stays locked to the receipt of the month.
+    if (suggestedAmount !== null && current.itemCode !== "loyer") {
       appliedAmount = true;
-    }
-
-    const start =
-      extraction.periodStart && isValidDate(extraction.periodStart)
-        ? extraction.periodStart
-        : "";
-    const end =
-      extraction.periodEnd && isValidDate(extraction.periodEnd)
-        ? extraction.periodEnd
-        : "";
-    const isValidPeriod = Boolean(start && end && periodInOrder(start, end));
-
-    if (!current.periodStart && !current.periodEnd && isValidPeriod) {
-      appliedPeriod = true;
     }
 
     const suggestedItem =
@@ -514,30 +495,22 @@ export function GenerateExpenseStatementPage() {
         shouldDirty: true,
       });
     }
-    if (appliedPeriod) {
-      setValue("periodStart", start, {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-      setValue("periodEnd", end, { shouldValidate: true, shouldDirty: true });
-      setPeriodVisible(true);
-    }
 
     setAi({
       type: appliedType,
       amount: appliedAmount,
-      period: appliedPeriod,
+      amountConfirmed: false,
       detectedAmount: suggestedAmount,
       supplier: extraction.supplier ?? null,
       sourceExtract: extraction.sourceExcerpt ?? null,
       confidence: confidenceValid(extraction.confidence),
     });
-    if (appliedAmount || appliedPeriod || appliedType) {
+    if (appliedAmount || appliedType) {
       toast.info(
         "Des champs ont été pré-remplis par l’IA. Vérifiez-les avant d’ajouter le frais.",
       );
     }
-    // Extraction is applied once per analysis, and only to empty fields.
+    // Extraction is applied once per analysis; the amount always overwrites.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analysisPhase, receipt?.id, expenseItemsQuery.data, lineBeingEdited]);
 
@@ -565,11 +538,8 @@ export function GenerateExpenseStatementPage() {
       shouldValidate: true,
       shouldDirty: true,
     });
-    setValue("periodStart", "", { shouldDirty: true });
-    setValue("periodEnd", "", { shouldDirty: true });
     setValue("monthlyAmountOverride", "", { shouldDirty: true });
-    setPeriodVisible(false);
-    setAi((previous) => ({ ...previous, type: false, period: false }));
+    setAi((previous) => ({ ...previous, type: false }));
 
     if (code === "loyer" && old !== "loyer") {
       if (!lineBeingEdited) {
@@ -583,7 +553,10 @@ export function GenerateExpenseStatementPage() {
         shouldDirty: true,
       });
     } else if (code !== "loyer" && old === "loyer") {
-      setValue("amountInclVat", "", { shouldValidate: true, shouldDirty: true });
+      setValue("amountInclVat", "", {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
     }
   }
 
@@ -611,19 +584,12 @@ export function GenerateExpenseStatementPage() {
           ? rentReceipt.data.total
           : line.amountInclVat,
       proRataPct: line.proRataPct,
-      periodStart: line.periodStart,
-      periodEnd: line.periodEnd,
       monthlyAmountOverride: line.monthlyAmountOverride,
     });
-    setPeriodVisible(
-      Boolean(
-        line.periodStart || line.periodEnd || line.monthlyAmountOverride,
-      ),
-    );
     setAi({
       type: false,
       amount: line.amountSource === "AI",
-      period: false,
+      amountConfirmed: true,
       detectedAmount: line.aiDetectedAmount,
       supplier: line.detectedSupplier,
       sourceExtract: null,
@@ -646,6 +612,12 @@ export function GenerateExpenseStatementPage() {
   }
 
   function saveExpense(submittedValues: ExpenseFormValues) {
+    if (amountConfirmationPending) {
+      toast.info(
+        "Confirmez le montant détecté par IA avant d’ajouter le frais.",
+      );
+      return;
+    }
     const expenseItem = expenseItemByCode.get(submittedValues.itemCode);
     if (!expenseItem?.code) {
       setError("itemCode", {
@@ -692,8 +664,6 @@ export function GenerateExpenseStatementPage() {
       itemCode: expenseItem.code,
       amountInclVat: amountInclVat,
       proRataPct: proRataPct,
-      periodStart: submittedValues.periodStart,
-      periodEnd: submittedValues.periodEnd,
       monthlyAmountOverride: override ?? "",
       receiptId: rentLine ? null : (receipt?.id ?? null),
       receiptName: rentLine ? null : (receipt?.name ?? null),
@@ -905,25 +875,16 @@ export function GenerateExpenseStatementPage() {
     }
   }
 
-  const estimate = estimateAllocation(
-    values.amountInclVat,
-    values.proRataPct,
-    values.periodStart,
-    values.periodEnd,
-    month,
-  );
   const typedOverride = values.monthlyAmountOverride.trim()
     ? parseAmount(values.monthlyAmountOverride)
     : null;
-  const estimatedMonthAmount =
-    typedOverride ?? estimate?.monthAmount ?? values.amountInclVat;
+  const estimatedMonthAmount = typedOverride ?? values.amountInclVat;
   const displayedRetainedAmount = estimatedRetainedAmount(
     estimatedMonthAmount,
     values.proRataPct,
   );
   const omittedTypes = missingTypes(expenseItems, lines);
-  const lowConfidenceError =
-    ai.confidence === "basse" && (ai.amount || ai.period);
+  const lowConfidenceError = ai.confidence === "basse" && ai.amount;
 
   function optionDisabled(expenseItem: ExpenseItemDto): boolean {
     if (!expenseItem.code || expenseItem.multipleLinesAllowed) {
@@ -1131,10 +1092,7 @@ export function GenerateExpenseStatementPage() {
                     <select
                       id="frais-type"
                       ref={typeRef}
-                      className={cn(
-                        "field",
-                        errors.itemCode && "field-error",
-                      )}
+                      className={cn("field", errors.itemCode && "field-error")}
                       data-cy="select-type-frais"
                       value={values.itemCode}
                       onChange={(event) => changeType(event.target.value)}
@@ -1187,8 +1145,7 @@ export function GenerateExpenseStatementPage() {
                   <div className="rounded-xl border border-line bg-paper/50 p-4">
                     {rentReceipt.isPending ? (
                       <p className="flex items-center gap-2 text-sm text-ink-soft">
-                        <Spinner size={16} /> Recherche de la quittance du
-                        mois…
+                        <Spinner size={16} /> Recherche de la quittance du mois…
                       </p>
                     ) : rentReceipt.data ? (
                       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1313,9 +1270,7 @@ export function GenerateExpenseStatementPage() {
                         className={cn(
                           "field pr-9",
                           errors.amountInclVat && "field-error",
-                          lowConfidenceError &&
-                            ai.amount &&
-                            "field-warning",
+                          lowConfidenceError && ai.amount && "field-warning",
                         )}
                         data-cy="input-montant-ttc"
                         aria-invalid={Boolean(errors.amountInclVat)}
@@ -1326,6 +1281,7 @@ export function GenerateExpenseStatementPage() {
                             setAi((previous) => ({
                               ...previous,
                               amount: false,
+                              amountConfirmed: true,
                             })),
                         })}
                       />
@@ -1347,6 +1303,18 @@ export function GenerateExpenseStatementPage() {
                   </div>
                 </div>
 
+                {ai.amount ? (
+                  <AmountConfirmButton
+                    confirmed={ai.amountConfirmed}
+                    onConfirm={() =>
+                      setAi((previous) => ({
+                        ...previous,
+                        amountConfirmed: true,
+                      }))
+                    }
+                  />
+                ) : null}
+
                 {lowConfidenceError ? (
                   <p className="flex items-start gap-2 rounded-lg bg-warning-soft/50 px-3 py-2 text-xs text-warning">
                     <AlertTriangle
@@ -1354,148 +1322,41 @@ export function GenerateExpenseStatementPage() {
                       className="mt-0.5 shrink-0"
                       aria-hidden="true"
                     />
-                    Confiance faible : vérifiez le montant et la période avant
-                    d’ajouter le frais.
+                    Confiance faible : vérifiez le montant avant d’ajouter le
+                    frais.
                   </p>
                 ) : null}
 
-                <div className="rounded-xl border border-line bg-paper/40">
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-[13px] font-semibold text-ink"
-                    onClick={() => setPeriodVisible((value) => !value)}
-                    aria-expanded={periodVisible}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FieldGroup
+                    id="frais-montant-mois"
+                    label="Montant du mois (optionnel)"
+                    error={errors.monthlyAmountOverride?.message}
+                    help="Laissez vide pour retenir le montant TTC de la facture."
                   >
-                    <span className="flex flex-wrap items-center gap-2">
-                      Facture sur plusieurs mois ?
-                      {ai.period ? (
-                        <AiBadge label="Période détectée" />
-                      ) : null}
-                      {!periodVisible &&
-                      (values.periodStart || values.periodEnd) ? (
-                        <span className="text-[11px] font-normal text-ink-soft">
-                          {formatPeriod(values.periodStart, values.periodEnd)}
-                        </span>
-                      ) : null}
-                    </span>
-                    <ChevronDown
-                      size={16}
-                      className={cn(
-                        "shrink-0 text-ink-soft transition",
-                        periodVisible && "rotate-180",
-                      )}
-                      aria-hidden="true"
-                    />
-                  </button>
-
-                  {periodVisible ? (
-                    <div className="space-y-4 border-t border-line px-4 pb-4 pt-4">
-                      <p className="text-[11px] leading-relaxed text-ink-soft">
-                        Renseignez la période de la facture : le montant du mois
-                        est ventilé au prorata temporis par le backend.
-                      </p>
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <FieldGroup
-                          id="frais-periode-debut"
-                          label="Début de la période"
-                          error={errors.periodStart?.message}
-                        >
-                          <input
-                            id="frais-periode-debut"
-                            type="date"
-                            className={cn(
-                              "field",
-                              errors.periodStart && "field-error",
-                            )}
-                            data-cy="input-periode-debut"
-                            aria-invalid={Boolean(errors.periodStart)}
-                            {...register("periodStart", {
-                              onChange: () =>
-                                setAi((previous) => ({
-                                  ...previous,
-                                  period: false,
-                                })),
-                            })}
-                          />
-                        </FieldGroup>
-                        <FieldGroup
-                          id="frais-periode-fin"
-                          label="Fin de la période"
-                          error={errors.periodEnd?.message}
-                        >
-                          <input
-                            id="frais-periode-fin"
-                            type="date"
-                            className={cn(
-                              "field",
-                              errors.periodEnd && "field-error",
-                            )}
-                            data-cy="input-periode-fin"
-                            aria-invalid={Boolean(errors.periodEnd)}
-                            {...register("periodEnd", {
-                              onChange: () =>
-                                setAi((previous) => ({
-                                  ...previous,
-                                  period: false,
-                                })),
-                            })}
-                          />
-                        </FieldGroup>
-                      </div>
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <FieldGroup
-                          id="frais-montant-mois"
-                          label="Montant du mois (optionnel)"
-                          error={errors.monthlyAmountOverride?.message}
-                          help="Surcharge manuelle : remplace la ventilation calculée."
-                        >
-                          <div className="relative">
-                            <input
-                              id="frais-montant-mois"
-                              inputMode="decimal"
-                              className={cn(
-                                "field pr-9",
-                                errors.monthlyAmountOverride && "field-error",
-                              )}
-                              data-cy="input-montant-mois"
-                              aria-invalid={Boolean(
-                                errors.monthlyAmountOverride,
-                              )}
-                              {...register("monthlyAmountOverride")}
-                            />
-                            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">
-                              €
-                            </span>
-                          </div>
-                        </FieldGroup>
-                        <div className="flex flex-col justify-end">
-                          {estimate ? (
-                            <p className="rounded-lg bg-surface px-3 py-2.5 text-xs leading-relaxed text-ink-soft">
-                              Ventilation estimée :{" "}
-                              <span className="font-semibold text-ink">
-                                {estimate.monthDays} jours sur{" "}
-                                {estimate.totalDays}
-                              </span>{" "}
-                              →{" "}
-                              <span className="number">
-                                {estimate.monthAmount}
-                              </span>
-                              <br />
-                              Retenu estimé :{" "}
-                              <span className="number">
-                                {displayedRetainedAmount}
-                              </span>
-                            </p>
-                          ) : (
-                            <p className="rounded-lg bg-surface px-3 py-2.5 text-xs text-ink-soft">
-                              La ventilation apparaîtra dès que la période sera
-                              complète.
-                            </p>
-                          )}
-                        </div>
-                      </div>
+                    <div className="relative">
+                      <input
+                        id="frais-montant-mois"
+                        inputMode="decimal"
+                        className={cn(
+                          "field pr-9",
+                          errors.monthlyAmountOverride && "field-error",
+                        )}
+                        data-cy="input-montant-mois"
+                        aria-invalid={Boolean(errors.monthlyAmountOverride)}
+                        {...register("monthlyAmountOverride")}
+                      />
+                      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">
+                        €
+                      </span>
                     </div>
-                  ) : null}
+                  </FieldGroup>
+                  <div className="flex flex-col justify-end">
+                    <p className="rounded-lg bg-surface px-3 py-2.5 text-xs leading-relaxed text-ink-soft">
+                      Montant retenu estimé pour {formatMonth(month)} :{" "}
+                      <span className="number">{displayedRetainedAmount}</span>
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -1515,7 +1376,8 @@ export function GenerateExpenseStatementPage() {
                       !isValid ||
                       uploading ||
                       (!isRent && !receipt) ||
-                      (isRent && !availableRent)
+                      (isRent && !availableRent) ||
+                      amountConfirmationPending
                     }
                     data-cy="btn-ajouter-frais"
                   >
@@ -1579,7 +1441,6 @@ export function GenerateExpenseStatementPage() {
                       <tr>
                         <th scope="col">Type</th>
                         <th scope="col">Fournisseur</th>
-                        <th scope="col">Période</th>
                         <th scope="col" className="text-right">
                           Montant TTC
                         </th>
@@ -1625,14 +1486,6 @@ export function GenerateExpenseStatementPage() {
                                 expenseItem?.supplier ??
                                 "—"}
                             </td>
-                            <td className="whitespace-nowrap text-xs text-ink-soft">
-                              {line.periodStart && line.periodEnd
-                                ? formatPeriod(
-                                    line.periodStart,
-                                    line.periodEnd,
-                                  )
-                                : "Mois concerné"}
-                            </td>
                             <td className="whitespace-nowrap text-right">
                               <span className="number font-semibold text-ink">
                                 {formatEUR(line.amountInclVat)}
@@ -1665,9 +1518,7 @@ export function GenerateExpenseStatementPage() {
                               <div className="flex items-center justify-end gap-1">
                                 {line.receiptId ? (
                                   <a
-                                    href={api.receipts.fileUrl(
-                                      line.receiptId,
-                                    )}
+                                    href={api.receipts.fileUrl(line.receiptId)}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="rounded-lg p-1.5 text-ink-soft transition hover:bg-paper-deep hover:text-ink"

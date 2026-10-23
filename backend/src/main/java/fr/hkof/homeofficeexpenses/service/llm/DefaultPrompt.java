@@ -13,6 +13,7 @@ public final class DefaultPrompt {
             Si une information est absente ou incertaine, renvoie null : ne devine jamais.
             Le montant doit être une chaîne décimale avec un point (exemple : "123.45"), sans espace ni symbole.
             Les dates doivent être au format YYYY-MM-DD.
+            N'extrais pas la période de facturation : seule la date de facture est demandée.
             `type_suggere` vaut uniquement : gaz, electricite, loyer, telephone, assurance, fibre, autre, ou null.
             `extrait_source` est une courte phrase du document où figure le montant TTC.
             `confiance` vaut haute, moyenne ou basse.
@@ -27,15 +28,13 @@ public final class DefaultPrompt {
                 "fournisseur": {"type": ["string", "null"]},
                 "numero_facture": {"type": ["string", "null"]},
                 "date_facture": {"type": ["string", "null"]},
-                "periode_debut": {"type": ["string", "null"]},
-                "periode_fin": {"type": ["string", "null"]},
                 "montant_ttc": {"type": ["string", "null"]},
                 "montant_ht": {"type": ["string", "null"]},
                 "devise": {"type": "string"},
                 "extrait_source": {"type": "string"},
                 "confiance": {"type": "string", "enum": ["haute", "moyenne", "basse"]}
               },
-              "required": ["type_suggere", "fournisseur", "numero_facture", "date_facture", "periode_debut", "periode_fin", "montant_ttc", "montant_ht", "devise", "extrait_source", "confiance"],
+              "required": ["type_suggere", "fournisseur", "numero_facture", "date_facture", "montant_ttc", "montant_ht", "devise", "extrait_source", "confiance"],
               "additionalProperties": false
             }
             """;

@@ -428,10 +428,7 @@ export function AdminLlmPage() {
 
   const modelOptions = useMemo(() => {
     const options = models.data ?? [];
-    if (
-      values.model &&
-      !options.some((model) => model.name === values.model)
-    ) {
+    if (values.model && !options.some((model) => model.name === values.model)) {
       return [
         {
           name: values.model,

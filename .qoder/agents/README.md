@@ -15,6 +15,23 @@ tester. Pipeline by size: `S` = builder only, `M` = builder + one review, `L` = 
 most two review rounds. Money, contract, migration, template sandbox, LLM path or secrets in
 the diff forces a review whatever the size.
 
+## Models
+
+OpenCode pins two tiers — a different family for review on purpose:
+
+| Agent       | Model (OpenCode)                    | Role                       |
+| ----------- | ----------------------------------- | -------------------------- |
+| `lead`      | `opencode/deepseek-v4.1-flash-free` | sizing, handoff, routing   |
+| `builder`   | `opencode/deepseek-v4.1-flash-free` | implementation and tests   |
+| `reviewer`  | `opencode/glm-5.3-flash-free`       | blocker-only diff review   |
+
+- `.opencode/agents/*.md` pins this ID in frontmatter. It is an OpenCode provider ID and
+  means nothing to another runtime.
+- `.qoder/agents/*.md` keeps the model binding as a comment only: Qoder decides its own.
+- `.github/agents/*.agent.md` carries no model: Copilot selects its own.
+
+Do not copy an OpenCode model ID into a Qoder or Copilot agent.
+
 ## Handoff
 
 One file per task: `.handoff/tasks/<TASK-ID>.md`, created from `.handoff/TEMPLATE.md`.
@@ -23,9 +40,14 @@ task continues unchanged when the user switches tools. `<TASK-ID>` is a short up
 slug such as `PREVIEW-DEBOUNCE`. Keep it compact: goal, files (context versus writable),
 constraints, acceptance criteria, commands, evidence. 25 lines maximum, 6 for `S`.
 
-Statuses: `TODO` → `REVIEW` → `DONE`, with `CHANGES_REQUESTED` as the way back to `builder`
-and `BLOCKED` carrying the single decision the user must make. Evidence lines are appended,
-never rewritten.
+Statuses: `TODO` → `REVIEW` → `USER_REVIEW` → `DONE`, gated by the user. `builder` ends at
+`REVIEW` (M/L) or `USER_REVIEW` (S); `reviewer` sets `USER_REVIEW` on `VERDICT: PASS`. The
+lead reports and asks the user to accept: explicit acceptance sets `DONE`. User feedback
+before acceptance sets `USER_CHANGES_REQUESTED`, appends the request to Goal and Acceptance,
+resets `Round` to 0 and returns to `builder`. Reviewer blockers set `CHANGES_REQUESTED`; a
+remaining blocker after round 2 sets `BLOCKED`, carrying the single decision for the user. A
+`DONE` task is never reopened: a later requirement gets a new task ID. Evidence lines are
+appended, never rewritten.
 
 ## File graph
 

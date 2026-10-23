@@ -34,7 +34,8 @@ describe("generated document query invalidation", () => {
 
     void queryClient.invalidateQueries({ queryKey: queryKeys.statementsAll });
     expect(
-      queryClient.getQueryState(queryKeys.statementActive(month))?.isInvalidated,
+      queryClient.getQueryState(queryKeys.statementActive(month))
+        ?.isInvalidated,
     ).toBe(true);
     expect(
       queryClient.getQueryState(queryKeys.rentReceiptActive(month))
@@ -61,7 +62,8 @@ describe("generated document query invalidation", () => {
       queryClient.getQueryState(queryKeys.rentReceipts(month))?.isInvalidated,
     ).toBe(true);
     expect(
-      queryClient.getQueryState(queryKeys.statementActive(month))?.isInvalidated,
+      queryClient.getQueryState(queryKeys.statementActive(month))
+        ?.isInvalidated,
     ).toBe(false);
   });
 });

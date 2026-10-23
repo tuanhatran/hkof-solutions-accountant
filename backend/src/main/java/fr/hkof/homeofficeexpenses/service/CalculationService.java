@@ -2,9 +2,6 @@ package fr.hkof.homeofficeexpenses.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.YearMonth;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -15,33 +12,17 @@ public final class CalculationService {
     private CalculationService() {
     }
 
-    public static BigDecimal allocateToMonth(BigDecimal amountInclVat, LocalDate periodStart, LocalDate periodEnd, YearMonth month) {
-        if (amountInclVat == null) {
+    public static BigDecimal monthlyAmount(BigDecimal amountInclVat, BigDecimal monthlyAmountOverride) {
+        BigDecimal value = monthlyAmountOverride != null ? monthlyAmountOverride : amountInclVat;
+        if (value == null) {
             throw new BusinessException("Le montant TTC est obligatoire.");
         }
-        if (amountInclVat.signum() < 0) {
-            throw new BusinessException("Le montant TTC ne peut pas être négatif.");
+        if (value.signum() < 0) {
+            throw new BusinessException(monthlyAmountOverride != null
+                    ? "Le montant du mois ne peut pas être négatif."
+                    : "Le montant TTC ne peut pas être négatif.");
         }
-        if (periodStart == null && periodEnd == null) {
-            return amountInclVat.setScale(2, RoundingMode.HALF_UP);
-        }
-        if (periodStart == null || periodEnd == null) {
-            throw new BusinessException("Les deux dates de période doivent être renseignées, ou aucune.");
-        }
-        if (periodEnd.isBefore(periodStart)) {
-            throw new BusinessException("La fin de période ne peut pas précéder le début.");
-        }
-        long totalDays = ChronoUnit.DAYS.between(periodStart, periodEnd) + 1;
-        LocalDate monthStart = month.atDay(1);
-        LocalDate monthEnd = month.atEndOfMonth();
-        LocalDate includedStart = periodStart.isBefore(monthStart) ? monthStart : periodStart;
-        LocalDate includedEnd = periodEnd.isAfter(monthEnd) ? monthEnd : periodEnd;
-        long daysInMonth = ChronoUnit.DAYS.between(includedStart, includedEnd) + 1;
-        if (daysInMonth <= 0) {
-            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        }
-        return amountInclVat.multiply(BigDecimal.valueOf(daysInMonth))
-                .divide(BigDecimal.valueOf(totalDays), 2, RoundingMode.HALF_UP);
+        return value.setScale(2, RoundingMode.HALF_UP);
     }
 
     public static BigDecimal claimedAmount(BigDecimal monthlyAmount, BigDecimal proRataPct) {

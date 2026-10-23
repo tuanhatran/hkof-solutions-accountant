@@ -99,7 +99,10 @@ export const useStatementDraft = create<StatementDraftState>()(
       markReceiptPrimed: (rentReceiptId) => {
         const { month, primedReceiptByMonth } = get();
         set({
-          primedReceiptByMonth: { ...primedReceiptByMonth, [month]: rentReceiptId },
+          primedReceiptByMonth: {
+            ...primedReceiptByMonth,
+            [month]: rentReceiptId,
+          },
         });
       },
 

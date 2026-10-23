@@ -132,7 +132,9 @@ export function GenerateRentReceiptPage() {
     if (!initializedBefore) {
       const currentDraft = useRentReceiptDraft.getState();
       if (!getValues("rentExclCharges")) {
-        setValue("rentExclCharges", currentDraft.rentExclCharges, { shouldValidate: true });
+        setValue("rentExclCharges", currentDraft.rentExclCharges, {
+          shouldValidate: true,
+        });
       }
       if (!getValues("charges")) {
         setValue("charges", currentDraft.charges, { shouldValidate: true });
@@ -489,10 +491,7 @@ export function GenerateRentReceiptPage() {
                     <input
                       id="quittance-fin"
                       type="date"
-                      className={cn(
-                        "field",
-                        errors.periodEnd && "field-error",
-                      )}
+                      className={cn("field", errors.periodEnd && "field-error")}
                       aria-invalid={Boolean(errors.periodEnd)}
                       {...register("periodEnd", {
                         onChange: (event) =>
@@ -520,7 +519,9 @@ export function GenerateRentReceiptPage() {
                         aria-invalid={Boolean(errors.rentExclCharges)}
                         {...register("rentExclCharges", {
                           onChange: (event) =>
-                            draft.update({ rentExclCharges: event.target.value }),
+                            draft.update({
+                              rentExclCharges: event.target.value,
+                            }),
                         })}
                       />
                       <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">
@@ -594,10 +595,7 @@ export function GenerateRentReceiptPage() {
                     <input
                       id="quittance-emission"
                       type="date"
-                      className={cn(
-                        "field",
-                        errors.issueDate && "field-error",
-                      )}
+                      className={cn("field", errors.issueDate && "field-error")}
                       {...register("issueDate", {
                         onChange: (event) =>
                           draft.update({ issueDate: event.target.value }),

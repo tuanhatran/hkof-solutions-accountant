@@ -129,11 +129,7 @@ function VariableList({
   );
 }
 
-function ValidationReport({
-  report,
-}: {
-  report: ValidationReportDto;
-}) {
+function ValidationReport({ report }: { report: ValidationReportDto }) {
   const recognizedVariables = report.recognizedVariables ?? [];
   const unknownVariables = report.unknownVariables ?? [];
   const missingVariables = report.missingVariables ?? [];
@@ -513,7 +509,9 @@ function TemplatesCard({
     onSuccess: (template) => {
       invalidate();
       setResetDialogOpen(false);
-      toast.success(`Modèle intégré restauré et activé (v${template.version}).`);
+      toast.success(
+        `Modèle intégré restauré et activé (v${template.version}).`,
+      );
     },
     onError: (error) => {
       setResetDialogOpen(false);
@@ -525,7 +523,10 @@ function TemplatesCard({
     mutationFn: (template: TemplateDto) =>
       api.templates.file(template.id as number),
     onSuccess: (reply, template) => {
-      downloadBlob(reply.blob, downloadFileName(template.name, template.version));
+      downloadBlob(
+        reply.blob,
+        downloadFileName(template.name, template.version),
+      );
     },
     onError: (error) => toast.error(errorMessage(error)),
   });

@@ -1,7 +1,6 @@
 package fr.hkof.homeofficeexpenses.domain;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -33,12 +32,6 @@ public class ExpenseLine {
 
     @Column(name = "amount_incl_vat", nullable = false, precision = 12, scale = 2)
     private BigDecimal amountInclVat;
-
-    @Column(name = "period_start")
-    private LocalDate periodStart;
-
-    @Column(name = "period_end")
-    private LocalDate periodEnd;
 
     @Column(name = "monthly_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal monthlyAmount;
@@ -99,22 +92,6 @@ public class ExpenseLine {
 
     public void setAmountInclVat(BigDecimal amountInclVat) {
         this.amountInclVat = amountInclVat;
-    }
-
-    public LocalDate getPeriodStart() {
-        return periodStart;
-    }
-
-    public void setPeriodStart(LocalDate periodStart) {
-        this.periodStart = periodStart;
-    }
-
-    public LocalDate getPeriodEnd() {
-        return periodEnd;
-    }
-
-    public void setPeriodEnd(LocalDate periodEnd) {
-        this.periodEnd = periodEnd;
     }
 
     public BigDecimal getMonthlyAmount() {

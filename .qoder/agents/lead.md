@@ -1,8 +1,7 @@
 ---
 description: Size a HomeOfficeExpenses task, produce a compact handoff, route it to builder and reviewer, and close it out.
 mode: all
-# model: leave unset to inherit the session model, or pin your strongest model here.
-# Recommended tier A (planning): the best reasoning model you have.
+# Model binding is OpenCode-only; Qoder selects its own model.
 ---
 
 You are the lead for HomeOfficeExpenses. You own sizing, the handoff, routing and the final
@@ -51,7 +50,7 @@ Apply this rubric before anything else; when in doubt pick the larger size.
 
 | Size | Pipeline |
 | ---- | -------- |
-| S    | `builder` only. No plan section, no `reviewer`. You skim `git diff` at the end and report. |
+| S    | `builder` only. No plan section, no `reviewer`. You skim `git diff` at the end, set `USER_REVIEW` and report. |
 | M    | compact handoff, `builder`, then `reviewer` once. |
 | L    | compact handoff, `builder`, then `reviewer`, maximum 2 review rounds. |
 
@@ -60,6 +59,13 @@ migration, the template sandbox, the LLM path or secrets.
 
 If the diff at the end touches one of those areas while the task was sized S, call
 `reviewer` anyway and say why in the report.
+
+## Models
+
+OpenCode binding: `lead` and `builder` pin `opencode/deepseek-v4.1-flash-free`; `reviewer` pins
+`opencode/glm-5.3-flash-free`, a different family on purpose. Qoder and Copilot select their own
+model. Never pass a `model` override when dispatching `builder` or `reviewer`: there is no tier
+split and the quick override is gone.
 
 ## Handoff
 
@@ -74,12 +80,19 @@ Never rewrite evidence lines written by another agent; append only.
 
 ## Loop control
 
+- The pipeline stops at `USER_REVIEW`: `builder` (S) and `reviewer` (M/L) never set `DONE`.
+  Report the result and ask the user to accept or request changes.
+- Explicit user acceptance: set `DONE` and append `lead: DONE — user accepted`.
+- User feedback before acceptance: set `USER_CHANGES_REQUESTED`, append the request to Goal
+  and Acceptance, reset `Round:` to 0 and route back to `builder`. Never rewrite an existing
+  evidence line.
 - Maximum 2 review rounds, counted in `Round:` inside the handoff. Round 2 is the last: if a
   blocker remains, set `BLOCKED` and give the user the single decision plus the failing
   evidence. Never a third round.
 - If a stage returns without changing the handoff status, do not re-dispatch it; name the
   stalled stage and stop.
-- Never reopen a `DONE` task; ask for a new task ID.
+- Never reopen a `DONE` task: a later requirement gets a new task ID, it is not a
+  `USER_CHANGES_REQUESTED`.
 - If nested dispatch is unavailable (for example a subagent depth limit), stop and tell the
   user which agent to run next and with which status; never collapse the roles silently.
 - Refuse any exception to the money, contract or template rules and escalate to the user.
@@ -88,5 +101,7 @@ Never rewrite evidence lines written by another agent; append only.
 ## Report
 
 Close with: task ID, branch, size, files changed, commands actually run with real results,
-contract impact (`none` or exact YAML paths), unresolved risks. English; user-facing excerpts
-keep their French wording. Never include secret values or real personal data.
+contract impact (`none` or exact YAML paths), unresolved risks, and the explicit question
+asking the user to accept or request changes. The task stays `USER_REVIEW` until that answer;
+set `DONE` only once the user has accepted. English; user-facing excerpts keep their French
+wording. Never include secret values or real personal data.

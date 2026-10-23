@@ -125,9 +125,7 @@ function SwitchField({
         id={id}
         type="checkbox"
         className="mt-0.5 h-4 w-4 shrink-0 rounded border-line text-accent accent-[#1b5b49]"
-        {...register(
-          id === "poste-actif" ? "active" : "multipleLinesAllowed",
-        )}
+        {...register(id === "poste-actif" ? "active" : "multipleLinesAllowed")}
       />
       <span>
         <span className="block text-sm font-medium text-ink">{labelText}</span>
@@ -624,7 +622,8 @@ export function SettingsPage() {
         landlordAddress: submittedValues.landlordAddress.trim(),
         tenantName: submittedValues.tenantName.trim(),
         tenantAddress: submittedValues.tenantAddress.trim(),
-        rentExclCharges: parseAmount(submittedValues.rentExclCharges) ?? undefined,
+        rentExclCharges:
+          parseAmount(submittedValues.rentExclCharges) ?? undefined,
         chargesAdvance:
           parseAmount(submittedValues.chargesAdvance) ?? undefined,
         issuePlace: submittedValues.issuePlace.trim(),
@@ -691,10 +690,7 @@ export function SettingsPage() {
               >
                 <input
                   id="param-raison-sociale"
-                  className={cn(
-                    "field",
-                    errors.companyName && "field-error",
-                  )}
+                  className={cn("field", errors.companyName && "field-error")}
                   {...register("companyName")}
                   data-cy="input-raison-sociale"
                 />
@@ -706,10 +702,7 @@ export function SettingsPage() {
               >
                 <input
                   id="param-forme-juridique"
-                  className={cn(
-                    "field",
-                    errors.legalForm && "field-error",
-                  )}
+                  className={cn("field", errors.legalForm && "field-error")}
                   {...register("legalForm")}
                 />
               </FieldGroup>
@@ -794,10 +787,7 @@ export function SettingsPage() {
               >
                 <input
                   id="param-surface-totale"
-                  className={cn(
-                    "field",
-                    errors.totalArea && "field-error",
-                  )}
+                  className={cn("field", errors.totalArea && "field-error")}
                   inputMode="decimal"
                   placeholder="70,00"
                   {...register("totalArea")}
@@ -904,10 +894,7 @@ export function SettingsPage() {
                 >
                   <input
                     id="param-locataire-nom"
-                    className={cn(
-                      "field",
-                      errors.tenantName && "field-error",
-                    )}
+                    className={cn("field", errors.tenantName && "field-error")}
                     {...register("tenantName")}
                   />
                 </FieldGroup>
@@ -944,7 +931,10 @@ export function SettingsPage() {
               >
                 <input
                   id="param-loyer-hc"
-                  className={cn("field", errors.rentExclCharges && "field-error")}
+                  className={cn(
+                    "field",
+                    errors.rentExclCharges && "field-error",
+                  )}
                   inputMode="decimal"
                   placeholder="900,00"
                   {...register("rentExclCharges")}

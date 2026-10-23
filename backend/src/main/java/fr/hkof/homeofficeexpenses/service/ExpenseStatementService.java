@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -77,7 +76,7 @@ public class ExpenseStatementService {
     @Transactional(readOnly = true)
     public CalculationResponse calculate(StatementCalculationRequest request) {
         YearMonth month = Amounts.month(request.month());
-        List<CalculatedLine> lines = calculateLines(request.lines(), month);
+        List<CalculatedLine> lines = calculateLines(request.lines());
         Settings settings = parametersService.entity();
         BigDecimal total = CalculationService.total(lines.stream().map(CalculatedLine::claimedAmount).toList());
         return new CalculationResponse(
@@ -97,7 +96,7 @@ public class ExpenseStatementService {
         if (rentReceipt != null) {
             ExpenseItem rentItem = expenseItemService.entity("loyer");
             lines.add(new ExpenseLineDto(
-                    null, rentItem.getCode(), rentItem.getLabel(), rentItem.getSupplier(), null, null,
+                    null, rentItem.getCode(), rentItem.getLabel(), rentItem.getSupplier(),
                     Amounts.apiValue(rentReceipt.getTotal()),
                     Amounts.apiValue(rentReceipt.getTotal()),
                     "100.00",
@@ -120,7 +119,7 @@ public class ExpenseStatementService {
     @Transactional(readOnly = true)
     public byte[] preview(StatementPreviewRequest request) {
         YearMonth month = Amounts.month(request.month());
-        List<CalculatedLine> lines = calculateLines(request.lines(), month);
+        List<CalculatedLine> lines = calculateLines(request.lines());
         Settings settings = parametersService.entity();
         ExpenseStatement statement = buildStatement(month, lines, null, null);
         boolean complete = Boolean.TRUE.equals(request.complete());
@@ -136,7 +135,7 @@ public class ExpenseStatementService {
     @Transactional
     public StatementDto generate(StatementGenerationRequest request) {
         YearMonth month = Amounts.month(request.month());
-        List<CalculatedLine> lines = calculateLines(request.lines(), month);
+        List<CalculatedLine> lines = calculateLines(request.lines());
         if (lines.isEmpty()) {
             throw new BusinessException("Ajoutez au moins un frais avant de générer la note.");
         }
@@ -195,7 +194,7 @@ public class ExpenseStatementService {
         return storage.read(path);
     }
 
-    private List<CalculatedLine> calculateLines(List<ExpenseLineRequest> requests, YearMonth month) {
+    private List<CalculatedLine> calculateLines(List<ExpenseLineRequest> requests) {
         if (requests == null || requests.isEmpty()) {
             return List.of();
         }
@@ -211,14 +210,8 @@ public class ExpenseStatementService {
             }
             BigDecimal amountInclVat = Amounts.decimal(request.amountInclVat(), "montant TTC", true);
             BigDecimal proRataPct = Amounts.percentage(request.proRataPct());
-            LocalDate periodStart = Amounts.optionalDate(request.periodStart(), "début de période");
-            LocalDate periodEnd = Amounts.optionalDate(request.periodEnd(), "fin de période");
-            if ((periodStart == null) != (periodEnd == null)) {
-                throw new BusinessException("Renseignez les deux dates de la période facturée, ou aucune.");
-            }
-            BigDecimal monthlyAmount = request.monthlyAmountOverride() == null || request.monthlyAmountOverride().isBlank()
-                    ? CalculationService.allocateToMonth(amountInclVat, periodStart, periodEnd, month)
-                    : Amounts.decimal(request.monthlyAmountOverride(), "montant du mois", false);
+            BigDecimal monthlyAmountOverride = Amounts.optionalDecimal(request.monthlyAmountOverride(), "montant du mois");
+            BigDecimal monthlyAmount = CalculationService.monthlyAmount(amountInclVat, monthlyAmountOverride);
             BigDecimal claimedAmount = CalculationService.claimedAmount(monthlyAmount, proRataPct);
             Receipt receipt = request.receiptId() == null
                     ? null
@@ -226,7 +219,7 @@ public class ExpenseStatementService {
             AmountSource source = amountSource(request.amountSource());
             BigDecimal detectedAmount = Amounts.optionalDecimal(request.aiDetectedAmount(), "montant détecté par IA");
             String confidence = confidence(request.aiConfidence());
-            calculatedLines.add(new CalculatedLine(expenseItem, amountInclVat, periodStart, periodEnd, monthlyAmount, proRataPct, claimedAmount,
+            calculatedLines.add(new CalculatedLine(expenseItem, amountInclVat, monthlyAmount, proRataPct, claimedAmount,
                     receipt, source, detectedAmount, confidence));
         }
         return calculatedLines;
@@ -250,8 +243,6 @@ public class ExpenseStatementService {
             ExpenseLine line = new ExpenseLine();
             line.setExpenseItem(calculated.expenseItem());
             line.setAmountInclVat(calculated.amountInclVat());
-            line.setPeriodStart(calculated.periodStart());
-            line.setPeriodEnd(calculated.periodEnd());
             line.setMonthlyAmount(calculated.monthlyAmount());
             line.setProRataPct(calculated.proRataPct());
             line.setClaimedAmount(calculated.claimedAmount());
@@ -349,8 +340,6 @@ public class ExpenseStatementService {
                 line.expenseItem().getCode(),
                 line.expenseItem().getLabel(),
                 line.expenseItem().getSupplier(),
-                line.periodStart(),
-                line.periodEnd(),
                 Amounts.apiValue(line.amountInclVat()),
                 Amounts.apiValue(line.monthlyAmount()),
                 Amounts.apiValue(line.proRataPct()),
@@ -369,8 +358,6 @@ public class ExpenseStatementService {
                         line.getExpenseItem().getCode(),
                         line.getExpenseItem().getLabel(),
                         line.getExpenseItem().getSupplier(),
-                        line.getPeriodStart(),
-                        line.getPeriodEnd(),
                         Amounts.apiValue(line.getAmountInclVat()),
                         Amounts.apiValue(line.getMonthlyAmount()),
                         Amounts.apiValue(line.getProRataPct()),
@@ -400,8 +387,6 @@ public class ExpenseStatementService {
     private record CalculatedLine(
             ExpenseItem expenseItem,
             BigDecimal amountInclVat,
-            LocalDate periodStart,
-            LocalDate periodEnd,
             BigDecimal monthlyAmount,
             BigDecimal proRataPct,
             BigDecimal claimedAmount,

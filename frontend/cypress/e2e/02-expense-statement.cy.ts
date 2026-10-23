@@ -216,18 +216,59 @@ describe("Expense statement — entry and preview", () => {
     waitForValue('[data-cy="select-type-frais"]', "gaz");
     waitForValue('[data-cy="input-montant-ttc"]', "120.00");
     waitForValue('[data-cy="input-prorata"]', "35.71");
-    waitForValue('[data-cy="input-periode-debut"]', "2026-01-01");
-    waitForValue('[data-cy="input-periode-fin"]', "2026-01-31");
+    cy.get('[data-cy="input-periode-debut"]').should("not.exist");
+    cy.get('[data-cy="input-periode-fin"]').should("not.exist");
     cy.contains("Fournisseur détecté : EDF").should("be.visible");
     cy.get('[data-cy="badge-ia-detecte"]').should(($badges) => {
       expect($badges.length).to.be.at.least(2);
     });
+
+    cy.get('[data-cy="btn-ajouter-frais"]').should("be.disabled");
+    cy.get('[data-cy="btn-confirmer-montant"]')
+      .should("be.visible")
+      .should("have.attr", "aria-pressed", "false");
+    cy.contains(
+      "Montant détecté par IA — confirmez-le pour ajouter le frais.",
+    ).should("be.visible");
+    cy.get('[data-cy="btn-confirmer-montant"]').click();
+    cy.contains("Montant confirmé.").should("be.visible");
+    cy.get('[data-cy="btn-ajouter-frais"]').should("not.be.disabled");
 
     cy.get('[data-cy="input-montant-ttc"]').clear().type("125.50");
     cy.get('[data-cy="btn-ajouter-frais"]').should("not.be.disabled").click();
 
     waitForAmount('[data-cy="ligne-frais-gaz"]', "44,82");
     waitForAmount('[data-cy="total-retenu"]', "994,82");
+  });
+
+  it("overwrites a typed amount with the AI proposal and requires confirmation", () => {
+    createRentReceipt();
+    cy.visit("/generer/note-frais");
+    cy.chooseMonth(MONTHS);
+    cy.get('[data-cy="select-type-frais"]').should("not.be.disabled");
+    addRent();
+
+    cy.get('[data-cy="select-type-frais"]').select("gaz");
+    cy.get('[data-cy="input-montant-ttc"]').clear().type("999.99");
+
+    uploadReceipt("facture-gaz.txt");
+    cy.get('[data-cy="analyse-statut"]', { timeout: 35_000 }).should(
+      "contain.text",
+      "Analyse terminée",
+    );
+    waitForSelectedFile("facture-gaz.txt");
+
+    waitForValue('[data-cy="input-montant-ttc"]', "120.00");
+    cy.get('[data-cy="btn-ajouter-frais"]').should("be.disabled");
+    cy.get('[data-cy="btn-confirmer-montant"]').click();
+    cy.get('[data-cy="btn-ajouter-frais"]').should("not.be.disabled").click();
+
+    waitForAmount('[data-cy="ligne-frais-gaz"]', "120,00");
+
+    // Reopening a saved AI line never asks for the confirmation again.
+    cy.get('[data-cy="btn-modifier-gaz"]').click();
+    cy.contains("Montant confirmé.").should("be.visible");
+    cy.get('[data-cy="btn-ajouter-frais"]').should("not.be.disabled");
   });
 
   it("stays usable when analysis fails", () => {

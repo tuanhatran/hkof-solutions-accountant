@@ -33,12 +33,20 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
 - `.qoder/skills` is registered as an extra skill source, so the vendored Superpowers
   skills remain the single copy.
 - `.opencode/skills/*/SKILL.md` are project skills, advertised by their `description`.
-- `.opencode/agents/*.md` are agents available through the `subagent` tool. All three use
-  `mode: all` so they can also be invoked directly. `lead` dispatches `builder` and
-  `reviewer`, which needs `experimental.subagent_depth: 2` in `opencode.json`. Pipeline by
-  size: `S` = builder only, `M` = builder + one review, `L` = builder + at most two review
-  rounds. Task handoffs live in the shared `.handoff/tasks/` tree, also used by the Qoder and
-  Copilot agents.
+- `.opencode/agents/*.md` define the workflow: `lead` (`mode: primary`) is writable — it may
+  edit `.handoff/` only, create the task branch with `git switch -c`, and launch `builder` and
+  `reviewer` (needs `experimental.subagent_depth: 2`); `builder` is `mode: all` with full edit
+  and shell; `reviewer` is `mode: subagent` and read-only.
+- Models pinned in frontmatter: `lead` `opencode/deepseek-v4.1-flash-free`, `builder`
+  `opencode/deepseek-v4.1-flash-free`, `reviewer` `opencode/glm-5.3-flash-free` (a different
+  family from the builder on purpose). Qoder and Copilot select their own models.
+- Sizing: `S` = 1-2 files, builder only; `M` = 3-5 files or some risk, builder then one review;
+  `L` = 6+ files, new architecture or unclear requirements, parallel builders then one review
+  on the combined diff. Money, contract, migration, template sandbox, LLM or secrets always
+  force a review.
+- Handoffs are files, `.handoff/tasks/<TASK-ID>.md` from `.handoff/TEMPLATE.md`, written by the
+  lead for every size (25 lines, 6 for S); the same tree is shared with the Qoder and Copilot
+  mirrors.
 - Global permissions in `opencode.json` deny `git commit`, `push`, `reset`, `clean`,
   `stash`, `worktree` and branch deletion.
 
