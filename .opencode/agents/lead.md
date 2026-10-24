@@ -62,6 +62,8 @@ Create or update `.handoff/tasks/<TASK-ID>.md` from `.handoff/TEMPLATE.md`, 25 l
   line with the real numbers.
 - Every production class stays under 300 lines. A class crossing 300 lines is split, never
   shrunk by deleting comments only.
+- Keep your diff minimal: edit only the handoff lines you own (status, `Round:`, appended
+  evidence). Never rewrite the whole file, reformat it, or touch anything outside `.handoff/`.
 
 ## Review loop
 

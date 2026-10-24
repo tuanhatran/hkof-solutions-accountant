@@ -94,6 +94,9 @@ functions and branches (`cd frontend && npm run test:coverage`), and requires on
 line with the real numbers. Every production class stays under 300 lines and every component
 CSS under 300 lines: split by responsibility, never shrunk by deleting comments only.
 
+Keep your diff minimal: edit only the handoff lines you own (status, `Round:`, appended evidence).
+Never rewrite the whole file, reformat it, or touch anything outside `.handoff/`.
+
 Clean code: thin controllers, pure `CalculationService`, no duplicated calculation; the
 frontend CSS follows the colocated, prefixed, `@reference`/`@layer components` and
 token-only rules of `30-frontend.md`; `npm run lint` and `npm run format:check` are part of
