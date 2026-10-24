@@ -7,7 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import fr.hkof.homeofficeexpenses.service.BusinessException;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.ExtractionDto;
+import fr.hkof.homeofficeexpenses.web.dto.ExtractionDtos.ExtractionDto;
 import tools.jackson.databind.json.JsonMapper;
 
 class ExtractionPipelineTest {

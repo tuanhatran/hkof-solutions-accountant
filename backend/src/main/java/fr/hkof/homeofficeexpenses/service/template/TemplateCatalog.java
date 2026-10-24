@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.TemplateVariableDto;
+import fr.hkof.homeofficeexpenses.web.dto.TemplateDtos.TemplateVariableDto;
 
 public final class TemplateCatalog {
 

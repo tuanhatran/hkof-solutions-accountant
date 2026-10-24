@@ -73,4 +73,33 @@ class ExternalCommandTest {
         Files.setPosixFilePermissions(script, PosixFilePermissions.fromString("rwx------"));
         return script;
     }
+
+    @Test
+    @DisplayName("A null or empty argv fails without starting a process")
+    void invalidArgv() {
+        assertThat(ExternalCommand.run(null, Duration.ofSeconds(1), 10))
+                .isEqualTo(new ExternalCommand.Result(-1, "", false));
+        assertThat(ExternalCommand.run(List.of(), Duration.ofSeconds(1), 10))
+                .isEqualTo(new ExternalCommand.Result(-1, "", false));
+    }
+
+    @Test
+    @DisplayName("A null timeout waits for completion instead of timing out")
+    void nullTimeoutWaits() {
+        ExternalCommand.Result result = ExternalCommand.run(List.of("/bin/echo", "hello"), null, 1_000);
+
+        assertThat(result.exitCode()).isZero();
+        assertThat(result.timedOut()).isFalse();
+        assertThat(result.stdout()).isEqualTo("hello\n");
+    }
+
+    @Test
+    @DisplayName("A zero character cap drains stdout but returns an empty string")
+    void zeroCharacterCap() {
+        ExternalCommand.Result result = ExternalCommand.run(List.of("/bin/echo", "hello"), Duration.ofSeconds(5), 0);
+
+        assertThat(result.exitCode()).isZero();
+        assertThat(result.timedOut()).isFalse();
+        assertThat(result.stdout()).isEmpty();
+    }
 }

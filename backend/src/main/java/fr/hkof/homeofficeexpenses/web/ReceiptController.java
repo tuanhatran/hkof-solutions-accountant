@@ -14,9 +14,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import fr.hkof.homeofficeexpenses.service.ReceiptService;
 import fr.hkof.homeofficeexpenses.service.llm.AnalysisJobService;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.AnalysisDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.AnalysisStartResponse;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.ReceiptDto;
+import fr.hkof.homeofficeexpenses.web.dto.ExtractionDtos.AnalysisDto;
+import fr.hkof.homeofficeexpenses.web.dto.ExtractionDtos.AnalysisStartResponse;
+import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.ReceiptDto;
 
 @RestController
 @RequestMapping("/api/receipts")

@@ -25,8 +25,8 @@ import fr.hkof.homeofficeexpenses.repository.RentReceiptRepository;
 import fr.hkof.homeofficeexpenses.repository.TenantRepository;
 import fr.hkof.homeofficeexpenses.service.template.TemplateDataService;
 import fr.hkof.homeofficeexpenses.service.template.TemplateService;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.RentReceiptDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.RentReceiptRequest;
+import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.RentReceiptDto;
+import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.RentReceiptRequest;
 
 @Service
 public class RentReceiptService {

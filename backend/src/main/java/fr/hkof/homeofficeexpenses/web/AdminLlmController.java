@@ -11,12 +11,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import fr.hkof.homeofficeexpenses.service.llm.DefaultPrompt;
 import fr.hkof.homeofficeexpenses.service.llm.LlmConfigService;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LlmConfigDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LlmConfigRequest;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LlmModelDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LlmStatusDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LlmTestResponse;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.DefaultPromptDto;
+import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.LlmConfigDto;
+import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.LlmConfigRequest;
+import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.LlmModelDto;
+import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.LlmStatusDto;
+import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.LlmTestResponse;
+import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.DefaultPromptDto;
 
 @RestController
 @RequestMapping("/api/admin/llm")

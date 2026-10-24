@@ -1,96 +1,71 @@
 package fr.hkof.homeofficeexpenses.service;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.time.Clock;
-import java.time.Instant;
 import java.time.YearMonth;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import fr.hkof.homeofficeexpenses.domain.Receipt;
-import fr.hkof.homeofficeexpenses.domain.ExpenseLine;
-import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
-import fr.hkof.homeofficeexpenses.domain.Settings;
-import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
-import fr.hkof.homeofficeexpenses.domain.RentReceipt;
-import fr.hkof.homeofficeexpenses.domain.Signature;
-import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.domain.AmountSource;
 import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
+import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
+import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
+import fr.hkof.homeofficeexpenses.domain.RentReceipt;
+import fr.hkof.homeofficeexpenses.domain.Settings;
+import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
-import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.repository.ExpenseStatementRepository;
-import fr.hkof.homeofficeexpenses.service.extraction.DocumentTextExtractor;
 import fr.hkof.homeofficeexpenses.service.template.TemplateDataService;
-import fr.hkof.homeofficeexpenses.service.template.TemplateService;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.DraftDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.CalculationResponse;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.ExpenseLineDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.ExpenseLineRequest;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementPreviewRequest;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementCalculationRequest;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementGenerationRequest;
+import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.CalculationResponse;
+import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.DraftDto;
+import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.ExpenseLineDto;
+import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.StatementCalculationRequest;
+import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.StatementDto;
+import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.StatementGenerationRequest;
+import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.StatementPreviewRequest;
 
+/**
+ * Facade of the expense statement domain: persists statements and orchestrates the line
+ * calculator and the document collaborator. Public behaviour is unchanged.
+ */
 @Service
 public class ExpenseStatementService {
-
-    private static final List<String> CONFIDENCE_LEVELS = List.of("haute", "moyenne", "basse");
 
     private final ExpenseStatementRepository repository;
     private final SettingsService parametersService;
     private final ExpenseItemService expenseItemService;
     private final RentReceiptService rentReceiptService;
-    private final ReceiptService receiptService;
-    private final TemplateService templateService;
     private final TemplateDataService templateDataService;
-    private final SignatureService signatureService;
-    private final PdfService pdfService;
     private final StorageService storage;
-    private final DocumentTextExtractor textExtractor;
-    private final Clock clock;
+    private final ExpenseStatementLineCalculator lineCalculator;
+    private final ExpenseStatementDocumentService documents;
 
     public ExpenseStatementService(ExpenseStatementRepository repository, SettingsService parametersService,
-            ExpenseItemService expenseItemService, RentReceiptService rentReceiptService, ReceiptService receiptService,
-            TemplateService templateService, TemplateDataService templateDataService, SignatureService signatureService,
-            PdfService pdfService, StorageService storage, DocumentTextExtractor textExtractor, Clock clock) {
+            ExpenseItemService expenseItemService, RentReceiptService rentReceiptService,
+            TemplateDataService templateDataService, StorageService storage,
+            ExpenseStatementLineCalculator lineCalculator, ExpenseStatementDocumentService documents) {
         this.repository = repository;
         this.parametersService = parametersService;
         this.expenseItemService = expenseItemService;
         this.rentReceiptService = rentReceiptService;
-        this.receiptService = receiptService;
-        this.templateService = templateService;
         this.templateDataService = templateDataService;
-        this.signatureService = signatureService;
-        this.pdfService = pdfService;
         this.storage = storage;
-        this.textExtractor = textExtractor;
-        this.clock = clock;
+        this.lineCalculator = lineCalculator;
+        this.documents = documents;
     }
 
     @Transactional(readOnly = true)
     public CalculationResponse calculate(StatementCalculationRequest request) {
         YearMonth month = Amounts.month(request.month());
-        List<CalculatedLine> lines = calculateLines(request.lines());
+        List<CalculatedLine> lines = lineCalculator.calculateLines(request.lines());
         Settings settings = parametersService.entity();
         BigDecimal total = CalculationService.total(lines.stream().map(CalculatedLine::claimedAmount).toList());
         return new CalculationResponse(
-                lines.stream().map(this::toDto).toList(),
+                lines.stream().map(lineCalculator::toDto).toList(),
                 Amounts.apiValue(total),
                 NumberToWords.toWords(total),
                 Amounts.apiValue(CalculationService.proRataBase(settings.getBusinessArea(), settings.getTotalArea())),
@@ -130,40 +105,31 @@ public class ExpenseStatementService {
     @Transactional(readOnly = true)
     public byte[] preview(StatementPreviewRequest request) {
         YearMonth month = Amounts.month(request.month());
-        List<CalculatedLine> lines = calculateLines(request.lines());
+        List<CalculatedLine> lines = lineCalculator.calculateLines(request.lines());
         Settings settings = parametersService.entity();
-        ExpenseStatement statement = buildStatement(month, lines, null, null);
-        boolean complete = Boolean.TRUE.equals(request.complete());
-        String signature = signatureDataUri(request.signatureId(), SignatureType.ENTREPRISE_CEO);
-        TemplateDocument template = templateForStatement(request.templateId());
-        String html = templateService.render(template, templateDataService.dataStatement(settings, statement, complete, signature));
-        byte[] pdf = pdfService.renderHtmlToPdf(html);
-        if (complete) {
-            pdf = pdfService.merge(withAttachments(pdf, statement, month));
-        }
-        return pdfService.addWatermark(pdf);
+        return documents.preview(month, lines, settings, request);
     }
 
     @Transactional
     public StatementDto generate(StatementGenerationRequest request) {
         YearMonth month = Amounts.month(request.month());
-        List<CalculatedLine> lines = calculateLines(request.lines());
+        List<CalculatedLine> lines = lineCalculator.calculateLines(request.lines());
         if (lines.isEmpty()) {
             throw new BusinessException("Ajoutez au moins un frais avant de générer la note.");
         }
         Settings settings = parametersService.entity();
-        String signature = signatureDataUri(request.signatureId(), SignatureType.ENTREPRISE_CEO);
-        TemplateDocument template = templateForStatement(request.templateId());
+        String signature = documents.signatureDataUri(request.signatureId(), SignatureType.ENTREPRISE_CEO);
+        TemplateDocument template = documents.templateForStatement(request.templateId());
         int version = repository.findFirstByMonthOrderByVersionDesc(month.toString())
                 .map(n -> n.getVersion() + 1)
                 .orElse(1);
         archive(month.toString());
-        ExpenseStatement statement = buildStatement(month, lines, version, template);
-        String html = templateService.render(template, templateDataService.dataStatement(settings, statement, true, signature));
-        byte[] pdf = pdfService.renderHtmlToPdf(html);
-        byte[] pdfComplete = pdfService.merge(withAttachments(pdf, statement, month));
-        statement.setPdfPath(storage.storePdf("note_frais_" + month + "_v" + version + ".pdf", pdf));
-        statement.setFullPdfPath(storage.storePdf("note_frais_" + month + "_v" + version + "_complet.pdf", pdfComplete));
+        ExpenseStatementDocumentService.GeneratedStatement generated =
+                documents.generate(month, lines, version, template, signature, settings);
+        ExpenseStatement statement = generated.statement();
+        statement.setPdfPath(storage.storePdf("note_frais_" + month + "_v" + version + ".pdf", generated.pdf()));
+        statement.setFullPdfPath(
+                storage.storePdf("note_frais_" + month + "_v" + version + "_complet.pdf", generated.completePdf()));
         ExpenseStatement saved = repository.saveAndFlush(statement);
         return toDto(saved);
     }
@@ -199,172 +165,11 @@ public class ExpenseStatementService {
     }
 
     public byte[] pdf(Long id, boolean complete) {
-        ExpenseStatement statement = entity(id);
-        String path = complete ? statement.getFullPdfPath() : statement.getPdfPath();
-        if (path == null) {
-            throw new NotFoundException("Le PDF demandé est introuvable.");
-        }
-        return storage.read(path);
+        return documents.pdf(entity(id), complete);
     }
 
-    /**
-     * Builds the complete download archive: the generated note PDF, the active rent receipt of
-     * the month and every justificatif of the statement in its original format. Justificatifs are
-     * deduplicated by receipt id and kept in statement line order.
-     */
     public byte[] zip(Long id) {
-        ExpenseStatement statement = entity(id);
-        if (statement.getPdfPath() == null) {
-            throw new NotFoundException("Le PDF demandé est introuvable.");
-        }
-        String month = statement.getMonth();
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ZipOutputStream zip = new ZipOutputStream(out, StandardCharsets.UTF_8)) {
-            addEntry(zip, "note_frais_" + month + ".pdf", storage.read(statement.getPdfPath()));
-            RentReceipt rentReceipt = rentReceiptService.activeForMonth(month, null, null);
-            if (rentReceipt != null && rentReceipt.getPdfPath() != null
-                    && !rentReceipt.getPdfPath().isBlank()) {
-                addEntry(zip, "quittance_" + month + ".pdf", storage.read(rentReceipt.getPdfPath()));
-            }
-            Set<Long> processedReceiptIds = new HashSet<>();
-            int index = 0;
-            for (ExpenseLine line : statement.getLines()) {
-                Receipt receipt = line.getReceipt();
-                if (receipt == null || !processedReceiptIds.add(receipt.getId())) {
-                    continue;
-                }
-                if (receipt.getPath() == null || receipt.getPath().isBlank()
-                        || receipt.getFileName() == null || receipt.getFileName().isBlank()) {
-                    continue;
-                }
-                index++;
-                addEntry(zip, "justificatifs/" + String.format(Locale.ROOT, "%02d", index) + "_"
-                        + StorageService.sanitizeName(receipt.getFileName()), storage.read(receipt.getPath()));
-            }
-            zip.finish();
-            return out.toByteArray();
-        } catch (IOException ex) {
-            throw new IllegalStateException("Impossible de générer l'archive ZIP.", ex);
-        }
-    }
-
-    private static void addEntry(ZipOutputStream zip, String name, byte[] content) throws IOException {
-        zip.putNextEntry(new ZipEntry(name));
-        zip.write(content);
-        zip.closeEntry();
-    }
-
-    private List<CalculatedLine> calculateLines(List<ExpenseLineRequest> requests) {
-        if (requests == null || requests.isEmpty()) {
-            return List.of();
-        }
-        List<CalculatedLine> calculatedLines = new ArrayList<>();
-        Set<String> codes = new HashSet<>();
-        for (ExpenseLineRequest request : requests) {
-            if (request.itemCode() == null || request.itemCode().isBlank()) {
-                throw new BusinessException("Le type de frais est obligatoire.");
-            }
-            ExpenseItem expenseItem = expenseItemService.entity(request.itemCode());
-            if (!expenseItem.isMultipleLinesAllowed() && !codes.add(expenseItem.getCode())) {
-                throw new BusinessException("Le type « " + expenseItem.getLabel() + " » ne peut être ajouté qu'une fois.");
-            }
-            BigDecimal amountInclVat = Amounts.decimal(request.amountInclVat(), "montant TTC", true);
-            BigDecimal proRataPct = Amounts.percentage(request.proRataPct());
-            BigDecimal monthlyAmount = CalculationService.monthlyAmount(amountInclVat);
-            BigDecimal claimedAmount = CalculationService.claimedAmount(monthlyAmount, proRataPct);
-            Receipt receipt = request.receiptId() == null
-                    ? null
-                    : receiptService.entity(request.receiptId());
-            AmountSource source = amountSource(request.amountSource());
-            BigDecimal detectedAmount = Amounts.optionalDecimal(request.aiDetectedAmount(), "montant détecté par IA");
-            String confidence = confidence(request.aiConfidence());
-            calculatedLines.add(new CalculatedLine(expenseItem, amountInclVat, monthlyAmount, proRataPct, claimedAmount,
-                    receipt, source, detectedAmount, confidence));
-        }
-        // The configured display order is authoritative, stable for equal sortOrder
-        // and for a repeated item. Amounts stay attached to their own line.
-        calculatedLines.sort(Comparator.comparingInt(line -> line.expenseItem().getSortOrder()));
-        return calculatedLines;
-    }
-
-    private ExpenseStatement buildStatement(YearMonth month, List<CalculatedLine> lines, Integer version,
-            TemplateDocument template) {
-        ExpenseStatement statement = new ExpenseStatement();
-        statement.setMonth(month.toString());
-        statement.setNumber("NF-" + month);
-        statement.setVersion(version == null ? 1 : version);
-        statement.setStatus(DocumentStatus.ACTIVE);
-        if (template != null) {
-            statement.setTemplateId(template.getId());
-            statement.setTemplateName(template.getName());
-            statement.setTemplateVersion(template.getVersion());
-        }
-        statement.setCreatedAt(Instant.now(clock));
-        BigDecimal total = BigDecimal.ZERO;
-        for (CalculatedLine calculated : lines) {
-            ExpenseLine line = new ExpenseLine();
-            line.setExpenseItem(calculated.expenseItem());
-            line.setAmountInclVat(calculated.amountInclVat());
-            line.setMonthlyAmount(calculated.monthlyAmount());
-            line.setProRataPct(calculated.proRataPct());
-            line.setClaimedAmount(calculated.claimedAmount());
-            line.setReceipt(calculated.receipt());
-            line.setAmountSource(calculated.source());
-            line.setAiDetectedAmount(calculated.detectedAmount());
-            line.setAiConfidence(calculated.confidence());
-            line.setLabelSnapshot(calculated.expenseItem().getLabel());
-            line.setSupplierSnapshot(calculated.expenseItem().getSupplier());
-            statement.addLine(line);
-            total = total.add(calculated.claimedAmount());
-        }
-        statement.setTotal(total.setScale(2, java.math.RoundingMode.HALF_UP));
-        return statement;
-    }
-
-    private List<byte[]> withAttachments(byte[] statementPdf, ExpenseStatement statement, YearMonth month) {
-        List<byte[]> pdfs = new ArrayList<>();
-        pdfs.add(statementPdf);
-        // Expense statements keep a month-scoped rent receipt: pair selection is out of scope.
-        RentReceipt rentReceipt = rentReceiptService.activeForMonth(month.toString(), null, null);
-        if (rentReceipt != null && rentReceipt.getPdfPath() != null) {
-            pdfs.add(storage.read(rentReceipt.getPdfPath()));
-        }
-        Set<Long> processedReceiptIds = new HashSet<>();
-        for (ExpenseLine line : statement.getLines()) {
-            Receipt receipt = line.getReceipt();
-            if (receipt == null || !processedReceiptIds.add(receipt.getId())) {
-                continue;
-            }
-            byte[] content = storage.read(receipt.getPath());
-            if (receipt.getMimeType().equals("application/pdf")) {
-                pdfs.add(content);
-            } else if (receipt.getMimeType().startsWith("image/")) {
-                pdfs.add(pdfService.imageToPdf(content, receipt.getFileName()));
-            } else {
-                DocumentTextExtractor.Extraction extraction = textExtractor.extract(
-                        Path.of(storage.temporaryPath(receipt.getFileName(), content)),
-                        receipt.getMimeType(), 1);
-                pdfs.add(pdfService.pageText("Justificatif — " + receipt.getFileName(), extraction.text()));
-            }
-        }
-        return pdfs;
-    }
-
-    private String signatureDataUri(Long requestedId, SignatureType defaultType) {
-        Signature signature = signatureService.resolve(requestedId, defaultType)
-                .orElseThrow(() -> new BusinessException(
-                        "Aucune signature configurée. Configurez une signature dans la page Paramètres."));
-        return signatureService.dataUri(signature.getId());
-    }
-
-    private TemplateDocument templateForStatement(Long templateId) {
-        TemplateDocument template = templateId == null
-                ? templateService.active(TemplateType.EXPENSE_STATEMENT)
-                : templateService.byId(templateId);
-        if (template.getType() != TemplateType.EXPENSE_STATEMENT) {
-            throw new BusinessException("Le template sélectionné n'est pas un template de note de frais.");
-        }
-        return template;
+        return documents.zip(entity(id));
     }
 
     private void archive(String month) {
@@ -380,45 +185,6 @@ public class ExpenseStatementService {
             repository.saveAll(existingStatements);
             repository.flush();
         }
-    }
-
-    private AmountSource amountSource(String value) {
-        if (value == null || value.isBlank()) {
-            return AmountSource.MANUAL;
-        }
-        try {
-            return AmountSource.valueOf(value.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ex) {
-            throw new BusinessException("Source de montant invalide : " + value);
-        }
-    }
-
-    private String confidence(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        String normalizedConfidence = value.trim().toLowerCase(Locale.ROOT);
-        if (!CONFIDENCE_LEVELS.contains(normalizedConfidence)) {
-            throw new BusinessException("Niveau de confiance IA invalide : " + value);
-        }
-        return normalizedConfidence;
-    }
-
-    public ExpenseLineDto toDto(CalculatedLine line) {
-        return new ExpenseLineDto(
-                null,
-                line.expenseItem().getCode(),
-                line.expenseItem().getLabel(),
-                line.expenseItem().getSupplier(),
-                Amounts.apiValue(line.amountInclVat()),
-                Amounts.apiValue(line.monthlyAmount()),
-                Amounts.apiValue(line.proRataPct()),
-                Amounts.apiValue(line.claimedAmount()),
-                line.receipt() == null ? null : line.receipt().getId(),
-                line.receipt() == null ? null : line.receipt().getFileName(),
-                line.source().name(),
-                Amounts.apiValue(line.detectedAmount()),
-                line.confidence());
     }
 
     public StatementDto toDto(ExpenseStatement statement) {
@@ -452,17 +218,5 @@ public class ExpenseStatementService {
                 lines,
                 statement.getPdfPath() != null,
                 statement.getFullPdfPath() != null);
-    }
-
-    private record CalculatedLine(
-            ExpenseItem expenseItem,
-            BigDecimal amountInclVat,
-            BigDecimal monthlyAmount,
-            BigDecimal proRataPct,
-            BigDecimal claimedAmount,
-            Receipt receipt,
-            AmountSource source,
-            BigDecimal detectedAmount,
-            String confidence) {
     }
 }

@@ -14,12 +14,12 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import fr.hkof.homeofficeexpenses.service.ExpenseStatementService;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.DraftDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.CalculationResponse;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementPreviewRequest;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementCalculationRequest;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.StatementGenerationRequest;
+import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.DraftDto;
+import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.CalculationResponse;
+import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.StatementPreviewRequest;
+import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.StatementCalculationRequest;
+import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.StatementDto;
+import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.StatementGenerationRequest;
 
 @RestController
 @RequestMapping("/api/expense-statements")

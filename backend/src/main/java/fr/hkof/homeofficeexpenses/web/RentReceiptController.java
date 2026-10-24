@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
 import fr.hkof.homeofficeexpenses.service.RentReceiptService;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.RentReceiptDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.RentReceiptRequest;
+import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.RentReceiptDto;
+import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.RentReceiptRequest;
 
 @RestController
 @RequestMapping("/api/rent-receipts")

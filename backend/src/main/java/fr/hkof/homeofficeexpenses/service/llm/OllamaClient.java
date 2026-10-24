@@ -15,7 +15,7 @@ import org.springframework.web.client.RestClientResponseException;
 
 import fr.hkof.homeofficeexpenses.domain.LlmConfig;
 import fr.hkof.homeofficeexpenses.service.BusinessException;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LlmModelDto;
+import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.LlmModelDto;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 

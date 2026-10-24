@@ -16,7 +16,7 @@ import fr.hkof.homeofficeexpenses.domain.Signature;
 import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.repository.LandlordRepository;
 import fr.hkof.homeofficeexpenses.repository.SignatureRepository;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.SignatureDto;
+import fr.hkof.homeofficeexpenses.web.dto.SignatureDtos.SignatureDto;
 
 @Service
 public class SignatureService {

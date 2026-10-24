@@ -10,7 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import fr.hkof.homeofficeexpenses.domain.Receipt;
 import fr.hkof.homeofficeexpenses.repository.ReceiptRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseLineRepository;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.ReceiptDto;
+import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.ReceiptDto;
 
 @Service
 public class ReceiptService {

@@ -10,8 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 import fr.hkof.homeofficeexpenses.domain.Periodicity;
 import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
 import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.ExpenseItemDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.ExpenseItemRequest;
+import fr.hkof.homeofficeexpenses.web.dto.ExpenseItemDtos.ExpenseItemDto;
+import fr.hkof.homeofficeexpenses.web.dto.ExpenseItemDtos.ExpenseItemRequest;
 
 @Service
 public class ExpenseItemService {

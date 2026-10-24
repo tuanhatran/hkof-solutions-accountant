@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.ValidationReportDto;
+import fr.hkof.homeofficeexpenses.web.dto.TemplateDtos.ValidationReportDto;
 
 class TemplateServiceValidationTest {
 

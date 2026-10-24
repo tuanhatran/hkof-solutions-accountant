@@ -7,8 +7,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import fr.hkof.homeofficeexpenses.service.SettingsService;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.SettingsDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.SettingsRequest;
+import fr.hkof.homeofficeexpenses.web.dto.SettingsDtos.SettingsDto;
+import fr.hkof.homeofficeexpenses.web.dto.SettingsDtos.SettingsRequest;
 
 @RestController
 @RequestMapping("/api/settings")

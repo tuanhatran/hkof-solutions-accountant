@@ -15,12 +15,12 @@ import fr.hkof.homeofficeexpenses.domain.Tenant;
 import fr.hkof.homeofficeexpenses.repository.LandlordRepository;
 import fr.hkof.homeofficeexpenses.repository.LeaseRepository;
 import fr.hkof.homeofficeexpenses.repository.TenantRepository;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LandlordDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LandlordRequest;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LeaseDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LeaseRequest;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.TenantDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.TenantRequest;
+import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.LandlordDto;
+import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.LandlordRequest;
+import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.LeaseDto;
+import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.LeaseRequest;
+import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.TenantDto;
+import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.TenantRequest;
 
 /**
  * Landlord, tenant and lease directories backing the rent receipt configuration.

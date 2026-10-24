@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import fr.hkof.homeofficeexpenses.service.llm.AnalysisJobService;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.AnalysisDto;
+import fr.hkof.homeofficeexpenses.web.dto.ExtractionDtos.AnalysisDto;
 
 @RestController
 @RequestMapping("/api/analyses")

@@ -56,6 +56,11 @@ serially.
 - UI, documents, toasts and error messages in French; code, identifiers, tests and reports in
   English. Amounts `1 234,56 €`, dates `DD/MM/YYYY`, API dates ISO.
 - TypeScript strict, no `any`. Never skip, weaken, disable or delete a failing test.
+- Keep the coverage gates green: JaCoCo bundle >= 90% LINE and >= 90% BRANCH
+  (`cd backend && ./mvnw -B verify`), Vitest global >= 90% lines, statements, functions and
+  branches (`cd frontend && npm run test:coverage`), with the real numbers in the handoff.
+  Every production class stays under 300 lines: split a class that crosses 300, never shrink
+  it by deleting comments only.
 - Full E2E suite on every task, every size (documentation and configuration included): all
   specs and all tests green in one run, never report green while any test fails or passes
   only on a retry. If the gate cannot run (for example Docker unavailable), report the

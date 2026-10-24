@@ -3,6 +3,7 @@ package fr.hkof.homeofficeexpenses.service.llm;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
@@ -127,5 +128,147 @@ class OllamaClientTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("injoignable")
                 .hasMessageContaining("saisissez le montant manuellement");
+    }
+
+    @Test
+    @DisplayName("The model list falls back to the legacy model field and tolerates missing details")
+    void modelsFallbackFields() {
+        serveur.stubFor(get(urlEqualTo("/api/tags")).willReturn(okJson("""
+                {"models":[
+                  {"name":"","model":"legacy:latest"},
+                  {"name":"plain"}
+                ]}
+                """)));
+
+        var models = client.models(config);
+
+        assertThat(models).hasSize(2);
+        assertThat(models.get(0).name()).isEqualTo("legacy:latest");
+        assertThat(models.get(0).family()).isEmpty();
+        assertThat(models.get(1).name()).isEqualTo("plain");
+    }
+
+    @Test
+    @DisplayName("A model list without a models array is empty")
+    void modelsMissingArray() {
+        serveur.stubFor(get(urlEqualTo("/api/tags")).willReturn(okJson("{\"other\":true}")));
+
+        assertThat(client.models(config)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("A blank or null model never supports vision")
+    void blankModelHasNoVision() {
+        assertThat(client.supportsVision(config, null)).isFalse();
+        assertThat(client.supportsVision(config, "   ")).isFalse();
+    }
+
+    @Test
+    @DisplayName("Vision falls back to the model name when /api/show fails")
+    void visionFallsBackToName() {
+        serveur.stubFor(post(urlEqualTo("/api/show")).willReturn(aResponse().withStatus(500)));
+
+        assertThat(client.supportsVision(config, "llava:latest")).isTrue();
+        assertThat(client.supportsVision(config, "llama-test:latest")).isFalse();
+    }
+
+    @Test
+    @DisplayName("Vision falls back to the model name when capabilities are absent")
+    void visionFallsBackWithoutCapabilities() {
+        serveur.stubFor(post(urlEqualTo("/api/show")).willReturn(okJson("{\"model_info\":{}}")));
+
+        assertThat(client.supportsVision(config, "minicpm-v")).isTrue();
+        assertThat(client.supportsVision(config, "llama-test:latest")).isFalse();
+    }
+
+    @Test
+    @DisplayName("A model without a configured name is rejected before any call")
+    void chatWithoutModel() {
+        config.setModel("  ");
+
+        assertThatThrownBy(() -> client.chat(config, "system", "document", List.of()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Aucun modèle LLM");
+    }
+
+    @Test
+    @DisplayName("An empty chat content is rejected")
+    void chatWithoutContent() {
+        serveur.stubFor(post(urlEqualTo("/api/chat")).willReturn(okJson("{\"message\":{\"content\":\"\"}}")));
+
+        assertThatThrownBy(() -> client.chat(config, "system", "document", List.of()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("aucun contenu exploitable");
+    }
+
+    @Test
+    @DisplayName("No image is sent when the image list is empty")
+    void chatWithoutImages() {
+        serveur.stubFor(post(urlEqualTo("/api/chat")).willReturn(okJson("""
+                {"message":{"content":"{\\"montant_ttc\\":\\"78.00\\"}"}}
+                """)));
+
+        String content = client.chat(config, "system", "document", null);
+
+        assertThat(content).contains("78.00");
+        serveur.verify(postRequestedFor(urlEqualTo("/api/chat"))
+                .withRequestBody(com.github.tomakehurst.wiremock.client.WireMock.notMatching(
+                        ".*images.*")));
+    }
+
+    @Test
+    @DisplayName("A configured API key is sent as a bearer token")
+    void chatWithApiKey() {
+        config.setApiKey("secret");
+        serveur.stubFor(get(urlEqualTo("/api/tags")).willReturn(okJson("{\"models\":[]}")));
+
+        client.models(config);
+
+        serveur.verify(getRequestedFor(urlEqualTo("/api/tags"))
+                .withHeader("Authorization", equalTo("Bearer secret")));
+    }
+
+    @Test
+    @DisplayName("A blank URL is rejected before any HTTP call")
+    void blankUrl() {
+        config.setUrl("  ");
+
+        assertThatThrownBy(() -> client.models(config))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("L'URL du service LLM n'est pas configurée.");
+    }
+
+    @Test
+    @DisplayName("A long error body is truncated in the French message")
+    void longErrorBodyTruncated() {
+        String body = "x".repeat(400);
+        serveur.stubFor(get(urlEqualTo("/api/tags")).willReturn(aResponse().withStatus(400)
+                .withHeader("Content-Type", "application/json").withBody(body)));
+
+        assertThatThrownBy(() -> client.models(config))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("service LLM a répondu 400")
+                .hasMessageContaining("x".repeat(300))
+                .satisfies(error -> assertThat(error.getMessage()).doesNotContain("x".repeat(301)));
+    }
+
+    @Test
+    @DisplayName("A blank error body keeps a complete French sentence")
+    void blankErrorBody() {
+        serveur.stubFor(get(urlEqualTo("/api/tags")).willReturn(aResponse().withStatus(502)));
+
+        assertThatThrownBy(() -> client.models(config))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Le service LLM a répondu 502.");
+    }
+
+    @Test
+    @DisplayName("A malformed JSON response is reported as unreachable")
+    void malformedJsonResponse() {
+        serveur.stubFor(get(urlEqualTo("/api/tags")).willReturn(okJson("{not json")));
+
+        assertThatThrownBy(() -> client.models(config))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("injoignable");
     }
 }

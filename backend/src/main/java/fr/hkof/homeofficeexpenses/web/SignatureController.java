@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.service.SignatureService;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.SignatureDto;
+import fr.hkof.homeofficeexpenses.web.dto.SignatureDtos.SignatureDto;
 
 @RestController
 @RequestMapping("/api/signatures")

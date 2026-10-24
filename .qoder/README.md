@@ -125,6 +125,12 @@ creates a second branch for the same task.
 
 - `cd backend && ./mvnw -B test`
 - `cd frontend && npm run typecheck && npm test && npm run build`
+- Coverage gates for every task: JaCoCo bundle >= 90% LINE and >= 90% BRANCH
+  (`cd backend && ./mvnw -B verify`), Vitest global >= 90% lines, statements, functions and
+  branches (`cd frontend && npm run test:coverage`). The handoff carries one evidence line
+  with the real numbers.
+- Every production class stays under 300 lines. A class crossing 300 lines is split, never
+  shrunk by deleting comments only.
 - Full E2E suite, once per task, on the task branch, in a single run:
   `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress`,
   then the same command with `down -v --remove-orphans`.

@@ -56,6 +56,12 @@ Create or update `.handoff/tasks/<TASK-ID>.md` from `.handoff/TEMPLATE.md`, 25 l
 - Constraints: at most 3 bullets.
 - Acceptance, Commands, Evidence: one line per item.
 - Append evidence lines, never rewrite one written by another agent.
+- Coverage gate: every task keeps JaCoCo bundle coverage >= 90% LINE and >= 90% BRANCH
+  (`cd backend && ./mvnw -B verify`) and Vitest global coverage >= 90% lines, statements,
+  functions and branches (`cd frontend && npm run test:coverage`), and requires one evidence
+  line with the real numbers.
+- Every production class stays under 300 lines. A class crossing 300 lines is split, never
+  shrunk by deleting comments only.
 
 ## Review loop
 

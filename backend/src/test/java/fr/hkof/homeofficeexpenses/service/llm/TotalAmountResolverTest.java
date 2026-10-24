@@ -143,4 +143,15 @@ class TotalAmountResolverTest {
         assertThat(resolution).isNotNull();
         assertThat(resolution.excerpt()).hasSize(500);
     }
+
+    @Test
+    @DisplayName("A non-total line is ignored and an unpaired total line is not a single candidate")
+    void ignoresNonTotalLinesAndUnpairedTotals() {
+        String text = """
+                Ligne courante sans libellé de total 12,00
+                total TTC 41,66 99,99
+                """;
+
+        assertThat(TotalAmountResolver.resolve(text)).isNull();
+    }
 }
