@@ -6,11 +6,9 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { cn } from "@/lib/cn";
 import { useCompanyStore } from "@/state/company";
 import { CompanySection } from "./CompanySection";
-import { EmployeeSection } from "./EmployeeSection";
 
 const TABS = [
   { value: "entreprise", label: "Entreprise", dataCy: "onglet-entreprise" },
-  { value: "salaries", label: "Salariés", dataCy: "onglet-salaries" },
   { value: "quittances", label: "Quittances", dataCy: "onglet-quittances" },
 ] as const;
 
@@ -25,7 +23,7 @@ export function SettingsPage() {
       <PageHeader
         eyebrow="Réglages"
         title="Configuration"
-        description="Gérez plusieurs sociétés, leurs salariés, leurs signatures et les données des quittances. Les calculs restent effectués par le backend."
+        description="Gérez plusieurs sociétés, leurs baux, leurs salariés, leurs signatures et les données des quittances. Les calculs restent effectués par le backend."
       />
 
       <div
@@ -56,8 +54,6 @@ export function SettingsPage() {
           <RentReceiptSettings />
           <SignaturesManager companyId={activeCompanyId} />
         </div>
-      ) : tab === "salaries" ? (
-        <EmployeeSection companyId={activeCompanyId} />
       ) : (
         <CompanySection />
       )}

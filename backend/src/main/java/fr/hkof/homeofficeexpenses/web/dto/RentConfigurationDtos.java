@@ -28,24 +28,29 @@ public final class RentConfigurationDtos {
     }
 
     public record LeaseRequest(
-            Long companyId,
+            Boolean companyLease,
             Long landlordId,
             Long tenantId,
             String propertyAddress,
             String rentExclCharges,
-            String charges) {
+            String charges,
+            String totalArea,
+            String businessArea) {
     }
 
     public record LeaseDto(
             Long id,
             Long companyId,
             String companyName,
+            Boolean companyLease,
             Long landlordId,
             Long tenantId,
             String landlordName,
             String tenantName,
             String propertyAddress,
             String rentExclCharges,
-            String charges) {
+            String charges,
+            String totalArea,
+            String businessArea) {
     }
 }

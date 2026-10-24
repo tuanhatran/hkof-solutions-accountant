@@ -184,12 +184,26 @@ public class RentConfigurationService {
         }
         lease.setLandlord(landlord);
         lease.setTenant(tenant);
-        lease.setCompanyId(request.companyId() == null ? null : companies.entity(request.companyId()).getId());
         lease.setPropertyAddress(requiredText(request.propertyAddress(), "L'adresse du bien est obligatoire."));
         lease.setRentExclCharges(Amounts.decimal(request.rentExclCharges(), "loyer hors charges", false));
         lease.setCharges(request.charges() == null || request.charges().isBlank()
                 ? ZERO
                 : Amounts.decimal(request.charges(), "provision pour charges", false));
+        boolean companyLease = Boolean.TRUE.equals(request.companyLease());
+        lease.setCompanyLease(companyLease);
+        if (companyLease) {
+            BigDecimal totalArea = Amounts.optionalDecimal(request.totalArea(), "surface totale");
+            BigDecimal businessArea = Amounts.optionalDecimal(request.businessArea(), "surface professionnelle");
+            if (totalArea == null || businessArea == null) {
+                throw new BusinessException("Les surfaces sont obligatoires pour un bail société.");
+            }
+            CalculationService.proRataBase(businessArea, totalArea);
+            lease.setTotalArea(totalArea);
+            lease.setBusinessArea(businessArea);
+        } else {
+            lease.setTotalArea(null);
+            lease.setBusinessArea(null);
+        }
     }
 
     private Landlord landlord(Long id) {
@@ -235,12 +249,15 @@ public class RentConfigurationService {
                 lease.getId(),
                 lease.getCompanyId(),
                 companyName,
+                lease.isCompanyLease(),
                 lease.getLandlord().getId(),
                 lease.getTenant().getId(),
                 lease.getLandlord().getName(),
                 lease.getTenant().getName(),
                 lease.getPropertyAddress(),
                 Amounts.apiValue(lease.getRentExclCharges()),
-                Amounts.apiValue(lease.getCharges()));
+                Amounts.apiValue(lease.getCharges()),
+                Amounts.apiValue(lease.getTotalArea()),
+                Amounts.apiValue(lease.getBusinessArea()));
     }
 }

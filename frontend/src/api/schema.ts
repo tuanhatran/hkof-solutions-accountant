@@ -14,7 +14,7 @@ export interface paths {
         /** @description Liste les sociétés non supprimées. */
         get: operations["listCompanies"];
         put?: never;
-        /** @description Crée une société. */
+        /** @description Crée une société et la lie éventuellement à un bail. */
         post: operations["createCompany"];
         delete?: never;
         options?: never;
@@ -31,10 +31,10 @@ export interface paths {
         };
         /** @description Retourne une société non supprimée. */
         get: operations["getCompany"];
-        /** @description Met à jour une société existante. */
+        /** @description Met à jour une société, son bail lié et détache le bail précédent. */
         put: operations["updateCompany"];
         post?: never;
-        /** @description Supprime logiquement une société. */
+        /** @description Supprime logiquement une société, ses salariés et ses signatures ; les baux liés sont conservés et détachés. Une société utilisée par des postes, notes ou quittances reste protégée. */
         delete: operations["deleteCompany"];
         options?: never;
         head?: never;
@@ -733,6 +733,7 @@ export interface paths {
         };
         get: operations["listLeases"];
         put?: never;
+        /** @description Crée un bail. Le lien à une société est porté par la société, jamais par ce point d'entrée. */
         post: operations["createLease"];
         delete?: never;
         options?: never;
@@ -748,6 +749,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        /** @description Met à jour un bail et conserve le lien société éventuel. */
         put: operations["updateLease"];
         post?: never;
         delete: operations["deleteLease"];
@@ -796,12 +798,11 @@ export interface components {
             address?: string;
             /** @description Nom du représentant légal. */
             managerName?: string;
-            /** @description Adresse du domicile utilisé pour le télétravail. */
-            homeAddress?: string;
-            /** @description Surface totale du logement, en mètres carrés. */
-            totalArea?: string;
-            /** @description Surface affectée à l'activité professionnelle, en mètres carrés. */
-            businessArea?: string;
+            /**
+             * Format: int64
+             * @description Bail lié à la société ; facultatif. Un bail appartient à au plus une société et la société porte au plus un bail.
+             */
+            leaseId?: number | null;
             /** @description Base de prorata calculée, en pourcentage décimal. */
             proRataBase?: string;
             /** @description Détail lisible du calcul de la base de prorata. */
@@ -817,9 +818,8 @@ export interface components {
             siren?: string;
             address?: string;
             managerName?: string;
-            homeAddress?: string;
-            totalArea?: string;
-            businessArea?: string;
+            /** Format: int64 */
+            leaseId?: number | null;
             proRataBase?: string;
             proRataBaseDetail?: string;
             issuePlace?: string;
@@ -872,11 +872,8 @@ export interface components {
             address?: string;
         };
         LeaseRequest: {
-            /**
-             * Format: int64
-             * @description Société liée au bail ; facultative.
-             */
-            companyId?: number | null;
+            /** @description Bail société : affiche et rend obligatoires les surfaces du logement. Le lien à une société se fait depuis la société, jamais depuis le bail. */
+            companyLease?: boolean;
             /** Format: int64 */
             landlordId?: number;
             /** Format: int64 */
@@ -884,13 +881,21 @@ export interface components {
             propertyAddress?: string;
             rentExclCharges?: string;
             charges?: string;
+            /** @description Surface totale du logement, en mètres carrés (bail société). */
+            totalArea?: string;
+            /** @description Surface affectée à l'activité professionnelle, en mètres carrés (bail société). */
+            businessArea?: string;
         };
         LeaseDto: {
             /** Format: int64 */
             id?: number;
-            /** Format: int64 */
-            companyId?: number | null;
-            companyName?: string | null;
+            /**
+             * Format: int64
+             * @description Société liée ; définie uniquement depuis la société.
+             */
+            readonly companyId?: number | null;
+            readonly companyName?: string | null;
+            companyLease?: boolean;
             /** Format: int64 */
             landlordId?: number;
             /** Format: int64 */
@@ -900,6 +905,8 @@ export interface components {
             propertyAddress?: string;
             rentExclCharges?: string;
             charges?: string;
+            totalArea?: string;
+            businessArea?: string;
         };
         ProblemDetail: {
             type?: string;

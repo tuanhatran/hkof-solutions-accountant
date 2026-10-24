@@ -94,9 +94,6 @@ public class DataInitializer implements ApplicationRunner {
         company.setSiren("000 000 000");
         company.setAddress(DEFAULT_HOME_ADDRESS);
         company.setManagerName("Gérant");
-        company.setHomeAddress(DEFAULT_HOME_ADDRESS);
-        company.setTotalArea(new BigDecimal("70.00"));
-        company.setBusinessArea(new BigDecimal("25.00"));
         company.setIssuePlace("Paris");
         company.setDeleted(false);
         company.setCreatedAt(Instant.now(clock));
@@ -132,6 +129,9 @@ public class DataInitializer implements ApplicationRunner {
         lease.setLandlord(landlord);
         lease.setTenant(tenant);
         lease.setCompanyId(company.getId());
+        lease.setCompanyLease(true);
+        lease.setTotalArea(new BigDecimal("70.00"));
+        lease.setBusinessArea(new BigDecimal("25.00"));
         lease.setPropertyAddress(DEFAULT_HOME_ADDRESS);
         lease.setRentExclCharges(new BigDecimal(DEFAULT_RENT_EXCL_CHARGES));
         lease.setCharges(new BigDecimal(DEFAULT_CHARGES));

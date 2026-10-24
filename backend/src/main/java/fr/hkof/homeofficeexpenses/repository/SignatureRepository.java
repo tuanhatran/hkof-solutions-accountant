@@ -14,6 +14,8 @@ public interface SignatureRepository extends JpaRepository<Signature, Long> {
 
     List<Signature> findByDeletedFalseOrderByTypeAscNameAscIdAsc();
 
+    List<Signature> findByCompanyIdAndDeletedFalse(Long companyId);
+
     /**
      * Company employee signatures plus the landlord signatures, which are global
      * and therefore visible whatever the active company.

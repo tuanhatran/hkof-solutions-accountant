@@ -33,6 +33,16 @@ public class Lease {
     @Column(name = "company_id")
     private Long companyId;
 
+    /** Company lease: the dwelling surfaces below drive the company pro-rata. */
+    @Column(name = "company_lease", nullable = false)
+    private boolean companyLease;
+
+    @Column(name = "total_area", precision = 8, scale = 2)
+    private BigDecimal totalArea;
+
+    @Column(name = "business_area", precision = 8, scale = 2)
+    private BigDecimal businessArea;
+
     @Column(name = "property_address", nullable = false)
     private String propertyAddress;
 
@@ -78,6 +88,30 @@ public class Lease {
 
     public void setCompanyId(Long companyId) {
         this.companyId = companyId;
+    }
+
+    public boolean isCompanyLease() {
+        return companyLease;
+    }
+
+    public void setCompanyLease(boolean companyLease) {
+        this.companyLease = companyLease;
+    }
+
+    public BigDecimal getTotalArea() {
+        return totalArea;
+    }
+
+    public void setTotalArea(BigDecimal totalArea) {
+        this.totalArea = totalArea;
+    }
+
+    public BigDecimal getBusinessArea() {
+        return businessArea;
+    }
+
+    public void setBusinessArea(BigDecimal businessArea) {
+        this.businessArea = businessArea;
     }
 
     public String getPropertyAddress() {

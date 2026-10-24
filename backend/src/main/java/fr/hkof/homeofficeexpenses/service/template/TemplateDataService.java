@@ -56,7 +56,7 @@ public class TemplateDataService {
                 "nom", tenant == null ? "" : text(tenant.getName()),
                 "adresse", tenant == null ? "" : text(tenant.getAddress())));
         data.put("logement", Map.of(
-                "adresse", lease == null ? text(company.getHomeAddress()) : text(lease.getPropertyAddress())));
+                "adresse", lease == null ? "" : text(lease.getPropertyAddress())));
         data.put("mois_libelle", Amounts.formatMonth(YearMonth.parse(rentReceipt.getMonth())));
         data.put("periode", Map.of(
                 "debut", Amounts.formatDate(rentReceipt.getPeriodStart()),
@@ -191,8 +191,7 @@ public class TemplateDataService {
     }
 
     public String proRataDetail(Company company) {
-        BigDecimal base = CalculationService.proRataBase(company.getBusinessArea(), company.getTotalArea());
-        return companyService.proRataDetail(company, base);
+        return companyService.proRataDetail(company);
     }
 
     private String text(String value) {

@@ -52,7 +52,7 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
       <SectionHeader
         icon={Users}
         title="Salariés"
-        description="Les salariés appartiennent à la société active. Leur intitulé est descriptif et ne donne encore aucun droit."
+        description="Les salariés appartiennent à la société sélectionnée. Leur intitulé est descriptif et ne donne encore aucun droit."
         action={
           <Button
             variant="primary"
@@ -69,7 +69,7 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
       <div className="card-body employee-section-body">
         {companyId === null ? (
           <EmptyState
-            text="Sélectionnez une société active pour gérer ses salariés."
+            text="Sélectionnez une société pour gérer ses salariés."
             dataCy="aucun-salarie-societe"
           />
         ) : employeeForm !== null ? (

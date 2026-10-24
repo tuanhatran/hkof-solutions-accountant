@@ -27,12 +27,16 @@ const ANNEXE_COMPANY = {
   name: "HKOF Annexe",
   siren: "123 456 789",
   address: "10 avenue des Tests, 75002 Paris",
-  homeAddress: "10 avenue des Tests, 75002 Paris",
   managerName: "Alice Martin",
-  totalArea: "80",
-  businessArea: "20",
   issuePlace: "Lyon",
   proRata: "25 %",
+};
+const ANNEXE_LEASE = {
+  propertyAddress: "10 avenue des Tests, 75002 Paris",
+  rent: "900",
+  charges: "50",
+  totalArea: "80",
+  businessArea: "20",
 };
 const ANNEXE_EMPLOYEE = {
   firstName: "Alice",
@@ -85,13 +89,71 @@ function employeeByName(
     });
 }
 
-/** Creates the second company through the UI; it becomes the active company. */
+function createDirectoryEntry(
+  path: string,
+  name: string,
+): Cypress.Chainable<number> {
+  return cy
+    .request<{ id: number }>("POST", path, {
+      name,
+      address: ANNEXE_COMPANY.address,
+    })
+    .then(({ body }) => body.id);
+}
+
+/** Creates the annexe lease through the UI, with its company surfaces. */
+function createAnnexeLease(): Cypress.Chainable<number> {
+  return createDirectoryEntry("/api/landlords", "Bailleur annexe").then(
+    (landlordId) =>
+      createDirectoryEntry("/api/tenants", "Locataire annexe").then(
+        (tenantId) => {
+          cy.get('[data-cy="onglet-quittances"]').click();
+          cy.get('[data-cy="btn-ajouter-bail"]').click();
+          cy.get('[data-cy="select-bail-bailleur"]').select(String(landlordId));
+          cy.get('[data-cy="select-bail-locataire"]').select(String(tenantId));
+          cy.get('[data-cy="input-bail-adresse"]').type(
+            ANNEXE_LEASE.propertyAddress,
+          );
+          cy.get('[data-cy="input-bail-loyer"]')
+            .clear()
+            .type(ANNEXE_LEASE.rent);
+          cy.get('[data-cy="input-bail-charges"]')
+            .clear()
+            .type(ANNEXE_LEASE.charges);
+          cy.get('[data-cy="input-bail-societe-type"]').check();
+          cy.get('[data-cy="input-surface-totale"]').type(
+            ANNEXE_LEASE.totalArea,
+          );
+          cy.get('[data-cy="input-surface-pro"]').type(
+            ANNEXE_LEASE.businessArea,
+          );
+          cy.get('[data-cy="btn-enregistrer-bail"]').click();
+          cy.contains("Bail ajouté.", { timeout: 20_000 }).should("be.visible");
+
+          return cy
+            .request<{ id: number; landlordId: number }[]>("/api/leases")
+            .then(({ body }) => {
+              const lease = body.find(
+                (candidate) => candidate.landlordId === landlordId,
+              );
+              if (!lease) {
+                throw new Error("Annexe lease was not created.");
+              }
+              return lease.id;
+            });
+        },
+      ),
+  );
+}
+
+/** Creates the second company and its lease through the UI; it becomes active. */
 function createAnnexeCompany(): void {
   cy.visit("/configuration");
   waitForValue('[data-cy="input-raison-sociale"]', SEEDED_COMPANY);
 
   cy.get('[data-cy="btn-nouvelle-societe"]').click();
   cy.get('[data-cy="select-societe"]').should("not.exist");
+  cy.get('[data-cy="btn-supprimer-societe"]').should("not.exist");
   cy.get('[data-cy="formulaire-societe"]').should("be.visible");
   cy.get('[data-cy="input-raison-sociale"]').clear().type(ANNEXE_COMPANY.name);
   cy.get('[data-cy="input-siren"]').clear().type(ANNEXE_COMPANY.siren);
@@ -101,19 +163,9 @@ function createAnnexeCompany(): void {
   cy.get('[data-cy="input-societe-adresse"]')
     .clear()
     .type(ANNEXE_COMPANY.address);
-  cy.get('[data-cy="input-logement-adresse"]')
-    .clear()
-    .type(ANNEXE_COMPANY.homeAddress);
-  cy.get('[data-cy="input-surface-totale"]')
-    .clear()
-    .type(ANNEXE_COMPANY.totalArea);
-  cy.get('[data-cy="input-surface-pro"]')
-    .clear()
-    .type(ANNEXE_COMPANY.businessArea);
   cy.get('[data-cy="input-lieu-emission"]')
     .clear()
     .type(ANNEXE_COMPANY.issuePlace);
-  waitForText('[data-cy="prorata-indicatif"]', ANNEXE_COMPANY.proRata);
   cy.get('[data-cy="btn-enregistrer-configuration-bas"]').click();
 
   cy.contains("Société créée.", { timeout: 20_000 }).should("be.visible");
@@ -129,11 +181,26 @@ function createAnnexeCompany(): void {
       );
       expect(labels).to.include.members([SEEDED_COMPANY, ANNEXE_COMPANY.name]);
     });
+
+    createAnnexeLease().then((leaseId) => {
+      cy.get('[data-cy="onglet-entreprise"]').click();
+      cy.get('[data-cy="select-societe"]').select(String(annexe.id));
+      cy.get(`[data-cy="select-bail-societe"] option[value="${leaseId}"]`, {
+        timeout: 20_000,
+      }).should("exist");
+      cy.get('[data-cy="select-bail-societe"]').select(String(leaseId));
+      waitForText('[data-cy="prorata-indicatif"]', ANNEXE_COMPANY.proRata);
+      cy.get('[data-cy="btn-enregistrer-configuration-bas"]').click();
+      cy.contains("Société enregistrée.", { timeout: 20_000 }).should(
+        "be.visible",
+      );
+    });
   });
 }
 
 function createAnnexeEmployee(companyId: number): void {
-  cy.get('[data-cy="onglet-salaries"]').click();
+  cy.get('[data-cy="onglet-entreprise"]').click();
+  cy.get('[data-cy="select-societe"]').should("have.value", String(companyId));
   cy.get('[data-cy="aucun-salarie"]').should("be.visible");
 
   cy.get('[data-cy="btn-ajouter-salarie"]').click();
@@ -220,14 +287,14 @@ function assertEmployeeIsolation(
   seededCompanyId: number,
   annexeCompanyId: number,
 ): void {
-  companySwitcher().select(String(seededCompanyId));
-  cy.get('[data-cy="onglet-salaries"]').click();
+  cy.get('[data-cy="onglet-entreprise"]').click();
+  cy.get('[data-cy="select-societe"]').select(String(seededCompanyId));
   cy.contains('[data-cy^="salarie-"]', "Gérant", { timeout: 20_000 }).should(
     "be.visible",
   );
   cy.contains('[data-cy^="salarie-"]', "Alice Martin").should("not.exist");
 
-  companySwitcher().select(String(annexeCompanyId));
+  cy.get('[data-cy="select-societe"]').select(String(annexeCompanyId));
   cy.contains('[data-cy^="salarie-"]', "Alice Martin", {
     timeout: 20_000,
   }).should("be.visible");

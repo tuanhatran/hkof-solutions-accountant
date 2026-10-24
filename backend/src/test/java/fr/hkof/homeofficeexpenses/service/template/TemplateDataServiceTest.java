@@ -63,7 +63,7 @@ class TemplateDataServiceTest {
 
     private CompanyDto companyDto() {
         return new CompanyDto(COMPANY_ID, "HKOF", "EURL", "000 000 000", "12 rue de la République",
-                "Gérant", "12 rue de la République", "70.00", "25.00", "35.71", "détail", "Paris");
+                "Gérant", 5L, "35.71", "détail", "Paris");
     }
 
     private void stubExampleCompany() {
@@ -135,7 +135,7 @@ class TemplateDataServiceTest {
 
         assertThat(data.get("bailleur")).isEqualTo(Map.of("nom", "", "adresse", ""));
         assertThat(data.get("locataire")).isEqualTo(Map.of("nom", "", "adresse", ""));
-        assertThat(data.get("logement")).isEqualTo(Map.of("adresse", company.getHomeAddress()));
+        assertThat(data.get("logement")).isEqualTo(Map.of("adresse", ""));
         assertThat(data.get("signature")).isEqualTo("");
     }
 
@@ -155,7 +155,7 @@ class TemplateDataServiceTest {
         statement.setNumber("NF-2026-10");
         statement.setTotal(new BigDecimal("42.85"));
         statement.setLines(List.of(line));
-        when(companyService.proRataDetail(any(), any())).thenReturn("Surface pro 25 m² / 70 m² = 35,71 %");
+        when(companyService.proRataDetail(any())).thenReturn("Surface pro 25 m² / 70 m² = 35,71 %");
 
         Map<String, Object> data = service.dataStatement(company(), statement, true, "signature");
 
@@ -217,7 +217,7 @@ class TemplateDataServiceTest {
     void statementExample() {
         stubExampleCompany();
         when(signatureService.resolveForCompany(COMPANY_ID, null)).thenReturn(Optional.empty());
-        when(companyService.proRataDetail(any(), any())).thenReturn("Surface pro 25 m² / 70 m² = 35,71 %");
+        when(companyService.proRataDetail(any())).thenReturn("Surface pro 25 m² / 70 m² = 35,71 %");
 
         Map<String, Object> data = service.dataExample(TemplateType.EXPENSE_STATEMENT);
 
@@ -230,7 +230,7 @@ class TemplateDataServiceTest {
     @Test
     @DisplayName("The pro-rata detail delegates to the company service")
     void proRataDetail() {
-        when(companyService.proRataDetail(any(), any())).thenReturn("détail");
+        when(companyService.proRataDetail(any())).thenReturn("détail");
         assertThat(service.proRataDetail(company())).isEqualTo("détail");
     }
 }

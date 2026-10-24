@@ -26,7 +26,7 @@ paths:
       tags:
         - company-controller
       operationId: createCompany
-      description: Crée une société.
+      description: Crée une société et la lie éventuellement à un bail.
       requestBody:
         content:
           application/json:
@@ -76,7 +76,7 @@ paths:
       tags:
         - company-controller
       operationId: updateCompany
-      description: Met à jour une société existante.
+      description: Met à jour une société, son bail lié et détache le bail précédent.
       parameters:
         - name: id
           in: path
@@ -113,7 +113,10 @@ paths:
       tags:
         - company-controller
       operationId: deleteCompany
-      description: Supprime logiquement une société.
+      description: >-
+        Supprime logiquement une société, ses salariés et ses signatures ; les baux
+        liés sont conservés et détachés. Une société utilisée par des postes, notes ou
+        quittances reste protégée.
       parameters:
         - name: id
           in: path
@@ -1473,6 +1476,9 @@ paths:
       tags:
         - rent-configuration-controller
       operationId: createLease
+      description: >-
+        Crée un bail. Le lien à une société est porté par la société, jamais par ce point
+        d'entrée.
       requestBody:
         content:
           application/json:
@@ -1497,6 +1503,8 @@ paths:
       tags:
         - rent-configuration-controller
       operationId: updateLease
+      description: >-
+        Met à jour un bail et conserve le lien société éventuel.
       parameters:
         - name: id
           in: path
@@ -1619,15 +1627,14 @@ components:
         managerName:
           type: string
           description: Nom du représentant légal.
-        homeAddress:
-          type: string
-          description: Adresse du domicile utilisé pour le télétravail.
-        totalArea:
-          type: string
-          description: Surface totale du logement, en mètres carrés.
-        businessArea:
-          type: string
-          description: Surface affectée à l'activité professionnelle, en mètres carrés.
+        leaseId:
+          type:
+            - integer
+            - "null"
+          format: int64
+          description: >-
+            Bail lié à la société ; facultatif. Un bail appartient à au plus une
+            société et la société porte au plus un bail.
         proRataBase:
           type: string
           description: Base de prorata calculée, en pourcentage décimal.
@@ -1653,12 +1660,11 @@ components:
           type: string
         managerName:
           type: string
-        homeAddress:
-          type: string
-        totalArea:
-          type: string
-        businessArea:
-          type: string
+        leaseId:
+          type:
+            - integer
+            - "null"
+          format: int64
         proRataBase:
           type: string
         proRataBaseDetail:
@@ -1757,12 +1763,11 @@ components:
     LeaseRequest:
       type: object
       properties:
-        companyId:
-          type:
-            - integer
-            - "null"
-          format: int64
-          description: Société liée au bail ; facultative.
+        companyLease:
+          type: boolean
+          description: >-
+            Bail société : affiche et rend obligatoires les surfaces du logement.
+            Le lien à une société se fait depuis la société, jamais depuis le bail.
         landlordId:
           type: integer
           format: int64
@@ -1775,6 +1780,12 @@ components:
           type: string
         charges:
           type: string
+        totalArea:
+          type: string
+          description: Surface totale du logement, en mètres carrés (bail société).
+        businessArea:
+          type: string
+          description: Surface affectée à l'activité professionnelle, en mètres carrés (bail société).
     LeaseDto:
       type: object
       properties:
@@ -1786,10 +1797,15 @@ components:
             - integer
             - "null"
           format: int64
+          readOnly: true
+          description: Société liée ; définie uniquement depuis la société.
         companyName:
           type:
             - string
             - "null"
+          readOnly: true
+        companyLease:
+          type: boolean
         landlordId:
           type: integer
           format: int64
@@ -1805,6 +1821,10 @@ components:
         rentExclCharges:
           type: string
         charges:
+          type: string
+        totalArea:
+          type: string
+        businessArea:
           type: string
     ProblemDetail:
       type: object

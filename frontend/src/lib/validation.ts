@@ -72,42 +72,21 @@ const optionalSurface = (message: string) =>
       message,
     );
 
-export const companySchema = z
-  .object({
-    name: z.string().trim().min(1, "Le nom de la société est obligatoire."),
-    legalForm: z.string(),
-    siren: z
-      .string()
-      .trim()
-      .refine(
-        (value) => value === "" || /^\d{3}\s?\d{3}\s?\d{3}$/.test(value),
-        "Le SIREN doit comporter 9 chiffres.",
-      ),
-    address: z.string(),
-    managerName: z.string(),
-    homeAddress: z.string(),
-    totalArea: optionalSurface("Surface totale invalide."),
-    businessArea: optionalSurface("Surface professionnelle invalide."),
-    issuePlace: z.string(),
-  })
-  .refine(
-    (values) => {
-      if (values.businessArea.trim() === "" || values.totalArea.trim() === "") {
-        return true;
-      }
-      const businessArea = parseAmount(values.businessArea);
-      const totalArea = parseAmount(values.totalArea);
-      if (businessArea === null || totalArea === null) {
-        return false;
-      }
-      return Number(businessArea) <= Number(totalArea);
-    },
-    {
-      path: ["businessArea"],
-      message:
-        "La surface professionnelle ne peut pas dépasser la surface totale.",
-    },
-  );
+export const companySchema = z.object({
+  name: z.string().trim().min(1, "Le nom de la société est obligatoire."),
+  legalForm: z.string(),
+  siren: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || /^\d{3}\s?\d{3}\s?\d{3}$/.test(value),
+      "Le SIREN doit comporter 9 chiffres.",
+    ),
+  address: z.string(),
+  managerName: z.string(),
+  leaseId: z.string(),
+  issuePlace: z.string(),
+});
 
 export type CompanyFormValues = z.infer<typeof companySchema>;
 
@@ -142,27 +121,60 @@ export const tenantSchema = z.object({
 
 export type TenantFormValues = z.infer<typeof tenantSchema>;
 
-export const leaseSchema = z.object({
-  companyId: z.string(),
-  landlordId: z.string().min(1, "Sélectionnez un bailleur."),
-  tenantId: z.string().min(1, "Sélectionnez un locataire."),
-  propertyAddress: z
-    .string()
-    .trim()
-    .min(1, "L'adresse du bien est obligatoire."),
-  rentExclCharges: z
-    .string()
-    .refine(
-      (value) => isValidAmount(value, false),
-      "Loyer hors charges invalide.",
-    ),
-  charges: z
-    .string()
-    .refine(
-      (value) => isValidAmount(value, false),
-      "Provision pour charges invalide.",
-    ),
-});
+export const leaseSchema = z
+  .object({
+    companyLease: z.boolean(),
+    landlordId: z.string().min(1, "Sélectionnez un bailleur."),
+    tenantId: z.string().min(1, "Sélectionnez un locataire."),
+    propertyAddress: z
+      .string()
+      .trim()
+      .min(1, "L'adresse du bien est obligatoire."),
+    rentExclCharges: z
+      .string()
+      .refine(
+        (value) => isValidAmount(value, false),
+        "Loyer hors charges invalide.",
+      ),
+    charges: z
+      .string()
+      .refine(
+        (value) => isValidAmount(value, false),
+        "Provision pour charges invalide.",
+      ),
+    totalArea: optionalSurface("Surface totale invalide."),
+    businessArea: optionalSurface("Surface professionnelle invalide."),
+  })
+  .refine((values) => !values.companyLease || values.totalArea.trim() !== "", {
+    path: ["totalArea"],
+    message: "La surface totale est obligatoire pour un bail société.",
+  })
+  .refine(
+    (values) => !values.companyLease || values.businessArea.trim() !== "",
+    {
+      path: ["businessArea"],
+      message:
+        "La surface professionnelle est obligatoire pour un bail société.",
+    },
+  )
+  .refine(
+    (values) => {
+      if (values.totalArea.trim() === "" || values.businessArea.trim() === "") {
+        return true;
+      }
+      const totalArea = parseAmount(values.totalArea);
+      const businessArea = parseAmount(values.businessArea);
+      if (totalArea === null || businessArea === null) {
+        return false;
+      }
+      return Number(businessArea) <= Number(totalArea);
+    },
+    {
+      path: ["businessArea"],
+      message:
+        "La surface professionnelle ne peut pas dépasser la surface totale.",
+    },
+  );
 
 export type LeaseFormValues = z.infer<typeof leaseSchema>;
 

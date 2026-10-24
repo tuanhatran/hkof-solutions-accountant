@@ -19,6 +19,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import fr.hkof.homeofficeexpenses.domain.Company;
+import fr.hkof.homeofficeexpenses.domain.Employee;
+import fr.hkof.homeofficeexpenses.domain.Lease;
+import fr.hkof.homeofficeexpenses.domain.Signature;
+import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
@@ -30,6 +34,9 @@ import fr.hkof.homeofficeexpenses.web.dto.CompanyDtos.CompanyDto;
 import fr.hkof.homeofficeexpenses.web.dto.CompanyDtos.CompanyRequest;
 
 class CompanyServiceTest {
+
+    private static final Long COMPANY_ID = 1L;
+    private static final Long LEASE_ID = 5L;
 
     private CompanyRepository repository;
     private ExpenseItemRepository expenseItems;
@@ -55,48 +62,81 @@ class CompanyServiceTest {
 
     private Company company() {
         Company company = new Company();
-        company.setId(1L);
+        company.setId(COMPANY_ID);
         company.setName("HKOF");
         company.setLegalForm("EURL");
         company.setSiren("000 000 000");
         company.setAddress("12 rue de la République");
         company.setManagerName("Gérant");
-        company.setHomeAddress("12 rue de la République");
-        company.setTotalArea(new java.math.BigDecimal("70.00"));
-        company.setBusinessArea(new java.math.BigDecimal("25.00"));
         company.setIssuePlace("Paris");
         company.setDeleted(false);
         return company;
     }
 
-    private CompanyRequest request(String name, String siren) {
-        return new CompanyRequest(name, "EURL", siren, "12 rue", "Gérant", "12 rue", "70", "25", "Paris");
+    private Lease lease(Long id, Long companyId) {
+        Lease lease = new Lease();
+        lease.setId(id);
+        lease.setCompanyId(companyId);
+        lease.setCompanyLease(true);
+        lease.setTotalArea(new java.math.BigDecimal("70.00"));
+        lease.setBusinessArea(new java.math.BigDecimal("25.00"));
+        lease.setDeleted(false);
+        return lease;
+    }
+
+    private CompanyRequest request(String name, String siren, Long leaseId) {
+        return new CompanyRequest(name, "EURL", siren, "12 rue", "Gérant", leaseId, "Paris");
+    }
+
+    private void stubSave() {
+        when(repository.save(any(Company.class))).thenAnswer(invocation -> {
+            Company saved = invocation.getArgument(0);
+            saved.setId(COMPANY_ID);
+            return saved;
+        });
     }
 
     @Test
-    @DisplayName("Listing and mapping expose the pro-rata base and its detail")
+    @DisplayName("Listing and mapping expose the linked lease and the pro-rata of that lease")
     void listsAndMaps() {
         when(repository.findAllByDeletedFalseOrderByNameAscIdAsc()).thenReturn(List.of(company()));
-        when(repository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(company()));
-        when(repository.findById(1L)).thenReturn(Optional.of(company()));
+        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(company()));
+        when(repository.findById(COMPANY_ID)).thenReturn(Optional.of(company()));
+        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID))
+                .thenReturn(Optional.of(lease(LEASE_ID, COMPANY_ID)));
 
         List<CompanyDto> list = service.list();
+
         assertThat(list).hasSize(1);
         assertThat(list.get(0).name()).isEqualTo("HKOF");
+        assertThat(list.get(0).leaseId()).isEqualTo(LEASE_ID);
         assertThat(list.get(0).proRataBase()).isEqualTo("35.71");
         assertThat(list.get(0).proRataBaseDetail()).contains("Surface pro 25");
-        assertThat(service.get(1L).issuePlace()).isEqualTo("Paris");
-        assertThat(service.find(1L)).isPresent();
+        assertThat(service.get(COMPANY_ID).issuePlace()).isEqualTo("Paris");
+        assertThat(service.find(COMPANY_ID)).isPresent();
     }
 
     @Test
-    @DisplayName("A company without surfaces maps a zero base and an explicit detail")
-    void mapsWithoutSurfaces() {
-        Company company = company();
-        company.setTotalArea(null);
-        company.setBusinessArea(null);
+    @DisplayName("A company without lease maps a zero base and an explicit detail")
+    void mapsWithoutLease() {
+        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.empty());
 
-        CompanyDto dto = service.toDto(company);
+        CompanyDto dto = service.toDto(company());
+
+        assertThat(dto.leaseId()).isNull();
+        assertThat(dto.proRataBase()).isEqualTo("0.00");
+        assertThat(dto.proRataBaseDetail()).isEqualTo("Surfaces non configurées");
+    }
+
+    @Test
+    @DisplayName("A linked lease without surfaces maps a zero base")
+    void mapsLeaseWithoutSurfaces() {
+        Lease lease = lease(LEASE_ID, COMPANY_ID);
+        lease.setTotalArea(null);
+        lease.setBusinessArea(null);
+        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(lease));
+
+        CompanyDto dto = service.toDto(company());
 
         assertThat(dto.proRataBase()).isEqualTo("0.00");
         assertThat(dto.proRataBaseDetail()).isEqualTo("Surfaces non configurées");
@@ -105,39 +145,26 @@ class CompanyServiceTest {
     @Test
     @DisplayName("Creating a company trims optional values and rejects a duplicate SIREN")
     void createsAndRejectsDuplicateSiren() {
-        when(repository.save(any(Company.class))).thenAnswer(invocation -> {
-            Company saved = invocation.getArgument(0);
-            saved.setId(1L);
-            return saved;
-        });
+        stubSave();
+        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.empty());
 
-        CompanyDto created = service.create(request("  HKOF  ", " 123 456 789 "));
+        CompanyDto created = service.create(request("  HKOF  ", " 123 456 789 ", null));
 
         assertThat(created.name()).isEqualTo("HKOF");
         assertThat(created.siren()).isEqualTo("123 456 789");
 
         when(repository.existsBySirenAndDeletedFalse("123 456 789")).thenReturn(true);
-        assertThatThrownBy(() -> service.create(request("Autre", "123 456 789")))
+        assertThatThrownBy(() -> service.create(request("Autre", "123 456 789", null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Une société avec ce SIREN existe déjà.");
     }
 
     @Test
-    @DisplayName("A blank name and an invalid surface are rejected in French")
-    void rejectsInvalidInputs() {
-        assertThatThrownBy(() -> service.create(request("  ", null)))
+    @DisplayName("A blank name is rejected in French")
+    void rejectsBlankName() {
+        assertThatThrownBy(() -> service.create(request("  ", null, null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Le nom de la société est obligatoire.");
-        assertThatThrownBy(() -> service.create(
-                new CompanyRequest("HKOF", null, null, null, null, null, "70", "80", null)))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage("La surface professionnelle doit être comprise entre 0 et la surface totale.");
-        assertThatThrownBy(() -> service.create(
-                new CompanyRequest("HKOF", null, null, null, null, null, "-1", null, null)))
-                .isInstanceOf(BusinessException.class);
-        assertThatThrownBy(() -> service.create(
-                new CompanyRequest("HKOF", null, null, null, null, null, "abc", null, null)))
-                .isInstanceOf(BusinessException.class);
         verify(repository, never()).save(any());
     }
 
@@ -145,49 +172,155 @@ class CompanyServiceTest {
     @DisplayName("Updating a company ignores its own SIREN and rejects another one")
     void updatesSiren() {
         Company existing = company();
-        when(repository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(existing));
+        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(repository.existsBySirenAndDeletedFalseAndIdNot("000 000 000", 1L)).thenReturn(false);
-        when(repository.existsBySirenAndDeletedFalseAndIdNot("999 999 999", 1L)).thenReturn(true);
+        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.empty());
+        when(repository.existsBySirenAndDeletedFalseAndIdNot("000 000 000", COMPANY_ID)).thenReturn(false);
+        when(repository.existsBySirenAndDeletedFalseAndIdNot("999 999 999", COMPANY_ID)).thenReturn(true);
 
-        assertThat(service.update(1L, request("HKOF 2", "000 000 000")).name()).isEqualTo("HKOF 2");
-        assertThatThrownBy(() -> service.update(1L, request("HKOF 2", "999 999 999")))
+        assertThat(service.update(COMPANY_ID, request("HKOF 2", "000 000 000", null)).name())
+                .isEqualTo("HKOF 2");
+        assertThatThrownBy(() -> service.update(COMPANY_ID, request("HKOF 2", "999 999 999", null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Une société avec ce SIREN existe déjà.");
     }
 
     @Test
-    @DisplayName("Deleting is logical and blocked while the company owns data")
+    @DisplayName("Creating a company with a lease links that lease")
+    void linksLeaseOnCreate() {
+        stubSave();
+        Lease lease = lease(LEASE_ID, null);
+        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(lease));
+        when(leases.findByIdAndDeletedFalse(LEASE_ID)).thenReturn(Optional.of(lease));
+
+        CompanyDto created = service.create(request("HKOF", null, LEASE_ID));
+
+        assertThat(created.leaseId()).isEqualTo(LEASE_ID);
+        assertThat(lease.getCompanyId()).isEqualTo(COMPANY_ID);
+        verify(leases).save(lease);
+    }
+
+    @Test
+    @DisplayName("Updating a company unlinks the previous lease and links the selected one")
+    void replacesLinkedLease() {
+        Company existing = company();
+        Lease previous = lease(LEASE_ID, COMPANY_ID);
+        Lease selected = lease(6L, null);
+        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
+        when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(previous));
+        when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.of(selected));
+
+        service.update(COMPANY_ID, request("HKOF", null, 6L));
+
+        assertThat(previous.getCompanyId()).isNull();
+        assertThat(selected.getCompanyId()).isEqualTo(COMPANY_ID);
+        verify(leases).save(previous);
+        verify(leases).save(selected);
+    }
+
+    @Test
+    @DisplayName("Selecting no lease unlinks the previous one")
+    void unlinksWhenNoLeaseSelected() {
+        Company existing = company();
+        Lease previous = lease(LEASE_ID, COMPANY_ID);
+        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
+        when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(previous));
+
+        service.update(COMPANY_ID, request("HKOF", null, null));
+
+        assertThat(previous.getCompanyId()).isNull();
+        verify(leases).save(previous);
+    }
+
+    @Test
+    @DisplayName("A lease already linked to another company is rejected in French")
+    void rejectsLeaseLinkedToAnotherCompany() {
+        Company existing = company();
+        Lease foreign = lease(6L, 2L);
+        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
+        when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.empty());
+        when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.of(foreign));
+
+        assertThatThrownBy(() -> service.update(COMPANY_ID, request("HKOF", null, 6L)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Ce bail est déjà lié à une autre société.");
+        assertThat(foreign.getCompanyId()).isEqualTo(2L);
+        verify(leases, never()).save(any(Lease.class));
+    }
+
+    @Test
+    @DisplayName("An unknown lease is reported in French")
+    void rejectsUnknownLease() {
+        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(company()));
+        when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.empty());
+        when(leases.findByIdAndDeletedFalse(9L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.update(COMPANY_ID, request("HKOF", null, 9L)))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Bail introuvable.");
+    }
+
+    @Test
+    @DisplayName("Deleting is blocked only while the company owns items, statements or receipts")
     void deletesLogically() {
         Company managed = company();
-        when(repository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(managed));
+        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(managed));
 
-        when(expenseItems.existsByCompanyIdAndDeletedFalse(1L)).thenReturn(true);
-        assertThatThrownBy(() -> service.delete(1L)).isInstanceOf(BusinessException.class)
+        when(expenseItems.existsByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(true);
+        assertThatThrownBy(() -> service.delete(COMPANY_ID)).isInstanceOf(BusinessException.class)
                 .hasMessage("Cette société est utilisée par des données et ne peut pas être supprimée.");
-        when(expenseItems.existsByCompanyIdAndDeletedFalse(1L)).thenReturn(false);
+        when(expenseItems.existsByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(false);
 
-        when(statements.existsByCompanyId(1L)).thenReturn(true);
-        assertThatThrownBy(() -> service.delete(1L)).isInstanceOf(BusinessException.class);
-        when(statements.existsByCompanyId(1L)).thenReturn(false);
+        when(statements.existsByCompanyId(COMPANY_ID)).thenReturn(true);
+        assertThatThrownBy(() -> service.delete(COMPANY_ID)).isInstanceOf(BusinessException.class);
+        when(statements.existsByCompanyId(COMPANY_ID)).thenReturn(false);
 
-        when(employees.existsByCompanyIdAndDeletedFalse(1L)).thenReturn(true);
-        assertThatThrownBy(() -> service.delete(1L)).isInstanceOf(BusinessException.class);
-        when(employees.existsByCompanyIdAndDeletedFalse(1L)).thenReturn(false);
+        when(rentReceipts.existsByCompanyId(COMPANY_ID)).thenReturn(true);
+        assertThatThrownBy(() -> service.delete(COMPANY_ID)).isInstanceOf(BusinessException.class);
+        when(rentReceipts.existsByCompanyId(COMPANY_ID)).thenReturn(false);
 
-        when(leases.existsByCompanyIdAndDeletedFalse(1L)).thenReturn(true);
-        assertThatThrownBy(() -> service.delete(1L)).isInstanceOf(BusinessException.class);
-        when(leases.existsByCompanyIdAndDeletedFalse(1L)).thenReturn(false);
+        Employee employee = new Employee();
+        employee.setId(7L);
+        employee.setCompanyId(COMPANY_ID);
+        Signature signature = new Signature();
+        signature.setId(8L);
+        signature.setCompanyId(COMPANY_ID);
+        signature.setType(SignatureType.ENTREPRISE_CEO);
+        Lease linked = lease(LEASE_ID, COMPANY_ID);
+        when(employees.findAllByCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(COMPANY_ID))
+                .thenReturn(List.of(employee));
+        when(signatures.findByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(List.of(signature));
+        when(leases.findAllByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(List.of(linked));
 
-        when(signatures.existsByCompanyIdAndDeletedFalse(1L)).thenReturn(true);
-        assertThatThrownBy(() -> service.delete(1L)).isInstanceOf(BusinessException.class);
-        when(signatures.existsByCompanyIdAndDeletedFalse(1L)).thenReturn(false);
+        service.delete(COMPANY_ID);
 
-        when(rentReceipts.existsByCompanyId(1L)).thenReturn(true);
-        assertThatThrownBy(() -> service.delete(1L)).isInstanceOf(BusinessException.class);
-        when(rentReceipts.existsByCompanyId(1L)).thenReturn(false);
+        assertThat(managed.isDeleted()).isTrue();
+        assertThat(employee.isDeleted()).isTrue();
+        assertThat(signature.isDeleted()).isTrue();
+        assertThat(linked.getCompanyId()).isNull();
+        verify(leases).save(linked);
+        verify(employees).saveAll(List.of(employee));
+        verify(signatures).saveAll(List.of(signature));
+        verify(repository).save(managed);
+    }
 
-        service.delete(1L);
+    @Test
+    @DisplayName("A company with no data is deleted without touching unrelated rows")
+    void deletesEmptyCompany() {
+        Company managed = company();
+        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(managed));
+        when(employees.findAllByCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(COMPANY_ID))
+                .thenReturn(List.of());
+        when(signatures.findByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(List.of());
+        when(leases.findAllByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(List.of());
+
+        service.delete(COMPANY_ID);
 
         assertThat(managed.isDeleted()).isTrue();
         verify(repository).save(managed);

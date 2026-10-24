@@ -11,6 +11,10 @@ public interface LeaseRepository extends JpaRepository<Lease, Long> {
 
     List<Lease> findAllByDeletedFalseOrderByIdAsc();
 
+    List<Lease> findAllByCompanyIdAndDeletedFalse(Long companyId);
+
+    Optional<Lease> findFirstByCompanyIdAndDeletedFalse(Long companyId);
+
     Optional<Lease> findByIdAndDeletedFalse(Long id);
 
     Optional<Lease> findFirstByLandlordIdAndTenantIdAndDeletedFalse(Long landlordId, Long tenantId);
