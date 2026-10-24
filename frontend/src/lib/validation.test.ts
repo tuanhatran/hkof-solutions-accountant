@@ -23,9 +23,7 @@ const VALID_COMPANY = {
   siren: "123 456 789",
   address: "1 rue de la Paix, 75002 Paris",
   managerName: "Camille Martin",
-  homeAddress: "12 rue des Lilas, 75011 Paris",
-  totalArea: "70,00",
-  businessArea: "25,00",
+  leaseId: "5",
   issuePlace: "Paris",
 };
 
@@ -106,9 +104,7 @@ describe("companySchema", () => {
         siren: "",
         address: "",
         managerName: "",
-        homeAddress: "",
-        totalArea: "",
-        businessArea: "",
+        leaseId: "",
         issuePlace: "",
       }).success,
     ).toBe(true);
@@ -120,17 +116,10 @@ describe("companySchema", () => {
     ).toBe(false);
   });
 
-  it("rejects a professional area larger than the total area", () => {
-    const result = companySchema.safeParse({
-      ...VALID_COMPANY,
-      businessArea: "80",
-    });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(
-        result.error.issues.some((issue) => issue.path[0] === "businessArea"),
-      ).toBe(true);
-    }
+  it("accepts a company without a lease", () => {
+    expect(
+      companySchema.safeParse({ ...VALID_COMPANY, leaseId: "" }).success,
+    ).toBe(true);
   });
 
   it("rejects a malformed SIREN", () => {
@@ -221,12 +210,14 @@ describe("directory schemas", () => {
 
   it("requires a pair, a property address and valid lease amounts", () => {
     const valid = {
-      companyId: "",
+      companyLease: false,
       landlordId: "1",
       tenantId: "2",
       propertyAddress: "12 rue de la République, 75000 Paris",
       rentExclCharges: "1300,00",
       charges: "0,00",
+      totalArea: "",
+      businessArea: "",
     };
     expect(leaseSchema.safeParse(valid).success).toBe(true);
     expect(leaseSchema.safeParse({ ...valid, landlordId: "" }).success).toBe(
@@ -244,6 +235,31 @@ describe("directory schemas", () => {
     expect(leaseSchema.safeParse({ ...valid, charges: "-1" }).success).toBe(
       false,
     );
+  });
+
+  it("requires and validates the surfaces of a company lease", () => {
+    const valid = {
+      companyLease: true,
+      landlordId: "1",
+      tenantId: "2",
+      propertyAddress: "12 rue de la République, 75000 Paris",
+      rentExclCharges: "1300,00",
+      charges: "0,00",
+      totalArea: "",
+      businessArea: "",
+    };
+    expect(leaseSchema.safeParse(valid).success).toBe(false);
+    expect(leaseSchema.safeParse({ ...valid, totalArea: "70" }).success).toBe(
+      false,
+    );
+    expect(
+      leaseSchema.safeParse({ ...valid, totalArea: "70", businessArea: "80" })
+        .success,
+    ).toBe(false);
+    expect(
+      leaseSchema.safeParse({ ...valid, totalArea: "70", businessArea: "25" })
+        .success,
+    ).toBe(true);
   });
 });
 

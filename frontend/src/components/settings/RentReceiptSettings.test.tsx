@@ -193,14 +193,118 @@ describe("RentReceiptSettings", () => {
 
     await waitFor(() =>
       expect(api.leases.create).toHaveBeenCalledWith({
-        companyId: null,
+        companyLease: false,
         landlordId: 1,
         tenantId: 2,
         propertyAddress: "12 rue de la République, 75000 Paris",
         rentExclCharges: "1300.00",
         charges: "50.00",
+        totalArea: undefined,
+        businessArea: undefined,
       }),
     );
+  });
+
+  it("creates a company lease with its required surfaces", async () => {
+    vi.mocked(api.leases.create).mockResolvedValue({
+      ...LEASE,
+      id: 11,
+      companyLease: true,
+      totalArea: "70.00",
+      businessArea: "25.00",
+    });
+
+    renderSettings();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Ajouter un bail" }));
+    const landlordSelect = screen.getByLabelText("Bailleur du bail");
+    const form = landlordSelect.closest("form");
+    if (!form) {
+      throw new Error("Lease form not found");
+    }
+    await user.selectOptions(landlordSelect, "1");
+    await user.selectOptions(
+      within(form).getByLabelText("Locataire du bail"),
+      "2",
+    );
+    await user.type(
+      within(form).getByLabelText("Adresse du bien"),
+      "12 rue de la République, 75000 Paris",
+    );
+    await user.type(
+      within(form).getByLabelText("Loyer hors charges (€)"),
+      "1300,00",
+    );
+    await user.type(
+      within(form).getByLabelText("Provision pour charges (€)"),
+      "50,00",
+    );
+
+    await user.click(
+      within(form).getByRole("checkbox", { name: /Bail société/ }),
+    );
+    await user.type(within(form).getByLabelText("Surface totale (m²)"), "70");
+    await user.type(
+      within(form).getByLabelText("Surface professionnelle (m²)"),
+      "25",
+    );
+    await user.click(
+      within(form).getByRole("button", { name: "Ajouter le bail" }),
+    );
+
+    await waitFor(() =>
+      expect(api.leases.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          companyLease: true,
+          totalArea: "70.00",
+          businessArea: "25.00",
+        }),
+      ),
+    );
+  });
+
+  it("requires the surfaces of a company lease", async () => {
+    renderSettings();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Ajouter un bail" }));
+    const form = screen.getByLabelText("Bailleur du bail").closest("form");
+    if (!form) {
+      throw new Error("Lease form not found");
+    }
+    await user.selectOptions(
+      within(form).getByLabelText("Bailleur du bail"),
+      "1",
+    );
+    await user.selectOptions(
+      within(form).getByLabelText("Locataire du bail"),
+      "2",
+    );
+    await user.type(
+      within(form).getByLabelText("Adresse du bien"),
+      "12 rue de la République, 75000 Paris",
+    );
+    await user.type(
+      within(form).getByLabelText("Loyer hors charges (€)"),
+      "1300,00",
+    );
+    await user.click(
+      within(form).getByRole("checkbox", { name: /Bail société/ }),
+    );
+    await user.click(
+      within(form).getByRole("button", { name: "Ajouter le bail" }),
+    );
+
+    expect(
+      await within(form).findByText(
+        "La surface totale est obligatoire pour un bail société.",
+      ),
+    ).toBeVisible();
+    expect(
+      within(form).getByText(
+        "La surface professionnelle est obligatoire pour un bail société.",
+      ),
+    ).toBeVisible();
+    expect(api.leases.create).not.toHaveBeenCalled();
   });
 
   it("confirms before deleting a lease", async () => {
@@ -351,12 +455,14 @@ describe("RentReceiptSettings", () => {
 
     await waitFor(() =>
       expect(api.leases.update).toHaveBeenCalledWith(10, {
-        companyId: null,
+        companyLease: false,
         landlordId: 1,
         tenantId: 2,
         propertyAddress: "12 rue de la République, 75000 Paris",
         rentExclCharges: "1300.00",
         charges: "0.00",
+        totalArea: undefined,
+        businessArea: undefined,
       }),
     );
     await waitFor(() => {

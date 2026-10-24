@@ -111,7 +111,8 @@ class ExpenseStatementServiceTest {
         ExpenseItem gaz = item("gaz", "Gaz", 20);
         when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of(calculatedLine(gaz)));
         when(lineCalculator.toDto(any())).thenCallRealMethod();
-        when(templateDataService.proRataDetail(any())).thenReturn("Surface pro 25 m² / 70 m² = 35,71 %");
+        when(companies.proRataBase(any())).thenReturn(new BigDecimal("35.71"));
+        when(companies.proRataDetail(any())).thenReturn("Surface pro 25 m² / 70 m² = 35,71 %");
 
         CalculationResponse response = service.calculate(
                 new StatementCalculationRequest(COMPANY_ID, "2026-10", List.of()));
@@ -128,7 +129,8 @@ class ExpenseStatementServiceTest {
         when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null)).thenReturn(null);
         when(expenseItemService.list(COMPANY_ID, false)).thenReturn(List.of(
                 itemDto(1L, "loyer", "Loyer"), itemDto(2L, "gaz", "Gaz")));
-        when(templateDataService.proRataDetail(any())).thenReturn("détail");
+        when(companies.proRataBase(any())).thenReturn(new BigDecimal("35.71"));
+        when(companies.proRataDetail(any())).thenReturn("détail");
 
         DraftDto draft = service.draft(COMPANY_ID, "2026-10");
 
@@ -151,7 +153,8 @@ class ExpenseStatementServiceTest {
         when(expenseItemService.entity(COMPANY_ID, "loyer"))
                 .thenReturn(item("loyer", "Quittance de loyer", 10));
         when(expenseItemService.list(COMPANY_ID, false)).thenReturn(List.of(itemDto(1L, "loyer", "Loyer")));
-        when(templateDataService.proRataDetail(any())).thenReturn("détail");
+        when(companies.proRataBase(any())).thenReturn(new BigDecimal("35.71"));
+        when(companies.proRataDetail(any())).thenReturn("détail");
 
         DraftDto draft = service.draft(COMPANY_ID, "2026-10");
 

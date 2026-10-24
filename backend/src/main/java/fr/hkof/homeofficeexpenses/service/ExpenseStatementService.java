@@ -67,8 +67,8 @@ public class ExpenseStatementService {
                 lines.stream().map(lineCalculator::toDto).toList(),
                 Amounts.apiValue(total),
                 NumberToWords.toWords(total),
-                Amounts.apiValue(CalculationService.proRataBase(company.getBusinessArea(), company.getTotalArea())),
-                templateDataService.proRataDetail(company));
+                Amounts.apiValue(companies.proRataBase(company)),
+                companies.proRataDetail(company));
     }
 
     @Transactional(readOnly = true)
@@ -96,8 +96,8 @@ public class ExpenseStatementService {
                 month.toString(),
                 rentReceipt == null ? null : rentReceiptService.toDto(rentReceipt),
                 lines,
-                Amounts.apiValue(CalculationService.proRataBase(company.getBusinessArea(), company.getTotalArea())),
-                templateDataService.proRataDetail(company),
+                Amounts.apiValue(companies.proRataBase(company)),
+                companies.proRataDetail(company),
                 missing);
     }
 

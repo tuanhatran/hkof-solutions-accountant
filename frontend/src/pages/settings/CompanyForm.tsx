@@ -4,18 +4,18 @@ import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
-import { queryKeys } from "@/api/queries";
+import { queryKeys, useLeases } from "@/api/queries";
 import type { CompanyDto, CompanyRequest } from "@/api/types";
 import { Button } from "@/components/ui/Button";
 import { parseAmount } from "@/lib/format";
 import { companySchema, type CompanyFormValues } from "@/lib/validation";
 import { toast } from "@/state/toasts";
 import { SettingsCompanySection } from "./SettingsCompanySection";
-import { SettingsHomeSection } from "./SettingsHomeSection";
+import { SettingsLeaseSection } from "./SettingsLeaseSection";
 import { SettingsSaveBar } from "./SettingsSaveBar";
 import { valuesFromCompany } from "./settingsValues";
 
-/** Create or update form of a company, with its home-office data. */
+/** Create or update form of a company and its optional lease link. */
 export function CompanyForm({
   company,
   onSaved,
@@ -26,6 +26,7 @@ export function CompanyForm({
   onClose?: () => void;
 }) {
   const queryClient = useQueryClient();
+  const leases = useLeases();
   const {
     register,
     handleSubmit,
@@ -39,14 +40,20 @@ export function CompanyForm({
   });
 
   const values = watch();
+  const leaseList = useMemo(() => leases.data ?? [], [leases.data]);
+  const selectedLease = useMemo(
+    () =>
+      leaseList.find((lease) => String(lease.id) === values.leaseId) ?? null,
+    [leaseList, values.leaseId],
+  );
   const displayedProRata = useMemo(() => {
-    const proArea = parseAmount(values.businessArea);
-    const totalArea = parseAmount(values.totalArea);
+    const proArea = parseAmount(selectedLease?.businessArea ?? "");
+    const totalArea = parseAmount(selectedLease?.totalArea ?? "");
     if (proArea === null || totalArea === null || Number(totalArea) <= 0) {
       return null;
     }
     return (Number(proArea) / Number(totalArea)) * 100;
-  }, [values.businessArea, values.totalArea]);
+  }, [selectedLease]);
 
   const save = useMutation({
     mutationFn: (submitted: CompanyFormValues) => {
@@ -56,9 +63,7 @@ export function CompanyForm({
         siren: submitted.siren.trim(),
         address: submitted.address.trim(),
         managerName: submitted.managerName.trim(),
-        homeAddress: submitted.homeAddress.trim(),
-        totalArea: parseAmount(submitted.totalArea) ?? undefined,
-        businessArea: parseAmount(submitted.businessArea) ?? undefined,
+        leaseId: submitted.leaseId === "" ? null : Number(submitted.leaseId),
         issuePlace: submitted.issuePlace.trim(),
       };
       return company?.id
@@ -82,6 +87,7 @@ export function CompanyForm({
         );
       }
       void queryClient.invalidateQueries({ queryKey: queryKeys.companiesAll });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.leases });
       if (payload.id !== undefined) {
         queryClient.setQueryData(queryKeys.company(payload.id), payload);
       }
@@ -104,9 +110,11 @@ export function CompanyForm({
       data-cy="formulaire-societe"
     >
       <SettingsCompanySection register={register} errors={errors} />
-      <SettingsHomeSection
+      <SettingsLeaseSection
         register={register}
         errors={errors}
+        leases={leaseList}
+        selectedLease={selectedLease}
         displayedProRata={displayedProRata}
       />
       <SettingsSaveBar

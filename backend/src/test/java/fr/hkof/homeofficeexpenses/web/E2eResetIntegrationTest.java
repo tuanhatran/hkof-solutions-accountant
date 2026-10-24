@@ -40,14 +40,17 @@ class E2eResetIntegrationTest {
     @DisplayName("The e2e profile resets the database and files to their initial state")
     void resetsData() throws Exception {
         long companyId = firstId("/api/companies");
+        String seedLeases = mockMvc.perform(get("/api/leases"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long leaseId = ((Number) JsonPath.read(seedLeases, "$[0].id")).longValue();
         mockMvc.perform(put("/api/companies/{id}", companyId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Test E2E","legalForm":"EURL","siren":"123 456 789",
                                  "address":"1 rue du Test, 75001 Paris","managerName":"Testeur",
-                                 "homeAddress":"1 rue du Test, 75001 Paris","totalArea":"80",
-                                 "businessArea":"32","issuePlace":"Paris"}
-                                """))
+                                 "leaseId":%d,"issuePlace":"Paris"}
+                                """.formatted(leaseId)))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/landlords")
@@ -94,7 +97,10 @@ class E2eResetIntegrationTest {
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].propertyAddress").value("12 rue de la République, 75000 Paris"))
                 .andExpect(jsonPath("$[0].rentExclCharges").value("1300.00"))
-                .andExpect(jsonPath("$[0].charges").value("0.00"));
+                .andExpect(jsonPath("$[0].charges").value("0.00"))
+                .andExpect(jsonPath("$[0].companyLease").value(true))
+                .andExpect(jsonPath("$[0].totalArea").value("70.00"))
+                .andExpect(jsonPath("$[0].businessArea").value("25.00"));
         mockMvc.perform(get("/api/rent-receipts"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));

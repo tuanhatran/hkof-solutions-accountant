@@ -458,9 +458,10 @@ class ApiIntegrationTest {
         mockMvc.perform(post("/api/leases")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"companyId":%d,"landlordId":%d,"tenantId":%d,
-                                 "propertyAddress":"8 rue du Test, 75003 Paris","rentExclCharges":"700.00"}
-                                """.formatted(seededId("/api/companies"), secondLandlordId, secondTenantId)))
+                                {"companyLease":true,"landlordId":%d,"tenantId":%d,
+                                 "propertyAddress":"8 rue du Test, 75003 Paris","rentExclCharges":"700.00",
+                                 "totalArea":"70","businessArea":"25"}
+                                """.formatted(secondLandlordId, secondTenantId)))
                 .andExpect(status().isCreated());
 
         String secondSignature = mockMvc.perform(multipart("/api/signatures")
@@ -475,8 +476,8 @@ class ApiIntegrationTest {
         mockMvc.perform(post("/api/rent-receipts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"month":"2027-09","landlordId":%d,"tenantId":%d}
-                                """.formatted(secondLandlordId, secondTenantId)))
+                                {"month":"2027-09","companyId":%d,"landlordId":%d,"tenantId":%d}
+                                """.formatted(seededId("/api/companies"), secondLandlordId, secondTenantId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.version").value(1))
                 .andExpect(jsonPath("$.status").value("ACTIVE"));

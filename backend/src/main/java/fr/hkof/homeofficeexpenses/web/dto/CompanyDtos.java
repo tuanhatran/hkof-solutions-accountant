@@ -11,9 +11,7 @@ public final class CompanyDtos {
             String siren,
             String address,
             String managerName,
-            String homeAddress,
-            String totalArea,
-            String businessArea,
+            Long leaseId,
             String issuePlace) {
     }
 
@@ -24,9 +22,7 @@ public final class CompanyDtos {
             String siren,
             String address,
             String managerName,
-            String homeAddress,
-            String totalArea,
-            String businessArea,
+            Long leaseId,
             String proRataBase,
             String proRataBaseDetail,
             String issuePlace) {

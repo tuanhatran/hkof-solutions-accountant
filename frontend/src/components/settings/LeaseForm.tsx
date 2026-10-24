@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
-import { queryKeys, useCompanies } from "@/api/queries";
+import { queryKeys } from "@/api/queries";
 import type {
   LandlordDto,
   LeaseDto,
@@ -34,7 +34,6 @@ export function LeaseForm({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
-  const companies = useCompanies();
   const [requestError, setRequestError] = useState<string | null>(null);
   const {
     register,
@@ -45,31 +44,37 @@ export function LeaseForm({
     resolver: zodResolver(leaseSchema),
     mode: "onChange",
     defaultValues: {
-      companyId:
-        item?.companyId === undefined || item.companyId === null
-          ? ""
-          : String(item.companyId),
+      companyLease: item?.companyLease ?? false,
       landlordId: item?.landlordId === undefined ? "" : String(item.landlordId),
       tenantId: item?.tenantId === undefined ? "" : String(item.tenantId),
       propertyAddress: item?.propertyAddress ?? "",
       rentExclCharges: decimalFormatter(item?.rentExclCharges),
       charges: decimalFormatter(item?.charges),
+      totalArea: decimalFormatter(item?.totalArea),
+      businessArea: decimalFormatter(item?.businessArea),
     },
   });
 
   const rent = watch("rentExclCharges");
   const charges = watch("charges");
+  const companyLease = watch("companyLease");
   const total = formatEUR((cents(rent) + cents(charges)) / 100);
 
   const save = useMutation({
     mutationFn: (values: LeaseFormValues) => {
       const requestBody: LeaseRequest = {
-        companyId: values.companyId === "" ? null : Number(values.companyId),
+        companyLease: values.companyLease,
         landlordId: Number(values.landlordId),
         tenantId: Number(values.tenantId),
         propertyAddress: values.propertyAddress.trim(),
         rentExclCharges: parseAmount(values.rentExclCharges) ?? "0.00",
         charges: parseAmount(values.charges) ?? "0.00",
+        totalArea: values.companyLease
+          ? (parseAmount(values.totalArea) ?? undefined)
+          : undefined,
+        businessArea: values.companyLease
+          ? (parseAmount(values.businessArea) ?? undefined)
+          : undefined,
       };
       return item?.id
         ? api.leases.update(item.id, requestBody)
@@ -77,6 +82,7 @@ export function LeaseForm({
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.leases });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.companiesAll });
       toast.success(item ? "Bail mis à jour." : "Bail ajouté.");
       onClose();
     },
@@ -97,27 +103,21 @@ export function LeaseForm({
       </h3>
 
       <div className="lease-form-grid">
-        <FieldGroup
-          id="bail-societe"
-          label="Société du bail"
-          error={errors.companyId?.message}
-          help="Facultative : la quittance utilise la société active à défaut."
-          className="sm:col-span-2"
-        >
-          <select
-            id="bail-societe"
-            className={cn("field", errors.companyId && "field-error")}
-            {...register("companyId")}
-            data-cy="select-bail-societe"
-          >
-            <option value="">Aucune société</option>
-            {(companies.data ?? []).map((company) => (
-              <option key={company.id} value={company.id}>
-                {company.name}
-              </option>
-            ))}
-          </select>
-        </FieldGroup>
+        <label className="lease-form-company-lease">
+          <input
+            type="checkbox"
+            className="lease-form-company-lease-input"
+            {...register("companyLease")}
+            data-cy="input-bail-societe-type"
+          />
+          <span>
+            <span className="lease-form-company-lease-title">Bail société</span>
+            <span className="lease-form-company-lease-hint">
+              Renseignez les surfaces du logement pour calculer la quote-part
+              professionnelle.
+            </span>
+          </span>
+        </label>
         <FieldGroup
           id="bail-bailleur"
           label="Bailleur du bail"
@@ -198,6 +198,38 @@ export function LeaseForm({
             data-cy="input-bail-charges"
           />
         </FieldGroup>
+        {companyLease ? (
+          <>
+            <FieldGroup
+              id="bail-surface-totale"
+              label="Surface totale (m²)"
+              error={errors.totalArea?.message}
+            >
+              <input
+                id="bail-surface-totale"
+                inputMode="decimal"
+                className={cn("field", errors.totalArea && "field-error")}
+                placeholder="70,00"
+                {...register("totalArea")}
+                data-cy="input-surface-totale"
+              />
+            </FieldGroup>
+            <FieldGroup
+              id="bail-surface-pro"
+              label="Surface professionnelle (m²)"
+              error={errors.businessArea?.message}
+            >
+              <input
+                id="bail-surface-pro"
+                inputMode="decimal"
+                className={cn("field", errors.businessArea && "field-error")}
+                placeholder="25,00"
+                {...register("businessArea")}
+                data-cy="input-surface-pro"
+              />
+            </FieldGroup>
+          </>
+        ) : null}
         <div className="lease-form-total">
           <p className="lease-form-total-label">Total quittance</p>
           <p

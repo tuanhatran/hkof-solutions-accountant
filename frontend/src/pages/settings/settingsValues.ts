@@ -41,9 +41,10 @@ export function valuesFromCompany(
     siren: company?.siren ?? "",
     address: company?.address ?? "",
     managerName: company?.managerName ?? "",
-    homeAddress: company?.homeAddress ?? "",
-    totalArea: decimalFormatter(company?.totalArea),
-    businessArea: decimalFormatter(company?.businessArea),
+    leaseId:
+      company?.leaseId === undefined || company.leaseId === null
+        ? ""
+        : String(company.leaseId),
     issuePlace: company?.issuePlace ?? "",
   };
 }

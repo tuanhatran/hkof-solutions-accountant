@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
-import type { CompanyDto, EmployeeDto } from "@/api/types";
+import type { CompanyDto, EmployeeDto, LeaseDto } from "@/api/types";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { useCompanyStore } from "@/state/company";
 import { useToasts } from "@/state/toasts";
@@ -24,10 +24,9 @@ const COMPANY: CompanyDto = {
   siren: "123 456 789",
   address: "1 rue de la Paix, 75002 Paris",
   managerName: "Camille Martin",
-  homeAddress: "12 rue des Lilas, 75011 Paris",
-  totalArea: "70.00",
-  businessArea: "25.00",
+  leaseId: 5,
   proRataBase: "35.71",
+  proRataBaseDetail: "25,00 m² sur 70,00 m²",
   issuePlace: "Paris",
 };
 
@@ -38,11 +37,26 @@ const OTHER: CompanyDto = {
   siren: "987 654 321",
   address: "2 rue du Marché, 75003 Paris",
   managerName: "Alex Durand",
-  homeAddress: "5 rue des Roses, 75012 Paris",
-  totalArea: "80.00",
-  businessArea: "20.00",
-  proRataBase: "25.00",
+  leaseId: null,
+  proRataBase: "0.00",
+  proRataBaseDetail: "Surfaces non configurées",
   issuePlace: "Paris",
+};
+
+const LEASE: LeaseDto = {
+  id: 5,
+  companyId: 1,
+  companyName: "HKOF",
+  companyLease: true,
+  landlordId: 1,
+  tenantId: 2,
+  landlordName: "M. Bailleur",
+  tenantName: "Mme Locataire",
+  propertyAddress: "12 rue des Lilas, 75011 Paris",
+  rentExclCharges: "900.00",
+  charges: "50.00",
+  totalArea: "70.00",
+  businessArea: "25.00",
 };
 
 const CEO: EmployeeDto = {
@@ -102,12 +116,13 @@ vi.mock("@/api/queries", async (importOriginal) => {
   return {
     ...actual,
     useCompanies: () => companiesState,
-    useEmployees: () => employeesState,
+    useEmployees: (companyId: number | null) =>
+      companyId === 2 ? readyQuery([]) : employeesState,
     useExpenseItems: () => readyQuery([]),
     useSignatures: () => readyQuery([]),
     useLandlords: () => readyQuery([]),
     useTenants: () => readyQuery([]),
-    useLeases: () => readyQuery([]),
+    useLeases: () => readyQuery([LEASE]),
   };
 });
 
@@ -149,6 +164,8 @@ describe("SettingsPage tabs", () => {
     );
     expect(screen.getByLabelText("Raison sociale")).toHaveValue("HKOF");
     expect(screen.queryByRole("heading", { name: "Bailleurs" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Salariés" })).toBeNull();
+    expect(screen.getByText("Location bail")).toBeVisible();
   });
 
   it("switches to the Quittances tab with the directories and signatures", async () => {
@@ -176,11 +193,8 @@ describe("SettingsPage tabs", () => {
     expect(screen.getByLabelText("Raison sociale")).toHaveValue("HKOF");
   });
 
-  it("lists the employees of the active company with their French title", async () => {
+  it("lists the employees of the selected company with their French title", async () => {
     renderPage();
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole("tab", { name: "Salariés" }));
 
     expect(
       await screen.findByRole("heading", { name: "Salariés" }),
@@ -190,32 +204,27 @@ describe("SettingsPage tabs", () => {
     expect(
       screen.getByRole("button", { name: "Ajouter un salarié" }),
     ).toBeEnabled();
-    expect(screen.queryByLabelText("Raison sociale")).toBeNull();
+    expect(screen.getByLabelText("Raison sociale")).toHaveValue("HKOF");
   });
 
-  it("asks for an active company before managing employees", async () => {
-    companiesState = readyQuery([]);
-    employeesState = {
-      data: undefined,
-      isPending: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    };
-    useCompanyStore.setState({ activeCompanyId: null });
+  it("scopes the employees to the company selected in the Entreprise tab", async () => {
+    companiesState = readyQuery([COMPANY, OTHER]);
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("tab", { name: "Salariés" }));
+    expect(await screen.findByText("Camille Martin")).toBeVisible();
+
+    await user.selectOptions(
+      screen.getByLabelText("Société à configurer"),
+      "2",
+    );
 
     expect(
-      screen.getByText(
-        "Sélectionnez une société active pour gérer ses salariés.",
+      await screen.findByText(
+        "Aucun salarié dans cette société. Ajoutez le gérant et les salariés signataires.",
       ),
     ).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "Ajouter un salarié" }),
-    ).toBeDisabled();
+    expect(screen.queryByText("Camille Martin")).toBeNull();
   });
 
   it("saves the company configuration and confirms in French", async () => {
@@ -239,9 +248,7 @@ describe("SettingsPage tabs", () => {
         siren: "123 456 789",
         address: "1 rue de la Paix, 75002 Paris",
         managerName: "Camille Martin",
-        homeAddress: "12 rue des Lilas, 75011 Paris",
-        totalArea: "70.00",
-        businessArea: "25.00",
+        leaseId: 5,
         issuePlace: "Paris",
       }),
     );
@@ -267,15 +274,36 @@ describe("SettingsPage tabs", () => {
     expect(api.companies.update).not.toHaveBeenCalled();
   });
 
-  it("computes the indicative pro-rata from the areas", async () => {
+  it("computes the indicative pro-rata from the selected lease surfaces", async () => {
     renderPage();
+    const user = userEvent.setup();
 
     expect(screen.getByText("35,71 %")).toBeVisible();
+    expect(screen.getByLabelText("Bail de la société")).toHaveValue("5");
 
+    await user.selectOptions(screen.getByLabelText("Bail de la société"), "");
+
+    expect(
+      document.querySelector('[data-cy="prorata-indicatif"]'),
+    ).toHaveTextContent("—");
+  });
+
+  it("unlinks the lease when Aucun bail is selected", async () => {
+    vi.mocked(api.companies.update).mockResolvedValue(OTHER);
+    renderPage();
     const user = userEvent.setup();
-    await user.clear(screen.getByLabelText("Surface totale (m²)"));
-    await user.type(screen.getByLabelText("Surface totale (m²)"), "0");
-    expect(screen.getByText("—")).toBeVisible();
+
+    await user.selectOptions(screen.getByLabelText("Bail de la société"), "");
+    await user.click(
+      screen.getByRole("button", { name: "Enregistrer la configuration" }),
+    );
+
+    await waitFor(() =>
+      expect(api.companies.update).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ leaseId: null }),
+      ),
+    );
   });
 
   it("surfaces the save error in the save bar", async () => {
@@ -348,9 +376,7 @@ describe("SettingsPage tabs", () => {
         siren: "",
         address: "",
         managerName: "",
-        homeAddress: "",
-        totalArea: undefined,
-        businessArea: undefined,
+        leaseId: null,
         issuePlace: "",
       }),
     );
@@ -384,6 +410,32 @@ describe("SettingsPage tabs", () => {
         "Aucune société configurée. Créez la première société.",
       ),
     ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Supprimer" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Salariés" })).toBeNull();
+    expect(
+      document.querySelector('[data-cy="formulaire-societe"]'),
+    ).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
+
+    const selector = screen.getByLabelText("Société à configurer");
+    await user.selectOptions(selector, "2");
+    expect(selector).toHaveValue("2");
+  });
+
+  it("hides the company selector while creating a new company", async () => {
+    companiesState = readyQuery([COMPANY, OTHER]);
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Nouvelle société" }));
+
+    expect(screen.queryByLabelText("Société à configurer")).toBeNull();
+    expect(
+      screen.queryByText(
+        "Aucune société configurée. Créez la première société.",
+      ),
+    ).toBeNull();
     expect(
       document.querySelector('[data-cy="formulaire-societe"]'),
     ).toBeVisible();
@@ -402,6 +454,8 @@ describe("SettingsPage tabs", () => {
 
     await user.click(screen.getByRole("button", { name: "Supprimer" }));
     expect(await screen.findByText("Supprimer cette société ?")).toBeVisible();
+    expect(screen.getByText(/et ses salariés seront supprimés/)).toBeVisible();
+    expect(screen.getByText(/baux seront détachés/)).toBeVisible();
     await user.click(
       screen.getByRole("button", { name: "Supprimer la société" }),
     );
@@ -423,7 +477,6 @@ describe("SettingsPage tabs", () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("tab", { name: "Salariés" }));
     await user.click(
       screen.getByRole("button", { name: "Ajouter un salarié" }),
     );

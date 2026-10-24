@@ -1,14 +1,19 @@
 package fr.hkof.homeofficeexpenses.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import fr.hkof.homeofficeexpenses.domain.Company;
+import fr.hkof.homeofficeexpenses.domain.Employee;
+import fr.hkof.homeofficeexpenses.domain.Lease;
+import fr.hkof.homeofficeexpenses.domain.Signature;
 import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
@@ -20,11 +25,14 @@ import fr.hkof.homeofficeexpenses.web.dto.CompanyDtos.CompanyDto;
 import fr.hkof.homeofficeexpenses.web.dto.CompanyDtos.CompanyRequest;
 
 /**
- * Company directory. A company owns its identity, home-office data, expense items and
- * expense statements; logical deletion keeps its history reachable.
+ * Company directory. A company owns its identity, its employees, its expense items and
+ * expense statements. It may be linked to at most one lease, which supplies the dwelling
+ * surfaces used by the pro-rata. Logical deletion keeps its history reachable.
  */
 @Service
 public class CompanyService {
+
+    private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(Amounts.SCALE, RoundingMode.HALF_UP);
 
     private final CompanyRepository repository;
     private final ExpenseItemRepository expenseItems;
@@ -65,7 +73,9 @@ public class CompanyService {
         company.setDeleted(false);
         company.setCreatedAt(Instant.now(clock));
         company.setUpdatedAt(Instant.now(clock));
-        return toDto(repository.save(company));
+        Company saved = repository.save(company);
+        linkLease(saved, request.leaseId());
+        return toDto(saved);
     }
 
     @Transactional
@@ -73,7 +83,30 @@ public class CompanyService {
         Company company = entity(id);
         apply(company, request, id);
         company.setUpdatedAt(Instant.now(clock));
-        return toDto(repository.save(company));
+        Company saved = repository.save(company);
+        linkLease(saved, request.leaseId());
+        return toDto(saved);
+    }
+
+    /**
+     * Links the selected lease or unlinks the previous one. A lease belongs to at most one
+     * company: selecting a lease already linked elsewhere is rejected in French.
+     */
+    @Transactional
+    public void linkLease(Company company, Long leaseId) {
+        Optional<Lease> current = leases.findFirstByCompanyIdAndDeletedFalse(company.getId());
+        if (leaseId == null) {
+            current.ifPresent(this::unlink);
+            return;
+        }
+        Lease target = leases.findByIdAndDeletedFalse(leaseId)
+                .orElseThrow(() -> new NotFoundException("Bail introuvable."));
+        if (target.getCompanyId() != null && !target.getCompanyId().equals(company.getId())) {
+            throw new BusinessException("Ce bail est déjà lié à une autre société.");
+        }
+        current.filter(lease -> !lease.getId().equals(leaseId)).ifPresent(this::unlink);
+        target.setCompanyId(company.getId());
+        leases.save(target);
     }
 
     @Transactional
@@ -81,20 +114,38 @@ public class CompanyService {
         Company company = entity(id);
         if (expenseItems.existsByCompanyIdAndDeletedFalse(id)
                 || statements.existsByCompanyId(id)
-                || employees.existsByCompanyIdAndDeletedFalse(id)
-                || leases.existsByCompanyIdAndDeletedFalse(id)
-                || signatures.existsByCompanyIdAndDeletedFalse(id)
                 || rentReceipts.existsByCompanyId(id)) {
             throw new BusinessException(
                     "Cette société est utilisée par des données et ne peut pas être supprimée.");
         }
+        Instant now = Instant.now(clock);
+        List<Employee> companyEmployees =
+                employees.findAllByCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(id);
+        for (Employee employee : companyEmployees) {
+            employee.setDeleted(true);
+            employee.setUpdatedAt(now);
+        }
+        if (!companyEmployees.isEmpty()) {
+            employees.saveAll(companyEmployees);
+        }
+        List<Signature> companySignatures = signatures.findByCompanyIdAndDeletedFalse(id);
+        for (Signature signature : companySignatures) {
+            signature.setDeleted(true);
+            signature.setUpdatedAt(now);
+        }
+        if (!companySignatures.isEmpty()) {
+            signatures.saveAll(companySignatures);
+        }
+        for (Lease lease : leases.findAllByCompanyIdAndDeletedFalse(id)) {
+            unlink(lease);
+        }
         company.setDeleted(true);
-        company.setUpdatedAt(Instant.now(clock));
+        company.setUpdatedAt(now);
         repository.save(company);
     }
 
     @Transactional(readOnly = true)
-    public java.util.Optional<Company> find(Long id) {
+    public Optional<Company> find(Long id) {
         return repository.findById(id);
     }
 
@@ -107,8 +158,34 @@ public class CompanyService {
                 .orElseThrow(() -> new NotFoundException("Société introuvable."));
     }
 
+    /** Pro-rata base computed from the linked lease surfaces, zero without lease or surfaces. */
+    public BigDecimal proRataBase(Company company) {
+        return linkedLease(company)
+                .map(lease -> CalculationService.proRataBase(lease.getBusinessArea(), lease.getTotalArea()))
+                .orElse(ZERO);
+    }
+
+    public String proRataDetail(Company company) {
+        return proRataDetail(company, proRataBase(company));
+    }
+
+    public String proRataDetail(Company company, BigDecimal proRataBase) {
+        return linkedLease(company).map(lease -> {
+            if (lease.getBusinessArea() == null || lease.getTotalArea() == null) {
+                return "Surfaces non configurées";
+            }
+            return "Surface pro %s m² / %s m² = %s".formatted(
+                    Amounts.apiValue(lease.getBusinessArea()).replace(".", ","),
+                    Amounts.apiValue(lease.getTotalArea()).replace(".", ","),
+                    Amounts.formatPercentage(proRataBase));
+        }).orElse("Surfaces non configurées");
+    }
+
     public CompanyDto toDto(Company company) {
-        BigDecimal proRataBase = CalculationService.proRataBase(company.getBusinessArea(), company.getTotalArea());
+        Optional<Lease> lease = linkedLease(company);
+        BigDecimal proRataBase = lease
+                .map(linked -> CalculationService.proRataBase(linked.getBusinessArea(), linked.getTotalArea()))
+                .orElse(ZERO);
         return new CompanyDto(
                 company.getId(),
                 company.getName(),
@@ -116,22 +193,23 @@ public class CompanyService {
                 company.getSiren(),
                 company.getAddress(),
                 company.getManagerName(),
-                company.getHomeAddress(),
-                Amounts.apiValue(company.getTotalArea()),
-                Amounts.apiValue(company.getBusinessArea()),
+                lease.map(Lease::getId).orElse(null),
                 Amounts.apiValue(proRataBase),
-                proRataDetail(company, proRataBase),
+                lease.isEmpty() || lease.get().getTotalArea() == null
+                        ? "Surfaces non configurées"
+                        : proRataDetail(company, proRataBase),
                 company.getIssuePlace());
     }
 
-    public String proRataDetail(Company company, BigDecimal proRataBase) {
-        if (company.getBusinessArea() == null || company.getTotalArea() == null) {
-            return "Surfaces non configurées";
-        }
-        return "Surface pro %s m² / %s m² = %s".formatted(
-                Amounts.apiValue(company.getBusinessArea()).replace(".", ","),
-                Amounts.apiValue(company.getTotalArea()).replace(".", ","),
-                Amounts.formatPercentage(proRataBase));
+    private Optional<Lease> linkedLease(Company company) {
+        return company.getId() == null
+                ? Optional.empty()
+                : leases.findFirstByCompanyIdAndDeletedFalse(company.getId());
+    }
+
+    private void unlink(Lease lease) {
+        lease.setCompanyId(null);
+        leases.save(lease);
     }
 
     private void apply(Company company, CompanyRequest request, Long currentId) {
@@ -149,12 +227,6 @@ public class CompanyService {
         company.setSiren(siren);
         company.setAddress(optionalText(request.address()));
         company.setManagerName(optionalText(request.managerName()));
-        company.setHomeAddress(optionalText(request.homeAddress()));
-        company.setTotalArea(Amounts.optionalDecimal(request.totalArea(), "surface totale"));
-        company.setBusinessArea(Amounts.optionalDecimal(request.businessArea(), "surface professionnelle"));
-        if (company.getTotalArea() != null && company.getBusinessArea() != null) {
-            CalculationService.proRataBase(company.getBusinessArea(), company.getTotalArea());
-        }
         company.setIssuePlace(optionalText(request.issuePlace()));
     }
 

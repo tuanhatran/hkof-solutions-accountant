@@ -16,6 +16,7 @@ import { ErrorState, LoadingState } from "@/components/ui/States";
 import { useCompanyStore } from "@/state/company";
 import { toast } from "@/state/toasts";
 import { CompanyForm } from "./CompanyForm";
+import { EmployeeSection } from "./EmployeeSection";
 import { ExpenseItemsManager } from "./ExpenseItemsManager";
 
 /** Company directory: select, create, edit, activate and logically delete. */
@@ -51,6 +52,9 @@ export function CompanySection() {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.expenseItemsAll,
       });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.employeesAll });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.signaturesAll });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.leases });
       setToDelete(null);
       toast.success("Société supprimée.");
     },
@@ -66,7 +70,7 @@ export function CompanySection() {
         <SectionHeader
           icon={Building2}
           title="Sociétés"
-          description="Chaque société possède son identité, son logement, ses postes de frais et ses notes de frais."
+          description="Chaque société possède son identité, son bail, ses salariés, ses postes de frais et ses notes de frais."
           action={
             <div className="company-section-actions">
               {selected && selected.id !== activeCompanyId ? (
@@ -84,7 +88,7 @@ export function CompanySection() {
                   Rendre active
                 </Button>
               ) : null}
-              {selected ? (
+              {selected && !creating ? (
                 <Button
                   variant="ghost"
                   small
@@ -179,10 +183,13 @@ export function CompanySection() {
       </section>
 
       {selected && !creating ? (
-        <ExpenseItemsManager
-          companyId={selected.id as number}
-          defaultProRata={selected.proRataBase ?? "100.00"}
-        />
+        <>
+          <ExpenseItemsManager
+            companyId={selected.id as number}
+            defaultProRata={selected.proRataBase ?? "100.00"}
+          />
+          <EmployeeSection companyId={selected.id as number} />
+        </>
       ) : null}
 
       <ConfirmDialog
@@ -190,7 +197,7 @@ export function CompanySection() {
         title="Supprimer cette société ?"
         message={
           toDelete
-            ? `« ${toDelete.name ?? "Cette société"} » et sa configuration ne seront plus proposées. Une société utilisée par des données ne peut pas être supprimée.`
+            ? `« ${toDelete.name ?? "Cette société"} » et ses salariés seront supprimés. Ses baux seront détachés, sans être supprimés. Une société utilisée par des notes de frais ou des quittances ne peut pas être supprimée.`
             : ""
         }
         confirmLabel="Supprimer la société"

@@ -92,6 +92,19 @@ export function SettingsCompanySection({
           data-cy="input-societe-adresse"
         />
       </FieldGroup>
+      <FieldGroup
+        id="param-lieu"
+        label="Lieu d’émission"
+        error={errors.issuePlace?.message}
+      >
+        <input
+          id="param-lieu"
+          className={cn("field", errors.issuePlace && "field-error")}
+          placeholder="Paris"
+          {...register("issuePlace")}
+          data-cy="input-lieu-emission"
+        />
+      </FieldGroup>
     </SettingsCardSection>
   );
 }

@@ -1,0 +1,39 @@
+@reference "../../index.css";
+
+@layer components {
+  .settings-lease-section-body {
+    @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3;
+  }
+
+  .settings-lease-section-prorata {
+    @apply flex flex-col justify-center rounded-xl border border-accent/15 bg-accent-soft/45 px-4 py-3;
+  }
+
+  .settings-lease-section-prorata-label {
+    @apply text-[10.5px] font-bold uppercase tracking-[0.1em] text-accent;
+  }
+
+  .settings-lease-section-prorata-value {
+    @apply mt-1 font-display text-2xl text-accent-strong;
+  }
+
+  .settings-lease-section-prorata-note {
+    @apply text-[10.5px] text-ink-soft;
+  }
+
+  .settings-lease-section-details {
+    @apply grid gap-1 rounded-xl border border-line bg-paper/40 px-4 py-3;
+  }
+
+  .settings-lease-section-details-address {
+    @apply text-sm font-semibold text-ink;
+  }
+
+  .settings-lease-section-details-meta {
+    @apply text-xs text-ink-soft;
+  }
+
+  .settings-lease-section-empty {
+    @apply text-xs text-ink-soft;
+  }
+}

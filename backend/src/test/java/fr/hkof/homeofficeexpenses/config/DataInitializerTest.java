@@ -120,6 +120,11 @@ class DataInitializerTest {
         ArgumentCaptor<Lease> leases = ArgumentCaptor.forClass(Lease.class);
         verify(leaseRepository).save(leases.capture());
         assertThat(leases.getValue().getCompanyId()).isEqualTo(1L);
+        assertThat(leases.getValue().isCompanyLease()).isTrue();
+        assertThat(leases.getValue().getTotalArea()).isEqualByComparingTo("70.00");
+        assertThat(leases.getValue().getBusinessArea()).isEqualByComparingTo("25.00");
+        assertThat(companies.getValue().getHomeAddress()).isNull();
+        assertThat(companies.getValue().getTotalArea()).isNull();
         verify(expenseItemRepository, times(6)).save(any());
         verify(llmConfigRepository).save(any());
 

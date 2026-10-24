@@ -13,6 +13,22 @@
     @apply mt-3 grid gap-3 sm:grid-cols-2;
   }
 
+  .lease-form-company-lease {
+    @apply flex items-start gap-2 rounded-xl border border-line bg-paper/45 px-3 py-2.5 sm:col-span-2;
+  }
+
+  .lease-form-company-lease-input {
+    @apply mt-0.5 h-4 w-4 shrink-0 rounded border-line text-accent accent-accent;
+  }
+
+  .lease-form-company-lease-title {
+    @apply block text-sm font-semibold text-ink;
+  }
+
+  .lease-form-company-lease-hint {
+    @apply block text-[10.5px] text-ink-soft;
+  }
+
   .lease-form-total {
     @apply flex flex-col justify-center rounded-xl border border-line bg-paper/45 px-4 py-3 sm:col-span-2;
   }
