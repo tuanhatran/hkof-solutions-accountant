@@ -4,33 +4,49 @@ import { Check, X } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
-import { queryKeys, useLandlords } from "@/api/queries";
+import { queryKeys, useEmployees, useLandlords } from "@/api/queries";
 import type { SignatureType } from "@/api/types";
 import { FileDropzone } from "@/components/forms/FileDropzone";
 import { Button } from "@/components/ui/Button";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { formatBytes } from "@/lib/format";
+import { employeeTitleLabel } from "@/pages/settings/settingsValues";
 import { toast } from "@/state/toasts";
 import {
   MAX_SIGNATURE_SIZE,
   SIGNATURE_FORMATS,
-  SIGNATURE_TYPES,
+  SIGNATURE_UPLOAD_TYPES,
   signatureImageError,
 } from "./signatureConstants";
 
-/** Upload form creating a signature image. */
-export function SignatureForm({ onClose }: { onClose: () => void }) {
+/** Upload form creating a landlord or employee signature image. */
+export function SignatureForm({
+  companyId,
+  onClose,
+}: {
+  companyId: number | null;
+  onClose: () => void;
+}) {
   const queryClient = useQueryClient();
   const landlords = useLandlords();
+  const employees = useEmployees(companyId);
   const [type, setType] = useState<SignatureType>("LANDLORD");
   const [name, setName] = useState("");
   const [landlordId, setLandlordId] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
-  const [landlordError, setLandlordError] = useState<string | null>(null);
+  const [ownerError, setOwnerError] = useState<string | null>(null);
   const [fileErrorText, setFileErrorText] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const landlordRows = landlords.data ?? [];
+  const employeeRows = employees.data ?? [];
+  const availableTypes =
+    companyId !== null && employeeRows.length > 0
+      ? SIGNATURE_UPLOAD_TYPES
+      : SIGNATURE_UPLOAD_TYPES.filter(
+          (candidate) => candidate.value === "LANDLORD",
+        );
 
   const previewUrl = useMemo(
     () => (file ? URL.createObjectURL(file) : null),
@@ -51,22 +67,27 @@ export function SignatureForm({ onClose }: { onClose: () => void }) {
       name: string;
       file: File;
       landlordId: number | null;
+      employeeId: number | null;
     }) =>
       api.signatures.create(
         input.type,
         input.name,
         input.file,
         input.landlordId,
+        input.employeeId,
       ),
     onSuccess: (created) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.signatures });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.signaturesAll,
+      });
       toast.success(`Signature « ${created.name ?? name} » ajoutée.`);
       setType("LANDLORD");
       setName("");
       setLandlordId("");
+      setEmployeeId("");
       setFile(null);
       setNameError(null);
-      setLandlordError(null);
+      setOwnerError(null);
       setFileErrorText(null);
       setRequestError(null);
       onClose();
@@ -100,15 +121,20 @@ export function SignatureForm({ onClose }: { onClose: () => void }) {
     }
     setFileErrorText(null);
     if (type === "LANDLORD" && !landlordId) {
-      setLandlordError("Le bailleur de la signature est obligatoire.");
+      setOwnerError("Le bailleur de la signature est obligatoire.");
       return;
     }
-    setLandlordError(null);
+    if (type === "EMPLOYEE" && !employeeId) {
+      setOwnerError("Le salarié de la signature est obligatoire.");
+      return;
+    }
+    setOwnerError(null);
     create.mutate({
       type,
       name: trimmedName,
       file,
       landlordId: type === "LANDLORD" ? Number(landlordId) : null,
+      employeeId: type === "EMPLOYEE" ? Number(employeeId) : null,
     });
   }
 
@@ -125,14 +151,14 @@ export function SignatureForm({ onClose }: { onClose: () => void }) {
         <FieldGroup
           id="signature-type"
           label="Type de signature"
-          help="Le bailleur signe les quittances, le gérant les notes de frais."
+          help="Le bailleur signe les quittances, le salarié signe les notes de frais."
         >
           <select
             id="signature-type"
             className="field"
             value={type}
             onChange={(event) => {
-              const next = SIGNATURE_TYPES.find(
+              const next = availableTypes.find(
                 (candidate) => candidate.value === event.target.value,
               );
               if (next) {
@@ -141,7 +167,7 @@ export function SignatureForm({ onClose }: { onClose: () => void }) {
             }}
             data-cy="select-type-signature"
           >
-            {SIGNATURE_TYPES.map((candidate) => (
+            {availableTypes.map((candidate) => (
               <option key={candidate.value} value={candidate.value}>
                 {candidate.label}
               </option>
@@ -171,12 +197,12 @@ export function SignatureForm({ onClose }: { onClose: () => void }) {
           <FieldGroup
             id="signature-bailleur"
             label="Bailleur de la signature"
-            error={landlordError ?? undefined}
+            error={ownerError ?? undefined}
             help="La signature n’est proposée que pour les quittances de ce bailleur."
           >
             <select
               id="signature-bailleur"
-              className={landlordError ? "field field-error" : "field"}
+              className={ownerError ? "field field-error" : "field"}
               value={landlordId}
               onChange={(event) => setLandlordId(event.target.value)}
               disabled={landlords.isPending}
@@ -186,6 +212,34 @@ export function SignatureForm({ onClose }: { onClose: () => void }) {
               {landlordRows.map((landlord) => (
                 <option key={landlord.id} value={landlord.id}>
                   {landlord.name}
+                </option>
+              ))}
+            </select>
+          </FieldGroup>
+        </div>
+      ) : null}
+
+      {type === "EMPLOYEE" ? (
+        <div className="signature-form-landlord">
+          <FieldGroup
+            id="signature-salarie"
+            label="Salarié de la signature"
+            error={ownerError ?? undefined}
+            help="La signature n’est proposée que pour les notes de frais de ce salarié."
+          >
+            <select
+              id="signature-salarie"
+              className={ownerError ? "field field-error" : "field"}
+              value={employeeId}
+              onChange={(event) => setEmployeeId(event.target.value)}
+              disabled={employees.isPending}
+              data-cy="select-salarie-signature"
+            >
+              <option value="">Sélectionnez un salarié</option>
+              {employeeRows.map((employee) => (
+                <option key={employee.id} value={employee.id}>
+                  {employee.firstName} {employee.lastName} —{" "}
+                  {employeeTitleLabel(employee.title)}
                 </option>
               ))}
             </select>

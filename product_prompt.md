@@ -122,6 +122,32 @@ Constraints: a single active version per month for each document type; regenerat
 
 API paths, query parameters and JSON field names are in English (code contracts, see `openapi/openapi.yaml`). Table, column and enum names follow the database schema. UI labels and texts stay in French (i18n later).
 
+## Multi-company, employees and deferred RBAC
+
+The application manages several companies. Each company owns its identity
+(name, legal form, SIREN, address, manager), its home-office data (home address,
+total area, business area, issue place), its expense items and its expense
+statements. A lease may optionally be linked to a company.
+
+Employees belong to one company and carry one title: `CEO`, `CFO`, `ACCOUNTANT`
+or `EMPLOYEE`. Signatures are attached to an employee; a landlord signature
+remains attached to a landlord. A company may keep several signatures per
+employee; a previous image is logically deleted, never overwritten.
+
+### Rights (target contract — RBAC deferred)
+
+| Title | Edit expense report | Export expense report | Company/employee settings |
+| --- | --- | --- | --- |
+| CEO | yes | yes | yes |
+| CFO | yes | yes | read |
+| ACCOUNTANT | yes | yes | read |
+| EMPLOYEE | no (read-only) | no | no |
+
+**Not implemented yet.** There is no authentication, session, user account or
+authorization check. The title is descriptive and every user of the local
+instance can edit and export. The matrix above is the contract for the future
+RBAC task; the UI must not present it as enforced.
+
 # API REST (prefix `/api`)
 
 **Settings and expense items**

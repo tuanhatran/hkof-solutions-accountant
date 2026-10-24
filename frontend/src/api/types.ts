@@ -2,8 +2,10 @@ import type { components } from "./schema";
 
 type Schemas = components["schemas"];
 
-export type SettingsDto = Schemas["SettingsDto"];
-export type SettingsRequest = Schemas["SettingsRequest"];
+export type CompanyDto = Schemas["CompanyDto"];
+export type CompanyRequest = Schemas["CompanyRequest"];
+export type EmployeeDto = Schemas["EmployeeDto"];
+export type EmployeeRequest = Schemas["EmployeeRequest"];
 export type LandlordDto = Schemas["LandlordDto"];
 export type LandlordRequest = Schemas["LandlordRequest"];
 export type TenantDto = Schemas["TenantDto"];
@@ -38,7 +40,7 @@ export type TemplateVariableDto = Schemas["TemplateVariableDto"];
 export type ValidationReportDto = Schemas["ValidationReportDto"];
 
 export type TemplateType = "RENT_RECEIPT" | "EXPENSE_STATEMENT";
-export type SignatureType = "LANDLORD" | "ENTREPRISE_CEO";
+export type SignatureType = "LANDLORD" | "ENTREPRISE_CEO" | "EMPLOYEE";
 export type AnalysisStatus =
   "PENDING" | "RUNNING" | "DONE" | "FAILED" | "CANCELLED";
 export type AiConfidence = "haute" | "moyenne" | "basse";

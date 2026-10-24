@@ -29,6 +29,10 @@ public class Lease {
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
+    /** Optional company: when set, the rent receipt uses that company's identity and data. */
+    @Column(name = "company_id")
+    private Long companyId;
+
     @Column(name = "property_address", nullable = false)
     private String propertyAddress;
 
@@ -66,6 +70,14 @@ public class Lease {
 
     public void setTenant(Tenant tenant) {
         this.tenant = tenant;
+    }
+
+    public Long getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(Long companyId) {
+        this.companyId = companyId;
     }
 
     public String getPropertyAddress() {

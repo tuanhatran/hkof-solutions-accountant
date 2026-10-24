@@ -8,12 +8,15 @@ import {
   ShieldCheck,
   SlidersHorizontal,
 } from "lucide-react";
+import { useEffect, useId } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import { useCompanies } from "@/api/queries";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { LlmBadge } from "@/components/llm/LlmBadge";
 import { ToastHost } from "@/components/ui/ToastHost";
 import { useDraftBlock } from "@/hooks/useDraftBlock";
 import { cn } from "@/lib/cn";
+import { resolveActiveCompanyId, useCompanyStore } from "@/state/company";
 
 const SECTIONS = [
   {
@@ -101,6 +104,70 @@ function Brand({ compact = false }: { compact?: boolean }) {
   );
 }
 
+function CompanySwitcher() {
+  const selectId = useId();
+  const companies = useCompanies();
+  const activeCompanyId = useCompanyStore((state) => state.activeCompanyId);
+  const setActiveCompany = useCompanyStore((state) => state.setActiveCompany);
+
+  useEffect(() => {
+    if (!companies.isSuccess) {
+      return;
+    }
+    const resolved = resolveActiveCompanyId(activeCompanyId, companies.data);
+    if (resolved !== activeCompanyId) {
+      setActiveCompany(resolved);
+    }
+  }, [companies.isSuccess, companies.data, activeCompanyId, setActiveCompany]);
+
+  if (companies.isPending) {
+    return <p className="app-shell-company-empty">Chargement des sociétés…</p>;
+  }
+  if (companies.isError) {
+    return (
+      <p role="alert" className="app-shell-company-empty">
+        Impossible de charger les sociétés.
+      </p>
+    );
+  }
+  const list = companies.data ?? [];
+  if (list.length === 0) {
+    return (
+      <p className="app-shell-company-empty">
+        Aucune société configurée. Ajoutez-en une dans Configuration.
+      </p>
+    );
+  }
+
+  return (
+    <div className="app-shell-company">
+      <label htmlFor={selectId} className="app-shell-company-label">
+        Société active
+      </label>
+      <select
+        id={selectId}
+        className="app-shell-company-select"
+        value={activeCompanyId === null ? "" : String(activeCompanyId)}
+        onChange={(event) =>
+          setActiveCompany(
+            event.target.value === "" ? null : Number(event.target.value),
+          )
+        }
+        data-cy="select-societe-active"
+      >
+        {activeCompanyId === null ? (
+          <option value="">Sélectionnez une société</option>
+        ) : null}
+        {list.map((company) => (
+          <option key={String(company.id)} value={String(company.id)}>
+            {company.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function SideNavigation() {
   return (
     <nav className="app-shell-nav" aria-label="Navigation principale">
@@ -161,6 +228,7 @@ export function AppShell() {
       <aside className="app-shell-sidebar hidden lg:flex">
         <div className="px-2">
           <Brand />
+          <CompanySwitcher />
         </div>
         <SideNavigation />
         <div className="app-shell-info-card">
@@ -188,6 +256,9 @@ export function AppShell() {
           <div className="app-shell-mobile-top">
             <Brand compact />
             <LlmBadge dark />
+          </div>
+          <div className="app-shell-mobile-company">
+            <CompanySwitcher />
           </div>
           <nav
             className="app-shell-mobile-nav"

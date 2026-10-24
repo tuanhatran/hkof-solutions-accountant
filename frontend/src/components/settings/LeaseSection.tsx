@@ -67,6 +67,12 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
                   <p className="lease-section-item-address">
                     {lease.propertyAddress}
                   </p>
+                  <p
+                    className="lease-section-item-company"
+                    data-cy={`societe-bail-${lease.id}`}
+                  >
+                    Société : {lease.companyName ?? "Aucune société"}
+                  </p>
                   <p className="lease-section-item-amounts">
                     Loyer {formatEUR(lease.rentExclCharges ?? "0.00")} · charges{" "}
                     {formatEUR(lease.charges ?? "0.00")} · total{" "}

@@ -9,8 +9,9 @@ import {
   queryKeys,
   useActiveRentReceipt,
   useActiveStatement,
+  useCompanies,
+  useEmployees,
   useExpenseItems,
-  useSettings,
   useSignatures,
   useTemplates,
 } from "@/api/queries";
@@ -42,6 +43,7 @@ import {
   type DraftLine,
 } from "@/lib/lines";
 import { expenseSchema, type ExpenseFormValues } from "@/lib/validation";
+import { resolveActiveCompanyId, useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft, useStatementLines } from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
@@ -70,19 +72,42 @@ export function useExpenseStatementPage() {
   const [mobilePanel, setMobilePanel] = useState<"input" | "preview">("input");
 
   const month = draft.month;
-  const settings = useSettings();
-  const expenseItemsQuery = useExpenseItems(false);
+  const companies = useCompanies();
+  const storedCompanyId = useCompanyStore((state) => state.activeCompanyId);
+  const setActiveCompany = useCompanyStore((state) => state.setActiveCompany);
+  const activeCompanyId = useMemo(
+    () => resolveActiveCompanyId(storedCompanyId, companies.data),
+    [storedCompanyId, companies.data],
+  );
+  useEffect(() => {
+    if (activeCompanyId !== storedCompanyId) {
+      setActiveCompany(activeCompanyId);
+    }
+  }, [activeCompanyId, storedCompanyId, setActiveCompany]);
+  const activeCompany =
+    (companies.data ?? []).find((company) => company.id === activeCompanyId) ??
+    null;
+
+  // Every company-scoped request carries the active company; a null id disables them.
+  const expenseItemsQuery = useExpenseItems(activeCompanyId);
   const templates = useTemplates("EXPENSE_STATEMENT");
-  const rentReceipt = useActiveRentReceipt(month);
-  const activeStatement = useActiveStatement(month);
-  const signatures = useSignatures();
+  const rentReceipt = useActiveRentReceipt(month, activeCompanyId);
+  const activeStatement = useActiveStatement(activeCompanyId, month);
+  const signatures = useSignatures(activeCompanyId);
+  const employees = useEmployees(activeCompanyId);
 
   const signatureList = signatures.data ?? [];
   const [chosenSignatureId, setChosenSignatureId] = useState<number | null>(
     null,
   );
+  // The statement uses the company CEO's signature, mirroring the backend default.
+  const ceoId =
+    (employees.data ?? []).find((employee) => employee.title === "CEO")?.id ??
+    null;
   const defaultSignature =
-    signatureList.find((candidate) => candidate.type === "ENTREPRISE_CEO") ??
+    signatureList.find(
+      (candidate) => ceoId !== null && candidate.employeeId === ceoId,
+    ) ??
     signatureList[0] ??
     null;
   const selectedSignatureId = chosenSignatureId ?? defaultSignature?.id ?? null;
@@ -106,12 +131,23 @@ export function useExpenseStatementPage() {
     [expenseItems],
   );
 
+  // A company switch must not send the previous company's lines. Draft lines whose
+  // item exists in the active company only are part of this statement; the others
+  // stay stored and reappear when their company becomes active again.
+  const companyLines = useMemo(
+    () =>
+      expenseItemsQuery.data
+        ? lines.filter((line) => expenseItemByCode.has(line.itemCode))
+        : lines,
+    [lines, expenseItemByCode, expenseItemsQuery.data],
+  );
+
   // The backend returns calculation lines in the configured order; the table and
   // the submitted requests must use that same order so `calculation.lines[index]`
   // keeps matching its row. The draft itself is never reordered.
   const orderedLines = useMemo(
-    () => orderLinesByExpenseItem(lines, expenseItems),
-    [lines, expenseItems],
+    () => orderLinesByExpenseItem(companyLines, expenseItems),
+    [companyLines, expenseItems],
   );
 
   const models = templates.data ?? [];
@@ -162,6 +198,23 @@ export function useExpenseStatementPage() {
   const originalReceipt = useRef<AttachedFile | null>(null);
   const typeRef = useRef<HTMLSelectElement>(null);
   const formCardRef = useRef<HTMLFormElement>(null);
+  const previousCompanyId = useRef<number | null>(null);
+
+  // The form and its attachment belong to one company: drop them on a switch. The
+  // persisted draft lines stay, filtered by the active company's items above.
+  useEffect(() => {
+    const previous = previousCompanyId.current;
+    previousCompanyId.current = activeCompanyId;
+    if (previous === null || previous === activeCompanyId) {
+      return;
+    }
+    uploadSequence.current += 1;
+    void cancel(true);
+    resetForm();
+    setResult(null);
+    // Runs only on an actual company change, not on the initial resolution.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCompanyId]);
 
   function releaseIfNotAttached(file: AttachedFile) {
     const isOriginal = originalReceipt.current?.id === file.id;
@@ -276,7 +329,9 @@ export function useExpenseStatementPage() {
     }
 
     const current = getValues();
-    const currentLines = useStatementDraft.getState().linesByMonth[month] ?? [];
+    const currentLines = (
+      useStatementDraft.getState().linesByMonth[month] ?? []
+    ).filter((line) => expenseItemByCode.has(line.itemCode));
     let appliedType = false;
     let appliedAmount = false;
 
@@ -455,7 +510,7 @@ export function useExpenseStatementPage() {
       });
       return;
     }
-    const others = lines.filter((line) => line.key !== lineBeingEdited);
+    const others = companyLines.filter((line) => line.key !== lineBeingEdited);
     if (
       !expenseItem.multipleLinesAllowed &&
       typeAlreadyAdded(others, expenseItem.code)
@@ -549,8 +604,8 @@ export function useExpenseStatementPage() {
   }, [orderedLines]);
 
   const calculationSignature = useMemo(
-    () => JSON.stringify({ month, lines: requests.values }),
-    [month, requests],
+    () => JSON.stringify({ activeCompanyId, month, lines: requests.values }),
+    [activeCompanyId, month, requests],
   );
 
   const [calculation, setCalculation] = useState<CalculationResponse | null>(
@@ -564,6 +619,10 @@ export function useExpenseStatementPage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    if (activeCompanyId === null) {
+      setCalculationInProgress(false);
+      return () => controller.abort();
+    }
     if (requests.error) {
       setCalculationError(requests.error);
       setCalculationInProgress(false);
@@ -578,7 +637,7 @@ export function useExpenseStatementPage() {
     const timer = window.setTimeout(async () => {
       try {
         const reply = await api.expenseStatements.calculate(
-          { month, lines: validRequests },
+          { companyId: activeCompanyId, month, lines: validRequests },
           controller.signal,
         );
         if (controller.signal.aborted) {
@@ -600,7 +659,7 @@ export function useExpenseStatementPage() {
       controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [calculationSignature, month, requests.error]);
+  }, [activeCompanyId, calculationSignature, month, requests.error]);
 
   const calculationUpToDate =
     calculatedSignature === calculationSignature &&
@@ -608,10 +667,15 @@ export function useExpenseStatementPage() {
     calculationError === null;
 
   const previewRequest = useMemo<StatementPreviewRequest | null>(() => {
-    if (!requests.values || orderedLines.length === 0) {
+    if (
+      activeCompanyId === null ||
+      !requests.values ||
+      orderedLines.length === 0
+    ) {
       return null;
     }
     const requestBody: StatementPreviewRequest = {
+      companyId: activeCompanyId,
       month,
       complete,
       lines: requests.values,
@@ -624,6 +688,7 @@ export function useExpenseStatementPage() {
     }
     return requestBody;
   }, [
+    activeCompanyId,
     month,
     complete,
     selectedTemplate,
@@ -648,6 +713,7 @@ export function useExpenseStatementPage() {
 
   async function generateStatement() {
     if (
+      activeCompanyId === null ||
       !requests.values ||
       orderedLines.length === 0 ||
       !calculationUpToDate ||
@@ -658,6 +724,7 @@ export function useExpenseStatementPage() {
     setGenerationInProgress(true);
     try {
       const requestBody: StatementGenerationRequest = {
+        companyId: activeCompanyId,
         month,
         lines: requests.values,
       };
@@ -717,7 +784,7 @@ export function useExpenseStatementPage() {
     values.amountInclVat,
     values.proRataPct,
   );
-  const omittedTypes = missingTypes(expenseItems, lines);
+  const omittedTypes = missingTypes(expenseItems, companyLines);
   const lowConfidenceError = ai.confidence === "basse" && ai.amount;
 
   function optionDisabled(expenseItem: ExpenseItemDto): boolean {
@@ -726,12 +793,12 @@ export function useExpenseStatementPage() {
     }
     if (
       lineBeingEdited &&
-      lines.find((line) => line.key === lineBeingEdited)?.itemCode ===
+      companyLines.find((line) => line.key === lineBeingEdited)?.itemCode ===
         expenseItem.code
     ) {
       return false;
     }
-    return typeAlreadyAdded(lines, expenseItem.code);
+    return typeAlreadyAdded(companyLines, expenseItem.code);
   }
 
   const displayedTotal = calculation?.total;
@@ -760,7 +827,9 @@ export function useExpenseStatementPage() {
     mobile,
     mobilePanel,
     setMobilePanel,
-    settings,
+    companies,
+    activeCompany,
+    activeCompanyId,
     expenseItemsQuery,
     templates,
     rentReceipt,

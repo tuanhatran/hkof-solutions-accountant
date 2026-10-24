@@ -37,14 +37,14 @@ class SignatureControllerIntegrationTest {
 
     @BeforeEach
     void ensureSignatures() throws Exception {
-        ensureSignature("LANDLORD", "Signature bailleur", firstId("/api/landlords"));
-        ensureSignature("ENTREPRISE_CEO", "Signature gérant", null);
+        ensureSignature("LANDLORD", "Signature bailleur", firstId("/api/landlords"), null);
+        ensureSignature("ENTREPRISE_CEO", "Signature gérant", null, ceoEmployeeId());
     }
 
     @Test
     @DisplayName("Creates, lists, serves the image and logically deletes a signature")
     void crudSignature() throws Exception {
-        long landlordId = firstId("/api/landlords");
+        long landlordId = seededLandlordId();
         String created = mockMvc.perform(multipart("/api/signatures")
                         .file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
                         .param("type", "LANDLORD")
@@ -80,8 +80,19 @@ class SignatureControllerIntegrationTest {
     }
 
     @Test
+    @DisplayName("Lists the global landlord signatures with the company employee signatures")
+    void listsLandlordSignaturesForCompany() throws Exception {
+        long companyId = firstId("/api/companies");
+        mockMvc.perform(get("/api/signatures").param("companyId", String.valueOf(companyId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.type == 'LANDLORD')]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.type == 'ENTREPRISE_CEO')]").isNotEmpty());
+    }
+
+    @Test
     @DisplayName("Requires a landlord for a LANDLORD signature and forbids one for the CEO")
     void enforcesSignatureLandlord() throws Exception {
+        long landlordId = seededLandlordId();
         mockMvc.perform(multipart("/api/signatures")
                         .file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
                         .param("type", "LANDLORD")
@@ -100,7 +111,7 @@ class SignatureControllerIntegrationTest {
         mockMvc.perform(multipart("/api/signatures")
                         .file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
                         .param("type", "ENTREPRISE_CEO")
-                        .param("landlordId", String.valueOf(firstId("/api/landlords")))
+                        .param("landlordId", String.valueOf(landlordId))
                         .param("name", "Gérant lié"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value(
@@ -134,8 +145,10 @@ class SignatureControllerIntegrationTest {
 
         mockMvc.perform(post("/api/rent-receipts")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"month\":\"2030-01\",\"landlordId\":%d,\"tenantId\":%d}"
-                                .formatted(firstId("/api/landlords"), firstId("/api/tenants"))))
+                        .content("""
+                                {"month":"2030-01","companyId":%d,"landlordId":%d,"tenantId":%d}
+                                """.formatted(firstId("/api/companies"), firstId("/api/landlords"),
+                                        firstId("/api/tenants"))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value(
                         "Aucune signature configurée. Configurez une signature dans la page Paramètres."));
@@ -143,10 +156,10 @@ class SignatureControllerIntegrationTest {
         mockMvc.perform(post("/api/expense-statements")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"month":"2030-02","lines":[
+                                {"companyId":%d,"month":"2030-02","lines":[
                                   {"itemCode":"gaz","amountInclVat":"80.00","proRataPct":"35,71"}
                                 ]}
-                                """))
+                                """.formatted(firstId("/api/companies"))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value(
                         "Aucune signature configurée. Configurez une signature dans la page Paramètres."));
@@ -160,6 +173,14 @@ class SignatureControllerIntegrationTest {
         return id.longValue();
     }
 
+    private long seededLandlordId() throws Exception {
+        String list = mockMvc.perform(get("/api/landlords"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<Number> ids = JsonPath.read(list, "$[?(@.name == 'Nom du bailleur')].id");
+        return ids.get(0).longValue();
+    }
+
     private List<Long> signatureIds() throws Exception {
         String list = mockMvc.perform(get("/api/signatures"))
                 .andExpect(status().isOk())
@@ -168,7 +189,7 @@ class SignatureControllerIntegrationTest {
         return ids.stream().map(Number::longValue).toList();
     }
 
-    private void ensureSignature(String type, String name, Long landlordId) throws Exception {
+    private void ensureSignature(String type, String name, Long landlordId, Long employeeId) throws Exception {
         String list = mockMvc.perform(get("/api/signatures"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -181,7 +202,19 @@ class SignatureControllerIntegrationTest {
             if (landlordId != null) {
                 request.param("landlordId", String.valueOf(landlordId));
             }
+            if (employeeId != null) {
+                request.param("employeeId", String.valueOf(employeeId));
+            }
             mockMvc.perform(request).andExpect(status().isCreated());
         }
+    }
+
+    private long ceoEmployeeId() throws Exception {
+        long companyId = firstId("/api/companies");
+        String body = mockMvc.perform(get("/api/companies/{companyId}/employees", companyId))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        Number id = JsonPath.read(body, "$[0].id");
+        return id.longValue();
     }
 }

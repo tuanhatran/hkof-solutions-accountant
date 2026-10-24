@@ -10,6 +10,7 @@ public final class RentReceiptDtos {
 
     public record RentReceiptRequest(
             String month,
+            Long companyId,
             Long landlordId,
             Long tenantId,
             String periodStart,
@@ -24,6 +25,8 @@ public final class RentReceiptDtos {
 
     public record RentReceiptDto(
             Long id,
+            Long companyId,
+            String companyName,
             String month,
             Long landlordId,
             Long tenantId,

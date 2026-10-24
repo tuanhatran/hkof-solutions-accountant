@@ -1,0 +1,55 @@
+@reference "../../index.css";
+
+@layer components {
+  .employee-section {
+    @apply overflow-hidden;
+  }
+
+  .employee-section-body {
+    @apply space-y-4;
+  }
+
+  .employee-section-list {
+    @apply space-y-3;
+  }
+
+  .employee-section-item {
+    @apply flex flex-wrap items-start gap-3 rounded-xl border border-line bg-paper/40 p-3;
+  }
+
+  .employee-section-item-body {
+    @apply min-w-0 flex-1;
+  }
+
+  .employee-section-item-title {
+    @apply text-sm font-semibold text-ink;
+  }
+
+  .employee-section-item-meta {
+    @apply mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-soft;
+  }
+
+  .employee-section-item-email {
+    @apply break-all;
+  }
+
+  .employee-form {
+    @apply space-y-4 rounded-xl border border-line bg-paper/40 p-4;
+  }
+
+  .employee-form-title {
+    @apply text-sm font-semibold text-ink;
+  }
+
+  .employee-form-grid {
+    @apply grid gap-3 sm:grid-cols-2;
+  }
+
+  .employee-form-error {
+    @apply rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-sm text-danger;
+  }
+
+  .employee-form-actions {
+    @apply flex justify-end gap-2;
+  }
+}

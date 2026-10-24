@@ -91,8 +91,13 @@ Never rewrite evidence lines written by another agent; append only.
 Coverage gate: every task keeps JaCoCo bundle coverage >= 90% LINE and >= 90% BRANCH
 (`cd backend && ./mvnw -B verify`) and Vitest global coverage >= 90% lines, statements,
 functions and branches (`cd frontend && npm run test:coverage`), and requires one evidence
-line with the real numbers. Every production class stays under 300 lines: a class crossing
-300 lines is split, never shrunk by deleting comments only.
+line with the real numbers. Every production class stays under 300 lines and every component
+CSS under 300 lines: split by responsibility, never shrunk by deleting comments only.
+
+Clean code: thin controllers, pure `CalculationService`, no duplicated calculation; the
+frontend CSS follows the colocated, prefixed, `@reference`/`@layer components` and
+token-only rules of `30-frontend.md`; `npm run lint` and `npm run format:check` are part of
+the frontend gate.
 
 ## Loop control
 

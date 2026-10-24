@@ -5,12 +5,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { downloadBlob } from "@/api/client";
 import { api } from "@/api/endpoints";
 import type {
+  CompanyDto,
   LandlordDto,
   LeaseDto,
   SignatureDto,
   TenantDto,
 } from "@/api/types";
 import { formatEUR } from "@/lib/format";
+import { useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft } from "@/state/statementDraft";
 import { useToasts } from "@/state/toasts";
@@ -29,6 +31,7 @@ let tenantsState: QueryLike<TenantDto[]>;
 let leasesState: QueryLike<LeaseDto[]>;
 let templatesState: QueryLike<{ id: number; active?: boolean }[]>;
 let signaturesState: QueryLike<SignatureDto[]>;
+let companiesState: QueryLike<CompanyDto[]>;
 let activeReceiptState: QueryLike<{ id: number; total: string } | null>;
 let mediaMobile = false;
 let lastPreviewLoader: ((signal: AbortSignal) => Promise<unknown>) | null =
@@ -65,6 +68,7 @@ vi.mock("@/api/queries", async (importOriginal) => {
     useLeases: () => leasesState,
     useTemplates: () => templatesState,
     useSignatures: () => signaturesState,
+    useCompanies: () => companiesState,
     useActiveRentReceipt: () => activeReceiptState,
   };
 });
@@ -164,7 +168,9 @@ beforeEach(() => {
     { id: 9, type: "LANDLORD", name: "Ancienne signature", landlordId: null },
     { id: 4, type: "ENTREPRISE_CEO", name: "Gérant" },
   ]);
+  companiesState = readyQuery([{ id: 3, name: "HKOF" }]);
   activeReceiptState = readyQuery(null);
+  useCompanyStore.setState({ activeCompanyId: 3 });
   mediaMobile = false;
   lastPreviewLoader = null;
   lastPreviewOptions = null;
@@ -414,6 +420,7 @@ describe("useRentReceiptPage preview and generation", () => {
     expect(api.rentReceipts.preview).toHaveBeenCalledWith(
       {
         month: MONTH,
+        companyId: 3,
         landlordId: 1,
         tenantId: 2,
         periodStart: "2026-01-01",
@@ -465,6 +472,7 @@ describe("useRentReceiptPage preview and generation", () => {
       expect(api.rentReceipts.create).toHaveBeenCalledWith(
         expect.objectContaining({
           month: MONTH,
+          companyId: 3,
           landlordId: 1,
           tenantId: 2,
           rentExclCharges: "1300.00",
@@ -482,6 +490,25 @@ describe("useRentReceiptPage preview and generation", () => {
     expect(useRentReceiptDraft.getState().dirty).toBe(false);
     expect(result.current.displayedTotal).toBe(formatEUR("1300.00"));
     expect(result.current.activeVersion).toBeUndefined();
+  });
+
+  it("uses the lease company over the active company and shows its name", async () => {
+    leasesState = readyQuery([
+      { ...LEASE, companyId: 9, companyName: "Bailleur SARL" },
+    ]);
+    const { result } = renderController();
+    act(() => result.current.selectPair("1", "2"));
+
+    expect(result.current.companyName).toBe("Bailleur SARL");
+    await act(async () => {
+      result.current.submit(result.current.values as never);
+    });
+
+    await waitFor(() =>
+      expect(api.rentReceipts.create).toHaveBeenCalledWith(
+        expect.objectContaining({ companyId: 9, landlordId: 1, tenantId: 2 }),
+      ),
+    );
   });
 
   it("surfaces a generation failure", async () => {

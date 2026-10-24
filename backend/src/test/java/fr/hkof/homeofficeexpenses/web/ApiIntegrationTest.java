@@ -50,11 +50,11 @@ class ApiIntegrationTest {
 
     @BeforeEach
     void ensureSignatures() throws Exception {
-        ensureSignature("LANDLORD", "Signature bailleur", seededId("/api/landlords"));
-        ensureSignature("ENTREPRISE_CEO", "Signature gérant", null);
+        ensureSignature("LANDLORD", "Signature bailleur", seededId("/api/landlords"), null);
+        ensureSignature("ENTREPRISE_CEO", "Signature gérant", null, ceoEmployeeId());
     }
 
-    private void ensureSignature(String type, String name, Long landlordId) throws Exception {
+    private void ensureSignature(String type, String name, Long landlordId, Long employeeId) throws Exception {
         String list = mockMvc.perform(get("/api/signatures"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -67,21 +67,30 @@ class ApiIntegrationTest {
             if (landlordId != null) {
                 request.param("landlordId", String.valueOf(landlordId));
             }
+            if (employeeId != null) {
+                request.param("employeeId", String.valueOf(employeeId));
+            }
             mockMvc.perform(request).andExpect(status().isCreated());
         }
+    }
+
+    private long ceoEmployeeId() throws Exception {
+        String body = mockMvc.perform(get("/api/companies/{companyId}/employees", seededId("/api/companies")))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return ((Number) JsonPath.read(body, "$[0].id")).longValue();
     }
 
     @Test
     @DisplayName("Covers the full flow: settings, rent receipt, expense statement, receipt, templates, LLM")
     void fullFlow() throws Exception {
-        mockMvc.perform(get("/api/settings"))
+        mockMvc.perform(get("/api/companies"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.proRataBase").value("35.71"))
-                .andExpect(jsonPath("$.rentExclCharges").doesNotExist())
-                .andExpect(jsonPath("$.landlordName").doesNotExist())
-                .andExpect(jsonPath("$.tenantName").doesNotExist());
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name").value("HKOF"))
+                .andExpect(jsonPath("$[0].proRataBase").value("35.71"));
 
-        mockMvc.perform(get("/api/expense-items"))
+        mockMvc.perform(get("/api/expense-items").param("companyId", String.valueOf(seededId("/api/companies"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(6));
 
@@ -155,13 +164,14 @@ class ApiIntegrationTest {
 
         String statementJson = """
                 {
+                  "companyId":%d,
                   "month":"2026-11",
                   "lines":[
                     {"itemCode":"loyer","amountInclVat":"950.00","proRataPct":"100"},
                     {"itemCode":"gaz","amountInclVat":"80.00","proRataPct":"35,71","receiptId":%d}
                   ]
                 }
-                """.formatted(receiptId);
+                """.formatted(seededId("/api/companies"), receiptId);
 
         mockMvc.perform(post("/api/expense-statements/calculation")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -176,11 +186,11 @@ class ApiIntegrationTest {
         mockMvc.perform(post("/api/expense-statements/preview")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"month":"2026-11","complete":true,"lines":[
+                                {"companyId":%d,"month":"2026-11","complete":true,"lines":[
                                   {"itemCode":"loyer","amountInclVat":"950.00","proRataPct":"100"},
                                   {"itemCode":"gaz","amountInclVat":"80.00","proRataPct":"35,71"}
                                 ]}
-                                """))
+                                """.formatted(seededId("/api/companies"))))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_PDF));
 
@@ -263,11 +273,11 @@ class ApiIntegrationTest {
             mockMvc.perform(post("/api/expense-statements/calculation")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
-                                    {"month":"%s","lines":[
+                                    {"companyId":%d,"month":"%s","lines":[
                                       {"itemCode":"gaz","amountInclVat":"80.00","proRataPct":"35,71",
                                        "periodStart":"2026-09-01","periodEnd":"2026-10-31"}
                                     ]}
-                                    """.formatted(month)))
+                                    """.formatted(seededId("/api/companies"), month)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.lines[0].monthlyAmount").value("80.00"))
                     .andExpect(jsonPath("$.lines[0].claimedAmount").value("28.57"))
@@ -282,13 +292,14 @@ class ApiIntegrationTest {
     void expenseLinesFollowConfiguredOrder() throws Exception {
         String statementJson = """
                 {
+                  "companyId":%d,
                   "month":"2027-03",
                   "lines":[
                     {"itemCode":"gaz","amountInclVat":"80.00","proRataPct":"35,71"},
                     {"itemCode":"loyer","amountInclVat":"950.00","proRataPct":"100"}
                   ]
                 }
-                """;
+                """.formatted(seededId("/api/companies"));
 
         mockMvc.perform(post("/api/expense-statements/calculation")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -332,13 +343,14 @@ class ApiIntegrationTest {
         // The same receipt is attached to two lines: it must appear once in the archive.
         String statementJson = """
                 {
+                  "companyId":%d,
                   "month":"2027-05",
                   "lines":[
                     {"itemCode":"gaz","amountInclVat":"80.00","proRataPct":"35,71","receiptId":%d},
                     {"itemCode":"electricite","amountInclVat":"50.00","proRataPct":"35,71","receiptId":%d}
                   ]
                 }
-                """.formatted(receiptId, receiptId);
+                """.formatted(seededId("/api/companies"), receiptId, receiptId);
         String statement = mockMvc.perform(post("/api/expense-statements")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(statementJson))
@@ -446,9 +458,9 @@ class ApiIntegrationTest {
         mockMvc.perform(post("/api/leases")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"landlordId":%d,"tenantId":%d,"propertyAddress":"8 rue du Test, 75003 Paris",
-                                 "rentExclCharges":"700.00"}
-                                """.formatted(secondLandlordId, secondTenantId)))
+                                {"companyId":%d,"landlordId":%d,"tenantId":%d,
+                                 "propertyAddress":"8 rue du Test, 75003 Paris","rentExclCharges":"700.00"}
+                                """.formatted(seededId("/api/companies"), secondLandlordId, secondTenantId)))
                 .andExpect(status().isCreated());
 
         String secondSignature = mockMvc.perform(multipart("/api/signatures")

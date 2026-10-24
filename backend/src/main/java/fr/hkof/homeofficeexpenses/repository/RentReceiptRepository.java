@@ -5,14 +5,21 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import fr.hkof.homeofficeexpenses.domain.RentReceipt;
 import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
+import fr.hkof.homeofficeexpenses.domain.RentReceipt;
 
 public interface RentReceiptRepository extends JpaRepository<RentReceipt, Long> {
 
     List<RentReceipt> findByMonthOrderByVersionDescIdDesc(String month);
 
+    List<RentReceipt> findByCompanyIdAndMonthOrderByVersionDescIdDesc(Long companyId, String month);
+
+    List<RentReceipt> findByCompanyIdOrderByMonthDescVersionDescIdDesc(Long companyId);
+
     List<RentReceipt> findAllByOrderByMonthDescVersionDescIdDesc();
+
+    Optional<RentReceipt> findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(Long companyId, String month,
+            DocumentStatus status);
 
     Optional<RentReceipt> findFirstByMonthAndStatusOrderByVersionDescIdDesc(String month, DocumentStatus status);
 
@@ -21,4 +28,6 @@ public interface RentReceiptRepository extends JpaRepository<RentReceipt, Long> 
 
     Optional<RentReceipt> findFirstByMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc(
             String month, Long landlordId, Long tenantId);
+
+    boolean existsByCompanyId(Long companyId);
 }

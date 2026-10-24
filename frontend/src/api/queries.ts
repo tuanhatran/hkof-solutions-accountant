@@ -3,20 +3,30 @@ import { api } from "./endpoints";
 import type { TemplateType } from "./types";
 
 export const queryKeys = {
-  settings: ["settings"] as const,
+  companiesAll: ["companies"] as const,
+  companies: ["companies"] as const,
+  company: (id: number) => ["companies", id] as const,
+  employeesAll: ["employees"] as const,
+  employees: (companyId: number) => ["employees", companyId] as const,
   landlords: ["landlords"] as const,
   tenants: ["tenants"] as const,
   leases: ["leases"] as const,
   expenseItemsAll: ["expenseItems"] as const,
-  expenseItems: (all: boolean) => ["expenseItems", all] as const,
+  expenseItemsForCompany: (companyId: number) =>
+    ["expenseItems", companyId] as const,
+  expenseItems: (companyId: number, all: boolean) =>
+    ["expenseItems", companyId, all] as const,
   templates: (type: TemplateType) => ["templates", type] as const,
   variables: (type: TemplateType) => ["templates", type, "variables"] as const,
   llmConfig: ["llm", "config"] as const,
-  signatures: ["signatures"] as const,
+  signaturesAll: ["signatures"] as const,
+  signatures: (companyId?: number | null, employeeId?: number | null) =>
+    ["signatures", companyId ?? "all", employeeId ?? "all"] as const,
   llmStatus: ["llm", "status"] as const,
   llmModels: ["llm", "models"] as const,
   rentReceiptActive: (
     month: string,
+    companyId?: number | null,
     landlordId?: number | null,
     tenantId?: number | null,
   ) =>
@@ -24,20 +34,33 @@ export const queryKeys = {
       "rentReceipts",
       "active",
       month,
+      companyId ?? null,
       landlordId ?? null,
       tenantId ?? null,
     ] as const,
-  statementActive: (month: string) => ["statements", "active", month] as const,
+  statementActive: (companyId: number | null, month: string) =>
+    ["statements", companyId ?? "all", "active", month] as const,
   rentReceiptsAll: ["rentReceipts"] as const,
   statementsAll: ["statements"] as const,
-  rentReceipts: (month?: string) => ["rentReceipts", month ?? "all"] as const,
-  statements: (month?: string) => ["statements", month ?? "all"] as const,
+  rentReceipts: (companyId?: number | null, month?: string) =>
+    ["rentReceipts", companyId ?? "all", month ?? "all"] as const,
+  statements: (companyId: number | null, month?: string) =>
+    ["statements", companyId ?? "all", month ?? "all"] as const,
 };
 
-export function useSettings() {
+export function useCompanies() {
   return useQuery({
-    queryKey: queryKeys.settings,
-    queryFn: () => api.settings.get(),
+    queryKey: queryKeys.companies,
+    queryFn: () => api.companies.list(),
+    staleTime: 30_000,
+  });
+}
+
+export function useEmployees(companyId: number | null) {
+  return useQuery({
+    queryKey: queryKeys.employees(companyId ?? 0),
+    queryFn: () => api.employees.list(companyId as number),
+    enabled: companyId !== null,
     staleTime: 30_000,
   });
 }
@@ -66,10 +89,11 @@ export function useLeases() {
   });
 }
 
-export function useExpenseItems(all = false) {
+export function useExpenseItems(companyId: number | null, all = false) {
   return useQuery({
-    queryKey: queryKeys.expenseItems(all),
-    queryFn: () => api.expenseItems.list(all),
+    queryKey: queryKeys.expenseItems(companyId ?? 0, all),
+    queryFn: () => api.expenseItems.list(companyId as number, all),
+    enabled: companyId !== null,
     staleTime: 30_000,
   });
 }
@@ -90,10 +114,13 @@ export function useTemplateVariables(type: TemplateType) {
   });
 }
 
-export function useSignatures() {
+export function useSignatures(
+  companyId: number | null = null,
+  employeeId: number | null = null,
+) {
   return useQuery({
-    queryKey: queryKeys.signatures,
-    queryFn: () => api.signatures.list(),
+    queryKey: queryKeys.signatures(companyId, employeeId),
+    queryFn: () => api.signatures.list(companyId, employeeId),
     staleTime: 30_000,
   });
 }
@@ -127,38 +154,47 @@ export function useLlmModels(url: string | null) {
 
 export function useActiveRentReceipt(
   month: string,
+  companyId: number | null = null,
   landlordId: number | null = null,
   tenantId: number | null = null,
 ) {
   return useQuery({
-    queryKey: queryKeys.rentReceiptActive(month, landlordId, tenantId),
-    queryFn: () => api.rentReceipts.active(month, landlordId, tenantId),
+    queryKey: queryKeys.rentReceiptActive(
+      month,
+      companyId,
+      landlordId,
+      tenantId,
+    ),
+    queryFn: () =>
+      api.rentReceipts.active(month, companyId, landlordId, tenantId),
     enabled: /^\d{4}-\d{2}$/.test(month),
     staleTime: 10_000,
   });
 }
 
-export function useActiveStatement(month: string) {
+export function useActiveStatement(companyId: number | null, month: string) {
   return useQuery({
-    queryKey: queryKeys.statementActive(month),
-    queryFn: () => api.expenseStatements.active(month),
-    enabled: /^\d{4}-\d{2}$/.test(month),
+    queryKey: queryKeys.statementActive(companyId, month),
+    queryFn: () => api.expenseStatements.active(companyId as number, month),
+    enabled: companyId !== null && /^\d{4}-\d{2}$/.test(month),
     staleTime: 10_000,
   });
 }
 
-export function useRentReceipts(month?: string) {
+export function useRentReceipts(companyId: number | null, month?: string) {
   return useQuery({
-    queryKey: queryKeys.rentReceipts(month),
-    queryFn: () => api.rentReceipts.list(month),
+    queryKey: queryKeys.rentReceipts(companyId, month),
+    queryFn: () => api.rentReceipts.list(companyId as number, month),
+    enabled: companyId !== null,
     staleTime: 10_000,
   });
 }
 
-export function useStatements(month?: string) {
+export function useStatements(companyId: number | null, month?: string) {
   return useQuery({
-    queryKey: queryKeys.statements(month),
-    queryFn: () => api.expenseStatements.list(month),
+    queryKey: queryKeys.statements(companyId, month),
+    queryFn: () => api.expenseStatements.list(companyId as number, month),
+    enabled: companyId !== null,
     staleTime: 10_000,
   });
 }

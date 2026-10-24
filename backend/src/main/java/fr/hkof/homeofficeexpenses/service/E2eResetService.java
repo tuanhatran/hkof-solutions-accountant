@@ -15,17 +15,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import fr.hkof.homeofficeexpenses.config.DataInitializer;
+import fr.hkof.homeofficeexpenses.domain.Company;
+import fr.hkof.homeofficeexpenses.domain.Employee;
+import fr.hkof.homeofficeexpenses.domain.EmployeeTitle;
 import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Signature;
 import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.repository.AnalysisDocumentRepository;
+import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
+import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
 import fr.hkof.homeofficeexpenses.repository.ReceiptRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseLineRepository;
 import fr.hkof.homeofficeexpenses.repository.LlmConfigRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseStatementRepository;
 import fr.hkof.homeofficeexpenses.repository.LandlordRepository;
 import fr.hkof.homeofficeexpenses.repository.LeaseRepository;
-import fr.hkof.homeofficeexpenses.repository.SettingsRepository;
 import fr.hkof.homeofficeexpenses.repository.SignatureRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
 import fr.hkof.homeofficeexpenses.repository.RentReceiptRepository;
@@ -50,7 +54,8 @@ public class E2eResetService {
     private final TemplateDocumentRepository templates;
     private final LlmConfigRepository llmConfigs;
     private final ExpenseItemRepository items;
-    private final SettingsRepository settings;
+    private final CompanyRepository companies;
+    private final EmployeeRepository employees;
     private final LeaseRepository leases;
     private final TenantRepository tenants;
     private final LandlordRepository landlords;
@@ -61,8 +66,9 @@ public class E2eResetService {
     public E2eResetService(AnalysisDocumentRepository analyses, ExpenseLineRepository lines,
             ExpenseStatementRepository statements, RentReceiptRepository rentReceipts, ReceiptRepository receipts,
             TemplateDocumentRepository templates, LlmConfigRepository llmConfigs, ExpenseItemRepository items,
-            SettingsRepository settings, LeaseRepository leases, TenantRepository tenants, LandlordRepository landlords,
-            SignatureRepository signatures, StorageService storage, DataInitializer initializer) {
+            CompanyRepository companies, EmployeeRepository employees, LeaseRepository leases,
+            TenantRepository tenants, LandlordRepository landlords, SignatureRepository signatures,
+            StorageService storage, DataInitializer initializer) {
         this.analyses = analyses;
         this.lines = lines;
         this.statements = statements;
@@ -71,7 +77,8 @@ public class E2eResetService {
         this.templates = templates;
         this.llmConfigs = llmConfigs;
         this.items = items;
-        this.settings = settings;
+        this.companies = companies;
+        this.employees = employees;
         this.leases = leases;
         this.tenants = tenants;
         this.landlords = landlords;
@@ -92,9 +99,10 @@ public class E2eResetService {
         llmConfigs.deleteAllInBatch();
         items.deleteAllInBatch();
         leases.deleteAllInBatch();
+        employees.deleteAllInBatch();
+        companies.deleteAllInBatch();
         tenants.deleteAllInBatch();
         landlords.deleteAllInBatch();
-        settings.deleteAllInBatch();
         cleanFiles();
         initializer.run(new DefaultApplicationArguments(new String[0]));
         seedSignatures();
@@ -105,16 +113,23 @@ public class E2eResetService {
         Long landlordId = landlords.findFirstByDeletedFalseOrderByNameAsc()
                 .map(Landlord::getId)
                 .orElse(null);
-        saveSignature(SignatureType.LANDLORD, landlordId, "Signature du bailleur (e2e)",
+        Company company = companies.findFirstByDeletedFalseOrderByIdAsc().orElse(null);
+        Long companyId = company == null ? null : company.getId();
+        Employee ceo = company == null ? null
+                : employees.findFirstByCompanyIdAndTitleAndDeletedFalseOrderByIdAsc(companyId, EmployeeTitle.CEO)
+                        .orElse(null);
+        saveSignature(SignatureType.LANDLORD, null, null, landlordId, "Signature du bailleur (e2e)",
                 "signature-bailleur-e2e.png", now);
-        saveSignature(SignatureType.ENTREPRISE_CEO, null, "Signature du gérant (e2e)",
-                "signature-gerant-e2e.png", now);
+        saveSignature(SignatureType.ENTREPRISE_CEO, companyId, ceo == null ? null : ceo.getId(), null,
+                "Signature du gérant (e2e)", "signature-gerant-e2e.png", now);
     }
 
-    private void saveSignature(SignatureType type, Long landlordId, String name, String fileName,
-            Instant createdAt) {
+    private void saveSignature(SignatureType type, Long companyId, Long employeeId, Long landlordId, String name,
+            String fileName, Instant createdAt) {
         Signature signature = new Signature();
         signature.setType(type);
+        signature.setCompanyId(companyId);
+        signature.setEmployeeId(employeeId);
         signature.setLandlordId(landlordId);
         signature.setName(name);
         signature.setMimeType("image/png");

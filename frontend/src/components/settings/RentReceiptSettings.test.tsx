@@ -193,6 +193,7 @@ describe("RentReceiptSettings", () => {
 
     await waitFor(() =>
       expect(api.leases.create).toHaveBeenCalledWith({
+        companyId: null,
         landlordId: 1,
         tenantId: 2,
         propertyAddress: "12 rue de la République, 75000 Paris",
@@ -350,6 +351,7 @@ describe("RentReceiptSettings", () => {
 
     await waitFor(() =>
       expect(api.leases.update).toHaveBeenCalledWith(10, {
+        companyId: null,
         landlordId: 1,
         tenantId: 2,
         propertyAddress: "12 rue de la République, 75000 Paris",

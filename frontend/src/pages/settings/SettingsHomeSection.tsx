@@ -4,7 +4,7 @@ import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
 import { formatPercentage } from "@/lib/format";
-import type { SettingsFormValues } from "@/lib/validation";
+import type { CompanyFormValues } from "@/lib/validation";
 import { SettingsCardSection } from "./SettingsCardSection";
 
 /** Home address, areas and the indicative professional pro rata. */
@@ -13,8 +13,8 @@ export function SettingsHomeSection({
   errors,
   displayedProRata,
 }: {
-  register: UseFormRegister<SettingsFormValues>;
-  errors: FieldErrors<SettingsFormValues>;
+  register: UseFormRegister<CompanyFormValues>;
+  errors: FieldErrors<CompanyFormValues>;
   displayedProRata: number | null;
 }) {
   return (

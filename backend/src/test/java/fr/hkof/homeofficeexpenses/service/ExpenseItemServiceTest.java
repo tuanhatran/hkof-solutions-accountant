@@ -23,18 +23,23 @@ import fr.hkof.homeofficeexpenses.web.dto.ExpenseItemDtos.ExpenseItemRequest;
 
 class ExpenseItemServiceTest {
 
+    private static final Long COMPANY_ID = 1L;
+
     private ExpenseItemRepository repository;
+    private CompanyService companies;
     private ExpenseItemService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(ExpenseItemRepository.class);
-        service = new ExpenseItemService(repository);
+        companies = mock(CompanyService.class);
+        service = new ExpenseItemService(repository, companies);
     }
 
     private ExpenseItem item(Long id, String code, String label, boolean deleted) {
         ExpenseItem item = new ExpenseItem();
         item.setId(id);
+        item.setCompanyId(COMPANY_ID);
         item.setCode(code);
         item.setLabel(label);
         item.setSupplier("EDF");
@@ -47,25 +52,26 @@ class ExpenseItemServiceTest {
     }
 
     private ExpenseItemRequest request(String code, String label, String periodicity) {
-        return new ExpenseItemRequest(code, label, "  EDF  ", "35,71", periodicity, null, null, null);
+        return new ExpenseItemRequest(COMPANY_ID, code, label, "  EDF  ", "35,71", periodicity, null, null, null);
     }
 
     @Test
     @DisplayName("Lists active items or every non deleted item")
     void lists() {
-        when(repository.findByDeletedFalseOrderBySortOrderAsc()).thenReturn(List.of(item(1L, "gaz", "Gaz", false)));
-        when(repository.findByDeletedFalseAndActiveTrueOrderBySortOrderAsc())
+        when(repository.findByCompanyIdAndDeletedFalseOrderBySortOrderAscIdAsc(COMPANY_ID))
+                .thenReturn(List.of(item(1L, "gaz", "Gaz", false)));
+        when(repository.findByCompanyIdAndDeletedFalseAndActiveTrueOrderBySortOrderAscIdAsc(COMPANY_ID))
                 .thenReturn(List.of(item(2L, "loyer", "Loyer", false)));
 
-        assertThat(service.list(true)).extracting(ExpenseItemDto::code).containsExactly("gaz");
-        assertThat(service.list(false)).extracting(ExpenseItemDto::code).containsExactly("loyer");
+        assertThat(service.list(COMPANY_ID, true)).extracting(ExpenseItemDto::code).containsExactly("gaz");
+        assertThat(service.list(COMPANY_ID, false)).extracting(ExpenseItemDto::code).containsExactly("loyer");
     }
 
     @Test
     @DisplayName("An unknown code is rejected in French")
     void entityNotFound() {
-        when(repository.findByCodeAndDeletedFalse("inconnu")).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> service.entity("inconnu"))
+        when(repository.findByCompanyIdAndCodeAndDeletedFalse(COMPANY_ID, "inconnu")).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.entity(COMPANY_ID, "inconnu"))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Type de frais inconnu : inconnu");
     }
@@ -73,8 +79,9 @@ class ExpenseItemServiceTest {
     @Test
     @DisplayName("An existing code is returned")
     void entityFound() {
-        when(repository.findByCodeAndDeletedFalse("gaz")).thenReturn(Optional.of(item(1L, "gaz", "Gaz", false)));
-        assertThat(service.entity("gaz").getLabel()).isEqualTo("Gaz");
+        when(repository.findByCompanyIdAndCodeAndDeletedFalse(COMPANY_ID, "gaz"))
+                .thenReturn(Optional.of(item(1L, "gaz", "Gaz", false)));
+        assertThat(service.entity(COMPANY_ID, "gaz").getLabel()).isEqualTo("Gaz");
     }
 
     @Test
@@ -91,7 +98,7 @@ class ExpenseItemServiceTest {
     @Test
     @DisplayName("A blank code is generated from the label and normalized")
     void createGeneratesCode() {
-        when(repository.existsByCode("assurance_habitation")).thenReturn(false);
+        when(repository.existsByCompanyIdAndCode(COMPANY_ID, "assurance_habitation")).thenReturn(false);
         when(repository.save(any(ExpenseItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ExpenseItemDto dto = service.create(request(null, "Assurance habitation", null));
@@ -106,7 +113,7 @@ class ExpenseItemServiceTest {
     @Test
     @DisplayName("A provided code is normalized and an existing code is rejected")
     void createNormalizesAndRejectsDuplicate() {
-        when(repository.existsByCode("electricite")).thenReturn(true);
+        when(repository.existsByCompanyIdAndCode(COMPANY_ID, "electricite")).thenReturn(true);
         assertThatThrownBy(() -> service.create(request("Électricité", "Électricité", "MONTHLY")))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Un poste avec le code « electricite » existe déjà.");
@@ -135,7 +142,7 @@ class ExpenseItemServiceTest {
         when(repository.save(any(ExpenseItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ExpenseItemDto dto = service.update(1L,
-                new ExpenseItemRequest(null, " Gaz ", " EDF ", "50", " annual ", false, 7, true));
+                new ExpenseItemRequest(COMPANY_ID, null, " Gaz ", " EDF ", "50", " annual ", false, 7, true));
 
         assertThat(dto.label()).isEqualTo("Gaz");
         assertThat(dto.supplier()).isEqualTo("EDF");

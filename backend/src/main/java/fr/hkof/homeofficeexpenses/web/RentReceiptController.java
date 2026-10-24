@@ -35,15 +35,17 @@ public class RentReceiptController {
     }
 
     @GetMapping
-    public List<RentReceiptDto> listRentReceipts(@RequestParam(required = false) String month) {
-        return service.list(month);
+    public List<RentReceiptDto> listRentReceipts(@RequestParam(required = false) Long companyId,
+            @RequestParam(required = false) String month) {
+        return service.list(companyId, month);
     }
 
     @GetMapping("/active")
     public ResponseEntity<RentReceiptDto> getActiveRentReceipt(@RequestParam String month,
+            @RequestParam(required = false) Long companyId,
             @RequestParam(required = false) Long landlordId,
             @RequestParam(required = false) Long tenantId) {
-        RentReceipt rentReceipt = service.activeForMonth(month, landlordId, tenantId);
+        RentReceipt rentReceipt = service.activeForMonth(companyId, month, landlordId, tenantId);
         return rentReceipt == null
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.ok(service.toDto(rentReceipt));

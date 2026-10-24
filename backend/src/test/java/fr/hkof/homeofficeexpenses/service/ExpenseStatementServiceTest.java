@@ -20,14 +20,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import fr.hkof.homeofficeexpenses.domain.AmountSource;
+import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
 import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
 import fr.hkof.homeofficeexpenses.domain.ExpenseLine;
 import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
 import fr.hkof.homeofficeexpenses.domain.Receipt;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
-import fr.hkof.homeofficeexpenses.domain.Settings;
-import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.repository.ExpenseStatementRepository;
 import fr.hkof.homeofficeexpenses.service.template.TemplateDataService;
@@ -43,8 +42,10 @@ import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.StatementPreviewRequest;
 
 class ExpenseStatementServiceTest {
 
+    private static final Long COMPANY_ID = 1L;
+
     private ExpenseStatementRepository repository;
-    private SettingsService settingsService;
+    private CompanyService companies;
     private ExpenseItemService expenseItemService;
     private RentReceiptService rentReceiptService;
     private TemplateDataService templateDataService;
@@ -56,20 +57,32 @@ class ExpenseStatementServiceTest {
     @BeforeEach
     void setUp() {
         repository = mock(ExpenseStatementRepository.class);
-        settingsService = mock(SettingsService.class);
+        companies = mock(CompanyService.class);
         expenseItemService = mock(ExpenseItemService.class);
         rentReceiptService = mock(RentReceiptService.class);
         templateDataService = mock(TemplateDataService.class);
         storage = mock(StorageService.class);
         lineCalculator = mock(ExpenseStatementLineCalculator.class);
         documents = mock(ExpenseStatementDocumentService.class);
-        service = new ExpenseStatementService(repository, settingsService, expenseItemService, rentReceiptService,
+        service = new ExpenseStatementService(repository, companies, expenseItemService, rentReceiptService,
                 templateDataService, storage, lineCalculator, documents);
+        when(companies.entity(COMPANY_ID)).thenReturn(company());
+        when(companies.find(COMPANY_ID)).thenReturn(Optional.of(company()));
+    }
+
+    private Company company() {
+        Company company = new Company();
+        company.setId(COMPANY_ID);
+        company.setName("HKOF");
+        company.setBusinessArea(new BigDecimal("25"));
+        company.setTotalArea(new BigDecimal("70"));
+        return company;
     }
 
     private ExpenseItem item(String code, String label, int sortOrder) {
         ExpenseItem item = new ExpenseItem();
         item.setId((long) sortOrder);
+        item.setCompanyId(COMPANY_ID);
         item.setCode(code);
         item.setLabel(label);
         item.setSupplier("Fournisseur");
@@ -82,11 +95,8 @@ class ExpenseStatementServiceTest {
                 new BigDecimal("50.00"), new BigDecimal("50.00"), null, AmountSource.MANUAL, null, null);
     }
 
-    private Settings settings() {
-        Settings settings = new Settings();
-        settings.setBusinessArea(new BigDecimal("25"));
-        settings.setTotalArea(new BigDecimal("70"));
-        return settings;
+    private ExpenseItemDto itemDto(Long id, String code, String label) {
+        return new ExpenseItemDto(id, COMPANY_ID, code, label, null, "100.00", "MONTHLY", true, 10, false);
     }
 
     private StatementDto statementDto(ExpenseStatement statement, ExpenseLine... lines) {
@@ -99,12 +109,12 @@ class ExpenseStatementServiceTest {
     @DisplayName("Calculation maps the lines, total, words and pro-rata detail")
     void calculate() {
         ExpenseItem gaz = item("gaz", "Gaz", 20);
-        when(lineCalculator.calculateLines(any())).thenReturn(List.of(calculatedLine(gaz)));
+        when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of(calculatedLine(gaz)));
         when(lineCalculator.toDto(any())).thenCallRealMethod();
-        when(settingsService.entity()).thenReturn(settings());
         when(templateDataService.proRataDetail(any())).thenReturn("Surface pro 25 m² / 70 m² = 35,71 %");
 
-        CalculationResponse response = service.calculate(new StatementCalculationRequest("2026-10", List.of()));
+        CalculationResponse response = service.calculate(
+                new StatementCalculationRequest(COMPANY_ID, "2026-10", List.of()));
 
         assertThat(response.total()).isEqualTo("50.00");
         assertThat(response.totalInWords()).isEqualTo("cinquante euros");
@@ -115,14 +125,12 @@ class ExpenseStatementServiceTest {
     @Test
     @DisplayName("A draft without rent receipt only lists missing items")
     void draftWithoutReceipt() {
-        when(settingsService.entity()).thenReturn(settings());
-        when(rentReceiptService.activeForMonth("2026-10", null, null)).thenReturn(null);
-        when(expenseItemService.list(false)).thenReturn(List.of(
-                new ExpenseItemDto(1L, "loyer", "Loyer", null, "100.00", "MONTHLY", true, 10, false),
-                new ExpenseItemDto(2L, "gaz", "Gaz", "EDF", "35.71", "MONTHLY", true, 20, false)));
+        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null)).thenReturn(null);
+        when(expenseItemService.list(COMPANY_ID, false)).thenReturn(List.of(
+                itemDto(1L, "loyer", "Loyer"), itemDto(2L, "gaz", "Gaz")));
         when(templateDataService.proRataDetail(any())).thenReturn("détail");
 
-        DraftDto draft = service.draft("2026-10");
+        DraftDto draft = service.draft(COMPANY_ID, "2026-10");
 
         assertThat(draft.rentReceipt()).isNull();
         assertThat(draft.lines()).isEmpty();
@@ -133,20 +141,19 @@ class ExpenseStatementServiceTest {
     @Test
     @DisplayName("A draft with a rent receipt prefills the rent line")
     void draftWithReceipt() {
-        when(settingsService.entity()).thenReturn(settings());
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setTotal(new BigDecimal("950.00"));
-        when(rentReceiptService.activeForMonth("2026-10", null, null)).thenReturn(rentReceipt);
-        RentReceiptDto receiptDto = new RentReceiptDto(9L, "2026-10", 1L, 2L, "Bailleur", "Locataire", null, null,
-                "900.00", "50.00", "950.00", null, null, 1, "ACTIVE", 1L, "Quittance", 1, null, true);
+        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null)).thenReturn(rentReceipt);
+        RentReceiptDto receiptDto = new RentReceiptDto(9L, COMPANY_ID, "HKOF", "2026-10", 1L, 2L,
+                "Bailleur", "Locataire", null, null, "900.00", "50.00", "950.00", null, null, 1, "ACTIVE",
+                1L, "Quittance", 1, null, true);
         when(rentReceiptService.toDto(rentReceipt)).thenReturn(receiptDto);
-        when(expenseItemService.entity("loyer"))
+        when(expenseItemService.entity(COMPANY_ID, "loyer"))
                 .thenReturn(item("loyer", "Quittance de loyer", 10));
-        when(expenseItemService.list(false)).thenReturn(List.of(
-                new ExpenseItemDto(1L, "loyer", "Loyer", null, "100.00", "MONTHLY", true, 10, false)));
+        when(expenseItemService.list(COMPANY_ID, false)).thenReturn(List.of(itemDto(1L, "loyer", "Loyer")));
         when(templateDataService.proRataDetail(any())).thenReturn("détail");
 
-        DraftDto draft = service.draft("2026-10");
+        DraftDto draft = service.draft(COMPANY_ID, "2026-10");
 
         assertThat(draft.rentReceipt()).isSameAs(receiptDto);
         assertThat(draft.lines()).hasSize(1);
@@ -158,11 +165,11 @@ class ExpenseStatementServiceTest {
     @Test
     @DisplayName("Preview delegates to the document collaborator")
     void preview() {
-        when(settingsService.entity()).thenReturn(settings());
-        when(lineCalculator.calculateLines(any())).thenReturn(List.of());
+        when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of());
         when(documents.preview(any(), any(), any(), any())).thenReturn(new byte[]{1});
 
-        byte[] pdf = service.preview(new StatementPreviewRequest("2026-10", null, false, List.of(), null));
+        byte[] pdf = service.preview(
+                new StatementPreviewRequest(COMPANY_ID, "2026-10", null, false, List.of(), null));
 
         assertThat(pdf).containsExactly(1);
         verify(documents).preview(eq(YearMonth.of(2026, 10)), any(), any(), any());
@@ -171,8 +178,9 @@ class ExpenseStatementServiceTest {
     @Test
     @DisplayName("Generation requires at least one line")
     void generateRequiresLines() {
-        when(lineCalculator.calculateLines(any())).thenReturn(List.of());
-        assertThatThrownBy(() -> service.generate(new StatementGenerationRequest("2026-10", null, List.of(), null)))
+        when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of());
+        assertThatThrownBy(() -> service.generate(
+                new StatementGenerationRequest(COMPANY_ID, "2026-10", null, List.of(), null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Ajoutez au moins un frais avant de générer la note.");
     }
@@ -181,9 +189,8 @@ class ExpenseStatementServiceTest {
     @DisplayName("Generation archives active statements and stores both PDFs")
     void generate() {
         ExpenseItem gaz = item("gaz", "Gaz", 20);
-        when(lineCalculator.calculateLines(any())).thenReturn(List.of(calculatedLine(gaz)));
-        when(settingsService.entity()).thenReturn(settings());
-        when(documents.signatureDataUri(null, SignatureType.ENTREPRISE_CEO)).thenReturn("signature");
+        when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of(calculatedLine(gaz)));
+        when(documents.signatureDataUri(null, COMPANY_ID)).thenReturn("signature");
         TemplateDocument template = new TemplateDocument();
         template.setId(4L);
         template.setName("Modèle");
@@ -195,11 +202,13 @@ class ExpenseStatementServiceTest {
         existing.setVersion(5);
         ExpenseStatement archivedAlready = new ExpenseStatement();
         archivedAlready.setStatus(DocumentStatus.ARCHIVED);
-        when(repository.findFirstByMonthOrderByVersionDesc("2026-10")).thenReturn(Optional.of(existing));
-        when(repository.findByMonthOrderByVersionDesc("2026-10"))
+        when(repository.findFirstByCompanyIdAndMonthOrderByVersionDesc(COMPANY_ID, "2026-10"))
+                .thenReturn(Optional.of(existing));
+        when(repository.findByCompanyIdAndMonthOrderByVersionDesc(COMPANY_ID, "2026-10"))
                 .thenReturn(List.of(existing, archivedAlready));
 
         ExpenseStatement generated = new ExpenseStatement();
+        generated.setCompanyId(COMPANY_ID);
         generated.setMonth("2026-10");
         generated.setStatus(DocumentStatus.ACTIVE);
         generated.setLines(List.of());
@@ -213,10 +222,11 @@ class ExpenseStatementServiceTest {
             return saved;
         });
 
-        StatementDto dto = service.generate(new StatementGenerationRequest("2026-10", null,
+        StatementDto dto = service.generate(new StatementGenerationRequest(COMPANY_ID, "2026-10", null,
                 List.of(new ExpenseLineRequest("gaz", "100", "50", null, null, null, null)), null));
 
         assertThat(dto.id()).isEqualTo(20L);
+        assertThat(dto.companyId()).isEqualTo(COMPANY_ID);
         assertThat(existing.getStatus()).isEqualTo(DocumentStatus.ARCHIVED);
         verify(repository).saveAll(List.of(existing, archivedAlready));
         verify(repository).flush();
@@ -228,13 +238,14 @@ class ExpenseStatementServiceTest {
     @DisplayName("Generation without an active previous statement skips the archive flush")
     void generateWithoutArchive() {
         ExpenseItem gaz = item("gaz", "Gaz", 20);
-        when(lineCalculator.calculateLines(any())).thenReturn(List.of(calculatedLine(gaz)));
-        when(settingsService.entity()).thenReturn(settings());
-        when(documents.signatureDataUri(null, SignatureType.ENTREPRISE_CEO)).thenReturn("signature");
+        when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of(calculatedLine(gaz)));
+        when(documents.signatureDataUri(null, COMPANY_ID)).thenReturn("signature");
         when(documents.templateForStatement(null)).thenReturn(new TemplateDocument());
-        when(repository.findFirstByMonthOrderByVersionDesc("2026-10")).thenReturn(Optional.empty());
-        when(repository.findByMonthOrderByVersionDesc("2026-10")).thenReturn(List.of());
+        when(repository.findFirstByCompanyIdAndMonthOrderByVersionDesc(COMPANY_ID, "2026-10"))
+                .thenReturn(Optional.empty());
+        when(repository.findByCompanyIdAndMonthOrderByVersionDesc(COMPANY_ID, "2026-10")).thenReturn(List.of());
         ExpenseStatement generated = new ExpenseStatement();
+        generated.setCompanyId(COMPANY_ID);
         generated.setMonth("2026-10");
         generated.setStatus(DocumentStatus.ACTIVE);
         generated.setLines(List.of());
@@ -244,7 +255,7 @@ class ExpenseStatementServiceTest {
         when(storage.storePdf(anyString(), any())).thenReturn("/data/note.pdf");
         when(repository.saveAndFlush(any())).thenReturn(generated);
 
-        service.generate(new StatementGenerationRequest("2026-10", null,
+        service.generate(new StatementGenerationRequest(COMPANY_ID, "2026-10", null,
                 List.of(new ExpenseLineRequest("gaz", "100", "50", null, null, null, null)), null));
 
         verify(repository, never()).flush();
@@ -252,17 +263,19 @@ class ExpenseStatementServiceTest {
     }
 
     @Test
-    @DisplayName("Listing filters by month or returns everything")
+    @DisplayName("Listing filters by company and month")
     void list() {
         ExpenseStatement statement = new ExpenseStatement();
+        statement.setCompanyId(COMPANY_ID);
         statement.setStatus(DocumentStatus.ACTIVE);
         statement.setLines(List.of());
-        when(repository.findAllByOrderByMonthDescVersionDesc()).thenReturn(List.of(statement));
-        when(repository.findByMonthOrderByVersionDesc("2026-10")).thenReturn(List.of(statement));
+        when(repository.findByCompanyIdOrderByMonthDescVersionDesc(COMPANY_ID)).thenReturn(List.of(statement));
+        when(repository.findByCompanyIdAndMonthOrderByVersionDesc(COMPANY_ID, "2026-10"))
+                .thenReturn(List.of(statement));
 
-        assertThat(service.list(null)).hasSize(1);
-        assertThat(service.list(" ")).hasSize(1);
-        assertThat(service.list("2026-10")).hasSize(1);
+        assertThat(service.list(COMPANY_ID, null)).hasSize(1);
+        assertThat(service.list(COMPANY_ID, " ")).hasSize(1);
+        assertThat(service.list(COMPANY_ID, "2026-10")).hasSize(1);
     }
 
     @Test
@@ -276,18 +289,19 @@ class ExpenseStatementServiceTest {
     }
 
     @Test
-    @DisplayName("The active statement of a month is mapped inside the transaction")
+    @DisplayName("The active statement of a company and month is mapped inside the transaction")
     void activeDto() {
         ExpenseStatement statement = new ExpenseStatement();
+        statement.setCompanyId(COMPANY_ID);
         statement.setStatus(DocumentStatus.ACTIVE);
         statement.setLines(List.of());
-        when(repository.findFirstByMonthAndStatusOrderByVersionDesc("2026-10", DocumentStatus.ACTIVE))
-                .thenReturn(Optional.of(statement));
-        when(repository.findFirstByMonthAndStatusOrderByVersionDesc("2026-11", DocumentStatus.ACTIVE))
-                .thenReturn(Optional.empty());
+        when(repository.findFirstByCompanyIdAndMonthAndStatusOrderByVersionDesc(COMPANY_ID, "2026-10",
+                DocumentStatus.ACTIVE)).thenReturn(Optional.of(statement));
+        when(repository.findFirstByCompanyIdAndMonthAndStatusOrderByVersionDesc(COMPANY_ID, "2026-11",
+                DocumentStatus.ACTIVE)).thenReturn(Optional.empty());
 
-        assertThat(service.activeDtoForMonth("2026-10")).isPresent();
-        assertThat(service.activeDtoForMonth("2026-11")).isEmpty();
+        assertThat(service.activeDtoForMonth(COMPANY_ID, "2026-10")).isPresent();
+        assertThat(service.activeDtoForMonth(COMPANY_ID, "2026-11")).isEmpty();
     }
 
     @Test
@@ -308,6 +322,7 @@ class ExpenseStatementServiceTest {
     @DisplayName("Mapping a statement exposes receipt fields when a receipt is attached")
     void toDtoWithReceipt() {
         ExpenseStatement statement = new ExpenseStatement();
+        statement.setCompanyId(COMPANY_ID);
         statement.setStatus(DocumentStatus.ACTIVE);
         statement.setTotal(new BigDecimal("50"));
         Receipt receipt = new Receipt();
@@ -325,6 +340,7 @@ class ExpenseStatementServiceTest {
 
         StatementDto dto = statementDto(statement, line);
 
+        assertThat(dto.companyName()).isEqualTo("HKOF");
         assertThat(dto.lines().get(0).receiptId()).isEqualTo(5L);
         assertThat(dto.lines().get(0).receiptName()).isEqualTo("facture.pdf");
     }

@@ -21,6 +21,9 @@ public class RentReceipt {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "company_id")
+    private Long companyId;
+
     @Column(name = "billing_month", nullable = false, length = 7)
     private String month;
 
@@ -79,6 +82,14 @@ public class RentReceipt {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(Long companyId) {
+        this.companyId = companyId;
     }
 
     public String getMonth() {

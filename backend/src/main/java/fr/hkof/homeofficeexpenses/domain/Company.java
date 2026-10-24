@@ -5,26 +5,33 @@ import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+/**
+ * A company profile: identity, home-office data and issue place. It owns its expense items
+ * and expense statements.
+ */
 @Entity
-@Table(name = "settings")
-public class Settings {
+@Table(name = "company")
+public class Company {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "company_name")
-    private String companyName;
+    @Column(name = "name", nullable = false)
+    private String name;
 
     @Column(name = "legal_form")
     private String legalForm;
 
     private String siren;
 
-    @Column(name = "company_address")
-    private String companyAddress;
+    @Column(name = "address")
+    private String address;
 
     @Column(name = "manager_name")
     private String managerName;
@@ -41,6 +48,12 @@ public class Settings {
     @Column(name = "issue_place")
     private String issuePlace;
 
+    @Column(name = "deleted", nullable = false)
+    private boolean deleted;
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
     @Column(name = "updated_at")
     private Instant updatedAt;
 
@@ -52,12 +65,12 @@ public class Settings {
         this.id = id;
     }
 
-    public String getCompanyName() {
-        return companyName;
+    public String getName() {
+        return name;
     }
 
-    public void setCompanyName(String companyName) {
-        this.companyName = companyName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getLegalForm() {
@@ -76,12 +89,12 @@ public class Settings {
         this.siren = siren;
     }
 
-    public String getCompanyAddress() {
-        return companyAddress;
+    public String getAddress() {
+        return address;
     }
 
-    public void setCompanyAddress(String companyAddress) {
-        this.companyAddress = companyAddress;
+    public void setAddress(String address) {
+        this.address = address;
     }
 
     public String getManagerName() {
@@ -122,6 +135,22 @@ public class Settings {
 
     public void setIssuePlace(String issuePlace) {
         this.issuePlace = issuePlace;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 
     public Instant getUpdatedAt() {

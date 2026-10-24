@@ -39,11 +39,12 @@ class E2eResetIntegrationTest {
     @Test
     @DisplayName("The e2e profile resets the database and files to their initial state")
     void resetsData() throws Exception {
-        mockMvc.perform(put("/api/settings")
+        long companyId = firstId("/api/companies");
+        mockMvc.perform(put("/api/companies/{id}", companyId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"companyName":"Test E2E","legalForm":"EURL","siren":"123 456 789",
-                                 "companyAddress":"1 rue du Test, 75001 Paris","managerName":"Testeur",
+                                {"name":"Test E2E","legalForm":"EURL","siren":"123 456 789",
+                                 "address":"1 rue du Test, 75001 Paris","managerName":"Testeur",
                                  "homeAddress":"1 rue du Test, 75001 Paris","totalArea":"80",
                                  "businessArea":"32","issuePlace":"Paris"}
                                 """))
@@ -59,10 +60,10 @@ class E2eResetIntegrationTest {
         mockMvc.perform(post("/api/expense-items")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"code":"test-e2e","label":"Poste e2e","proRataPct":"35.71",
+                                {"companyId":%d,"code":"test-e2e","label":"Poste e2e","proRataPct":"35.71",
                                  "periodicity":"MONTHLY","active":true,"sortOrder":99,
                                  "multipleLinesAllowed":false}
-                                """))
+                                """.formatted(companyId)))
                 .andExpect(status().isCreated());
 
         MockMultipartFile file = new MockMultipartFile("file", "note.txt", "text/plain",
@@ -75,10 +76,10 @@ class E2eResetIntegrationTest {
         mockMvc.perform(post("/api/e2e/reset"))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/settings"))
+        mockMvc.perform(get("/api/companies"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.companyName").value("HKOF"))
-                .andExpect(jsonPath("$.rentExclCharges").doesNotExist());
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name").value("HKOF"));
         mockMvc.perform(get("/api/landlords"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
@@ -97,12 +98,19 @@ class E2eResetIntegrationTest {
         mockMvc.perform(get("/api/rent-receipts"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
-        mockMvc.perform(get("/api/expense-items"))
+        mockMvc.perform(get("/api/expense-items").param("companyId", String.valueOf(firstId("/api/companies"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(6))
                 .andExpect(jsonPath("$[?(@.code == 'test-e2e')]").isEmpty());
         mockMvc.perform(get("/api/receipts/" + receiptId))
                 .andExpect(status().isNotFound());
+    }
+
+    private long firstId(String path) throws Exception {
+        String body = mockMvc.perform(get(path))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return ((Number) JsonPath.read(body, "$[0].id")).longValue();
     }
 
     @Test

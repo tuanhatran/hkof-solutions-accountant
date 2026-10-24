@@ -10,9 +10,11 @@ import { signatureTypeLabel } from "./signatureConstants";
 export function SignatureCard({
   signature,
   onDelete,
+  highlighted = false,
 }: {
   signature: SignatureDto;
   onDelete: (signature: SignatureDto) => void;
+  highlighted?: boolean;
 }) {
   return (
     <li className="signature-card" data-cy={`signature-${signature.id}`}>
@@ -30,15 +32,36 @@ export function SignatureCard({
         <span className="badge badge-neutral signature-card-badge">
           {signatureTypeLabel(signature.type)}
         </span>
+        {highlighted ? (
+          <span
+            className="badge badge-accent signature-card-badge"
+            data-cy="signature-par-defaut"
+          >
+            Signature par défaut des notes de frais
+          </span>
+        ) : null}
         <p className="signature-card-meta">
           {signature.type === "LANDLORD" ? (
             <>
               Bailleur : <span>{signature.landlordName ?? "Non liée"}</span>
             </>
           ) : (
-            "Signature du gérant"
+            <>
+              Salarié :{" "}
+              <span>
+                {signature.employeeName ??
+                  (signature.type === "ENTREPRISE_CEO"
+                    ? "Gérant d'entreprise"
+                    : "Non lié")}
+              </span>
+            </>
           )}
         </p>
+        {signature.type === "LANDLORD" ? null : (
+          <p className="signature-card-meta">
+            Société : <span>{signature.companyName ?? "Non liée"}</span>
+          </p>
+        )}
         <p className="signature-card-meta">
           Ajoutée le {formatDate(signature.createdAt)}
         </p>

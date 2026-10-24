@@ -55,11 +55,13 @@ function SwitchField({
 /** Create/update form of an expense item. */
 export function ExpenseItemForm({
   item: expenseItem,
+  companyId,
   defaultProRata: defaultProRata,
   defaultOrder,
   onClose: onClose,
 }: {
   item: ExpenseItemDto | null;
+  companyId: number;
   defaultProRata: string;
   defaultOrder: number;
   onClose: () => void;
@@ -89,6 +91,7 @@ export function ExpenseItemForm({
   const save = useMutation({
     mutationFn: (values: ExpenseItemFormValues) => {
       const requestBody: ExpenseItemRequest = {
+        companyId,
         label: values.label.trim(),
         supplier: values.supplier.trim() || undefined,
         proRataPct: parsePercentage(values.proRataPct) ?? "0",

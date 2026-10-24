@@ -64,10 +64,18 @@ export const rentReceiptSchema = z
 
 export type RentReceiptFormValues = z.infer<typeof rentReceiptSchema>;
 
-export const settingsSchema = z
+const optionalSurface = (message: string) =>
+  z
+    .string()
+    .refine(
+      (value) => value.trim() === "" || isValidAmount(value, false),
+      message,
+    );
+
+export const companySchema = z
   .object({
-    companyName: z.string().trim().min(1, "La raison sociale est obligatoire."),
-    legalForm: z.string().trim().min(1, "La forme juridique est obligatoire."),
+    name: z.string().trim().min(1, "Le nom de la société est obligatoire."),
+    legalForm: z.string(),
     siren: z
       .string()
       .trim()
@@ -75,31 +83,18 @@ export const settingsSchema = z
         (value) => value === "" || /^\d{3}\s?\d{3}\s?\d{3}$/.test(value),
         "Le SIREN doit comporter 9 chiffres.",
       ),
-    companyAddress: z
-      .string()
-      .trim()
-      .min(1, "L'adresse de la société est obligatoire."),
-    managerName: z.string().trim().min(1, "Le gérant est obligatoire."),
-    homeAddress: z
-      .string()
-      .trim()
-      .min(1, "L'adresse du logement est obligatoire."),
-    totalArea: z
-      .string()
-      .refine(
-        (value) => isValidAmount(value, true),
-        "Surface totale invalide.",
-      ),
-    businessArea: z
-      .string()
-      .refine(
-        (value) => isValidAmount(value, true),
-        "Surface professionnelle invalide.",
-      ),
-    issuePlace: z.string().trim().min(1, "Le lieu d'émission est obligatoire."),
+    address: z.string(),
+    managerName: z.string(),
+    homeAddress: z.string(),
+    totalArea: optionalSurface("Surface totale invalide."),
+    businessArea: optionalSurface("Surface professionnelle invalide."),
+    issuePlace: z.string(),
   })
   .refine(
     (values) => {
+      if (values.businessArea.trim() === "" || values.totalArea.trim() === "") {
+        return true;
+      }
       const businessArea = parseAmount(values.businessArea);
       const totalArea = parseAmount(values.totalArea);
       if (businessArea === null || totalArea === null) {
@@ -114,7 +109,24 @@ export const settingsSchema = z
     },
   );
 
-export type SettingsFormValues = z.infer<typeof settingsSchema>;
+export type CompanyFormValues = z.infer<typeof companySchema>;
+
+export const employeeSchema = z.object({
+  firstName: z.string().trim().min(1, "Le prénom du salarié est obligatoire."),
+  lastName: z.string().trim().min(1, "Le nom du salarié est obligatoire."),
+  email: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value),
+      "L'adresse électronique du salarié est invalide.",
+    ),
+  title: z.enum(["CEO", "CFO", "ACCOUNTANT", "EMPLOYEE"], {
+    error: "L'intitulé du salarié est obligatoire.",
+  }),
+});
+
+export type EmployeeFormValues = z.infer<typeof employeeSchema>;
 
 export const landlordSchema = z.object({
   name: z.string().trim().min(1, "Le nom du bailleur est obligatoire."),
@@ -131,6 +143,7 @@ export const tenantSchema = z.object({
 export type TenantFormValues = z.infer<typeof tenantSchema>;
 
 export const leaseSchema = z.object({
+  companyId: z.string(),
   landlordId: z.string().min(1, "Sélectionnez un bailleur."),
   tenantId: z.string().min(1, "Sélectionnez un locataire."),
   propertyAddress: z

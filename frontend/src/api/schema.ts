@@ -4,2591 +4,3035 @@
  */
 
 export interface paths {
-  "/api/settings": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/companies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Liste les sociétés non supprimées. */
+        get: operations["listCompanies"];
+        put?: never;
+        /** @description Crée une société. */
+        post: operations["createCompany"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getSettings"];
-    put: operations["updateSettings"];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/expense-items/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/companies/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Retourne une société non supprimée. */
+        get: operations["getCompany"];
+        /** @description Met à jour une société existante. */
+        put: operations["updateCompany"];
+        post?: never;
+        /** @description Supprime logiquement une société. */
+        delete: operations["deleteCompany"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put: operations["updateExpenseItem"];
-    post?: never;
-    delete: operations["deleteExpenseItem"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/llm": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/companies/{companyId}/employees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Liste les salariés non supprimés d'une société. */
+        get: operations["listEmployees"];
+        put?: never;
+        /** @description Crée un salarié rattaché à une société. */
+        post: operations["createEmployee"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getLlmConfig"];
-    put: operations["updateLlmConfig"];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/templates": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/employees/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Met à jour un salarié existant. */
+        put: operations["updateEmployee"];
+        post?: never;
+        /** @description Supprime logiquement un salarié. */
+        delete: operations["deleteEmployee"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["listTemplates"];
-    put?: never;
-    post: operations["uploadTemplate"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/templates/{id}/preview": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/expense-items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateExpenseItem"];
+        post?: never;
+        delete: operations["deleteExpenseItem"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["previewTemplate"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/templates/{id}/activate": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/admin/llm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getLlmConfig"];
+        put: operations["updateLlmConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["activateTemplate"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/templates/default/{type}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listTemplates"];
+        put?: never;
+        post: operations["uploadTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getDefaultTemplate"];
-    put?: never;
-    post: operations["resetDefaultTemplate"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/rent-receipts": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/templates/{id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["previewTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["listRentReceipts"];
-    put?: never;
-    post: operations["createRentReceipt"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/rent-receipts/preview": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/templates/{id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["activateTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["previewRentReceipt"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/receipts": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/templates/default/{type}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getDefaultTemplate"];
+        put?: never;
+        post: operations["resetDefaultTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["uploadReceipt"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/receipts/{id}/analysis": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/rent-receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Liste les quittances, éventuellement filtrées par société. */
+        get: operations["listRentReceipts"];
+        put?: never;
+        post: operations["createRentReceipt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["startReceiptAnalysis"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/expense-statements": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/rent-receipts/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["previewRentReceipt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["listExpenseStatements"];
-    put?: never;
-    post: operations["createExpenseStatement"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/expense-statements/preview": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["uploadReceipt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["previewStatement"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/expense-statements/draft": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/receipts/{id}/analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["startReceiptAnalysis"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["createStatementDraft"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/expense-statements/calculation": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/expense-statements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Liste les notes de frais d'une société. */
+        get: operations["listExpenseStatements"];
+        put?: never;
+        post: operations["createExpenseStatement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["calculateStatement"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/expense-items": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/expense-statements/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["previewStatement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["listExpenseItems"];
-    put?: never;
-    post: operations["createExpenseItem"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/e2e/reset": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/expense-statements/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Construit le brouillon d'une note de frais pour une société et un mois. */
+        post: operations["createStatementDraft"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["resetE2eData"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/llm/test": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/expense-statements/calculation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["calculateStatement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["testLlm"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/templates/{id}/file": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/expense-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Liste les postes de frais de la société active. */
+        get: operations["listExpenseItems"];
+        put?: never;
+        post: operations["createExpenseItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getTemplateFile"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/templates/variables": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/e2e/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resetE2eData"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getTemplateVariables"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/rent-receipts/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/admin/llm/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["testLlm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getRentReceipt"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/rent-receipts/{id}/pdf": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/templates/{id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getTemplateFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getRentReceiptPdf"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/rent-receipts/active": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/templates/variables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getTemplateVariables"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getActiveRentReceipt"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/receipts/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/rent-receipts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRentReceipt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getReceipt"];
-    put?: never;
-    post?: never;
-    delete: operations["deleteReceipt"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/receipts/{id}/file": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/rent-receipts/{id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRentReceiptPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getReceiptFile"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/expense-statements/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/rent-receipts/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getActiveRentReceipt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getExpenseStatement"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/expense-statements/{id}/pdf": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/receipts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getReceipt"];
+        put?: never;
+        post?: never;
+        delete: operations["deleteReceipt"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getExpenseStatementPdf"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/expense-statements/{id}/zip": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/receipts/{id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getReceiptFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getExpenseStatementZip"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/expense-statements/active": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/expense-statements/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getExpenseStatement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getActiveExpenseStatement"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/analyses/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/expense-statements/{id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getExpenseStatementPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getAnalysis"];
-    put?: never;
-    post?: never;
-    delete: operations["cancelAnalysis"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/llm/status": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/expense-statements/{id}/zip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getExpenseStatementZip"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getLlmStatus"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/llm/models": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/expense-statements/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Retourne la note de frais active d'une société pour un mois. */
+        get: operations["getActiveExpenseStatement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["listLlmModels"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/llm/default-prompt": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/analyses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAnalysis"];
+        put?: never;
+        post?: never;
+        delete: operations["cancelAnalysis"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getDefaultLlmPrompt"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/templates/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/admin/llm/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getLlmStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete: operations["deleteTemplate"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/signatures": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/admin/llm/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listLlmModels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["listSignatures"];
-    put?: never;
-    post: operations["createSignature"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/signatures/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/admin/llm/default-prompt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getDefaultLlmPrompt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete: operations["deleteSignature"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/signatures/{id}/image": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteTemplate"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["getSignatureImage"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/landlords": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/signatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Liste les signatures, éventuellement filtrées par société ou salarié. */
+        get: operations["listSignatures"];
+        put?: never;
+        /** @description Dépose une signature. Les types EMPLOYEE et ENTREPRISE_CEO exigent employeeId ; le type LANDLORD exige landlordId. */
+        post: operations["createSignature"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["listLandlords"];
-    put?: never;
-    post: operations["createLandlord"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/landlords/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/signatures/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteSignature"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put: operations["updateLandlord"];
-    post?: never;
-    delete: operations["deleteLandlord"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/tenants": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/signatures/{id}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getSignatureImage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["listTenants"];
-    put?: never;
-    post: operations["createTenant"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/tenants/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/landlords": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listLandlords"];
+        put?: never;
+        post: operations["createLandlord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put: operations["updateTenant"];
-    post?: never;
-    delete: operations["deleteTenant"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/leases": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/landlords/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateLandlord"];
+        post?: never;
+        delete: operations["deleteLandlord"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["listLeases"];
-    put?: never;
-    post: operations["createLease"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/leases/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/tenants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listTenants"];
+        put?: never;
+        post: operations["createTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put: operations["updateLease"];
-    post?: never;
-    delete: operations["deleteLease"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
+    "/api/tenants/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateTenant"];
+        post?: never;
+        delete: operations["deleteTenant"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/leases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listLeases"];
+        put?: never;
+        post: operations["createLease"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/leases/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateLease"];
+        post?: never;
+        delete: operations["deleteLease"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    SignatureDto: {
-      /** Format: int64 */
-      id?: number;
-      /** @enum {string} */
-      type?: "LANDLORD" | "ENTREPRISE_CEO";
-      name?: string;
-      mimeType?: string;
-      /** Format: date-time */
-      createdAt?: string;
-      /** Format: int64 */
-      landlordId?: number | null;
-      landlordName?: string | null;
+    schemas: {
+        SignatureDto: {
+            /** Format: int64 */
+            id?: number;
+            /** @enum {string} */
+            type?: "LANDLORD" | "ENTREPRISE_CEO" | "EMPLOYEE";
+            name?: string;
+            mimeType?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            /**
+             * Format: int64
+             * @description Société de la signature salariée ; absente pour un bailleur.
+             */
+            companyId?: number | null;
+            companyName?: string | null;
+            /**
+             * Format: int64
+             * @description Salarié propriétaire de la signature ; absent pour un bailleur.
+             */
+            employeeId?: number | null;
+            employeeName?: string | null;
+            /** Format: int64 */
+            landlordId?: number | null;
+            landlordName?: string | null;
+        };
+        CompanyRequest: {
+            /** @description Raison sociale de la société. */
+            name: string;
+            /** @description Forme juridique (SAS, SARL, ...). */
+            legalForm?: string;
+            /** @description Numéro SIREN, unique parmi les sociétés non supprimées. */
+            siren?: string;
+            /** @description Adresse du siège social. */
+            address?: string;
+            /** @description Nom du représentant légal. */
+            managerName?: string;
+            /** @description Adresse du domicile utilisé pour le télétravail. */
+            homeAddress?: string;
+            /** @description Surface totale du logement, en mètres carrés. */
+            totalArea?: string;
+            /** @description Surface affectée à l'activité professionnelle, en mètres carrés. */
+            businessArea?: string;
+            /** @description Base de prorata calculée, en pourcentage décimal. */
+            proRataBase?: string;
+            /** @description Détail lisible du calcul de la base de prorata. */
+            proRataBaseDetail?: string;
+            /** @description Lieu d'émission des documents. */
+            issuePlace?: string;
+        };
+        CompanyDto: {
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+            legalForm?: string;
+            siren?: string;
+            address?: string;
+            managerName?: string;
+            homeAddress?: string;
+            totalArea?: string;
+            businessArea?: string;
+            proRataBase?: string;
+            proRataBaseDetail?: string;
+            issuePlace?: string;
+        };
+        EmployeeRequest: {
+            /**
+             * Format: int64
+             * @description Société à laquelle le salarié appartient.
+             */
+            companyId: number;
+            firstName: string;
+            lastName: string;
+            /** @description Adresse électronique, unique par société lorsqu'elle est renseignée. */
+            email?: string | null;
+            /**
+             * @description Intitulé descriptif du salarié ; il ne donne aucun droit tant que le contrôle d'accès n'est pas implémenté.
+             * @enum {string}
+             */
+            title: "CEO" | "CFO" | "ACCOUNTANT" | "EMPLOYEE";
+        };
+        EmployeeDto: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            companyId?: number;
+            firstName?: string;
+            lastName?: string;
+            email?: string | null;
+            /** @enum {string} */
+            title?: "CEO" | "CFO" | "ACCOUNTANT" | "EMPLOYEE";
+        };
+        LandlordRequest: {
+            name?: string;
+            address?: string;
+        };
+        LandlordDto: {
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+            address?: string;
+        };
+        TenantRequest: {
+            name?: string;
+            address?: string;
+        };
+        TenantDto: {
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+            address?: string;
+        };
+        LeaseRequest: {
+            /**
+             * Format: int64
+             * @description Société liée au bail ; facultative.
+             */
+            companyId?: number | null;
+            /** Format: int64 */
+            landlordId?: number;
+            /** Format: int64 */
+            tenantId?: number;
+            propertyAddress?: string;
+            rentExclCharges?: string;
+            charges?: string;
+        };
+        LeaseDto: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            companyId?: number | null;
+            companyName?: string | null;
+            /** Format: int64 */
+            landlordId?: number;
+            /** Format: int64 */
+            tenantId?: number;
+            landlordName?: string;
+            tenantName?: string;
+            propertyAddress?: string;
+            rentExclCharges?: string;
+            charges?: string;
+        };
+        ProblemDetail: {
+            type?: string;
+            title?: string;
+            status?: number;
+            detail?: string;
+            instance?: string;
+        };
+        ExpenseItemRequest: {
+            /**
+             * Format: int64
+             * @description Société propriétaire du poste de frais.
+             */
+            companyId: number;
+            /** @description Code unique au sein de la société. */
+            code?: string;
+            label?: string;
+            supplier?: string;
+            proRataPct?: string;
+            periodicity?: string;
+            active?: boolean;
+            /** Format: int32 */
+            sortOrder?: number;
+            multipleLinesAllowed?: boolean;
+        };
+        ExpenseItemDto: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            companyId?: number;
+            code?: string;
+            label?: string;
+            supplier?: string;
+            proRataPct?: string;
+            periodicity?: string;
+            active?: boolean;
+            /** Format: int32 */
+            sortOrder?: number;
+            multipleLinesAllowed?: boolean;
+        };
+        LlmConfigRequest: {
+            active?: boolean;
+            supplier?: string;
+            url?: string;
+            model?: string;
+            /** Format: int32 */
+            timeoutSeconds?: number;
+            temperature?: string;
+            /** Format: int32 */
+            numCtx?: number;
+            /** Format: int32 */
+            maxPages?: number;
+            ocrActive?: boolean;
+            extractionPrompt?: string;
+            apiKey?: string;
+        };
+        LlmConfigDto: {
+            active?: boolean;
+            supplier?: string;
+            url?: string;
+            model?: string;
+            /** Format: int32 */
+            timeoutSeconds?: number;
+            temperature?: string;
+            /** Format: int32 */
+            numCtx?: number;
+            /** Format: int32 */
+            maxPages?: number;
+            ocrActive?: boolean;
+            extractionPrompt?: string;
+            apiKeyConfigured?: boolean;
+            remoteUrl?: boolean;
+            warning?: string;
+        };
+        TemplateDto: {
+            /** Format: int64 */
+            id?: number;
+            type?: string;
+            name?: string;
+            /** Format: int32 */
+            version?: number;
+            format?: string;
+            active?: boolean;
+            builtIn?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
+            report?: components["schemas"]["ValidationReportDto"];
+        };
+        ValidationReportDto: {
+            recognizedVariables?: string[];
+            unknownVariables?: string[];
+            missingVariables?: string[];
+            structureValid?: boolean;
+            errors?: string[];
+        };
+        RentReceiptRequest: {
+            month?: string;
+            /**
+             * Format: int64
+             * @description Société utilisée pour l'identité et les données de domicile ; la société du bail est prioritaire lorsqu'elle existe.
+             */
+            companyId?: number | null;
+            /** Format: int64 */
+            landlordId: number;
+            /** Format: int64 */
+            tenantId: number;
+            periodStart?: string;
+            periodEnd?: string;
+            rentExclCharges?: string;
+            charges?: string;
+            paymentDate?: string;
+            issueDate?: string;
+            /** Format: int64 */
+            templateId?: number;
+            /** Format: int64 */
+            signatureId?: number;
+        };
+        RentReceiptDto: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            companyId?: number | null;
+            companyName?: string | null;
+            month?: string;
+            /** Format: int64 */
+            landlordId?: number;
+            /** Format: int64 */
+            tenantId?: number;
+            landlordName?: string;
+            tenantName?: string;
+            /** Format: date */
+            periodStart?: string;
+            /** Format: date */
+            periodEnd?: string;
+            rentExclCharges?: string;
+            charges?: string;
+            total?: string;
+            /** Format: date */
+            paymentDate?: string;
+            /** Format: date */
+            issueDate?: string;
+            /** Format: int32 */
+            version?: number;
+            status?: string;
+            /** Format: int64 */
+            templateId?: number;
+            templateName?: string;
+            /** Format: int32 */
+            templateVersion?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            pdfAvailable?: boolean;
+        };
+        ReceiptDto: {
+            /** Format: int64 */
+            id?: number;
+            fileName?: string;
+            mimeType?: string;
+            /** Format: int64 */
+            size?: number;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        AnalysisStartResponse: {
+            /** Format: int64 */
+            analysisId?: number;
+            status?: string;
+        };
+        ExpenseLineRequest: {
+            itemCode?: string;
+            amountInclVat?: string;
+            proRataPct?: string;
+            /** Format: int64 */
+            receiptId?: number;
+            amountSource?: string;
+            aiDetectedAmount?: string;
+            aiConfidence?: string;
+        };
+        StatementGenerationRequest: {
+            /**
+             * Format: int64
+             * @description Société propriétaire de la note de frais.
+             */
+            companyId: number;
+            month?: string;
+            /** Format: int64 */
+            templateId?: number;
+            /** Format: int64 */
+            signatureId?: number;
+            lines?: components["schemas"]["ExpenseLineRequest"][];
+        };
+        ExpenseLineDto: {
+            /** Format: int64 */
+            id?: number;
+            itemCode?: string;
+            itemLabel?: string;
+            supplier?: string;
+            amountInclVat?: string;
+            monthlyAmount?: string;
+            proRataPct?: string;
+            claimedAmount?: string;
+            /** Format: int64 */
+            receiptId?: number;
+            receiptName?: string;
+            amountSource?: string;
+            aiDetectedAmount?: string;
+            aiConfidence?: string;
+        };
+        StatementDto: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            companyId?: number;
+            companyName?: string;
+            month?: string;
+            number?: string;
+            total?: string;
+            /** Format: int32 */
+            version?: number;
+            status?: string;
+            /** Format: int64 */
+            templateId?: number;
+            templateName?: string;
+            /** Format: int32 */
+            templateVersion?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            lines?: components["schemas"]["ExpenseLineDto"][];
+            pdfAvailable?: boolean;
+            fullPdfAvailable?: boolean;
+        };
+        StatementPreviewRequest: {
+            /**
+             * Format: int64
+             * @description Société propriétaire de la note de frais.
+             */
+            companyId: number;
+            month?: string;
+            /** Format: int64 */
+            templateId?: number;
+            /** Format: int64 */
+            signatureId?: number;
+            complete?: boolean;
+            lines?: components["schemas"]["ExpenseLineRequest"][];
+        };
+        DraftDto: {
+            month?: string;
+            rentReceipt?: components["schemas"]["RentReceiptDto"];
+            lines?: components["schemas"]["ExpenseLineDto"][];
+            proRataBase?: string;
+            proRataBaseDetail?: string;
+            missingItems?: string[];
+        };
+        StatementCalculationRequest: {
+            /**
+             * Format: int64
+             * @description Société propriétaire de la note de frais.
+             */
+            companyId: number;
+            month?: string;
+            lines?: components["schemas"]["ExpenseLineRequest"][];
+        };
+        CalculationResponse: {
+            lines?: components["schemas"]["ExpenseLineDto"][];
+            total?: string;
+            totalInWords?: string;
+            proRataBase?: string;
+            proRataBaseDetail?: string;
+        };
+        LlmTestResponse: {
+            success?: boolean;
+            /** Format: int64 */
+            durationMs?: number;
+            message?: string;
+            detectedAmount?: string;
+        };
+        TemplateVariableDto: {
+            name?: string;
+            description?: string;
+            required?: boolean;
+            example?: string;
+        };
+        AnalysisDto: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            receiptId?: number;
+            fileName?: string;
+            status?: string;
+            model?: string;
+            /** Format: int64 */
+            durationMs?: number;
+            result?: components["schemas"]["ExtractionDto"];
+            errorMessage?: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        ExtractionDto: {
+            suggestedType?: string;
+            supplier?: string;
+            invoiceNumber?: string;
+            invoiceDate?: string;
+            amountInclVat?: string;
+            amountExclVat?: string;
+            currency?: string;
+            sourceExcerpt?: string;
+            confidence?: string;
+        };
+        LlmStatusDto: {
+            status?: string;
+            active?: boolean;
+            reachable?: boolean;
+            modelAvailable?: boolean;
+            message?: string;
+        };
+        LlmModelDto: {
+            name?: string;
+            family?: string;
+            parameters?: string;
+            vision?: boolean;
+        };
+        DefaultPromptDto: {
+            prompt?: string;
+        };
     };
-    SettingsRequest: {
-      companyName?: string;
-      legalForm?: string;
-      siren?: string;
-      companyAddress?: string;
-      managerName?: string;
-      homeAddress?: string;
-      totalArea?: string;
-      businessArea?: string;
-      issuePlace?: string;
-    };
-    SettingsDto: {
-      /** Format: int64 */
-      id?: number;
-      companyName?: string;
-      legalForm?: string;
-      siren?: string;
-      companyAddress?: string;
-      managerName?: string;
-      homeAddress?: string;
-      totalArea?: string;
-      businessArea?: string;
-      proRataBase?: string;
-      proRataBaseDetail?: string;
-      issuePlace?: string;
-    };
-    LandlordRequest: {
-      name?: string;
-      address?: string;
-    };
-    LandlordDto: {
-      /** Format: int64 */
-      id?: number;
-      name?: string;
-      address?: string;
-    };
-    TenantRequest: {
-      name?: string;
-      address?: string;
-    };
-    TenantDto: {
-      /** Format: int64 */
-      id?: number;
-      name?: string;
-      address?: string;
-    };
-    LeaseRequest: {
-      /** Format: int64 */
-      landlordId?: number;
-      /** Format: int64 */
-      tenantId?: number;
-      propertyAddress?: string;
-      rentExclCharges?: string;
-      charges?: string;
-    };
-    LeaseDto: {
-      /** Format: int64 */
-      id?: number;
-      /** Format: int64 */
-      landlordId?: number;
-      /** Format: int64 */
-      tenantId?: number;
-      landlordName?: string;
-      tenantName?: string;
-      propertyAddress?: string;
-      rentExclCharges?: string;
-      charges?: string;
-    };
-    ProblemDetail: {
-      type?: string;
-      title?: string;
-      status?: number;
-      detail?: string;
-      instance?: string;
-    };
-    ExpenseItemRequest: {
-      code?: string;
-      label?: string;
-      supplier?: string;
-      proRataPct?: string;
-      periodicity?: string;
-      active?: boolean;
-      /** Format: int32 */
-      sortOrder?: number;
-      multipleLinesAllowed?: boolean;
-    };
-    ExpenseItemDto: {
-      /** Format: int64 */
-      id?: number;
-      code?: string;
-      label?: string;
-      supplier?: string;
-      proRataPct?: string;
-      periodicity?: string;
-      active?: boolean;
-      /** Format: int32 */
-      sortOrder?: number;
-      multipleLinesAllowed?: boolean;
-    };
-    LlmConfigRequest: {
-      active?: boolean;
-      supplier?: string;
-      url?: string;
-      model?: string;
-      /** Format: int32 */
-      timeoutSeconds?: number;
-      temperature?: string;
-      /** Format: int32 */
-      numCtx?: number;
-      /** Format: int32 */
-      maxPages?: number;
-      ocrActive?: boolean;
-      extractionPrompt?: string;
-      apiKey?: string;
-    };
-    LlmConfigDto: {
-      active?: boolean;
-      supplier?: string;
-      url?: string;
-      model?: string;
-      /** Format: int32 */
-      timeoutSeconds?: number;
-      temperature?: string;
-      /** Format: int32 */
-      numCtx?: number;
-      /** Format: int32 */
-      maxPages?: number;
-      ocrActive?: boolean;
-      extractionPrompt?: string;
-      apiKeyConfigured?: boolean;
-      remoteUrl?: boolean;
-      warning?: string;
-    };
-    TemplateDto: {
-      /** Format: int64 */
-      id?: number;
-      type?: string;
-      name?: string;
-      /** Format: int32 */
-      version?: number;
-      format?: string;
-      active?: boolean;
-      builtIn?: boolean;
-      /** Format: date-time */
-      createdAt?: string;
-      report?: components["schemas"]["ValidationReportDto"];
-    };
-    ValidationReportDto: {
-      recognizedVariables?: string[];
-      unknownVariables?: string[];
-      missingVariables?: string[];
-      structureValid?: boolean;
-      errors?: string[];
-    };
-    RentReceiptRequest: {
-      month?: string;
-      /** Format: int64 */
-      landlordId: number;
-      /** Format: int64 */
-      tenantId: number;
-      periodStart?: string;
-      periodEnd?: string;
-      rentExclCharges?: string;
-      charges?: string;
-      paymentDate?: string;
-      issueDate?: string;
-      /** Format: int64 */
-      templateId?: number;
-      /** Format: int64 */
-      signatureId?: number;
-    };
-    RentReceiptDto: {
-      /** Format: int64 */
-      id?: number;
-      month?: string;
-      /** Format: int64 */
-      landlordId?: number;
-      /** Format: int64 */
-      tenantId?: number;
-      landlordName?: string;
-      tenantName?: string;
-      /** Format: date */
-      periodStart?: string;
-      /** Format: date */
-      periodEnd?: string;
-      rentExclCharges?: string;
-      charges?: string;
-      total?: string;
-      /** Format: date */
-      paymentDate?: string;
-      /** Format: date */
-      issueDate?: string;
-      /** Format: int32 */
-      version?: number;
-      status?: string;
-      /** Format: int64 */
-      templateId?: number;
-      templateName?: string;
-      /** Format: int32 */
-      templateVersion?: number;
-      /** Format: date-time */
-      createdAt?: string;
-      pdfAvailable?: boolean;
-    };
-    ReceiptDto: {
-      /** Format: int64 */
-      id?: number;
-      fileName?: string;
-      mimeType?: string;
-      /** Format: int64 */
-      size?: number;
-      /** Format: date-time */
-      createdAt?: string;
-    };
-    AnalysisStartResponse: {
-      /** Format: int64 */
-      analysisId?: number;
-      status?: string;
-    };
-    ExpenseLineRequest: {
-      itemCode?: string;
-      amountInclVat?: string;
-      proRataPct?: string;
-      /** Format: int64 */
-      receiptId?: number;
-      amountSource?: string;
-      aiDetectedAmount?: string;
-      aiConfidence?: string;
-    };
-    StatementGenerationRequest: {
-      month?: string;
-      /** Format: int64 */
-      templateId?: number;
-      /** Format: int64 */
-      signatureId?: number;
-      lines?: components["schemas"]["ExpenseLineRequest"][];
-    };
-    ExpenseLineDto: {
-      /** Format: int64 */
-      id?: number;
-      itemCode?: string;
-      itemLabel?: string;
-      supplier?: string;
-      amountInclVat?: string;
-      monthlyAmount?: string;
-      proRataPct?: string;
-      claimedAmount?: string;
-      /** Format: int64 */
-      receiptId?: number;
-      receiptName?: string;
-      amountSource?: string;
-      aiDetectedAmount?: string;
-      aiConfidence?: string;
-    };
-    StatementDto: {
-      /** Format: int64 */
-      id?: number;
-      month?: string;
-      number?: string;
-      total?: string;
-      /** Format: int32 */
-      version?: number;
-      status?: string;
-      /** Format: int64 */
-      templateId?: number;
-      templateName?: string;
-      /** Format: int32 */
-      templateVersion?: number;
-      /** Format: date-time */
-      createdAt?: string;
-      lines?: components["schemas"]["ExpenseLineDto"][];
-      pdfAvailable?: boolean;
-      fullPdfAvailable?: boolean;
-    };
-    StatementPreviewRequest: {
-      month?: string;
-      /** Format: int64 */
-      templateId?: number;
-      /** Format: int64 */
-      signatureId?: number;
-      complete?: boolean;
-      lines?: components["schemas"]["ExpenseLineRequest"][];
-    };
-    DraftDto: {
-      month?: string;
-      rentReceipt?: components["schemas"]["RentReceiptDto"];
-      lines?: components["schemas"]["ExpenseLineDto"][];
-      proRataBase?: string;
-      proRataBaseDetail?: string;
-      missingItems?: string[];
-    };
-    StatementCalculationRequest: {
-      month?: string;
-      lines?: components["schemas"]["ExpenseLineRequest"][];
-    };
-    CalculationResponse: {
-      lines?: components["schemas"]["ExpenseLineDto"][];
-      total?: string;
-      totalInWords?: string;
-      proRataBase?: string;
-      proRataBaseDetail?: string;
-    };
-    LlmTestResponse: {
-      success?: boolean;
-      /** Format: int64 */
-      durationMs?: number;
-      message?: string;
-      detectedAmount?: string;
-    };
-    TemplateVariableDto: {
-      name?: string;
-      description?: string;
-      required?: boolean;
-      example?: string;
-    };
-    AnalysisDto: {
-      /** Format: int64 */
-      id?: number;
-      /** Format: int64 */
-      receiptId?: number;
-      fileName?: string;
-      status?: string;
-      model?: string;
-      /** Format: int64 */
-      durationMs?: number;
-      result?: components["schemas"]["ExtractionDto"];
-      errorMessage?: string;
-      /** Format: date-time */
-      createdAt?: string;
-    };
-    ExtractionDto: {
-      suggestedType?: string;
-      supplier?: string;
-      invoiceNumber?: string;
-      invoiceDate?: string;
-      amountInclVat?: string;
-      amountExclVat?: string;
-      currency?: string;
-      sourceExcerpt?: string;
-      confidence?: string;
-    };
-    LlmStatusDto: {
-      status?: string;
-      active?: boolean;
-      reachable?: boolean;
-      modelAvailable?: boolean;
-      message?: string;
-    };
-    LlmModelDto: {
-      name?: string;
-      family?: string;
-      parameters?: string;
-      vision?: boolean;
-    };
-    DefaultPromptDto: {
-      prompt?: string;
-    };
-  };
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  getSettings: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["SettingsDto"];
-        };
-      };
-    };
-  };
-  updateSettings: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["SettingsRequest"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["SettingsDto"];
-        };
-      };
-    };
-  };
-  updateExpenseItem: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ExpenseItemRequest"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["ExpenseItemDto"];
-        };
-      };
-    };
-  };
-  deleteExpenseItem: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No Content */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  getLlmConfig: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["LlmConfigDto"];
-        };
-      };
-    };
-  };
-  updateLlmConfig: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["LlmConfigRequest"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["LlmConfigDto"];
-        };
-      };
-    };
-  };
-  listTemplates: {
-    parameters: {
-      query: {
-        type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["TemplateDto"][];
-        };
-      };
-    };
-  };
-  uploadTemplate: {
-    parameters: {
-      query: {
-        type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
-        name: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        "application/json": {
-          /** Format: binary */
-          file: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Created */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["TemplateDto"];
-        };
-      };
-    };
-  };
-  previewTemplate: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": string;
-        };
-      };
-    };
-  };
-  activateTemplate: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["TemplateDto"];
-        };
-      };
-    };
-  };
-  getDefaultTemplate: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": string;
-        };
-      };
-    };
-  };
-  resetDefaultTemplate: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["TemplateDto"];
-        };
-      };
-    };
-  };
-  listRentReceipts: {
-    parameters: {
-      query?: {
-        month?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["RentReceiptDto"][];
-        };
-      };
-    };
-  };
-  createRentReceipt: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["RentReceiptRequest"];
-      };
-    };
-    responses: {
-      /** @description Created */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["RentReceiptDto"];
-        };
-      };
-    };
-  };
-  previewRentReceipt: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["RentReceiptRequest"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": string;
-        };
-      };
-    };
-  };
-  uploadReceipt: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        "application/json": {
-          /** Format: binary */
-          file: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Created */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["ReceiptDto"];
-        };
-      };
-    };
-  };
-  startReceiptAnalysis: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Accepted */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["AnalysisStartResponse"];
-        };
-      };
-    };
-  };
-  listExpenseStatements: {
-    parameters: {
-      query?: {
-        month?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["StatementDto"][];
-        };
-      };
-    };
-  };
-  createExpenseStatement: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["StatementGenerationRequest"];
-      };
-    };
-    responses: {
-      /** @description Created */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["StatementDto"];
-        };
-      };
-    };
-  };
-  previewStatement: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["StatementPreviewRequest"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": string;
-        };
-      };
-    };
-  };
-  createStatementDraft: {
-    parameters: {
-      query: {
-        month: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["DraftDto"];
-        };
-      };
-    };
-  };
-  calculateStatement: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["StatementCalculationRequest"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["CalculationResponse"];
-        };
-      };
-    };
-  };
-  listExpenseItems: {
-    parameters: {
-      query?: {
-        all?: boolean;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["ExpenseItemDto"][];
-        };
-      };
-    };
-  };
-  createExpenseItem: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ExpenseItemRequest"];
-      };
-    };
-    responses: {
-      /** @description Created */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["ExpenseItemDto"];
-        };
-      };
-    };
-  };
-  resetE2eData: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No Content */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  testLlm: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["LlmTestResponse"];
-        };
-      };
-    };
-  };
-  getTemplateFile: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": string;
-        };
-      };
-    };
-  };
-  getTemplateVariables: {
-    parameters: {
-      query: {
-        type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["TemplateVariableDto"][];
-        };
-      };
-    };
-  };
-  getRentReceipt: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["RentReceiptDto"];
-        };
-      };
-    };
-  };
-  getRentReceiptPdf: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": string;
-        };
-      };
-    };
-  };
-  getActiveRentReceipt: {
-    parameters: {
-      query: {
-        month: string;
-        landlordId?: number;
-        tenantId?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["RentReceiptDto"];
-        };
-      };
-    };
-  };
-  getReceipt: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["ReceiptDto"];
-        };
-      };
-    };
-  };
-  deleteReceipt: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No Content */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  getReceiptFile: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": string;
-        };
-      };
-    };
-  };
-  getExpenseStatement: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["StatementDto"];
-        };
-      };
-    };
-  };
-  getExpenseStatementPdf: {
-    parameters: {
-      query?: {
-        complete?: boolean;
-      };
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": string;
-        };
-      };
-    };
-  };
-  getExpenseStatementZip: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/zip": string;
-        };
-      };
-    };
-  };
-  getActiveExpenseStatement: {
-    parameters: {
-      query: {
-        month: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["StatementDto"];
-        };
-      };
-    };
-  };
-  getAnalysis: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["AnalysisDto"];
-        };
-      };
-    };
-  };
-  cancelAnalysis: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["AnalysisDto"];
-        };
-      };
-    };
-  };
-  getLlmStatus: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["LlmStatusDto"];
-        };
-      };
-    };
-  };
-  listLlmModels: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["LlmModelDto"][];
-        };
-      };
-    };
-  };
-  getDefaultLlmPrompt: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["DefaultPromptDto"];
-        };
-      };
-    };
-  };
-  deleteTemplate: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No Content */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  listSignatures: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["SignatureDto"][];
-        };
-      };
-    };
-  };
-  createSignature: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "multipart/form-data": {
-          /** @enum {string} */
-          type: "LANDLORD" | "ENTREPRISE_CEO";
-          name: string;
-          /** Format: int64 */
-          landlordId?: number;
-          /** Format: binary */
-          file: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Created */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["SignatureDto"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": {
-            type?: string;
-            title?: string;
-            status?: number;
-            detail?: string;
-          };
-        };
-      };
-    };
-  };
-  deleteSignature: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No Content */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": {
-            type?: string;
-            title?: string;
-            status?: number;
-            detail?: string;
-          };
-        };
-      };
-    };
-  };
-  getSignatureImage: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "image/png": string;
-          "image/jpeg": string;
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": {
-            type?: string;
-            title?: string;
-            status?: number;
-            detail?: string;
-          };
-        };
-      };
-    };
-  };
-  listLandlords: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["LandlordDto"][];
-        };
-      };
-    };
-  };
-  createLandlord: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["LandlordRequest"];
-      };
-    };
-    responses: {
-      /** @description Created */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["LandlordDto"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDetail"];
-        };
-      };
-    };
-  };
-  updateLandlord: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["LandlordRequest"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["LandlordDto"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDetail"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDetail"];
-        };
-      };
-    };
-  };
-  deleteLandlord: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No Content */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDetail"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDetail"];
-        };
-      };
-    };
-  };
-  listTenants: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["TenantDto"][];
-        };
-      };
-    };
-  };
-  createTenant: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["TenantRequest"];
-      };
-    };
-    responses: {
-      /** @description Created */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["TenantDto"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDetail"];
-        };
-      };
-    };
-  };
-  updateTenant: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["TenantRequest"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["TenantDto"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDetail"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDetail"];
-        };
-      };
-    };
-  };
-  deleteTenant: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No Content */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDetail"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDetail"];
-        };
-      };
-    };
-  };
-  listLeases: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["LeaseDto"][];
-        };
-      };
-    };
-  };
-  createLease: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["LeaseRequest"];
-      };
-    };
-    responses: {
-      /** @description Created */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["LeaseDto"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDetail"];
-        };
-      };
-    };
-  };
-  updateLease: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["LeaseRequest"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "*/*": components["schemas"]["LeaseDto"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDetail"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDetail"];
-        };
-      };
-    };
-  };
-  deleteLease: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No Content */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDetail"];
-        };
-      };
-    };
-  };
+    listCompanies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompanyDto"][];
+                };
+            };
+        };
+    };
+    createCompany: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompanyDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getCompany: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompanyDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    updateCompany: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompanyDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    deleteCompany: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listEmployees: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EmployeeDto"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    createEmployee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmployeeRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EmployeeDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    updateEmployee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmployeeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EmployeeDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    deleteEmployee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    updateExpenseItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpenseItemRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ExpenseItemDto"];
+                };
+            };
+        };
+    };
+    deleteExpenseItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getLlmConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LlmConfigDto"];
+                };
+            };
+        };
+    };
+    updateLlmConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LlmConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LlmConfigDto"];
+                };
+            };
+        };
+    };
+    listTemplates: {
+        parameters: {
+            query: {
+                type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TemplateDto"][];
+                };
+            };
+        };
+    };
+    uploadTemplate: {
+        parameters: {
+            query: {
+                type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
+                name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TemplateDto"];
+                };
+            };
+        };
+    };
+    previewTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    activateTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TemplateDto"];
+                };
+            };
+        };
+    };
+    getDefaultTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    resetDefaultTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TemplateDto"];
+                };
+            };
+        };
+    };
+    listRentReceipts: {
+        parameters: {
+            query?: {
+                /** @description Identifiant de la société de la quittance. */
+                companyId?: number;
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RentReceiptDto"][];
+                };
+            };
+        };
+    };
+    createRentReceipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RentReceiptRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RentReceiptDto"];
+                };
+            };
+        };
+    };
+    previewRentReceipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RentReceiptRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    uploadReceipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReceiptDto"];
+                };
+            };
+        };
+    };
+    startReceiptAnalysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnalysisStartResponse"];
+                };
+            };
+        };
+    };
+    listExpenseStatements: {
+        parameters: {
+            query: {
+                /** @description Identifiant de la société propriétaire des notes de frais. */
+                companyId: number;
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StatementDto"][];
+                };
+            };
+        };
+    };
+    createExpenseStatement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatementGenerationRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StatementDto"];
+                };
+            };
+        };
+    };
+    previewStatement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatementPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    createStatementDraft: {
+        parameters: {
+            query: {
+                /** @description Identifiant de la société. */
+                companyId: number;
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DraftDto"];
+                };
+            };
+        };
+    };
+    calculateStatement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatementCalculationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CalculationResponse"];
+                };
+            };
+        };
+    };
+    listExpenseItems: {
+        parameters: {
+            query: {
+                /** @description Identifiant de la société propriétaire des postes de frais. */
+                companyId: number;
+                all?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ExpenseItemDto"][];
+                };
+            };
+        };
+    };
+    createExpenseItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpenseItemRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ExpenseItemDto"];
+                };
+            };
+        };
+    };
+    resetE2eData: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    testLlm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LlmTestResponse"];
+                };
+            };
+        };
+    };
+    getTemplateFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    getTemplateVariables: {
+        parameters: {
+            query: {
+                type: "RENT_RECEIPT" | "EXPENSE_STATEMENT";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TemplateVariableDto"][];
+                };
+            };
+        };
+    };
+    getRentReceipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RentReceiptDto"];
+                };
+            };
+        };
+    };
+    getRentReceiptPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    getActiveRentReceipt: {
+        parameters: {
+            query: {
+                month: string;
+                /** @description Société utilisée pour l'identité et les données de domicile. */
+                companyId?: number;
+                landlordId?: number;
+                tenantId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RentReceiptDto"];
+                };
+            };
+        };
+    };
+    getReceipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReceiptDto"];
+                };
+            };
+        };
+    };
+    deleteReceipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getReceiptFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    getExpenseStatement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StatementDto"];
+                };
+            };
+        };
+    };
+    getExpenseStatementPdf: {
+        parameters: {
+            query?: {
+                complete?: boolean;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    getExpenseStatementZip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+        };
+    };
+    getActiveExpenseStatement: {
+        parameters: {
+            query: {
+                /** @description Identifiant de la société. */
+                companyId: number;
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StatementDto"];
+                };
+            };
+        };
+    };
+    getAnalysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnalysisDto"];
+                };
+            };
+        };
+    };
+    cancelAnalysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnalysisDto"];
+                };
+            };
+        };
+    };
+    getLlmStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LlmStatusDto"];
+                };
+            };
+        };
+    };
+    listLlmModels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LlmModelDto"][];
+                };
+            };
+        };
+    };
+    getDefaultLlmPrompt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DefaultPromptDto"];
+                };
+            };
+        };
+    };
+    deleteTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listSignatures: {
+        parameters: {
+            query?: {
+                /** @description Identifiant de la société. */
+                companyId?: number;
+                /** @description Identifiant du salarié. */
+                employeeId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SignatureDto"][];
+                };
+            };
+        };
+    };
+    createSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** @enum {string} */
+                    type: "LANDLORD" | "ENTREPRISE_CEO" | "EMPLOYEE";
+                    name: string;
+                    /**
+                     * Format: int64
+                     * @description Obligatoire pour une signature de type LANDLORD.
+                     */
+                    landlordId?: number;
+                    /**
+                     * Format: int64
+                     * @description Obligatoire pour une signature de type EMPLOYEE ou ENTREPRISE_CEO.
+                     */
+                    employeeId?: number;
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SignatureDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": {
+                        type?: string;
+                        title?: string;
+                        status?: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    deleteSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": {
+                        type?: string;
+                        title?: string;
+                        status?: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getSignatureImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                    "image/jpeg": string;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": {
+                        type?: string;
+                        title?: string;
+                        status?: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    listLandlords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LandlordDto"][];
+                };
+            };
+        };
+    };
+    createLandlord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LandlordRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LandlordDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    updateLandlord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LandlordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LandlordDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    deleteLandlord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listTenants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TenantDto"][];
+                };
+            };
+        };
+    };
+    createTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TenantDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    updateTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TenantDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    deleteTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listLeases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LeaseDto"][];
+                };
+            };
+        };
+    };
+    createLease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaseRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LeaseDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    updateLease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaseRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LeaseDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    deleteLease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
 }

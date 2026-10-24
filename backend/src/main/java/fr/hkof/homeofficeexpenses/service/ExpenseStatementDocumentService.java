@@ -19,14 +19,13 @@ import java.util.zip.ZipOutputStream;
 
 import org.springframework.stereotype.Service;
 
+import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
 import fr.hkof.homeofficeexpenses.domain.ExpenseLine;
 import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
 import fr.hkof.homeofficeexpenses.domain.Receipt;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
-import fr.hkof.homeofficeexpenses.domain.Settings;
 import fr.hkof.homeofficeexpenses.domain.Signature;
-import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.service.extraction.DocumentTextExtractor;
@@ -63,28 +62,28 @@ public class ExpenseStatementDocumentService {
         this.clock = clock;
     }
 
-    public byte[] preview(YearMonth month, List<CalculatedLine> lines, Settings settings,
+    public byte[] preview(YearMonth month, List<CalculatedLine> lines, Company company,
             StatementPreviewRequest request) {
-        ExpenseStatement statement = buildStatement(month, lines, null, null);
+        ExpenseStatement statement = buildStatement(month, lines, null, null, company);
         boolean complete = Boolean.TRUE.equals(request.complete());
-        String signature = signatureDataUri(request.signatureId(), SignatureType.ENTREPRISE_CEO);
+        String signature = signatureDataUri(request.signatureId(), company.getId());
         TemplateDocument template = templateForStatement(request.templateId());
         String html = templateService.render(template,
-                templateDataService.dataStatement(settings, statement, complete, signature));
+                templateDataService.dataStatement(company, statement, complete, signature));
         byte[] pdf = pdfService.renderHtmlToPdf(html);
         if (complete) {
-            pdf = pdfService.merge(withAttachments(pdf, statement, month));
+            pdf = pdfService.merge(withAttachments(pdf, statement, month, company.getId()));
         }
         return pdfService.addWatermark(pdf);
     }
 
     public GeneratedStatement generate(YearMonth month, List<CalculatedLine> lines, int version,
-            TemplateDocument template, String signature, Settings settings) {
-        ExpenseStatement statement = buildStatement(month, lines, version, template);
+            TemplateDocument template, String signature, Company company) {
+        ExpenseStatement statement = buildStatement(month, lines, version, template, company);
         String html = templateService.render(template,
-                templateDataService.dataStatement(settings, statement, true, signature));
+                templateDataService.dataStatement(company, statement, true, signature));
         byte[] pdf = pdfService.renderHtmlToPdf(html);
-        byte[] completePdf = pdfService.merge(withAttachments(pdf, statement, month));
+        byte[] completePdf = pdfService.merge(withAttachments(pdf, statement, month, company.getId()));
         return new GeneratedStatement(statement, pdf, completePdf);
     }
 
@@ -109,7 +108,7 @@ public class ExpenseStatementDocumentService {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream();
                 ZipOutputStream zip = new ZipOutputStream(out, StandardCharsets.UTF_8)) {
             addEntry(zip, "note_frais_" + month + ".pdf", storage.read(statement.getPdfPath()));
-            RentReceipt rentReceipt = rentReceiptService.activeForMonth(month, null, null);
+            RentReceipt rentReceipt = rentReceiptService.activeForMonth(statement.getCompanyId(), month, null, null);
             if (rentReceipt != null && rentReceipt.getPdfPath() != null
                     && !rentReceipt.getPdfPath().isBlank()) {
                 addEntry(zip, "quittance_" + month + ".pdf", storage.read(rentReceipt.getPdfPath()));
@@ -136,8 +135,8 @@ public class ExpenseStatementDocumentService {
         }
     }
 
-    public String signatureDataUri(Long requestedId, SignatureType defaultType) {
-        Signature signature = signatureService.resolve(requestedId, defaultType)
+    public String signatureDataUri(Long requestedId, Long companyId) {
+        Signature signature = signatureService.resolveForCompany(companyId, requestedId)
                 .orElseThrow(() -> new BusinessException(
                         "Aucune signature configurée. Configurez une signature dans la page Paramètres."));
         return signatureService.dataUri(signature.getId());
@@ -154,8 +153,9 @@ public class ExpenseStatementDocumentService {
     }
 
     private ExpenseStatement buildStatement(YearMonth month, List<CalculatedLine> lines, Integer version,
-            TemplateDocument template) {
+            TemplateDocument template, Company company) {
         ExpenseStatement statement = new ExpenseStatement();
+        statement.setCompanyId(company.getId());
         statement.setMonth(month.toString());
         statement.setNumber("NF-" + month);
         statement.setVersion(version == null ? 1 : version);
@@ -187,11 +187,12 @@ public class ExpenseStatementDocumentService {
         return statement;
     }
 
-    private List<byte[]> withAttachments(byte[] statementPdf, ExpenseStatement statement, YearMonth month) {
+    private List<byte[]> withAttachments(byte[] statementPdf, ExpenseStatement statement, YearMonth month,
+            Long companyId) {
         List<byte[]> pdfs = new ArrayList<>();
         pdfs.add(statementPdf);
         // Expense statements keep a month-scoped rent receipt: pair selection is out of scope.
-        RentReceipt rentReceipt = rentReceiptService.activeForMonth(month.toString(), null, null);
+        RentReceipt rentReceipt = rentReceiptService.activeForMonth(companyId, month.toString(), null, null);
         if (rentReceipt != null && rentReceipt.getPdfPath() != null) {
             pdfs.add(storage.read(rentReceipt.getPdfPath()));
         }

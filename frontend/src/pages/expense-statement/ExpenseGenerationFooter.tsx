@@ -37,7 +37,7 @@ export function ExpenseGenerationFooter({
             Base de prorata :{" "}
             <span className="expense-generation-footer-basis-value">
               {c.calculation?.proRataBaseDetail ??
-                c.settings.data?.proRataBaseDetail ??
+                c.activeCompany?.proRataBaseDetail ??
                 "—"}
             </span>
           </p>

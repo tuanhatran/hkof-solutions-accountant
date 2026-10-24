@@ -5,6 +5,10 @@
     @apply items-center gap-1.5 rounded-full border border-line bg-surface/70 px-3 py-2 text-xs font-medium text-ink-soft;
   }
 
+  .generate-rent-receipt-page-company {
+    @apply hidden max-w-64 items-center gap-1.5 truncate rounded-full border border-line bg-surface/70 px-3 py-2 text-xs font-medium text-ink-soft sm:inline-flex;
+  }
+
   .generate-rent-receipt-page-tabs {
     @apply mb-4 flex items-center justify-between gap-3 lg:hidden;
   }

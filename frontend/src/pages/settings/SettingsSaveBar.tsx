@@ -1,16 +1,23 @@
 import "./SettingsSaveBar.css";
 import { Save } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 
-/** Submit error, dirty indicator and bottom save button of the settings form. */
+/** Submit error, dirty indicator and bottom save button of a settings form. */
 export function SettingsSaveBar({
   errorText,
   isDirty,
   isPending,
+  submitLabel = "Enregistrer la configuration",
+  extraAction = null,
+  dataCy = "btn-enregistrer-configuration-bas",
 }: {
   errorText: string | null;
   isDirty: boolean;
   isPending: boolean;
+  submitLabel?: string;
+  extraAction?: ReactNode;
+  dataCy?: string;
 }) {
   return (
     <>
@@ -26,15 +33,18 @@ export function SettingsSaveBar({
             ? "Modifications non enregistrées."
             : "Toutes les valeurs sont à jour."}
         </p>
-        <Button
-          variant="primary"
-          type="submit"
-          icon={<Save size={15} />}
-          loading={isPending}
-          data-cy="btn-enregistrer-configuration-bas"
-        >
-          Enregistrer la configuration
-        </Button>
+        <div className="settings-save-bar-actions">
+          {extraAction}
+          <Button
+            variant="primary"
+            type="submit"
+            icon={<Save size={15} />}
+            loading={isPending}
+            data-cy={dataCy}
+          >
+            {submitLabel}
+          </Button>
+        </div>
       </div>
     </>
   );

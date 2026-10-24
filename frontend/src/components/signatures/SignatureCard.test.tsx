@@ -8,7 +8,8 @@ describe("SignatureCard", () => {
 
     expect(screen.queryByRole("img")).toBeNull();
     expect(screen.getAllByText("Signature").length).toBeGreaterThan(0);
-    expect(screen.getByText("Signature du gérant")).toBeInTheDocument();
+    expect(screen.getByText("Non lié")).toBeInTheDocument();
+    expect(screen.getByText("Non liée")).toBeInTheDocument();
     expect(screen.getByText(/Ajoutée le/)).toHaveTextContent("Ajoutée le —");
     expect(
       screen.getByRole("button", { name: "Supprimer la signature" }),

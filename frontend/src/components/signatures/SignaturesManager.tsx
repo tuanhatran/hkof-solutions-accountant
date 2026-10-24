@@ -4,19 +4,22 @@ import { ImagePlus, Plus } from "lucide-react";
 import { useState } from "react";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
-import { queryKeys, useSignatures } from "@/api/queries";
+import { queryKeys, useEmployees, useSignatures } from "@/api/queries";
 import type { SignatureDto } from "@/api/types";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorState, LoadingState } from "@/components/ui/States";
+import { employeeTitleLabel } from "@/pages/settings/settingsValues";
 import { toast } from "@/state/toasts";
 import { SignatureCard } from "./SignatureCard";
 import { SignatureForm } from "./SignatureForm";
 
 /** Signature images available to the rent receipts and expense statements. */
-export function SignaturesManager() {
+export function SignaturesManager({ companyId }: { companyId: number | null }) {
   const queryClient = useQueryClient();
-  const signatures = useSignatures();
+  const [employeeFilter, setEmployeeFilter] = useState<number | null>(null);
+  const signatures = useSignatures(companyId, employeeFilter);
+  const employees = useEmployees(companyId);
   const [formOpen, setFormOpen] = useState(false);
   const [toDelete, setToDelete] = useState<SignatureDto | null>(null);
 
@@ -24,7 +27,9 @@ export function SignaturesManager() {
     mutationFn: (signature: SignatureDto) =>
       api.signatures.remove(signature.id as number),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.signatures });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.signaturesAll,
+      });
       setToDelete(null);
       toast.success("Signature supprimée.");
     },
@@ -35,6 +40,12 @@ export function SignaturesManager() {
   });
 
   const list = signatures.data ?? [];
+  const employeeRows = employees.data ?? [];
+  const ceo = employeeRows.find((employee) => employee.title === "CEO");
+  const defaultSignatureId = list.find(
+    (signature) =>
+      signature.type !== "LANDLORD" && signature.employeeId === ceo?.id,
+  )?.id;
 
   return (
     <section className="card signatures-manager">
@@ -64,7 +75,41 @@ export function SignaturesManager() {
       </div>
 
       <div className="card-body signatures-manager-body">
-        {formOpen ? <SignatureForm onClose={() => setFormOpen(false)} /> : null}
+        <div className="signatures-manager-filters">
+          <label
+            htmlFor="signature-filtre-salarie"
+            className="signatures-manager-filter-label"
+          >
+            Filtrer par salarié
+          </label>
+          <select
+            id="signature-filtre-salarie"
+            className="field signatures-manager-filter-select"
+            value={employeeFilter === null ? "" : String(employeeFilter)}
+            onChange={(event) =>
+              setEmployeeFilter(
+                event.target.value === "" ? null : Number(event.target.value),
+              )
+            }
+            disabled={companyId === null || employeeRows.length === 0}
+            data-cy="select-filtre-signature-salarie"
+          >
+            <option value="">Tous les salariés</option>
+            {employeeRows.map((employee) => (
+              <option key={employee.id} value={employee.id}>
+                {employee.firstName} {employee.lastName} —{" "}
+                {employeeTitleLabel(employee.title)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {formOpen ? (
+          <SignatureForm
+            companyId={companyId}
+            onClose={() => setFormOpen(false)}
+          />
+        ) : null}
 
         {signatures.isError ? (
           <ErrorState
@@ -78,8 +123,8 @@ export function SignaturesManager() {
             className="signatures-manager-empty"
             data-cy="aucune-signature-configuration"
           >
-            Aucune signature configurée. Ajoutez une image PNG ou JPEG pour
-            signer vos documents.
+            Aucune signature configurée pour cette société. Ajoutez une image
+            PNG ou JPEG pour signer vos documents.
           </p>
         ) : (
           <ul className="signatures-manager-list">
@@ -88,6 +133,7 @@ export function SignaturesManager() {
                 key={signature.id}
                 signature={signature}
                 onDelete={setToDelete}
+                highlighted={signature.id === defaultSignatureId}
               />
             ))}
           </ul>

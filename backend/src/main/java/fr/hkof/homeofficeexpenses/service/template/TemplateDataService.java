@@ -1,6 +1,8 @@
 package fr.hkof.homeofficeexpenses.service.template;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -9,18 +11,18 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
 import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Lease;
-import fr.hkof.homeofficeexpenses.domain.Settings;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
-import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.domain.Tenant;
-import fr.hkof.homeofficeexpenses.service.CalculationService;
+import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.service.Amounts;
+import fr.hkof.homeofficeexpenses.service.CalculationService;
+import fr.hkof.homeofficeexpenses.service.CompanyService;
 import fr.hkof.homeofficeexpenses.service.NumberToWords;
 import fr.hkof.homeofficeexpenses.service.RentConfigurationService;
-import fr.hkof.homeofficeexpenses.service.SettingsService;
 import fr.hkof.homeofficeexpenses.service.SignatureService;
 
 @Service
@@ -33,18 +35,18 @@ public class TemplateDataService {
     private static final String PREVIEW_SIGNATURE =
             "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=";
 
-    private final SettingsService settingsService;
+    private final CompanyService companyService;
     private final SignatureService signatureService;
     private final RentConfigurationService rentConfigurationService;
 
-    public TemplateDataService(SettingsService settingsService, SignatureService signatureService,
+    public TemplateDataService(CompanyService companyService, SignatureService signatureService,
             RentConfigurationService rentConfigurationService) {
-        this.settingsService = settingsService;
+        this.companyService = companyService;
         this.signatureService = signatureService;
         this.rentConfigurationService = rentConfigurationService;
     }
 
-    public Map<String, Object> dataRentReceipt(Settings settings, Landlord landlord, Tenant tenant, Lease lease,
+    public Map<String, Object> dataRentReceipt(Company company, Landlord landlord, Tenant tenant, Lease lease,
             RentReceipt rentReceipt, String signature) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("bailleur", Map.of(
@@ -54,8 +56,8 @@ public class TemplateDataService {
                 "nom", tenant == null ? "" : text(tenant.getName()),
                 "adresse", tenant == null ? "" : text(tenant.getAddress())));
         data.put("logement", Map.of(
-                "adresse", lease == null ? text(settings.getHomeAddress()) : text(lease.getPropertyAddress())));
-        data.put("mois_libelle", Amounts.formatMonth(java.time.YearMonth.parse(rentReceipt.getMonth())));
+                "adresse", lease == null ? text(company.getHomeAddress()) : text(lease.getPropertyAddress())));
+        data.put("mois_libelle", Amounts.formatMonth(YearMonth.parse(rentReceipt.getMonth())));
         data.put("periode", Map.of(
                 "debut", Amounts.formatDate(rentReceipt.getPeriodStart()),
                 "fin", Amounts.formatDate(rentReceipt.getPeriodEnd())));
@@ -65,19 +67,20 @@ public class TemplateDataService {
         data.put("total_en_lettres", NumberToWords.toWords(rentReceipt.getTotal()));
         data.put("date_paiement", Amounts.formatDate(rentReceipt.getPaymentDate()));
         data.put("date_emission", Amounts.formatDate(rentReceipt.getIssueDate()));
-        data.put("lieu", text(settings.getIssuePlace()));
+        data.put("lieu", text(company.getIssuePlace()));
         data.put("signature", text(signature));
         return data;
     }
 
-    public Map<String, Object> dataStatement(Settings settings, ExpenseStatement statement, boolean complete, String signature) {
+    public Map<String, Object> dataStatement(Company company, ExpenseStatement statement, boolean complete,
+            String signature) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("societe", Map.of(
-                "raison_sociale", text(settings.getCompanyName()),
-                "siren", text(settings.getSiren()),
-                "adresse", text(settings.getCompanyAddress())));
-        data.put("gerant", text(settings.getManagerName()));
-        data.put("mois_libelle", Amounts.formatMonth(java.time.YearMonth.parse(statement.getMonth())));
+                "raison_sociale", text(company.getName()),
+                "siren", text(company.getSiren()),
+                "adresse", text(company.getAddress())));
+        data.put("gerant", text(company.getManagerName()));
+        data.put("mois_libelle", Amounts.formatMonth(YearMonth.parse(statement.getMonth())));
         data.put("numero", text(statement.getNumber()));
         List<Map<String, Object>> lines = new ArrayList<>();
         for (var line : statement.getLines()) {
@@ -93,36 +96,36 @@ public class TemplateDataService {
         data.put("lignes", lines);
         data.put("total", Amounts.formatEUR(statement.getTotal()));
         data.put("total_en_lettres", NumberToWords.toWords(statement.getTotal()));
-        data.put("base_prorata", proRataDetail(settings));
-        data.put("date_emission", Amounts.formatDate(java.time.LocalDate.now()));
-        data.put("lieu", text(settings.getIssuePlace()));
+        data.put("base_prorata", proRataDetail(company));
+        data.put("date_emission", Amounts.formatDate(LocalDate.now()));
+        data.put("lieu", text(company.getIssuePlace()));
         data.put("complete", complete);
         data.put("signature", text(signature));
         return data;
     }
 
     @Transactional(readOnly = true)
-    public Map<String, Object> dataExample(fr.hkof.homeofficeexpenses.domain.TemplateType type) {
-        Settings settings = settingsService.entity();
-        SignatureType defaultType = type == fr.hkof.homeofficeexpenses.domain.TemplateType.RENT_RECEIPT
-                ? SignatureType.LANDLORD
-                : SignatureType.ENTREPRISE_CEO;
-        String signature = signatureService.resolve(null, defaultType)
+    public Map<String, Object> dataExample(TemplateType type) {
+        Company company = companyService.list().isEmpty()
+                ? new Company()
+                : companyService.entity(companyService.list().get(0).id());
+        String signature = signatureService.resolveForCompany(company.getId(), null)
                 .map(stored -> signatureService.dataUri(stored.getId()))
                 .orElse(null);
         String effectiveSignature = signature == null || signature.isBlank() ? PREVIEW_SIGNATURE : signature;
-        if (type == fr.hkof.homeofficeexpenses.domain.TemplateType.RENT_RECEIPT) {
+        if (type == TemplateType.RENT_RECEIPT) {
             Lease lease = rentConfigurationService.exampleLease();
             RentReceipt rentReceipt = new RentReceipt();
             rentReceipt.setMonth("2026-10");
-            rentReceipt.setPeriodStart(java.time.LocalDate.of(2026, 10, 1));
-            rentReceipt.setPeriodEnd(java.time.LocalDate.of(2026, 10, 31));
+            rentReceipt.setPeriodStart(LocalDate.of(2026, 10, 1));
+            rentReceipt.setPeriodEnd(LocalDate.of(2026, 10, 31));
             rentReceipt.setRentExclCharges(lease == null ? new BigDecimal("900.00") : lease.getRentExclCharges());
             rentReceipt.setCharges(lease == null ? new BigDecimal("50.00") : lease.getCharges());
-            rentReceipt.setTotal(CalculationService.totalRentReceipt(rentReceipt.getRentExclCharges(), rentReceipt.getCharges()));
-            rentReceipt.setPaymentDate(java.time.LocalDate.of(2026, 10, 5));
-            rentReceipt.setIssueDate(java.time.LocalDate.of(2026, 10, 1));
-            return dataRentReceipt(settings,
+            rentReceipt.setTotal(CalculationService.totalRentReceipt(rentReceipt.getRentExclCharges(),
+                    rentReceipt.getCharges()));
+            rentReceipt.setPaymentDate(LocalDate.of(2026, 10, 5));
+            rentReceipt.setIssueDate(LocalDate.of(2026, 10, 1));
+            return dataRentReceipt(company,
                     lease == null ? null : lease.getLandlord(),
                     lease == null ? null : lease.getTenant(),
                     lease, rentReceipt, effectiveSignature);
@@ -131,17 +134,17 @@ public class TemplateDataService {
         statement.setMonth("2026-10");
         statement.setNumber("NF-2026-10");
         statement.setTotal(new BigDecimal("364.96"));
-        return dataStatementExample(settings, statement, true, effectiveSignature);
+        return dataStatementExample(company, statement, true, effectiveSignature);
     }
 
-    private Map<String, Object> dataStatementExample(Settings settings, ExpenseStatement statement, boolean complete,
+    private Map<String, Object> dataStatementExample(Company company, ExpenseStatement statement, boolean complete,
             String signature) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("societe", Map.of(
-                "raison_sociale", text(settings.getCompanyName()),
-                "siren", text(settings.getSiren()),
-                "adresse", text(settings.getCompanyAddress())));
-        data.put("gerant", text(settings.getManagerName()));
+                "raison_sociale", text(company.getName()),
+                "siren", text(company.getSiren()),
+                "adresse", text(company.getAddress())));
+        data.put("gerant", text(company.getManagerName()));
         data.put("mois_libelle", "Octobre 2026");
         data.put("numero", statement.getNumber());
         List<Map<String, Object>> lines = new ArrayList<>();
@@ -150,13 +153,14 @@ public class TemplateDataService {
         lines.add(line("Électricité", "Primeo", "01/10/2026 au 31/10/2026", "85,00 €", "35,71 %", "30,35 €"));
         lines.add(line("Téléphone", "Opérateur", "01/10/2026 au 31/10/2026", "29,99 €", "35,71 %", "10,71 €"));
         lines.add(line("Fibre internet", "Opérateur", "01/10/2026 au 31/10/2026", "39,99 €", "35,71 %", "14,28 €"));
-        lines.add(line("Assurance habitation", "Assureur", "01/10/2026 au 31/10/2026", "180,00 €", "35,71 %", "64,28 €"));
+        lines.add(line("Assurance habitation", "Assureur", "01/10/2026 au 31/10/2026", "180,00 €", "35,71 %",
+                "64,28 €"));
         data.put("lignes", lines);
         data.put("total", "1 112,47 €");
         data.put("total_en_lettres", "mille cent douze euros et quarante-sept centimes");
-        data.put("base_prorata", proRataDetail(settings));
-        data.put("date_emission", Amounts.formatDate(java.time.LocalDate.now()));
-        data.put("lieu", text(settings.getIssuePlace()));
+        data.put("base_prorata", proRataDetail(company));
+        data.put("date_emission", Amounts.formatDate(LocalDate.now()));
+        data.put("lieu", text(company.getIssuePlace()));
         data.put("complete", complete);
         data.put("signature", text(signature));
         return data;
@@ -174,7 +178,7 @@ public class TemplateDataService {
         return item;
     }
 
-    private String period(java.time.LocalDate start, java.time.LocalDate end) {
+    private String period(LocalDate start, LocalDate end) {
         if (start == null || end == null) {
             return "";
         }
@@ -182,13 +186,13 @@ public class TemplateDataService {
     }
 
     private String statementPeriod(String month) {
-        java.time.YearMonth yearMonth = java.time.YearMonth.parse(month);
+        YearMonth yearMonth = YearMonth.parse(month);
         return period(yearMonth.atDay(1), yearMonth.atEndOfMonth());
     }
 
-    public String proRataDetail(Settings settings) {
-        BigDecimal base = CalculationService.proRataBase(settings.getBusinessArea(), settings.getTotalArea());
-        return settingsService.proRataDetail(settings, base);
+    public String proRataDetail(Company company) {
+        BigDecimal base = CalculationService.proRataBase(company.getBusinessArea(), company.getTotalArea());
+        return companyService.proRataDetail(company, base);
     }
 
     private String text(String value) {

@@ -7,47 +7,58 @@ import java.util.Locale;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import fr.hkof.homeofficeexpenses.domain.Periodicity;
 import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
+import fr.hkof.homeofficeexpenses.domain.Periodicity;
 import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
 import fr.hkof.homeofficeexpenses.web.dto.ExpenseItemDtos.ExpenseItemDto;
 import fr.hkof.homeofficeexpenses.web.dto.ExpenseItemDtos.ExpenseItemRequest;
 
+/**
+ * Expense items are owned by one company; codes are unique inside a company only.
+ */
 @Service
 public class ExpenseItemService {
 
     private final ExpenseItemRepository repository;
+    private final CompanyService companies;
 
-    public ExpenseItemService(ExpenseItemRepository repository) {
+    public ExpenseItemService(ExpenseItemRepository repository, CompanyService companies) {
         this.repository = repository;
+        this.companies = companies;
     }
 
     @Transactional(readOnly = true)
-    public List<ExpenseItemDto> list(boolean includeDeleted) {
+    public List<ExpenseItemDto> list(Long companyId, boolean includeDeleted) {
+        companies.entity(companyId);
         List<ExpenseItem> items = includeDeleted
-                ? repository.findByDeletedFalseOrderBySortOrderAsc()
-                : repository.findByDeletedFalseAndActiveTrueOrderBySortOrderAsc();
+                ? repository.findByCompanyIdAndDeletedFalseOrderBySortOrderAscIdAsc(companyId)
+                : repository.findByCompanyIdAndDeletedFalseAndActiveTrueOrderBySortOrderAscIdAsc(companyId);
         return items.stream().map(this::toDto).toList();
     }
 
     @Transactional(readOnly = true)
-    public ExpenseItem entity(String code) {
-        return repository.findByCodeAndDeletedFalse(code)
+    public ExpenseItem entity(Long companyId, String code) {
+        return repository.findByCompanyIdAndCodeAndDeletedFalse(companyId, code)
                 .orElseThrow(() -> new BusinessException("Type de frais inconnu : " + code));
     }
 
     @Transactional
     public ExpenseItemDto create(ExpenseItemRequest request) {
+        if (request.companyId() == null) {
+            throw new BusinessException("Sélectionnez une société.");
+        }
+        companies.entity(request.companyId());
         if (request.label() == null || request.label().isBlank()) {
             throw new BusinessException("Le libellé du poste est obligatoire.");
         }
         String code = request.code() == null || request.code().isBlank()
                 ? generateCode(request.label())
                 : normalizeCode(request.code());
-        if (repository.existsByCode(code)) {
+        if (repository.existsByCompanyIdAndCode(request.companyId(), code)) {
             throw new BusinessException("Un poste avec le code « " + code + " » existe déjà.");
         }
         ExpenseItem expenseItem = new ExpenseItem();
+        expenseItem.setCompanyId(request.companyId());
         expenseItem.setCode(code);
         apply(expenseItem, request);
         expenseItem.setDeleted(false);
@@ -56,21 +67,23 @@ public class ExpenseItemService {
 
     @Transactional
     public ExpenseItemDto update(Long id, ExpenseItemRequest request) {
-        ExpenseItem expenseItem = repository.findById(id)
-                .filter(item -> !item.isDeleted())
-                .orElseThrow(() -> new NotFoundException("Poste introuvable."));
+        ExpenseItem expenseItem = activeItem(id);
         apply(expenseItem, request);
         return toDto(repository.save(expenseItem));
     }
 
     @Transactional
     public void delete(Long id) {
-        ExpenseItem expenseItem = repository.findById(id)
-                .filter(item -> !item.isDeleted())
-                .orElseThrow(() -> new NotFoundException("Poste introuvable."));
+        ExpenseItem expenseItem = activeItem(id);
         expenseItem.setDeleted(true);
         expenseItem.setActive(false);
         repository.save(expenseItem);
+    }
+
+    private ExpenseItem activeItem(Long id) {
+        return repository.findById(id)
+                .filter(item -> !item.isDeleted())
+                .orElseThrow(() -> new NotFoundException("Poste introuvable."));
     }
 
     private void apply(ExpenseItem expenseItem, ExpenseItemRequest request) {
@@ -116,6 +129,7 @@ public class ExpenseItemService {
     public ExpenseItemDto toDto(ExpenseItem expenseItem) {
         return new ExpenseItemDto(
                 expenseItem.getId(),
+                expenseItem.getCompanyId(),
                 expenseItem.getCode(),
                 expenseItem.getLabel(),
                 expenseItem.getSupplier(),

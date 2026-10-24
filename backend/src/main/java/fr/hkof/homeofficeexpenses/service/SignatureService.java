@@ -11,13 +11,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import fr.hkof.homeofficeexpenses.domain.Landlord;
+import fr.hkof.homeofficeexpenses.domain.Employee;
 import fr.hkof.homeofficeexpenses.domain.Signature;
 import fr.hkof.homeofficeexpenses.domain.SignatureType;
-import fr.hkof.homeofficeexpenses.repository.LandlordRepository;
 import fr.hkof.homeofficeexpenses.repository.SignatureRepository;
 import fr.hkof.homeofficeexpenses.web.dto.SignatureDtos.SignatureDto;
 
+/**
+ * Signature versions: a landlord signature is attached to a landlord, an employee signature
+ * to one employee of a company. Images are never overwritten, only logically deleted.
+ */
 @Service
 public class SignatureService {
 
@@ -25,27 +28,40 @@ public class SignatureService {
     public static final int MAX_NAME_LENGTH = 255;
 
     private final SignatureRepository repository;
-    private final LandlordRepository landlords;
+    private final SignatureOwnerService owners;
     private final FileTypeDetector detector;
     private final Clock clock;
 
-    public SignatureService(SignatureRepository repository, LandlordRepository landlords,
+    public SignatureService(SignatureRepository repository, SignatureOwnerService owners,
             FileTypeDetector detector, Clock clock) {
         this.repository = repository;
-        this.landlords = landlords;
+        this.owners = owners;
         this.detector = detector;
         this.clock = clock;
     }
 
     @Transactional(readOnly = true)
-    public List<SignatureDto> list() {
-        return repository.findByDeletedFalseOrderByTypeAscNameAscIdAsc().stream()
-                .map(this::toDto)
-                .toList();
+    public List<SignatureDto> list(Long companyId, Long employeeId) {
+        List<Signature> signatures;
+        if (employeeId != null) {
+            Employee employee = owners.employee(employeeId);
+            if (companyId != null && !companyId.equals(employee.getCompanyId())) {
+                throw new BusinessException("Le salarié n'appartient pas à cette société.");
+            }
+            signatures = repository.findByCompanyIdAndEmployeeIdAndDeletedFalseOrderByNameAscIdAsc(
+                    employee.getCompanyId(), employeeId);
+        } else if (companyId != null) {
+            owners.requireCompany(companyId);
+            signatures = repository.findVisibleForCompany(companyId, SignatureType.LANDLORD);
+        } else {
+            signatures = repository.findByDeletedFalseOrderByTypeAscNameAscIdAsc();
+        }
+        return signatures.stream().map(this::toDto).toList();
     }
 
     @Transactional
-    public SignatureDto create(SignatureType type, Long landlordId, String name, MultipartFile file) {
+    public SignatureDto create(SignatureType type, Long landlordId, Long employeeId, String name,
+            MultipartFile file) {
         if (type == null) {
             throw new BusinessException("Le type de signature est obligatoire.");
         }
@@ -53,7 +69,7 @@ public class SignatureService {
             throw new BusinessException("Le nom de la signature est obligatoire.");
         }
         String trimmedName = name.trim();
-        if (trimmedName.length() > SignatureService.MAX_NAME_LENGTH) {
+        if (trimmedName.length() > MAX_NAME_LENGTH) {
             throw new BusinessException(
                     "Le nom de la signature est trop long (255 caractères maximum).");
         }
@@ -67,10 +83,9 @@ public class SignatureService {
             throw new BusinessException("Impossible de lire le fichier de signature.");
         }
         FileTypeDetector.DetectedFile detected = detector.detectSignature(file.getOriginalFilename(), content);
-        Landlord landlord = landlord(type, landlordId);
         Signature signature = new Signature();
         signature.setType(type);
-        signature.setLandlordId(landlord == null ? null : landlord.getId());
+        owners.applyOwner(signature, type, landlordId, employeeId);
         signature.setName(trimmedName);
         signature.setMimeType(detected.mimeType());
         signature.setFileName(file.getOriginalFilename());
@@ -138,18 +153,58 @@ public class SignatureService {
     }
 
     /**
-     * Resolves the signature to use: the explicitly requested one when given (validated),
-     * otherwise the first non-deleted signature of the default type.
+     * Resolves the signature of one employee, mirroring {@link #resolveForLandlord}.
      */
     @Transactional(readOnly = true)
-    public Optional<Signature> resolve(Long requestedId, SignatureType defaultType) {
+    public Optional<Signature> resolveForEmployee(Long requestedId, Long employeeId) {
+        Employee employee = owners.employee(employeeId);
         if (requestedId != null) {
-            return Optional.of(entity(requestedId));
+            Signature requested = entity(requestedId);
+            if (requested.getType() == SignatureType.LANDLORD) {
+                throw new BusinessException("La signature sélectionnée n'est pas une signature de salarié.");
+            }
+            if (requested.getEmployeeId() != null && !requested.getEmployeeId().equals(employeeId)) {
+                throw new BusinessException("La signature sélectionnée n'appartient pas à ce salarié.");
+            }
+            return Optional.of(requested);
         }
-        if (defaultType == null) {
-            return Optional.empty();
+        return repository.findFirstByTypeAndDeletedFalseAndEmployeeIdOrderByNameAscIdAsc(
+                SignatureType.EMPLOYEE, employee.getId());
+    }
+
+    /**
+     * Resolves the default statement signature of a company: the requested signature when
+     * given, otherwise the CEO's first non-deleted signature, then any employee signature.
+     */
+    @Transactional(readOnly = true)
+    public Optional<Signature> resolveForCompany(Long companyId, Long requestedId) {
+        owners.requireCompany(companyId);
+        if (requestedId != null) {
+            Signature requested = entity(requestedId);
+            if (requested.getType() == SignatureType.LANDLORD) {
+                throw new BusinessException("La signature sélectionnée n'est pas une signature de salarié.");
+            }
+            if (requested.getCompanyId() != null && !requested.getCompanyId().equals(companyId)) {
+                throw new BusinessException("La signature sélectionnée n'appartient pas à cette société.");
+            }
+            return Optional.of(requested);
         }
-        return repository.findFirstByTypeAndDeletedFalseOrderByNameAscIdAsc(defaultType);
+        Optional<Employee> ceo = owners.ceo(companyId);
+        if (ceo.isPresent()) {
+            Optional<Signature> employeeSignature = repository
+                    .findFirstByTypeAndDeletedFalseAndEmployeeIdOrderByNameAscIdAsc(
+                            SignatureType.EMPLOYEE, ceo.get().getId());
+            if (employeeSignature.isPresent()) {
+                return employeeSignature;
+            }
+            Optional<Signature> legacySignature = repository
+                    .findFirstByTypeAndDeletedFalseAndEmployeeIdOrderByNameAscIdAsc(
+                            SignatureType.ENTREPRISE_CEO, ceo.get().getId());
+            if (legacySignature.isPresent()) {
+                return legacySignature;
+            }
+        }
+        return repository.findFirstByCompanyIdAndEmployeeIdIsNotNullAndDeletedFalseOrderByIdAsc(companyId);
     }
 
     @Transactional(readOnly = true)
@@ -160,31 +215,7 @@ public class SignatureService {
     }
 
     public SignatureDto toDto(Signature signature) {
-        Landlord landlord = signature.getLandlordId() == null
-                ? null
-                : landlords.findById(signature.getLandlordId()).orElse(null);
-        return new SignatureDto(
-                signature.getId(),
-                signature.getType().name(),
-                signature.getName(),
-                signature.getMimeType(),
-                signature.getCreatedAt(),
-                signature.getLandlordId(),
-                landlord == null ? null : landlord.getName());
-    }
-
-    private Landlord landlord(SignatureType type, Long landlordId) {
-        if (type == SignatureType.ENTREPRISE_CEO) {
-            if (landlordId != null) {
-                throw new BusinessException("Une signature de gérant ne peut pas être liée à un bailleur.");
-            }
-            return null;
-        }
-        if (landlordId == null) {
-            throw new BusinessException("Le bailleur de la signature est obligatoire.");
-        }
-        return landlords.findByIdAndDeletedFalse(landlordId)
-                .orElseThrow(() -> new NotFoundException("Bailleur introuvable."));
+        return owners.toDto(signature);
     }
 
     public record SignatureImage(byte[] content, String mimeType, String fileName) {

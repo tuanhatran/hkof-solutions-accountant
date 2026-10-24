@@ -7,6 +7,7 @@ public final class ExpenseItemDtos {
 
     public record ExpenseItemDto(
             Long id,
+            Long companyId,
             String code,
             String label,
             String supplier,
@@ -18,6 +19,7 @@ public final class ExpenseItemDtos {
     }
 
     public record ExpenseItemRequest(
+            Long companyId,
             String code,
             String label,
             String supplier,

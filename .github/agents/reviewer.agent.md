@@ -44,6 +44,8 @@ a specific claim looks wrong, and you must say why.
 9. Coverage gate missed: JaCoCo bundle under 90% LINE or BRANCH, Vitest global under 90%
    lines/statements/functions/branches, no coverage evidence line, or a production class at
    300 lines or more.
+10. Clean-code gate missed: frontend `npm run lint` or `npm run format:check` failed, or the
+    build is green only because a gate was skipped.
 
 ## False-green probe
 

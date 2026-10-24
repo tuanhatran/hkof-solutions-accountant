@@ -1,5 +1,5 @@
 import "./GenerateRentReceiptPage.css";
-import { CalendarDays, ReceiptText } from "lucide-react";
+import { Building2, CalendarDays, ReceiptText } from "lucide-react";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 import { ErrorState } from "@/components/ui/States";
@@ -34,6 +34,15 @@ export function GenerateRentReceiptPage() {
             >
               Note de frais du mois
             </Button>
+            {c.companyName ? (
+              <span
+                className="generate-rent-receipt-page-company"
+                data-cy="societe-quittance"
+              >
+                <Building2 size={14} aria-hidden="true" />
+                {c.companyName}
+              </span>
+            ) : null}
             <span className="hidden generate-rent-receipt-page-month sm:inline-flex">
               <CalendarDays size={14} aria-hidden="true" />
               {formatMonth(c.draft.month)}

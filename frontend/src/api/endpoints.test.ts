@@ -39,19 +39,51 @@ async function callJson<T>(operation: () => Promise<T>): Promise<T> {
   return operation();
 }
 
-describe("settings and directory endpoints", () => {
-  it("reads and updates the settings", async () => {
-    await callJson(() => api.settings.get());
-    expect(lastCall()[0]).toBe("/api/settings");
+describe("company and directory endpoints", () => {
+  it("manages companies", async () => {
+    await callJson(() => api.companies.list());
+    expect(lastCall()[0]).toBe("/api/companies");
 
-    await callJson(() => api.settings.update({ companyName: "Société" }));
+    await callJson(() => api.companies.get(2));
+    expect(lastCall()[0]).toBe("/api/companies/2");
+
+    await callJson(() => api.companies.create({ name: "HKOF" }));
     const [path, init] = lastCall();
-    expect(path).toBe("/api/settings");
+    expect(path).toBe("/api/companies");
     expect(init).toMatchObject({
-      method: "PUT",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ companyName: "Société" }),
+      body: JSON.stringify({ name: "HKOF" }),
     });
+
+    await callJson(() => api.companies.update(2, { name: "Autre" }));
+    expect(lastCall()[0]).toBe("/api/companies/2");
+    expect(lastCall()[1]).toMatchObject({ method: "PUT" });
+
+    await api.companies.delete(2);
+    expect(lastCall()[1]).toMatchObject({ method: "DELETE" });
+  });
+
+  it("manages the employees of a company", async () => {
+    await api.employees.list(2);
+    expect(lastCall()[0]).toBe("/api/companies/2/employees");
+
+    const employee = {
+      companyId: 2,
+      firstName: "Camille",
+      lastName: "Martin",
+      title: "CEO" as const,
+    };
+    await api.employees.create(2, employee);
+    expect(lastCall()[0]).toBe("/api/companies/2/employees");
+    expect(lastCall()[1]).toMatchObject({ method: "POST" });
+
+    await api.employees.update(5, employee);
+    expect(lastCall()[0]).toBe("/api/employees/5");
+    expect(lastCall()[1]).toMatchObject({ method: "PUT" });
+
+    await api.employees.delete(5);
+    expect(lastCall()[1]).toMatchObject({ method: "DELETE" });
   });
 
   it("manages landlords", async () => {
@@ -99,17 +131,17 @@ describe("settings and directory endpoints", () => {
     expect(lastCall()[1]).toMatchObject({ method: "DELETE" });
   });
 
-  it("manages expense items and their all flag", async () => {
-    await api.expenseItems.list();
-    expect(lastCall()[0]).toBe("/api/expense-items?all=false");
+  it("manages expense items scoped to a company and their all flag", async () => {
+    await api.expenseItems.list(3);
+    expect(lastCall()[0]).toBe("/api/expense-items?companyId=3&all=false");
 
-    await api.expenseItems.list(true);
-    expect(lastCall()[0]).toBe("/api/expense-items?all=true");
+    await api.expenseItems.list(3, true);
+    expect(lastCall()[0]).toBe("/api/expense-items?companyId=3&all=true");
 
-    await api.expenseItems.create({ code: "gaz", label: "Gaz" });
+    await api.expenseItems.create({ companyId: 3, code: "gaz", label: "Gaz" });
     expect(lastCall()[1]).toMatchObject({ method: "POST" });
 
-    await api.expenseItems.update(4, { label: "Électricité" });
+    await api.expenseItems.update(4, { companyId: 3, label: "Électricité" });
     expect(lastCall()[0]).toBe("/api/expense-items/4");
 
     await api.expenseItems.delete(4);
@@ -122,10 +154,15 @@ describe("rent receipt endpoints", () => {
     await api.rentReceipts.list();
     expect(lastCall()[0]).toBe("/api/rent-receipts");
 
-    await api.rentReceipts.list("2026-01");
-    expect(lastCall()[0]).toBe("/api/rent-receipts?month=2026-01");
+    await api.rentReceipts.list(3, "2026-01");
+    expect(lastCall()[0]).toBe("/api/rent-receipts?companyId=3&month=2026-01");
 
-    const body = { month: "2026-01", landlordId: 1, tenantId: 2 };
+    const body = {
+      companyId: 3,
+      month: "2026-01",
+      landlordId: 1,
+      tenantId: 2,
+    };
     await api.rentReceipts.create(body);
     expect(lastCall()[0]).toBe("/api/rent-receipts");
     expect(lastCall()[1]).toMatchObject({ method: "POST" });
@@ -137,17 +174,17 @@ describe("rent receipt endpoints", () => {
     expect(lastCall()[1]).toMatchObject({ method: "POST", signal });
   });
 
-  it("builds the active query with optional pair parameters", async () => {
+  it("builds the active query with optional company and pair parameters", async () => {
     fetchMock.mockResolvedValue(jsonResponse(null));
     await expect(api.rentReceipts.active("2026-01")).resolves.toBeNull();
     expect(lastCall()[0]).toBe("/api/rent-receipts/active?month=2026-01");
 
     fetchMock.mockResolvedValue(jsonResponse({ id: 7 }));
-    await expect(api.rentReceipts.active("2026-01", 1, 2)).resolves.toEqual({
+    await expect(api.rentReceipts.active("2026-01", 3, 1, 2)).resolves.toEqual({
       id: 7,
     });
     expect(lastCall()[0]).toBe(
-      "/api/rent-receipts/active?month=2026-01&landlordId=1&tenantId=2",
+      "/api/rent-receipts/active?month=2026-01&companyId=3&landlordId=1&tenantId=2",
     );
   });
 
@@ -160,23 +197,31 @@ describe("rent receipt endpoints", () => {
 
 describe("expense statement endpoints", () => {
   it("lists, drafts and finds the active statement", async () => {
-    await api.expenseStatements.list();
-    expect(lastCall()[0]).toBe("/api/expense-statements");
+    await api.expenseStatements.list(3);
+    expect(lastCall()[0]).toBe("/api/expense-statements?companyId=3");
 
-    await api.expenseStatements.list("2026-02");
-    expect(lastCall()[0]).toBe("/api/expense-statements?month=2026-02");
+    await api.expenseStatements.list(3, "2026-02");
+    expect(lastCall()[0]).toBe(
+      "/api/expense-statements?companyId=3&month=2026-02",
+    );
 
     fetchMock.mockResolvedValue(jsonResponse(null));
-    await expect(api.expenseStatements.active("2026-02")).resolves.toBeNull();
-    expect(lastCall()[0]).toBe("/api/expense-statements/active?month=2026-02");
+    await expect(
+      api.expenseStatements.active(3, "2026-02"),
+    ).resolves.toBeNull();
+    expect(lastCall()[0]).toBe(
+      "/api/expense-statements/active?companyId=3&month=2026-02",
+    );
 
-    await api.expenseStatements.draft("2026-02");
-    expect(lastCall()[0]).toBe("/api/expense-statements/draft?month=2026-02");
+    await api.expenseStatements.draft(3, "2026-02");
+    expect(lastCall()[0]).toBe(
+      "/api/expense-statements/draft?companyId=3&month=2026-02",
+    );
     expect(lastCall()[1]).toMatchObject({ method: "POST" });
   });
 
   it("calculates, previews and creates a statement", async () => {
-    const calculation = { month: "2026-02", lines: [] };
+    const calculation = { companyId: 3, month: "2026-02", lines: [] };
     await api.expenseStatements.calculate(calculation);
     expect(lastCall()[0]).toBe("/api/expense-statements/calculation");
     expect(lastCall()[1]).toMatchObject({ method: "POST" });
@@ -211,6 +256,9 @@ describe("signature, receipt and analysis endpoints", () => {
     await api.signatures.list();
     expect(lastCall()[0]).toBe("/api/signatures");
 
+    await api.signatures.list(3, 6);
+    expect(lastCall()[0]).toBe("/api/signatures?companyId=3&employeeId=6");
+
     const file = new File(["png"], "signature.png", { type: "image/png" });
     await api.signatures.create("LANDLORD", "Bailleur", file, 4);
     const [path, init] = lastCall();
@@ -221,10 +269,13 @@ describe("signature, receipt and analysis endpoints", () => {
     expect(payload.get("type")).toBe("LANDLORD");
     expect(payload.get("name")).toBe("Bailleur");
     expect(payload.get("landlordId")).toBe("4");
+    expect(payload.get("employeeId")).toBeNull();
     expect(payload.get("file")).toBeInstanceOf(File);
 
-    await api.signatures.create("ENTREPRISE_CEO", "Gérant", file);
-    expect((lastCall()[1]?.body as FormData).get("landlordId")).toBeNull();
+    await api.signatures.create("EMPLOYEE", "Gérant", file, null, 6);
+    const employeePayload = lastCall()[1]?.body as FormData;
+    expect(employeePayload.get("landlordId")).toBeNull();
+    expect(employeePayload.get("employeeId")).toBe("6");
 
     await api.signatures.remove(5);
     expect(lastCall()[1]).toMatchObject({ method: "DELETE" });

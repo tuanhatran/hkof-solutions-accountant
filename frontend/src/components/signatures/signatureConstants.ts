@@ -1,19 +1,26 @@
 import type { Accept } from "react-dropzone";
 import type { SignatureType } from "@/api/types";
 
-export const SIGNATURE_TYPES: ReadonlyArray<{
+/** Signature types accepted by the upload form; legacy gérant signatures stay readable. */
+export const SIGNATURE_UPLOAD_TYPES: ReadonlyArray<{
   value: SignatureType;
   label: string;
 }> = [
   { value: "LANDLORD", label: "Bailleur" },
-  { value: "ENTREPRISE_CEO", label: "Gérant d'entreprise" },
+  { value: "EMPLOYEE", label: "Salarié" },
 ];
 
 export function signatureTypeLabel(type: SignatureType | undefined): string {
-  return (
-    SIGNATURE_TYPES.find((candidate) => candidate.value === type)?.label ??
-    "Signature"
-  );
+  if (type === "LANDLORD") {
+    return "Bailleur";
+  }
+  if (type === "ENTREPRISE_CEO") {
+    return "Gérant d'entreprise";
+  }
+  if (type === "EMPLOYEE") {
+    return "Salarié";
+  }
+  return "Signature";
 }
 
 export const SIGNATURE_FORMATS: Accept = {

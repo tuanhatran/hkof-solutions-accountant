@@ -25,6 +25,9 @@ public class ExpenseStatement {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "company_id", nullable = false)
+    private Long companyId;
+
     @Column(name = "billing_month", nullable = false, length = 7)
     private String month;
 
@@ -74,6 +77,14 @@ public class ExpenseStatement {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(Long companyId) {
+        this.companyId = companyId;
     }
 
     public String getMonth() {
