@@ -21,6 +21,7 @@ import fr.hkof.homeofficeexpenses.domain.EmployeeTitle;
 import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Signature;
 import fr.hkof.homeofficeexpenses.domain.SignatureType;
+import fr.hkof.homeofficeexpenses.repository.AddressRepository;
 import fr.hkof.homeofficeexpenses.repository.AnalysisDocumentRepository;
 import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
@@ -57,6 +58,7 @@ public class E2eResetService {
     private final CompanyRepository companies;
     private final EmployeeRepository employees;
     private final LeaseRepository leases;
+    private final AddressRepository addresses;
     private final TenantRepository tenants;
     private final LandlordRepository landlords;
     private final SignatureRepository signatures;
@@ -67,8 +69,8 @@ public class E2eResetService {
             ExpenseStatementRepository statements, RentReceiptRepository rentReceipts, ReceiptRepository receipts,
             TemplateDocumentRepository templates, LlmConfigRepository llmConfigs, ExpenseItemRepository items,
             CompanyRepository companies, EmployeeRepository employees, LeaseRepository leases,
-            TenantRepository tenants, LandlordRepository landlords, SignatureRepository signatures,
-            StorageService storage, DataInitializer initializer) {
+            AddressRepository addresses, TenantRepository tenants, LandlordRepository landlords,
+            SignatureRepository signatures, StorageService storage, DataInitializer initializer) {
         this.analyses = analyses;
         this.lines = lines;
         this.statements = statements;
@@ -80,6 +82,7 @@ public class E2eResetService {
         this.companies = companies;
         this.employees = employees;
         this.leases = leases;
+        this.addresses = addresses;
         this.tenants = tenants;
         this.landlords = landlords;
         this.signatures = signatures;
@@ -99,6 +102,7 @@ public class E2eResetService {
         llmConfigs.deleteAllInBatch();
         items.deleteAllInBatch();
         leases.deleteAllInBatch();
+        addresses.deleteAllInBatch();
         employees.deleteAllInBatch();
         companies.deleteAllInBatch();
         tenants.deleteAllInBatch();

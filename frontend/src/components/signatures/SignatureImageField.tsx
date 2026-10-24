@@ -1,0 +1,72 @@
+import { X } from "lucide-react";
+import { FileDropzone } from "@/components/forms/FileDropzone";
+import { formatBytes } from "@/lib/format";
+import { MAX_SIGNATURE_SIZE, SIGNATURE_FORMATS } from "./signatureConstants";
+
+interface SignatureImageFieldProps {
+  file: File | null;
+  previewUrl: string | null;
+  fileErrorText: string | null;
+  pending: boolean;
+  onFile: (file: File) => void;
+  onRemove: () => void;
+}
+
+/** Dropzone and local preview of the signature image. */
+export function SignatureImageField({
+  file,
+  previewUrl,
+  fileErrorText,
+  pending,
+  onFile,
+  onRemove,
+}: SignatureImageFieldProps) {
+  return (
+    <>
+      <div className="signature-form-dropzone">
+        <FileDropzone
+          onFile={onFile}
+          disabled={pending}
+          dataCy="input-signature-image"
+          externalError={fileErrorText}
+          text="Déposez l’image de la signature"
+          accept={SIGNATURE_FORMATS}
+          maxSize={MAX_SIGNATURE_SIZE}
+          formatsDescription="PNG, JPEG"
+          ariaLabel="Choisir une image de signature"
+        />
+      </div>
+
+      {file ? (
+        <div className="signature-form-preview">
+          {previewUrl ? (
+            <img
+              src={previewUrl}
+              alt={`Aperçu de ${file.name}`}
+              className="signature-form-preview-image"
+              data-cy="apercu-signature"
+            />
+          ) : null}
+          <div className="signature-form-preview-body">
+            <p className="signature-form-preview-name" title={file.name}>
+              {file.name}
+            </p>
+            <p className="signature-form-preview-size">
+              {formatBytes(file.size)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onRemove}
+            disabled={pending}
+            className="signature-form-remove"
+            aria-label="Retirer l’image de la signature"
+            data-cy="btn-retirer-signature-image"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      ) : null}
+    </>
+  );
+}

@@ -18,6 +18,7 @@ import type {
   CompanyRequest,
   EmployeeDto,
   EmployeeRequest,
+  AddressDto,
   LandlordDto,
   LandlordRequest,
   TenantDto,
@@ -119,6 +120,10 @@ export const api = {
       ),
     delete: (id: number) =>
       request<void>(`/api/tenants/${id}`, { method: "DELETE" }),
+  },
+
+  addresses: {
+    list: () => request<AddressDto[]>("/api/addresses"),
   },
 
   leases: {

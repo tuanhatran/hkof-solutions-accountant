@@ -9,6 +9,10 @@
     @apply space-y-4;
   }
 
+  .lease-section-address {
+    @apply rounded-xl border border-line bg-paper/40 p-3 sm:max-w-md;
+  }
+
   .lease-section-list {
     @apply space-y-3;
   }

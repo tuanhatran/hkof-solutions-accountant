@@ -3,13 +3,14 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
-import type { LandlordDto, LeaseDto, TenantDto } from "@/api/types";
+import type { AddressDto, LandlordDto, LeaseDto, TenantDto } from "@/api/types";
 import { useToasts } from "@/state/toasts";
 import { RentReceiptSettings } from "@/components/settings/RentReceiptSettings";
 
 let landlordList: LandlordDto[] = [];
 let tenantList: TenantDto[] = [];
 let leaseList: LeaseDto[] = [];
+let addressList: AddressDto[] = [];
 interface QueryLike<T> {
   data: T | undefined;
   isPending: boolean;
@@ -20,9 +21,13 @@ interface QueryLike<T> {
 let landlordState: QueryLike<LandlordDto[]>;
 let tenantState: QueryLike<TenantDto[]>;
 let leaseState: QueryLike<LeaseDto[]>;
+let addressState: QueryLike<AddressDto[]>;
 
 vi.mock("@/api/endpoints", () => ({
   api: {
+    addresses: {
+      list: vi.fn(),
+    },
     landlords: {
       create: vi.fn(),
       update: vi.fn(),
@@ -48,8 +53,19 @@ vi.mock("@/api/queries", async (importOriginal) => {
     useLandlords: () => landlordState,
     useTenants: () => tenantState,
     useLeases: () => leaseState,
+    useAddresses: () => addressState,
   };
 });
+
+const HOME: AddressDto = {
+  id: 3,
+  label: "12 rue de la République, 75000 Paris",
+};
+
+const OTHER_HOME: AddressDto = {
+  id: 4,
+  label: "8 rue du Test, 75001 Paris",
+};
 
 const LANDLORD: LandlordDto = {
   id: 1,
@@ -65,12 +81,25 @@ const TENANT: TenantDto = {
 
 const LEASE: LeaseDto = {
   id: 10,
+  addressId: HOME.id,
   landlordId: 1,
   tenantId: 2,
   landlordName: "M. Bailleur",
   tenantName: "Mme Locataire",
   propertyAddress: "12 rue de la République, 75000 Paris",
   rentExclCharges: "1300.00",
+  charges: "0.00",
+};
+
+const OTHER_LEASE: LeaseDto = {
+  id: 11,
+  addressId: OTHER_HOME.id,
+  landlordId: 1,
+  tenantId: 2,
+  landlordName: "M. Bailleur",
+  tenantName: "Mme Locataire",
+  propertyAddress: "8 rue du Test, 75001 Paris",
+  rentExclCharges: "700.00",
   charges: "0.00",
 };
 
@@ -88,7 +117,8 @@ describe("RentReceiptSettings", () => {
   beforeEach(() => {
     landlordList = [LANDLORD];
     tenantList = [TENANT];
-    leaseList = [LEASE];
+    leaseList = [LEASE, OTHER_LEASE];
+    addressList = [HOME, OTHER_HOME];
     landlordState = {
       data: landlordList,
       isPending: false,
@@ -110,6 +140,14 @@ describe("RentReceiptSettings", () => {
       error: null,
       refetch: vi.fn(),
     };
+    addressState = {
+      data: addressList,
+      isPending: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    };
+    vi.mocked(api.addresses.list).mockReset();
     vi.mocked(api.landlords.create).mockReset();
     vi.mocked(api.landlords.update).mockReset();
     vi.mocked(api.landlords.delete).mockReset();
@@ -140,9 +178,7 @@ describe("RentReceiptSettings", () => {
       screen.getByLabelText("Adresse du bailleur"),
       "1 rue de Paris",
     );
-    await user.click(
-      screen.getByRole("button", { name: "Ajouter le bailleur" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
       expect(api.landlords.create).toHaveBeenCalledWith({
@@ -187,9 +223,7 @@ describe("RentReceiptSettings", () => {
 
     expect(within(form).getByText("1 350,00 €")).toBeInTheDocument();
 
-    await user.click(
-      within(form).getByRole("button", { name: "Ajouter le bail" }),
-    );
+    await user.click(within(form).getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
       expect(api.leases.create).toHaveBeenCalledWith({
@@ -248,9 +282,7 @@ describe("RentReceiptSettings", () => {
       within(form).getByLabelText("Surface professionnelle (m²)"),
       "25",
     );
-    await user.click(
-      within(form).getByRole("button", { name: "Ajouter le bail" }),
-    );
+    await user.click(within(form).getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
       expect(api.leases.create).toHaveBeenCalledWith(
@@ -290,9 +322,7 @@ describe("RentReceiptSettings", () => {
     await user.click(
       within(form).getByRole("checkbox", { name: /Bail société/ }),
     );
-    await user.click(
-      within(form).getByRole("button", { name: "Ajouter le bail" }),
-    );
+    await user.click(within(form).getByRole("button", { name: "Valider" }));
 
     expect(
       await within(form).findByText(
@@ -380,9 +410,7 @@ describe("RentReceiptSettings", () => {
       }),
     ).toBeVisible();
     expect(screen.getByLabelText("Nom du bailleur")).toHaveValue("M. Bailleur");
-    await user.click(
-      screen.getByRole("button", { name: "Enregistrer le bailleur" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
       expect(api.landlords.update).toHaveBeenCalledWith(1, {
@@ -405,9 +433,7 @@ describe("RentReceiptSettings", () => {
         name: "Modifier le locataire « Mme Locataire »",
       }),
     ).toBeVisible();
-    await user.click(
-      screen.getByRole("button", { name: "Enregistrer le locataire" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
       expect(api.tenants.update).toHaveBeenCalledWith(2, {
@@ -449,9 +475,7 @@ describe("RentReceiptSettings", () => {
       within(form).getByLabelText("Provision pour charges (€)"),
     ).toHaveValue("0,00");
 
-    await user.click(
-      within(form).getByRole("button", { name: "Enregistrer le bail" }),
-    );
+    await user.click(within(form).getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
       expect(api.leases.update).toHaveBeenCalledWith(10, {
@@ -580,7 +604,7 @@ describe("RentReceiptSettings", () => {
 
     expect(screen.getByText(/Aucun bailleur configuré/)).toBeVisible();
     expect(screen.getByText(/Aucun locataire configuré/)).toBeVisible();
-    expect(screen.getByText(/Aucun bail configuré/)).toBeVisible();
+    expect(screen.getByText(/Aucun bail pour cette adresse/)).toBeVisible();
   });
 
   it("shows the loading states of the three directories", () => {
@@ -652,6 +676,7 @@ describe("RentReceiptSettings", () => {
       data: [
         {
           id: 12,
+          addressId: HOME.id,
           landlordId: 7,
           tenantId: 8,
           tenantName: "Locataire sans adresse",
@@ -682,26 +707,24 @@ describe("RentReceiptSettings", () => {
     await user.click(
       screen.getByRole("button", { name: "Ajouter un bailleur" }),
     );
-    await user.click(
-      screen.getByRole("button", { name: "Ajouter le bailleur" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
     expect(
       await screen.findByText("Le nom du bailleur est obligatoire."),
     ).toBeVisible();
     expect(landlordForm).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
 
     await user.click(
       screen.getByRole("button", { name: "Ajouter un locataire" }),
     );
-    await user.click(
-      screen.getByRole("button", { name: "Ajouter le locataire" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
     expect(
       await screen.findByText("Le nom du locataire est obligatoire."),
     ).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
 
     await user.click(screen.getByRole("button", { name: "Ajouter un bail" }));
-    await user.click(screen.getByRole("button", { name: "Ajouter le bail" }));
+    await user.click(screen.getByRole("button", { name: "Valider" }));
     expect(await screen.findByText("Sélectionnez un bailleur.")).toBeVisible();
     expect(screen.getByText("Sélectionnez un locataire.")).toBeVisible();
     expect(
@@ -730,23 +753,21 @@ describe("RentReceiptSettings", () => {
       screen.getByRole("button", { name: "Ajouter un bailleur" }),
     );
     await user.type(screen.getByLabelText("Nom du bailleur"), "M. Refusé");
-    await user.click(
-      screen.getByRole("button", { name: "Ajouter le bailleur" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Bailleur refusé.",
     );
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
 
     await user.click(
       screen.getByRole("button", { name: "Ajouter un locataire" }),
     );
     await user.type(screen.getByLabelText("Nom du locataire"), "Mme Refusée");
-    await user.click(
-      screen.getByRole("button", { name: "Ajouter le locataire" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
     await waitFor(() =>
       expect(screen.getByText("Locataire refusé.")).toBeVisible(),
     );
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
 
     await user.click(screen.getByRole("button", { name: "Ajouter un bail" }));
     const form = screen.getByLabelText("Bailleur du bail").closest("form");
@@ -770,9 +791,102 @@ describe("RentReceiptSettings", () => {
       within(form).getByLabelText("Provision pour charges (€)"),
       "50",
     );
-    await user.click(
-      within(form).getByRole("button", { name: "Ajouter le bail" }),
-    );
+    await user.click(within(form).getByRole("button", { name: "Valider" }));
     await waitFor(() => expect(screen.getByText("Bail refusé.")).toBeVisible());
+  });
+
+  it("renames the lease section and shows only the selected address's leases", async () => {
+    renderSettings();
+    const user = userEvent.setup();
+
+    expect(
+      screen.getByRole("heading", { name: "Baux et adresses" }),
+    ).toBeVisible();
+    const addressSelect = screen.getByLabelText("Adresse des baux");
+    expect(within(addressSelect).getAllByRole("option")).toHaveLength(2);
+    expect(addressSelect).toHaveValue("3");
+    expect(
+      screen.getByRole("button", { name: "Modifier le bail 10" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Modifier le bail 11" }),
+    ).toBeNull();
+
+    await user.selectOptions(addressSelect, "4");
+
+    expect(
+      screen.queryByRole("button", { name: "Modifier le bail 10" }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Modifier le bail 11" }),
+    ).toBeVisible();
+  });
+
+  it("selects the address of a newly created lease", async () => {
+    leaseList = [LEASE];
+    leaseState = { ...leaseState, data: leaseList };
+    vi.mocked(api.leases.create).mockResolvedValue({
+      ...OTHER_LEASE,
+      id: 12,
+    });
+
+    renderSettings();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Ajouter un bail" }));
+    await user.selectOptions(screen.getByLabelText("Bailleur du bail"), "1");
+    await user.selectOptions(screen.getByLabelText("Locataire du bail"), "2");
+    await user.type(
+      screen.getByLabelText("Adresse du bien"),
+      "8 rue du Test, 75001 Paris",
+    );
+    await user.type(screen.getByLabelText("Loyer hors charges (€)"), "700,00");
+    await user.type(screen.getByLabelText("Provision pour charges (€)"), "0");
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Adresse des baux")).toHaveValue("4"),
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("shows the loading state of the address dropdown", () => {
+    addressList = [];
+    addressState = {
+      data: undefined,
+      isPending: true,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    };
+    leaseList = [];
+    leaseState = { ...leaseState, data: leaseList };
+
+    renderSettings();
+
+    const addressSelect = screen.getByLabelText("Adresse des baux");
+    expect(addressSelect).toBeDisabled();
+    expect(
+      within(addressSelect).getByRole("option", {
+        name: "Chargement des adresses…",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the empty address state when no address exists", () => {
+    addressList = [];
+    addressState = { ...addressState, data: addressList };
+    leaseList = [];
+    leaseState = { ...leaseState, data: leaseList };
+
+    renderSettings();
+
+    const addressSelect = screen.getByLabelText("Adresse des baux");
+    expect(addressSelect).toBeDisabled();
+    expect(
+      within(addressSelect).getByRole("option", {
+        name: "Aucune adresse configurée",
+      }),
+    ).toBeInTheDocument();
   });
 });

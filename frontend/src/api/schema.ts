@@ -724,6 +724,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/addresses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Liste les adresses non supprimées, triées par libellé. Une adresse peut porter plusieurs baux. */
+        get: operations["listAddresses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/leases": {
         parameters: {
             query?: never;
@@ -871,6 +888,11 @@ export interface components {
             name?: string;
             address?: string;
         };
+        AddressDto: {
+            /** Format: int64 */
+            id?: number;
+            label?: string;
+        };
         LeaseRequest: {
             /** @description Bail société : affiche et rend obligatoires les surfaces du logement. Le lien à une société se fait depuis la société, jamais depuis le bail. */
             companyLease?: boolean;
@@ -878,6 +900,7 @@ export interface components {
             landlordId?: number;
             /** Format: int64 */
             tenantId?: number;
+            /** @description Libellé de l'adresse du bien. Le backend réutilise l'adresse existante pour un libellé identique, sans tenir compte de la casse ni des espaces. */
             propertyAddress?: string;
             rentExclCharges?: string;
             charges?: string;
@@ -889,6 +912,11 @@ export interface components {
         LeaseDto: {
             /** Format: int64 */
             id?: number;
+            /**
+             * Format: int64
+             * @description Adresse du bien, résolue depuis le libellé de la requête.
+             */
+            readonly addressId?: number;
             /**
              * Format: int64
              * @description Société liée ; définie uniquement depuis la société.
@@ -2912,6 +2940,26 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listAddresses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AddressDto"][];
                 };
             };
         };

@@ -45,6 +45,7 @@ const OTHER: CompanyDto = {
 
 const LEASE: LeaseDto = {
   id: 5,
+  addressId: 3,
   companyId: 1,
   companyName: "HKOF",
   companyLease: true,
@@ -122,6 +123,8 @@ vi.mock("@/api/queries", async (importOriginal) => {
     useSignatures: () => readyQuery([]),
     useLandlords: () => readyQuery([]),
     useTenants: () => readyQuery([]),
+    useAddresses: () =>
+      readyQuery([{ id: 3, label: "12 rue des Lilas, 75011 Paris" }]),
     useLeases: () => readyQuery([LEASE]),
   };
 });
@@ -178,7 +181,9 @@ describe("SettingsPage tabs", () => {
       await screen.findByRole("heading", { name: "Bailleurs" }),
     ).toBeVisible();
     expect(screen.getByRole("heading", { name: "Locataires" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Baux" })).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Baux et adresses" }),
+    ).toBeVisible();
     expect(screen.getByRole("heading", { name: "Signatures" })).toBeVisible();
     expect(screen.queryByLabelText("Raison sociale")).toBeNull();
     expect(screen.getByRole("tab", { name: "Quittances" })).toHaveAttribute(

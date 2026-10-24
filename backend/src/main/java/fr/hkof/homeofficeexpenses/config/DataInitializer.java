@@ -9,6 +9,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import fr.hkof.homeofficeexpenses.domain.Address;
 import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.Employee;
 import fr.hkof.homeofficeexpenses.domain.EmployeeTitle;
@@ -21,6 +22,7 @@ import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateFormat;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.domain.Tenant;
+import fr.hkof.homeofficeexpenses.repository.AddressRepository;
 import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
@@ -48,6 +50,7 @@ public class DataInitializer implements ApplicationRunner {
     private final LandlordRepository landlordRepository;
     private final TenantRepository tenantRepository;
     private final LeaseRepository leaseRepository;
+    private final AddressRepository addressRepository;
     private final ExpenseItemRepository expenseItemRepository;
     private final TemplateDocumentRepository templateRepository;
     private final LlmConfigRepository llmConfigRepository;
@@ -56,14 +59,15 @@ public class DataInitializer implements ApplicationRunner {
 
     public DataInitializer(CompanyRepository companyRepository, EmployeeRepository employeeRepository,
             LandlordRepository landlordRepository, TenantRepository tenantRepository,
-            LeaseRepository leaseRepository, ExpenseItemRepository expenseItemRepository,
-            TemplateDocumentRepository templateRepository, LlmConfigRepository llmConfigRepository,
-            AppProperties properties, Clock clock) {
+            LeaseRepository leaseRepository, AddressRepository addressRepository,
+            ExpenseItemRepository expenseItemRepository, TemplateDocumentRepository templateRepository,
+            LlmConfigRepository llmConfigRepository, AppProperties properties, Clock clock) {
         this.companyRepository = companyRepository;
         this.employeeRepository = employeeRepository;
         this.landlordRepository = landlordRepository;
         this.tenantRepository = tenantRepository;
         this.leaseRepository = leaseRepository;
+        this.addressRepository = addressRepository;
         this.expenseItemRepository = expenseItemRepository;
         this.templateRepository = templateRepository;
         this.llmConfigRepository = llmConfigRepository;
@@ -125,6 +129,8 @@ public class DataInitializer implements ApplicationRunner {
         if (leaseRepository.findFirstByDeletedFalseOrderByIdAsc().isPresent()) {
             return;
         }
+        Address address = addressRepository.findFirstByDeletedFalseAndLabelIgnoreCase(DEFAULT_HOME_ADDRESS)
+                .orElseGet(this::createDefaultAddress);
         Lease lease = new Lease();
         lease.setLandlord(landlord);
         lease.setTenant(tenant);
@@ -132,7 +138,7 @@ public class DataInitializer implements ApplicationRunner {
         lease.setCompanyLease(true);
         lease.setTotalArea(new BigDecimal("70.00"));
         lease.setBusinessArea(new BigDecimal("25.00"));
-        lease.setPropertyAddress(DEFAULT_HOME_ADDRESS);
+        lease.setAddress(address);
         lease.setRentExclCharges(new BigDecimal(DEFAULT_RENT_EXCL_CHARGES));
         lease.setCharges(new BigDecimal(DEFAULT_CHARGES));
         lease.setDeleted(false);
@@ -147,6 +153,14 @@ public class DataInitializer implements ApplicationRunner {
         landlord.setDeleted(false);
         landlord.setCreatedAt(Instant.now(clock));
         return landlordRepository.save(landlord);
+    }
+
+    private Address createDefaultAddress() {
+        Address address = new Address();
+        address.setLabel(DEFAULT_HOME_ADDRESS);
+        address.setDeleted(false);
+        address.setCreatedAt(Instant.now(clock));
+        return addressRepository.save(address);
     }
 
     private Tenant createDefaultTenant() {

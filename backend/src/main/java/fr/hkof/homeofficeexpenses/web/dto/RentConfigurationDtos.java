@@ -38,8 +38,14 @@ public final class RentConfigurationDtos {
             String businessArea) {
     }
 
+    public record AddressDto(
+            Long id,
+            String label) {
+    }
+
     public record LeaseDto(
             Long id,
+            Long addressId,
             Long companyId,
             String companyName,
             Boolean companyLease,

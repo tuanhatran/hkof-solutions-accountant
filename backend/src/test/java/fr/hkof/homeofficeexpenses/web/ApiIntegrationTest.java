@@ -102,11 +102,19 @@ class ApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].name").value("Nom du locataire"));
+        String addresses = mockMvc.perform(get("/api/addresses"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.label == '12 rue de la République, 75000 Paris')]").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
+        List<Number> seededAddressIds = JsonPath.read(addresses,
+                "$[?(@.label == '12 rue de la République, 75000 Paris')].id");
+        long addressId = seededAddressIds.get(0).longValue();
         mockMvc.perform(get("/api/leases"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].landlordName").value("Nom du bailleur"))
                 .andExpect(jsonPath("$[0].tenantName").value("Nom du locataire"))
+                .andExpect(jsonPath("$[0].addressId").value(addressId))
                 .andExpect(jsonPath("$[0].propertyAddress").value("12 rue de la République, 75000 Paris"))
                 .andExpect(jsonPath("$[0].rentExclCharges").value("1300.00"))
                 .andExpect(jsonPath("$[0].charges").value("0.00"));
@@ -569,6 +577,7 @@ class ApiIntegrationTest {
                                 """.formatted(newLandlordId, newTenantId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.propertyAddress").value("3 rue du Bail, 75002 Paris"))
+                .andExpect(jsonPath("$.addressId").isNumber())
                 .andExpect(jsonPath("$.rentExclCharges").value("1000.00"))
                 .andExpect(jsonPath("$.charges").value("80.00"))
                 .andReturn().getResponse().getContentAsString();
@@ -628,6 +637,58 @@ class ApiIntegrationTest {
         mockMvc.perform(get("/api/leases"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.propertyAddress == '3 rue du Bail, 75002 Paris')]").isEmpty());
+    }
+
+    @Test
+    @DisplayName("An address is listed once and reused for trimmed, case-insensitive labels")
+    void addressesAreListedAndReused() throws Exception {
+        long landlordId = ((Number) JsonPath.read(mockMvc.perform(post("/api/landlords")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Bailleur adresse test","address":"1 rue de l'Adresse"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), "$.id")).longValue();
+        long tenantId = ((Number) JsonPath.read(mockMvc.perform(post("/api/tenants")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Locataire adresse test","address":"2 rue de l'Adresse"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), "$.id")).longValue();
+
+        String lease = mockMvc.perform(post("/api/leases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"landlordId":%d,"tenantId":%d,"propertyAddress":"  3 rue de l'Adresse  ",
+                                 "rentExclCharges":"700.00"}
+                                """.formatted(landlordId, tenantId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.propertyAddress").value("3 rue de l'Adresse"))
+                .andReturn().getResponse().getContentAsString();
+        long leaseId = ((Number) JsonPath.read(lease, "$.id")).longValue();
+        long addressId = ((Number) JsonPath.read(lease, "$.addressId")).longValue();
+
+        String addresses = mockMvc.perform(get("/api/addresses"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == " + addressId + ")]").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
+        List<String> labels = JsonPath.read(addresses, "$[?(@.id == " + addressId + ")].label");
+        assertThat(labels).containsExactly("3 rue de l'Adresse");
+
+        mockMvc.perform(put("/api/leases/{id}", leaseId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"landlordId":%d,"tenantId":%d,"propertyAddress":"3 RUE DE L'ADRESSE",
+                                 "rentExclCharges":"700.00"}
+                                """.formatted(landlordId, tenantId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.addressId").value(addressId))
+                .andExpect(jsonPath("$.propertyAddress").value("3 rue de l'Adresse"));
+
+        mockMvc.perform(delete("/api/leases/{id}", leaseId)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/tenants/{id}", tenantId)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/landlords/{id}", landlordId)).andExpect(status().isNoContent());
     }
 
     private long seededId(String path) throws Exception {

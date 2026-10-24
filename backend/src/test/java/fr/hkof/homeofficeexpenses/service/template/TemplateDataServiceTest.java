@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import fr.hkof.homeofficeexpenses.domain.Address;
 import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
 import fr.hkof.homeofficeexpenses.domain.ExpenseLine;
@@ -87,12 +88,19 @@ class TemplateDataServiceTest {
         return tenant;
     }
 
+    private Address address(String label) {
+        Address address = new Address();
+        address.setId(4L);
+        address.setLabel(label);
+        return address;
+    }
+
     private Lease lease() {
         Lease lease = new Lease();
         lease.setId(3L);
         lease.setLandlord(landlord());
         lease.setTenant(tenant());
-        lease.setPropertyAddress("12 rue de la République, 75000 Paris");
+        lease.setAddress(address("12 rue de la République, 75000 Paris"));
         lease.setRentExclCharges(new BigDecimal("900.00"));
         lease.setCharges(new BigDecimal("50.00"));
         return lease;

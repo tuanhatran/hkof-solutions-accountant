@@ -2,7 +2,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
-import { queryKeys, useLandlords, useLeases, useTenants } from "@/api/queries";
+import {
+  queryKeys,
+  useAddresses,
+  useLandlords,
+  useLeases,
+  useTenants,
+} from "@/api/queries";
 import type { LandlordDto, LeaseDto, TenantDto } from "@/api/types";
 import { toast } from "@/state/toasts";
 
@@ -11,6 +17,7 @@ export function useRentReceiptSettings() {
   const queryClient = useQueryClient();
   const landlords = useLandlords();
   const tenants = useTenants();
+  const addresses = useAddresses();
   const leases = useLeases();
 
   const [landlordForm, setLandlordForm] = useState<LandlordDto | null | "new">(
@@ -23,10 +30,18 @@ export function useRentReceiptSettings() {
   );
   const [tenantToDelete, setTenantToDelete] = useState<TenantDto | null>(null);
   const [leaseToDelete, setLeaseToDelete] = useState<LeaseDto | null>(null);
+  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
+    null,
+  );
 
   const landlordList = landlords.data ?? [];
   const tenantList = tenants.data ?? [];
-  const leaseList = leases.data ?? [];
+  const addressList = addresses.data ?? [];
+  // The first address is selected until the user picks another one.
+  const activeAddressId = selectedAddressId ?? addressList[0]?.id ?? null;
+  const leaseList = (leases.data ?? []).filter(
+    (lease) => lease.addressId === activeAddressId,
+  );
 
   const removeLandlord = useMutation({
     mutationFn: (landlord: LandlordDto) =>
@@ -68,13 +83,25 @@ export function useRentReceiptSettings() {
     },
   });
 
+  function handleLeaseSaved(lease: LeaseDto) {
+    if (lease.addressId !== undefined) {
+      setSelectedAddressId(lease.addressId);
+    }
+    void queryClient.invalidateQueries({ queryKey: queryKeys.addresses });
+  }
+
   return {
     landlords,
     tenants,
+    addresses,
     leases,
     landlordList,
     tenantList,
+    addressList,
     leaseList,
+    activeAddressId,
+    selectAddress: setSelectedAddressId,
+    handleLeaseSaved,
     landlordForm,
     setLandlordForm,
     tenantForm,

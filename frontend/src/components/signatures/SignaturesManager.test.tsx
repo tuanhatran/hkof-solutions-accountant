@@ -114,6 +114,9 @@ describe("SignaturesManager", () => {
     await user.click(
       screen.getByRole("button", { name: /Ajouter une signature/ }),
     );
+    expect(
+      screen.getByRole("dialog", { name: "Ajouter une signature" }),
+    ).toBeVisible();
 
     await user.type(screen.getByLabelText("Nom"), "Signature du bailleur");
     await user.selectOptions(
@@ -129,9 +132,7 @@ describe("SignaturesManager", () => {
       await screen.findByAltText("Aperçu de signature-bailleur.png"),
     ).toBeInTheDocument();
 
-    await user.click(
-      screen.getByRole("button", { name: /Ajouter la signature/ }),
-    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     await waitFor(() => expect(api.signatures.create).toHaveBeenCalledTimes(1));
     expect(api.signatures.create).toHaveBeenCalledWith(
@@ -164,9 +165,7 @@ describe("SignaturesManager", () => {
       screen.getByLabelText("Choisir une image de signature"),
       pngFixture(),
     );
-    await user.click(
-      screen.getByRole("button", { name: /Ajouter la signature/ }),
-    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     expect(
       await screen.findByText("Le bailleur de la signature est obligatoire."),
@@ -207,9 +206,7 @@ describe("SignaturesManager", () => {
       screen.getByLabelText("Choisir une image de signature"),
       pngFixture(),
     );
-    await user.click(
-      screen.getByRole("button", { name: /Ajouter la signature/ }),
-    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     expect(
       await screen.findByText("Le salarié de la signature est obligatoire."),
@@ -253,9 +250,7 @@ describe("SignaturesManager", () => {
       screen.getByLabelText("Choisir une image de signature"),
       pngFixture(),
     );
-    await user.click(
-      screen.getByRole("button", { name: /Ajouter la signature/ }),
-    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Enregistrement refusé",
@@ -299,9 +294,7 @@ describe("SignaturesManager", () => {
       screen.getByLabelText("Choisir une image de signature"),
       pngFixture("signature-gerant.png"),
     );
-    await user.click(
-      screen.getByRole("button", { name: /Ajouter la signature/ }),
-    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     await waitFor(() => expect(api.signatures.create).toHaveBeenCalledTimes(1));
     expect(api.signatures.create).toHaveBeenCalledWith(
@@ -335,9 +328,7 @@ describe("SignaturesManager", () => {
       screen.getByRole("button", { name: /Ajouter une signature/ }),
     );
 
-    await user.click(
-      screen.getByRole("button", { name: /Ajouter la signature/ }),
-    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
     expect(
       await screen.findByText("Le nom de la signature est obligatoire."),
     ).toBeInTheDocument();
@@ -354,9 +345,7 @@ describe("SignaturesManager", () => {
     ).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("Nom"), "Trop grande");
-    await user.click(
-      screen.getByRole("button", { name: /Ajouter la signature/ }),
-    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
     expect(
       await screen.findByText("Sélectionnez une image PNG ou JPEG."),
     ).toBeInTheDocument();

@@ -43,8 +43,9 @@ public class Lease {
     @Column(name = "business_area", precision = 8, scale = 2)
     private BigDecimal businessArea;
 
-    @Column(name = "property_address", nullable = false)
-    private String propertyAddress;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "address_id", nullable = false)
+    private Address address;
 
     @Column(name = "rent_excl_charges", nullable = false, precision = 12, scale = 2)
     private BigDecimal rentExclCharges;
@@ -114,12 +115,12 @@ public class Lease {
         this.businessArea = businessArea;
     }
 
-    public String getPropertyAddress() {
-        return propertyAddress;
+    public Address getAddress() {
+        return address;
     }
 
-    public void setPropertyAddress(String propertyAddress) {
-        this.propertyAddress = propertyAddress;
+    public void setAddress(Address address) {
+        this.address = address;
     }
 
     public BigDecimal getRentExclCharges() {

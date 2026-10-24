@@ -1,20 +1,19 @@
 import "./LandlordForm.css";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
 import type { LandlordDto, LandlordRequest } from "@/api/types";
-import { Button } from "@/components/ui/Button";
 import { FieldGroup } from "@/components/ui/FieldGroup";
+import { FormModal } from "@/components/ui/FormModal";
 import { cn } from "@/lib/cn";
 import { landlordSchema, type LandlordFormValues } from "@/lib/validation";
 import { toast } from "@/state/toasts";
 
-/** Create/update form for a landlord. */
+/** Create/update form for a landlord, displayed in a modal. */
 export function LandlordForm({
   item,
   onClose,
@@ -61,20 +60,24 @@ export function LandlordForm({
   });
 
   return (
-    <form
-      className="landlord-form"
+    <FormModal
+      open
+      title={
+        item
+          ? `Modifier le bailleur « ${item.name ?? ""} »`
+          : "Ajouter un bailleur"
+      }
+      onClose={onClose}
       onSubmit={handleSubmit((values) => {
         setRequestError(null);
         save.mutate(values);
       })}
-      data-cy="formulaire-bailleur"
+      formDataCy="formulaire-bailleur"
+      submitDataCy="btn-enregistrer-bailleur"
+      formClassName="landlord-form"
+      pending={save.isPending}
+      error={requestError}
     >
-      <h3 className="landlord-form-title">
-        {item
-          ? `Modifier le bailleur « ${item.name ?? ""} »`
-          : "Ajouter un bailleur"}
-      </h3>
-
       <div className="landlord-form-grid">
         <FieldGroup
           id="bailleur-nom"
@@ -103,33 +106,6 @@ export function LandlordForm({
           />
         </FieldGroup>
       </div>
-
-      {requestError ? (
-        <p className="landlord-form-error" role="alert">
-          {requestError}
-        </p>
-      ) : null}
-
-      <div className="landlord-form-actions">
-        <Button
-          variant="ghost"
-          small
-          onClick={onClose}
-          disabled={save.isPending}
-        >
-          Annuler
-        </Button>
-        <Button
-          variant="primary"
-          small
-          type="submit"
-          loading={save.isPending}
-          icon={<Check size={14} />}
-          data-cy="btn-enregistrer-bailleur"
-        >
-          {item ? "Enregistrer le bailleur" : "Ajouter le bailleur"}
-        </Button>
-      </div>
-    </form>
+    </FormModal>
   );
 }

@@ -10,6 +10,7 @@ export type LandlordDto = Schemas["LandlordDto"];
 export type LandlordRequest = Schemas["LandlordRequest"];
 export type TenantDto = Schemas["TenantDto"];
 export type TenantRequest = Schemas["TenantRequest"];
+export type AddressDto = Schemas["AddressDto"];
 export type LeaseDto = Schemas["LeaseDto"];
 export type LeaseRequest = Schemas["LeaseRequest"];
 export type ExpenseItemDto = Schemas["ExpenseItemDto"];
