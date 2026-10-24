@@ -1,3 +1,4 @@
+import "./ModelPreview.css";
 import { Check, X } from "lucide-react";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -31,7 +32,7 @@ export function ModelPreview({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 p-3 backdrop-blur-[3px] sm:p-6"
+      className="model-preview-backdrop"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {
           onClose();
@@ -39,25 +40,22 @@ export function ModelPreview({
       }}
     >
       <div
-        className="animation-fade flex max-h-[94vh] w-full max-w-4xl flex-col"
+        className="animation-fade model-preview"
         role="dialog"
         aria-modal="true"
         aria-labelledby="apercu-template-titre"
         data-cy="apercu-template"
       >
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-accent-strong px-4 py-3 text-white">
-          <div className="min-w-0">
-            <h2
-              id="apercu-template-titre"
-              className="truncate text-lg text-white"
-            >
+        <div className="model-preview-bar">
+          <div className="model-preview-heading">
+            <h2 id="apercu-template-titre" className="model-preview-title">
               Aperçu — {template.name} · v{template.version}
             </h2>
-            <p className="text-[11px] text-white/60">
+            <p className="model-preview-subtitle">
               Données d’exemple · filigrane « APERÇU » · rien n’est persisté.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="model-preview-actions">
             {!template.active ? (
               <Button
                 variant="secondary"
@@ -72,7 +70,7 @@ export function ModelPreview({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
+              className="model-preview-close"
               aria-label="Fermer l’aperçu"
             >
               <X size={18} />

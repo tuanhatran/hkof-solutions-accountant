@@ -1,3 +1,4 @@
+import "./ExpenseAmountFields.css";
 import { AlertTriangle } from "lucide-react";
 import { AiBadge } from "@/components/ui/AiBadge";
 import { AmountConfirmButton } from "@/components/ui/AmountConfirmButton";
@@ -13,7 +14,7 @@ export function ExpenseAmountFields({
 }) {
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="expense-amount-fields-grid">
         <FieldGroup
           id="frais-montant"
           label="Montant TTC"
@@ -24,7 +25,7 @@ export function ExpenseAmountFields({
             ) : undefined
           }
         >
-          <div className="relative">
+          <div className="expense-amount-fields-amount">
             <input
               id="frais-montant"
               inputMode="decimal"
@@ -41,18 +42,16 @@ export function ExpenseAmountFields({
                 onChange: () => c.markAmountEdited(),
               })}
             />
-            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">
-              €
-            </span>
+            <span className="expense-amount-fields-unit">€</span>
           </div>
         </FieldGroup>
 
-        <div className="flex flex-col justify-end rounded-xl border border-accent/15 bg-accent-soft/45 px-4 py-3">
+        <div className="expense-amount-fields-estimate">
           <p className="eyebrow text-accent">Montant retenu estimé</p>
-          <p className="mt-1 font-display text-[24px] leading-none text-accent-strong number">
+          <p className="expense-amount-fields-estimate-value number">
             {c.displayedRetainedAmount}
           </p>
-          <p className="mt-1.5 text-[11px] leading-snug text-ink-soft">
+          <p className="expense-amount-fields-estimate-note">
             Estimation d’affichage : le backend recalcule chaque ligne avec
             arrondi au centime.
           </p>
@@ -67,10 +66,10 @@ export function ExpenseAmountFields({
       ) : null}
 
       {c.lowConfidenceError ? (
-        <p className="flex items-start gap-2 rounded-lg bg-warning-soft/50 px-3 py-2 text-xs text-warning">
+        <p className="expense-amount-fields-warning">
           <AlertTriangle
             size={14}
-            className="mt-0.5 shrink-0"
+            className="expense-amount-fields-warning-icon"
             aria-hidden="true"
           />
           Confiance faible : vérifiez le montant avant d’ajouter le frais.

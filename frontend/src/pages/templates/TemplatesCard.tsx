@@ -1,3 +1,4 @@
+import "./TemplatesCard.css";
 import { Download, Info, RotateCcw, ShieldCheck } from "lucide-react";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
@@ -22,15 +23,15 @@ export function TemplatesCard({
   const preview = c.preview;
 
   return (
-    <section className="card overflow-hidden">
+    <section className="card templates-card">
       <div className="card-header">
-        <div className="flex items-start gap-3">
-          <span className="grid h-11 w-11 place-items-center rounded-xl bg-accent-soft text-accent">
+        <div className="templates-card-heading">
+          <span className="templates-card-icon">
             <IconComponent size={20} aria-hidden="true" />
           </span>
           <div>
-            <h2 className="text-xl text-ink">{title}</h2>
-            <p className="mt-0.5 text-xs text-ink-soft">{description}</p>
+            <h2 className="templates-card-title">{title}</h2>
+            <p className="templates-card-description">{description}</p>
           </div>
         </div>
         <span className="badge badge-neutral">
@@ -39,7 +40,7 @@ export function TemplatesCard({
         </span>
       </div>
 
-      <div className="card-body space-y-5">
+      <div className="card-body templates-card-body">
         {c.templates.isError ? (
           <ErrorState
             message={errorMessage(c.templates.error)}
@@ -51,7 +52,7 @@ export function TemplatesCard({
           <>
             <TemplateActiveModel c={c} />
 
-            <div className="flex flex-wrap gap-2">
+            <div className="templates-card-actions">
               <Button
                 variant="secondary"
                 small
@@ -81,10 +82,10 @@ export function TemplatesCard({
             <TemplateVersionsList c={c} />
             <TemplateImportForm c={c} />
 
-            <div className="flex items-start gap-2 rounded-xl border border-line bg-paper/30 p-3 text-[11.5px] leading-relaxed text-ink-soft">
+            <div className="templates-card-note">
               <Info
                 size={15}
-                className="mt-0.5 shrink-0 text-accent"
+                className="templates-card-note-icon"
                 aria-hidden="true"
               />
               <p>

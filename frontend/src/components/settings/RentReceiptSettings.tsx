@@ -1,3 +1,4 @@
+import "./RentReceiptSettings.css";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { LandlordSection } from "./LandlordSection";
 import { LeaseSection } from "./LeaseSection";
@@ -9,7 +10,7 @@ export function RentReceiptSettings() {
   const c = useRentReceiptSettings();
 
   return (
-    <div className="space-y-6">
+    <div className="rent-receipt-settings">
       <LandlordSection c={c} />
       <TenantSection c={c} />
       <LeaseSection c={c} />

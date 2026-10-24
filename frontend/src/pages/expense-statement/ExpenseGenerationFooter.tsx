@@ -1,3 +1,4 @@
+import "./ExpenseGenerationFooter.css";
 import { FileCheck2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { errorMessage } from "@/api/client";
@@ -15,26 +16,26 @@ export function ExpenseGenerationFooter({
   controller: ExpenseStatementController;
 }) {
   return (
-    <div className="space-y-3 border-t border-line px-5 py-4 sm:px-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="expense-generation-footer">
+      <div className="expense-generation-footer-totals">
         <div>
           <p className="eyebrow">Total retenu</p>
-          <p className="mt-1 flex items-baseline gap-2 font-display text-[30px] leading-none text-accent-strong">
+          <p className="expense-generation-footer-total">
             <span className="number" data-cy="total-retenu">
               {formatEUR(c.displayedTotal)}
             </span>
             {c.calculationInProgress ? <Spinner size={15} /> : null}
           </p>
           {c.calculation?.totalInWords ? (
-            <p className="mt-1.5 text-xs text-ink-soft">
+            <p className="expense-generation-footer-words">
               Soit {c.calculation.totalInWords}.
             </p>
           ) : null}
         </div>
-        <div className="text-right text-[11px] leading-relaxed text-ink-soft">
+        <div className="expense-generation-footer-basis">
           <p>
             Base de prorata :{" "}
-            <span className="font-medium text-ink">
+            <span className="expense-generation-footer-basis-value">
               {c.calculation?.proRataBaseDetail ??
                 c.settings.data?.proRataBaseDetail ??
                 "—"}
@@ -63,7 +64,7 @@ export function ExpenseGenerationFooter({
         </p>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="expense-generation-footer-signature">
         <FieldGroup
           id="note-signature"
           label="Signature"
@@ -94,7 +95,7 @@ export function ExpenseGenerationFooter({
         </FieldGroup>
         {c.signatures.isError ? (
           <p
-            className="self-end rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger"
+            className="expense-generation-footer-alert"
             role="alert"
             aria-live="polite"
             data-cy="alerte-signatures-erreur"
@@ -104,7 +105,7 @@ export function ExpenseGenerationFooter({
           </p>
         ) : !c.signatureAvailable && !c.signatures.isPending ? (
           <p
-            className="self-end rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger"
+            className="expense-generation-footer-alert"
             role="alert"
             data-cy="alerte-signature-manquante"
           >
@@ -117,7 +118,7 @@ export function ExpenseGenerationFooter({
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="expense-generation-footer-actions">
         <Button
           variant="primary"
           icon={<FileCheck2 size={16} />}
@@ -132,7 +133,7 @@ export function ExpenseGenerationFooter({
         >
           Générer la note de frais
         </Button>
-        <p className="max-w-[300px] text-[11px] leading-snug text-ink-soft">
+        <p className="expense-generation-footer-hint">
           {c.orderedLines.length === 0
             ? "Ajoutez au moins un frais pour générer la note."
             : !c.signatureAvailable

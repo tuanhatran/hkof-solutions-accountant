@@ -30,6 +30,27 @@
 - Rendered strings, labels, alt text and toasts in French.
 - Exported helper names stay consistent with the codebase (`parseAmount`, `formatEUR`).
 
+## CSS conventions
+
+- Every styled component has a colocated `<Component>.css` next to its `.tsx`,
+  imported by the component (`import "./Component.css";` first), never by `main.tsx`
+  and never through a barrel.
+- Class names are prefixed with the component file name in kebab-case:
+  `PageHeader.css` → `.page-header`, `.page-header-title`,
+  `.page-header-title-active`.
+- Each component CSS starts with `@reference "<relative path>/index.css";` (the path is
+  relative to the CSS file's own depth), then puts every rule inside
+  `@layer components`. `main.tsx` imports `./index.css` first so the cascade holds.
+- Design-system primitives (`card`, `btn`, `field`, `badge`, …) stay on the element and
+  are never copied: `@apply card` / `@apply btn` do not resolve in Tailwind v4. Add only
+  the component-specific class: `className="card expense-result-card"`.
+- Values come from tokens only (`var(--color-*)`, `var(--shadow-*)`, `var(--font-*)`) or
+  from `@apply <utility>`; no hex literal in component CSS. A hex already equal to a
+  token reuses that token.
+- Conditional variants are a separate class combined with `cn()`; no long conditional
+  utility strings.
+- A component CSS stays under 300 lines; split it by block when it grows.
+
 ## PDF preview
 
 - Preview through `react-pdf`, never an iframe.

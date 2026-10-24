@@ -1,3 +1,4 @@
+import "./RentReceiptPreviewPane.css";
 import { PdfViewer } from "@/components/pdf/PdfViewer";
 import { cn } from "@/lib/cn";
 import type { RentReceiptController } from "./useRentReceiptPage";
@@ -8,9 +9,8 @@ export function RentReceiptPreviewPane({ c }: { c: RentReceiptController }) {
     <div
       data-cy="volet-apercu"
       className={cn(
-        "min-w-0",
+        "rent-receipt-preview-pane",
         c.mobile && c.mobilePanel !== "apercu" && "hidden",
-        "lg:sticky lg:top-6 lg:self-start",
       )}
     >
       <PdfViewer
@@ -30,7 +30,7 @@ export function RentReceiptPreviewPane({ c }: { c: RentReceiptController }) {
         actions={
           <select
             aria-label="Template de la quittance"
-            className="rounded-lg border border-line bg-white px-2 py-1.5 text-[11px] font-medium text-ink-soft"
+            className="rent-receipt-preview-pane-select"
             value={c.selectedModel ?? ""}
             onChange={(event) =>
               c.draft.setTemplate(
@@ -51,7 +51,7 @@ export function RentReceiptPreviewPane({ c }: { c: RentReceiptController }) {
           </select>
         }
       />
-      <p className="mt-2 px-1 text-[11px] leading-relaxed text-ink-soft">
+      <p className="rent-receipt-preview-pane-note">
         L’aperçu est rendu par le backend à partir du template actif. Il porte
         un filigrane et n’est jamais enregistré.
       </p>

@@ -1,3 +1,4 @@
+import "./AppShell.css";
 import {
   Bot,
   FileText,
@@ -67,11 +68,13 @@ const MOBILE_LINKS = SECTIONS.flatMap((section) => section.links);
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="app-shell-brand">
       <span
         className={cn(
-          "grid place-items-center rounded-xl bg-[#f4f0e8] font-display font-bold text-accent-strong shadow-sm",
-          compact ? "h-9 w-9 text-lg" : "h-11 w-11 text-xl",
+          "app-shell-brand-mark",
+          compact
+            ? "app-shell-brand-mark-compact"
+            : "app-shell-brand-mark-full",
         )}
         aria-hidden="true"
       >
@@ -80,14 +83,16 @@ function Brand({ compact = false }: { compact?: boolean }) {
       <div>
         <p
           className={cn(
-            "font-display font-semibold tracking-tight text-white",
-            compact ? "text-lg" : "text-xl",
+            "app-shell-brand-title",
+            compact
+              ? "app-shell-brand-title-compact"
+              : "app-shell-brand-title-full",
           )}
         >
           HomeOfficeExpenses
         </p>
         {!compact ? (
-          <p className="text-[11px] text-white/50">
+          <p className="app-shell-brand-tagline">
             Quittances &amp; frais d’occupation
           </p>
         ) : null}
@@ -98,13 +103,11 @@ function Brand({ compact = false }: { compact?: boolean }) {
 
 function SideNavigation() {
   return (
-    <nav className="mt-8 flex-1 space-y-6" aria-label="Navigation principale">
+    <nav className="app-shell-nav" aria-label="Navigation principale">
       {SECTIONS.map((section) => (
         <div key={section.title}>
-          <p className="px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">
-            {section.title}
-          </p>
-          <div className="mt-2 space-y-1">
+          <p className="app-shell-nav-section">{section.title}</p>
+          <div className="app-shell-nav-links">
             {section.links.map((link) => (
               <NavLink
                 key={link.to}
@@ -112,10 +115,10 @@ function SideNavigation() {
                 data-cy={link.dataCy}
                 className={({ isActive }) =>
                   cn(
-                    "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium transition",
+                    "group app-shell-nav-link",
                     isActive
-                      ? "bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
-                      : "text-white/60 hover:bg-white/[0.06] hover:text-white/90",
+                      ? "app-shell-nav-link-active"
+                      : "app-shell-nav-link-idle",
                   )
                 }
               >
@@ -124,19 +127,16 @@ function SideNavigation() {
                     <link.icon
                       size={17}
                       className={cn(
-                        "shrink-0 transition",
+                        "app-shell-nav-icon",
                         isActive
-                          ? "text-[#e7b98f]"
-                          : "text-white/45 group-hover:text-white/70",
+                          ? "app-shell-nav-icon-active"
+                          : "app-shell-nav-icon-idle",
                       )}
                       aria-hidden="true"
                     />
                     <span className="flex-1">{link.label}</span>
                     {isActive ? (
-                      <span
-                        className="h-1.5 w-1.5 rounded-full bg-[#e7b98f]"
-                        aria-hidden="true"
-                      />
+                      <span className="app-shell-nav-dot" aria-hidden="true" />
                     ) : null}
                   </>
                 )}
@@ -153,35 +153,26 @@ export function AppShell() {
   const blocker = useDraftBlock();
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[256px_minmax(0,1fr)]">
-      <a
-        href="#contenu"
-        className="sr-only z-[70] rounded-lg bg-surface px-4 py-2 font-semibold text-ink focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
-      >
+    <div className="app-shell">
+      <a href="#contenu" className="app-shell-skip-link">
         Aller au contenu
       </a>
 
-      <aside
-        className="sticky top-0 hidden h-screen flex-col overflow-y-auto px-4 py-7 lg:flex"
-        style={{
-          backgroundImage:
-            "linear-gradient(158deg, #164a3c 0%, #113d31 46%, #0c2f27 100%)",
-        }}
-      >
+      <aside className="app-shell-sidebar hidden lg:flex">
         <div className="px-2">
           <Brand />
         </div>
         <SideNavigation />
-        <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.055] p-3.5">
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/55">
+        <div className="app-shell-info-card">
+          <div className="app-shell-info-header">
             <ShieldCheck
               size={14}
-              className="text-[#e7b98f]"
+              className="app-shell-info-icon"
               aria-hidden="true"
             />
             Données locales
           </div>
-          <p className="mt-2 text-[11.5px] leading-relaxed text-white/45">
+          <p className="app-shell-info-text">
             Aucune donnée ne quitte votre machine tant que l’URL du LLM reste
             locale.
           </p>
@@ -189,19 +180,17 @@ export function AppShell() {
             <LlmBadge dark />
           </div>
         </div>
-        <p className="mt-5 px-2 text-[10px] text-white/25">
-          HomeOfficeExpenses · usage personnel
-        </p>
+        <p className="app-shell-footer">HomeOfficeExpenses · usage personnel</p>
       </aside>
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-30 border-b border-line/80 bg-[#123f33] px-4 py-3 lg:hidden">
-          <div className="flex items-center justify-between gap-3">
+        <header className="app-shell-mobile-header lg:hidden">
+          <div className="app-shell-mobile-top">
             <Brand compact />
             <LlmBadge dark />
           </div>
           <nav
-            className="-mx-1 mt-3 flex gap-1 overflow-x-auto pb-0.5"
+            className="app-shell-mobile-nav"
             aria-label="Navigation principale mobile"
           >
             {MOBILE_LINKS.map((link) => (
@@ -210,10 +199,10 @@ export function AppShell() {
                 to={link.to}
                 className={({ isActive }) =>
                   cn(
-                    "flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition",
+                    "app-shell-mobile-link",
                     isActive
-                      ? "bg-white/12 text-white"
-                      : "text-white/60 hover:text-white/90",
+                      ? "app-shell-mobile-link-active"
+                      : "app-shell-mobile-link-idle",
                   )
                 }
               >
@@ -224,10 +213,7 @@ export function AppShell() {
           </nav>
         </header>
 
-        <main
-          id="contenu"
-          className="mx-auto w-full max-w-[1580px] px-4 pb-20 pt-6 sm:px-6 lg:px-8 lg:py-9"
-        >
+        <main id="contenu" className="app-shell-main">
           <Outlet />
         </main>
       </div>

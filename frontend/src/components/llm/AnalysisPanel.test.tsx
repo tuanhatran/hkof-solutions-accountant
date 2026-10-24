@@ -105,7 +105,7 @@ describe("AnalysisPanel", () => {
       />,
     );
     const low = screen.getByText("Confiance faible — vérifiez les valeurs");
-    expect(low.className).toContain("text-warning");
+    expect(low.className).toContain("analysis-panel-confidence-low");
     expect(screen.queryByText(/Fournisseur détecté/)).toBeNull();
 
     rerender(

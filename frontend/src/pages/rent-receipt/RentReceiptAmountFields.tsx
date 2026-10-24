@@ -1,3 +1,4 @@
+import "./RentReceiptAmountFields.css";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
 import type { RentReceiptController } from "./useRentReceiptPage";
@@ -6,7 +7,7 @@ import type { RentReceiptController } from "./useRentReceiptPage";
 export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="rent-receipt-amount-fields-grid">
         <FieldGroup
           id="quittance-debut"
           label="Début de période"
@@ -41,14 +42,14 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
         </FieldGroup>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="rent-receipt-amount-fields-grid">
         <FieldGroup
           id="quittance-loyer"
           label="Loyer hors charges"
           error={c.errors.rentExclCharges?.message}
           help="Modifiable pour une régularisation ponctuelle."
         >
-          <div className="relative">
+          <div className="rent-receipt-amount-fields-amount">
             <input
               id="quittance-loyer"
               inputMode="decimal"
@@ -62,9 +63,7 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
                   c.draft.update({ rentExclCharges: event.target.value }),
               })}
             />
-            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">
-              €
-            </span>
+            <span className="rent-receipt-amount-fields-unit">€</span>
           </div>
         </FieldGroup>
         <FieldGroup
@@ -72,7 +71,7 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
           label="Provision pour charges"
           error={c.errors.charges?.message}
         >
-          <div className="relative">
+          <div className="rent-receipt-amount-fields-amount">
             <input
               id="quittance-charges"
               inputMode="decimal"
@@ -83,27 +82,25 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
                   c.draft.update({ charges: event.target.value }),
               })}
             />
-            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">
-              €
-            </span>
+            <span className="rent-receipt-amount-fields-unit">€</span>
           </div>
         </FieldGroup>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/15 bg-accent-soft/45 px-4 py-3.5">
+      <div className="rent-receipt-amount-fields-total">
         <div>
           <p className="eyebrow text-accent">Total estimé</p>
-          <p className="mt-1 font-display text-[28px] leading-none text-accent-strong number">
+          <p className="rent-receipt-amount-fields-total-value number">
             {c.estimatedTotal}
           </p>
         </div>
-        <p className="max-w-[240px] text-right text-[11px] leading-snug text-ink-soft">
+        <p className="rent-receipt-amount-fields-total-note">
           Affichage estimé. Le backend calcule le total du PDF avec arrondi au
           centime.
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="rent-receipt-amount-fields-grid">
         <FieldGroup
           id="quittance-paiement"
           label="Date de paiement"

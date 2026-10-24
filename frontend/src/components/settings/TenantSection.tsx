@@ -1,3 +1,4 @@
+import "./TenantSection.css";
 import { PencilLine, Plus, Trash2, UsersRound } from "lucide-react";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
@@ -9,7 +10,7 @@ import type { RentReceiptSettingsController } from "./useRentReceiptSettings";
 /** Tenants section: list, create/update form and delete triggers. */
 export function TenantSection({ c }: { c: RentReceiptSettingsController }) {
   return (
-    <section className="card overflow-hidden">
+    <section className="card tenant-section">
       <SectionHeader
         icon={UsersRound}
         title="Locataires"
@@ -27,7 +28,7 @@ export function TenantSection({ c }: { c: RentReceiptSettingsController }) {
           </Button>
         }
       />
-      <div className="card-body space-y-4">
+      <div className="card-body tenant-section-body">
         {c.tenantForm !== null ? (
           <TenantForm
             key={c.tenantForm === "new" ? "new" : c.tenantForm.id}
@@ -49,18 +50,18 @@ export function TenantSection({ c }: { c: RentReceiptSettingsController }) {
             dataCy="aucun-locataire"
           />
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="tenant-section-list">
             {c.tenantList.map((tenant) => (
               <li
                 key={tenant.id}
-                className="flex items-start gap-3 rounded-xl border border-line bg-paper/40 p-3"
+                className="tenant-section-item"
                 data-cy={`locataire-${tenant.id}`}
               >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-ink">
+                <div className="tenant-section-item-body">
+                  <p className="tenant-section-item-name">
                     {tenant.name ?? "Locataire"}
                   </p>
-                  <p className="mt-0.5 text-xs text-ink-soft">
+                  <p className="tenant-section-item-address">
                     {tenant.address || "Adresse non renseignée"}
                   </p>
                 </div>

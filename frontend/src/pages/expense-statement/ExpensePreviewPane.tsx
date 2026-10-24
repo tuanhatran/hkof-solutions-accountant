@@ -1,3 +1,4 @@
+import "./ExpensePreviewPane.css";
 import { PdfViewer } from "@/components/pdf/PdfViewer";
 import { cn } from "@/lib/cn";
 import type { ExpenseStatementController } from "./useExpenseStatementPage";
@@ -12,9 +13,8 @@ export function ExpensePreviewPane({
     <div
       data-cy="volet-apercu"
       className={cn(
-        "min-w-0",
+        "expense-preview-pane",
         c.mobile && c.mobilePanel !== "preview" && "hidden",
-        "lg:sticky lg:top-6 lg:self-start",
       )}
     >
       <PdfViewer
@@ -35,7 +35,7 @@ export function ExpensePreviewPane({
           <>
             <select
               aria-label="Template de la note de frais"
-              className="rounded-lg border border-line bg-white px-2 py-1.5 text-[11px] font-medium text-ink-soft"
+              className="expense-preview-pane-select"
               value={c.selectedTemplate ?? ""}
               onChange={(event) =>
                 c.draft.setTemplate(
@@ -54,10 +54,10 @@ export function ExpensePreviewPane({
                 </option>
               ))}
             </select>
-            <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-line bg-white px-2 py-1.5 text-[11px] font-medium text-ink-soft">
+            <label className="expense-preview-pane-option">
               <input
                 type="checkbox"
-                className="h-3.5 w-3.5 accent-[#1d5b49]"
+                className="expense-preview-pane-checkbox"
                 checked={c.complete}
                 onChange={(event) => c.draft.setComplete(event.target.checked)}
                 data-cy="toggle-apercu-complet"
@@ -67,7 +67,7 @@ export function ExpensePreviewPane({
           </>
         }
       />
-      <p className="mt-2 px-1 text-[11px] leading-relaxed text-ink-soft">
+      <p className="expense-preview-pane-note">
         L’aperçu est rendu par le backend à partir des mêmes lignes que le total
         affiché. Il porte un filigrane et n’est jamais enregistré.
       </p>

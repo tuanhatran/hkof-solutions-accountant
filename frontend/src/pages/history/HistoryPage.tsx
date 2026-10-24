@@ -1,3 +1,4 @@
+import "./HistoryPage.css";
 import { History } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -106,7 +107,7 @@ export function HistoryPage() {
       />
 
       {errorText ? (
-        <div className="mb-4">
+        <div className="history-page-error">
           <ErrorState message={errorText} onRetry={reload} />
         </div>
       ) : null}
@@ -119,7 +120,7 @@ export function HistoryPage() {
           onCreateStatement={() => navigate("/generer/note-frais")}
         />
       ) : (
-        <div className="space-y-4" data-cy="historique">
+        <div className="history-page-months" data-cy="historique">
           {groups.map((group) => (
             <HistoryMonthSection
               key={group.month}

@@ -54,7 +54,7 @@ describe("LlmBadge", () => {
   it("uses the dark styling when requested", () => {
     renderBadge({ dark: true });
     const badge = screen.getByText("IA prête");
-    expect(badge.className).toContain("border-white/15");
+    expect(badge.className).toContain("llm-badge-dark");
   });
 
   it("renders loading, error, unknown and missing message states", () => {
@@ -74,7 +74,7 @@ describe("LlmBadge", () => {
       </MemoryRouter>,
     );
     expect(screen.getByText("IA indisponible")).toBeVisible();
-    expect(document.querySelector(".bg-danger")).not.toBeNull();
+    expect(document.querySelector(".llm-badge-dot-danger")).not.toBeNull();
 
     statusState = {
       data: { status: "INCONNU" },
@@ -116,7 +116,7 @@ describe("LlmBadge", () => {
         <LlmBadge withLink={false} />
       </MemoryRouter>,
     );
-    expect(document.querySelector(".animate-pulse")).toBeNull();
+    expect(document.querySelector(".llm-badge-dot-pulse")).toBeNull();
 
     statusState = {
       data: { status: "DESACTIVE" },
@@ -128,7 +128,7 @@ describe("LlmBadge", () => {
         <LlmBadge withLink={false} />
       </MemoryRouter>,
     );
-    expect(document.querySelector(".animate-pulse")).toBeNull();
+    expect(document.querySelector(".llm-badge-dot-pulse")).toBeNull();
 
     statusState = {
       data: { status: "PRET" },
@@ -140,6 +140,6 @@ describe("LlmBadge", () => {
         <LlmBadge withLink={false} />
       </MemoryRouter>,
     );
-    expect(document.querySelector(".animate-pulse")).not.toBeNull();
+    expect(document.querySelector(".llm-badge-dot-pulse")).not.toBeNull();
   });
 });

@@ -11,8 +11,12 @@
   --color-accent: #1b5b49;
   --color-accent-strong: #123f33;
   --color-accent-soft: #e3efe9;
+  --color-sidebar-start: #164a3c;
+  --color-sidebar-mid: #113d31;
+  --color-sidebar-end: #0c2f27;
   --color-copper: #a3613a;
   --color-copper-soft: #f5e8dd;
+  --color-copper-light: #e7b98f;
   --color-warning: #925512;
   --color-warning-soft: #fbf0dc;
   --color-danger: #a03d34;

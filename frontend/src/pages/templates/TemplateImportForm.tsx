@@ -1,3 +1,4 @@
+import "./TemplateImportForm.css";
 import { Check, Eye, UploadCloud } from "lucide-react";
 import {
   FileDropzone,
@@ -14,18 +15,22 @@ export function TemplateImportForm({ c }: { c: TemplatesCardController }) {
   const { type, dataCy } = c.configuration;
   const lastImport = c.lastImport;
   return (
-    <div className="rounded-xl border border-line bg-paper/35 p-4">
-      <h3 className="flex items-center gap-2 text-[15px] font-semibold text-ink">
-        <UploadCloud size={16} className="text-accent" aria-hidden="true" />
+    <div className="template-import-form">
+      <h3 className="template-import-form-title">
+        <UploadCloud
+          size={16}
+          className="template-import-form-title-icon"
+          aria-hidden="true"
+        />
         Importer une nouvelle version
       </h3>
-      <p className="mt-1 text-xs leading-relaxed text-ink-soft">
+      <p className="template-import-form-intro">
         Fichier HTML UTF-8, 5 Mo maximum. Le nouveau modèle est validé puis
         importé sans être activé : vous pouvez d’abord l’aperçu avec des données
         d’exemple.
       </p>
 
-      <div className="mt-3 space-y-3">
+      <div className="template-import-form-body">
         <div>
           <label className="field-label" htmlFor={`nom-template-${type}`}>
             Nom de la version
@@ -63,15 +68,12 @@ export function TemplateImportForm({ c }: { c: TemplatesCardController }) {
         )}
 
         {c.uploadError ? (
-          <p
-            className="rounded-lg border border-danger/20 bg-danger-soft/60 p-3 text-xs font-medium text-danger"
-            role="alert"
-          >
+          <p className="template-import-form-error" role="alert">
             {c.uploadError}
           </p>
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="template-import-form-actions">
           <Button
             variant="primary"
             icon={<UploadCloud size={15} />}
@@ -89,7 +91,7 @@ export function TemplateImportForm({ c }: { c: TemplatesCardController }) {
           >
             Valider et importer
           </Button>
-          <span className="text-[11px] text-ink-soft">
+          <span className="template-import-form-actions-note">
             Une version importée doit être activée explicitement.
           </span>
         </div>
@@ -97,7 +99,7 @@ export function TemplateImportForm({ c }: { c: TemplatesCardController }) {
         {c.report ? <ValidationReport report={c.report} /> : null}
 
         {c.report && lastImport?.id ? (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="template-import-form-followup">
             <Button
               variant="secondary"
               small

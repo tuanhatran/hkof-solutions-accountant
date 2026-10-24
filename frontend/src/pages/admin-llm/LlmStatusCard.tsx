@@ -1,3 +1,4 @@
+import "./LlmStatusCard.css";
 import { Activity, CheckCircle2, CloudOff, RefreshCw } from "lucide-react";
 import { useLlmStatus } from "@/api/queries";
 import type { LlmStatus } from "@/api/types";
@@ -12,17 +13,17 @@ export function LlmStatusCard() {
   const info = key ? STATUSES[key] : null;
 
   return (
-    <section className="card mb-6 overflow-hidden" data-cy="llm-statut">
-      <div className="flex flex-wrap items-start justify-between gap-3 px-5 py-4 sm:px-6">
-        <div className="flex items-start gap-3">
+    <section className="card llm-status-card" data-cy="llm-statut">
+      <div className="llm-status-card-header">
+        <div className="llm-status-card-main">
           <span
             className={cn(
-              "grid h-10 w-10 place-items-center rounded-xl",
+              "llm-status-card-icon",
               key === "PRET"
-                ? "bg-accent-soft text-accent"
+                ? "llm-status-card-icon-ready"
                 : key === "DESACTIVE"
-                  ? "bg-paper-deep text-ink-soft"
-                  : "bg-warning-soft text-warning",
+                  ? "llm-status-card-icon-off"
+                  : "llm-status-card-icon-warning",
             )}
           >
             {key === "PRET" ? (
@@ -35,15 +36,15 @@ export function LlmStatusCard() {
           </span>
           <div>
             <p className="eyebrow">État de l’analyse IA</p>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <h2 className="text-lg text-ink">Connexion Ollama</h2>
+            <div className="llm-status-card-title-row">
+              <h2 className="llm-status-card-title">Connexion Ollama</h2>
               <span
                 className={cn("badge", info?.className ?? "badge-neutral")}
                 data-cy="badge-llm-statut-admin"
               >
                 <span
                   className={cn(
-                    "h-1.5 w-1.5 rounded-full",
+                    "llm-status-card-dot",
                     info?.dot ?? "bg-ink-soft/60",
                   )}
                   aria-hidden="true"
@@ -55,15 +56,15 @@ export function LlmStatusCard() {
                     : (info?.text ?? "Inconnu")}
               </span>
             </div>
-            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-ink-soft">
+            <p className="llm-status-card-description">
               {status.data?.message ??
                 info?.description ??
                 "Interrogation du serveur Ollama…"}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="hidden text-[11px] text-ink-soft sm:inline">
+        <div className="llm-status-card-actions">
+          <span className="llm-status-card-reachability">
             {status.data?.reachable
               ? "Serveur joignable"
               : status.data

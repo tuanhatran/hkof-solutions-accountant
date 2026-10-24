@@ -1,3 +1,4 @@
+import "./ExpenseTypeAndProRata.css";
 import { AiBadge } from "@/components/ui/AiBadge";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
@@ -10,7 +11,7 @@ export function ExpenseTypeAndProRata({
   controller: ExpenseStatementController;
 }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+    <div className="expense-type-and-pro-rata-grid">
       <FieldGroup
         id="frais-type"
         label="Type de frais"
@@ -53,7 +54,7 @@ export function ExpenseTypeAndProRata({
         error={c.errors.proRataPct?.message}
         help="Champ libre : 35,71 ou 35,71 %."
       >
-        <div className="relative">
+        <div className="expense-type-and-pro-rata-prorata">
           <input
             id="frais-prorata"
             inputMode="decimal"
@@ -62,9 +63,7 @@ export function ExpenseTypeAndProRata({
             aria-invalid={Boolean(c.errors.proRataPct)}
             {...c.register("proRataPct")}
           />
-          <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">
-            %
-          </span>
+          <span className="expense-type-and-pro-rata-unit">%</span>
         </div>
       </FieldGroup>
     </div>

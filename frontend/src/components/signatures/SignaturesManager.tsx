@@ -1,3 +1,4 @@
+import "./SignaturesManager.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImagePlus, Plus } from "lucide-react";
 import { useState } from "react";
@@ -36,15 +37,15 @@ export function SignaturesManager() {
   const list = signatures.data ?? [];
 
   return (
-    <section className="card mt-6 overflow-hidden">
+    <section className="card signatures-manager">
       <div className="card-header">
-        <div className="flex items-start gap-3">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-accent-soft text-accent">
+        <div className="signatures-manager-heading">
+          <span className="signatures-manager-icon">
             <ImagePlus size={17} aria-hidden="true" />
           </span>
           <div>
-            <h2 className="text-xl text-ink">Signatures</h2>
-            <p className="mt-0.5 text-xs text-ink-soft">
+            <h2 className="signatures-manager-title">Signatures</h2>
+            <p className="signatures-manager-description">
               Images PNG ou JPEG apposées dans les quittances et les notes de
               frais. 2 Mo maximum, suppression logique uniquement.
             </p>
@@ -62,7 +63,7 @@ export function SignaturesManager() {
         </Button>
       </div>
 
-      <div className="card-body space-y-4">
+      <div className="card-body signatures-manager-body">
         {formOpen ? <SignatureForm onClose={() => setFormOpen(false)} /> : null}
 
         {signatures.isError ? (
@@ -74,14 +75,14 @@ export function SignaturesManager() {
           <LoadingState message="Chargement des signatures…" />
         ) : list.length === 0 ? (
           <p
-            className="rounded-xl border border-dashed border-line-strong p-6 text-center text-sm text-ink-soft"
+            className="signatures-manager-empty"
             data-cy="aucune-signature-configuration"
           >
             Aucune signature configurée. Ajoutez une image PNG ou JPEG pour
             signer vos documents.
           </p>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="signatures-manager-list">
             {list.map((signature) => (
               <SignatureCard
                 key={signature.id}

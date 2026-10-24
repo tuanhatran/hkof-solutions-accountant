@@ -1,3 +1,4 @@
+import "./ExpenseStatementHeader.css";
 import {
   CalendarDays,
   ExternalLink,
@@ -32,7 +33,7 @@ export function ExpenseStatementHeader({
             >
               Quittance du mois
             </Button>
-            <span className="hidden items-center gap-1.5 rounded-full border border-line bg-surface/70 px-3 py-2 text-xs font-medium text-ink-soft sm:inline-flex">
+            <span className="hidden expense-statement-header-month sm:inline-flex">
               <CalendarDays size={14} aria-hidden="true" />
               {formatMonth(c.month)}
             </span>
@@ -41,23 +42,23 @@ export function ExpenseStatementHeader({
       />
 
       {active && !c.result ? (
-        <div className="card mb-4 flex flex-wrap items-center justify-between gap-3 border-accent/20 bg-accent-soft/45 p-4">
-          <div className="flex items-start gap-3">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-surface text-accent">
+        <div className="card expense-statement-header-banner border-accent/20 bg-accent-soft/45">
+          <div className="expense-statement-header-banner-main">
+            <span className="expense-statement-header-banner-icon">
               <FileCheck2 size={17} aria-hidden="true" />
             </span>
             <div>
-              <p className="text-sm font-semibold text-ink">
+              <p className="expense-statement-header-banner-title">
                 {formatMonth(c.month)} — note version {c.activeVersion} déjà
                 active
               </p>
-              <p className="text-xs text-ink-soft">
+              <p className="expense-statement-header-banner-text">
                 Total {formatEUR(active.total)}. Générer à nouveau créera la
                 version {(c.activeVersion ?? 0) + 1}.
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="expense-statement-header-banner-actions">
             {active.id ? (
               <>
                 <a

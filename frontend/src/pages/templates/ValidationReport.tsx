@@ -1,3 +1,4 @@
+import "./ValidationReport.css";
 import { Check, X } from "lucide-react";
 import type { ValidationReportDto } from "@/api/types";
 import { cn } from "@/lib/cn";
@@ -29,20 +30,18 @@ function VariableList({
   }
   return (
     <div>
-      <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-soft">
-        {title}
-      </p>
-      <div className="mt-1.5 flex flex-wrap gap-1.5">
+      <p className="validation-report-variable-title">{title}</p>
+      <div className="validation-report-variables">
         {variables.map((variable) => (
           <code
             key={variable}
             className={cn(
-              "rounded-md border px-1.5 py-0.5 font-mono text-[11px]",
+              "validation-report-variable",
               tone === "danger"
-                ? "border-danger/25 bg-danger-soft text-danger"
+                ? "validation-report-variable-danger"
                 : tone === "warning"
-                  ? "border-warning/25 bg-warning-soft text-warning"
-                  : "border-accent/15 bg-accent-soft text-accent",
+                  ? "validation-report-variable-warning"
+                  : "validation-report-variable-accent",
             )}
           >
             {variable}
@@ -61,12 +60,9 @@ export function ValidationReport({ report }: { report: ValidationReportDto }) {
   const errorList = report.errors ?? [];
 
   return (
-    <div
-      className="space-y-3 rounded-xl border border-line bg-paper/45 p-4"
-      data-cy="rapport-validation-template"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-ink">Rapport de validation</p>
+    <div className="validation-report" data-cy="rapport-validation-template">
+      <div className="validation-report-header">
+        <p className="validation-report-title">Rapport de validation</p>
         <BadgeStructure valid={Boolean(report.structureValid)} />
       </div>
       <VariableList
@@ -85,11 +81,9 @@ export function ValidationReport({ report }: { report: ValidationReportDto }) {
         tone="warning"
       />
       {errorList.length > 0 ? (
-        <div className="rounded-lg border border-danger/20 bg-danger-soft/60 p-3">
-          <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-danger">
-            Erreurs
-          </p>
-          <ul className="mt-1.5 list-disc space-y-1 pl-4 text-xs text-danger">
+        <div className="validation-report-errors">
+          <p className="validation-report-errors-title">Erreurs</p>
+          <ul className="validation-report-errors-list">
             {errorList.map((errorText) => (
               <li key={errorText}>{errorText}</li>
             ))}
@@ -97,7 +91,7 @@ export function ValidationReport({ report }: { report: ValidationReportDto }) {
         </div>
       ) : null}
       {missingVariables.length > 0 && errorList.length === 0 ? (
-        <p className="text-xs text-warning">
+        <p className="validation-report-warning">
           Avertissement : le modèle sera accepté, mais les champs obligatoires
           absents apparaîtront vides dans le document.
         </p>

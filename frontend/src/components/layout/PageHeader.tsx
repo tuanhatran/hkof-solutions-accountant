@@ -1,3 +1,4 @@
+import "./PageHeader.css";
 import type { ReactNode } from "react";
 
 interface PageHeaderProps {
@@ -14,21 +15,15 @@ export function PageHeader({
   actions,
 }: PageHeaderProps) {
   return (
-    <header className="mb-6 flex flex-wrap items-end justify-between gap-4 lg:mb-8">
-      <div className="min-w-0">
+    <header className="page-header">
+      <div className="page-header-main">
         {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-        <h1 className="mt-2 text-[30px] leading-[1.1] text-ink sm:text-[38px]">
-          {title}
-        </h1>
+        <h1 className="page-header-title">{title}</h1>
         {description ? (
-          <div className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
-            {description}
-          </div>
+          <div className="page-header-description">{description}</div>
         ) : null}
       </div>
-      {actions ? (
-        <div className="flex flex-wrap items-center gap-2">{actions}</div>
-      ) : null}
+      {actions ? <div className="page-header-actions">{actions}</div> : null}
     </header>
   );
 }

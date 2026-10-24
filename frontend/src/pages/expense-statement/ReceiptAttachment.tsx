@@ -1,3 +1,4 @@
+import "./ReceiptAttachment.css";
 import { FileDropzone, SelectedFile } from "@/components/forms/FileDropzone";
 import { Spinner } from "@/components/ui/States";
 import type { ExpenseStatementController } from "./useExpenseStatementPage";
@@ -10,14 +11,15 @@ export function ReceiptAttachment({
 }) {
   return (
     <div>
-      <div className="mb-1.5 flex items-center justify-between gap-2">
+      <div className="receipt-attachment-header">
         <span className="field-label">
-          Fichier justificatif <span className="text-danger">*</span>
+          Fichier justificatif{" "}
+          <span className="receipt-attachment-required">*</span>
         </span>
-        <span className="text-[11px] text-ink-soft">10 Mo max.</span>
+        <span className="receipt-attachment-limit">10 Mo max.</span>
       </div>
       {c.uploading ? (
-        <div className="flex items-center gap-3 rounded-xl border border-line bg-paper/50 p-4 text-sm text-ink-soft">
+        <div className="receipt-attachment-uploading">
           <Spinner size={18} />
           Envoi et préparation de l’analyse…
         </div>

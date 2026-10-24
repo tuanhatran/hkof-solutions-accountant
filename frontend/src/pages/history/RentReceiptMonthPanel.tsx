@@ -1,3 +1,4 @@
+import "./RentReceiptMonthPanel.css";
 import { FilePlus2, FileText } from "lucide-react";
 import { api } from "@/api/endpoints";
 import type { RentReceiptDto } from "@/api/types";
@@ -23,45 +24,45 @@ export function RentReceiptMonthPanel({
   const rentReceiptHistory = sortRentReceiptsDesc(group.rentReceipts);
 
   return (
-    <div className="p-5 sm:p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-2.5">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-accent-soft text-accent">
+    <div className="rent-receipt-month-panel">
+      <div className="rent-receipt-month-panel-header">
+        <div className="rent-receipt-month-panel-heading">
+          <span className="rent-receipt-month-panel-icon">
             <FileText size={17} aria-hidden="true" />
           </span>
           <div>
-            <h3 className="text-[15px] font-semibold text-ink">
+            <h3 className="rent-receipt-month-panel-title">
               Quittance de loyer
             </h3>
             {rentReceipt ? (
               <>
-                <p className="text-xs text-ink-soft">
+                <p className="rent-receipt-month-panel-meta">
                   Version {rentReceipt.version ?? 1} ·{" "}
                   {formatDateTime(rentReceipt.createdAt)}
                 </p>
                 <p
-                  className="text-xs text-ink-soft"
+                  className="rent-receipt-month-panel-meta"
                   data-cy={`quittance-active-${group.month}`}
                 >
                   {pairLabel(rentReceipt)}
                 </p>
               </>
             ) : (
-              <p className="text-xs text-ink-soft">
+              <p className="rent-receipt-month-panel-meta">
                 Aucune version pour ce mois.
               </p>
             )}
           </div>
         </div>
         {rentReceipt ? (
-          <p className="font-display text-xl text-ink number">
+          <p className="number rent-receipt-month-panel-total">
             {formatEUR(rentReceipt.total)}
           </p>
         ) : null}
       </div>
 
       {rentReceipt ? (
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="rent-receipt-month-panel-actions">
           {rentReceipt.id ? (
             <>
               <PdfActionLink
@@ -87,20 +88,20 @@ export function RentReceiptMonthPanel({
 
       {group.rentReceipts.length > 1 ? (
         <details
-          className="mt-4 rounded-xl border border-line bg-paper/35 px-3 py-2"
+          className="rent-receipt-month-panel-history"
           data-cy={`quittances-mois-${group.month}`}
         >
-          <summary className="cursor-pointer text-xs font-semibold text-ink-soft">
+          <summary className="rent-receipt-month-panel-summary">
             Toutes les quittances du mois ({group.rentReceipts.length})
           </summary>
-          <ul className="mt-2 space-y-1.5">
+          <ul className="rent-receipt-month-panel-history-list">
             {rentReceiptHistory.map((version) => (
               <li
                 key={version.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg px-1.5 py-1 text-xs"
+                className="rent-receipt-month-panel-history-item"
                 data-cy={`historique-quittance-${version.id}`}
               >
-                <span className="flex flex-wrap items-center gap-2">
+                <span className="rent-receipt-month-panel-history-meta">
                   <VersionBadge
                     version={version.version ?? 1}
                     active={version.status === "ACTIVE"}
@@ -109,7 +110,7 @@ export function RentReceiptMonthPanel({
                   <span className="text-ink-soft">
                     {formatDateTime(version.createdAt)}
                   </span>
-                  <span className="font-medium text-ink number">
+                  <span className="number rent-receipt-month-panel-history-amount">
                     {formatEUR(version.total)}
                   </span>
                 </span>

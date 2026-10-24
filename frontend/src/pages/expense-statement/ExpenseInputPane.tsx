@@ -1,3 +1,4 @@
+import "./ExpenseInputPane.css";
 import { cn } from "@/lib/cn";
 import type { ExpenseStatementController } from "./useExpenseStatementPage";
 import { ExpenseEntryCard } from "./ExpenseEntryCard";
@@ -14,7 +15,7 @@ export function ExpenseInputPane({
     <div
       data-cy="volet-saisie"
       className={cn(
-        "min-w-0 space-y-4",
+        "expense-input-pane",
         c.mobile && c.mobilePanel !== "input" && "hidden",
       )}
     >

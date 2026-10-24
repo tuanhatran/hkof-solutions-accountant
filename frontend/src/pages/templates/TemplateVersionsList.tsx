@@ -1,3 +1,4 @@
+import "./TemplateVersionsList.css";
 import { Check, Download, Eye, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
@@ -8,24 +9,23 @@ import type { TemplatesCardController } from "./useTemplatesCard";
 export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
   return (
     <div>
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-[15px] font-semibold text-ink">Versions</h3>
-        <span className="text-xs text-ink-soft">
+      <div className="template-versions-list-header">
+        <h3 className="template-versions-list-title">Versions</h3>
+        <span className="template-versions-list-count">
           {c.versions.length} version{c.versions.length > 1 ? "s" : ""}
         </span>
       </div>
-      <ul className="mt-2 divide-y divide-line rounded-xl border border-line">
+      <ul className="template-versions-list">
         {c.versions.map((template) => {
           const isTemplateActive = Boolean(template.active);
           const deletionBlocked = isTemplateActive || Boolean(template.builtIn);
           return (
-            <li
-              key={template.id}
-              className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5"
-            >
-              <div className="min-w-0">
-                <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-ink">
-                  <span className="truncate">{template.name}</span>
+            <li key={template.id} className="template-versions-list-item">
+              <div className="template-versions-list-main">
+                <p className="template-versions-list-name-row">
+                  <span className="template-versions-list-name">
+                    {template.name}
+                  </span>
                   <span
                     className={cn(
                       "badge",
@@ -38,17 +38,17 @@ export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
                     <span className="badge badge-neutral">intégré</span>
                   ) : null}
                   {isTemplateActive ? (
-                    <span className="text-[10px] font-bold uppercase text-accent">
+                    <span className="template-versions-list-active">
                       active
                     </span>
                   ) : null}
                 </p>
-                <p className="mt-0.5 text-[11px] text-ink-soft">
+                <p className="template-versions-list-meta">
                   {template.format ?? "HTML"} ·{" "}
                   {formatDateTime(template.createdAt)}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-1">
+              <div className="template-versions-list-actions">
                 <Button
                   variant="ghost"
                   small
@@ -110,7 +110,7 @@ export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
         })}
       </ul>
       {c.previousVersions.length === 0 ? (
-        <p className="mt-2 text-xs text-ink-soft">
+        <p className="template-versions-list-empty">
           Aucune version précédente archivée.
         </p>
       ) : null}

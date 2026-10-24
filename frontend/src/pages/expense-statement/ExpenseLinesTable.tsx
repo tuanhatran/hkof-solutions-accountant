@@ -1,3 +1,4 @@
+import "./ExpenseLinesTable.css";
 import { FileText, Pencil, Trash2 } from "lucide-react";
 import { api } from "@/api/endpoints";
 import { AiBadge } from "@/components/ui/AiBadge";
@@ -11,22 +12,22 @@ export function ExpenseLinesTable({
   controller: ExpenseStatementController;
 }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="expense-table min-w-[760px]">
+    <div className="expense-lines-table-scroll">
+      <table className="expense-table expense-lines-table">
         <thead>
           <tr>
             <th scope="col">Type</th>
             <th scope="col">Fournisseur</th>
-            <th scope="col" className="text-right">
+            <th scope="col" className="expense-lines-table-col-right">
               Montant TTC
             </th>
-            <th scope="col" className="text-right">
+            <th scope="col" className="expense-lines-table-col-right">
               Prorata
             </th>
-            <th scope="col" className="w-px whitespace-nowrap text-right">
+            <th scope="col" className="expense-lines-table-col-narrow">
               Montant retenu
             </th>
-            <th scope="col" className="text-right">
+            <th scope="col" className="expense-lines-table-col-right">
               Actions
             </th>
           </tr>
@@ -40,53 +41,53 @@ export function ExpenseLinesTable({
             return (
               <tr key={line.key} data-cy={`ligne-frais-${line.itemCode}`}>
                 <td>
-                  <p className="font-semibold text-ink">
+                  <p className="expense-lines-table-item">
                     {expenseItem?.label ?? dto?.itemLabel ?? line.itemCode}
                   </p>
                   {line.receiptName ? (
                     <p
-                      className="mt-0.5 max-w-[160px] truncate text-[11px] text-ink-soft"
+                      className="expense-lines-table-receipt"
                       title={line.receiptName}
                     >
                       {line.receiptName}
                     </p>
                   ) : null}
                 </td>
-                <td className="text-ink-soft">
+                <td className="expense-lines-table-supplier">
                   {line.detectedSupplier ?? expenseItem?.supplier ?? "—"}
                 </td>
-                <td className="whitespace-nowrap text-right">
+                <td className="expense-lines-table-amount">
                   {line.amountSource === "AI" ? (
-                    <span className="inline-flex align-middle">
+                    <span className="expense-lines-table-ai">
                       <AiBadge label="AI" />
                     </span>
                   ) : null}
-                  <span className="ml-2 number font-semibold text-ink">
+                  <span className="expense-lines-table-amount-value number">
                     {formatEUR(line.amountInclVat)}
                   </span>
                 </td>
-                <td className="number w-px whitespace-nowrap text-right text-ink-soft">
+                <td className="expense-lines-table-prorata number">
                   {formatPercentage(line.proRataPct)}
                 </td>
-                <td className="w-px whitespace-nowrap text-right">
+                <td className="expense-lines-table-claimed">
                   {dto?.claimedAmount ? (
-                    <span className="number font-semibold text-accent-strong">
+                    <span className="expense-lines-table-claimed-value number">
                       {formatEUR(dto.claimedAmount)}
                     </span>
                   ) : (
-                    <span className="text-xs text-ink-soft">
+                    <span className="expense-lines-table-pending">
                       {c.calculationInProgress ? "Calcul…" : "—"}
                     </span>
                   )}
                 </td>
                 <td>
-                  <div className="flex items-center justify-end gap-1">
+                  <div className="expense-lines-table-actions">
                     {line.receiptId ? (
                       <a
                         href={api.receipts.fileUrl(line.receiptId)}
                         target="_blank"
                         rel="noreferrer"
-                        className="rounded-lg p-1.5 text-ink-soft transition hover:bg-paper-deep hover:text-ink"
+                        className="expense-lines-table-action"
                         aria-label={`Voir le justificatif de ${expenseItem?.label ?? line.itemCode}`}
                         data-cy={`btn-voir-justificatif-${line.itemCode}`}
                       >
@@ -95,7 +96,7 @@ export function ExpenseLinesTable({
                     ) : null}
                     <button
                       type="button"
-                      className="rounded-lg p-1.5 text-ink-soft transition hover:bg-paper-deep hover:text-ink"
+                      className="expense-lines-table-action"
                       onClick={() => c.editLine(line)}
                       aria-label={`Modifier ${expenseItem?.label ?? line.itemCode}`}
                       data-cy={`btn-modifier-${line.itemCode}`}
@@ -104,7 +105,7 @@ export function ExpenseLinesTable({
                     </button>
                     <button
                       type="button"
-                      className="rounded-lg p-1.5 text-ink-soft transition hover:bg-danger-soft hover:text-danger"
+                      className="expense-lines-table-action expense-lines-table-action-danger"
                       onClick={() => c.setLineToRemove(line)}
                       aria-label={`Supprimer ${expenseItem?.label ?? line.itemCode}`}
                       data-cy={`btn-supprimer-${line.itemCode}`}

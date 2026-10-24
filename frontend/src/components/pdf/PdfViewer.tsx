@@ -1,3 +1,4 @@
+import "./PdfViewer.css";
 import {
   ChevronLeft,
   ChevronRight,
@@ -82,32 +83,24 @@ export function PdfViewer({
   const errorMessage = errorText ?? pdfError;
 
   return (
-    <section
-      className={cn(
-        "card flex min-h-[420px] flex-col overflow-hidden",
-        className,
-      )}
-      data-cy={dataCy}
-    >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
-        <div className="flex items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent-soft text-accent">
+    <section className={cn("card pdf-viewer", className)} data-cy={dataCy}>
+      <div className="pdf-viewer-header">
+        <div className="pdf-viewer-title-group">
+          <span className="pdf-viewer-icon">
             <FileText size={16} aria-hidden="true" />
           </span>
           <div>
-            <h2 className="text-[15px] font-semibold leading-tight text-ink">
-              Aperçu du document
-            </h2>
-            <p className="text-[11px] text-ink-soft">
+            <h2 className="pdf-viewer-title">Aperçu du document</h2>
+            <p className="pdf-viewer-subtitle">
               Filigrane « APERÇU » — rien n’est enregistré.
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="pdf-viewer-actions">
           {actions}
           {url ? (
             <span
-              className="text-[11px] text-ink-soft"
+              className="pdf-viewer-updated"
               data-cy="apercu-maj"
               aria-live="polite"
             >
@@ -120,21 +113,15 @@ export function PdfViewer({
       </div>
 
       {errorMessage ? (
-        <div
-          className="border-b border-warning/20 bg-warning-soft px-4 py-2 text-xs font-medium text-warning"
-          role="alert"
-        >
+        <div className="pdf-viewer-error" role="alert">
           {errorMessage}
         </div>
       ) : null}
 
-      <div ref={containerRef} className="relative flex-1">
-        <div
-          ref={pdfZoneRef}
-          className="max-h-[68vh] min-h-[360px] overflow-auto bg-paper-deep/45 p-5"
-        >
+      <div ref={containerRef} className="pdf-viewer-body">
+        <div ref={pdfZoneRef} className="pdf-viewer-zone">
           {url ? (
-            <div className="flex justify-center">
+            <div className="pdf-viewer-center">
               <Document
                 file={url}
                 onLoadSuccess={({ numPages }: { numPages: number }) => {
@@ -145,7 +132,7 @@ export function PdfViewer({
                   setPdfError("Impossible d'afficher l'aperçu PDF.")
                 }
                 loading={
-                  <div className="flex items-center gap-2 px-8 py-16 text-sm text-ink-soft">
+                  <div className="pdf-viewer-document-loading">
                     <Spinner /> Chargement du PDF…
                   </div>
                 }
@@ -153,10 +140,10 @@ export function PdfViewer({
                 <Page
                   pageNumber={page}
                   width={Math.round(width * zoom)}
-                  className="overflow-hidden rounded-sm shadow-[0_18px_50px_-20px_rgba(33,48,43,0.55)]"
+                  className="pdf-viewer-page"
                   loading={
                     <div
-                      className="flex items-center justify-center bg-white"
+                      className="pdf-viewer-page-loading"
                       style={{
                         width: Math.round(width * zoom),
                         height: Math.round(1.414 * width * zoom),
@@ -169,20 +156,20 @@ export function PdfViewer({
               </Document>
             </div>
           ) : (
-            <div className="flex min-h-[340px] flex-col items-center justify-center gap-3 text-center">
+            <div className="pdf-viewer-placeholder">
               {loading ? (
                 <>
                   <Spinner size={26} />
-                  <p className="text-sm text-ink-soft">
+                  <p className="pdf-viewer-loading-text">
                     Préparation de l’aperçu…
                   </p>
                 </>
               ) : (
                 <>
-                  <span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-ink-soft/70">
+                  <span className="pdf-viewer-placeholder-icon">
                     <FileText size={22} aria-hidden="true" />
                   </span>
-                  <p className="max-w-xs text-sm text-ink-soft">
+                  <p className="pdf-viewer-placeholder-text">
                     L’aperçu apparaîtra ici dès que les informations seront
                     complètes.
                   </p>
@@ -193,60 +180,55 @@ export function PdfViewer({
         </div>
 
         {loading && url ? (
-          <div className="glass-surface absolute inset-0 flex flex-col items-center justify-center gap-2">
+          <div className="glass-surface pdf-viewer-overlay">
             <Spinner size={26} />
-            <p className="text-sm font-medium text-ink">
-              Mise à jour de l’aperçu…
-            </p>
-            <p className="text-xs text-ink-soft">
+            <p className="pdf-viewer-overlay-title">Mise à jour de l’aperçu…</p>
+            <p className="pdf-viewer-overlay-hint">
               L’ancienne version reste affichée.
             </p>
           </div>
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3">
-        <div className="flex items-center gap-1.5">
+      <div className="pdf-viewer-footer">
+        <div className="pdf-viewer-toolbar">
           <button
             type="button"
-            className="rounded-lg border border-line p-1.5 text-ink-soft transition hover:bg-paper hover:text-ink disabled:opacity-35"
+            className="pdf-viewer-tool"
             onClick={() => goToPage(page - 1)}
             disabled={!url || page <= 1}
             aria-label="Page précédente"
           >
             <ChevronLeft size={16} />
           </button>
-          <span
-            className="min-w-[86px] text-center text-xs font-medium text-ink-soft"
-            aria-live="polite"
-          >
+          <span className="pdf-viewer-page-label" aria-live="polite">
             Page {pageCount ? page : 0} / {pageCount || "—"}
           </span>
           <button
             type="button"
-            className="rounded-lg border border-line p-1.5 text-ink-soft transition hover:bg-paper hover:text-ink disabled:opacity-35"
+            className="pdf-viewer-tool"
             onClick={() => goToPage(page + 1)}
             disabled={!url || page >= pageCount}
             aria-label="Page suivante"
           >
             <ChevronRight size={16} />
           </button>
-          <span className="mx-2 h-4 w-px bg-line" aria-hidden="true" />
+          <span className="pdf-viewer-separator" aria-hidden="true" />
           <button
             type="button"
-            className="rounded-lg border border-line p-1.5 text-ink-soft transition hover:bg-paper hover:text-ink disabled:opacity-35"
+            className="pdf-viewer-tool"
             onClick={() => changeZoom(-0.15)}
             disabled={!url || zoom <= 0.7}
             aria-label="Réduire le zoom"
           >
             <Minus size={15} />
           </button>
-          <span className="min-w-[42px] text-center text-xs font-medium text-ink-soft">
+          <span className="pdf-viewer-zoom-label">
             {Math.round(zoom * 100)} %
           </span>
           <button
             type="button"
-            className="rounded-lg border border-line p-1.5 text-ink-soft transition hover:bg-paper hover:text-ink disabled:opacity-35"
+            className="pdf-viewer-tool"
             onClick={() => changeZoom(0.15)}
             disabled={!url || zoom >= 1.75}
             aria-label="Agrandir le zoom"

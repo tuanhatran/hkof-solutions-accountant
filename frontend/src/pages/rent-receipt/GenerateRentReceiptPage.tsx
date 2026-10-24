@@ -1,3 +1,4 @@
+import "./GenerateRentReceiptPage.css";
 import { CalendarDays, ReceiptText } from "lucide-react";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
@@ -33,7 +34,7 @@ export function GenerateRentReceiptPage() {
             >
               Note de frais du mois
             </Button>
-            <span className="hidden items-center gap-1.5 rounded-full border border-line bg-surface/70 px-3 py-2 text-xs font-medium text-ink-soft sm:inline-flex">
+            <span className="hidden generate-rent-receipt-page-month sm:inline-flex">
               <CalendarDays size={14} aria-hidden="true" />
               {formatMonth(c.draft.month)}
             </span>
@@ -56,7 +57,7 @@ export function GenerateRentReceiptPage() {
         </div>
       ) : null}
 
-      <div className="mb-4 flex items-center justify-between gap-3 lg:hidden">
+      <div className="generate-rent-receipt-page-tabs">
         <ViewTabs
           ariaLabel="Volets de génération"
           active={c.mobilePanel}
@@ -75,11 +76,11 @@ export function GenerateRentReceiptPage() {
         />
       </div>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.02fr)_minmax(400px,0.98fr)] xl:gap-6">
+      <div className="generate-rent-receipt-page-grid">
         <div
           data-cy="volet-saisie"
           className={cn(
-            "min-w-0 space-y-4",
+            "generate-rent-receipt-page-input",
             c.mobile && c.mobilePanel !== "saisie" && "hidden",
           )}
         >

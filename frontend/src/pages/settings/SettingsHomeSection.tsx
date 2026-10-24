@@ -1,3 +1,4 @@
+import "./SettingsHomeSection.css";
 import { Home } from "lucide-react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import { FieldGroup } from "@/components/ui/FieldGroup";
@@ -21,18 +22,21 @@ export function SettingsHomeSection({
       icon={Home}
       title="Logement et quote-part professionnelle"
       description="La surface professionnelle divisée par la surface totale fixe le prorata de référence."
-      bodyClassName="card-body grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      bodyClassName="card-body settings-home-section-body"
     >
       <FieldGroup
         id="param-logement-adresse"
         label="Adresse du logement"
         error={errors.homeAddress?.message}
-        className="sm:col-span-2 lg:col-span-4"
+        className="settings-home-section-field-wide"
       >
         <textarea
           id="param-logement-adresse"
           rows={2}
-          className={cn("field resize-y", errors.homeAddress && "field-error")}
+          className={cn(
+            "field settings-home-section-textarea",
+            errors.homeAddress && "field-error",
+          )}
           {...register("homeAddress")}
           data-cy="input-logement-adresse"
         />
@@ -78,17 +82,15 @@ export function SettingsHomeSection({
           data-cy="input-lieu-emission"
         />
       </FieldGroup>
-      <div className="flex flex-col justify-center rounded-xl border border-accent/15 bg-accent-soft/45 px-4 py-3">
-        <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-accent">
-          Prorata indicatif
-        </p>
+      <div className="settings-home-section-prorata">
+        <p className="settings-home-section-prorata-label">Prorata indicatif</p>
         <p
-          className="mt-1 font-display text-2xl text-accent-strong"
+          className="settings-home-section-prorata-value"
           data-cy="prorata-indicatif"
         >
           {displayedProRata === null ? "—" : formatPercentage(displayedProRata)}
         </p>
-        <p className="text-[10.5px] text-ink-soft">
+        <p className="settings-home-section-prorata-note">
           Calculé et arrondi côté backend à l’enregistrement.
         </p>
       </div>

@@ -1,3 +1,4 @@
+import "./SettingsPage.css";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Save } from "lucide-react";
@@ -101,7 +102,7 @@ export function SettingsPage() {
       />
 
       <div
-        className="segmented mb-6 w-full max-w-sm"
+        className="segmented settings-page-tabs"
         role="tablist"
         aria-label="Sections de la configuration"
       >
@@ -111,7 +112,7 @@ export function SettingsPage() {
           aria-selected={tab === "entreprise"}
           onClick={() => setTab("entreprise")}
           className={cn(
-            "segmented-item flex-1",
+            "segmented-item settings-page-tab",
             tab === "entreprise" && "segmented-item-active",
           )}
           data-cy="onglet-entreprise"
@@ -124,7 +125,7 @@ export function SettingsPage() {
           aria-selected={tab === "quittances"}
           onClick={() => setTab("quittances")}
           className={cn(
-            "segmented-item flex-1",
+            "segmented-item settings-page-tab",
             tab === "quittances" && "segmented-item-active",
           )}
           data-cy="onglet-quittances"
@@ -134,7 +135,7 @@ export function SettingsPage() {
       </div>
 
       {tab === "quittances" ? (
-        <div className="space-y-6">
+        <div className="settings-page-sections">
           <RentReceiptSettings />
           <SignaturesManager />
         </div>
@@ -149,7 +150,7 @@ export function SettingsPage() {
         <>
           <form
             id="form-parametres"
-            className="space-y-6"
+            className="settings-page-form"
             onSubmit={handleSubmit((submittedValues) =>
               save.mutate(submittedValues),
             )}

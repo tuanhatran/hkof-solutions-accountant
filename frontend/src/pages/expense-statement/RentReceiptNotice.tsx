@@ -1,3 +1,4 @@
+import "./RentReceiptNotice.css";
 import { AlertTriangle, ExternalLink } from "lucide-react";
 import { api } from "@/api/endpoints";
 import { Button } from "@/components/ui/Button";
@@ -12,22 +13,22 @@ export function RentReceiptNotice({
   controller: ExpenseStatementController;
 }) {
   return (
-    <div className="rounded-xl border border-line bg-paper/50 p-4">
+    <div className="rent-receipt-notice">
       {c.rentReceipt.isPending ? (
-        <p className="flex items-center gap-2 text-sm text-ink-soft">
+        <p className="rent-receipt-notice-pending">
           <Spinner size={16} /> Recherche de la quittance du mois…
         </p>
       ) : c.rentReceipt.data ? (
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="rent-receipt-notice-row">
           <div>
-            <p className="text-sm font-semibold text-ink">
+            <p className="rent-receipt-notice-title">
               Quittance de {formatMonth(c.month)} (v
               {c.rentReceipt.data.version ?? 1}) :{" "}
               <span className="number">
                 {formatEUR(c.rentReceipt.data.total)}
               </span>
             </p>
-            <p className="mt-1 text-xs text-ink-soft">
+            <p className="rent-receipt-notice-hint">
               Montant pré-rempli et verrouillé. La quittance sera annexée
               automatiquement.
             </p>
@@ -46,21 +47,21 @@ export function RentReceiptNotice({
         </div>
       ) : (
         <div
-          className="flex flex-wrap items-center justify-between gap-3"
+          className="rent-receipt-notice-row"
           data-cy="alerte-quittance-manquante"
           role="alert"
         >
-          <div className="flex items-start gap-2.5">
+          <div className="rent-receipt-notice-alert">
             <AlertTriangle
               size={17}
-              className="mt-0.5 text-warning"
+              className="rent-receipt-notice-alert-icon"
               aria-hidden="true"
             />
             <div>
-              <p className="text-sm font-semibold text-ink">
+              <p className="rent-receipt-notice-title">
                 Aucune quittance pour ce mois
               </p>
-              <p className="mt-0.5 text-xs text-ink-soft">
+              <p className="rent-receipt-notice-alert-text">
                 Générez la quittance : le montant du loyer sera repris et
                 verrouillé.
               </p>
