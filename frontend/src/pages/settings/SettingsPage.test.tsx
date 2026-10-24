@@ -371,6 +371,30 @@ describe("SettingsPage tabs", () => {
     expect(useCompanyStore.getState().activeCompanyId).toBe(2);
   });
 
+  it("hides the company selector while creating a new company", async () => {
+    companiesState = readyQuery([COMPANY, OTHER]);
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Nouvelle société" }));
+
+    expect(screen.queryByLabelText("Société à configurer")).toBeNull();
+    expect(
+      screen.queryByText(
+        "Aucune société configurée. Créez la première société.",
+      ),
+    ).toBeNull();
+    expect(
+      document.querySelector('[data-cy="formulaire-societe"]'),
+    ).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
+
+    const selector = screen.getByLabelText("Société à configurer");
+    await user.selectOptions(selector, "2");
+    expect(selector).toHaveValue("2");
+  });
+
   it("deletes a company after confirmation", async () => {
     vi.mocked(api.companies.delete).mockResolvedValue(undefined);
     renderPage();
