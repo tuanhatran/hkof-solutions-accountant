@@ -30,14 +30,14 @@ The `.opencode/` directory is the OpenCode entry point for this project:
 
 - `opencode.json` — instructions glob, the `.qoder/skills` source, and git guards.
 - `instructions/` — detailed rules loaded alongside this file.
-- `agents/` — the lead, builder and reviewer workflow, mirroring `.qoder/agents/`.
+- `agents/` — the lead, builder and reviewer workflow (source of truth).
 - `skills/` — project skills for contract changes, backend, frontend, PDF, LLM and E2E.
 - `commands/` — `/verify`, `/contract`, `/review`.
 
-`.qoder/agents/*.md` remains the source of truth. The same three agents are mirrored to
-`.opencode/agents/*.md` and `.github/agents/*.agent.md`; when a workflow rule changes,
-update all three so they do not diverge. Task handoffs live in the shared `.handoff/tasks/`
-tree, so a task continues unchanged whichever configuration runs it.
+`.opencode/agents/*.md` is the source of truth. The same three agents are mirrored to
+`.qoder/agents/*.md` and `.github/agents/*.agent.md`; when a workflow rule changes, update
+`.opencode` first, then the two mirrors so they do not diverge. Task handoffs live in the
+shared `.handoff/tasks/` tree, so a task continues unchanged whichever configuration runs it.
 
 - `lead` sizes the task (`S`, `M`, `L`), creates the branch, discovers the context files
   with CodeGraph, writes the compact handoff, routes the work and reports. It edits only

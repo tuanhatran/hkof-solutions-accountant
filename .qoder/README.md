@@ -114,6 +114,51 @@ creates a second branch for the same task.
   through to the YAML and the generated types.
 - Amounts are decimal strings (`"123.45"`) or integer cents, never JSON floats.
 
+## Code conventions
+
+The detailed rules live in `.opencode/instructions/*.md` and are read on demand. The
+project-wide rules are:
+
+### Backend — clean code and coverage
+
+- `CalculationService` is pure: no Spring, no repository, no clock. Every monetary
+  calculation lives there (`BigDecimal`, `RoundingMode.HALF_UP`, scale 2). Never duplicate
+  it in a controller, a repository or an entity; never use `double` or `float`.
+- Controllers stay thin: validation and mapping only, no business logic.
+- Read service methods use `@Transactional(readOnly = true)`.
+- `BusinessException` for a business rule, `NotFoundException` for a missing row; both
+  become a `ProblemDetail` with a French user-facing message.
+- Logical deletion only (`deleted`); queries use `findByDeletedFalse...`; a previous
+  version is never overwritten.
+- Flyway migrations are append-only: never edit an applied migration.
+- Every new task keeps JaCoCo bundle coverage >= 90% LINE and >= 90% BRANCH
+  (`cd backend && ./mvnw -B verify`).
+- Every production class stays under 300 lines. A class crossing 300 lines is split by
+  responsibility, never shrunk by deleting comments only.
+
+### Frontend — clean code and CSS
+
+- TypeScript strict, no `any`; no authoritative monetary calculation on the client.
+- Every HTTP call goes through `frontend/src/api/endpoints.ts`; hooks and keys live in
+  `frontend/src/api/queries.ts` with `queryKeys` constants, never string literals.
+- Forms use React Hook Form + Zod in `frontend/src/lib/validation.ts`; feedback goes
+  through `toast` from `frontend/src/state/toasts.ts`.
+- API amounts are strings; use the existing parsers and formatters. UI text is French;
+  loading, error and empty states are mandatory; labels and keyboard access are required.
+- E2E selectors use the specification's `data-cy` attributes, never style selectors.
+- CSS: one colocated `<Component>.css` per styled component, imported first by the
+  component, never by `main.tsx` and never through a barrel. Classes are prefixed with the
+  component file name in kebab-case (`PageHeader.css` → `.page-header`,
+  `.page-header-title`). Each file starts with `@reference "<relative>/index.css";` and
+  wraps its rules in `@layer components`. Design-system primitives (`card`, `btn`, `field`,
+  `badge`) stay on the element; add only the component-specific class. Values come from
+  tokens (`var(--color-*)`, `var(--shadow-*)`, `var(--font-*)`) or `@apply` utilities,
+  never hex literals. Conditional variants are separate classes combined with `cn()`.
+  A component CSS stays under 300 lines and is split by block.
+- Every new task keeps Vitest global coverage >= 90% lines, statements, functions and
+  branches (`cd frontend && npm run test:coverage`).
+- `npm run lint` and `npm run format:check` must pass (CI gate).
+
 ## Language
 
 - Agent instructions, code, comments and reports are in English.
@@ -124,7 +169,7 @@ creates a second branch for the same task.
 ## Verification
 
 - `cd backend && ./mvnw -B test`
-- `cd frontend && npm run typecheck && npm test && npm run build`
+- `cd frontend && npm run typecheck && npm run lint && npm run format:check && npm test && npm run build`
 - Coverage gates for every task: JaCoCo bundle >= 90% LINE and >= 90% BRANCH
   (`cd backend && ./mvnw -B verify`), Vitest global >= 90% lines, statements, functions and
   branches (`cd frontend && npm run test:coverage`). The handoff carries one evidence line

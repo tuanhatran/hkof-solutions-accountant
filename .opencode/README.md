@@ -58,14 +58,14 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
 | Root rules         | `AGENTS.md`                       | loaded directly               |
 | Copilot guidance   | `.github/copilot-instructions.md` | same conventions              |
 | Superpowers skills | `.qoder/skills`                   | registered in `opencode.json` |
-| Agent workflow     | `.qoder/agents/*.md`              | `.opencode/agents/*.md`       |
+| Agent workflow     | `.opencode/agents/*.md`           | upstream (source of truth)    |
 | Task handoffs      | `.handoff/tasks/*.md`             | same shared tree              |
 | File graph         | CodeGraph index in `.codegraph/`  | `codegraph` CLI, shared       |
 | Detailed rules     | this directory                    | instructions                  |
 
-When a rule changes, update the source of truth first, then mirror it here. Do not let
-`.qoder/agents`, `.opencode/agents` and `.github/agents` diverge: the same agents, scope
-and exit criteria must appear in all three.
+When a rule changes, update `.opencode` first, then mirror it to `.qoder/agents` and
+`.github/agents`. Do not let `.opencode/agents`, `.qoder/agents` and `.github/agents`
+diverge: the same agents, scope and exit criteria must appear in all three.
 
 ## Language policy
 

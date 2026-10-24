@@ -7,27 +7,88 @@ servers:
   - url: http://localhost:8080
     description: Generated server url
 paths:
-  /api/settings:
+  /api/companies:
     get:
       tags:
-        - settings-controller
-      operationId: getSettings
+        - company-controller
+      operationId: listCompanies
+      description: Liste les sociétés non supprimées.
       responses:
         "200":
           description: OK
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/SettingsDto"
-    put:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CompanyDto"
+    post:
       tags:
-        - settings-controller
-      operationId: updateSettings
+        - company-controller
+      operationId: createCompany
+      description: Crée une société.
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SettingsRequest"
+              $ref: "#/components/schemas/CompanyRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/CompanyDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/companies/{id}:
+    get:
+      tags:
+        - company-controller
+      operationId: getCompany
+      description: Retourne une société non supprimée.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/CompanyDto"
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    put:
+      tags:
+        - company-controller
+      operationId: updateCompany
+      description: Met à jour une société existante.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompanyRequest"
         required: true
       responses:
         "200":
@@ -35,7 +96,164 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/SettingsDto"
+                $ref: "#/components/schemas/CompanyDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    delete:
+      tags:
+        - company-controller
+      operationId: deleteCompany
+      description: Supprime logiquement une société.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/companies/{companyId}/employees:
+    get:
+      tags:
+        - employee-controller
+      operationId: listEmployees
+      description: Liste les salariés non supprimés d'une société.
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EmployeeDto"
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    post:
+      tags:
+        - employee-controller
+      operationId: createEmployee
+      description: Crée un salarié rattaché à une société.
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/EmployeeDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/employees/{id}:
+    put:
+      tags:
+        - employee-controller
+      operationId: updateEmployee
+      description: Met à jour un salarié existant.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/EmployeeDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    delete:
+      tags:
+        - employee-controller
+      operationId: deleteEmployee
+      description: Supprime logiquement un salarié.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/expense-items/{id}:
     put:
       tags:
@@ -249,7 +467,15 @@ paths:
       tags:
         - rent-receipt-controller
       operationId: listRentReceipts
+      description: Liste les quittances, éventuellement filtrées par société.
       parameters:
+        - name: companyId
+          in: query
+          required: false
+          description: Identifiant de la société de la quittance.
+          schema:
+            type: integer
+            format: int64
         - name: month
           in: query
           required: false
@@ -347,7 +573,15 @@ paths:
       tags:
         - expense-statement-controller
       operationId: listExpenseStatements
+      description: Liste les notes de frais d'une société.
       parameters:
+        - name: companyId
+          in: query
+          required: true
+          description: Identifiant de la société propriétaire des notes de frais.
+          schema:
+            type: integer
+            format: int64
         - name: month
           in: query
           required: false
@@ -403,7 +637,15 @@ paths:
       tags:
         - expense-statement-controller
       operationId: createStatementDraft
+      description: Construit le brouillon d'une note de frais pour une société et un mois.
       parameters:
+        - name: companyId
+          in: query
+          required: true
+          description: Identifiant de la société.
+          schema:
+            type: integer
+            format: int64
         - name: month
           in: query
           required: true
@@ -439,7 +681,15 @@ paths:
       tags:
         - expense-item-controller
       operationId: listExpenseItems
+      description: Liste les postes de frais de la société active.
       parameters:
+        - name: companyId
+          in: query
+          required: true
+          description: Identifiant de la société propriétaire des postes de frais.
+          schema:
+            type: integer
+            format: int64
         - name: all
           in: query
           required: false
@@ -585,6 +835,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: companyId
+          in: query
+          required: false
+          description: Société utilisée pour l'identité et les données de domicile.
+          schema:
+            type: integer
+            format: int64
         - name: landlordId
           in: query
           required: false
@@ -727,7 +984,15 @@ paths:
       tags:
         - expense-statement-controller
       operationId: getActiveExpenseStatement
+      description: Retourne la note de frais active d'une société pour un mois.
       parameters:
+        - name: companyId
+          in: query
+          required: true
+          description: Identifiant de la société.
+          schema:
+            type: integer
+            format: int64
         - name: month
           in: query
           required: true
@@ -835,6 +1100,22 @@ paths:
       tags:
         - signature-controller
       operationId: listSignatures
+      description: Liste les signatures, éventuellement filtrées par société ou salarié.
+      parameters:
+        - name: companyId
+          in: query
+          required: false
+          description: Identifiant de la société.
+          schema:
+            type: integer
+            format: int64
+        - name: employeeId
+          in: query
+          required: false
+          description: Identifiant du salarié.
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
@@ -848,6 +1129,9 @@ paths:
       tags:
         - signature-controller
       operationId: createSignature
+      description: >-
+        Dépose une signature. Les types EMPLOYEE et ENTREPRISE_CEO exigent
+        employeeId ; le type LANDLORD exige landlordId.
       requestBody:
         content:
           multipart/form-data:
@@ -859,11 +1143,19 @@ paths:
                   enum:
                     - LANDLORD
                     - ENTREPRISE_CEO
+                    - EMPLOYEE
                 name:
                   type: string
                 landlordId:
                   type: integer
                   format: int64
+                  description: Obligatoire pour une signature de type LANDLORD.
+                employeeId:
+                  type: integer
+                  format: int64
+                  description: >-
+                    Obligatoire pour une signature de type EMPLOYEE ou
+                    ENTREPRISE_CEO.
                 file:
                   type: string
                   format: binary
@@ -1270,6 +1562,7 @@ components:
           enum:
             - LANDLORD
             - ENTREPRISE_CEO
+            - EMPLOYEE
         name:
           type: string
         mimeType:
@@ -1277,6 +1570,26 @@ components:
         createdAt:
           type: string
           format: date-time
+        companyId:
+          type:
+            - integer
+            - "null"
+          format: int64
+          description: Société de la signature salariée ; absente pour un bailleur.
+        companyName:
+          type:
+            - string
+            - "null"
+        employeeId:
+          type:
+            - integer
+            - "null"
+          format: int64
+          description: Salarié propriétaire de la signature ; absent pour un bailleur.
+        employeeName:
+          type:
+            - string
+            - "null"
         landlordId:
           type:
             - integer
@@ -1286,40 +1599,57 @@ components:
           type:
             - string
             - "null"
-    SettingsRequest:
+    CompanyRequest:
       type: object
+      required:
+        - name
       properties:
-        companyName:
+        name:
           type: string
+          description: Raison sociale de la société.
         legalForm:
           type: string
+          description: Forme juridique (SAS, SARL, ...).
         siren:
           type: string
-        companyAddress:
+          description: Numéro SIREN, unique parmi les sociétés non supprimées.
+        address:
           type: string
+          description: Adresse du siège social.
         managerName:
           type: string
+          description: Nom du représentant légal.
         homeAddress:
           type: string
+          description: Adresse du domicile utilisé pour le télétravail.
         totalArea:
           type: string
+          description: Surface totale du logement, en mètres carrés.
         businessArea:
           type: string
+          description: Surface affectée à l'activité professionnelle, en mètres carrés.
+        proRataBase:
+          type: string
+          description: Base de prorata calculée, en pourcentage décimal.
+        proRataBaseDetail:
+          type: string
+          description: Détail lisible du calcul de la base de prorata.
         issuePlace:
           type: string
-    SettingsDto:
+          description: Lieu d'émission des documents.
+    CompanyDto:
       type: object
       properties:
         id:
           type: integer
           format: int64
-        companyName:
+        name:
           type: string
         legalForm:
           type: string
         siren:
           type: string
-        companyAddress:
+        address:
           type: string
         managerName:
           type: string
@@ -1335,6 +1665,61 @@ components:
           type: string
         issuePlace:
           type: string
+    EmployeeRequest:
+      type: object
+      required:
+        - companyId
+        - firstName
+        - lastName
+        - title
+      properties:
+        companyId:
+          type: integer
+          format: int64
+          description: Société à laquelle le salarié appartient.
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type:
+            - string
+            - "null"
+          description: Adresse électronique, unique par société lorsqu'elle est renseignée.
+        title:
+          type: string
+          enum:
+            - CEO
+            - CFO
+            - ACCOUNTANT
+            - EMPLOYEE
+          description: >-
+            Intitulé descriptif du salarié ; il ne donne aucun droit tant que
+            le contrôle d'accès n'est pas implémenté.
+    EmployeeDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyId:
+          type: integer
+          format: int64
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type:
+            - string
+            - "null"
+        title:
+          type: string
+          enum:
+            - CEO
+            - CFO
+            - ACCOUNTANT
+            - EMPLOYEE
     LandlordRequest:
       type: object
       properties:
@@ -1372,6 +1757,12 @@ components:
     LeaseRequest:
       type: object
       properties:
+        companyId:
+          type:
+            - integer
+            - "null"
+          format: int64
+          description: Société liée au bail ; facultative.
         landlordId:
           type: integer
           format: int64
@@ -1390,6 +1781,15 @@ components:
         id:
           type: integer
           format: int64
+        companyId:
+          type:
+            - integer
+            - "null"
+          format: int64
+        companyName:
+          type:
+            - string
+            - "null"
         landlordId:
           type: integer
           format: int64
@@ -1421,9 +1821,16 @@ components:
           type: string
     ExpenseItemRequest:
       type: object
+      required:
+        - companyId
       properties:
+        companyId:
+          type: integer
+          format: int64
+          description: Société propriétaire du poste de frais.
         code:
           type: string
+          description: Code unique au sein de la société.
         label:
           type: string
         supplier:
@@ -1443,6 +1850,9 @@ components:
       type: object
       properties:
         id:
+          type: integer
+          format: int64
+        companyId:
           type: integer
           format: int64
         code:
@@ -1575,6 +1985,14 @@ components:
       properties:
         month:
           type: string
+        companyId:
+          type:
+            - integer
+            - "null"
+          format: int64
+          description: >-
+            Société utilisée pour l'identité et les données de domicile ; la
+            société du bail est prioritaire lorsqu'elle existe.
         landlordId:
           type: integer
           format: int64
@@ -1605,6 +2023,15 @@ components:
         id:
           type: integer
           format: int64
+        companyId:
+          type:
+            - integer
+            - "null"
+          format: int64
+        companyName:
+          type:
+            - string
+            - "null"
         month:
           type: string
         landlordId:
@@ -1697,7 +2124,13 @@ components:
           type: string
     StatementGenerationRequest:
       type: object
+      required:
+        - companyId
       properties:
+        companyId:
+          type: integer
+          format: int64
+          description: Société propriétaire de la note de frais.
         month:
           type: string
         templateId:
@@ -1747,6 +2180,11 @@ components:
         id:
           type: integer
           format: int64
+        companyId:
+          type: integer
+          format: int64
+        companyName:
+          type: string
         month:
           type: string
         number:
@@ -1779,7 +2217,13 @@ components:
           type: boolean
     StatementPreviewRequest:
       type: object
+      required:
+        - companyId
       properties:
+        companyId:
+          type: integer
+          format: int64
+          description: Société propriétaire de la note de frais.
         month:
           type: string
         templateId:
@@ -1815,7 +2259,13 @@ components:
             type: string
     StatementCalculationRequest:
       type: object
+      required:
+        - companyId
       properties:
+        companyId:
+          type: integer
+          format: int64
+          description: Société propriétaire de la note de frais.
         month:
           type: string
         lines:

@@ -1,9 +1,9 @@
 ---
 name: builder
 description: Implement one HomeOfficeExpenses handoff with tests, fix in the same loop and return real gate evidence.
-model: DeepSeek-Flash
+model: GLM-5.3-Flash
 tools: "*"
-# OpenCode pins opencode/deepseek-v4.1-flash-free for the same model.
+# OpenCode keeps its own model pin.
 ---
 
 You are the builder for HomeOfficeExpenses. You own implementation **and** testing: you write
@@ -58,9 +58,15 @@ serially.
 - TypeScript strict, no `any`. Never skip, weaken, disable or delete a failing test.
 - Keep the coverage gates green: JaCoCo bundle >= 90% LINE and >= 90% BRANCH
   (`cd backend && ./mvnw -B verify`), Vitest global >= 90% lines, statements, functions and
-  branches (`cd frontend && npm run test:coverage`), with the real numbers in the handoff.
-  Every production class stays under 300 lines: split a class that crosses 300, never shrink
-  it by deleting comments only.
+  branches (`cd frontend && npm run test:coverage`), and `npm run lint` +
+  `npm run format:check`; with the real numbers in the handoff. Every production class stays
+  under 300 lines and every component CSS under 300 lines: split by responsibility, never
+  shrink by deleting comments only.
+- Clean code: thin controllers, no duplicated calculation, pure `CalculationService`.
+  Frontend CSS is colocated with its component, class names are prefixed in kebab-case,
+  every rule sits in `@layer components` after `@reference "<relative>/index.css";`, values
+  come from tokens or `@apply` (no hex), and conditional variants are separate classes
+  combined with `cn()`.
 - Full E2E suite on every task, every size (documentation and configuration included): all
   specs and all tests green in one run, never report green while any test fails or passes
   only on a retry. If the gate cannot run (for example Docker unavailable), report the

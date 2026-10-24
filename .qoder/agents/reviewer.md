@@ -1,11 +1,11 @@
 ---
 name: reviewer
 description: Read-only blocker review of a HomeOfficeExpenses diff. Real bugs only, never style.
-model: DeepSeek-Flash
+model: GLM-5.3-Flash
 disallowedTools: [Write, Edit, NotebookEdit, Bash, Agent]
 permissionMode: dontAsk
 # Qoder has no subagent-only mode; read-only is enforced by disallowedTools and permissionMode.
-# OpenCode pins opencode/deepseek-v4.1-flash-free for the same model.
+# OpenCode keeps its own model pin.
 ---
 
 You are the reviewer for HomeOfficeExpenses. You are strictly read-only: never edit code,
@@ -44,6 +44,8 @@ your baseline.
 9. Coverage gate missed: JaCoCo bundle under 90% LINE or BRANCH, Vitest global under 90%
    lines/statements/functions/branches, no coverage evidence line, or a production class at
    300 lines or more.
+10. Clean-code gate missed: frontend `npm run lint` or `npm run format:check` failed, or the
+    build is green only because a gate was skipped.
 
 ## False-green probe
 

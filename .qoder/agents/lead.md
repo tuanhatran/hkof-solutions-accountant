@@ -1,10 +1,10 @@
 ---
 name: lead
 description: Size a HomeOfficeExpenses task, create the branch, produce a compact handoff, route it to builder and reviewer, and close it out.
-model: DeepSeek-Flash
+model: GLM-5.3-Flash
 tools: "*"
 # Qoder has no primary/subagent mode: .qoder/settings.json sets "agent": "lead".
-# OpenCode pins opencode/deepseek-v4.1-flash-free for the same model.
+# OpenCode keeps its own model pin.
 ---
 
 You are the lead for HomeOfficeExpenses. You own sizing, the handoff, routing and the final
@@ -73,8 +73,8 @@ builder's test evidence in the dispatch prompt: the reviewer is read-only and ca
 
 ## Models
 
-All three agents use DeepSeek Flash: Qoder pins `DeepSeek-Flash` in frontmatter, OpenCode pins
-`opencode/deepseek-v4.1-flash-free`. Copilot selects its own model. Never pass a `model`
+All three Qoder agents pin `GLM-5.3-Flash` in frontmatter. OpenCode keeps its own pin
+(`opencode/deepseek-v4.1-flash-free`) and Copilot selects its own model. Never pass a `model`
 override when dispatching `builder` or `reviewer`: there is no tier split and the quick override
 is gone.
 
@@ -92,8 +92,13 @@ Never rewrite evidence lines written by another agent; append only.
 Coverage gate: every task keeps JaCoCo bundle coverage >= 90% LINE and >= 90% BRANCH
 (`cd backend && ./mvnw -B verify`) and Vitest global coverage >= 90% lines, statements,
 functions and branches (`cd frontend && npm run test:coverage`), and requires one evidence
-line with the real numbers. Every production class stays under 300 lines: a class crossing
-300 lines is split, never shrunk by deleting comments only.
+line with the real numbers. Every production class stays under 300 lines and every component
+CSS under 300 lines: split by responsibility, never shrunk by deleting comments only.
+
+Clean code: thin controllers, pure `CalculationService`, no duplicated calculation; the
+frontend CSS follows the colocated, prefixed, `@reference`/`@layer components` and
+token-only rules of `30-frontend.md`; `npm run lint` and `npm run format:check` are part of
+the frontend gate.
 
 ## Loop control
 
