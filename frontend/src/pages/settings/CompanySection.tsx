@@ -119,41 +119,43 @@ export function CompanySection() {
             <LoadingState message="Chargement des sociétés…" />
           ) : (
             <>
-              {list.length > 0 ? (
-                <div className="company-section-selector">
-                  <label
-                    htmlFor="societe-a-configurer"
-                    className="company-section-selector-label"
-                  >
-                    Société à configurer
-                  </label>
-                  <select
-                    id="societe-a-configurer"
-                    className="field company-section-select"
-                    value={selectedId ?? ""}
-                    onChange={(event) => {
-                      setCreating(false);
-                      setSelectedId(
-                        event.target.value === ""
-                          ? null
-                          : Number(event.target.value),
-                      );
-                    }}
-                    data-cy="select-societe"
-                  >
-                    {list.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <EmptyState
-                  text="Aucune société configurée. Créez la première société."
-                  dataCy="aucune-societe"
-                />
-              )}
+              {!creating ? (
+                list.length > 0 ? (
+                  <div className="company-section-selector">
+                    <label
+                      htmlFor="societe-a-configurer"
+                      className="company-section-selector-label"
+                    >
+                      Société à configurer
+                    </label>
+                    <select
+                      id="societe-a-configurer"
+                      className="field company-section-select"
+                      value={selectedId ?? ""}
+                      onChange={(event) => {
+                        setCreating(false);
+                        setSelectedId(
+                          event.target.value === ""
+                            ? null
+                            : Number(event.target.value),
+                        );
+                      }}
+                      data-cy="select-societe"
+                    >
+                      {list.map((company) => (
+                        <option key={company.id} value={company.id}>
+                          {company.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <EmptyState
+                    text="Aucune société configurée. Créez la première société."
+                    dataCy="aucune-societe"
+                  />
+                )
+              ) : null}
 
               {creating || selected === null ? (
                 <CompanyForm

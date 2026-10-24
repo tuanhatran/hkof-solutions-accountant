@@ -91,6 +91,7 @@ function createAnnexeCompany(): void {
   waitForValue('[data-cy="input-raison-sociale"]', SEEDED_COMPANY);
 
   cy.get('[data-cy="btn-nouvelle-societe"]').click();
+  cy.get('[data-cy="select-societe"]').should("not.exist");
   cy.get('[data-cy="formulaire-societe"]').should("be.visible");
   cy.get('[data-cy="input-raison-sociale"]').clear().type(ANNEXE_COMPANY.name);
   cy.get('[data-cy="input-siren"]').clear().type(ANNEXE_COMPANY.siren);
