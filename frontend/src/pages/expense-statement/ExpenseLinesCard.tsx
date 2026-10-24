@@ -1,3 +1,4 @@
+import "./ExpenseLinesCard.css";
 import { AlertTriangle, FileText } from "lucide-react";
 import { formatMonth } from "@/lib/format";
 import type { ExpenseStatementController } from "./useExpenseStatementPage";
@@ -15,9 +16,9 @@ export function ExpenseLinesCard({
       <div className="card-header">
         <div>
           <p className="eyebrow">Liste</p>
-          <h2 className="mt-1 text-[22px] text-ink">Frais ajoutés</h2>
+          <h2 className="expense-lines-card-title">Frais ajoutés</h2>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="expense-lines-card-badges">
           {c.omittedTypes.length > 0 ? (
             <span
               className="badge badge-warning"
@@ -35,14 +36,14 @@ export function ExpenseLinesCard({
 
       <div data-cy="liste-frais">
         {c.orderedLines.length === 0 ? (
-          <div className="flex flex-col items-center justify-center px-5 py-10 text-center">
-            <span className="grid h-11 w-11 place-items-center rounded-full bg-paper-deep/70 text-ink-soft">
+          <div className="expense-lines-card-empty">
+            <span className="expense-lines-card-empty-icon">
               <FileText size={20} aria-hidden="true" />
             </span>
-            <p className="mt-3 text-sm font-semibold text-ink">
+            <p className="expense-lines-card-empty-title">
               Aucun frais pour {formatMonth(c.month)}
             </p>
-            <p className="mt-1 max-w-sm text-xs text-ink-soft">
+            <p className="expense-lines-card-empty-text">
               Sélectionnez un type de frais ci-dessus, déposez un justificatif
               et ajoutez la ligne.
             </p>

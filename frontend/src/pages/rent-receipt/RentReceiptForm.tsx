@@ -1,3 +1,4 @@
+import "./RentReceiptForm.css";
 import { LoaderCircle, ReceiptText, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import type { RentReceiptController } from "./useRentReceiptPage";
@@ -13,7 +14,7 @@ export function RentReceiptForm({ c }: { c: RentReceiptController }) {
         <div className="card-header">
           <div>
             <p className="eyebrow">Étape 1</p>
-            <h2 className="mt-1 text-[22px] text-ink">
+            <h2 className="rent-receipt-form-title">
               Paramètres de la quittance
             </h2>
           </div>
@@ -23,14 +24,14 @@ export function RentReceiptForm({ c }: { c: RentReceiptController }) {
           </span>
         </div>
 
-        <div className="card-body space-y-5">
+        <div className="card-body rent-receipt-form-body">
           <RentReceiptPartyFields c={c} />
           <RentReceiptSignatureField c={c} />
           <RentReceiptAmountFields c={c} />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-6">
-          <div className="flex flex-wrap gap-2">
+        <div className="rent-receipt-form-footer">
+          <div className="rent-receipt-form-actions">
             <Button
               type="submit"
               variant="primary"
@@ -59,14 +60,14 @@ export function RentReceiptForm({ c }: { c: RentReceiptController }) {
             </Button>
           </div>
           {c.activePairReceipt ? (
-            <p className="text-[11px] text-ink-soft">
+            <p className="rent-receipt-form-note">
               Dernière version : v{c.activeVersion} → v
               {(c.activeVersion ?? 0) + 1} à la génération.
             </p>
           ) : (
-            <p className="text-[11px] text-ink-soft">
+            <p className="rent-receipt-form-note">
               {c.generationInProgress ? (
-                <span className="inline-flex items-center gap-1.5">
+                <span className="rent-receipt-form-progress">
                   <LoaderCircle size={12} className="animate-spin" /> Génération
                   en cours…
                 </span>

@@ -1,3 +1,4 @@
+import "./ExpenseItemForm.css";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, PencilLine } from "lucide-react";
@@ -34,19 +35,16 @@ function SwitchField({
   register: ReturnType<typeof useForm<ExpenseItemFormValues>>["register"];
 }) {
   return (
-    <label
-      htmlFor={id}
-      className="flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-paper/35 p-3 transition hover:border-line-strong"
-    >
+    <label htmlFor={id} className="expense-item-form-switch">
       <input
         id={id}
         type="checkbox"
-        className="mt-0.5 h-4 w-4 shrink-0 rounded border-line text-accent accent-[#1b5b49]"
+        className="expense-item-form-switch-input"
         {...register(id === "poste-actif" ? "active" : "multipleLinesAllowed")}
       />
       <span>
-        <span className="block text-sm font-medium text-ink">{labelText}</span>
-        <span className="mt-0.5 block text-[11.5px] leading-relaxed text-ink-soft">
+        <span className="expense-item-form-switch-label">{labelText}</span>
+        <span className="expense-item-form-switch-description">
           {description}
         </span>
       </span>
@@ -122,15 +120,15 @@ export function ExpenseItemForm({
 
   return (
     <form
-      className="rounded-xl border border-accent/20 bg-accent-soft/25 p-4"
+      className="expense-item-form"
       onSubmit={handleSubmit((values) => {
         setErrorText(null);
         save.mutate(values);
       })}
       data-cy="formulaire-poste"
     >
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-[15px] font-semibold text-ink">
+      <div className="expense-item-form-header">
+        <h3 className="expense-item-form-title">
           {expenseItem
             ? `Modifier le poste « ${expenseItem.label} »`
             : "Ajouter un type de frais"}
@@ -143,7 +141,7 @@ export function ExpenseItemForm({
         ) : null}
       </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className="expense-item-form-grid">
         <FieldGroup
           id="poste-code"
           label="Code"
@@ -157,7 +155,7 @@ export function ExpenseItemForm({
           <input
             id="poste-code"
             className={cn(
-              "field font-mono text-[13px]",
+              "field expense-item-form-code",
               errors.code && "field-error",
             )}
             placeholder="gaz"
@@ -240,7 +238,7 @@ export function ExpenseItemForm({
         </FieldGroup>
       </div>
 
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+      <div className="expense-item-form-switches">
         <SwitchField
           id="poste-actif"
           label="Poste actif"
@@ -256,15 +254,12 @@ export function ExpenseItemForm({
       </div>
 
       {errorText ? (
-        <p
-          className="mt-3 rounded-lg border border-danger/20 bg-danger-soft/60 p-2.5 text-xs text-danger"
-          role="alert"
-        >
+        <p className="expense-item-form-error" role="alert">
           {errorText}
         </p>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap justify-end gap-2">
+      <div className="expense-item-form-actions">
         <Button
           variant="ghost"
           small

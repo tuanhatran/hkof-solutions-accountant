@@ -1,3 +1,4 @@
+import "./FileDropzone.css";
 import {
   FileText,
   Image as ImageIcon,
@@ -95,12 +96,12 @@ export function FileDropzone({
       <div
         {...getRootProps()}
         className={cn(
-          "group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-7 text-center transition",
+          "group file-dropzone-zone",
           isDragActive
-            ? "border-accent bg-accent-soft/70"
-            : "border-line-strong/70 bg-paper/40 hover:border-accent/50 hover:bg-accent-soft/30",
-          disabled && "cursor-not-allowed opacity-60",
-          message && "border-danger/50 bg-danger-soft/30",
+            ? "file-dropzone-zone-active"
+            : "file-dropzone-zone-idle",
+          disabled && "file-dropzone-zone-disabled",
+          message && "file-dropzone-zone-error",
         )}
         aria-disabled={disabled}
       >
@@ -110,14 +111,14 @@ export function FileDropzone({
           className="sr-only"
           aria-label={ariaLabel}
         />
-        <span className="grid h-11 w-11 place-items-center rounded-full bg-surface text-accent shadow-sm transition group-hover:scale-105">
+        <span className="file-dropzone-icon">
           <UploadCloud size={20} aria-hidden="true" />
         </span>
-        <p className="mt-3 text-sm font-semibold text-ink">{text}</p>
-        <p className="mt-1 text-xs text-ink-soft">
+        <p className="file-dropzone-title">{text}</p>
+        <p className="file-dropzone-hint">
           ou cliquez pour parcourir vos fichiers
         </p>
-        <p className="mt-3 text-[11px] text-ink-soft/80">
+        <p className="file-dropzone-meta">
           {formatsDescription} — {Math.round(maxSize / (1024 * 1024))} Mo max.
         </p>
       </div>
@@ -152,15 +153,15 @@ export function SelectedFile({
       : FileText;
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-line bg-paper/50 p-3">
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-surface text-accent">
+    <div className="file-dropzone-selected">
+      <span className="file-dropzone-selected-icon">
         <IconComponent size={18} aria-hidden="true" />
       </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-ink" title={name}>
+      <div className="file-dropzone-selected-body">
+        <p className="file-dropzone-selected-name" title={name}>
           {name}
         </p>
-        <p className="text-xs text-ink-soft">
+        <p className="file-dropzone-selected-meta">
           {size ? formatBytes(size) : "Justificatif joint"}
         </p>
       </div>
@@ -169,7 +170,7 @@ export function SelectedFile({
           type="button"
           onClick={onRemove}
           disabled={inProgress}
-          className="rounded-lg p-2 text-ink-soft transition hover:bg-danger-soft hover:text-danger disabled:cursor-not-allowed disabled:opacity-40"
+          className="file-dropzone-remove"
           aria-label={`Retirer ${name}`}
           data-cy="btn-retirer-fichier"
         >

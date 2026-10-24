@@ -1,3 +1,4 @@
+import "./GenerateExpenseStatementPage.css";
 import { errorMessage } from "@/api/client";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorState } from "@/components/ui/States";
@@ -36,7 +37,7 @@ export function GenerateExpenseStatementPage() {
         </div>
       ) : null}
 
-      <div className="mb-4 flex items-center justify-between gap-3 lg:hidden">
+      <div className="generate-expense-statement-page-tabs">
         <ViewTabs
           ariaLabel="Volets de génération"
           active={c.mobilePanel}
@@ -55,7 +56,7 @@ export function GenerateExpenseStatementPage() {
         />
       </div>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.06fr)_minmax(400px,0.94fr)] xl:gap-6">
+      <div className="generate-expense-statement-page-grid">
         <ExpenseInputPane controller={c} />
         <ExpensePreviewPane controller={c} />
       </div>

@@ -1,3 +1,4 @@
+import "./ActiveRentReceiptBanner.css";
 import { ExternalLink, FileCheck2 } from "lucide-react";
 import { api } from "@/api/endpoints";
 import type { RentReceiptController } from "./useRentReceiptPage";
@@ -9,16 +10,16 @@ export function ActiveRentReceiptBanner({ c }: { c: RentReceiptController }) {
     return null;
   }
   return (
-    <div className="card flex flex-wrap items-center justify-between gap-3 border-accent/20 bg-accent-soft/45 p-4">
-      <div className="flex items-start gap-3">
-        <span className="grid h-9 w-9 place-items-center rounded-full bg-surface text-accent">
+    <div className="card active-rent-receipt-banner border-accent/20 bg-accent-soft/45">
+      <div className="active-rent-receipt-banner-main">
+        <span className="active-rent-receipt-banner-icon">
           <FileCheck2 size={17} aria-hidden="true" />
         </span>
         <div>
-          <p className="text-sm font-semibold text-ink">
+          <p className="active-rent-receipt-banner-title">
             Quittance déjà active pour ce bailleur et ce locataire
           </p>
-          <p className="text-xs text-ink-soft">
+          <p className="active-rent-receipt-banner-text">
             Total {c.displayedTotal}, version {c.activeVersion}. Générer à
             nouveau crée une nouvelle quittance active (version{" "}
             {(c.activeVersion ?? 0) + 1}).

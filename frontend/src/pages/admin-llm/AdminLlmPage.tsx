@@ -1,3 +1,4 @@
+import "./AdminLlmPage.css";
 import { Activity, Save } from "lucide-react";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
@@ -72,7 +73,7 @@ export function AdminLlmPage() {
 
       <form
         id="form-llm"
-        className="space-y-6"
+        className="admin-llm-page-form"
         onSubmit={c.handleSubmit((submittedValues) =>
           c.save.mutate(submittedValues),
         )}
@@ -82,10 +83,7 @@ export function AdminLlmPage() {
         <LlmAdvancedSection c={c} />
 
         {c.save.isError ? (
-          <p
-            className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-sm text-danger"
-            role="alert"
-          >
+          <p className="admin-llm-page-error" role="alert">
             {errorMessage(c.save.error)}
           </p>
         ) : null}

@@ -1,3 +1,4 @@
+import "./ExpenseEntryCard.css";
 import { Pencil, Plus } from "lucide-react";
 import { AnalysisPanel } from "@/components/llm/AnalysisPanel";
 import { Button } from "@/components/ui/Button";
@@ -20,12 +21,12 @@ export function ExpenseEntryCard({
           <p className="eyebrow">
             {c.lineBeingEdited ? "Modification" : "Ajouter un frais"}
           </p>
-          <h2 className="mt-1 text-[22px] text-ink">
+          <h2 className="expense-entry-card-title">
             {c.lineBeingEdited ? "Modifier le frais" : "Nouveau frais"}
           </h2>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="grid gap-2">
+        <div className="expense-entry-card-month">
+          <div className="expense-entry-card-month-grid">
             <label htmlFor="note-mois" className="sr-only">
               Mois concerné
             </label>
@@ -46,7 +47,7 @@ export function ExpenseEntryCard({
         onSubmit={c.handleSubmit(c.saveExpense)}
         noValidate
       >
-        <div className="card-body space-y-5">
+        <div className="card-body expense-entry-card-body">
           <ExpenseTypeAndProRata controller={c} />
 
           {c.isRent ? (
@@ -66,8 +67,8 @@ export function ExpenseEntryCard({
           <ExpenseAmountFields controller={c} />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-6">
-          <div className="flex flex-wrap gap-2">
+        <div className="expense-entry-card-footer">
+          <div className="expense-entry-card-actions">
             <Button
               type="submit"
               variant="primary"
@@ -93,7 +94,7 @@ export function ExpenseEntryCard({
               </Button>
             ) : null}
           </div>
-          <p className="text-[11px] text-ink-soft">
+          <p className="expense-entry-card-hint">
             Le formulaire se réinitialise après chaque ajout.
           </p>
         </div>

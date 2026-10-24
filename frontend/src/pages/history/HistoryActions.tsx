@@ -1,3 +1,4 @@
+import "./HistoryActions.css";
 import { Download, ExternalLink } from "lucide-react";
 
 /** PDF download link of a history entry. */
@@ -11,11 +12,7 @@ export function PdfActionLink({
   dataCy?: string;
 }) {
   return (
-    <a
-      href={href}
-      className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] font-medium text-accent transition hover:bg-accent-soft"
-      data-cy={dataCy}
-    >
+    <a href={href} className="history-actions-pdf-link" data-cy={dataCy}>
       <Download size={12} aria-hidden="true" />
       {labelText}
     </a>
@@ -29,7 +26,7 @@ export function OpenPdfLink({ href }: { href: string }) {
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] font-medium text-ink-soft transition hover:bg-paper-deep hover:text-ink"
+      className="history-actions-open-link"
     >
       <ExternalLink size={12} aria-hidden="true" />
       Ouvrir

@@ -58,15 +58,17 @@ describe("AppShell", () => {
     });
     expect(historyLink).toHaveAttribute("href", "/historique");
     expect(historyLink).toHaveAttribute("data-cy", "tab-historique");
-    expect(historyLink.className).toContain("bg-white/10");
-    expect(historyLink.querySelector(".bg-\\[\\#e7b98f\\]")).not.toBeNull();
+    expect(historyLink.className).toContain("app-shell-nav-link-active");
+    expect(
+      historyLink.querySelector(".app-shell-nav-icon-active"),
+    ).not.toBeNull();
 
     const adminLink = within(navigation).getByRole("link", {
       name: /Admin IA/,
     });
     expect(adminLink).toHaveAttribute("href", "/admin");
-    expect(adminLink.className).toContain("text-white/60");
-    expect(adminLink.querySelector(".bg-\\[\\#e7b98f\\]")).toBeNull();
+    expect(adminLink.className).toContain("app-shell-nav-link-idle");
+    expect(adminLink.querySelector(".app-shell-nav-icon-active")).toBeNull();
 
     expect(screen.getByText("Contenu de la page")).toBeVisible();
     expect(screen.getByText("Quittances & frais d’occupation")).toBeVisible();
@@ -113,7 +115,7 @@ describe("AppShell", () => {
     const active = within(mobileNavigation).getByRole("link", {
       name: "Historique",
     });
-    expect(active.className).toContain("bg-white/12");
+    expect(active.className).toContain("app-shell-mobile-link-active");
   });
 
   it("shows the draft dialog and proceeds when blocked", async () => {

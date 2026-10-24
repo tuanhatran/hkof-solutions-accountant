@@ -1,3 +1,4 @@
+import "./SettingsCardSection.css";
 import { Building2 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -16,14 +17,14 @@ export function SettingsCardSection({
   children: ReactNode;
 }) {
   return (
-    <section className="card overflow-hidden">
-      <div className="flex items-start gap-3 border-b border-line px-5 py-4 sm:px-6">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
+    <section className="card settings-card-section">
+      <div className="settings-card-section-header">
+        <span className="settings-card-section-icon">
           <IconComponent size={17} aria-hidden="true" />
         </span>
         <div>
-          <h2 className="text-lg text-ink">{title}</h2>
-          <p className="mt-0.5 text-xs text-ink-soft">{description}</p>
+          <h2 className="settings-card-section-title">{title}</h2>
+          <p className="settings-card-section-description">{description}</p>
         </div>
       </div>
       <div className={bodyClassName}>{children}</div>

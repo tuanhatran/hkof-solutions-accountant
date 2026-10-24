@@ -1,3 +1,4 @@
+import "./States.css";
 import { AlertCircle, Inbox, LoaderCircle, RefreshCcw } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
@@ -13,7 +14,7 @@ export function Spinner({
   return (
     <LoaderCircle
       size={size}
-      className={cn("animate-spin text-accent", className)}
+      className={cn("states-spinner", className)}
       aria-hidden="true"
     />
   );
@@ -25,10 +26,7 @@ export function LoadingState({
   message?: string;
 }) {
   return (
-    <div
-      className="card flex items-center gap-3 p-6 text-sm text-ink-soft"
-      role="status"
-    >
+    <div className="card states-loading" role="status">
       <Spinner />
       {message}
     </div>
@@ -44,14 +42,14 @@ export function ErrorState({
 }) {
   return (
     <div
-      className="card flex flex-col items-start gap-3 border-danger/25 bg-danger-soft/40 p-6"
+      className="card states-error border-danger/25 bg-danger-soft/40"
       role="alert"
     >
-      <div className="flex items-center gap-2 font-semibold text-danger">
+      <div className="states-error-title">
         <AlertCircle size={18} aria-hidden="true" />
         Impossible de charger les données
       </div>
-      <p className="text-sm text-ink-soft">{message}</p>
+      <p className="states-error-message">{message}</p>
       {onRetry ? (
         <Button
           variant="secondary"
@@ -78,15 +76,15 @@ export function EmptyState({
   icon?: ReactNode;
 }) {
   return (
-    <div className="card flex flex-col items-center justify-center px-6 py-12 text-center">
-      <span className="grid h-12 w-12 place-items-center rounded-full bg-paper-deep/70 text-ink-soft">
+    <div className="card states-empty">
+      <span className="states-empty-icon">
         {icon ?? <Inbox size={22} aria-hidden="true" />}
       </span>
-      <h3 className="mt-4 text-lg text-ink">{title}</h3>
+      <h3 className="states-empty-title">{title}</h3>
       {description ? (
-        <p className="mt-1.5 max-w-sm text-sm text-ink-soft">{description}</p>
+        <p className="states-empty-description">{description}</p>
       ) : null}
-      {action ? <div className="mt-5">{action}</div> : null}
+      {action ? <div className="states-empty-action">{action}</div> : null}
     </div>
   );
 }

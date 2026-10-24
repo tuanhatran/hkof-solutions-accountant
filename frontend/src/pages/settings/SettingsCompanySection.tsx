@@ -1,3 +1,4 @@
+import "./SettingsCompanySection.css";
 import { Building2 } from "lucide-react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import { FieldGroup } from "@/components/ui/FieldGroup";
@@ -18,7 +19,7 @@ export function SettingsCompanySection({
       icon={Building2}
       title="Société"
       description="Identité de l’EURL utilisée en en-tête de la note de frais."
-      bodyClassName="card-body grid gap-4 sm:grid-cols-2"
+      bodyClassName="card-body settings-company-section-body"
     >
       <FieldGroup
         id="param-raison-sociale"
@@ -52,7 +53,10 @@ export function SettingsCompanySection({
       >
         <input
           id="param-siren"
-          className={cn("field font-mono", errors.siren && "field-error")}
+          className={cn(
+            "field settings-company-section-code",
+            errors.siren && "field-error",
+          )}
           inputMode="numeric"
           placeholder="000 000 000"
           {...register("siren")}
@@ -81,7 +85,7 @@ export function SettingsCompanySection({
           id="param-societe-adresse"
           rows={2}
           className={cn(
-            "field resize-y",
+            "field settings-company-section-textarea",
             errors.companyAddress && "field-error",
           )}
           {...register("companyAddress")}

@@ -1,3 +1,4 @@
+import "./RentReceiptPartyFields.css";
 import { Link } from "react-router-dom";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
@@ -7,7 +8,7 @@ import type { RentReceiptController } from "./useRentReceiptPage";
 export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="rent-receipt-party-fields-grid">
         <FieldGroup
           id="quittance-mois"
           label="Mois concerné"
@@ -57,7 +58,7 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
         </FieldGroup>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="rent-receipt-party-fields-grid">
         <FieldGroup
           id="quittance-bailleur"
           label="Bailleur"
@@ -116,7 +117,7 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
       !c.selectedLease &&
       !c.leases.isPending ? (
         <p
-          className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger"
+          className="rent-receipt-party-fields-alert"
           role="alert"
           data-cy="alerte-bail-manquant"
         >
@@ -130,15 +131,12 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
       ) : null}
 
       {c.selectedLease ? (
-        <div
-          className="rounded-xl border border-accent/15 bg-accent-soft/45 px-4 py-3"
-          data-cy="detail-bail"
-        >
+        <div className="rent-receipt-party-fields-lease" data-cy="detail-bail">
           <p className="eyebrow text-accent">Bail sélectionné</p>
-          <p className="mt-1 text-sm font-semibold text-ink">
+          <p className="rent-receipt-party-fields-lease-pair">
             {c.selectedLease.landlordName} → {c.selectedLease.tenantName}
           </p>
-          <p className="text-xs text-ink-soft">
+          <p className="rent-receipt-party-fields-lease-address">
             {c.selectedLease.propertyAddress}
           </p>
         </div>

@@ -1,3 +1,4 @@
+import "./AnalysisPanel.css";
 import { AlertTriangle, CheckCircle2, X } from "lucide-react";
 import type { ExtractionDto } from "@/api/types";
 import { AiBadge } from "@/components/ui/AiBadge";
@@ -29,19 +30,19 @@ export function AnalysisPanel({
       data-cy="analyse-statut"
       aria-live="polite"
       className={cn(
-        "rounded-xl border px-3.5 py-3 text-xs",
+        "analysis-panel",
         phase.status === "failed"
-          ? "border-warning/25 bg-warning-soft/40 text-warning"
+          ? "analysis-panel-failed"
           : phase.status === "done"
-            ? "border-copper/20 bg-copper-soft/50 text-ink"
+            ? "analysis-panel-done"
             : inProgress
-              ? "border-accent/20 bg-accent-soft/45 text-ink"
-              : "border-line bg-paper/50 text-ink-soft",
+              ? "analysis-panel-running"
+              : "analysis-panel-idle",
       )}
     >
       {inProgress ? (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="flex items-center gap-2 font-medium">
+        <div className="analysis-panel-progress">
+          <span className="analysis-panel-progress-text">
             <Spinner size={14} />
             {phase.status === "starting"
               ? "Préparation de l’analyse…"
@@ -58,18 +59,18 @@ export function AnalysisPanel({
           </Button>
         </div>
       ) : phase.status === "done" ? (
-        <div className="space-y-2">
-          <p className="flex items-center gap-2 font-semibold text-ink">
+        <div className="analysis-panel-result">
+          <p className="analysis-panel-result-title">
             <CheckCircle2
               size={14}
-              className="text-copper"
+              className="analysis-panel-result-icon"
               aria-hidden="true"
             />
             Analyse terminée{duration ? ` en ${duration}` : ""} — les champs ont
             été pré-remplis et le montant détecté remplace la valeur saisie.
           </p>
           {result ? (
-            <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-soft">
+            <div className="analysis-panel-meta">
               <AiBadge sourceExtract={result.sourceExcerpt} />
               {result.supplier ? (
                 <span>Fournisseur détecté : {result.supplier}</span>
@@ -78,7 +79,7 @@ export function AnalysisPanel({
                 <span
                   className={cn(
                     confidenceValid(result.confidence) === "basse" &&
-                      "font-semibold text-warning",
+                      "analysis-panel-confidence-low",
                   )}
                 >
                   {confidenceLabel(confidenceValid(result.confidence))}
@@ -86,26 +87,24 @@ export function AnalysisPanel({
               ) : null}
             </div>
           ) : (
-            <p className="text-[11px]">
+            <p className="analysis-panel-note">
               Aucune information exploitable n’a été extraite. Complétez le
               frais manuellement.
             </p>
           )}
           {result?.sourceExcerpt ? (
-            <p className="border-l-2 border-copper/30 pl-2 text-[11px] italic text-ink-soft">
-              « {result.sourceExcerpt} »
-            </p>
+            <p className="analysis-panel-excerpt">« {result.sourceExcerpt} »</p>
           ) : null}
-          <p className="text-[11px] text-ink-soft">
+          <p className="analysis-panel-hint">
             Les propositions de l’IA restent modifiables. Vérifiez-les avant
             d’ajouter le frais.
           </p>
         </div>
       ) : phase.status === "failed" ? (
-        <p className="flex items-start gap-2">
+        <p className="analysis-panel-failure">
           <AlertTriangle
             size={14}
-            className="mt-0.5 shrink-0"
+            className="analysis-panel-failure-icon"
             aria-hidden="true"
           />
           <span>

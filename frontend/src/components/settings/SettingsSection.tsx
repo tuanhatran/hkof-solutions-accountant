@@ -1,3 +1,4 @@
+import "./SettingsSection.css";
 import type { ReactNode } from "react";
 import type { Landmark } from "lucide-react";
 
@@ -15,13 +16,13 @@ export function SectionHeader({
 }) {
   return (
     <div className="card-header">
-      <div className="flex items-start gap-3">
-        <span className="grid h-9 w-9 place-items-center rounded-lg bg-accent-soft text-accent">
+      <div className="settings-section-heading">
+        <span className="settings-section-icon">
           <IconComponent size={17} aria-hidden="true" />
         </span>
         <div>
-          <h2 className="text-xl text-ink">{title}</h2>
-          <p className="mt-0.5 text-xs text-ink-soft">{description}</p>
+          <h2 className="settings-section-title">{title}</h2>
+          <p className="settings-section-description">{description}</p>
         </div>
       </div>
       {action}
@@ -32,10 +33,7 @@ export function SectionHeader({
 /** Dashed empty state of a settings list. */
 export function EmptyState({ text, dataCy }: { text: string; dataCy: string }) {
   return (
-    <p
-      className="rounded-xl border border-dashed border-line-strong p-6 text-center text-sm text-ink-soft"
-      data-cy={dataCy}
-    >
+    <p className="settings-section-empty" data-cy={dataCy}>
       {text}
     </p>
   );

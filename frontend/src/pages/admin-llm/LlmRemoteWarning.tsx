@@ -1,26 +1,29 @@
+import "./LlmRemoteWarning.css";
 import { ShieldAlert } from "lucide-react";
 
 /** Warning shown when the configured Ollama URL is not local. */
 export function LlmRemoteWarning() {
   return (
     <div
-      className="mb-6 flex items-start gap-3 rounded-2xl border border-warning/25 bg-warning-soft/70 px-4 py-3"
+      className="llm-remote-warning"
       role="alert"
       data-cy="alerte-llm-distante"
     >
       <ShieldAlert
         size={18}
-        className="mt-0.5 shrink-0 text-warning"
+        className="llm-remote-warning-icon"
         aria-hidden="true"
       />
-      <div className="text-xs leading-relaxed text-warning">
-        <p className="font-semibold">
+      <div className="llm-remote-warning-body">
+        <p className="llm-remote-warning-title">
           Les justificatifs seront envoyés à un serveur distant.
         </p>
-        <p className="mt-0.5">
-          L’URL configurée n’est ni <code className="font-mono">localhost</code>
-          , ni <code className="font-mono">host.docker.internal</code>, ni une
-          IP privée. N’utilisez cette option que si vous acceptez ce transfert.
+        <p className="llm-remote-warning-text">
+          L’URL configurée n’est ni{" "}
+          <code className="llm-remote-warning-code">localhost</code>, ni{" "}
+          <code className="llm-remote-warning-code">host.docker.internal</code>,
+          ni une IP privée. N’utilisez cette option que si vous acceptez ce
+          transfert.
         </p>
       </div>
     </div>

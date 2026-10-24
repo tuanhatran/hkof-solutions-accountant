@@ -1,3 +1,4 @@
+import "./ViewTabs.css";
 import { cn } from "@/lib/cn";
 
 export interface ViewTab {
@@ -19,7 +20,7 @@ interface ViewTabsProps {
 /** Two-panel switcher shown below 1024 px on the generation pages. */
 export function ViewTabs({ ariaLabel, tabs, active, onChange }: ViewTabsProps) {
   return (
-    <div className="segmented w-full" role="tablist" aria-label={ariaLabel}>
+    <div className="segmented view-tabs" role="tablist" aria-label={ariaLabel}>
       {tabs.map((tab) => (
         <button
           key={tab.value}
@@ -28,17 +29,14 @@ export function ViewTabs({ ariaLabel, tabs, active, onChange }: ViewTabsProps) {
           aria-selected={active === tab.value}
           onClick={() => onChange(tab.value)}
           className={cn(
-            "segmented-item flex-1",
+            "segmented-item view-tabs-item",
             tab.className,
             active === tab.value && "segmented-item-active",
           )}
         >
           {tab.label}
           {tab.updated ? (
-            <span
-              className="h-1.5 w-1.5 rounded-full bg-accent"
-              aria-hidden="true"
-            />
+            <span className="view-tabs-dot" aria-hidden="true" />
           ) : null}
         </button>
       ))}

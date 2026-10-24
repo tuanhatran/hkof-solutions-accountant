@@ -1,3 +1,4 @@
+import "./LeaseForm.css";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check } from "lucide-react";
@@ -78,18 +79,18 @@ export function LeaseForm({
 
   return (
     <form
-      className="rounded-xl border border-accent/20 bg-accent-soft/25 p-4"
+      className="lease-form"
       onSubmit={handleSubmit((values) => {
         setRequestError(null);
         save.mutate(values);
       })}
       data-cy="formulaire-bail"
     >
-      <h3 className="text-[15px] font-semibold text-ink">
+      <h3 className="lease-form-title">
         {item ? "Modifier le bail" : "Ajouter un bail"}
       </h3>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className="lease-form-grid">
         <FieldGroup
           id="bail-bailleur"
           label="Bailleur du bail"
@@ -170,17 +171,15 @@ export function LeaseForm({
             data-cy="input-bail-charges"
           />
         </FieldGroup>
-        <div className="flex flex-col justify-center rounded-xl border border-line bg-paper/45 px-4 py-3 sm:col-span-2">
-          <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-ink-soft">
-            Total quittance
-          </p>
+        <div className="lease-form-total">
+          <p className="lease-form-total-label">Total quittance</p>
           <p
-            className="mt-1 font-display text-2xl text-ink"
+            className="lease-form-total-value"
             data-cy="total-quittance-config"
           >
             {total}
           </p>
-          <p className="text-[10.5px] text-ink-soft">
+          <p className="lease-form-total-hint">
             Indicatif : loyer + provision. Le total de la quittance est calculé
             par le backend.
           </p>
@@ -188,15 +187,12 @@ export function LeaseForm({
       </div>
 
       {requestError ? (
-        <p
-          className="mt-3 rounded-lg border border-danger/20 bg-danger-soft/60 p-2.5 text-xs text-danger"
-          role="alert"
-        >
+        <p className="lease-form-error" role="alert">
           {requestError}
         </p>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap justify-end gap-2">
+      <div className="lease-form-actions">
         <Button
           variant="ghost"
           small

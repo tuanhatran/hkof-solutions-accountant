@@ -27,7 +27,7 @@ describe("ViewTabs", () => {
     expect(saisie.className).toContain("custom-tab");
     expect(apercu.className).toContain("segmented-item-active");
     expect(saisie.querySelector("span")).toBeNull();
-    expect(apercu.querySelector("span")).toHaveClass("bg-accent");
+    expect(apercu.querySelector("span")).toHaveClass("view-tabs-dot");
     expect(tablist).toBeVisible();
 
     await userEvent.setup().click(saisie);

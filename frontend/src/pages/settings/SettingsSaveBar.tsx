@@ -1,3 +1,4 @@
+import "./SettingsSaveBar.css";
 import { Save } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
@@ -14,16 +15,13 @@ export function SettingsSaveBar({
   return (
     <>
       {errorText ? (
-        <p
-          className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-sm text-danger"
-          role="alert"
-        >
+        <p className="settings-save-bar-error" role="alert">
           {errorText}
         </p>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface/80 px-4 py-3">
-        <p className="text-xs text-ink-soft" aria-live="polite">
+      <div className="settings-save-bar">
+        <p className="settings-save-bar-status" aria-live="polite">
           {isDirty
             ? "Modifications non enregistrées."
             : "Toutes les valeurs sont à jour."}

@@ -1,3 +1,4 @@
+import "./ProRataInput.css";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { parsePercentage } from "@/lib/format";
@@ -30,7 +31,7 @@ export function ProRataInput({ label, value, onChange }: ProRataInputProps) {
   const valid = parsePercentage(text) !== null;
 
   return (
-    <div className="relative w-[92px]">
+    <div className="pro-rata-input">
       <input
         inputMode="decimal"
         className={cn(
@@ -62,9 +63,7 @@ export function ProRataInput({ label, value, onChange }: ProRataInputProps) {
         aria-label={label}
         aria-invalid={!valid}
       />
-      <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-[11px] text-ink-soft">
-        %
-      </span>
+      <span className="pro-rata-input-suffix">%</span>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import "./RentReceiptResultCard.css";
 import { Download, ExternalLink, FileCheck2 } from "lucide-react";
 import { api } from "@/api/endpoints";
 import { Button } from "@/components/ui/Button";
@@ -12,24 +13,24 @@ export function RentReceiptResultCard({ c }: { c: RentReceiptController }) {
   }
   return (
     <div className="card animation-fade overflow-hidden border-accent/25">
-      <div className="flex items-start gap-3 bg-accent-soft/60 px-5 py-4">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent text-white">
+      <div className="rent-receipt-result-card-head">
+        <span className="rent-receipt-result-card-icon">
           <FileCheck2 size={19} aria-hidden="true" />
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-accent">Quittance générée</p>
-          <p className="mt-0.5 text-sm text-ink">
+        <div className="rent-receipt-result-card-body">
+          <p className="rent-receipt-result-card-title">Quittance générée</p>
+          <p className="rent-receipt-result-card-meta">
             {formatMonth(result.month)} · version {result.version ?? 1} ·{" "}
             {formatEUR(result.total)}
           </p>
-          <p className="mt-0.5 text-xs text-ink-soft">
+          <p className="rent-receipt-result-card-note">
             Enregistrée dans l’historique avec le template «{" "}
             {result.templateName ?? "modèle intégré"} » v
             {result.templateVersion ?? 1}.
           </p>
         </div>
       </div>
-      <div className="flex flex-wrap gap-2 px-5 py-4">
+      <div className="rent-receipt-result-card-actions">
         <Button
           variant="primary"
           small

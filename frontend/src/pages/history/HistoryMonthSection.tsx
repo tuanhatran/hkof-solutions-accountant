@@ -1,3 +1,4 @@
+import "./HistoryMonthSection.css";
 import type { StatementDto } from "@/api/types";
 import { formatMonth } from "@/lib/format";
 import { current, latestReceipt, type MonthGroup } from "./historyHelpers";
@@ -21,17 +22,17 @@ export function HistoryMonthSection({
 
   return (
     <section
-      className="card overflow-hidden"
+      className="card history-month-section"
       data-cy={`historique-mois-${group.month}`}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-paper/45 px-5 py-3.5 sm:px-6">
+      <div className="history-month-section-header">
         <div>
           <p className="eyebrow">Mois</p>
-          <h2 className="mt-1 text-[22px] text-ink">
+          <h2 className="history-month-section-title">
             {formatMonth(group.month)}
           </h2>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="history-month-section-badges">
           <span
             className={
               rentReceipt ? "badge badge-accent" : "badge badge-neutral"
@@ -52,7 +53,7 @@ export function HistoryMonthSection({
         </div>
       </div>
 
-      <div className="grid divide-y divide-line lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+      <div className="history-month-section-body">
         <RentReceiptMonthPanel
           group={group}
           rentReceipt={rentReceipt}

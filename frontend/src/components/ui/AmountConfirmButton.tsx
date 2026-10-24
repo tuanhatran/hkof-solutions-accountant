@@ -1,3 +1,4 @@
+import "./AmountConfirmButton.css";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -11,7 +12,7 @@ export function AmountConfirmButton({
   onConfirm,
 }: AmountConfirmButtonProps) {
   return (
-    <div className="flex flex-wrap items-center gap-2.5">
+    <div className="amount-confirm-button-root">
       <button
         type="button"
         data-cy="btn-confirmer-montant"
@@ -20,10 +21,10 @@ export function AmountConfirmButton({
         }
         aria-pressed={confirmed}
         className={cn(
-          "grid h-8 w-8 shrink-0 place-items-center rounded-lg border transition",
+          "amount-confirm-button",
           confirmed
-            ? "cursor-default border-line bg-paper-deep/70 text-ink-soft"
-            : "border-accent/40 bg-accent-soft text-accent-strong hover:border-accent hover:bg-accent-soft/70",
+            ? "amount-confirm-button-confirmed"
+            : "amount-confirm-button-idle",
         )}
         onClick={onConfirm}
       >
@@ -32,8 +33,10 @@ export function AmountConfirmButton({
       <p
         aria-live="polite"
         className={cn(
-          "text-[11px] leading-snug",
-          confirmed ? "text-ink-soft" : "font-medium text-accent-strong",
+          "amount-confirm-button-text",
+          confirmed
+            ? "amount-confirm-button-text-confirmed"
+            : "amount-confirm-button-text-idle",
         )}
       >
         {confirmed

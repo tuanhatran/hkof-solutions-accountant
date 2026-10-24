@@ -1,3 +1,4 @@
+import "./LeaseSection.css";
 import { Home, PencilLine, Plus, Trash2 } from "lucide-react";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
@@ -10,7 +11,7 @@ import type { RentReceiptSettingsController } from "./useRentReceiptSettings";
 /** Leases section: list, create/update form and delete triggers. */
 export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
   return (
-    <section className="card overflow-hidden">
+    <section className="card lease-section">
       <SectionHeader
         icon={Home}
         title="Baux"
@@ -28,7 +29,7 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
           </Button>
         }
       />
-      <div className="card-body space-y-4">
+      <div className="card-body lease-section-body">
         {c.leaseForm !== null ? (
           <LeaseForm
             key={c.leaseForm === "new" ? "new" : c.leaseForm.id}
@@ -52,25 +53,25 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
             dataCy="aucun-bail"
           />
         ) : (
-          <ul className="space-y-3">
+          <ul className="lease-section-list">
             {c.leaseList.map((lease) => (
               <li
                 key={lease.id}
-                className="flex flex-wrap items-start gap-3 rounded-xl border border-line bg-paper/40 p-3"
+                className="lease-section-item"
                 data-cy={`bail-${lease.id}`}
               >
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-ink">
+                <div className="lease-section-item-body">
+                  <p className="lease-section-item-title">
                     {lease.landlordName} → {lease.tenantName}
                   </p>
-                  <p className="mt-0.5 text-xs text-ink-soft">
+                  <p className="lease-section-item-address">
                     {lease.propertyAddress}
                   </p>
-                  <p className="mt-1 text-xs text-ink-soft">
+                  <p className="lease-section-item-amounts">
                     Loyer {formatEUR(lease.rentExclCharges ?? "0.00")} · charges{" "}
                     {formatEUR(lease.charges ?? "0.00")} · total{" "}
                     <span
-                      className="font-semibold text-ink"
+                      className="lease-section-item-total"
                       data-cy={`total-bail-${lease.id}`}
                     >
                       {formatEUR(

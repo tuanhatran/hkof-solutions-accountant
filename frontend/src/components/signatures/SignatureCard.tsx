@@ -1,3 +1,4 @@
+import "./SignatureCard.css";
 import { Trash2 } from "lucide-react";
 import { api } from "@/api/endpoints";
 import type { SignatureDto } from "@/api/types";
@@ -14,28 +15,22 @@ export function SignatureCard({
   onDelete: (signature: SignatureDto) => void;
 }) {
   return (
-    <li
-      className="flex items-center gap-3 rounded-xl border border-line bg-paper/40 p-3"
-      data-cy={`signature-${signature.id}`}
-    >
+    <li className="signature-card" data-cy={`signature-${signature.id}`}>
       {signature.id !== undefined ? (
         <img
           src={api.signatures.imageUrl(signature.id)}
           alt={`Signature ${signature.name ?? ""}`}
-          className="h-14 w-24 shrink-0 rounded-lg border border-line bg-white object-contain p-1"
+          className="signature-card-image"
         />
       ) : null}
-      <div className="min-w-0 flex-1">
-        <p
-          className="truncate text-sm font-semibold text-ink"
-          title={signature.name ?? ""}
-        >
+      <div className="signature-card-body">
+        <p className="signature-card-name" title={signature.name ?? ""}>
           {signature.name ?? "Signature"}
         </p>
-        <span className="badge badge-neutral mt-1">
+        <span className="badge badge-neutral signature-card-badge">
           {signatureTypeLabel(signature.type)}
         </span>
-        <p className="mt-1 text-[11px] text-ink-soft">
+        <p className="signature-card-meta">
           {signature.type === "LANDLORD" ? (
             <>
               Bailleur : <span>{signature.landlordName ?? "Non liée"}</span>
@@ -44,7 +39,7 @@ export function SignatureCard({
             "Signature du gérant"
           )}
         </p>
-        <p className="mt-1 text-[11px] text-ink-soft">
+        <p className="signature-card-meta">
           Ajoutée le {formatDate(signature.createdAt)}
         </p>
       </div>

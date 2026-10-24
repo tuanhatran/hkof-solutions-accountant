@@ -1,3 +1,4 @@
+import "./FieldGroup.css";
 import type { ReactNode } from "react";
 
 interface FieldGroupProps {
@@ -21,7 +22,7 @@ export function FieldGroup({
 }: FieldGroupProps) {
   return (
     <div className={className}>
-      <div className="flex items-center justify-between gap-2">
+      <div className="field-group-header">
         <label htmlFor={id} className="field-label">
           {label}
         </label>

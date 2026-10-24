@@ -1,3 +1,4 @@
+import "./LlmConnectionSection.css";
 import {
   Activity,
   AlertTriangle,
@@ -18,21 +19,21 @@ import { LlmToggle } from "./LlmToggle";
 /** Main Ollama connection card of the LLM admin page. */
 export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
   return (
-    <section className="card overflow-hidden">
+    <section className="card llm-connection-section">
       <div className="card-header">
-        <div className="flex items-start gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-soft text-accent">
+        <div className="llm-connection-section-heading">
+          <span className="llm-connection-section-icon">
             <Bot size={19} aria-hidden="true" />
           </span>
           <div>
-            <h2 className="text-xl text-ink">Connexion Ollama</h2>
-            <p className="mt-0.5 text-xs text-ink-soft">
+            <h2 className="llm-connection-section-title">Connexion Ollama</h2>
+            <p className="llm-connection-section-subtitle">
               Fournisseur local, URL, modèle et authentification éventuelle.
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-medium text-ink-soft">
+        <div className="llm-connection-section-status">
+          <span className="llm-connection-section-status-text">
             {c.active ? "Analyse IA activée" : "Analyse IA désactivée"}
           </span>
           <LlmToggle
@@ -44,12 +45,12 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
         </div>
       </div>
 
-      <div className="card-body space-y-5">
+      <div className="card-body llm-connection-section-body">
         {!c.active ? (
-          <div className="flex items-start gap-2 rounded-xl border border-line bg-paper/45 p-3 text-xs leading-relaxed text-ink-soft">
+          <div className="llm-connection-section-notice">
             <AlertTriangle
               size={15}
-              className="mt-0.5 shrink-0 text-warning"
+              className="llm-connection-section-notice-icon"
               aria-hidden="true"
             />
             Quand l’IA est désactivée, aucun justificatif n’est envoyé. Toute la
@@ -57,7 +58,7 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
           </div>
         ) : null}
 
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="llm-connection-section-grid">
           <FieldGroup id="llm-fournisseur" label="Fournisseur">
             <select
               id="llm-fournisseur"
@@ -78,10 +79,10 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
             error={c.errors.url?.message}
             help="Par défaut : http://host.docker.internal:11434. L’URL est enregistrée automatiquement lorsque la liste des modèles est actualisée."
           >
-            <div className="flex gap-2">
+            <div className="llm-connection-section-url-row">
               <input
                 id="llm-url"
-                className={cn("field mt-1.5", c.errors.url && "field-error")}
+                className={cn("field", c.errors.url && "field-error")}
                 placeholder="http://host.docker.internal:11434"
                 autoComplete="off"
                 spellCheck={false}
@@ -91,7 +92,7 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
               />
               <Button
                 variant="secondary"
-                className="mt-1.5 shrink-0"
+                className="llm-connection-section-refresh"
                 icon={
                   <RefreshCw
                     size={15}
@@ -109,7 +110,7 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
           </FieldGroup>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="llm-connection-section-grid">
           <FieldGroup
             id="llm-modele"
             label="Modèle"
@@ -157,7 +158,7 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
             ) : null}
 
             {c.manualMode ? (
-              <div className="mt-1.5">
+              <div className="llm-connection-section-manual">
                 <input
                   id="llm-modele"
                   className={cn("field mt-0", c.errors.model && "field-error")}
@@ -170,7 +171,7 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
                 {c.models.data && c.models.data.length > 0 ? (
                   <button
                     type="button"
-                    className="mt-1.5 text-xs font-medium text-accent underline decoration-accent/30 underline-offset-4"
+                    className="llm-connection-section-manual-link"
                     onClick={() => c.setManualMode(false)}
                   >
                     Choisir dans la liste
@@ -180,20 +181,24 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
             ) : null}
           </FieldGroup>
 
-          <div className="flex flex-col justify-end gap-2">
-            <div className="rounded-xl border border-line bg-paper/40 p-3">
-              <p className="flex items-center gap-2 text-xs font-semibold text-ink">
-                <Cpu size={14} className="text-accent" aria-hidden="true" />
+          <div className="llm-connection-section-vision-column">
+            <div className="llm-connection-section-vision">
+              <p className="llm-connection-section-vision-title">
+                <Cpu
+                  size={14}
+                  className="llm-connection-section-vision-icon"
+                  aria-hidden="true"
+                />
                 Support des images
               </p>
-              <p className="mt-1 text-[11.5px] leading-relaxed text-ink-soft">
+              <p className="llm-connection-section-vision-text">
                 {c.selectedModel?.vision
                   ? "Ce modèle accepte les images : les photos et scans peuvent être analysés."
                   : "Ce modèle n’est pas signalé comme multimodal. Les PDF texte restent analysables ; les images nécessitent un modèle vision ou l’OCR."}
               </p>
             </div>
             {c.selectedModel && c.selectedModel.configure ? (
-              <p className="text-[11px] text-warning">
+              <p className="llm-connection-section-vision-warning">
                 Ce modèle configuré n’apparaît pas dans la liste du serveur.
                 Vérifiez qu’il est installé.
               </p>
@@ -202,15 +207,14 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
         </div>
 
         {c.modelsError || c.models.isError ? (
-          <div
-            className="rounded-xl border border-warning/25 bg-warning-soft/70 p-3 text-xs text-warning"
-            role="alert"
-          >
-            <p className="font-semibold">Liste des modèles indisponible.</p>
-            <p className="mt-0.5">
+          <div className="llm-connection-section-error" role="alert">
+            <p className="llm-connection-section-error-title">
+              Liste des modèles indisponible.
+            </p>
+            <p className="llm-connection-section-error-message">
               {c.modelsError ?? errorMessage(c.models.error)}
             </p>
-            <p className="mt-1">
+            <p className="llm-connection-section-error-hint">
               Saisissez le nom du modèle manuellement, puis testez la connexion.
             </p>
           </div>
@@ -218,12 +222,12 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
 
         <LlmApiKeyField c={c} />
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4">
-          <p className="text-[11px] text-ink-soft">
+        <div className="llm-connection-section-footer">
+          <p className="llm-connection-section-footer-note">
             « Tester la connexion » enregistre d’abord les réglages affichés,
             puis interroge le serveur.
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="llm-connection-section-actions">
             <Button
               variant="secondary"
               small

@@ -1,3 +1,4 @@
+import "./HistoryEmptyState.css";
 import { Archive } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/States";
@@ -16,7 +17,7 @@ export function HistoryEmptyState({
       description="Générez une quittance ou une note de frais : elle apparaîtra ici, avec toutes ses versions."
       icon={<Archive size={22} aria-hidden="true" />}
       action={
-        <div className="flex flex-wrap justify-center gap-2">
+        <div className="history-empty-state-actions">
           <Button variant="primary" onClick={onCreateRentReceipt}>
             Générer une quittance
           </Button>

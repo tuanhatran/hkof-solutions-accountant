@@ -1,3 +1,4 @@
+import "./LandlordSection.css";
 import { Landmark, PencilLine, Plus, Trash2 } from "lucide-react";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
@@ -9,7 +10,7 @@ import type { RentReceiptSettingsController } from "./useRentReceiptSettings";
 /** Landlords section: list, create/update form and delete triggers. */
 export function LandlordSection({ c }: { c: RentReceiptSettingsController }) {
   return (
-    <section className="card overflow-hidden">
+    <section className="card landlord-section">
       <SectionHeader
         icon={Landmark}
         title="Bailleurs"
@@ -27,7 +28,7 @@ export function LandlordSection({ c }: { c: RentReceiptSettingsController }) {
           </Button>
         }
       />
-      <div className="card-body space-y-4">
+      <div className="card-body landlord-section-body">
         {c.landlordForm !== null ? (
           <LandlordForm
             key={c.landlordForm === "new" ? "new" : c.landlordForm.id}
@@ -49,18 +50,18 @@ export function LandlordSection({ c }: { c: RentReceiptSettingsController }) {
             dataCy="aucun-bailleur"
           />
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="landlord-section-list">
             {c.landlordList.map((landlord) => (
               <li
                 key={landlord.id}
-                className="flex items-start gap-3 rounded-xl border border-line bg-paper/40 p-3"
+                className="landlord-section-item"
                 data-cy={`bailleur-${landlord.id}`}
               >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-ink">
+                <div className="landlord-section-item-body">
+                  <p className="landlord-section-item-name">
                     {landlord.name ?? "Bailleur"}
                   </p>
-                  <p className="mt-0.5 text-xs text-ink-soft">
+                  <p className="landlord-section-item-address">
                     {landlord.address || "Adresse non renseignée"}
                   </p>
                 </div>

@@ -1,3 +1,4 @@
+import "./LlmBadge.css";
 import { Link } from "react-router-dom";
 import { useLlmStatus } from "@/api/queries";
 import type { LlmStatus } from "@/api/types";
@@ -10,26 +11,30 @@ interface StatusLabel {
 }
 
 const STATUSES: Record<LlmStatus, StatusLabel> = {
-  PRET: { text: "IA prête", className: "badge-accent", dot: "bg-accent" },
+  PRET: {
+    text: "IA prête",
+    className: "badge-accent",
+    dot: "llm-badge-dot-accent",
+  },
   PRET_DISTANT: {
     text: "IA distante",
     className: "badge-warning",
-    dot: "bg-warning",
+    dot: "llm-badge-dot-warning",
   },
   MODELE_ABSENT: {
     text: "Modèle absent",
     className: "badge-warning",
-    dot: "bg-warning",
+    dot: "llm-badge-dot-warning",
   },
   INJOIGNABLE: {
     text: "IA injoignable",
     className: "badge-danger",
-    dot: "bg-danger",
+    dot: "llm-badge-dot-danger",
   },
   DESACTIVE: {
     text: "IA désactivée",
     className: "badge-neutral",
-    dot: "bg-ink-soft/60",
+    dot: "llm-badge-dot-neutral",
   },
 };
 
@@ -54,18 +59,21 @@ export function LlmBadge({ dark = false, withLink = true }: LlmBadgeProps) {
     <span
       className={cn(
         "badge",
-        dark
-          ? "border-white/15 bg-white/10 text-white/90"
-          : (configuration?.className ?? "badge-neutral"),
+        dark ? "llm-badge-dark" : (configuration?.className ?? "badge-neutral"),
       )}
       data-cy="badge-llm-status"
       title={message}
     >
       <span
         className={cn(
-          "h-1.5 w-1.5 rounded-full",
-          isError ? "bg-danger" : (configuration?.dot ?? "bg-ink-soft/60"),
-          !isPending && !isError && status !== "DESACTIVE" && "animate-pulse",
+          "llm-badge-dot",
+          isError
+            ? "llm-badge-dot-danger"
+            : (configuration?.dot ?? "llm-badge-dot-neutral"),
+          !isPending &&
+            !isError &&
+            status !== "DESACTIVE" &&
+            "llm-badge-dot-pulse",
         )}
         aria-hidden="true"
       />
@@ -80,7 +88,7 @@ export function LlmBadge({ dark = false, withLink = true }: LlmBadgeProps) {
   return (
     <Link
       to="/admin"
-      className="rounded-full"
+      className="llm-badge-link"
       aria-label={`${text}. Ouvrir la configuration de l'IA.`}
     >
       {content}

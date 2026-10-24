@@ -1,3 +1,4 @@
+import "./LandlordForm.css";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check } from "lucide-react";
@@ -61,20 +62,20 @@ export function LandlordForm({
 
   return (
     <form
-      className="rounded-xl border border-accent/20 bg-accent-soft/25 p-4"
+      className="landlord-form"
       onSubmit={handleSubmit((values) => {
         setRequestError(null);
         save.mutate(values);
       })}
       data-cy="formulaire-bailleur"
     >
-      <h3 className="text-[15px] font-semibold text-ink">
+      <h3 className="landlord-form-title">
         {item
           ? `Modifier le bailleur « ${item.name ?? ""} »`
           : "Ajouter un bailleur"}
       </h3>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className="landlord-form-grid">
         <FieldGroup
           id="bailleur-nom"
           label="Nom du bailleur"
@@ -104,15 +105,12 @@ export function LandlordForm({
       </div>
 
       {requestError ? (
-        <p
-          className="mt-3 rounded-lg border border-danger/20 bg-danger-soft/60 p-2.5 text-xs text-danger"
-          role="alert"
-        >
+        <p className="landlord-form-error" role="alert">
           {requestError}
         </p>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap justify-end gap-2">
+      <div className="landlord-form-actions">
         <Button
           variant="ghost"
           small

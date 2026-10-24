@@ -1,3 +1,4 @@
+import "./SignatureForm.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, X } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
@@ -113,16 +114,14 @@ export function SignatureForm({ onClose }: { onClose: () => void }) {
 
   return (
     <form
-      className="rounded-xl border border-accent/20 bg-accent-soft/25 p-4"
+      className="signature-form"
       onSubmit={submit}
       noValidate
       data-cy="formulaire-signature"
     >
-      <h3 className="text-[15px] font-semibold text-ink">
-        Ajouter une signature
-      </h3>
+      <h3 className="signature-form-title">Ajouter une signature</h3>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className="signature-form-grid">
         <FieldGroup
           id="signature-type"
           label="Type de signature"
@@ -168,7 +167,7 @@ export function SignatureForm({ onClose }: { onClose: () => void }) {
       </div>
 
       {type === "LANDLORD" ? (
-        <div className="mt-3">
+        <div className="signature-form-landlord">
           <FieldGroup
             id="signature-bailleur"
             label="Bailleur de la signature"
@@ -194,7 +193,7 @@ export function SignatureForm({ onClose }: { onClose: () => void }) {
         </div>
       ) : null}
 
-      <div className="mt-3">
+      <div className="signature-form-dropzone">
         <FileDropzone
           onFile={selectFile}
           disabled={create.isPending}
@@ -209,23 +208,22 @@ export function SignatureForm({ onClose }: { onClose: () => void }) {
       </div>
 
       {file ? (
-        <div className="mt-3 flex items-center gap-3 rounded-xl border border-line bg-paper/50 p-3">
+        <div className="signature-form-preview">
           {previewUrl ? (
             <img
               src={previewUrl}
               alt={`Aperçu de ${file.name}`}
-              className="h-14 w-24 shrink-0 rounded-lg border border-line bg-white object-contain p-1"
+              className="signature-form-preview-image"
               data-cy="apercu-signature"
             />
           ) : null}
-          <div className="min-w-0 flex-1">
-            <p
-              className="truncate text-sm font-semibold text-ink"
-              title={file.name}
-            >
+          <div className="signature-form-preview-body">
+            <p className="signature-form-preview-name" title={file.name}>
               {file.name}
             </p>
-            <p className="text-xs text-ink-soft">{formatBytes(file.size)}</p>
+            <p className="signature-form-preview-size">
+              {formatBytes(file.size)}
+            </p>
           </div>
           <button
             type="button"
@@ -234,7 +232,7 @@ export function SignatureForm({ onClose }: { onClose: () => void }) {
               setFileErrorText(null);
             }}
             disabled={create.isPending}
-            className="rounded-lg p-2 text-ink-soft transition hover:bg-danger-soft hover:text-danger disabled:cursor-not-allowed disabled:opacity-40"
+            className="signature-form-remove"
             aria-label="Retirer l’image de la signature"
             data-cy="btn-retirer-signature-image"
           >
@@ -244,15 +242,12 @@ export function SignatureForm({ onClose }: { onClose: () => void }) {
       ) : null}
 
       {requestError ? (
-        <p
-          className="mt-3 rounded-lg border border-danger/20 bg-danger-soft/60 p-2.5 text-xs text-danger"
-          role="alert"
-        >
+        <p className="signature-form-error" role="alert">
           {requestError}
         </p>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap justify-end gap-2">
+      <div className="signature-form-actions">
         <Button
           variant="ghost"
           small

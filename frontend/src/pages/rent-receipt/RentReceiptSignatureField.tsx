@@ -1,3 +1,4 @@
+import "./RentReceiptSignatureField.css";
 import { Link } from "react-router-dom";
 import { errorMessage } from "@/api/client";
 import { FieldGroup } from "@/components/ui/FieldGroup";
@@ -8,7 +9,7 @@ import type { RentReceiptController } from "./useRentReceiptPage";
 export function RentReceiptSignatureField({ c }: { c: RentReceiptController }) {
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="rent-receipt-signature-field-grid">
         <FieldGroup
           id="quittance-signature"
           label="Signature"
@@ -43,7 +44,7 @@ export function RentReceiptSignatureField({ c }: { c: RentReceiptController }) {
 
       {c.signatures.isError ? (
         <p
-          className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger"
+          className="rent-receipt-signature-field-alert"
           role="alert"
           aria-live="polite"
           data-cy="alerte-signatures-erreur"
@@ -53,7 +54,7 @@ export function RentReceiptSignatureField({ c }: { c: RentReceiptController }) {
         </p>
       ) : (c.signatures.data ?? []).length === 0 && !c.signatures.isPending ? (
         <p
-          className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger"
+          className="rent-receipt-signature-field-alert"
           role="alert"
           data-cy="alerte-signature-manquante"
         >
@@ -65,7 +66,7 @@ export function RentReceiptSignatureField({ c }: { c: RentReceiptController }) {
         </p>
       ) : c.landlordWithoutSignature ? (
         <p
-          className="rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger"
+          className="rent-receipt-signature-field-alert"
           role="alert"
           data-cy="alerte-signature-bailleur"
         >
