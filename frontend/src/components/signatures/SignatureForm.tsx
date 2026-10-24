@@ -1,20 +1,15 @@
 import "./SignatureForm.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, X } from "lucide-react";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys, useEmployees, useLandlords } from "@/api/queries";
 import type { SignatureType } from "@/api/types";
-import { FileDropzone } from "@/components/forms/FileDropzone";
-import { Button } from "@/components/ui/Button";
-import { FieldGroup } from "@/components/ui/FieldGroup";
-import { formatBytes } from "@/lib/format";
-import { employeeTitleLabel } from "@/pages/settings/settingsValues";
+import { FormModal } from "@/components/ui/FormModal";
 import { toast } from "@/state/toasts";
+import { SignatureFormFields } from "./SignatureFormFields";
+import { SignatureImageField } from "./SignatureImageField";
 import {
-  MAX_SIGNATURE_SIZE,
-  SIGNATURE_FORMATS,
   SIGNATURE_UPLOAD_TYPES,
   signatureImageError,
 } from "./signatureConstants";
@@ -81,15 +76,6 @@ export function SignatureForm({
         queryKey: queryKeys.signaturesAll,
       });
       toast.success(`Signature « ${created.name ?? name} » ajoutée.`);
-      setType("LANDLORD");
-      setName("");
-      setLandlordId("");
-      setEmployeeId("");
-      setFile(null);
-      setNameError(null);
-      setOwnerError(null);
-      setFileErrorText(null);
-      setRequestError(null);
       onClose();
     },
     onError: (error) => setRequestError(errorMessage(error)),
@@ -106,8 +92,7 @@ export function SignatureForm({
     setFile(candidate);
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function submit() {
     setRequestError(null);
     const trimmedName = name.trim();
     if (!trimmedName) {
@@ -139,188 +124,45 @@ export function SignatureForm({
   }
 
   return (
-    <form
-      className="signature-form"
+    <FormModal
+      open
+      title="Ajouter une signature"
+      onClose={onClose}
       onSubmit={submit}
-      noValidate
-      data-cy="formulaire-signature"
+      formDataCy="formulaire-signature"
+      submitDataCy="btn-enregistrer-signature"
+      formClassName="signature-form"
+      pending={create.isPending}
+      error={requestError}
     >
-      <h3 className="signature-form-title">Ajouter une signature</h3>
-
-      <div className="signature-form-grid">
-        <FieldGroup
-          id="signature-type"
-          label="Type de signature"
-          help="Le bailleur signe les quittances, le salarié signe les notes de frais."
-        >
-          <select
-            id="signature-type"
-            className="field"
-            value={type}
-            onChange={(event) => {
-              const next = availableTypes.find(
-                (candidate) => candidate.value === event.target.value,
-              );
-              if (next) {
-                setType(next.value);
-              }
-            }}
-            data-cy="select-type-signature"
-          >
-            {availableTypes.map((candidate) => (
-              <option key={candidate.value} value={candidate.value}>
-                {candidate.label}
-              </option>
-            ))}
-          </select>
-        </FieldGroup>
-        <FieldGroup
-          id="signature-nom"
-          label="Nom"
-          error={nameError ?? undefined}
-          help="Affiché dans la liste déroulante des documents."
-        >
-          <input
-            id="signature-nom"
-            className={nameError ? "field field-error" : "field"}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            maxLength={255}
-            placeholder="Signature du bailleur"
-            data-cy="input-signature-nom"
-          />
-        </FieldGroup>
-      </div>
-
-      {type === "LANDLORD" ? (
-        <div className="signature-form-landlord">
-          <FieldGroup
-            id="signature-bailleur"
-            label="Bailleur de la signature"
-            error={ownerError ?? undefined}
-            help="La signature n’est proposée que pour les quittances de ce bailleur."
-          >
-            <select
-              id="signature-bailleur"
-              className={ownerError ? "field field-error" : "field"}
-              value={landlordId}
-              onChange={(event) => setLandlordId(event.target.value)}
-              disabled={landlords.isPending}
-              data-cy="select-bailleur-signature"
-            >
-              <option value="">Sélectionnez un bailleur</option>
-              {landlordRows.map((landlord) => (
-                <option key={landlord.id} value={landlord.id}>
-                  {landlord.name}
-                </option>
-              ))}
-            </select>
-          </FieldGroup>
-        </div>
-      ) : null}
-
-      {type === "EMPLOYEE" ? (
-        <div className="signature-form-landlord">
-          <FieldGroup
-            id="signature-salarie"
-            label="Salarié de la signature"
-            error={ownerError ?? undefined}
-            help="La signature n’est proposée que pour les notes de frais de ce salarié."
-          >
-            <select
-              id="signature-salarie"
-              className={ownerError ? "field field-error" : "field"}
-              value={employeeId}
-              onChange={(event) => setEmployeeId(event.target.value)}
-              disabled={employees.isPending}
-              data-cy="select-salarie-signature"
-            >
-              <option value="">Sélectionnez un salarié</option>
-              {employeeRows.map((employee) => (
-                <option key={employee.id} value={employee.id}>
-                  {employee.firstName} {employee.lastName} —{" "}
-                  {employeeTitleLabel(employee.title)}
-                </option>
-              ))}
-            </select>
-          </FieldGroup>
-        </div>
-      ) : null}
-
-      <div className="signature-form-dropzone">
-        <FileDropzone
-          onFile={selectFile}
-          disabled={create.isPending}
-          dataCy="input-signature-image"
-          externalError={fileErrorText}
-          text="Déposez l’image de la signature"
-          accept={SIGNATURE_FORMATS}
-          maxSize={MAX_SIGNATURE_SIZE}
-          formatsDescription="PNG, JPEG"
-          ariaLabel="Choisir une image de signature"
-        />
-      </div>
-
-      {file ? (
-        <div className="signature-form-preview">
-          {previewUrl ? (
-            <img
-              src={previewUrl}
-              alt={`Aperçu de ${file.name}`}
-              className="signature-form-preview-image"
-              data-cy="apercu-signature"
-            />
-          ) : null}
-          <div className="signature-form-preview-body">
-            <p className="signature-form-preview-name" title={file.name}>
-              {file.name}
-            </p>
-            <p className="signature-form-preview-size">
-              {formatBytes(file.size)}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setFile(null);
-              setFileErrorText(null);
-            }}
-            disabled={create.isPending}
-            className="signature-form-remove"
-            aria-label="Retirer l’image de la signature"
-            data-cy="btn-retirer-signature-image"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      ) : null}
-
-      {requestError ? (
-        <p className="signature-form-error" role="alert">
-          {requestError}
-        </p>
-      ) : null}
-
-      <div className="signature-form-actions">
-        <Button
-          variant="ghost"
-          small
-          onClick={onClose}
-          disabled={create.isPending}
-        >
-          Annuler
-        </Button>
-        <Button
-          variant="primary"
-          small
-          type="submit"
-          loading={create.isPending}
-          icon={<Check size={14} />}
-          data-cy="btn-enregistrer-signature"
-        >
-          Ajouter la signature
-        </Button>
-      </div>
-    </form>
+      <SignatureFormFields
+        type={type}
+        onTypeChange={setType}
+        availableTypes={availableTypes}
+        name={name}
+        onNameChange={setName}
+        nameError={nameError}
+        landlordId={landlordId}
+        onLandlordChange={setLandlordId}
+        employeeId={employeeId}
+        onEmployeeChange={setEmployeeId}
+        ownerError={ownerError}
+        landlords={landlordRows}
+        employees={employeeRows}
+        landlordsPending={landlords.isPending}
+        employeesPending={employees.isPending}
+      />
+      <SignatureImageField
+        file={file}
+        previewUrl={previewUrl}
+        fileErrorText={fileErrorText}
+        pending={create.isPending}
+        onFile={selectFile}
+        onRemove={() => {
+          setFile(null);
+          setFileErrorText(null);
+        }}
+      />
+    </FormModal>
   );
 }

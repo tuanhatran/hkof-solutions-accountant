@@ -130,6 +130,20 @@ function createAnnexeLease(): Cypress.Chainable<number> {
           cy.get('[data-cy="btn-enregistrer-bail"]').click();
           cy.contains("Bail ajouté.", { timeout: 20_000 }).should("be.visible");
 
+          cy.request<{ id: number; label: string }[]>("/api/addresses").then(
+            ({ body }) => {
+              const address = body.find(
+                (candidate) => candidate.label === ANNEXE_LEASE.propertyAddress,
+              );
+              if (!address) {
+                throw new Error("Annexe address was not created.");
+              }
+              cy.get('[data-cy="select-adresse-quittances"]', {
+                timeout: 20_000,
+              }).should("have.value", String(address.id));
+            },
+          );
+
           return cy
             .request<{ id: number; landlordId: number }[]>("/api/leases")
             .then(({ body }) => {

@@ -36,14 +36,16 @@ public class RentConfigurationService {
     private final TenantRepository tenants;
     private final LeaseRepository leases;
     private final CompanyService companies;
+    private final AddressService addresses;
     private final Clock clock;
 
     public RentConfigurationService(LandlordRepository landlords, TenantRepository tenants, LeaseRepository leases,
-            CompanyService companies, Clock clock) {
+            CompanyService companies, AddressService addresses, Clock clock) {
         this.landlords = landlords;
         this.tenants = tenants;
         this.leases = leases;
         this.companies = companies;
+        this.addresses = addresses;
         this.clock = clock;
     }
 
@@ -184,7 +186,8 @@ public class RentConfigurationService {
         }
         lease.setLandlord(landlord);
         lease.setTenant(tenant);
-        lease.setPropertyAddress(requiredText(request.propertyAddress(), "L'adresse du bien est obligatoire."));
+        lease.setAddress(addresses.findOrCreate(
+                requiredText(request.propertyAddress(), "L'adresse du bien est obligatoire.")));
         lease.setRentExclCharges(Amounts.decimal(request.rentExclCharges(), "loyer hors charges", false));
         lease.setCharges(request.charges() == null || request.charges().isBlank()
                 ? ZERO
@@ -247,6 +250,7 @@ public class RentConfigurationService {
                 : companies.find(lease.getCompanyId()).map(company -> company.getName()).orElse(null);
         return new LeaseDto(
                 lease.getId(),
+                lease.getAddress().getId(),
                 lease.getCompanyId(),
                 companyName,
                 lease.isCompanyLease(),
@@ -254,7 +258,7 @@ public class RentConfigurationService {
                 lease.getTenant().getId(),
                 lease.getLandlord().getName(),
                 lease.getTenant().getName(),
-                lease.getPropertyAddress(),
+                lease.getAddress().getLabel(),
                 Amounts.apiValue(lease.getRentExclCharges()),
                 Amounts.apiValue(lease.getCharges()),
                 Amounts.apiValue(lease.getTotalArea()),

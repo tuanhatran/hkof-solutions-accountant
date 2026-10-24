@@ -67,7 +67,9 @@ class RentConfigurationMigrationPostgresTest {
                     .isEqualTo("Bailleur historique");
             assertThat(singleString(statement, "SELECT address FROM tenant WHERE id = " + tenantId))
                     .isEqualTo("12 rue des Lilas, 75011 Paris");
-            assertThat(singleString(statement, "SELECT property_address FROM lease WHERE id = " + leaseId))
+            assertThat(singleString(statement, """
+                    SELECT a.label FROM lease l JOIN address a ON a.id = l.address_id WHERE l.id = %d
+                    """.formatted(leaseId)))
                     .isEqualTo("12 rue des Lilas, 75011 Paris");
             assertThat(singleDecimal(statement, "SELECT rent_excl_charges FROM lease WHERE id = " + leaseId))
                     .isEqualByComparingTo(new BigDecimal("900.00"));
@@ -77,19 +79,21 @@ class RentConfigurationMigrationPostgresTest {
             assertThat(singleLong(statement, "SELECT landlord_id FROM rent_receipt")).isEqualTo(landlordId);
             assertThat(singleLong(statement, "SELECT tenant_id FROM rent_receipt")).isEqualTo(tenantId);
 
+            long addressId = singleLong(statement, "SELECT address_id FROM lease WHERE id = " + leaseId);
+
             assertThatThrownBy(() -> statement.execute("""
-                    INSERT INTO lease (landlord_id, tenant_id, property_address, rent_excl_charges, charges,
+                    INSERT INTO lease (landlord_id, tenant_id, address_id, rent_excl_charges, charges,
                         deleted, created_at)
-                    VALUES (%d, %d, 'Autre bien', 1000.00, 0.00, FALSE, NOW())
-                    """.formatted(landlordId, tenantId)))
+                    VALUES (%d, %d, %d, 1000.00, 0.00, FALSE, NOW())
+                    """.formatted(landlordId, tenantId, addressId)))
                     .isInstanceOf(SQLException.class);
 
             statement.execute("UPDATE lease SET deleted = TRUE WHERE id = " + leaseId);
             statement.execute("""
-                    INSERT INTO lease (landlord_id, tenant_id, property_address, rent_excl_charges, charges,
+                    INSERT INTO lease (landlord_id, tenant_id, address_id, rent_excl_charges, charges,
                         deleted, created_at)
-                    VALUES (%d, %d, 'Nouveau bail', 1000.00, 0.00, FALSE, NOW())
-                    """.formatted(landlordId, tenantId));
+                    VALUES (%d, %d, %d, 1000.00, 0.00, FALSE, NOW())
+                    """.formatted(landlordId, tenantId, addressId));
             assertThat(count(statement, "SELECT COUNT(*) FROM lease WHERE deleted = FALSE")).isEqualTo(1);
         }
     }

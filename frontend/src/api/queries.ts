@@ -10,6 +10,7 @@ export const queryKeys = {
   employees: (companyId: number) => ["employees", companyId] as const,
   landlords: ["landlords"] as const,
   tenants: ["tenants"] as const,
+  addresses: ["addresses"] as const,
   leases: ["leases"] as const,
   expenseItemsAll: ["expenseItems"] as const,
   expenseItemsForCompany: (companyId: number) =>
@@ -77,6 +78,14 @@ export function useTenants() {
   return useQuery({
     queryKey: queryKeys.tenants,
     queryFn: () => api.tenants.list(),
+    staleTime: 30_000,
+  });
+}
+
+export function useAddresses() {
+  return useQuery({
+    queryKey: queryKeys.addresses,
+    queryFn: () => api.addresses.list(),
     staleTime: 30_000,
   });
 }

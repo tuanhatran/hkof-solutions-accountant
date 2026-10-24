@@ -1458,6 +1458,23 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /api/addresses:
+    get:
+      tags:
+        - address-controller
+      operationId: listAddresses
+      description: >-
+        Liste les adresses non supprimées, triées par libellé. Une adresse peut porter
+        plusieurs baux.
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AddressDto"
   /api/leases:
     get:
       tags:
@@ -1760,6 +1777,14 @@ components:
           type: string
         address:
           type: string
+    AddressDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        label:
+          type: string
     LeaseRequest:
       type: object
       properties:
@@ -1776,6 +1801,9 @@ components:
           format: int64
         propertyAddress:
           type: string
+          description: >-
+            Libellé de l'adresse du bien. Le backend réutilise l'adresse existante
+            pour un libellé identique, sans tenir compte de la casse ni des espaces.
         rentExclCharges:
           type: string
         charges:
@@ -1792,6 +1820,11 @@ components:
         id:
           type: integer
           format: int64
+        addressId:
+          type: integer
+          format: int64
+          readOnly: true
+          description: Adresse du bien, résolue depuis le libellé de la requête.
         companyId:
           type:
             - integer

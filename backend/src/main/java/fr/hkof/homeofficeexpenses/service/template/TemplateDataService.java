@@ -56,7 +56,7 @@ public class TemplateDataService {
                 "nom", tenant == null ? "" : text(tenant.getName()),
                 "adresse", tenant == null ? "" : text(tenant.getAddress())));
         data.put("logement", Map.of(
-                "adresse", lease == null ? "" : text(lease.getPropertyAddress())));
+                "adresse", lease == null || lease.getAddress() == null ? "" : text(lease.getAddress().getLabel())));
         data.put("mois_libelle", Amounts.formatMonth(YearMonth.parse(rentReceipt.getMonth())));
         data.put("periode", Map.of(
                 "debut", Amounts.formatDate(rentReceipt.getPeriodStart()),

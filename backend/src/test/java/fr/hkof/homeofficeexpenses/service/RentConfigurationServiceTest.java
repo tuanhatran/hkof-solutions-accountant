@@ -3,6 +3,7 @@ package fr.hkof.homeofficeexpenses.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import fr.hkof.homeofficeexpenses.domain.Address;
 import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Lease;
@@ -41,6 +43,7 @@ class RentConfigurationServiceTest {
     private TenantRepository tenants;
     private LeaseRepository leases;
     private CompanyService companies;
+    private AddressService addresses;
     private RentConfigurationService service;
 
     @BeforeEach
@@ -49,7 +52,9 @@ class RentConfigurationServiceTest {
         tenants = mock(TenantRepository.class);
         leases = mock(LeaseRepository.class);
         companies = mock(CompanyService.class);
-        service = new RentConfigurationService(landlords, tenants, leases, companies,
+        addresses = mock(AddressService.class);
+        when(addresses.findOrCreate(anyString())).thenAnswer(invocation -> address(4L, invocation.getArgument(0)));
+        service = new RentConfigurationService(landlords, tenants, leases, companies, addresses,
                 Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
@@ -76,15 +81,22 @@ class RentConfigurationServiceTest {
         return tenant;
     }
 
+    private Address address(Long id, String label) {
+        Address address = new Address();
+        address.setId(id);
+        address.setLabel(label);
+        return address;
+    }
+
     private Lease lease() {
         Lease lease = new Lease();
         lease.setId(3L);
         lease.setLandlord(landlord());
         lease.setTenant(tenant());
+        lease.setAddress(address(4L, "12 rue de la République"));
         lease.setCompanyLease(true);
         lease.setTotalArea(new BigDecimal("70.00"));
         lease.setBusinessArea(new BigDecimal("25.00"));
-        lease.setPropertyAddress("12 rue de la République");
         lease.setRentExclCharges(new BigDecimal("900.00"));
         lease.setCharges(new BigDecimal("50.00"));
         return lease;
@@ -100,6 +112,7 @@ class RentConfigurationServiceTest {
         assertThat(service.listLandlords()).extracting(LandlordDto::name).containsExactly("Bailleur");
         assertThat(service.listTenants()).extracting(TenantDto::name).containsExactly("Locataire");
         assertThat(service.listLeases()).extracting(LeaseDto::propertyAddress).containsExactly("12 rue de la République");
+        assertThat(service.listLeases()).extracting(LeaseDto::addressId).containsExactly(4L);
     }
 
     @Test
@@ -176,6 +189,8 @@ class RentConfigurationServiceTest {
         when(landlords.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(landlord()));
         when(tenants.findByIdAndDeletedFalse(2L)).thenReturn(Optional.of(tenant()));
         when(leases.existsByLandlordIdAndTenantIdAndDeletedFalse(1L, 2L)).thenReturn(false);
+        when(addresses.findOrCreate("12 rue")).thenReturn(address(4L, "12 rue"));
+        when(addresses.findOrCreate("13 rue")).thenReturn(address(5L, "13 rue"));
         when(leases.save(any(Lease.class))).thenAnswer(invocation -> {
             Lease saved = invocation.getArgument(0);
             saved.setId(3L);
@@ -184,6 +199,7 @@ class RentConfigurationServiceTest {
 
         LeaseDto created = service.createLease(
                 new LeaseRequest(true, 1L, 2L, "12 rue", "900", null, "70", "25"));
+        assertThat(created.addressId()).isEqualTo(4L);
         assertThat(created.rentExclCharges()).isEqualTo("900.00");
         assertThat(created.charges()).isEqualTo("0.00");
         assertThat(created.companyLease()).isTrue();

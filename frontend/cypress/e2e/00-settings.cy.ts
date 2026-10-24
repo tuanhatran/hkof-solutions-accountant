@@ -3,6 +3,7 @@ import {
   SEED_RENT_INPUT,
   SEED_TOTAL,
   seededLease,
+  selectAddressForLease,
   waitForText,
   waitForValue,
 } from "../support/helpers";
@@ -29,6 +30,7 @@ describe("Settings", () => {
     cy.get('[data-cy="onglet-quittances"]').click();
 
     seededLease().then((lease) => {
+      selectAddressForLease(lease);
       const row = `bail-${lease.id}`;
       waitForText(`[data-cy="total-bail-${lease.id}"]`, SEED_TOTAL);
 
@@ -45,6 +47,7 @@ describe("Settings", () => {
     cy.reload();
     cy.get('[data-cy="onglet-quittances"]').click();
     seededLease().then((lease) => {
+      selectAddressForLease(lease);
       waitForText(`[data-cy="total-bail-${lease.id}"]`, "1 350,00 €");
       cy.get(`[data-cy="btn-modifier-bail-${lease.id}"]`).click();
       waitForValue('[data-cy="input-bail-charges"]', "50,00");

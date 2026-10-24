@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import fr.hkof.homeofficeexpenses.domain.Address;
 import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
 import fr.hkof.homeofficeexpenses.domain.Landlord;
@@ -89,12 +90,15 @@ class RentReceiptServiceTest {
         tenant.setId(2L);
         tenant.setName("Locataire");
         tenant.setAddress("2 rue du Locataire");
+        Address address = new Address();
+        address.setId(4L);
+        address.setLabel("12 rue de la République");
         Lease lease = new Lease();
         lease.setId(3L);
         lease.setCompanyId(COMPANY_ID);
         lease.setLandlord(landlord);
         lease.setTenant(tenant);
-        lease.setPropertyAddress("12 rue de la République");
+        lease.setAddress(address);
         lease.setRentExclCharges(new BigDecimal("900.00"));
         lease.setCharges(new BigDecimal("50.00"));
         return lease;

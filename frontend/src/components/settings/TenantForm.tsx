@@ -1,20 +1,19 @@
 import "./TenantForm.css";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
 import type { TenantDto, TenantRequest } from "@/api/types";
-import { Button } from "@/components/ui/Button";
 import { FieldGroup } from "@/components/ui/FieldGroup";
+import { FormModal } from "@/components/ui/FormModal";
 import { cn } from "@/lib/cn";
 import { tenantSchema, type TenantFormValues } from "@/lib/validation";
 import { toast } from "@/state/toasts";
 
-/** Create/update form for a tenant. */
+/** Create/update form for a tenant, displayed in a modal. */
 export function TenantForm({
   item,
   onClose,
@@ -61,20 +60,24 @@ export function TenantForm({
   });
 
   return (
-    <form
-      className="tenant-form"
+    <FormModal
+      open
+      title={
+        item
+          ? `Modifier le locataire « ${item.name ?? ""} »`
+          : "Ajouter un locataire"
+      }
+      onClose={onClose}
       onSubmit={handleSubmit((values) => {
         setRequestError(null);
         save.mutate(values);
       })}
-      data-cy="formulaire-locataire"
+      formDataCy="formulaire-locataire"
+      submitDataCy="btn-enregistrer-locataire"
+      formClassName="tenant-form"
+      pending={save.isPending}
+      error={requestError}
     >
-      <h3 className="tenant-form-title">
-        {item
-          ? `Modifier le locataire « ${item.name ?? ""} »`
-          : "Ajouter un locataire"}
-      </h3>
-
       <div className="tenant-form-grid">
         <FieldGroup
           id="locataire-nom"
@@ -103,33 +106,6 @@ export function TenantForm({
           />
         </FieldGroup>
       </div>
-
-      {requestError ? (
-        <p className="tenant-form-error" role="alert">
-          {requestError}
-        </p>
-      ) : null}
-
-      <div className="tenant-form-actions">
-        <Button
-          variant="ghost"
-          small
-          onClick={onClose}
-          disabled={save.isPending}
-        >
-          Annuler
-        </Button>
-        <Button
-          variant="primary"
-          small
-          type="submit"
-          loading={save.isPending}
-          icon={<Check size={14} />}
-          data-cy="btn-enregistrer-locataire"
-        >
-          {item ? "Enregistrer le locataire" : "Ajouter le locataire"}
-        </Button>
-      </div>
-    </form>
+    </FormModal>
   );
 }

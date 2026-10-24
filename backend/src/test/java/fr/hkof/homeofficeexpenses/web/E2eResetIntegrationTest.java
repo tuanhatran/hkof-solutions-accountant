@@ -53,11 +53,27 @@ class E2eResetIntegrationTest {
                                 """.formatted(leaseId)))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/api/landlords")
+        String landlord = mockMvc.perform(post("/api/landlords")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Bailleur Test e2e","address":"1 rue du Test, 75001 Paris"}
                                 """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String tenant = mockMvc.perform(post("/api/tenants")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Locataire Test e2e","address":"2 rue du Test, 75001 Paris"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        mockMvc.perform(post("/api/leases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"landlordId":%d,"tenantId":%d,"propertyAddress":"9 rue du Test, 75001 Paris",
+                                 "rentExclCharges":"800.00"}
+                                """.formatted(((Number) JsonPath.read(landlord, "$.id")).longValue(),
+                        ((Number) JsonPath.read(tenant, "$.id")).longValue())))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/expense-items")
@@ -92,9 +108,16 @@ class E2eResetIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].name").value("Nom du locataire"));
+        String resetAddresses = mockMvc.perform(get("/api/addresses"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].label").value("12 rue de la République, 75000 Paris"))
+                .andReturn().getResponse().getContentAsString();
+        long addressId = ((Number) JsonPath.read(resetAddresses, "$[0].id")).longValue();
         mockMvc.perform(get("/api/leases"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].addressId").value(addressId))
                 .andExpect(jsonPath("$[0].propertyAddress").value("12 rue de la République, 75000 Paris"))
                 .andExpect(jsonPath("$[0].rentExclCharges").value("1300.00"))
                 .andExpect(jsonPath("$[0].charges").value("0.00"))

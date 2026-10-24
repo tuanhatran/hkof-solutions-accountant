@@ -1,7 +1,6 @@
 import "./LeaseForm.css";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { errorMessage } from "@/api/client";
@@ -13,8 +12,8 @@ import type {
   LeaseRequest,
   TenantDto,
 } from "@/api/types";
-import { Button } from "@/components/ui/Button";
 import { FieldGroup } from "@/components/ui/FieldGroup";
+import { FormModal } from "@/components/ui/FormModal";
 import { cn } from "@/lib/cn";
 import { formatEUR, parseAmount } from "@/lib/format";
 import { leaseSchema, type LeaseFormValues } from "@/lib/validation";
@@ -26,11 +25,13 @@ export function LeaseForm({
   item,
   landlords,
   tenants,
+  onSaved,
   onClose,
 }: {
   item: LeaseDto | null;
   landlords: LandlordDto[];
   tenants: TenantDto[];
+  onSaved?: (lease: LeaseDto) => void;
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -80,28 +81,32 @@ export function LeaseForm({
         ? api.leases.update(item.id, requestBody)
         : api.leases.create(requestBody);
     },
-    onSuccess: () => {
+    onSuccess: (saved) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.leases });
       void queryClient.invalidateQueries({ queryKey: queryKeys.companiesAll });
       toast.success(item ? "Bail mis à jour." : "Bail ajouté.");
+      onSaved?.(saved);
       onClose();
     },
     onError: (error) => setRequestError(errorMessage(error)),
   });
 
   return (
-    <form
-      className="lease-form"
+    <FormModal
+      open
+      wide
+      title={item ? "Modifier le bail" : "Ajouter un bail"}
+      onClose={onClose}
       onSubmit={handleSubmit((values) => {
         setRequestError(null);
         save.mutate(values);
       })}
-      data-cy="formulaire-bail"
+      formDataCy="formulaire-bail"
+      submitDataCy="btn-enregistrer-bail"
+      formClassName="lease-form"
+      pending={save.isPending}
+      error={requestError}
     >
-      <h3 className="lease-form-title">
-        {item ? "Modifier le bail" : "Ajouter un bail"}
-      </h3>
-
       <div className="lease-form-grid">
         <label className="lease-form-company-lease">
           <input
@@ -244,33 +249,6 @@ export function LeaseForm({
           </p>
         </div>
       </div>
-
-      {requestError ? (
-        <p className="lease-form-error" role="alert">
-          {requestError}
-        </p>
-      ) : null}
-
-      <div className="lease-form-actions">
-        <Button
-          variant="ghost"
-          small
-          onClick={onClose}
-          disabled={save.isPending}
-        >
-          Annuler
-        </Button>
-        <Button
-          variant="primary"
-          small
-          type="submit"
-          loading={save.isPending}
-          icon={<Check size={14} />}
-          data-cy="btn-enregistrer-bail"
-        >
-          {item ? "Enregistrer le bail" : "Ajouter le bail"}
-        </Button>
-      </div>
-    </form>
+    </FormModal>
   );
 }

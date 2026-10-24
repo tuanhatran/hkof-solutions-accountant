@@ -64,9 +64,20 @@ function endOfMonth(month: string): string {
 
 export interface LeaseSummary {
   id?: number;
+  addressId?: number;
   landlordId?: number;
   tenantId?: number;
   propertyAddress?: string;
+}
+
+/** Selects the address of a lease in the « Baux et adresses » dropdown. */
+export function selectAddressForLease(lease: LeaseSummary): void {
+  if (lease.addressId === undefined) {
+    throw new Error("seeded lease has no addressId");
+  }
+  cy.get('[data-cy="select-adresse-quittances"]').select(
+    String(lease.addressId),
+  );
 }
 
 /** Reads the seeded active lease; the E2E reset recreates exactly one. */

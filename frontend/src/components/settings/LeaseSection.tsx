@@ -2,20 +2,21 @@ import "./LeaseSection.css";
 import { Home, PencilLine, Plus, Trash2 } from "lucide-react";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
+import { FieldGroup } from "@/components/ui/FieldGroup";
 import { ErrorState, LoadingState } from "@/components/ui/States";
 import { formatEUR } from "@/lib/format";
 import { LeaseForm } from "./LeaseForm";
 import { EmptyState, SectionHeader } from "./SettingsSection";
 import type { RentReceiptSettingsController } from "./useRentReceiptSettings";
 
-/** Leases section: list, create/update form and delete triggers. */
+/** Leases section: address filter, list, create/update modal and delete triggers. */
 export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
   return (
     <section className="card lease-section">
       <SectionHeader
         icon={Home}
-        title="Baux"
-        description="Un bail actif par couple bailleur + locataire. Il fixe l’adresse du bien, le loyer et les charges."
+        title="Baux et adresses"
+        description="Une adresse peut porter plusieurs baux. Sélectionnez une adresse pour afficher ses baux et fixer le loyer et les charges."
         action={
           <Button
             variant="primary"
@@ -30,12 +31,47 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
         }
       />
       <div className="card-body lease-section-body">
+        <div className="lease-section-address">
+          <FieldGroup
+            id="baux-adresse"
+            label="Adresse des baux"
+            help="Seuls les baux de l’adresse sélectionnée sont affichés."
+          >
+            <select
+              id="baux-adresse"
+              className="field"
+              value={c.activeAddressId ?? ""}
+              onChange={(event) =>
+                c.selectAddress(
+                  event.target.value === "" ? null : Number(event.target.value),
+                )
+              }
+              disabled={c.addressList.length === 0}
+              data-cy="select-adresse-quittances"
+            >
+              {c.addressList.length === 0 ? (
+                <option value="">
+                  {c.addresses.isPending
+                    ? "Chargement des adresses…"
+                    : "Aucune adresse configurée"}
+                </option>
+              ) : null}
+              {c.addressList.map((address) => (
+                <option key={address.id} value={address.id}>
+                  {address.label}
+                </option>
+              ))}
+            </select>
+          </FieldGroup>
+        </div>
+
         {c.leaseForm !== null ? (
           <LeaseForm
             key={c.leaseForm === "new" ? "new" : c.leaseForm.id}
             item={c.leaseForm === "new" ? null : c.leaseForm}
             landlords={c.landlordList}
             tenants={c.tenantList}
+            onSaved={c.handleLeaseSaved}
             onClose={() => c.setLeaseForm(null)}
           />
         ) : null}
@@ -49,7 +85,7 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
           <LoadingState message="Chargement des baux…" />
         ) : c.leaseList.length === 0 ? (
           <EmptyState
-            text="Aucun bail configuré. Ajoutez un bail pour générer des quittances."
+            text="Aucun bail pour cette adresse. Ajoutez un bail pour générer des quittances."
             dataCy="aucun-bail"
           />
         ) : (

@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.boot.ApplicationArguments;
 
+import fr.hkof.homeofficeexpenses.domain.Address;
 import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.Employee;
 import fr.hkof.homeofficeexpenses.domain.EmployeeTitle;
@@ -29,6 +30,7 @@ import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.domain.Tenant;
+import fr.hkof.homeofficeexpenses.repository.AddressRepository;
 import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
@@ -45,6 +47,7 @@ class DataInitializerTest {
     private LandlordRepository landlordRepository;
     private TenantRepository tenantRepository;
     private LeaseRepository leaseRepository;
+    private AddressRepository addressRepository;
     private ExpenseItemRepository expenseItemRepository;
     private TemplateDocumentRepository templateRepository;
     private LlmConfigRepository llmConfigRepository;
@@ -57,14 +60,15 @@ class DataInitializerTest {
         landlordRepository = mock(LandlordRepository.class);
         tenantRepository = mock(TenantRepository.class);
         leaseRepository = mock(LeaseRepository.class);
+        addressRepository = mock(AddressRepository.class);
         expenseItemRepository = mock(ExpenseItemRepository.class);
         templateRepository = mock(TemplateDocumentRepository.class);
         llmConfigRepository = mock(LlmConfigRepository.class);
         AppProperties properties = new AppProperties("data", List.of(),
                 new AppProperties.Llm("http://localhost:11434", "qwen2.5vl"));
         initializer = new DataInitializer(companyRepository, employeeRepository, landlordRepository, tenantRepository,
-                leaseRepository, expenseItemRepository, templateRepository, llmConfigRepository, properties,
-                Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
+                leaseRepository, addressRepository, expenseItemRepository, templateRepository, llmConfigRepository,
+                properties, Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
     private Company company() {
@@ -98,6 +102,13 @@ class DataInitializerTest {
             return tenant;
         });
         when(leaseRepository.findFirstByDeletedFalseOrderByIdAsc()).thenReturn(Optional.empty());
+        when(addressRepository.findFirstByDeletedFalseAndLabelIgnoreCase("12 rue de la République, 75000 Paris"))
+                .thenReturn(Optional.empty());
+        when(addressRepository.save(any(Address.class))).thenAnswer(invocation -> {
+            Address address = invocation.getArgument(0);
+            address.setId(1L);
+            return address;
+        });
         when(expenseItemRepository.findFirstByCompanyIdAndCode(any(), any())).thenReturn(Optional.empty());
         when(templateRepository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(any())).thenReturn(Optional.empty());
         when(templateRepository.save(any(TemplateDocument.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -117,8 +128,13 @@ class DataInitializerTest {
         assertThat(employees.getValue().getTitle()).isEqualTo(EmployeeTitle.CEO);
         assertThat(employees.getValue().getFirstName()).isEqualTo("Gérant");
 
+        ArgumentCaptor<Address> addresses = ArgumentCaptor.forClass(Address.class);
+        verify(addressRepository).save(addresses.capture());
+        assertThat(addresses.getValue().getLabel()).isEqualTo("12 rue de la République, 75000 Paris");
+
         ArgumentCaptor<Lease> leases = ArgumentCaptor.forClass(Lease.class);
         verify(leaseRepository).save(leases.capture());
+        assertThat(leases.getValue().getAddress()).isSameAs(addresses.getValue());
         assertThat(leases.getValue().getCompanyId()).isEqualTo(1L);
         assertThat(leases.getValue().isCompanyLease()).isTrue();
         assertThat(leases.getValue().getTotalArea()).isEqualByComparingTo("70.00");
@@ -157,6 +173,7 @@ class DataInitializerTest {
         verify(companyRepository, never()).save(any());
         verify(employeeRepository, never()).save(any());
         verify(leaseRepository, never()).save(any());
+        verify(addressRepository, never()).save(any());
         verify(expenseItemRepository, never()).save(any());
         verify(llmConfigRepository, never()).save(any());
         verify(templateRepository, never()).save(any());
