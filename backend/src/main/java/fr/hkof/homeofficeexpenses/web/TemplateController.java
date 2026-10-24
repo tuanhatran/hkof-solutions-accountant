@@ -19,8 +19,8 @@ import org.springframework.web.multipart.MultipartFile;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.service.template.TemplateDataService;
 import fr.hkof.homeofficeexpenses.service.template.TemplateService;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.TemplateDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.TemplateVariableDto;
+import fr.hkof.homeofficeexpenses.web.dto.TemplateDtos.TemplateDto;
+import fr.hkof.homeofficeexpenses.web.dto.TemplateDtos.TemplateVariableDto;
 
 @RestController
 @RequestMapping("/api/templates")

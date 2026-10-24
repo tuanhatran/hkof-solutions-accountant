@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import fr.hkof.homeofficeexpenses.service.ExpenseItemService;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.ExpenseItemDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.ExpenseItemRequest;
+import fr.hkof.homeofficeexpenses.web.dto.ExpenseItemDtos.ExpenseItemDto;
+import fr.hkof.homeofficeexpenses.web.dto.ExpenseItemDtos.ExpenseItemRequest;
 
 @RestController
 @RequestMapping("/api/expense-items")

@@ -89,6 +89,12 @@ or routes involved, and the affected test files from `codegraph affected`. Every
 
 Never rewrite evidence lines written by another agent; append only.
 
+Coverage gate: every task keeps JaCoCo bundle coverage >= 90% LINE and >= 90% BRANCH
+(`cd backend && ./mvnw -B verify`) and Vitest global coverage >= 90% lines, statements,
+functions and branches (`cd frontend && npm run test:coverage`), and requires one evidence
+line with the real numbers. Every production class stays under 300 lines: a class crossing
+300 lines is split, never shrunk by deleting comments only.
+
 ## Loop control
 
 - The pipeline stops at `USER_REVIEW`: `builder` (S) and `reviewer` (M/L) never set `DONE`.

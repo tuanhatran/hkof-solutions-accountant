@@ -9,8 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import fr.hkof.homeofficeexpenses.domain.Settings;
 import fr.hkof.homeofficeexpenses.repository.SettingsRepository;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.SettingsDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.SettingsRequest;
+import fr.hkof.homeofficeexpenses.web.dto.SettingsDtos.SettingsDto;
+import fr.hkof.homeofficeexpenses.web.dto.SettingsDtos.SettingsRequest;
 
 @Service
 public class SettingsService {

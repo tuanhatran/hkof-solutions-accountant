@@ -19,7 +19,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.repository.TemplateDocumentRepository;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.TemplateDto;
+import fr.hkof.homeofficeexpenses.web.dto.TemplateDtos.TemplateDto;
 
 /**
  * Regression guard for the PostgreSQL partial unique index {@code ux_template_active}:

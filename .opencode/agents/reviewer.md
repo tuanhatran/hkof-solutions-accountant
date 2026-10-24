@@ -25,6 +25,9 @@ Report only:
 - BLOCKER: missing or incomplete E2E evidence, whatever the task and size — no single
   full-suite run with every spec and every test green. A failing test, or a test green only
   on a retry, is a false green.
+- BLOCKER: coverage gate missed — JaCoCo bundle under 90% LINE or BRANCH, Vitest global under
+  90% lines/statements/functions/branches, no coverage evidence line, or a production class
+  at 300 lines or more.
 - NOTE: at most 3 optional points.
 
 Ignore style, naming and formatting unless they cause bugs. Point to `file:line` and describe

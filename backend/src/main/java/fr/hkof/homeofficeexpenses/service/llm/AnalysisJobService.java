@@ -26,8 +26,8 @@ import fr.hkof.homeofficeexpenses.service.BusinessException;
 import fr.hkof.homeofficeexpenses.service.ReceiptService;
 import fr.hkof.homeofficeexpenses.service.NotFoundException;
 import fr.hkof.homeofficeexpenses.service.extraction.DocumentTextExtractor;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.AnalysisDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.ExtractionDto;
+import fr.hkof.homeofficeexpenses.web.dto.ExtractionDtos.AnalysisDto;
+import fr.hkof.homeofficeexpenses.web.dto.ExtractionDtos.ExtractionDto;
 
 @Service
 public class AnalysisJobService {

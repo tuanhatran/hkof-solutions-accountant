@@ -17,11 +17,11 @@ import fr.hkof.homeofficeexpenses.domain.LlmConfig;
 import fr.hkof.homeofficeexpenses.repository.LlmConfigRepository;
 import fr.hkof.homeofficeexpenses.service.BusinessException;
 import fr.hkof.homeofficeexpenses.service.NotFoundException;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LlmConfigDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LlmConfigRequest;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LlmModelDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LlmStatusDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LlmTestResponse;
+import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.LlmConfigDto;
+import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.LlmConfigRequest;
+import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.LlmModelDto;
+import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.LlmStatusDto;
+import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.LlmTestResponse;
 
 @Service
 public class LlmConfigService {

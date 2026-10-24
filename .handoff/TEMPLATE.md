@@ -30,11 +30,12 @@ Money: `CalculationService` only · UI French · no `any` · no commit or push
 
 - [ ] observable check 1
 - [ ] observable check 2
+- [ ] coverage gates met: backend `./mvnw -B verify` >= 90% LINE/BRANCH, frontend `npm run test:coverage` >= 90% lines/statements/functions/branches; production classes < 300 lines
 
 ## Commands
 
-- backend: `cd backend && ./mvnw -B test`
-- frontend: `cd frontend && npm run typecheck && npm test && npm run build`
+- backend: `cd backend && ./mvnw -B verify`
+- frontend: `cd frontend && npm run typecheck && npm test && npm run test:coverage && npm run build`
 - e2e: `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress`
 
 ## Evidence
@@ -43,6 +44,7 @@ Append one line per event; never rewrite a previous line.
 
 - `YYYY-MM-DD builder:` red → `<key assertion message>`
 - `YYYY-MM-DD builder:` `<command>` `<real counts>` PASS|FAIL
+- `YYYY-MM-DD builder:` coverage backend LINE `<x>%` BRANCH `<x>%` · frontend lines/statements/functions/branches `<x>/<x>/<x>/<x>%`
 - `YYYY-MM-DD reviewer:` `VERDICT` (round n)
 - `YYYY-MM-DD lead:` `USER_CHANGES_REQUESTED — <user request>` (Round reset to 0)
 - `YYYY-MM-DD lead:` `DONE — user accepted`
@@ -50,6 +52,8 @@ Append one line per event; never rewrite a previous line.
 <!--
 Compact handoff shared by .qoder/, .opencode/ and .github/ agents.
 Target 25 lines, 6 lines maximum for size S.
+Every task keeps backend JaCoCo >= 90% LINE/BRANCH and frontend Vitest >= 90%; production
+classes stay under 300 lines (split, never shrink by deleting comments).
 
 Status flow: TODO -> REVIEW -> USER_REVIEW -> DONE, gated by the user.
 - builder ends at REVIEW (M/L) or USER_REVIEW (S); reviewer ends at USER_REVIEW on PASS.

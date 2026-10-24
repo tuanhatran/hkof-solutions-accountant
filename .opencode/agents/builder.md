@@ -13,6 +13,11 @@ failures in the same loop, and report.
   `CalculationService`, contract first in `openapi/openapi.yaml`, French UI text, TypeScript
   strict without `any`.
 - Run the relevant tests before reporting. Never weaken, skip or delete a failing test.
+- Keep the gates green: JaCoCo bundle coverage >= 90% LINE and >= 90% BRANCH
+  (`cd backend && ./mvnw -B verify`) and Vitest global coverage >= 90% lines, statements,
+  functions and branches (`cd frontend && npm run test:coverage`); record the real numbers in
+  the handoff. Every production class stays under 300 lines: split a class that crosses 300,
+  never shrink it by deleting comments only.
 - Run the full E2E suite once per task, every size, after the targeted tests: `docker compose
 -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build
 --abort-on-container-exit --exit-code-from cypress`, then `down -v --remove-orphans`. All

@@ -14,12 +14,12 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import fr.hkof.homeofficeexpenses.service.RentConfigurationService;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LandlordDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LandlordRequest;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LeaseDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.LeaseRequest;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.TenantDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.TenantRequest;
+import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.LandlordDto;
+import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.LandlordRequest;
+import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.LeaseDto;
+import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.LeaseRequest;
+import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.TenantDto;
+import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.TenantRequest;
 
 @RestController
 @RequestMapping("/api")

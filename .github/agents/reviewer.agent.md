@@ -41,6 +41,9 @@ a specific claim looks wrong, and you must say why.
 7. User-facing English text, wrong amount or date formatting.
 8. Missing or incomplete E2E evidence: no single full-suite run with every spec and every test
    green. A failing test, or a test green only on a retry, is a false green and a blocker.
+9. Coverage gate missed: JaCoCo bundle under 90% LINE or BRANCH, Vitest global under 90%
+   lines/statements/functions/branches, no coverage evidence line, or a production class at
+   300 lines or more.
 
 ## False-green probe
 

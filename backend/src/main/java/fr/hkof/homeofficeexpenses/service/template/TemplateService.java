@@ -4,20 +4,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Attribute;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,8 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
 
-import fr.hkof.homeofficeexpenses.domain.TemplateFormat;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
+import fr.hkof.homeofficeexpenses.domain.TemplateFormat;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.repository.TemplateDocumentRepository;
 import fr.hkof.homeofficeexpenses.service.BusinessException;
@@ -34,17 +23,13 @@ import fr.hkof.homeofficeexpenses.service.FileTypeDetector;
 import fr.hkof.homeofficeexpenses.service.NotFoundException;
 import fr.hkof.homeofficeexpenses.service.PdfService;
 import fr.hkof.homeofficeexpenses.service.StorageService;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.ValidationReportDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.TemplateDto;
-import fr.hkof.homeofficeexpenses.web.dto.Dtos.TemplateVariableDto;
+import fr.hkof.homeofficeexpenses.web.dto.TemplateDtos.TemplateDto;
+import fr.hkof.homeofficeexpenses.web.dto.TemplateDtos.TemplateVariableDto;
+import fr.hkof.homeofficeexpenses.web.dto.TemplateDtos.ValidationReportDto;
 import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class TemplateService {
-
-    private static final Pattern VARIABLE = Pattern.compile("\\{\\{\\s*([#\\^/!]?)\\s*([^{}]+?)\\s*\\}\\}");
-    private static final List<String> FORBIDDEN_TAGS = List.of("script", "iframe", "object", "embed", "form", "base");
-    private static final Pattern REMOTE_CSS_URL = Pattern.compile("url\\(\\s*['\"]?\\s*(https?:|//|file:)", Pattern.CASE_INSENSITIVE);
 
     private final TemplateDocumentRepository repository;
     private final StorageService storage;
@@ -52,6 +37,7 @@ public class TemplateService {
     private final FileTypeDetector detector;
     private final ObjectMapper objectMapper;
     private final Clock clock;
+    private final TemplateValidator validator = new TemplateValidator();
 
     public TemplateService(TemplateDocumentRepository repository, StorageService storage, PdfService pdfService,
             FileTypeDetector detector, ObjectMapper objectMapper, Clock clock) {
@@ -98,63 +84,7 @@ public class TemplateService {
     }
 
     public ValidationReportDto validate(TemplateType type, String content) {
-        List<String> recognized = new ArrayList<>();
-        List<String> unknown = new ArrayList<>();
-        List<String> missing = new ArrayList<>();
-        List<String> errors = new ArrayList<>();
-        Set<String> allowed = TemplateCatalog.allowedNames(type);
-        Set<String> requires = TemplateCatalog.requiredNames(type);
-        Set<String> presentVariables = new TreeSet<>();
-
-        Matcher matcher = VARIABLE.matcher(content);
-        int lineDepth = 0;
-        while (matcher.find()) {
-            String prefix = matcher.group(1);
-            String name = matcher.group(2).trim();
-            if ("!".equals(prefix)) {
-                continue;
-            }
-            if ("/".equals(prefix)) {
-                if ("lignes".equals(name)) {
-                    lineDepth = Math.max(0, lineDepth - 1);
-                }
-                continue;
-            }
-            String canonical = name;
-            if (!allowed.contains(canonical) && lineDepth > 0
-                    && allowed.contains("lignes." + name)) {
-                canonical = "lignes." + name;
-            }
-            if (!allowed.contains(canonical)) {
-                if (!unknown.contains(name)) {
-                    unknown.add(name);
-                }
-                continue;
-            }
-            presentVariables.add(canonical);
-            if (!recognized.contains(canonical)) {
-                recognized.add(canonical);
-            }
-            if ("#".equals(prefix) && "lignes".equals(name)) {
-                lineDepth++;
-            }
-        }
-        for (String required : requires) {
-            if (!presentVariables.contains(required)) {
-                missing.add(required);
-            }
-        }
-
-        errors.addAll(checkSecurity(content));
-        try {
-            Mustache.compiler().compile(content);
-        } catch (RuntimeException ex) {
-            errors.add("Structure Mustache invalide : " + ex.getMessage());
-        }
-        if (!unknown.isEmpty()) {
-            errors.add("Variables inconnues : " + String.join(", ", unknown));
-        }
-        return new ValidationReportDto(recognized, unknown, missing, errors.isEmpty(), errors);
+        return validator.validate(type, content);
     }
 
     @Transactional
@@ -260,51 +190,5 @@ public class TemplateService {
         }
         return new TemplateDto(template.getId(), template.getType().name(), template.getName(), template.getVersion(), template.getFormat().name(),
                 template.isActive(), template.isBuiltIn(), template.getCreatedAt(), report);
-    }
-
-    private List<String> checkSecurity(String content) {
-        List<String> errors = new ArrayList<>();
-        String lowercaseContent = content.toLowerCase(Locale.ROOT);
-        if (lowercaseContent.contains("{{{") || lowercaseContent.contains("{{&")) {
-            errors.add("Les expressions non échappées ({{{...}}} ou {{&...}}) sont interdites.");
-        }
-        if (lowercaseContent.contains("#{") || lowercaseContent.contains("<%")) {
-            errors.add("Les expressions exécutables (Thymeleaf, JSP) sont interdites.");
-        }
-        if (lowercaseContent.contains("javascript:")) {
-            errors.add("Les liens JavaScript sont interdits.");
-        }
-        if (REMOTE_CSS_URL.matcher(content).find()) {
-            errors.add("Les ressources distantes sont interdites.");
-        }
-        Document document = Jsoup.parse(content);
-        for (String tag : FORBIDDEN_TAGS) {
-            if (!document.select(tag).isEmpty()) {
-                errors.add("La balise <" + tag + "> est interdite.");
-            }
-        }
-        for (Element element : document.getAllElements()) {
-            for (Attribute attribute : element.attributes()) {
-                String key = attribute.getKey().toLowerCase(Locale.ROOT);
-                String value = attribute.getValue().toLowerCase(Locale.ROOT).trim();
-                if (key.startsWith("on")) {
-                    errors.add("Les attributs d'événement (« " + key + " ») sont interdits.");
-                }
-                if (key.startsWith("th:") || key.startsWith("data-th-")) {
-                    errors.add("Les expressions exécutables (Thymeleaf, JSP) sont interdites.");
-                }
-                if (key.equals("href") && !value.startsWith("#")) {
-                    errors.add("Les liens externes sont interdits dans un template.");
-                }
-                if (key.equals("src") || key.equals("data")) {
-                    boolean embeddedImage = value.startsWith("data:image/")
-                            || (key.equals("src") && "{{signature}}".equals(value.trim()));
-                    if (!embeddedImage) {
-                        errors.add("Les images doivent être intégrées en data URI.");
-                    }
-                }
-            }
-        }
-        return errors.stream().distinct().toList();
     }
 }
