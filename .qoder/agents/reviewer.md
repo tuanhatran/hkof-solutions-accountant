@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Read-only blocker review of a HomeOfficeExpenses diff. Real bugs only, never style.
-model: GLM-5.3-Flash
+model: DeepSeek-Flash
 disallowedTools: [Write, Edit, NotebookEdit, Bash, Agent]
 permissionMode: dontAsk
 # Qoder has no subagent-only mode; read-only is enforced by disallowedTools and permissionMode.

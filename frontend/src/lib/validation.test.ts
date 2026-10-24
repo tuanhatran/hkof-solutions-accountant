@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   expenseSchema,
   llmSchema,
-  settingsSchema,
+  companySchema,
+  employeeSchema,
   expenseItemSchema,
   rentReceiptSchema,
   landlordSchema,
@@ -16,11 +17,11 @@ const VALID_EXPENSE = {
   proRataPct: "35,71",
 };
 
-const VALID_SETTINGS = {
-  companyName: "HKOF",
+const VALID_COMPANY = {
+  name: "HKOF",
   legalForm: "EURL",
   siren: "123 456 789",
-  companyAddress: "1 rue de la Paix, 75002 Paris",
+  address: "1 rue de la Paix, 75002 Paris",
   managerName: "Camille Martin",
   homeAddress: "12 rue des Lilas, 75011 Paris",
   totalArea: "70,00",
@@ -92,27 +93,36 @@ describe("rentReceiptSchema", () => {
   });
 });
 
-describe("settingsSchema", () => {
-  it("accepts a complete configuration", () => {
-    expect(settingsSchema.safeParse(VALID_SETTINGS).success).toBe(true);
+describe("companySchema", () => {
+  it("accepts a complete company", () => {
+    expect(companySchema.safeParse(VALID_COMPANY).success).toBe(true);
   });
 
-  it("no longer carries the landlord, tenant and rent fields", () => {
-    expect(Object.keys(settingsSchema.shape)).not.toEqual(
-      expect.arrayContaining([
-        "landlordName",
-        "landlordAddress",
-        "tenantName",
-        "tenantAddress",
-        "rentExclCharges",
-        "chargesAdvance",
-      ]),
-    );
+  it("accepts a name-only company with empty optional fields", () => {
+    expect(
+      companySchema.safeParse({
+        ...VALID_COMPANY,
+        legalForm: "",
+        siren: "",
+        address: "",
+        managerName: "",
+        homeAddress: "",
+        totalArea: "",
+        businessArea: "",
+        issuePlace: "",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("requires the company name", () => {
+    expect(
+      companySchema.safeParse({ ...VALID_COMPANY, name: "  " }).success,
+    ).toBe(false);
   });
 
   it("rejects a professional area larger than the total area", () => {
-    const result = settingsSchema.safeParse({
-      ...VALID_SETTINGS,
+    const result = companySchema.safeParse({
+      ...VALID_COMPANY,
       businessArea: "80",
     });
     expect(result.success).toBe(false);
@@ -125,7 +135,41 @@ describe("settingsSchema", () => {
 
   it("rejects a malformed SIREN", () => {
     expect(
-      settingsSchema.safeParse({ ...VALID_SETTINGS, siren: "12345" }).success,
+      companySchema.safeParse({ ...VALID_COMPANY, siren: "12345" }).success,
+    ).toBe(false);
+  });
+});
+
+describe("employeeSchema", () => {
+  const VALID = {
+    firstName: "Camille",
+    lastName: "Martin",
+    email: "camille@example.fr",
+    title: "CEO" as const,
+  };
+
+  it("accepts a complete employee and an empty email", () => {
+    expect(employeeSchema.safeParse(VALID).success).toBe(true);
+    expect(employeeSchema.safeParse({ ...VALID, email: "" }).success).toBe(
+      true,
+    );
+  });
+
+  it("requires the first and last names", () => {
+    expect(employeeSchema.safeParse({ ...VALID, firstName: "" }).success).toBe(
+      false,
+    );
+    expect(employeeSchema.safeParse({ ...VALID, lastName: "  " }).success).toBe(
+      false,
+    );
+  });
+
+  it("rejects an invalid email and an unknown title", () => {
+    expect(
+      employeeSchema.safeParse({ ...VALID, email: "camille" }).success,
+    ).toBe(false);
+    expect(
+      employeeSchema.safeParse({ ...VALID, title: "DIRECTOR" }).success,
     ).toBe(false);
   });
 });
@@ -177,6 +221,7 @@ describe("directory schemas", () => {
 
   it("requires a pair, a property address and valid lease amounts", () => {
     const valid = {
+      companyId: "",
       landlordId: "1",
       tenantId: "2",
       propertyAddress: "12 rue de la République, 75000 Paris",

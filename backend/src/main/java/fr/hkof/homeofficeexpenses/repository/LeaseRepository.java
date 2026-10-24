@@ -24,4 +24,6 @@ public interface LeaseRepository extends JpaRepository<Lease, Long> {
     boolean existsByLandlordIdAndDeletedFalse(Long landlordId);
 
     boolean existsByTenantIdAndDeletedFalse(Long tenantId);
+
+    boolean existsByCompanyIdAndDeletedFalse(Long companyId);
 }

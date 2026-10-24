@@ -35,13 +35,15 @@ public class RentConfigurationService {
     private final LandlordRepository landlords;
     private final TenantRepository tenants;
     private final LeaseRepository leases;
+    private final CompanyService companies;
     private final Clock clock;
 
     public RentConfigurationService(LandlordRepository landlords, TenantRepository tenants, LeaseRepository leases,
-            Clock clock) {
+            CompanyService companies, Clock clock) {
         this.landlords = landlords;
         this.tenants = tenants;
         this.leases = leases;
+        this.companies = companies;
         this.clock = clock;
     }
 
@@ -182,6 +184,7 @@ public class RentConfigurationService {
         }
         lease.setLandlord(landlord);
         lease.setTenant(tenant);
+        lease.setCompanyId(request.companyId() == null ? null : companies.entity(request.companyId()).getId());
         lease.setPropertyAddress(requiredText(request.propertyAddress(), "L'adresse du bien est obligatoire."));
         lease.setRentExclCharges(Amounts.decimal(request.rentExclCharges(), "loyer hors charges", false));
         lease.setCharges(request.charges() == null || request.charges().isBlank()
@@ -225,8 +228,13 @@ public class RentConfigurationService {
     }
 
     private LeaseDto toDto(Lease lease) {
+        String companyName = lease.getCompanyId() == null
+                ? null
+                : companies.find(lease.getCompanyId()).map(company -> company.getName()).orElse(null);
         return new LeaseDto(
                 lease.getId(),
+                lease.getCompanyId(),
+                companyName,
                 lease.getLandlord().getId(),
                 lease.getTenant().getId(),
                 lease.getLandlord().getName(),

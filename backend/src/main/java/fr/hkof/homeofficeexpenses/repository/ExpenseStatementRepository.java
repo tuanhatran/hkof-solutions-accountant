@@ -8,23 +8,26 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
 import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
+import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
 
 public interface ExpenseStatementRepository extends JpaRepository<ExpenseStatement, Long> {
 
     @EntityGraph(attributePaths = {"lines", "lines.expenseItem", "lines.receipt"})
-    List<ExpenseStatement> findByMonthOrderByVersionDesc(String month);
+    List<ExpenseStatement> findByCompanyIdAndMonthOrderByVersionDesc(Long companyId, String month);
 
     @EntityGraph(attributePaths = {"lines", "lines.expenseItem", "lines.receipt"})
-    List<ExpenseStatement> findAllByOrderByMonthDescVersionDesc();
+    List<ExpenseStatement> findByCompanyIdOrderByMonthDescVersionDesc(Long companyId);
 
     @EntityGraph(attributePaths = {"lines", "lines.expenseItem", "lines.receipt"})
     @Query("select n from ExpenseStatement n where n.id = :id")
     Optional<ExpenseStatement> findWithLinesById(@Param("id") Long id);
 
-    Optional<ExpenseStatement> findFirstByMonthOrderByVersionDesc(String month);
+    Optional<ExpenseStatement> findFirstByCompanyIdAndMonthOrderByVersionDesc(Long companyId, String month);
 
     @EntityGraph(attributePaths = {"lines", "lines.expenseItem", "lines.receipt"})
-    Optional<ExpenseStatement> findFirstByMonthAndStatusOrderByVersionDesc(String month, DocumentStatus status);
+    Optional<ExpenseStatement> findFirstByCompanyIdAndMonthAndStatusOrderByVersionDesc(Long companyId, String month,
+            DocumentStatus status);
+
+    boolean existsByCompanyId(Long companyId);
 }

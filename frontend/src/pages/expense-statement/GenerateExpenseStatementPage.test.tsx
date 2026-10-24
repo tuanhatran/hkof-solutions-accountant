@@ -7,13 +7,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { downloadBlob } from "@/api/client";
 import { api } from "@/api/endpoints";
 import type { SignatureDto } from "@/api/types";
+import { useCompanyStore } from "@/state/company";
 import { useStatementDraft } from "@/state/statementDraft";
 import { GenerateExpenseStatementPage } from "@/pages/expense-statement/GenerateExpenseStatementPage";
 
 let signatureList: SignatureDto[] = [];
 let signatureError: Error | null = null;
 let signaturePending = false;
-let settingsError: Error | null = null;
+let companiesError: Error | null = null;
 let expenseItemsError: Error | null = null;
 let templatesData: Array<{ id: number; name: string; version: number }> = [];
 let rentReceiptData: {
@@ -85,13 +86,25 @@ vi.mock("@/api/queries", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/queries")>();
   return {
     ...actual,
-    useSettings: () => ({
-      data: {
-        proRataBase: "100.00",
-        proRataBaseDetail: "Surface professionnelle / surface totale",
-      },
-      isError: settingsError !== null,
-      error: settingsError,
+    useCompanies: () => ({
+      data: [{ id: 1, name: "HKOF", proRataBase: "100.00" }],
+      isError: companiesError !== null,
+      error: companiesError,
+      isPending: false,
+      refetch: vi.fn(),
+    }),
+    useEmployees: () => ({
+      data: [
+        {
+          id: 9,
+          companyId: 1,
+          firstName: "Camille",
+          lastName: "Martin",
+          title: "CEO",
+        },
+      ],
+      isError: false,
+      error: null,
       isPending: false,
       refetch: vi.fn(),
     }),
@@ -150,10 +163,11 @@ const LANDLORD: SignatureDto = {
 
 const CEO: SignatureDto = {
   id: 4,
-  type: "ENTREPRISE_CEO",
+  type: "EMPLOYEE",
   name: "Gérant",
   mimeType: "image/jpeg",
   createdAt: "2026-10-23T10:00:00Z",
+  employeeId: 9,
 };
 
 function renderPage() {
@@ -173,8 +187,9 @@ describe("GenerateExpenseStatementPage signatures", () => {
     signatureList = [LANDLORD, CEO];
     signatureError = null;
     signaturePending = false;
-    settingsError = null;
+    companiesError = null;
     expenseItemsError = null;
+    useCompanyStore.setState({ activeCompanyId: 1 });
     templatesData = [];
     rentReceiptData = null;
     activeStatementData = null;
@@ -232,7 +247,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     });
   });
 
-  it("defaults to the ENTREPRISE_CEO signature and sends signatureId to the preview and the generation", async () => {
+  it("defaults to the CEO employee signature and sends signatureId to the preview and the generation", async () => {
     renderPage();
 
     const select = await screen.findByLabelText("Signature");
@@ -418,6 +433,47 @@ describe("GenerateExpenseStatementPage signatures", () => {
     ).toBeDisabled();
   });
 
+  it("shows the receipt, supplier, AI badge and claimed amount of a line", async () => {
+    vi.mocked(api.expenseStatements.calculate).mockResolvedValue({
+      total: "80.00",
+      lines: [{ itemCode: "gaz", itemLabel: "Gaz", claimedAmount: "80.00" }],
+    });
+    useStatementDraft.setState({
+      month: MONTH,
+      linesByMonth: {
+        [MONTH]: [
+          {
+            key: "line-gaz",
+            itemCode: "gaz",
+            amountInclVat: "80.00",
+            proRataPct: "100",
+            receiptId: 5,
+            receiptName: "facture-edf.pdf",
+            amountSource: "AI",
+            aiDetectedAmount: "80.00",
+            aiConfidence: "haute",
+            detectedSupplier: "EDF",
+          },
+        ],
+      },
+      templatesByMonth: {},
+      completeByMonth: {},
+      primedReceiptByMonth: {},
+      dirtyByMonth: { [MONTH]: true },
+    });
+    renderPage();
+
+    expect(await screen.findByText("facture-edf.pdf")).toBeVisible();
+    expect(screen.getByText("EDF")).toBeVisible();
+    expect(screen.getByText("AI")).toBeVisible();
+    expect(
+      screen.getByLabelText("Voir le justificatif de Gaz"),
+    ).toHaveAttribute("href", "/api/receipts/5/file");
+    await waitFor(() =>
+      expect(screen.getAllByText(/80,00/).length).toBeGreaterThanOrEqual(2),
+    );
+  });
+
   it("removes a draft line after confirmation", async () => {
     renderPage();
     const user = userEvent.setup();
@@ -496,8 +552,8 @@ describe("GenerateExpenseStatementPage signatures", () => {
     ).toBeVisible();
   });
 
-  it("shows the settings and expense item loading errors with retries", async () => {
-    settingsError = new Error("Configuration indisponible");
+  it("shows the company and expense item loading errors with retries", async () => {
+    companiesError = new Error("Configuration indisponible");
     expenseItemsError = new Error("Postes indisponibles");
     renderPage();
 

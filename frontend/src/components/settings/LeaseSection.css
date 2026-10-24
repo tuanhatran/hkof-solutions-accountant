@@ -29,6 +29,10 @@
     @apply mt-0.5 text-xs text-ink-soft;
   }
 
+  .lease-section-item-company {
+    @apply mt-0.5 text-xs text-ink-soft;
+  }
+
   .lease-section-item-amounts {
     @apply mt-1 text-xs text-ink-soft;
   }

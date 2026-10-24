@@ -44,6 +44,7 @@ function renderForm(
   render(
     <ExpenseItemForm
       item={null}
+      companyId={1}
       defaultProRata="35.71"
       defaultOrder={4}
       onClose={onClose}
@@ -129,8 +130,8 @@ describe("ExpenseItemForm", () => {
       label: "Gaz",
     });
     const { onClose, queryClient } = renderForm();
-    queryClient.setQueryData(queryKeys.expenseItems(true), []);
-    queryClient.setQueryData(queryKeys.expenseItems(false), []);
+    queryClient.setQueryData(queryKeys.expenseItems(1, true), []);
+    queryClient.setQueryData(queryKeys.expenseItems(1, false), []);
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText("Code"), "gaz-2");
@@ -145,6 +146,7 @@ describe("ExpenseItemForm", () => {
 
     await waitFor(() =>
       expect(api.expenseItems.create).toHaveBeenCalledWith({
+        companyId: 1,
         code: "gaz-2",
         label: "Gaz",
         supplier: "EDF",
@@ -160,7 +162,7 @@ describe("ExpenseItemForm", () => {
       "Poste « Gaz » ajouté à la liste des frais.",
     );
     expect(
-      queryClient.getQueryState(queryKeys.expenseItems(true))?.isInvalidated,
+      queryClient.getQueryState(queryKeys.expenseItems(1, true))?.isInvalidated,
     ).toBe(true);
   });
 
@@ -212,6 +214,7 @@ describe("ExpenseItemForm", () => {
 
     await waitFor(() =>
       expect(api.expenseItems.update).toHaveBeenCalledWith(9, {
+        companyId: 1,
         label: "Gaz",
         supplier: "EDF",
         proRataPct: "12.5",

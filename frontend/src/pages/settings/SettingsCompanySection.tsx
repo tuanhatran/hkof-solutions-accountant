@@ -3,34 +3,34 @@ import { Building2 } from "lucide-react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
-import type { SettingsFormValues } from "@/lib/validation";
+import type { CompanyFormValues } from "@/lib/validation";
 import { SettingsCardSection } from "./SettingsCardSection";
 
-/** Company identity used in the expense statement header. */
+/** Company identity used in the document headers. */
 export function SettingsCompanySection({
   register,
   errors,
 }: {
-  register: UseFormRegister<SettingsFormValues>;
-  errors: FieldErrors<SettingsFormValues>;
+  register: UseFormRegister<CompanyFormValues>;
+  errors: FieldErrors<CompanyFormValues>;
 }) {
   return (
     <SettingsCardSection
       icon={Building2}
-      title="Société"
-      description="Identité de l’EURL utilisée en en-tête de la note de frais."
+      title="Identité de la société"
+      description="Nom, forme juridique et siège utilisés en en-tête des documents."
       bodyClassName="card-body settings-company-section-body"
     >
       <FieldGroup
         id="param-raison-sociale"
         label="Raison sociale"
-        error={errors.companyName?.message}
+        error={errors.name?.message}
         className="sm:col-span-1"
       >
         <input
           id="param-raison-sociale"
-          className={cn("field", errors.companyName && "field-error")}
-          {...register("companyName")}
+          className={cn("field", errors.name && "field-error")}
+          {...register("name")}
           data-cy="input-raison-sociale"
         />
       </FieldGroup>
@@ -78,7 +78,7 @@ export function SettingsCompanySection({
       <FieldGroup
         id="param-societe-adresse"
         label="Adresse de la société"
-        error={errors.companyAddress?.message}
+        error={errors.address?.message}
         className="sm:col-span-2"
       >
         <textarea
@@ -86,9 +86,9 @@ export function SettingsCompanySection({
           rows={2}
           className={cn(
             "field settings-company-section-textarea",
-            errors.companyAddress && "field-error",
+            errors.address && "field-error",
           )}
-          {...register("companyAddress")}
+          {...register("address")}
           data-cy="input-societe-adresse"
         />
       </FieldGroup>

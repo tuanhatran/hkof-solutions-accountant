@@ -25,6 +25,18 @@
     @apply space-y-4;
   }
 
+  .signatures-manager-filters {
+    @apply flex flex-col gap-1.5;
+  }
+
+  .signatures-manager-filter-label {
+    @apply text-xs font-semibold text-ink-soft;
+  }
+
+  .signatures-manager-filter-select {
+    @apply max-w-sm;
+  }
+
   .signatures-manager-empty {
     @apply rounded-xl border border-dashed border-line-strong p-6 text-center text-sm text-ink-soft;
   }

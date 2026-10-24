@@ -20,11 +20,11 @@ export function GenerateExpenseStatementPage() {
     <>
       <ExpenseStatementHeader controller={c} />
 
-      {c.settings.isError ? (
+      {c.companies.isError ? (
         <div className="mb-4">
           <ErrorState
-            message={errorMessage(c.settings.error)}
-            onRetry={() => void c.settings.refetch()}
+            message={errorMessage(c.companies.error)}
+            onRetry={() => void c.companies.refetch()}
           />
         </div>
       ) : null}

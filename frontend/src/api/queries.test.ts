@@ -7,6 +7,8 @@ import {
   queryKeys,
   useActiveRentReceipt,
   useActiveStatement,
+  useCompanies,
+  useEmployees,
   useExpenseItems,
   useLandlords,
   useLeases,
@@ -14,7 +16,6 @@ import {
   useLlmModels,
   useLlmStatus,
   useRentReceipts,
-  useSettings,
   useSignatures,
   useStatements,
   useTemplates,
@@ -24,7 +25,8 @@ import {
 
 vi.mock("./endpoints", () => ({
   api: {
-    settings: { get: vi.fn() },
+    companies: { list: vi.fn() },
+    employees: { list: vi.fn() },
     landlords: { list: vi.fn() },
     tenants: { list: vi.fn() },
     leases: { list: vi.fn() },
@@ -45,41 +47,54 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 describe("query hooks", () => {
-  it("loads the settings and the rent directories", async () => {
-    vi.mocked(api.settings.get).mockResolvedValue({ companyName: "HKOF" });
+  it("loads the companies, employees and rent directories", async () => {
+    vi.mocked(api.companies.list).mockResolvedValue([{ id: 1, name: "HKOF" }]);
+    vi.mocked(api.employees.list).mockResolvedValue([]);
     vi.mocked(api.landlords.list).mockResolvedValue([]);
     vi.mocked(api.tenants.list).mockResolvedValue([]);
     vi.mocked(api.leases.list).mockResolvedValue([]);
 
-    const settings = renderHook(() => useSettings(), { wrapper });
+    const companies = renderHook(() => useCompanies(), { wrapper });
+    const employees = renderHook(() => useEmployees(1), { wrapper });
     const landlords = renderHook(() => useLandlords(), { wrapper });
     const tenants = renderHook(() => useTenants(), { wrapper });
     const leases = renderHook(() => useLeases(), { wrapper });
 
     await waitFor(() =>
-      expect(settings.result.current.data).toEqual({
-        companyName: "HKOF",
-      }),
+      expect(companies.result.current.data).toEqual([{ id: 1, name: "HKOF" }]),
     );
     await waitFor(() =>
       expect([
+        employees.result.current.isSuccess,
         landlords.result.current.isSuccess,
         tenants.result.current.isSuccess,
         leases.result.current.isSuccess,
-      ]).toEqual([true, true, true]),
+      ]).toEqual([true, true, true, true]),
     );
+    expect(api.employees.list).toHaveBeenCalledWith(1);
   });
 
-  it("loads expense items for both list scopes", async () => {
+  it("keeps the employees disabled without a company", async () => {
+    const employees = renderHook(() => useEmployees(null), { wrapper });
+
+    await waitFor(() =>
+      expect(employees.result.current.fetchStatus).toBe("idle"),
+    );
+    expect(api.employees.list).not.toHaveBeenCalled();
+  });
+
+  it("loads expense items for both list scopes of a company", async () => {
     vi.mocked(api.expenseItems.list).mockResolvedValue([]);
 
-    const active = renderHook(() => useExpenseItems(), { wrapper });
-    const all = renderHook(() => useExpenseItems(true), { wrapper });
+    const active = renderHook(() => useExpenseItems(3), { wrapper });
+    const all = renderHook(() => useExpenseItems(3, true), { wrapper });
+    const scoped = renderHook(() => useExpenseItems(null), { wrapper });
 
     await waitFor(() => expect(active.result.current.isSuccess).toBe(true));
     await waitFor(() => expect(all.result.current.isSuccess).toBe(true));
-    expect(api.expenseItems.list).toHaveBeenCalledWith(false);
-    expect(api.expenseItems.list).toHaveBeenCalledWith(true);
+    expect(api.expenseItems.list).toHaveBeenCalledWith(3, false);
+    expect(api.expenseItems.list).toHaveBeenCalledWith(3, true);
+    expect(scoped.result.current.fetchStatus).toBe("idle");
   });
 
   it("loads templates and their variables for a type", async () => {
@@ -112,6 +127,9 @@ describe("query hooks", () => {
     vi.mocked(api.llm.models).mockResolvedValue([]);
 
     const signatures = renderHook(() => useSignatures(), { wrapper });
+    const employeeSignatures = renderHook(() => useSignatures(3, 6), {
+      wrapper,
+    });
     const config = renderHook(() => useLlmConfig(), { wrapper });
     const status = renderHook(() => useLlmStatus(), { wrapper });
     const models = renderHook(() => useLlmModels("http://ollama"), { wrapper });
@@ -119,11 +137,14 @@ describe("query hooks", () => {
     await waitFor(() =>
       expect([
         signatures.result.current.isSuccess,
+        employeeSignatures.result.current.isSuccess,
         config.result.current.isSuccess,
         status.result.current.isSuccess,
         models.result.current.isSuccess,
-      ]).toEqual([true, true, true, true]),
+      ]).toEqual([true, true, true, true, true]),
     );
+    expect(api.signatures.list).toHaveBeenCalledWith(null, null);
+    expect(api.signatures.list).toHaveBeenCalledWith(3, 6);
     expect(api.llm.models).toHaveBeenCalledTimes(1);
   });
 
@@ -140,10 +161,10 @@ describe("query hooks", () => {
     vi.mocked(api.rentReceipts.active).mockResolvedValue(null);
     vi.mocked(api.expenseStatements.active).mockResolvedValue(null);
 
-    const receipt = renderHook(() => useActiveRentReceipt("2026-10"), {
+    const receipt = renderHook(() => useActiveRentReceipt("2026-10", 3), {
       wrapper,
     });
-    const statement = renderHook(() => useActiveStatement("2026-10"), {
+    const statement = renderHook(() => useActiveStatement(3, "2026-10"), {
       wrapper,
     });
 
@@ -153,15 +174,24 @@ describe("query hooks", () => {
         statement.result.current.isSuccess,
       ]).toEqual([true, true]),
     );
-    expect(api.rentReceipts.active).toHaveBeenCalledWith("2026-10", null, null);
-    expect(api.expenseStatements.active).toHaveBeenCalledWith("2026-10");
+    expect(api.rentReceipts.active).toHaveBeenCalledWith(
+      "2026-10",
+      3,
+      null,
+      null,
+    );
+    expect(api.expenseStatements.active).toHaveBeenCalledWith(3, "2026-10");
   });
 
-  it("skips the active documents for an invalid month", async () => {
-    const receipt = renderHook(() => useActiveRentReceipt("invalide", 3, 4), {
+  it("skips the active documents for an invalid month or no company", async () => {
+    const receipt = renderHook(
+      () => useActiveRentReceipt("invalide", 3, 4, 5),
+      { wrapper },
+    );
+    const statement = renderHook(() => useActiveStatement(3, "10-2026"), {
       wrapper,
     });
-    const statement = renderHook(() => useActiveStatement("10-2026"), {
+    const companyless = renderHook(() => useActiveStatement(null, "2026-10"), {
       wrapper,
     });
 
@@ -169,18 +199,25 @@ describe("query hooks", () => {
       expect(receipt.result.current.fetchStatus).toBe("idle"),
     );
     expect(statement.result.current.fetchStatus).toBe("idle");
+    expect(companyless.result.current.fetchStatus).toBe("idle");
     expect(api.rentReceipts.active).not.toHaveBeenCalled();
     expect(api.expenseStatements.active).not.toHaveBeenCalled();
   });
 
-  it("loads the document history with and without a month", async () => {
+  it("loads the document history of a company and skips it without one", async () => {
     vi.mocked(api.rentReceipts.list).mockResolvedValue([]);
     vi.mocked(api.expenseStatements.list).mockResolvedValue([]);
 
-    const receipts = renderHook(() => useRentReceipts("2026-10"), { wrapper });
-    const allReceipts = renderHook(() => useRentReceipts(), { wrapper });
-    const statements = renderHook(() => useStatements("2026-10"), { wrapper });
-    const allStatements = renderHook(() => useStatements(), { wrapper });
+    const receipts = renderHook(() => useRentReceipts(3, "2026-10"), {
+      wrapper,
+    });
+    const allReceipts = renderHook(() => useRentReceipts(3), { wrapper });
+    const noReceipts = renderHook(() => useRentReceipts(null), { wrapper });
+    const statements = renderHook(() => useStatements(3, "2026-10"), {
+      wrapper,
+    });
+    const allStatements = renderHook(() => useStatements(3), { wrapper });
+    const companyless = renderHook(() => useStatements(null), { wrapper });
 
     await waitFor(() =>
       expect([
@@ -190,29 +227,69 @@ describe("query hooks", () => {
         allStatements.result.current.isSuccess,
       ]).toEqual([true, true, true, true]),
     );
-    expect(api.rentReceipts.list).toHaveBeenCalledWith("2026-10");
-    expect(api.rentReceipts.list).toHaveBeenCalledWith(undefined);
-    expect(api.expenseStatements.list).toHaveBeenCalledWith("2026-10");
-    expect(api.expenseStatements.list).toHaveBeenCalledWith(undefined);
+    expect(api.rentReceipts.list).toHaveBeenCalledWith(3, "2026-10");
+    expect(api.rentReceipts.list).toHaveBeenCalledWith(3, undefined);
+    expect(api.rentReceipts.list).toHaveBeenCalledTimes(2);
+    expect(api.expenseStatements.list).toHaveBeenCalledWith(3, "2026-10");
+    expect(api.expenseStatements.list).toHaveBeenCalledWith(3, undefined);
+    expect(noReceipts.result.current.fetchStatus).toBe("idle");
+    expect(companyless.result.current.fetchStatus).toBe("idle");
+  });
+});
+
+describe("company query invalidation", () => {
+  it("invalidates every company key, including a single company", () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(queryKeys.companies, []);
+    queryClient.setQueryData(queryKeys.company(1), { id: 1 });
+    queryClient.setQueryData(queryKeys.landlords, []);
+
+    void queryClient.invalidateQueries({ queryKey: queryKeys.companiesAll });
+
+    expect(queryClient.getQueryState(queryKeys.companies)?.isInvalidated).toBe(
+      true,
+    );
+    expect(queryClient.getQueryState(queryKeys.company(1))?.isInvalidated).toBe(
+      true,
+    );
+    expect(queryClient.getQueryState(queryKeys.landlords)?.isInvalidated).toBe(
+      false,
+    );
+  });
+
+  it("invalidates every signature scope", () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(queryKeys.signatures(), []);
+    queryClient.setQueryData(queryKeys.signatures(3, 6), []);
+
+    void queryClient.invalidateQueries({ queryKey: queryKeys.signaturesAll });
+
+    expect(
+      queryClient.getQueryState(queryKeys.signatures())?.isInvalidated,
+    ).toBe(true);
+    expect(
+      queryClient.getQueryState(queryKeys.signatures(3, 6))?.isInvalidated,
+    ).toBe(true);
   });
 });
 
 describe("expense item query invalidation", () => {
-  it("invalidates every expense item list, whatever the all flag", () => {
+  it("invalidates every expense item list, whatever the company and all flag", () => {
     const queryClient = new QueryClient();
-    queryClient.setQueryData(queryKeys.expenseItems(true), []);
-    queryClient.setQueryData(queryKeys.expenseItems(false), []);
-    queryClient.setQueryData(queryKeys.settings, {});
+    queryClient.setQueryData(queryKeys.expenseItems(1, true), []);
+    queryClient.setQueryData(queryKeys.expenseItems(2, false), []);
+    queryClient.setQueryData(queryKeys.companies, []);
 
     void queryClient.invalidateQueries({ queryKey: queryKeys.expenseItemsAll });
 
     expect(
-      queryClient.getQueryState(queryKeys.expenseItems(true))?.isInvalidated,
+      queryClient.getQueryState(queryKeys.expenseItems(1, true))?.isInvalidated,
     ).toBe(true);
     expect(
-      queryClient.getQueryState(queryKeys.expenseItems(false))?.isInvalidated,
+      queryClient.getQueryState(queryKeys.expenseItems(2, false))
+        ?.isInvalidated,
     ).toBe(true);
-    expect(queryClient.getQueryState(queryKeys.settings)?.isInvalidated).toBe(
+    expect(queryClient.getQueryState(queryKeys.companies)?.isInvalidated).toBe(
       false,
     );
   });
@@ -224,7 +301,7 @@ describe("rent configuration query invalidation", () => {
     queryClient.setQueryData(queryKeys.landlords, []);
     queryClient.setQueryData(queryKeys.tenants, []);
     queryClient.setQueryData(queryKeys.leases, []);
-    queryClient.setQueryData(queryKeys.settings, {});
+    queryClient.setQueryData(queryKeys.companies, []);
 
     void queryClient.invalidateQueries({ queryKey: queryKeys.leases });
 
@@ -237,7 +314,7 @@ describe("rent configuration query invalidation", () => {
     expect(queryClient.getQueryState(queryKeys.tenants)?.isInvalidated).toBe(
       false,
     );
-    expect(queryClient.getQueryState(queryKeys.settings)?.isInvalidated).toBe(
+    expect(queryClient.getQueryState(queryKeys.companies)?.isInvalidated).toBe(
       false,
     );
   });
@@ -248,20 +325,20 @@ describe("generated document query invalidation", () => {
 
   it("invalidates the active statement through the statements prefix", () => {
     const queryClient = new QueryClient();
-    queryClient.setQueryData(queryKeys.statementActive(month), null);
+    queryClient.setQueryData(queryKeys.statementActive(3, month), null);
     queryClient.setQueryData(queryKeys.rentReceiptActive(month), null);
-    queryClient.setQueryData(queryKeys.settings, {});
+    queryClient.setQueryData(queryKeys.companies, []);
 
     void queryClient.invalidateQueries({ queryKey: queryKeys.statementsAll });
     expect(
-      queryClient.getQueryState(queryKeys.statementActive(month))
+      queryClient.getQueryState(queryKeys.statementActive(3, month))
         ?.isInvalidated,
     ).toBe(true);
     expect(
       queryClient.getQueryState(queryKeys.rentReceiptActive(month))
         ?.isInvalidated,
     ).toBe(false);
-    expect(queryClient.getQueryState(queryKeys.settings)?.isInvalidated).toBe(
+    expect(queryClient.getQueryState(queryKeys.companies)?.isInvalidated).toBe(
       false,
     );
   });
@@ -269,8 +346,8 @@ describe("generated document query invalidation", () => {
   it("invalidates the active rent receipt through the rent receipts prefix", () => {
     const queryClient = new QueryClient();
     queryClient.setQueryData(queryKeys.rentReceiptActive(month), null);
-    queryClient.setQueryData(queryKeys.statementActive(month), null);
-    queryClient.setQueryData(queryKeys.rentReceipts(month), []);
+    queryClient.setQueryData(queryKeys.statementActive(3, month), null);
+    queryClient.setQueryData(queryKeys.rentReceipts(3, month), []);
 
     void queryClient.invalidateQueries({ queryKey: queryKeys.rentReceiptsAll });
 
@@ -279,31 +356,32 @@ describe("generated document query invalidation", () => {
         ?.isInvalidated,
     ).toBe(true);
     expect(
-      queryClient.getQueryState(queryKeys.rentReceipts(month))?.isInvalidated,
+      queryClient.getQueryState(queryKeys.rentReceipts(3, month))
+        ?.isInvalidated,
     ).toBe(true);
     expect(
-      queryClient.getQueryState(queryKeys.statementActive(month))
+      queryClient.getQueryState(queryKeys.statementActive(3, month))
         ?.isInvalidated,
     ).toBe(false);
   });
 
   it("keeps the active rent receipt pair-scoped and invalidates every pair", () => {
     const queryClient = new QueryClient();
-    queryClient.setQueryData(queryKeys.rentReceiptActive(month, 1, 2), null);
-    queryClient.setQueryData(queryKeys.rentReceiptActive(month, 3, 4), null);
+    queryClient.setQueryData(queryKeys.rentReceiptActive(month, 3, 1, 2), null);
+    queryClient.setQueryData(queryKeys.rentReceiptActive(month, 3, 5, 6), null);
 
-    expect(queryKeys.rentReceiptActive(month, 1, 2)).not.toEqual(
-      queryKeys.rentReceiptActive(month, 3, 4),
+    expect(queryKeys.rentReceiptActive(month, 3, 1, 2)).not.toEqual(
+      queryKeys.rentReceiptActive(month, 3, 5, 6),
     );
 
     void queryClient.invalidateQueries({ queryKey: queryKeys.rentReceiptsAll });
 
     expect(
-      queryClient.getQueryState(queryKeys.rentReceiptActive(month, 1, 2))
+      queryClient.getQueryState(queryKeys.rentReceiptActive(month, 3, 1, 2))
         ?.isInvalidated,
     ).toBe(true);
     expect(
-      queryClient.getQueryState(queryKeys.rentReceiptActive(month, 3, 4))
+      queryClient.getQueryState(queryKeys.rentReceiptActive(month, 3, 5, 6))
         ?.isInvalidated,
     ).toBe(true);
   });

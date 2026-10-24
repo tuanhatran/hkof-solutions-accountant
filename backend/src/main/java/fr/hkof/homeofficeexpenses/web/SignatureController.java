@@ -29,16 +29,17 @@ public class SignatureController {
     }
 
     @GetMapping
-    public List<SignatureDto> listSignatures() {
-        return service.list();
+    public List<SignatureDto> listSignatures(@RequestParam(required = false) Long companyId,
+            @RequestParam(required = false) Long employeeId) {
+        return service.list(companyId, employeeId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public SignatureDto createSignature(@RequestParam SignatureType type,
-            @RequestParam(required = false) Long landlordId, @RequestParam String name,
-            @RequestParam("file") MultipartFile file) {
-        return service.create(type, landlordId, name, file);
+            @RequestParam(required = false) Long landlordId, @RequestParam(required = false) Long employeeId,
+            @RequestParam String name, @RequestParam("file") MultipartFile file) {
+        return service.create(type, landlordId, employeeId, name, file);
     }
 
     @DeleteMapping("/{id}")

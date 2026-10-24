@@ -8,6 +8,7 @@ import { api } from "@/api/endpoints";
 import {
   queryKeys,
   useActiveRentReceipt,
+  useCompanies,
   useLandlords,
   useLeases,
   useSignatures,
@@ -23,6 +24,7 @@ import {
   rentReceiptSchema,
   type RentReceiptFormValues,
 } from "@/lib/validation";
+import { resolveActiveCompanyId, useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft } from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
@@ -79,8 +81,31 @@ export function useRentReceiptPage() {
     ? Number(values.landlordId)
     : null;
   const selectedTenantId = values.tenantId ? Number(values.tenantId) : null;
+  const leaseRows = leases.data ?? [];
+  const selectedLease =
+    leaseRows.find(
+      (lease) =>
+        lease.landlordId !== undefined &&
+        lease.tenantId !== undefined &&
+        String(lease.landlordId) === values.landlordId &&
+        String(lease.tenantId) === values.tenantId,
+    ) ?? null;
+
+  // A company-linked lease wins over the active company selected in the UI.
+  const companies = useCompanies();
+  const storedCompanyId = useCompanyStore((state) => state.activeCompanyId);
+  const activeCompanyId = resolveActiveCompanyId(
+    storedCompanyId,
+    companies.data,
+  );
+  const activeCompany =
+    (companies.data ?? []).find((company) => company.id === activeCompanyId) ??
+    null;
+  const receiptCompanyId = selectedLease?.companyId ?? activeCompanyId;
+  const companyName = selectedLease?.companyName ?? activeCompany?.name ?? null;
   const activeRentReceipt = useActiveRentReceipt(
     draft.month,
+    receiptCompanyId,
     selectedLandlordId,
     selectedTenantId,
   );
@@ -123,15 +148,6 @@ export function useRentReceiptPage() {
   const selectedModel = draft.templateId ?? activeModel?.id ?? null;
   const landlordRows = landlords.data ?? [];
   const tenantRows = tenants.data ?? [];
-  const leaseRows = leases.data ?? [];
-  const selectedLease =
-    leaseRows.find(
-      (lease) =>
-        lease.landlordId !== undefined &&
-        lease.tenantId !== undefined &&
-        String(lease.landlordId) === values.landlordId &&
-        String(lease.tenantId) === values.tenantId,
-    ) ?? null;
   // Without a full pair the hook falls back to the month-scoped query, whose
   // receipt belongs to no identifiable pair: never surface it on this page.
   const pairSelected = selectedLandlordId !== null && selectedTenantId !== null;
@@ -140,7 +156,12 @@ export function useRentReceiptPage() {
     : null;
   const request =
     validation.success && selectedLease
-      ? requestFromValues(validation.data, selectedModel, selectedSignatureId)
+      ? requestFromValues(
+          validation.data,
+          selectedModel,
+          selectedSignatureId,
+          receiptCompanyId,
+        )
       : null;
   const signature = JSON.stringify(request ?? values);
 
@@ -206,6 +227,7 @@ export function useRentReceiptPage() {
       submittedValues,
       selectedModel,
       selectedSignatureId,
+      receiptCompanyId,
     );
     setGenerationInProgress(true);
     try {
@@ -320,6 +342,8 @@ export function useRentReceiptPage() {
     values,
     selectedLease,
     leaseRows,
+    companies,
+    companyName,
     landlordRows,
     tenantRows,
     models,

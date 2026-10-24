@@ -30,9 +30,17 @@ public class Signature {
     @Column(name = "type", nullable = false, length = 20)
     private SignatureType type;
 
-    /** Linked landlord for a {@code LANDLORD} signature; null on legacy or CEO signatures. */
+    /** Linked landlord for a {@code LANDLORD} signature; null on employee signatures. */
     @Column(name = "landlord_id")
     private Long landlordId;
+
+    /** Company owning an employee signature; null on a landlord signature. */
+    @Column(name = "company_id")
+    private Long companyId;
+
+    /** Employee owning an {@code EMPLOYEE} or {@code ENTREPRISE_CEO} signature. */
+    @Column(name = "employee_id")
+    private Long employeeId;
 
     @Column(name = "name", nullable = false)
     private String name;
@@ -78,6 +86,22 @@ public class Signature {
 
     public void setLandlordId(Long landlordId) {
         this.landlordId = landlordId;
+    }
+
+    public Long getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(Long companyId) {
+        this.companyId = companyId;
+    }
+
+    public Long getEmployeeId() {
+        return employeeId;
+    }
+
+    public void setEmployeeId(Long employeeId) {
+        this.employeeId = employeeId;
     }
 
     public String getName() {

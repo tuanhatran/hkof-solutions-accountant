@@ -10,16 +10,15 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import fr.hkof.homeofficeexpenses.domain.Settings;
+import fr.hkof.homeofficeexpenses.domain.Company;
+import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
 import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
 import fr.hkof.homeofficeexpenses.domain.Signature;
-import fr.hkof.homeofficeexpenses.domain.SignatureType;
-import fr.hkof.homeofficeexpenses.domain.Tenant;
-import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
+import fr.hkof.homeofficeexpenses.domain.Tenant;
 import fr.hkof.homeofficeexpenses.repository.LandlordRepository;
 import fr.hkof.homeofficeexpenses.repository.RentReceiptRepository;
 import fr.hkof.homeofficeexpenses.repository.TenantRepository;
@@ -32,7 +31,7 @@ import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.RentReceiptRequest;
 public class RentReceiptService {
 
     private final RentReceiptRepository repository;
-    private final SettingsService parametersService;
+    private final CompanyService companies;
     private final RentConfigurationService rentConfigurationService;
     private final LandlordRepository landlordRepository;
     private final TenantRepository tenantRepository;
@@ -43,13 +42,13 @@ public class RentReceiptService {
     private final StorageService storage;
     private final Clock clock;
 
-    public RentReceiptService(RentReceiptRepository repository, SettingsService parametersService,
+    public RentReceiptService(RentReceiptRepository repository, CompanyService companies,
             RentConfigurationService rentConfigurationService, LandlordRepository landlordRepository,
             TenantRepository tenantRepository, TemplateService templateService,
             TemplateDataService templateDataService, SignatureService signatureService,
             PdfService pdfService, StorageService storage, Clock clock) {
         this.repository = repository;
-        this.parametersService = parametersService;
+        this.companies = companies;
         this.rentConfigurationService = rentConfigurationService;
         this.landlordRepository = landlordRepository;
         this.tenantRepository = tenantRepository;
@@ -64,8 +63,8 @@ public class RentReceiptService {
     @Transactional
     public RentReceiptDto generate(RentReceiptRequest request) {
         YearMonth month = Amounts.month(request.month());
-        Settings parameters = parametersService.entity();
         Lease lease = rentConfigurationService.resolveLease(request.landlordId(), request.tenantId());
+        Company company = resolveCompany(lease, request.companyId());
         LocalDate periodStart = dateOr(request.periodStart(), month.atDay(1));
         LocalDate periodEnd = dateOr(request.periodEnd(), month.atEndOfMonth());
         if (periodEnd.isBefore(periodStart)) {
@@ -98,6 +97,7 @@ public class RentReceiptService {
                 .orElse(1);
 
         RentReceipt rentReceipt = new RentReceipt();
+        rentReceipt.setCompanyId(company.getId());
         rentReceipt.setMonth(month.toString());
         rentReceipt.setLandlordId(lease.getLandlord().getId());
         rentReceipt.setTenantId(lease.getTenant().getId());
@@ -116,7 +116,7 @@ public class RentReceiptService {
         rentReceipt.setCreatedAt(Instant.now(clock));
 
         String html = templateService.render(template, templateDataService.dataRentReceipt(
-                parameters, lease.getLandlord(), lease.getTenant(), lease, rentReceipt, signature));
+                company, lease.getLandlord(), lease.getTenant(), lease, rentReceipt, signature));
         byte[] pdf = pdfService.renderHtmlToPdf(html);
         String path = storage.storePdf("quittance_" + month + "_l" + lease.getLandlord().getId()
                 + "_t" + lease.getTenant().getId() + "_v" + version + ".pdf", pdf);
@@ -127,8 +127,8 @@ public class RentReceiptService {
     @Transactional(readOnly = true)
     public byte[] preview(RentReceiptRequest request) {
         YearMonth month = Amounts.month(request.month());
-        Settings parameters = parametersService.entity();
         Lease lease = rentConfigurationService.resolveLease(request.landlordId(), request.tenantId());
+        Company company = resolveCompany(lease, request.companyId());
         LocalDate periodStart = dateOr(request.periodStart(), month.atDay(1));
         LocalDate periodEnd = dateOr(request.periodEnd(), month.atEndOfMonth());
         if (periodEnd.isBefore(periodStart)) {
@@ -141,6 +141,7 @@ public class RentReceiptService {
                 ? lease.getCharges()
                 : Amounts.decimal(request.charges(), "provision pour charges", false);
         RentReceipt rentReceipt = new RentReceipt();
+        rentReceipt.setCompanyId(company.getId());
         rentReceipt.setMonth(month.toString());
         rentReceipt.setLandlordId(lease.getLandlord().getId());
         rentReceipt.setTenantId(lease.getTenant().getId());
@@ -159,15 +160,29 @@ public class RentReceiptService {
             throw new BusinessException("Le template sélectionné n'est pas un template de quittance.");
         }
         String html = templateService.render(template, templateDataService.dataRentReceipt(
-                parameters, lease.getLandlord(), lease.getTenant(), lease, rentReceipt, signature));
+                company, lease.getLandlord(), lease.getTenant(), lease, rentReceipt, signature));
         return pdfService.addWatermark(pdfService.renderHtmlToPdf(html));
     }
 
+    /**
+     * Lists receipts, optionally filtered by company and month. A company filter keeps the
+     * history of one company isolated from the others.
+     */
     @Transactional(readOnly = true)
-    public List<RentReceiptDto> list(String month) {
-        List<RentReceipt> rentReceipts = month == null || month.isBlank()
-                ? repository.findAllByOrderByMonthDescVersionDescIdDesc()
-                : repository.findByMonthOrderByVersionDescIdDesc(Amounts.month(month).toString());
+    public List<RentReceiptDto> list(Long companyId, String month) {
+        boolean hasMonth = month != null && !month.isBlank();
+        String monthValue = hasMonth ? Amounts.month(month).toString() : null;
+        List<RentReceipt> rentReceipts;
+        if (companyId != null) {
+            companies.entity(companyId);
+            rentReceipts = hasMonth
+                    ? repository.findByCompanyIdAndMonthOrderByVersionDescIdDesc(companyId, monthValue)
+                    : repository.findByCompanyIdOrderByMonthDescVersionDescIdDesc(companyId);
+        } else {
+            rentReceipts = hasMonth
+                    ? repository.findByMonthOrderByVersionDescIdDesc(monthValue)
+                    : repository.findAllByOrderByMonthDescVersionDescIdDesc();
+        }
         return rentReceipts.stream().map(this::toDto).toList();
     }
 
@@ -184,14 +199,21 @@ public class RentReceiptService {
 
     /**
      * Returns the latest ACTIVE receipt: for the pair when both identifiers are given,
-     * otherwise for the month. The order is deterministic: highest version, then highest id.
+     * otherwise for the company and month when a company is given, otherwise for the month.
+     * The order is deterministic: highest version, then highest id.
      */
     @Transactional(readOnly = true)
-    public RentReceipt activeForMonth(String month, Long landlordId, Long tenantId) {
+    public RentReceipt activeForMonth(Long companyId, String month, Long landlordId, Long tenantId) {
         if (landlordId != null && tenantId != null) {
             return repository
                     .findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
                             month, landlordId, tenantId, DocumentStatus.ACTIVE)
+                    .orElse(null);
+        }
+        if (companyId != null) {
+            return repository
+                    .findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
+                            companyId, month, DocumentStatus.ACTIVE)
                     .orElse(null);
         }
         return repository.findFirstByMonthAndStatusOrderByVersionDescIdDesc(month, DocumentStatus.ACTIVE)
@@ -204,6 +226,11 @@ public class RentReceiptService {
             throw new NotFoundException("Le PDF de cette quittance est introuvable.");
         }
         return storage.read(rentReceipt.getPdfPath());
+    }
+
+    private Company resolveCompany(Lease lease, Long requestCompanyId) {
+        Long companyId = lease.getCompanyId() != null ? lease.getCompanyId() : requestCompanyId;
+        return companies.entity(companyId);
     }
 
     private LocalDate dateOr(String date, LocalDate fallback) {
@@ -223,8 +250,12 @@ public class RentReceiptService {
                 : landlordRepository.findById(rentReceipt.getLandlordId()).orElse(null);
         Tenant tenant = rentReceipt.getTenantId() == null ? null
                 : tenantRepository.findById(rentReceipt.getTenantId()).orElse(null);
+        String companyName = rentReceipt.getCompanyId() == null ? null
+                : companies.find(rentReceipt.getCompanyId()).map(Company::getName).orElse(null);
         return new RentReceiptDto(
                 rentReceipt.getId(),
+                rentReceipt.getCompanyId(),
+                companyName,
                 rentReceipt.getMonth(),
                 rentReceipt.getLandlordId(),
                 rentReceipt.getTenantId(),

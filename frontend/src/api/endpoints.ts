@@ -14,8 +14,10 @@ import type {
   StatementCalculationRequest,
   StatementDto,
   StatementGenerationRequest,
-  SettingsDto,
-  SettingsRequest,
+  CompanyDto,
+  CompanyRequest,
+  EmployeeDto,
+  EmployeeRequest,
   LandlordDto,
   LandlordRequest,
   TenantDto,
@@ -39,14 +41,52 @@ function json(init: RequestInit): RequestInit {
   return { ...init, headers: JSON_HEADERS };
 }
 
+function query(
+  params: Record<string, string | number | boolean | null | undefined>,
+) {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== null && value !== undefined && value !== "") {
+      search.set(key, String(value));
+    }
+  }
+  const serialized = search.toString();
+  return serialized ? `?${serialized}` : "";
+}
+
 export const api = {
-  settings: {
-    get: () => request<SettingsDto>("/api/settings"),
-    update: (requestBody: SettingsRequest) =>
-      request<SettingsDto>(
-        "/api/settings",
+  companies: {
+    list: () => request<CompanyDto[]>("/api/companies"),
+    get: (id: number) => request<CompanyDto>(`/api/companies/${id}`),
+    create: (requestBody: CompanyRequest) =>
+      request<CompanyDto>(
+        "/api/companies",
+        json({ method: "POST", body: JSON.stringify(requestBody) }),
+      ),
+    update: (id: number, requestBody: CompanyRequest) =>
+      request<CompanyDto>(
+        `/api/companies/${id}`,
         json({ method: "PUT", body: JSON.stringify(requestBody) }),
       ),
+    delete: (id: number) =>
+      request<void>(`/api/companies/${id}`, { method: "DELETE" }),
+  },
+
+  employees: {
+    list: (companyId: number) =>
+      request<EmployeeDto[]>(`/api/companies/${companyId}/employees`),
+    create: (companyId: number, requestBody: EmployeeRequest) =>
+      request<EmployeeDto>(
+        `/api/companies/${companyId}/employees`,
+        json({ method: "POST", body: JSON.stringify(requestBody) }),
+      ),
+    update: (id: number, requestBody: EmployeeRequest) =>
+      request<EmployeeDto>(
+        `/api/employees/${id}`,
+        json({ method: "PUT", body: JSON.stringify(requestBody) }),
+      ),
+    delete: (id: number) =>
+      request<void>(`/api/employees/${id}`, { method: "DELETE" }),
   },
 
   landlords: {
@@ -98,8 +138,10 @@ export const api = {
   },
 
   expenseItems: {
-    list: (all = false) =>
-      request<ExpenseItemDto[]>(`/api/expense-items?all=${all}`),
+    list: (companyId: number, all = false) =>
+      request<ExpenseItemDto[]>(
+        `/api/expense-items${query({ companyId, all })}`,
+      ),
     create: (requestBody: ExpenseItemRequest) =>
       request<ExpenseItemDto>(
         "/api/expense-items",
@@ -115,24 +157,18 @@ export const api = {
   },
 
   rentReceipts: {
-    list: (month?: string) =>
+    list: (companyId?: number | null, month?: string) =>
       request<RentReceiptDto[]>(
-        `/api/rent-receipts${month ? `?month=${encodeURIComponent(month)}` : ""}`,
+        `/api/rent-receipts${query({ companyId, month })}`,
       ),
     active: async (
       month: string,
+      companyId?: number | null,
       landlordId?: number | null,
       tenantId?: number | null,
     ): Promise<RentReceiptDto | null> => {
-      const params = new URLSearchParams({ month });
-      if (landlordId !== null && landlordId !== undefined) {
-        params.set("landlordId", String(landlordId));
-      }
-      if (tenantId !== null && tenantId !== undefined) {
-        params.set("tenantId", String(tenantId));
-      }
       const result = await request<RentReceiptDto | undefined>(
-        `/api/rent-receipts/active?${params.toString()}`,
+        `/api/rent-receipts/active${query({ month, companyId, landlordId, tenantId })}`,
       );
       return result ?? null;
     },
@@ -155,19 +191,22 @@ export const api = {
   },
 
   expenseStatements: {
-    list: (month?: string) =>
+    list: (companyId: number, month?: string) =>
       request<StatementDto[]>(
-        `/api/expense-statements${month ? `?month=${encodeURIComponent(month)}` : ""}`,
+        `/api/expense-statements${query({ companyId, month })}`,
       ),
-    active: async (month: string): Promise<StatementDto | null> => {
+    active: async (
+      companyId: number,
+      month: string,
+    ): Promise<StatementDto | null> => {
       const result = await request<StatementDto | undefined>(
-        `/api/expense-statements/active?month=${encodeURIComponent(month)}`,
+        `/api/expense-statements/active${query({ companyId, month })}`,
       );
       return result ?? null;
     },
-    draft: (month: string) =>
+    draft: (companyId: number, month: string) =>
       request<DraftDto>(
-        `/api/expense-statements/draft?month=${encodeURIComponent(month)}`,
+        `/api/expense-statements/draft${query({ companyId, month })}`,
         {
           method: "POST",
         },
@@ -203,13 +242,17 @@ export const api = {
   },
 
   signatures: {
-    list: () => request<SignatureDto[]>("/api/signatures"),
+    list: (companyId?: number | null, employeeId?: number | null) =>
+      request<SignatureDto[]>(
+        `/api/signatures${query({ companyId, employeeId })}`,
+      ),
     // The browser must set the multipart boundary: never set Content-Type here.
     create: (
       type: SignatureType,
       name: string,
       file: File,
       landlordId: number | null = null,
+      employeeId: number | null = null,
     ): Promise<SignatureDto> => {
       const payload = new FormData();
       payload.append("type", type);
@@ -217,6 +260,9 @@ export const api = {
       payload.append("file", file);
       if (landlordId !== null) {
         payload.append("landlordId", String(landlordId));
+      }
+      if (employeeId !== null) {
+        payload.append("employeeId", String(employeeId));
       }
       return request<SignatureDto>("/api/signatures", {
         method: "POST",

@@ -1,0 +1,23 @@
+@reference "../../index.css";
+
+@layer components {
+  .company-section-actions {
+    @apply flex flex-wrap items-center justify-end gap-2;
+  }
+
+  .company-section-body {
+    @apply space-y-5;
+  }
+
+  .company-section-selector {
+    @apply flex flex-col gap-1.5;
+  }
+
+  .company-section-selector-label {
+    @apply text-xs font-semibold text-ink-soft;
+  }
+
+  .company-section-select {
+    @apply max-w-sm;
+  }
+}

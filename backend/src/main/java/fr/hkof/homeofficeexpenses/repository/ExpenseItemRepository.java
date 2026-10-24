@@ -9,13 +9,15 @@ import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
 
 public interface ExpenseItemRepository extends JpaRepository<ExpenseItem, Long> {
 
-    List<ExpenseItem> findByDeletedFalseOrderBySortOrderAsc();
+    List<ExpenseItem> findByCompanyIdAndDeletedFalseOrderBySortOrderAscIdAsc(Long companyId);
 
-    List<ExpenseItem> findByDeletedFalseAndActiveTrueOrderBySortOrderAsc();
+    List<ExpenseItem> findByCompanyIdAndDeletedFalseAndActiveTrueOrderBySortOrderAscIdAsc(Long companyId);
 
-    Optional<ExpenseItem> findByCodeAndDeletedFalse(String code);
+    Optional<ExpenseItem> findByCompanyIdAndCodeAndDeletedFalse(Long companyId, String code);
 
-    Optional<ExpenseItem> findFirstByCode(String code);
+    Optional<ExpenseItem> findFirstByCompanyIdAndCode(Long companyId, String code);
 
-    boolean existsByCode(String code);
+    boolean existsByCompanyIdAndCode(Long companyId, String code);
+
+    boolean existsByCompanyIdAndDeletedFalse(Long companyId);
 }

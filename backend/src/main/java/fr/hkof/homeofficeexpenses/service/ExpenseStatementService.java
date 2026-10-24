@@ -11,12 +11,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import fr.hkof.homeofficeexpenses.domain.AmountSource;
+import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
 import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
 import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
-import fr.hkof.homeofficeexpenses.domain.Settings;
-import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.repository.ExpenseStatementRepository;
 import fr.hkof.homeofficeexpenses.service.template.TemplateDataService;
@@ -30,13 +29,13 @@ import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.StatementPreviewRequest;
 
 /**
  * Facade of the expense statement domain: persists statements and orchestrates the line
- * calculator and the document collaborator. Public behaviour is unchanged.
+ * calculator and the document collaborator. Statements are owned by one company.
  */
 @Service
 public class ExpenseStatementService {
 
     private final ExpenseStatementRepository repository;
-    private final SettingsService parametersService;
+    private final CompanyService companies;
     private final ExpenseItemService expenseItemService;
     private final RentReceiptService rentReceiptService;
     private final TemplateDataService templateDataService;
@@ -44,12 +43,12 @@ public class ExpenseStatementService {
     private final ExpenseStatementLineCalculator lineCalculator;
     private final ExpenseStatementDocumentService documents;
 
-    public ExpenseStatementService(ExpenseStatementRepository repository, SettingsService parametersService,
+    public ExpenseStatementService(ExpenseStatementRepository repository, CompanyService companies,
             ExpenseItemService expenseItemService, RentReceiptService rentReceiptService,
             TemplateDataService templateDataService, StorageService storage,
             ExpenseStatementLineCalculator lineCalculator, ExpenseStatementDocumentService documents) {
         this.repository = repository;
-        this.parametersService = parametersService;
+        this.companies = companies;
         this.expenseItemService = expenseItemService;
         this.rentReceiptService = rentReceiptService;
         this.templateDataService = templateDataService;
@@ -61,26 +60,26 @@ public class ExpenseStatementService {
     @Transactional(readOnly = true)
     public CalculationResponse calculate(StatementCalculationRequest request) {
         YearMonth month = Amounts.month(request.month());
-        List<CalculatedLine> lines = lineCalculator.calculateLines(request.lines());
-        Settings settings = parametersService.entity();
+        Company company = companies.entity(request.companyId());
+        List<CalculatedLine> lines = lineCalculator.calculateLines(company.getId(), request.lines());
         BigDecimal total = CalculationService.total(lines.stream().map(CalculatedLine::claimedAmount).toList());
         return new CalculationResponse(
                 lines.stream().map(lineCalculator::toDto).toList(),
                 Amounts.apiValue(total),
                 NumberToWords.toWords(total),
-                Amounts.apiValue(CalculationService.proRataBase(settings.getBusinessArea(), settings.getTotalArea())),
-                templateDataService.proRataDetail(settings));
+                Amounts.apiValue(CalculationService.proRataBase(company.getBusinessArea(), company.getTotalArea())),
+                templateDataService.proRataDetail(company));
     }
 
     @Transactional(readOnly = true)
-    public DraftDto draft(String monthText) {
+    public DraftDto draft(Long companyId, String monthText) {
         YearMonth month = Amounts.month(monthText);
-        Settings settings = parametersService.entity();
+        Company company = companies.entity(companyId);
         // Expense statements keep a month-scoped rent receipt: pair selection is out of scope.
-        RentReceipt rentReceipt = rentReceiptService.activeForMonth(month.toString(), null, null);
+        RentReceipt rentReceipt = rentReceiptService.activeForMonth(company.getId(), month.toString(), null, null);
         List<ExpenseLineDto> lines = new ArrayList<>();
         if (rentReceipt != null) {
-            ExpenseItem rentItem = expenseItemService.entity("loyer");
+            ExpenseItem rentItem = expenseItemService.entity(company.getId(), "loyer");
             lines.add(new ExpenseLineDto(
                     null, rentItem.getCode(), rentItem.getLabel(), rentItem.getSupplier(),
                     Amounts.apiValue(rentReceipt.getTotal()),
@@ -89,7 +88,7 @@ public class ExpenseStatementService {
                     Amounts.apiValue(rentReceipt.getTotal()),
                     null, null, AmountSource.MANUAL.name(), null, null));
         }
-        List<String> missing = expenseItemService.list(false).stream()
+        List<String> missing = expenseItemService.list(company.getId(), false).stream()
                 .filter(expenseItem -> !expenseItem.code().equals("loyer"))
                 .map(expenseItem -> expenseItem.label().toLowerCase(Locale.FRENCH))
                 .toList();
@@ -97,35 +96,36 @@ public class ExpenseStatementService {
                 month.toString(),
                 rentReceipt == null ? null : rentReceiptService.toDto(rentReceipt),
                 lines,
-                Amounts.apiValue(CalculationService.proRataBase(settings.getBusinessArea(), settings.getTotalArea())),
-                templateDataService.proRataDetail(settings),
+                Amounts.apiValue(CalculationService.proRataBase(company.getBusinessArea(), company.getTotalArea())),
+                templateDataService.proRataDetail(company),
                 missing);
     }
 
     @Transactional(readOnly = true)
     public byte[] preview(StatementPreviewRequest request) {
         YearMonth month = Amounts.month(request.month());
-        List<CalculatedLine> lines = lineCalculator.calculateLines(request.lines());
-        Settings settings = parametersService.entity();
-        return documents.preview(month, lines, settings, request);
+        Company company = companies.entity(request.companyId());
+        List<CalculatedLine> lines = lineCalculator.calculateLines(company.getId(), request.lines());
+        return documents.preview(month, lines, company, request);
     }
 
     @Transactional
     public StatementDto generate(StatementGenerationRequest request) {
         YearMonth month = Amounts.month(request.month());
-        List<CalculatedLine> lines = lineCalculator.calculateLines(request.lines());
+        Company company = companies.entity(request.companyId());
+        List<CalculatedLine> lines = lineCalculator.calculateLines(company.getId(), request.lines());
         if (lines.isEmpty()) {
             throw new BusinessException("Ajoutez au moins un frais avant de générer la note.");
         }
-        Settings settings = parametersService.entity();
-        String signature = documents.signatureDataUri(request.signatureId(), SignatureType.ENTREPRISE_CEO);
+        String signature = documents.signatureDataUri(request.signatureId(), company.getId());
         TemplateDocument template = documents.templateForStatement(request.templateId());
-        int version = repository.findFirstByMonthOrderByVersionDesc(month.toString())
+        int version = repository
+                .findFirstByCompanyIdAndMonthOrderByVersionDesc(company.getId(), month.toString())
                 .map(n -> n.getVersion() + 1)
                 .orElse(1);
-        archive(month.toString());
+        archive(company.getId(), month.toString());
         ExpenseStatementDocumentService.GeneratedStatement generated =
-                documents.generate(month, lines, version, template, signature, settings);
+                documents.generate(month, lines, version, template, signature, company);
         ExpenseStatement statement = generated.statement();
         statement.setPdfPath(storage.storePdf("note_frais_" + month + "_v" + version + ".pdf", generated.pdf()));
         statement.setFullPdfPath(
@@ -135,10 +135,11 @@ public class ExpenseStatementService {
     }
 
     @Transactional(readOnly = true)
-    public List<StatementDto> list(String month) {
+    public List<StatementDto> list(Long companyId, String month) {
+        companies.entity(companyId);
         List<ExpenseStatement> statements = month == null || month.isBlank()
-                ? repository.findAllByOrderByMonthDescVersionDesc()
-                : repository.findByMonthOrderByVersionDesc(Amounts.month(month).toString());
+                ? repository.findByCompanyIdOrderByMonthDescVersionDesc(companyId)
+                : repository.findByCompanyIdAndMonthOrderByVersionDesc(companyId, Amounts.month(month).toString());
         return statements.stream().map(this::toDto).toList();
     }
 
@@ -154,13 +155,15 @@ public class ExpenseStatementService {
     }
 
     /**
-     * Returns the DTO of the active statement for the month, mapped inside the transaction:
-     * {@code spring.jpa.open-in-view} is disabled, so the entity cannot be mapped by the
-     * controller without initializing its lazy lines.
+     * Returns the DTO of the active statement for the company and month, mapped inside the
+     * transaction: {@code spring.jpa.open-in-view} is disabled, so the entity cannot be mapped
+     * by the controller without initializing its lazy lines.
      */
     @Transactional(readOnly = true)
-    public Optional<StatementDto> activeDtoForMonth(String month) {
-        return repository.findFirstByMonthAndStatusOrderByVersionDesc(month, DocumentStatus.ACTIVE)
+    public Optional<StatementDto> activeDtoForMonth(Long companyId, String month) {
+        companies.entity(companyId);
+        return repository
+                .findFirstByCompanyIdAndMonthAndStatusOrderByVersionDesc(companyId, month, DocumentStatus.ACTIVE)
                 .map(this::toDto);
     }
 
@@ -172,8 +175,9 @@ public class ExpenseStatementService {
         return documents.zip(entity(id));
     }
 
-    private void archive(String month) {
-        List<ExpenseStatement> existingStatements = repository.findByMonthOrderByVersionDesc(month);
+    private void archive(Long companyId, String month) {
+        List<ExpenseStatement> existingStatements = repository
+                .findByCompanyIdAndMonthOrderByVersionDesc(companyId, month);
         boolean modified = false;
         for (ExpenseStatement existingStatement : existingStatements) {
             if (existingStatement.getStatus() == DocumentStatus.ACTIVE) {
@@ -204,8 +208,13 @@ public class ExpenseStatementService {
                         Amounts.apiValue(line.getAiDetectedAmount()),
                         line.getAiConfidence()))
                 .toList();
+        String companyName = companies.find(statement.getCompanyId())
+                .map(Company::getName)
+                .orElse(null);
         return new StatementDto(
                 statement.getId(),
+                statement.getCompanyId(),
+                companyName,
                 statement.getMonth(),
                 statement.getNumber(),
                 Amounts.apiValue(statement.getTotal()),

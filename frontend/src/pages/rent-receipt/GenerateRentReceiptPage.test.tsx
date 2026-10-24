@@ -99,6 +99,13 @@ vi.mock("@/api/queries", async (importOriginal) => {
       data: directoriesUndefined ? undefined : templatesList,
       isPending: false,
     }),
+    useCompanies: () => ({
+      data: [{ id: 3, name: "HKOF" }],
+      isPending: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    }),
     useActiveRentReceipt: () => ({ data: activeReceipt, isPending: false }),
     useSignatures: () => ({
       data: signaturesUndefined ? undefined : signatureList,
@@ -168,7 +175,7 @@ const LEASE: LeaseDto = {
 function renderPage() {
   const queryClient = new QueryClient();
   queryClient.setQueryData(queryKeys.rentReceiptActive(MONTH), null);
-  queryClient.setQueryData(queryKeys.rentReceipts(MONTH), []);
+  queryClient.setQueryData(queryKeys.rentReceipts(null, MONTH), []);
 
   render(
     <QueryClientProvider client={queryClient}>
@@ -266,7 +273,8 @@ describe("GenerateRentReceiptPage", () => {
       ).toBe(true),
     );
     expect(
-      queryClient.getQueryState(queryKeys.rentReceipts(MONTH))?.isInvalidated,
+      queryClient.getQueryState(queryKeys.rentReceipts(null, MONTH))
+        ?.isInvalidated,
     ).toBe(true);
   });
 
@@ -287,6 +295,7 @@ describe("GenerateRentReceiptPage", () => {
 
     renderPage();
 
+    expect(screen.getByText("HKOF")).toBeInTheDocument();
     expect(await screen.findByLabelText("Bailleur")).toHaveValue("1");
     expect(screen.getByLabelText("Locataire")).toHaveValue("2");
     expect(screen.getByLabelText("Loyer hors charges")).toHaveValue("1300.00");

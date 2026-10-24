@@ -87,7 +87,7 @@ function renderManager(defaultProRata = "35.71") {
   });
   const view = render(
     <QueryClientProvider client={queryClient}>
-      <ExpenseItemsManager defaultProRata={defaultProRata} />
+      <ExpenseItemsManager companyId={1} defaultProRata={defaultProRata} />
     </QueryClientProvider>,
   );
   return { queryClient, unmount: view.unmount };

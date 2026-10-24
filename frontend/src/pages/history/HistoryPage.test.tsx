@@ -2,7 +2,8 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { RentReceiptDto, StatementDto } from "@/api/types";
+import type { CompanyDto, RentReceiptDto, StatementDto } from "@/api/types";
+import { useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft } from "@/state/statementDraft";
 import { useToasts } from "@/state/toasts";
@@ -18,6 +19,7 @@ interface QueryLike<T> {
 
 let receiptsState: QueryLike<RentReceiptDto[]>;
 let statementsState: QueryLike<StatementDto[]>;
+let companiesState: QueryLike<CompanyDto[]>;
 
 vi.mock("@/api/endpoints", () => ({
   api: {
@@ -36,6 +38,7 @@ vi.mock("@/api/queries", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/queries")>();
   return {
     ...actual,
+    useCompanies: () => companiesState,
     useRentReceipts: () => receiptsState,
     useStatements: () => statementsState,
   };
@@ -175,11 +178,27 @@ beforeEach(() => {
     STATEMENT_JAN_OLD,
     STATEMENT_FEB,
   ]);
+  companiesState = readyQuery([{ id: 1, name: "HKOF" }] as CompanyDto[]);
+  useCompanyStore.setState({ activeCompanyId: 1 });
   resetDrafts();
   useToasts.setState({ toasts: [] });
 });
 
 describe("HistoryPage", () => {
+  it("asks to configure a company when none is active", () => {
+    companiesState = readyQuery([] as CompanyDto[]);
+    useCompanyStore.setState({ activeCompanyId: null });
+    receiptsState = readyQuery([]);
+    statementsState = readyQuery([]);
+
+    renderPage();
+
+    expect(screen.getByText("Aucune société active")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Aucun document pour le moment"),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows the loading and empty states with the two shortcuts", async () => {
     receiptsState = {
       data: undefined,

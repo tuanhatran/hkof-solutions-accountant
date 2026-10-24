@@ -387,12 +387,12 @@ Acceptance: every spec and test green on the task branch, no retry-only pass.
 
 - [x] W0 docs
 - [x] W1 contract + generated types
-- [ ] W2 domain + V7 migration
-- [ ] W3 services/controllers/DTOs + seed/reset
-- [ ] W4 frontend API/store/shell
-- [ ] W5 frontend companies/employees/signatures/lease
-- [ ] W6 frontend expense/rent/history
-- [ ] W7 E2E
+- [x] W2 domain + V7 migration
+- [x] W3 services/controllers/DTOs + seed/reset
+- [x] W4 frontend API/store/shell
+- [x] W5 frontend companies/employees/signatures/lease
+- [x] W6 frontend expense/rent/history
+- [x] W7 E2E
 - [ ] W8 review + full gates
 
 ## Resume on Qoder (quota fallback)
@@ -433,3 +433,38 @@ Append one line per event; never rewrite a line.
 - `2026-10-24 lead:` W2 (backend domain + V7) and W4 (frontend API/store/shell)
   dispatched in parallel. W2 will intentionally break old `Settings`-based tests
   until W3 removes that code; W4 will leave page typecheck errors until W5–W6.
+- `2026-10-24 lead:` W4–W6 completed inline on the primary agent (user requested
+  no subagent). Frontend: typecheck exit 0; Vitest 46 files / 466 tests pass;
+  coverage 96.61% statements, 90.32% branches, 95.20% functions, 96.75% lines;
+  build exit 0; lint exit 0 (0 errors, 0 warnings); `format:check` exit 0.
+  Backend: `./mvnw -B verify` exit 0, 465 tests, 8 skipped (Testcontainers
+  Postgres classes skip: socket probe returns HTTP 400 on this Docker Desktop WSL
+  host, while the Docker CLI works); JaCoCo LINE 97.37% (3437/3530), BRANCH
+  92.77% (1206/1300); `SignatureService` split into `SignatureService` (223
+  lines) + `SignatureOwnerService` (117 lines), every production class < 300
+  lines. W7 E2E not run: Cypress specs still target the pre-multi-company
+  contract.
+- `2026-10-24 lead (W7, inline on primary agent):` new
+  `frontend/cypress/e2e/05-multi-company.cy.ts` (2 tests: company/employee/
+  signature/expense-item isolation; statement generation + PDF export scoped to
+  the active company, with API history assertions). The spec exposed two real
+  defects, fixed with failing tests: `CompanyForm` now upserts the created
+  company into `queryKeys.companiesAll` before the refetch so `CompanySwitcher`
+  no longer reverts the active company; company-filtered signature lists now
+  include the global LANDLORD signatures
+  (`SignatureRepository.findVisibleForCompany`; RED→GREEN
+  `SignatureServiceTest#listsSignatures`, new
+  `SignatureControllerIntegrationTest#listsLandlordSignaturesForCompany`).
+- `2026-10-24 lead (E2E gate):` `docker compose -p homeofficeexpenses-e2e
+  -f docker-compose.yml -f docker-compose.e2e.yml run --rm cypress
+  "cypress run"` exit 0: 6 specs / 26 tests passed, 0 failed, 0 skipped, no
+  retry-only pass (no `Attempt` line). Breakdown: 00-settings 5,
+  01-rent-receipt 1, 02-expense-statement 12, 03-statement-finalization 1,
+  04-admin-templates 5, 05-multi-company 2.
+- `2026-10-24 lead (W7 gates):` backend `./mvnw -B verify` exit 0, Tests run:
+  466, Failures: 0, Errors: 0, Skipped: 8 (Testcontainers host limitation
+  unchanged), JaCoCo LINE 97.65% (15952/16336), BRANCH 92.77% (1206/1300).
+  Frontend `npm run test:coverage` exit 0: statements 96.53%, branches 90.23%,
+  functions 95.09%, lines 96.72%; `typecheck`, `lint`, `format:check` and
+  `build` exit 0. W8 independent review still not run (user requested
+  primary-agent-only): status stays USER_REVIEW.

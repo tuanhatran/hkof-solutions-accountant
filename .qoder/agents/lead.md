@@ -1,7 +1,7 @@
 ---
 name: lead
 description: Size a HomeOfficeExpenses task, create the branch, produce a compact handoff, route it to builder and reviewer, and close it out.
-model: GLM-5.3-Flash
+model: DeepSeek-Flash
 tools: "*"
 # Qoder has no primary/subagent mode: .qoder/settings.json sets "agent": "lead".
 # OpenCode keeps its own model pin.

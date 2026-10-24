@@ -4,8 +4,15 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { downloadBlob } from "@/api/client";
 import { api } from "@/api/endpoints";
-import type { ExpenseItemDto, SignatureDto, TemplateDto } from "@/api/types";
+import type {
+  CompanyDto,
+  EmployeeDto,
+  ExpenseItemDto,
+  SignatureDto,
+  TemplateDto,
+} from "@/api/types";
 import type { DraftLine } from "@/lib/lines";
+import { useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft } from "@/state/statementDraft";
 import { useToasts } from "@/state/toasts";
@@ -20,7 +27,8 @@ interface QueryLike<T> {
   refetch: ReturnType<typeof vi.fn>;
 }
 
-let settingsState: QueryLike<{ proRataBase: string }>;
+let companiesState: QueryLike<CompanyDto[]>;
+let employeesState: QueryLike<EmployeeDto[]>;
 let itemsState: QueryLike<ExpenseItemDto[]>;
 let templatesState: QueryLike<TemplateDto[]>;
 let rentReceiptState: QueryLike<{ id: number; total: string }>;
@@ -67,7 +75,8 @@ vi.mock("@/api/queries", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/queries")>();
   return {
     ...actual,
-    useSettings: () => settingsState,
+    useCompanies: () => companiesState,
+    useEmployees: () => employeesState,
     useExpenseItems: () => itemsState,
     useTemplates: () => templatesState,
     useActiveRentReceipt: () => rentReceiptState,
@@ -148,7 +157,20 @@ const TEMPLATES: TemplateDto[] = [
   { id: 6, name: "Modele archive", active: false, builtIn: false },
 ];
 
-const CEO: SignatureDto = { id: 4, type: "ENTREPRISE_CEO", name: "Gérant" };
+const COMPANY: CompanyDto = { id: 1, name: "HKOF" };
+const CEO_EMPLOYEE: EmployeeDto = {
+  id: 9,
+  companyId: 1,
+  firstName: "Camille",
+  lastName: "Martin",
+  title: "CEO",
+};
+const CEO: SignatureDto = {
+  id: 4,
+  type: "EMPLOYEE",
+  name: "Gérant",
+  employeeId: 9,
+};
 const LANDLORD: SignatureDto = { id: 3, type: "LANDLORD", name: "Bailleur" };
 
 const MONTH = "2026-01";
@@ -205,7 +227,9 @@ function toastMessages(): string[] {
 }
 
 beforeEach(() => {
-  settingsState = readyQuery({ proRataBase: "100.00" });
+  companiesState = readyQuery([COMPANY]);
+  employeesState = readyQuery([CEO_EMPLOYEE]);
+  useCompanyStore.setState({ activeCompanyId: 1 });
   itemsState = readyQuery(ITEMS);
   templatesState = readyQuery(TEMPLATES);
   rentReceiptState = readyQuery({ id: 7, total: "1300.00" });
@@ -281,6 +305,86 @@ describe("useExpenseStatementPage defaults", () => {
     expect(result.current.complete).toBe(true);
     expect(result.current.omittedTypes).toEqual(["internet"]);
     expect(result.current.isRent).toBe(false);
+  });
+
+  it("disables the calculation without an active company", async () => {
+    companiesState = readyQuery([]);
+    useCompanyStore.setState({ activeCompanyId: null });
+    resetDraft([line()]);
+    const { result } = renderController();
+
+    await waitFor(() => expect(result.current.activeCompanyId).toBeNull());
+    expect(result.current.previewRequest).toBeNull();
+    expect(api.expenseStatements.calculate).not.toHaveBeenCalled();
+  });
+
+  it("recalculates for the newly active company", async () => {
+    companiesState = readyQuery([COMPANY, { id: 2, name: "Autre SARL" }]);
+    resetDraft([line()]);
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.calculationUpToDate).toBe(true), {
+      timeout: 2000,
+    });
+
+    act(() => useCompanyStore.setState({ activeCompanyId: 2 }));
+
+    await waitFor(() => expect(result.current.activeCompanyId).toBe(2));
+    await waitFor(() => expect(result.current.calculationUpToDate).toBe(true), {
+      timeout: 2000,
+    });
+    expect(api.expenseStatements.calculate).toHaveBeenLastCalledWith(
+      expect.objectContaining({ companyId: 2 }),
+      expect.anything(),
+    );
+  });
+
+  it("tolerates pending optional queries and items without order or code", () => {
+    itemsState = readyQuery([
+      { ...ITEMS[1] },
+      {
+        label: "Sans ordre",
+        code: "sans-ordre",
+        active: true,
+        proRataPct: "100",
+      },
+      { label: "Sans code", active: true, proRataPct: "100" },
+    ]);
+    const pending = {
+      data: undefined,
+      isPending: true,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    };
+    templatesState = pending;
+    signaturesState = pending;
+    employeesState = pending;
+    rentReceiptState = pending;
+    const { result } = renderController();
+
+    expect(result.current.activeModel).toBeNull();
+    expect(result.current.currentTemplate).toBe("modèle intégré");
+    expect(result.current.selectedTemplate).toBeNull();
+    expect(result.current.selectedSignatureId).toBeNull();
+    expect(result.current.signatureAvailable).toBe(false);
+    expect(result.current.availableRent).toBe(false);
+    expect(result.current.optionDisabled(result.current.expenseItems[2]!)).toBe(
+      false,
+    );
+  });
+
+  it("disables a single-line type already added, except while editing it", () => {
+    resetDraft([line({ itemCode: "internet" })]);
+    const { result } = renderController();
+    const internet = result.current.expenseItemByCode.get("internet");
+    const gaz = result.current.expenseItemByCode.get("gaz");
+    expect(internet).toBeDefined();
+    expect(gaz).toBeDefined();
+    expect(result.current.optionDisabled(internet!)).toBe(true);
+    expect(result.current.optionDisabled(gaz!)).toBe(false);
+
+    act(() => result.current.editLine(result.current.orderedLines[0]!));
+    expect(result.current.optionDisabled(internet!)).toBe(false);
   });
 
   it("falls back to the first signature and the built-in template", () => {
@@ -478,6 +582,25 @@ describe("useExpenseStatementPage form and upload", () => {
     );
     expect(result.current.receipt).toBeNull();
     expect(result.current.values.amountInclVat).toBe("1300.00");
+  });
+
+  it("ignores an empty or unchanged month change", () => {
+    const { result } = renderController();
+
+    act(() => result.current.changeMonth(""));
+    expect(result.current.month).toBe(MONTH);
+    act(() => result.current.changeMonth(MONTH));
+    expect(result.current.month).toBe(MONTH);
+  });
+
+  it("marks and confirms the AI amount flags", () => {
+    const { result } = renderController();
+
+    act(() => result.current.markAmountEdited());
+    expect(result.current.ai.amount).toBe(false);
+    expect(result.current.ai.amountConfirmed).toBe(true);
+    act(() => result.current.confirmAmount());
+    expect(result.current.ai.amountConfirmed).toBe(true);
   });
 
   it("changes month, releases the receipt and navigates to the rent receipt", () => {
@@ -891,6 +1014,7 @@ describe("useExpenseStatementPage calculation, preview and generation", () => {
     });
     expect(api.expenseStatements.calculate).toHaveBeenCalledWith(
       {
+        companyId: 1,
         month: MONTH,
         lines: [
           expect.objectContaining({
@@ -905,6 +1029,7 @@ describe("useExpenseStatementPage calculation, preview and generation", () => {
     expect(result.current.calculation?.total).toBe("80.00");
     expect(result.current.calculationInProgress).toBe(false);
     expect(result.current.previewRequest).toEqual({
+      companyId: 1,
       month: MONTH,
       complete: true,
       lines: [
@@ -993,6 +1118,7 @@ describe("useExpenseStatementPage calculation, preview and generation", () => {
 
     await waitFor(() => expect(result.current.result?.id).toBe(12));
     expect(api.expenseStatements.create).toHaveBeenCalledWith({
+      companyId: 1,
       month: MONTH,
       lines: [
         {
@@ -1009,6 +1135,43 @@ describe("useExpenseStatementPage calculation, preview and generation", () => {
       "Note de Janvier 2026 générée en version 2.",
     );
     expect(result.current.generationInProgress).toBe(false);
+  });
+
+  it("generates without a template and defaults the version to 1", async () => {
+    templatesState = readyQuery([]);
+    vi.mocked(api.expenseStatements.create).mockResolvedValue({
+      id: 14,
+      month: MONTH,
+    });
+    resetDraft([line()]);
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.calculationUpToDate).toBe(true), {
+      timeout: 2000,
+    });
+
+    await act(async () => {
+      await result.current.generateStatement();
+    });
+
+    expect(api.expenseStatements.create).toHaveBeenCalledWith({
+      companyId: 1,
+      month: MONTH,
+      lines: [
+        {
+          itemCode: "gaz",
+          amountInclVat: "80.00",
+          proRataPct: "100",
+          amountSource: "MANUAL",
+        },
+      ],
+      signatureId: 4,
+    });
+    expect(
+      vi.mocked(api.expenseStatements.create).mock.calls[0][0],
+    ).not.toHaveProperty("templateId");
+    expect(toastMessages()).toContain(
+      "Note de Janvier 2026 générée en version 1.",
+    );
   });
 
   it("asks for confirmation when a statement version already exists", async () => {

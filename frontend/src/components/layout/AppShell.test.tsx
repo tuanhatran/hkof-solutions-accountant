@@ -1,7 +1,9 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { CompanyDto } from "@/api/types";
+import { useCompanyStore } from "@/state/company";
 import { AppShell } from "./AppShell";
 
 type Blocker = {
@@ -10,10 +12,22 @@ type Blocker = {
   reset: ReturnType<typeof vi.fn>;
 };
 
+type CompaniesState = {
+  isPending: boolean;
+  isError: boolean;
+  isSuccess: boolean;
+  data?: CompanyDto[];
+};
+
 let blockerState: Blocker;
+let companiesState: CompaniesState;
 
 vi.mock("@/hooks/useDraftBlock", () => ({
   useDraftBlock: () => blockerState,
+}));
+
+vi.mock("@/api/queries", () => ({
+  useCompanies: () => companiesState,
 }));
 
 vi.mock("@/components/llm/LlmBadge", () => ({
@@ -23,7 +37,7 @@ vi.mock("@/components/llm/LlmBadge", () => ({
 }));
 
 function renderShell(path = "/historique") {
-  render(
+  return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route element={<AppShell />}>
@@ -35,10 +49,21 @@ function renderShell(path = "/historique") {
 }
 
 beforeEach(() => {
+  localStorage.clear();
+  useCompanyStore.setState({ activeCompanyId: null });
   blockerState = {
     state: "unblocked",
     proceed: vi.fn(),
     reset: vi.fn(),
+  };
+  companiesState = {
+    isPending: false,
+    isError: false,
+    isSuccess: true,
+    data: [
+      { id: 1, name: "HKOF" },
+      { id: 2, name: "Autre société" },
+    ],
   };
 });
 
@@ -158,5 +183,58 @@ describe("AppShell", () => {
   it("hides the dialog when navigation is not blocked", () => {
     renderShell();
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("selects the first company and switches the active company", async () => {
+    renderShell();
+
+    const selects = screen.getAllByLabelText("Société active");
+    expect(selects).toHaveLength(2);
+    await waitFor(() =>
+      expect(useCompanyStore.getState().activeCompanyId).toBe(1),
+    );
+    expect(selects[0]).toHaveValue("1");
+    expect(
+      within(selects[0]).getByRole("option", { name: "HKOF" }),
+    ).toBeVisible();
+
+    await userEvent.setup().selectOptions(selects[0], "2");
+    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
+  });
+
+  it("keeps a stored company that still exists", async () => {
+    useCompanyStore.setState({ activeCompanyId: 2 });
+    renderShell();
+
+    const [select] = screen.getAllByLabelText("Société active");
+    await waitFor(() => expect(select).toHaveValue("2"));
+    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
+  });
+
+  it("shows the loading, error and empty company states", async () => {
+    companiesState = { isPending: true, isError: false, isSuccess: false };
+    const pending = renderShell();
+    expect(screen.getAllByText("Chargement des sociétés…")).toHaveLength(2);
+    pending.unmount();
+
+    companiesState = { isPending: false, isError: true, isSuccess: false };
+    const failed = renderShell();
+    expect(screen.getAllByRole("alert")).toHaveLength(2);
+    expect(
+      screen.getAllByText("Impossible de charger les sociétés."),
+    ).toHaveLength(2);
+    failed.unmount();
+
+    companiesState = {
+      isPending: false,
+      isError: false,
+      isSuccess: true,
+      data: [],
+    };
+    renderShell();
+    await waitFor(() =>
+      expect(screen.getAllByText(/Aucune société configurée/)).toHaveLength(2),
+    );
+    expect(useCompanyStore.getState().activeCompanyId).toBeNull();
   });
 });

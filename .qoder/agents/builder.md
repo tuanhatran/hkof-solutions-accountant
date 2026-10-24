@@ -1,7 +1,7 @@
 ---
 name: builder
 description: Implement one HomeOfficeExpenses handoff with tests, fix in the same loop and return real gate evidence.
-model: GLM-5.3-Flash
+model: DeepSeek-Flash
 tools: "*"
 # OpenCode keeps its own model pin.
 ---

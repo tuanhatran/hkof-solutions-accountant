@@ -29,8 +29,9 @@ public class ExpenseItemController {
     }
 
     @GetMapping
-    public List<ExpenseItemDto> listExpenseItems(@RequestParam(defaultValue = "false") boolean all) {
-        return service.list(all);
+    public List<ExpenseItemDto> listExpenseItems(@RequestParam Long companyId,
+            @RequestParam(defaultValue = "false") boolean all) {
+        return service.list(companyId, all);
     }
 
     @PostMapping

@@ -48,24 +48,43 @@ class ExpenseStatementActiveIntegrationTest {
             mockMvc.perform(multipart("/api/signatures")
                             .file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
                             .param("type", "ENTREPRISE_CEO")
+                            .param("employeeId", String.valueOf(ceoEmployeeId()))
                             .param("name", "Signature gérant"))
                     .andExpect(status().isCreated());
         }
     }
 
+    private long ceoEmployeeId() throws Exception {
+        String companies = mockMvc.perform(get("/api/companies"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long companyId = ((Number) JsonPath.read(companies, "$[0].id")).longValue();
+        String body = mockMvc.perform(get("/api/companies/{companyId}/employees", companyId))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return ((Number) JsonPath.read(body, "$[0].id")).longValue();
+    }
+
     @Test
     @DisplayName("Returns the active statement with its lines and amounts")
     void activeStatementReturnsLines() throws Exception {
+        String companies = mockMvc.perform(get("/api/companies"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long companyId = ((Number) JsonPath.read(companies, "$[0].id")).longValue();
+
         mockMvc.perform(post("/api/expense-statements")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"month":"2026-05","lines":[
+                                {"companyId":%d,"month":"2026-05","lines":[
                                   {"itemCode":"loyer","amountInclVat":"950.00","proRataPct":"100"}
                                 ]}
-                                """))
+                                """.formatted(companyId)))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/expense-statements/active").param("month", "2026-05"))
+        mockMvc.perform(get("/api/expense-statements/active")
+                        .param("companyId", String.valueOf(companyId))
+                        .param("month", "2026-05"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.month").value("2026-05"))
                 .andExpect(jsonPath("$.version").value(1))

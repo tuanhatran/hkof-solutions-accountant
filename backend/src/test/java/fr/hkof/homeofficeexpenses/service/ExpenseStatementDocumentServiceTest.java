@@ -29,13 +29,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import fr.hkof.homeofficeexpenses.domain.AmountSource;
+import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
 import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
 import fr.hkof.homeofficeexpenses.domain.ExpenseLine;
 import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
 import fr.hkof.homeofficeexpenses.domain.Receipt;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
-import fr.hkof.homeofficeexpenses.domain.Settings;
 import fr.hkof.homeofficeexpenses.domain.Signature;
 import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
@@ -46,6 +46,8 @@ import fr.hkof.homeofficeexpenses.service.template.TemplateService;
 import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.StatementPreviewRequest;
 
 class ExpenseStatementDocumentServiceTest {
+
+    private static final Long COMPANY_ID = 1L;
 
     private RentReceiptService rentReceiptService;
     private TemplateService templateService;
@@ -104,8 +106,15 @@ class ExpenseStatementDocumentServiceTest {
         return receipt;
     }
 
+    private Company company() {
+        Company company = new Company();
+        company.setId(COMPANY_ID);
+        company.setName("HKOF");
+        return company;
+    }
+
     private StatementPreviewRequest previewRequest(Long templateId, boolean complete) {
-        return new StatementPreviewRequest("2026-10", templateId, complete, List.of(), null);
+        return new StatementPreviewRequest(COMPANY_ID, "2026-10", templateId, complete, List.of(), null);
     }
 
     private void stubDocumentRendering(TemplateDocument template, String html) {
@@ -113,7 +122,7 @@ class ExpenseStatementDocumentServiceTest {
         when(templateService.render(eq(template), any())).thenReturn(html);
         when(pdfService.renderHtmlToPdf(html)).thenReturn(new byte[]{1});
         when(pdfService.addWatermark(any())).thenReturn(new byte[]{9});
-        when(signatureService.resolve(any(), eq(SignatureType.ENTREPRISE_CEO))).thenReturn(OptionalSignature.present());
+        when(signatureService.resolveForCompany(eq(COMPANY_ID), any())).thenReturn(OptionalSignature.present());
         when(signatureService.dataUri(7L)).thenReturn("data:image/png;base64,AAAA");
     }
 
@@ -125,7 +134,7 @@ class ExpenseStatementDocumentServiceTest {
         stubDocumentRendering(template, "<html></html>");
 
         byte[] pdf = service.preview(YearMonth.of(2026, 10), List.of(line(item("gaz", "Gaz", 20), null)),
-                new Settings(), previewRequest(null, false));
+                company(), previewRequest(null, false));
 
         assertThat(pdf).containsExactly(9);
         verify(pdfService, never()).merge(any());
@@ -141,7 +150,7 @@ class ExpenseStatementDocumentServiceTest {
 
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setPdfPath("/data/quittance.pdf");
-        when(rentReceiptService.activeForMonth("2026-10", null, null)).thenReturn(rentReceipt);
+        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null)).thenReturn(rentReceipt);
         when(storage.read("/data/quittance.pdf")).thenReturn(new byte[]{3});
 
         Receipt pdfReceipt = receipt(1L, "application/pdf", "/data/gaz.pdf", "gaz.pdf");
@@ -162,7 +171,7 @@ class ExpenseStatementDocumentServiceTest {
                 line(item("fibre", "Fibre", 40), textReceipt),
                 line(item("gaz", "Gaz", 20), pdfReceipt));
 
-        byte[] pdf = service.preview(YearMonth.of(2026, 10), lines, new Settings(), previewRequest(null, true));
+        byte[] pdf = service.preview(YearMonth.of(2026, 10), lines, company(), previewRequest(null, true));
 
         assertThat(pdf).containsExactly(9);
         @SuppressWarnings("unchecked")
@@ -178,13 +187,13 @@ class ExpenseStatementDocumentServiceTest {
         when(templateService.active(TemplateType.EXPENSE_STATEMENT)).thenReturn(template);
         stubDocumentRendering(template, "<html></html>");
         when(pdfService.merge(any())).thenReturn(new byte[]{2});
-        when(rentReceiptService.activeForMonth("2026-10", null, null)).thenReturn(null);
+        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null)).thenReturn(null);
 
         List<CalculatedLine> lines = List.of(
                 line(item("gaz", "Gaz", 20), null),
                 line(item("electricite", "Électricité", 30), null));
 
-        service.preview(YearMonth.of(2026, 10), lines, new Settings(), previewRequest(null, true));
+        service.preview(YearMonth.of(2026, 10), lines, company(), previewRequest(null, true));
 
         @SuppressWarnings("unchecked")
         org.mockito.ArgumentCaptor<List<byte[]>> merged = org.mockito.ArgumentCaptor.forClass(List.class);
@@ -198,10 +207,10 @@ class ExpenseStatementDocumentServiceTest {
         TemplateDocument template = template(4L, TemplateType.EXPENSE_STATEMENT);
         when(templateService.byId(4L)).thenReturn(template);
         stubDocumentRendering(template, "<html></html>");
-        service.preview(YearMonth.of(2026, 10), List.of(), new Settings(), previewRequest(4L, false));
+        service.preview(YearMonth.of(2026, 10), List.of(), company(), previewRequest(4L, false));
 
         when(templateService.byId(9L)).thenReturn(template(9L, TemplateType.RENT_RECEIPT));
-        assertThatThrownBy(() -> service.preview(YearMonth.of(2026, 10), List.of(), new Settings(),
+        assertThatThrownBy(() -> service.preview(YearMonth.of(2026, 10), List.of(), company(),
                 previewRequest(9L, false)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Le template sélectionné n'est pas un template de note de frais.");
@@ -212,9 +221,9 @@ class ExpenseStatementDocumentServiceTest {
     void previewWithoutSignature() {
         TemplateDocument template = template(4L, TemplateType.EXPENSE_STATEMENT);
         when(templateService.active(TemplateType.EXPENSE_STATEMENT)).thenReturn(template);
-        when(signatureService.resolve(null, SignatureType.ENTREPRISE_CEO)).thenReturn(java.util.Optional.empty());
+        when(signatureService.resolveForCompany(COMPANY_ID, null)).thenReturn(java.util.Optional.empty());
 
-        assertThatThrownBy(() -> service.preview(YearMonth.of(2026, 10), List.of(), new Settings(),
+        assertThatThrownBy(() -> service.preview(YearMonth.of(2026, 10), List.of(), company(),
                 previewRequest(null, false)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Aucune signature configurée. Configurez une signature dans la page Paramètres.");
@@ -226,11 +235,12 @@ class ExpenseStatementDocumentServiceTest {
         TemplateDocument template = template(4L, TemplateType.EXPENSE_STATEMENT);
         stubDocumentRendering(template, "<html></html>");
         when(pdfService.merge(any())).thenReturn(new byte[]{2});
-        when(rentReceiptService.activeForMonth("2026-10", null, null)).thenReturn(null);
+        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null)).thenReturn(null);
 
         ExpenseStatementDocumentService.GeneratedStatement generated = service.generate(YearMonth.of(2026, 10),
-                List.of(line(item("gaz", "Gaz", 20), null)), 3, template, "signature", new Settings());
+                List.of(line(item("gaz", "Gaz", 20), null)), 3, template, "signature", company());
 
+        assertThat(generated.statement().getCompanyId()).isEqualTo(COMPANY_ID);
         assertThat(generated.statement().getVersion()).isEqualTo(3);
         assertThat(generated.statement().getMonth()).isEqualTo("2026-10");
         assertThat(generated.statement().getNumber()).isEqualTo("NF-2026-10");
@@ -279,13 +289,14 @@ class ExpenseStatementDocumentServiceTest {
     @DisplayName("The ZIP archive contains the note, the rent receipt and each attachment once")
     void zip() throws Exception {
         ExpenseStatement statement = new ExpenseStatement();
+        statement.setCompanyId(COMPANY_ID);
         statement.setMonth("2026-10");
         statement.setPdfPath("/data/note.pdf");
         when(storage.read("/data/note.pdf")).thenReturn("%PDF-note".getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setPdfPath("/data/quittance.pdf");
-        when(rentReceiptService.activeForMonth("2026-10", null, null)).thenReturn(rentReceipt);
+        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null)).thenReturn(rentReceipt);
         when(storage.read("/data/quittance.pdf"))
                 .thenReturn("%PDF-quittance".getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
@@ -315,13 +326,14 @@ class ExpenseStatementDocumentServiceTest {
     @DisplayName("The ZIP archive skips a rent receipt without a PDF path or file name")
     void zipSkipsIncompleteEntries() throws Exception {
         ExpenseStatement statement = new ExpenseStatement();
+        statement.setCompanyId(COMPANY_ID);
         statement.setMonth("2026-10");
         statement.setPdfPath("/data/note.pdf");
         when(storage.read("/data/note.pdf")).thenReturn(new byte[]{1});
 
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setPdfPath(" ");
-        when(rentReceiptService.activeForMonth("2026-10", null, null)).thenReturn(rentReceipt);
+        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null)).thenReturn(rentReceipt);
 
         Receipt blankName = receipt(2L, "application/pdf", "/data/x.pdf", " ");
         ExpenseLine line = new ExpenseLine();
@@ -342,13 +354,13 @@ class ExpenseStatementDocumentServiceTest {
     @Test
     @DisplayName("The signature resolver defaults to the company signature and rejects a missing one")
     void signatureDataUri() {
-        when(signatureService.resolve(null, SignatureType.ENTREPRISE_CEO)).thenReturn(OptionalSignature.present());
+        when(signatureService.resolveForCompany(COMPANY_ID, null)).thenReturn(OptionalSignature.present());
         when(signatureService.dataUri(7L)).thenReturn("data:image/png;base64,AAAA");
-        assertThat(service.signatureDataUri(null, SignatureType.ENTREPRISE_CEO))
+        assertThat(service.signatureDataUri(null, COMPANY_ID))
                 .isEqualTo("data:image/png;base64,AAAA");
 
-        when(signatureService.resolve(null, SignatureType.ENTREPRISE_CEO)).thenReturn(java.util.Optional.empty());
-        assertThatThrownBy(() -> service.signatureDataUri(null, SignatureType.ENTREPRISE_CEO))
+        when(signatureService.resolveForCompany(COMPANY_ID, null)).thenReturn(java.util.Optional.empty());
+        assertThatThrownBy(() -> service.signatureDataUri(null, COMPANY_ID))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Aucune signature configurée");
     }

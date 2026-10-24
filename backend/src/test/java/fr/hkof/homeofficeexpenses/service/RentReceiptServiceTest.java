@@ -22,11 +22,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
 import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
-import fr.hkof.homeofficeexpenses.domain.Settings;
 import fr.hkof.homeofficeexpenses.domain.Signature;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateFormat;
@@ -42,8 +42,10 @@ import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.RentReceiptRequest;
 
 class RentReceiptServiceTest {
 
+    private static final Long COMPANY_ID = 1L;
+
     private RentReceiptRepository repository;
-    private SettingsService settingsService;
+    private CompanyService companies;
     private RentConfigurationService rentConfigurationService;
     private LandlordRepository landlordRepository;
     private TenantRepository tenantRepository;
@@ -57,7 +59,7 @@ class RentReceiptServiceTest {
     @BeforeEach
     void setUp() {
         repository = mock(RentReceiptRepository.class);
-        settingsService = mock(SettingsService.class);
+        companies = mock(CompanyService.class);
         rentConfigurationService = mock(RentConfigurationService.class);
         landlordRepository = mock(LandlordRepository.class);
         tenantRepository = mock(TenantRepository.class);
@@ -66,9 +68,16 @@ class RentReceiptServiceTest {
         signatureService = mock(SignatureService.class);
         pdfService = mock(PdfService.class);
         storage = mock(StorageService.class);
-        service = new RentReceiptService(repository, settingsService, rentConfigurationService, landlordRepository,
+        service = new RentReceiptService(repository, companies, rentConfigurationService, landlordRepository,
                 tenantRepository, templateService, templateDataService, signatureService, pdfService, storage,
                 Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
+    }
+
+    private Company company() {
+        Company company = new Company();
+        company.setId(COMPANY_ID);
+        company.setName("HKOF");
+        return company;
     }
 
     private Lease lease() {
@@ -82,6 +91,7 @@ class RentReceiptServiceTest {
         tenant.setAddress("2 rue du Locataire");
         Lease lease = new Lease();
         lease.setId(3L);
+        lease.setCompanyId(COMPANY_ID);
         lease.setLandlord(landlord);
         lease.setTenant(tenant);
         lease.setPropertyAddress("12 rue de la République");
@@ -103,12 +113,13 @@ class RentReceiptServiceTest {
 
     private RentReceiptRequest request(String month, String periodStart, String periodEnd, String rent, String charges,
             Long templateId, Long signatureId) {
-        return new RentReceiptRequest(month, 1L, 2L, periodStart, periodEnd, rent, charges, null, null, templateId,
-                signatureId);
+        return new RentReceiptRequest(month, COMPANY_ID, 1L, 2L, periodStart, periodEnd, rent, charges, null, null,
+                templateId, signatureId);
     }
 
     private void stubGenerationDependencies(TemplateDocument template) {
-        when(settingsService.entity()).thenReturn(new Settings());
+        when(companies.entity(COMPANY_ID)).thenReturn(company());
+        when(companies.find(COMPANY_ID)).thenReturn(Optional.of(company()));
         when(rentConfigurationService.resolveLease(1L, 2L)).thenReturn(lease());
         when(templateService.active(TemplateType.RENT_RECEIPT)).thenReturn(template);
         Signature signature = new Signature();
@@ -175,7 +186,7 @@ class RentReceiptServiceTest {
     @Test
     @DisplayName("Generation rejects an inverted period and a template of another type")
     void generateRejectsInvalidInputs() {
-        when(settingsService.entity()).thenReturn(new Settings());
+        when(companies.entity(COMPANY_ID)).thenReturn(company());
         when(rentConfigurationService.resolveLease(1L, 2L)).thenReturn(lease());
         Signature signature = new Signature();
         signature.setId(7L);
@@ -196,7 +207,7 @@ class RentReceiptServiceTest {
     @Test
     @DisplayName("Generation without a configured signature is rejected in French")
     void generateWithoutSignature() {
-        when(settingsService.entity()).thenReturn(new Settings());
+        when(companies.entity(COMPANY_ID)).thenReturn(company());
         when(rentConfigurationService.resolveLease(1L, 2L)).thenReturn(lease());
         when(templateService.active(TemplateType.RENT_RECEIPT))
                 .thenReturn(template(1L, TemplateType.RENT_RECEIPT, "Quittance", 1));
@@ -222,7 +233,7 @@ class RentReceiptServiceTest {
     @Test
     @DisplayName("Preview rejects an inverted period and a template of another type")
     void previewRejectsInvalidInputs() {
-        when(settingsService.entity()).thenReturn(new Settings());
+        when(companies.entity(COMPANY_ID)).thenReturn(company());
         when(rentConfigurationService.resolveLease(1L, 2L)).thenReturn(lease());
         Signature signature = new Signature();
         signature.setId(7L);
@@ -240,19 +251,24 @@ class RentReceiptServiceTest {
     }
 
     @Test
-    @DisplayName("Listing without month returns every receipt and a month filters it")
+    @DisplayName("Listing filters by company and month or lists every receipt")
     void list() {
         RentReceipt receipt = new RentReceipt();
         receipt.setId(10L);
         receipt.setMonth("2026-10");
         receipt.setStatus(DocumentStatus.ACTIVE);
         receipt.setVersion(1);
+        when(repository.findByCompanyIdOrderByMonthDescVersionDescIdDesc(COMPANY_ID)).thenReturn(List.of(receipt));
+        when(repository.findByCompanyIdAndMonthOrderByVersionDescIdDesc(COMPANY_ID, "2026-10"))
+                .thenReturn(List.of(receipt));
         when(repository.findAllByOrderByMonthDescVersionDescIdDesc()).thenReturn(List.of(receipt));
         when(repository.findByMonthOrderByVersionDescIdDesc("2026-10")).thenReturn(List.of(receipt));
 
-        assertThat(service.list(null)).hasSize(1);
-        assertThat(service.list(" ")).hasSize(1);
-        assertThat(service.list("2026-10")).hasSize(1);
+        assertThat(service.list(COMPANY_ID, null)).hasSize(1);
+        assertThat(service.list(COMPANY_ID, " ")).hasSize(1);
+        assertThat(service.list(COMPANY_ID, "2026-10")).hasSize(1);
+        assertThat(service.list(null, null)).hasSize(1);
+        assertThat(service.list(null, "2026-10")).hasSize(1);
     }
 
     @Test
@@ -266,27 +282,33 @@ class RentReceiptServiceTest {
     }
 
     @Test
-    @DisplayName("The active receipt is selected by pair when both identifiers are provided")
+    @DisplayName("The active receipt is selected by pair, then by company and month, then by month")
     void activeForMonth() {
         RentReceipt receipt = new RentReceipt();
         receipt.setId(10L);
         receipt.setStatus(DocumentStatus.ACTIVE);
         when(repository.findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
                 "2026-10", 1L, 2L, DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
-        assertThat(service.activeForMonth("2026-10", 1L, 2L)).isSameAs(receipt);
+        assertThat(service.activeForMonth(COMPANY_ID, "2026-10", 1L, 2L)).isSameAs(receipt);
 
+        when(repository.findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
+                COMPANY_ID, "2026-10", DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
         when(repository.findFirstByMonthAndStatusOrderByVersionDescIdDesc("2026-10", DocumentStatus.ACTIVE))
                 .thenReturn(Optional.of(receipt));
-        assertThat(service.activeForMonth("2026-10", null, 2L)).isSameAs(receipt);
-        assertThat(service.activeForMonth("2026-10", 1L, null)).isSameAs(receipt);
-        assertThat(service.activeForMonth("2026-10", null, null)).isSameAs(receipt);
+        assertThat(service.activeForMonth(COMPANY_ID, "2026-10", null, 2L)).isSameAs(receipt);
+        assertThat(service.activeForMonth(COMPANY_ID, "2026-10", 1L, null)).isSameAs(receipt);
+        assertThat(service.activeForMonth(COMPANY_ID, "2026-10", null, null)).isSameAs(receipt);
+        assertThat(service.activeForMonth(null, "2026-10", null, null)).isSameAs(receipt);
 
         when(repository.findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
                 "2026-10", 3L, 4L, DocumentStatus.ACTIVE)).thenReturn(Optional.empty());
-        assertThat(service.activeForMonth("2026-10", 3L, 4L)).isNull();
+        assertThat(service.activeForMonth(COMPANY_ID, "2026-10", 3L, 4L)).isNull();
+        when(repository.findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
+                COMPANY_ID, "2026-11", DocumentStatus.ACTIVE)).thenReturn(Optional.empty());
+        assertThat(service.activeForMonth(COMPANY_ID, "2026-11", null, null)).isNull();
         when(repository.findFirstByMonthAndStatusOrderByVersionDescIdDesc("2026-11", DocumentStatus.ACTIVE))
                 .thenReturn(Optional.empty());
-        assertThat(service.activeForMonth("2026-11", null, null)).isNull();
+        assertThat(service.activeForMonth(null, "2026-11", null, null)).isNull();
     }
 
     @Test
@@ -310,6 +332,7 @@ class RentReceiptServiceTest {
     void toDtoWithMissingDirectoryEntries() {
         RentReceipt receipt = new RentReceipt();
         receipt.setId(10L);
+        receipt.setCompanyId(COMPANY_ID);
         receipt.setMonth("2026-10");
         receipt.setLandlordId(5L);
         receipt.setTenantId(6L);
@@ -320,9 +343,11 @@ class RentReceiptServiceTest {
         receipt.setPdfPath("/data/out/quittance.pdf");
         when(landlordRepository.findById(5L)).thenReturn(Optional.empty());
         when(tenantRepository.findById(6L)).thenReturn(Optional.empty());
+        when(companies.find(COMPANY_ID)).thenReturn(Optional.of(company()));
 
         RentReceiptDto dto = service.toDto(receipt);
 
+        assertThat(dto.companyName()).isEqualTo("HKOF");
         assertThat(dto.landlordName()).isNull();
         assertThat(dto.tenantName()).isNull();
         assertThat(dto.pdfAvailable()).isTrue();
@@ -340,6 +365,8 @@ class RentReceiptServiceTest {
 
         RentReceiptDto dto = service.toDto(receipt);
 
+        assertThat(dto.companyId()).isNull();
+        assertThat(dto.companyName()).isNull();
         assertThat(dto.landlordId()).isNull();
         assertThat(dto.tenantId()).isNull();
         assertThat(dto.landlordName()).isNull();

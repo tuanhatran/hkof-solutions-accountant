@@ -1,104 +1,31 @@
 import "./SettingsPage.css";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Save } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
-import { errorMessage } from "@/api/client";
-import { api } from "@/api/endpoints";
-import { queryKeys, useSettings } from "@/api/queries";
-import type { SettingsRequest } from "@/api/types";
-import { RentReceiptSettings } from "@/components/settings/RentReceiptSettings";
+import { useState } from "react";
 import { SignaturesManager } from "@/components/signatures/SignaturesManager";
-import { Button } from "@/components/ui/Button";
-import { ErrorState, LoadingState } from "@/components/ui/States";
+import { RentReceiptSettings } from "@/components/settings/RentReceiptSettings";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { cn } from "@/lib/cn";
-import { parseAmount } from "@/lib/format";
-import { settingsSchema, type SettingsFormValues } from "@/lib/validation";
-import { toast } from "@/state/toasts";
-import { ExpenseItemsManager } from "./ExpenseItemsManager";
-import { SettingsCompanySection } from "./SettingsCompanySection";
-import { SettingsHomeSection } from "./SettingsHomeSection";
-import { SettingsSaveBar } from "./SettingsSaveBar";
-import { valuesFromSettings } from "./settingsValues";
+import { useCompanyStore } from "@/state/company";
+import { CompanySection } from "./CompanySection";
+import { EmployeeSection } from "./EmployeeSection";
+
+const TABS = [
+  { value: "entreprise", label: "Entreprise", dataCy: "onglet-entreprise" },
+  { value: "salaries", label: "Salariés", dataCy: "onglet-salaries" },
+  { value: "quittances", label: "Quittances", dataCy: "onglet-quittances" },
+] as const;
+
+type Tab = (typeof TABS)[number]["value"];
 
 export function SettingsPage() {
-  const queryClient = useQueryClient();
-  const settings = useSettings();
-  const [tab, setTab] = useState<"entreprise" | "quittances">("entreprise");
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    formState: { errors, isDirty },
-  } = useForm<SettingsFormValues>({
-    resolver: zodResolver(settingsSchema),
-    mode: "onChange",
-    defaultValues: valuesFromSettings(undefined),
-  });
-
-  useEffect(() => {
-    if (settings.data) {
-      reset(valuesFromSettings(settings.data));
-    }
-  }, [settings.data, reset]);
-
-  const values = watch();
-  const displayedProRata = useMemo(() => {
-    const proArea = parseAmount(values.businessArea);
-    const totalArea = parseAmount(values.totalArea);
-    if (proArea === null || totalArea === null || Number(totalArea) <= 0) {
-      return null;
-    }
-    return (Number(proArea) / Number(totalArea)) * 100;
-  }, [values.businessArea, values.totalArea]);
-
-  const save = useMutation({
-    mutationFn: (submittedValues: SettingsFormValues) => {
-      const requestBody: SettingsRequest = {
-        companyName: submittedValues.companyName.trim(),
-        legalForm: submittedValues.legalForm.trim(),
-        siren: submittedValues.siren.trim(),
-        companyAddress: submittedValues.companyAddress.trim(),
-        managerName: submittedValues.managerName.trim(),
-        homeAddress: submittedValues.homeAddress.trim(),
-        totalArea: parseAmount(submittedValues.totalArea) ?? undefined,
-        businessArea: parseAmount(submittedValues.businessArea) ?? undefined,
-        issuePlace: submittedValues.issuePlace.trim(),
-      };
-      return api.settings.update(requestBody);
-    },
-    onSuccess: (payload) => {
-      queryClient.setQueryData(queryKeys.settings, payload);
-      toast.success(
-        "Configuration enregistrée. Les prochains documents utiliseront ces valeurs.",
-      );
-    },
-  });
+  const [tab, setTab] = useState<Tab>("entreprise");
+  const activeCompanyId = useCompanyStore((state) => state.activeCompanyId);
 
   return (
     <>
       <PageHeader
         eyebrow="Réglages"
         title="Configuration"
-        description="Ces informations alimentent les quittances, les notes de frais et les valeurs par défaut. Les calculs restent effectués par le backend."
-        actions={
-          tab === "entreprise" ? (
-            <Button
-              variant="primary"
-              type="submit"
-              form="form-parametres"
-              formNoValidate
-              icon={<Save size={15} />}
-              loading={save.isPending}
-              data-cy="btn-enregistrer-configuration"
-            >
-              Enregistrer
-            </Button>
-          ) : null
-        }
+        description="Gérez plusieurs sociétés, leurs salariés, leurs signatures et les données des quittances. Les calculs restent effectués par le backend."
       />
 
       <div
@@ -106,72 +33,33 @@ export function SettingsPage() {
         role="tablist"
         aria-label="Sections de la configuration"
       >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "entreprise"}
-          onClick={() => setTab("entreprise")}
-          className={cn(
-            "segmented-item settings-page-tab",
-            tab === "entreprise" && "segmented-item-active",
-          )}
-          data-cy="onglet-entreprise"
-        >
-          Entreprise
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "quittances"}
-          onClick={() => setTab("quittances")}
-          className={cn(
-            "segmented-item settings-page-tab",
-            tab === "quittances" && "segmented-item-active",
-          )}
-          data-cy="onglet-quittances"
-        >
-          Quittances
-        </button>
+        {TABS.map((candidate) => (
+          <button
+            key={candidate.value}
+            type="button"
+            role="tab"
+            aria-selected={tab === candidate.value}
+            onClick={() => setTab(candidate.value)}
+            className={cn(
+              "segmented-item settings-page-tab",
+              tab === candidate.value && "segmented-item-active",
+            )}
+            data-cy={candidate.dataCy}
+          >
+            {candidate.label}
+          </button>
+        ))}
       </div>
 
       {tab === "quittances" ? (
         <div className="settings-page-sections">
           <RentReceiptSettings />
-          <SignaturesManager />
+          <SignaturesManager companyId={activeCompanyId} />
         </div>
-      ) : settings.isError ? (
-        <ErrorState
-          message={errorMessage(settings.error)}
-          onRetry={() => void settings.refetch()}
-        />
-      ) : settings.isPending ? (
-        <LoadingState message="Chargement de la configuration…" />
+      ) : tab === "salaries" ? (
+        <EmployeeSection companyId={activeCompanyId} />
       ) : (
-        <>
-          <form
-            id="form-parametres"
-            className="settings-page-form"
-            onSubmit={handleSubmit((submittedValues) =>
-              save.mutate(submittedValues),
-            )}
-            noValidate
-          >
-            <SettingsCompanySection register={register} errors={errors} />
-            <SettingsHomeSection
-              register={register}
-              errors={errors}
-              displayedProRata={displayedProRata}
-            />
-            <SettingsSaveBar
-              errorText={save.isError ? errorMessage(save.error) : null}
-              isDirty={isDirty}
-              isPending={save.isPending}
-            />
-          </form>
-          <ExpenseItemsManager
-            defaultProRata={settings.data?.proRataBase ?? "100.00"}
-          />
-        </>
+        <CompanySection />
       )}
     </>
   );

@@ -34,13 +34,15 @@ public final class StatementDtos {
             String aiConfidence) {
     }
 
-    public record StatementCalculationRequest(String month, List<ExpenseLineRequest> lines) {
+    public record StatementCalculationRequest(Long companyId, String month, List<ExpenseLineRequest> lines) {
     }
 
-    public record StatementGenerationRequest(String month, Long templateId, List<ExpenseLineRequest> lines, Long signatureId) {
+    public record StatementGenerationRequest(Long companyId, String month, Long templateId,
+            List<ExpenseLineRequest> lines, Long signatureId) {
     }
 
-    public record StatementPreviewRequest(String month, Long templateId, Boolean complete, List<ExpenseLineRequest> lines, Long signatureId) {
+    public record StatementPreviewRequest(Long companyId, String month, Long templateId, Boolean complete,
+            List<ExpenseLineRequest> lines, Long signatureId) {
     }
 
     public record CalculationResponse(
@@ -62,6 +64,8 @@ public final class StatementDtos {
 
     public record StatementDto(
             Long id,
+            Long companyId,
+            String companyName,
             String month,
             String number,
             String total,

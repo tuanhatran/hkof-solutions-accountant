@@ -32,8 +32,8 @@ public class ExpenseStatementController {
     }
 
     @PostMapping("/draft")
-    public DraftDto createStatementDraft(@RequestParam String month) {
-        return service.draft(month);
+    public DraftDto createStatementDraft(@RequestParam Long companyId, @RequestParam String month) {
+        return service.draft(companyId, month);
     }
 
     @PostMapping("/calculation")
@@ -53,13 +53,15 @@ public class ExpenseStatementController {
     }
 
     @GetMapping
-    public List<StatementDto> listExpenseStatements(@RequestParam(required = false) String month) {
-        return service.list(month);
+    public List<StatementDto> listExpenseStatements(@RequestParam Long companyId,
+            @RequestParam(required = false) String month) {
+        return service.list(companyId, month);
     }
 
     @GetMapping("/active")
-    public ResponseEntity<StatementDto> getActiveExpenseStatement(@RequestParam String month) {
-        return service.activeDtoForMonth(month)
+    public ResponseEntity<StatementDto> getActiveExpenseStatement(@RequestParam Long companyId,
+            @RequestParam String month) {
+        return service.activeDtoForMonth(companyId, month)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }

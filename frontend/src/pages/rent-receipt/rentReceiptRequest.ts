@@ -6,6 +6,7 @@ export function requestFromValues(
   values: RentReceiptFormValues,
   templateId: number | null,
   signatureId: number | null,
+  companyId: number | null = null,
 ): RentReceiptRequest {
   const request: RentReceiptRequest = {
     month: values.month,
@@ -16,6 +17,9 @@ export function requestFromValues(
     rentExclCharges: parseAmount(values.rentExclCharges) ?? "",
     charges: parseAmount(values.charges) ?? "",
   };
+  if (companyId !== null) {
+    request.companyId = companyId;
+  }
   if (values.paymentDate) {
     request.paymentDate = values.paymentDate;
   }

@@ -3,11 +3,12 @@ import { History } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { errorMessage } from "@/api/client";
-import { useRentReceipts, useStatements } from "@/api/queries";
+import { useCompanies, useRentReceipts, useStatements } from "@/api/queries";
 import type { StatementDto } from "@/api/types";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { ErrorState, LoadingState } from "@/components/ui/States";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/States";
 import { formatMonth } from "@/lib/format";
+import { resolveActiveCompanyId, useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft } from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
@@ -18,8 +19,15 @@ import { current, type MonthGroup } from "./historyHelpers";
 
 export function HistoryPage() {
   const navigate = useNavigate();
-  const rentReceiptsQuery = useRentReceipts();
-  const statementsQuery = useStatements();
+  const companies = useCompanies();
+  const storedCompanyId = useCompanyStore((state) => state.activeCompanyId);
+  const activeCompanyId = resolveActiveCompanyId(
+    storedCompanyId,
+    companies.data,
+  );
+  // History is company-scoped: the active company owns every listed document.
+  const rentReceiptsQuery = useRentReceipts(activeCompanyId);
+  const statementsQuery = useStatements(activeCompanyId);
   const [statementToReload, setStatementToReload] =
     useState<StatementDto | null>(null);
 
@@ -52,7 +60,10 @@ export function HistoryPage() {
     return [...byMonth.values()].sort((a, b) => b.month.localeCompare(a.month));
   }, [rentReceiptsQuery.data, statementsQuery.data]);
 
-  const loading = rentReceiptsQuery.isPending || statementsQuery.isPending;
+  const loading =
+    companies.isPending ||
+    rentReceiptsQuery.isPending ||
+    statementsQuery.isPending;
   const errorText = rentReceiptsQuery.isError
     ? errorMessage(rentReceiptsQuery.error)
     : statementsQuery.isError
@@ -114,6 +125,11 @@ export function HistoryPage() {
 
       {loading && groups.length === 0 ? (
         <LoadingState message="Chargement de l’historique…" />
+      ) : activeCompanyId === null ? (
+        <EmptyState
+          title="Aucune société active"
+          description="Créez ou sélectionnez une société dans la configuration pour consulter son historique."
+        />
       ) : groups.length === 0 && !errorText ? (
         <HistoryEmptyState
           onCreateRentReceipt={() => navigate("/generer/quittance")}

@@ -12,4 +12,8 @@
   .settings-save-bar-status {
     @apply text-xs text-ink-soft;
   }
+
+  .settings-save-bar-actions {
+    @apply flex items-center gap-2;
+  }
 }

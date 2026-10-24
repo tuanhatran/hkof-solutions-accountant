@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.Tenant;
@@ -34,9 +35,12 @@ import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.TenantRequest;
 
 class RentConfigurationServiceTest {
 
+    private static final Long COMPANY_ID = 1L;
+
     private LandlordRepository landlords;
     private TenantRepository tenants;
     private LeaseRepository leases;
+    private CompanyService companies;
     private RentConfigurationService service;
 
     @BeforeEach
@@ -44,8 +48,16 @@ class RentConfigurationServiceTest {
         landlords = mock(LandlordRepository.class);
         tenants = mock(TenantRepository.class);
         leases = mock(LeaseRepository.class);
-        service = new RentConfigurationService(landlords, tenants, leases,
+        companies = mock(CompanyService.class);
+        service = new RentConfigurationService(landlords, tenants, leases, companies,
                 Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
+    }
+
+    private Company company() {
+        Company company = new Company();
+        company.setId(COMPANY_ID);
+        company.setName("HKOF");
+        return company;
     }
 
     private Landlord landlord() {
@@ -160,6 +172,8 @@ class RentConfigurationServiceTest {
     void leaseCrud() {
         when(landlords.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(landlord()));
         when(tenants.findByIdAndDeletedFalse(2L)).thenReturn(Optional.of(tenant()));
+        when(companies.entity(COMPANY_ID)).thenReturn(company());
+        when(companies.find(COMPANY_ID)).thenReturn(Optional.of(company()));
         when(leases.existsByLandlordIdAndTenantIdAndDeletedFalse(1L, 2L)).thenReturn(false);
         when(leases.save(any(Lease.class))).thenAnswer(invocation -> {
             Lease saved = invocation.getArgument(0);
@@ -167,15 +181,17 @@ class RentConfigurationServiceTest {
             return saved;
         });
 
-        LeaseDto created = service.createLease(new LeaseRequest(1L, 2L, "12 rue", "900", null));
+        LeaseDto created = service.createLease(new LeaseRequest(COMPANY_ID, 1L, 2L, "12 rue", "900", null));
         assertThat(created.rentExclCharges()).isEqualTo("900.00");
         assertThat(created.charges()).isEqualTo("0.00");
+        assertThat(created.companyId()).isEqualTo(COMPANY_ID);
+        assertThat(created.companyName()).isEqualTo("HKOF");
 
         Lease existing = lease();
         when(leases.findByIdAndDeletedFalse(3L)).thenReturn(Optional.of(existing));
         when(leases.existsByLandlordIdAndTenantIdAndDeletedFalseAndIdNot(1L, 2L, 3L)).thenReturn(false);
-        assertThat(service.updateLease(3L, new LeaseRequest(1L, 2L, "13 rue", "950", "60")).propertyAddress())
-                .isEqualTo("13 rue");
+        assertThat(service.updateLease(3L, new LeaseRequest(COMPANY_ID, 1L, 2L, "13 rue", "950", "60"))
+                .propertyAddress()).isEqualTo("13 rue");
 
         service.deleteLease(3L);
         assertThat(existing.isDeleted()).isTrue();
@@ -184,20 +200,33 @@ class RentConfigurationServiceTest {
     @Test
     @DisplayName("Lease creation requires both identifiers and existing parties")
     void leaseValidation() {
-        assertThatThrownBy(() -> service.createLease(new LeaseRequest(null, 2L, "12 rue", "900", null)))
+        assertThatThrownBy(() -> service.createLease(new LeaseRequest(null, null, 2L, "12 rue", "900", null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Sélectionnez un bailleur et un locataire.");
-        assertThatThrownBy(() -> service.createLease(new LeaseRequest(1L, null, "12 rue", "900", null)))
+        assertThatThrownBy(() -> service.createLease(new LeaseRequest(null, 1L, null, "12 rue", "900", null)))
                 .isInstanceOf(BusinessException.class);
         when(landlords.findByIdAndDeletedFalse(1L)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> service.createLease(new LeaseRequest(1L, 2L, "12 rue", "900", null)))
+        assertThatThrownBy(() -> service.createLease(new LeaseRequest(null, 1L, 2L, "12 rue", "900", null)))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Bailleur introuvable.");
         when(landlords.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(landlord()));
         when(tenants.findByIdAndDeletedFalse(2L)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> service.createLease(new LeaseRequest(1L, 2L, "12 rue", "900", null)))
+        assertThatThrownBy(() -> service.createLease(new LeaseRequest(null, 1L, 2L, "12 rue", "900", null)))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Locataire introuvable.");
+    }
+
+    @Test
+    @DisplayName("An unknown company on a lease is not found")
+    void leaseUnknownCompany() {
+        when(landlords.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(landlord()));
+        when(tenants.findByIdAndDeletedFalse(2L)).thenReturn(Optional.of(tenant()));
+        when(leases.existsByLandlordIdAndTenantIdAndDeletedFalse(1L, 2L)).thenReturn(false);
+        when(companies.entity(9L)).thenThrow(new NotFoundException("Société introuvable."));
+
+        assertThatThrownBy(() -> service.createLease(new LeaseRequest(9L, 1L, 2L, "12 rue", "900", null)))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Société introuvable.");
     }
 
     @Test
@@ -206,13 +235,13 @@ class RentConfigurationServiceTest {
         when(landlords.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(landlord()));
         when(tenants.findByIdAndDeletedFalse(2L)).thenReturn(Optional.of(tenant()));
         when(leases.existsByLandlordIdAndTenantIdAndDeletedFalse(1L, 2L)).thenReturn(true);
-        assertThatThrownBy(() -> service.createLease(new LeaseRequest(1L, 2L, "12 rue", "900", null)))
+        assertThatThrownBy(() -> service.createLease(new LeaseRequest(null, 1L, 2L, "12 rue", "900", null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Un bail actif existe déjà pour ce bailleur et ce locataire.");
 
         when(leases.findByIdAndDeletedFalse(3L)).thenReturn(Optional.of(lease()));
         when(leases.existsByLandlordIdAndTenantIdAndDeletedFalseAndIdNot(1L, 2L, 3L)).thenReturn(true);
-        assertThatThrownBy(() -> service.updateLease(3L, new LeaseRequest(1L, 2L, "12 rue", "900", null)))
+        assertThatThrownBy(() -> service.updateLease(3L, new LeaseRequest(null, 1L, 2L, "12 rue", "900", null)))
                 .isInstanceOf(BusinessException.class);
     }
 
@@ -223,7 +252,7 @@ class RentConfigurationServiceTest {
         when(tenants.findByIdAndDeletedFalse(2L)).thenReturn(Optional.of(tenant()));
         when(leases.existsByLandlordIdAndTenantIdAndDeletedFalse(1L, 2L)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.createLease(new LeaseRequest(1L, 2L, " ", "900", null)))
+        assertThatThrownBy(() -> service.createLease(new LeaseRequest(null, 1L, 2L, " ", "900", null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("L'adresse du bien est obligatoire.");
     }
@@ -258,7 +287,7 @@ class RentConfigurationServiceTest {
                 .isInstanceOf(NotFoundException.class).hasMessage("Locataire introuvable.");
         assertThatThrownBy(() -> service.deleteTenant(9L))
                 .isInstanceOf(NotFoundException.class);
-        assertThatThrownBy(() -> service.updateLease(9L, new LeaseRequest(1L, 2L, "x", "1", null)))
+        assertThatThrownBy(() -> service.updateLease(9L, new LeaseRequest(null, 1L, 2L, "x", "1", null)))
                 .isInstanceOf(NotFoundException.class).hasMessage("Bail introuvable.");
         assertThatThrownBy(() -> service.deleteLease(9L))
                 .isInstanceOf(NotFoundException.class);

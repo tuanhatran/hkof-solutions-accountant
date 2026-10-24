@@ -4,15 +4,25 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
-import type { SettingsDto } from "@/api/types";
+import type { CompanyDto, EmployeeDto } from "@/api/types";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
+import { useCompanyStore } from "@/state/company";
 import { useToasts } from "@/state/toasts";
 
-const SETTINGS: SettingsDto = {
-  companyName: "HKOF",
+interface QueryLike<T> {
+  data: T | undefined;
+  isPending: boolean;
+  isError: boolean;
+  error: Error | null;
+  refetch: ReturnType<typeof vi.fn>;
+}
+
+const COMPANY: CompanyDto = {
+  id: 1,
+  name: "HKOF",
   legalForm: "EURL",
   siren: "123 456 789",
-  companyAddress: "1 rue de la Paix, 75002 Paris",
+  address: "1 rue de la Paix, 75002 Paris",
   managerName: "Camille Martin",
   homeAddress: "12 rue des Lilas, 75011 Paris",
   totalArea: "70.00",
@@ -21,11 +31,57 @@ const SETTINGS: SettingsDto = {
   issuePlace: "Paris",
 };
 
-let settingsState = {};
+const OTHER: CompanyDto = {
+  id: 2,
+  name: "Autre SARL",
+  legalForm: "SAS",
+  siren: "987 654 321",
+  address: "2 rue du Marché, 75003 Paris",
+  managerName: "Alex Durand",
+  homeAddress: "5 rue des Roses, 75012 Paris",
+  totalArea: "80.00",
+  businessArea: "20.00",
+  proRataBase: "25.00",
+  issuePlace: "Paris",
+};
+
+const CEO: EmployeeDto = {
+  id: 3,
+  companyId: 1,
+  firstName: "Camille",
+  lastName: "Martin",
+  email: "camille.martin@exemple.fr",
+  title: "CEO",
+};
+
+let companiesState: QueryLike<CompanyDto[]>;
+let employeesState: QueryLike<EmployeeDto[]>;
+
+function readyQuery<T>(data: T[]): QueryLike<T[]> {
+  return {
+    data,
+    isPending: false,
+    isError: false,
+    error: null,
+    refetch: vi.fn(),
+  };
+}
 
 vi.mock("@/api/endpoints", () => ({
   api: {
-    settings: { get: vi.fn(), update: vi.fn() },
+    companies: {
+      list: vi.fn(),
+      get: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    employees: {
+      list: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
     expenseItems: {
       list: vi.fn(),
       create: vi.fn(),
@@ -45,47 +101,20 @@ vi.mock("@/api/queries", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/queries")>();
   return {
     ...actual,
-    useSettings: () => settingsState,
-    useExpenseItems: () => ({
-      data: [],
-      isPending: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    }),
-    useSignatures: () => ({
-      data: [],
-      isPending: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    }),
-    useLandlords: () => ({
-      data: [],
-      isPending: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    }),
-    useTenants: () => ({
-      data: [],
-      isPending: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    }),
-    useLeases: () => ({
-      data: [],
-      isPending: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    }),
+    useCompanies: () => companiesState,
+    useEmployees: () => employeesState,
+    useExpenseItems: () => readyQuery([]),
+    useSignatures: () => readyQuery([]),
+    useLandlords: () => readyQuery([]),
+    useTenants: () => readyQuery([]),
+    useLeases: () => readyQuery([]),
   };
 });
 
 function renderPage() {
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
@@ -95,16 +124,19 @@ function renderPage() {
   );
 }
 
+function toastMessages(): string[] {
+  return useToasts.getState().toasts.map((element) => element.message);
+}
+
 describe("SettingsPage tabs", () => {
   beforeEach(() => {
-    settingsState = {
-      data: SETTINGS,
-      isPending: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    };
-    vi.mocked(api.settings.update).mockReset();
+    companiesState = readyQuery([COMPANY]);
+    employeesState = readyQuery([CEO]);
+    useCompanyStore.setState({ activeCompanyId: 1 });
+    vi.mocked(api.companies.update).mockReset();
+    vi.mocked(api.companies.create).mockReset();
+    vi.mocked(api.companies.delete).mockReset();
+    vi.mocked(api.employees.create).mockReset();
     useToasts.setState({ toasts: [] });
   });
 
@@ -121,10 +153,9 @@ describe("SettingsPage tabs", () => {
 
   it("switches to the Quittances tab with the directories and signatures", async () => {
     renderPage();
+    const user = userEvent.setup();
 
-    await userEvent
-      .setup()
-      .click(screen.getByRole("tab", { name: "Quittances" }));
+    await user.click(screen.getByRole("tab", { name: "Quittances" }));
 
     expect(
       await screen.findByRole("heading", { name: "Bailleurs" }),
@@ -141,14 +172,54 @@ describe("SettingsPage tabs", () => {
       screen.queryByRole("button", { name: "Enregistrer" }),
     ).not.toBeInTheDocument();
 
-    await userEvent
-      .setup()
-      .click(screen.getByRole("tab", { name: "Entreprise" }));
+    await user.click(screen.getByRole("tab", { name: "Entreprise" }));
     expect(screen.getByLabelText("Raison sociale")).toHaveValue("HKOF");
   });
 
-  it("saves the configuration and confirms in French", async () => {
-    vi.mocked(api.settings.update).mockResolvedValue(SETTINGS);
+  it("lists the employees of the active company with their French title", async () => {
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("tab", { name: "Salariés" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Salariés" }),
+    ).toBeVisible();
+    expect(screen.getByText("Camille Martin")).toBeVisible();
+    expect(screen.getByText("PDG")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Ajouter un salarié" }),
+    ).toBeEnabled();
+    expect(screen.queryByLabelText("Raison sociale")).toBeNull();
+  });
+
+  it("asks for an active company before managing employees", async () => {
+    companiesState = readyQuery([]);
+    employeesState = {
+      data: undefined,
+      isPending: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    };
+    useCompanyStore.setState({ activeCompanyId: null });
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("tab", { name: "Salariés" }));
+
+    expect(
+      screen.getByText(
+        "Sélectionnez une société active pour gérer ses salariés.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Ajouter un salarié" }),
+    ).toBeDisabled();
+  });
+
+  it("saves the company configuration and confirms in French", async () => {
+    vi.mocked(api.companies.update).mockResolvedValue(COMPANY);
     renderPage();
     const user = userEvent.setup();
 
@@ -157,14 +228,16 @@ describe("SettingsPage tabs", () => {
     await user.type(screen.getByLabelText("Raison sociale"), "HKOF 2");
     expect(screen.getByText("Modifications non enregistrées.")).toBeVisible();
 
-    await user.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await user.click(
+      screen.getByRole("button", { name: "Enregistrer la configuration" }),
+    );
 
     await waitFor(() =>
-      expect(api.settings.update).toHaveBeenCalledWith({
-        companyName: "HKOF 2",
+      expect(api.companies.update).toHaveBeenCalledWith(1, {
+        name: "HKOF 2",
         legalForm: "EURL",
         siren: "123 456 789",
-        companyAddress: "1 rue de la Paix, 75002 Paris",
+        address: "1 rue de la Paix, 75002 Paris",
         managerName: "Camille Martin",
         homeAddress: "12 rue des Lilas, 75011 Paris",
         totalArea: "70.00",
@@ -173,39 +246,25 @@ describe("SettingsPage tabs", () => {
       }),
     );
     await waitFor(() =>
-      expect(
-        useToasts.getState().toasts.map((element) => element.message),
-      ).toContain(
-        "Configuration enregistrée. Les prochains documents utiliseront ces valeurs.",
+      expect(toastMessages()).toContain(
+        "Société enregistrée. Les prochains documents utiliseront ces valeurs.",
       ),
     );
   });
 
-  it("shows the validation messages when required fields are empty", async () => {
+  it("shows the validation message when the company name is empty", async () => {
     renderPage();
     const user = userEvent.setup();
 
     await user.clear(screen.getByLabelText("Raison sociale"));
-    await user.clear(screen.getByLabelText("Forme juridique"));
-    await user.clear(screen.getByLabelText("Adresse de la société"));
-    await user.clear(screen.getByLabelText("Adresse du logement"));
     await user.click(
       screen.getByRole("button", { name: "Enregistrer la configuration" }),
     );
 
     expect(
-      await screen.findByText("La raison sociale est obligatoire."),
+      await screen.findByText("Le nom de la société est obligatoire."),
     ).toBeVisible();
-    expect(
-      screen.getByText("La forme juridique est obligatoire."),
-    ).toBeVisible();
-    expect(
-      screen.getByText("L'adresse de la société est obligatoire."),
-    ).toBeVisible();
-    expect(
-      screen.getByText("L'adresse du logement est obligatoire."),
-    ).toBeVisible();
-    expect(api.settings.update).not.toHaveBeenCalled();
+    expect(api.companies.update).not.toHaveBeenCalled();
   });
 
   it("computes the indicative pro-rata from the areas", async () => {
@@ -220,7 +279,7 @@ describe("SettingsPage tabs", () => {
   });
 
   it("surfaces the save error in the save bar", async () => {
-    vi.mocked(api.settings.update).mockRejectedValue(
+    vi.mocked(api.companies.update).mockRejectedValue(
       new Error("Enregistrement impossible."),
     );
     renderPage();
@@ -235,9 +294,9 @@ describe("SettingsPage tabs", () => {
     expect(await screen.findByText("Enregistrement impossible.")).toBeVisible();
   });
 
-  it("shows the loading then error states of the settings", async () => {
+  it("shows the loading then error states of the companies", async () => {
     const refetch = vi.fn();
-    settingsState = {
+    companiesState = {
       data: undefined,
       isPending: true,
       isError: false,
@@ -251,29 +310,118 @@ describe("SettingsPage tabs", () => {
         </MemoryRouter>
       </QueryClientProvider>,
     );
-    expect(screen.getByText("Chargement de la configuration…")).toBeVisible();
+    expect(screen.getByText("Chargement des sociétés…")).toBeVisible();
     loading.unmount();
 
-    settingsState = {
+    companiesState = {
       data: undefined,
       isPending: false,
       isError: true,
-      error: new Error("Paramètres indisponibles"),
+      error: new Error("Sociétés indisponibles"),
       refetch,
     };
     renderPage();
-    expect(screen.getByText("Paramètres indisponibles")).toBeVisible();
+    expect(screen.getByText("Sociétés indisponibles")).toBeVisible();
     await userEvent
       .setup()
       .click(screen.getByRole("button", { name: "Réessayer" }));
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
+  it("creates the first company when none is configured", async () => {
+    companiesState = readyQuery([]);
+    vi.mocked(api.companies.create).mockResolvedValue(COMPANY);
+    renderPage();
+    const user = userEvent.setup();
+
+    expect(
+      screen.getByText("Aucune société configurée. Créez la première société."),
+    ).toBeVisible();
+
+    await user.type(screen.getByLabelText("Raison sociale"), "HKOF");
+    await user.click(screen.getByRole("button", { name: "Créer la société" }));
+
+    await waitFor(() =>
+      expect(api.companies.create).toHaveBeenCalledWith({
+        name: "HKOF",
+        legalForm: "",
+        siren: "",
+        address: "",
+        managerName: "",
+        homeAddress: "",
+        totalArea: undefined,
+        businessArea: undefined,
+        issuePlace: "",
+      }),
+    );
+    await waitFor(() => expect(toastMessages()).toContain("Société créée."));
+  });
+
+  it("makes another company active", async () => {
+    companiesState = readyQuery([COMPANY, OTHER]);
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.selectOptions(
+      screen.getByLabelText("Société à configurer"),
+      "2",
+    );
+    await user.click(screen.getByRole("button", { name: "Rendre active" }));
+
+    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
+  });
+
+  it("deletes a company after confirmation", async () => {
+    vi.mocked(api.companies.delete).mockResolvedValue(undefined);
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Supprimer" }));
+    expect(await screen.findByText("Supprimer cette société ?")).toBeVisible();
+    await user.click(
+      screen.getByRole("button", { name: "Supprimer la société" }),
+    );
+
+    await waitFor(() => expect(api.companies.delete).toHaveBeenCalledWith(1));
+    await waitFor(() =>
+      expect(toastMessages()).toContain("Société supprimée."),
+    );
+  });
+
+  it("adds an employee to the active company", async () => {
+    vi.mocked(api.employees.create).mockResolvedValue({
+      id: 4,
+      companyId: 1,
+      firstName: "Alex",
+      lastName: "Durand",
+      title: "EMPLOYEE",
+    });
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("tab", { name: "Salariés" }));
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter un salarié" }),
+    );
+    await user.type(screen.getByLabelText("Prénom"), "Alex");
+    await user.type(screen.getByLabelText("Nom"), "Durand");
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter le salarié" }),
+    );
+
+    await waitFor(() =>
+      expect(api.employees.create).toHaveBeenCalledWith(1, {
+        companyId: 1,
+        firstName: "Alex",
+        lastName: "Durand",
+        email: null,
+        title: "EMPLOYEE",
+      }),
+    );
+  });
+
   it("falls back on the default pro-rata for a new expense item", async () => {
-    settingsState = {
-      ...settingsState,
-      data: { ...SETTINGS, proRataBase: undefined },
-    };
+    companiesState = readyQuery([{ ...COMPANY, proRataBase: undefined }]);
     renderPage();
     const user = userEvent.setup();
 

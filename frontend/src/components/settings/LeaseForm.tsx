@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
-import { queryKeys } from "@/api/queries";
+import { queryKeys, useCompanies } from "@/api/queries";
 import type {
   LandlordDto,
   LeaseDto,
@@ -34,6 +34,7 @@ export function LeaseForm({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  const companies = useCompanies();
   const [requestError, setRequestError] = useState<string | null>(null);
   const {
     register,
@@ -44,6 +45,10 @@ export function LeaseForm({
     resolver: zodResolver(leaseSchema),
     mode: "onChange",
     defaultValues: {
+      companyId:
+        item?.companyId === undefined || item.companyId === null
+          ? ""
+          : String(item.companyId),
       landlordId: item?.landlordId === undefined ? "" : String(item.landlordId),
       tenantId: item?.tenantId === undefined ? "" : String(item.tenantId),
       propertyAddress: item?.propertyAddress ?? "",
@@ -59,6 +64,7 @@ export function LeaseForm({
   const save = useMutation({
     mutationFn: (values: LeaseFormValues) => {
       const requestBody: LeaseRequest = {
+        companyId: values.companyId === "" ? null : Number(values.companyId),
         landlordId: Number(values.landlordId),
         tenantId: Number(values.tenantId),
         propertyAddress: values.propertyAddress.trim(),
@@ -91,6 +97,27 @@ export function LeaseForm({
       </h3>
 
       <div className="lease-form-grid">
+        <FieldGroup
+          id="bail-societe"
+          label="Société du bail"
+          error={errors.companyId?.message}
+          help="Facultative : la quittance utilise la société active à défaut."
+          className="sm:col-span-2"
+        >
+          <select
+            id="bail-societe"
+            className={cn("field", errors.companyId && "field-error")}
+            {...register("companyId")}
+            data-cy="select-bail-societe"
+          >
+            <option value="">Aucune société</option>
+            {(companies.data ?? []).map((company) => (
+              <option key={company.id} value={company.id}>
+                {company.name}
+              </option>
+            ))}
+          </select>
+        </FieldGroup>
         <FieldGroup
           id="bail-bailleur"
           label="Bailleur du bail"
