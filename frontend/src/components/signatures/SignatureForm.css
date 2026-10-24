@@ -1,0 +1,55 @@
+@reference "../../index.css";
+
+@layer components {
+  .signature-form {
+    @apply rounded-xl border border-accent/20 bg-accent-soft/25 p-4;
+  }
+
+  .signature-form-title {
+    @apply text-[15px] font-semibold text-ink;
+  }
+
+  .signature-form-grid {
+    @apply mt-3 grid gap-3 sm:grid-cols-2;
+  }
+
+  .signature-form-landlord {
+    @apply mt-3;
+  }
+
+  .signature-form-dropzone {
+    @apply mt-3;
+  }
+
+  .signature-form-preview {
+    @apply mt-3 flex items-center gap-3 rounded-xl border border-line bg-paper/50 p-3;
+  }
+
+  .signature-form-preview-image {
+    @apply h-14 w-24 shrink-0 rounded-lg border border-line bg-white object-contain p-1;
+  }
+
+  .signature-form-preview-body {
+    @apply min-w-0 flex-1;
+  }
+
+  .signature-form-preview-name {
+    @apply truncate text-sm font-semibold text-ink;
+  }
+
+  .signature-form-preview-size {
+    @apply text-xs text-ink-soft;
+  }
+
+  .signature-form-remove {
+    @apply rounded-lg p-2 text-ink-soft transition hover:bg-danger-soft hover:text-danger disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .signature-form-error {
+    @apply mt-3 rounded-lg border border-danger/20 bg-danger-soft/60 p-2.5 text-xs text-danger;
+  }
+
+  .signature-form-actions {
+    @apply mt-4 flex flex-wrap justify-end gap-2;
+  }
+}

@@ -1,0 +1,23 @@
+@reference "../../index.css";
+
+@layer components {
+  .settings-section-heading {
+    @apply flex items-start gap-3;
+  }
+
+  .settings-section-icon {
+    @apply grid h-9 w-9 place-items-center rounded-lg bg-accent-soft text-accent;
+  }
+
+  .settings-section-title {
+    @apply text-xl text-ink;
+  }
+
+  .settings-section-description {
+    @apply mt-0.5 text-xs text-ink-soft;
+  }
+
+  .settings-section-empty {
+    @apply rounded-xl border border-dashed border-line-strong p-6 text-center text-sm text-ink-soft;
+  }
+}

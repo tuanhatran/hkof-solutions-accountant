@@ -1,0 +1,27 @@
+@reference "../../index.css";
+
+@layer components {
+  .llm-remote-warning {
+    @apply mb-6 flex items-start gap-3 rounded-2xl border border-warning/25 bg-warning-soft/70 px-4 py-3;
+  }
+
+  .llm-remote-warning-icon {
+    @apply mt-0.5 shrink-0 text-warning;
+  }
+
+  .llm-remote-warning-body {
+    @apply text-xs leading-relaxed text-warning;
+  }
+
+  .llm-remote-warning-title {
+    @apply font-semibold;
+  }
+
+  .llm-remote-warning-text {
+    @apply mt-0.5;
+  }
+
+  .llm-remote-warning-code {
+    @apply font-mono;
+  }
+}

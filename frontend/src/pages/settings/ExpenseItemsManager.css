@@ -1,0 +1,67 @@
+@reference "../../index.css";
+
+@layer components {
+  .expense-items-manager {
+    @apply mt-6 overflow-hidden;
+  }
+
+  .expense-items-manager-heading {
+    @apply flex items-start gap-3;
+  }
+
+  .expense-items-manager-icon {
+    @apply grid h-9 w-9 place-items-center rounded-lg bg-accent-soft text-accent;
+  }
+
+  .expense-items-manager-title {
+    @apply text-xl text-ink;
+  }
+
+  .expense-items-manager-description {
+    @apply mt-0.5 text-xs text-ink-soft;
+  }
+
+  .expense-items-manager-body {
+    @apply space-y-4;
+  }
+
+  .expense-items-manager-empty {
+    @apply rounded-xl border border-dashed border-line-strong p-6 text-center text-sm text-ink-soft;
+  }
+
+  .expense-items-manager-table-wrapper {
+    @apply overflow-x-auto rounded-xl border border-line;
+  }
+
+  .expense-items-manager-item {
+    @apply flex flex-wrap items-center gap-1.5;
+  }
+
+  .expense-items-manager-item-label {
+    @apply font-medium text-ink;
+  }
+
+  .expense-items-manager-item-code {
+    @apply rounded bg-paper-deep/60 px-1 py-0.5 font-mono text-[10.5px] text-ink-soft;
+  }
+
+  .expense-items-manager-number-cell {
+    @apply text-right text-ink-soft;
+  }
+
+  .expense-items-manager-periodicity-cell {
+    @apply text-xs capitalize text-ink-soft;
+  }
+
+  .expense-items-manager-order-cell {
+    @apply text-center text-ink-soft;
+  }
+
+  .expense-items-manager-single-line {
+    @apply text-xs text-ink-soft;
+  }
+
+  .expense-items-manager-actions {
+    @apply flex justify-end gap-1;
+  }
+}

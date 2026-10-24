@@ -1,0 +1,23 @@
+@reference "../../index.css";
+
+@layer components {
+  .settings-card-section {
+    @apply overflow-hidden;
+  }
+
+  .settings-card-section-header {
+    @apply flex items-start gap-3 border-b border-line px-5 py-4 sm:px-6;
+  }
+
+  .settings-card-section-icon {
+    @apply grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent;
+  }
+
+  .settings-card-section-title {
+    @apply text-lg text-ink;
+  }
+
+  .settings-card-section-description {
+    @apply mt-0.5 text-xs text-ink-soft;
+  }
+}

@@ -1,0 +1,43 @@
+@reference "../../index.css";
+
+@layer components {
+  .expense-generation-footer {
+    @apply space-y-3 border-t border-line px-5 py-4 sm:px-6;
+  }
+
+  .expense-generation-footer-totals {
+    @apply flex flex-wrap items-end justify-between gap-3;
+  }
+
+  .expense-generation-footer-total {
+    @apply mt-1 flex items-baseline gap-2 font-display text-[30px] leading-none text-accent-strong;
+  }
+
+  .expense-generation-footer-words {
+    @apply mt-1.5 text-xs text-ink-soft;
+  }
+
+  .expense-generation-footer-basis {
+    @apply text-right text-[11px] leading-relaxed text-ink-soft;
+  }
+
+  .expense-generation-footer-basis-value {
+    @apply font-medium text-ink;
+  }
+
+  .expense-generation-footer-signature {
+    @apply grid gap-4 sm:grid-cols-2;
+  }
+
+  .expense-generation-footer-alert {
+    @apply self-end rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger;
+  }
+
+  .expense-generation-footer-actions {
+    @apply flex flex-wrap items-center justify-between gap-3;
+  }
+
+  .expense-generation-footer-hint {
+    @apply max-w-[300px] text-[11px] leading-snug text-ink-soft;
+  }
+}

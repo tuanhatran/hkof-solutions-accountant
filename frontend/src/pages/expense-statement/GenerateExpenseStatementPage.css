@@ -1,0 +1,11 @@
+@reference "../../index.css";
+
+@layer components {
+  .generate-expense-statement-page-tabs {
+    @apply mb-4 flex items-center justify-between gap-3 lg:hidden;
+  }
+
+  .generate-expense-statement-page-grid {
+    @apply grid items-start gap-5 lg:grid-cols-[minmax(0,1.06fr)_minmax(400px,0.94fr)] xl:gap-6;
+  }
+}

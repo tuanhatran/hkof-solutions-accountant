@@ -1,0 +1,35 @@
+@reference "../../index.css";
+
+@layer components {
+  .toast-host {
+    @apply pointer-events-none fixed bottom-4 right-4 z-[60] flex w-[min(92vw,380px)] flex-col gap-2;
+  }
+
+  .toast-host-item {
+    @apply pointer-events-auto flex items-start gap-3 rounded-xl border px-4 py-3 shadow-floating;
+  }
+
+  .toast-host-item-success {
+    @apply border-accent/20 bg-accent-soft text-accent;
+  }
+
+  .toast-host-item-error {
+    @apply border-danger/20 bg-danger-soft text-danger;
+  }
+
+  .toast-host-item-info {
+    @apply border-line bg-surface text-ink;
+  }
+
+  .toast-host-icon {
+    @apply mt-0.5 shrink-0;
+  }
+
+  .toast-host-message {
+    @apply min-w-0 flex-1 text-sm font-medium leading-snug;
+  }
+
+  .toast-host-close {
+    @apply rounded p-0.5 opacity-60 transition hover:opacity-100;
+  }
+}

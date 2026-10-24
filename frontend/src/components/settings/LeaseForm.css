@@ -1,0 +1,39 @@
+@reference "../../index.css";
+
+@layer components {
+  .lease-form {
+    @apply rounded-xl border border-accent/20 bg-accent-soft/25 p-4;
+  }
+
+  .lease-form-title {
+    @apply text-[15px] font-semibold text-ink;
+  }
+
+  .lease-form-grid {
+    @apply mt-3 grid gap-3 sm:grid-cols-2;
+  }
+
+  .lease-form-total {
+    @apply flex flex-col justify-center rounded-xl border border-line bg-paper/45 px-4 py-3 sm:col-span-2;
+  }
+
+  .lease-form-total-label {
+    @apply text-[10.5px] font-bold uppercase tracking-[0.1em] text-ink-soft;
+  }
+
+  .lease-form-total-value {
+    @apply mt-1 font-display text-2xl text-ink;
+  }
+
+  .lease-form-total-hint {
+    @apply text-[10.5px] text-ink-soft;
+  }
+
+  .lease-form-error {
+    @apply mt-3 rounded-lg border border-danger/20 bg-danger-soft/60 p-2.5 text-xs text-danger;
+  }
+
+  .lease-form-actions {
+    @apply mt-4 flex flex-wrap justify-end gap-2;
+  }
+}

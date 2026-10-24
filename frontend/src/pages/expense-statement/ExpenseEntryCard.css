@@ -1,0 +1,31 @@
+@reference "../../index.css";
+
+@layer components {
+  .expense-entry-card-title {
+    @apply mt-1 text-[22px] text-ink;
+  }
+
+  .expense-entry-card-month {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .expense-entry-card-month-grid {
+    @apply grid gap-2;
+  }
+
+  .expense-entry-card-body {
+    @apply space-y-5;
+  }
+
+  .expense-entry-card-footer {
+    @apply flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-6;
+  }
+
+  .expense-entry-card-actions {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .expense-entry-card-hint {
+    @apply text-[11px] text-ink-soft;
+  }
+}

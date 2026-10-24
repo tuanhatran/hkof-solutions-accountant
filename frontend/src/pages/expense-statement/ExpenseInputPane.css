@@ -1,0 +1,7 @@
+@reference "../../index.css";
+
+@layer components {
+  .expense-input-pane {
+    @apply min-w-0 space-y-4;
+  }
+}

@@ -1,0 +1,15 @@
+@reference "../../index.css";
+
+@layer components {
+  .rent-receipt-preview-pane {
+    @apply min-w-0 lg:sticky lg:top-6 lg:self-start;
+  }
+
+  .rent-receipt-preview-pane-select {
+    @apply rounded-lg border border-line bg-white px-2 py-1.5 text-[11px] font-medium text-ink-soft;
+  }
+
+  .rent-receipt-preview-pane-note {
+    @apply mt-2 px-1 text-[11px] leading-relaxed text-ink-soft;
+  }
+}

@@ -1,0 +1,27 @@
+@reference "../../index.css";
+
+@layer components {
+  .rent-receipt-form-title {
+    @apply mt-1 text-[22px] text-ink;
+  }
+
+  .rent-receipt-form-body {
+    @apply space-y-5;
+  }
+
+  .rent-receipt-form-footer {
+    @apply flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-6;
+  }
+
+  .rent-receipt-form-actions {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .rent-receipt-form-note {
+    @apply text-[11px] text-ink-soft;
+  }
+
+  .rent-receipt-form-progress {
+    @apply inline-flex items-center gap-1.5;
+  }
+}

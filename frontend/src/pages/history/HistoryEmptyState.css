@@ -1,0 +1,7 @@
+@reference "../../index.css";
+
+@layer components {
+  .history-empty-state-actions {
+    @apply flex flex-wrap justify-center gap-2;
+  }
+}

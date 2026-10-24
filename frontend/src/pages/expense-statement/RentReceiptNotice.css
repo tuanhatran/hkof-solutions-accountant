@@ -1,0 +1,35 @@
+@reference "../../index.css";
+
+@layer components {
+  .rent-receipt-notice {
+    @apply rounded-xl border border-line bg-paper/50 p-4;
+  }
+
+  .rent-receipt-notice-pending {
+    @apply flex items-center gap-2 text-sm text-ink-soft;
+  }
+
+  .rent-receipt-notice-row {
+    @apply flex flex-wrap items-center justify-between gap-3;
+  }
+
+  .rent-receipt-notice-title {
+    @apply text-sm font-semibold text-ink;
+  }
+
+  .rent-receipt-notice-hint {
+    @apply mt-1 text-xs text-ink-soft;
+  }
+
+  .rent-receipt-notice-alert {
+    @apply flex items-start gap-2.5;
+  }
+
+  .rent-receipt-notice-alert-icon {
+    @apply mt-0.5 text-warning;
+  }
+
+  .rent-receipt-notice-alert-text {
+    @apply mt-0.5 text-xs text-ink-soft;
+  }
+}

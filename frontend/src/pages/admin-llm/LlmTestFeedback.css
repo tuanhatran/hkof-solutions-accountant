@@ -1,0 +1,55 @@
+@reference "../../index.css";
+
+@layer components {
+  .llm-test-feedback-error {
+    @apply rounded-lg border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger;
+  }
+
+  .llm-test-feedback-result {
+    @apply rounded-xl border p-4;
+  }
+
+  .llm-test-feedback-result-success {
+    @apply border-accent/20 bg-accent-soft/50;
+  }
+
+  .llm-test-feedback-result-failure {
+    @apply border-danger/20 bg-danger-soft/50;
+  }
+
+  .llm-test-feedback-heading {
+    @apply flex items-center gap-2;
+  }
+
+  .llm-test-feedback-icon-success {
+    @apply text-accent;
+  }
+
+  .llm-test-feedback-icon-failure {
+    @apply text-danger;
+  }
+
+  .llm-test-feedback-title {
+    @apply text-sm font-semibold;
+  }
+
+  .llm-test-feedback-title-success {
+    @apply text-accent;
+  }
+
+  .llm-test-feedback-title-failure {
+    @apply text-danger;
+  }
+
+  .llm-test-feedback-message {
+    @apply mt-1 text-xs text-ink-soft;
+  }
+
+  .llm-test-feedback-amount {
+    @apply mt-2 text-xs text-ink;
+  }
+
+  .llm-test-feedback-amount-value {
+    @apply font-mono font-semibold;
+  }
+}

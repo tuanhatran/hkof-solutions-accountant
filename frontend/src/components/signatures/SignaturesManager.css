@@ -1,0 +1,35 @@
+@reference "../../index.css";
+
+@layer components {
+  .signatures-manager {
+    @apply mt-6 overflow-hidden;
+  }
+
+  .signatures-manager-heading {
+    @apply flex items-start gap-3;
+  }
+
+  .signatures-manager-icon {
+    @apply grid h-9 w-9 place-items-center rounded-lg bg-accent-soft text-accent;
+  }
+
+  .signatures-manager-title {
+    @apply text-xl text-ink;
+  }
+
+  .signatures-manager-description {
+    @apply mt-0.5 text-xs text-ink-soft;
+  }
+
+  .signatures-manager-body {
+    @apply space-y-4;
+  }
+
+  .signatures-manager-empty {
+    @apply rounded-xl border border-dashed border-line-strong p-6 text-center text-sm text-ink-soft;
+  }
+
+  .signatures-manager-list {
+    @apply grid gap-3 sm:grid-cols-2;
+  }
+}

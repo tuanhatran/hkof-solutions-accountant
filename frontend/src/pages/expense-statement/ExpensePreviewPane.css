@@ -1,0 +1,26 @@
+@reference "../../index.css";
+
+@layer components {
+  .expense-preview-pane {
+    @apply min-w-0 lg:sticky lg:top-6 lg:self-start;
+  }
+
+  .expense-preview-pane-select {
+    @apply rounded-lg border border-line bg-white px-2 py-1.5 text-[11px] font-medium text-ink-soft;
+  }
+
+  .expense-preview-pane-option {
+    @apply flex cursor-pointer items-center gap-1.5 rounded-lg border border-line bg-white px-2 py-1.5 text-[11px] font-medium text-ink-soft;
+  }
+
+  /* The original inline accent utility used a raw colour that was not a token;
+     it is normalised to the accent token (the single approved pixel-level
+     change). */
+  .expense-preview-pane-checkbox {
+    @apply h-3.5 w-3.5 accent-accent;
+  }
+
+  .expense-preview-pane-note {
+    @apply mt-2 px-1 text-[11px] leading-relaxed text-ink-soft;
+  }
+}

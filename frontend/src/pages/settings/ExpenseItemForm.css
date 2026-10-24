@@ -1,0 +1,51 @@
+@reference "../../index.css";
+
+@layer components {
+  .expense-item-form {
+    @apply rounded-xl border border-accent/20 bg-accent-soft/25 p-4;
+  }
+
+  .expense-item-form-header {
+    @apply flex items-center justify-between gap-2;
+  }
+
+  .expense-item-form-title {
+    @apply text-[15px] font-semibold text-ink;
+  }
+
+  .expense-item-form-grid {
+    @apply mt-3 grid gap-3 sm:grid-cols-2;
+  }
+
+  .expense-item-form-code {
+    @apply font-mono text-[13px];
+  }
+
+  .expense-item-form-switches {
+    @apply mt-3 grid gap-2 sm:grid-cols-2;
+  }
+
+  .expense-item-form-switch {
+    @apply flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-paper/35 p-3 transition hover:border-line-strong;
+  }
+
+  .expense-item-form-switch-input {
+    @apply mt-0.5 h-4 w-4 shrink-0 rounded border-line text-accent accent-accent;
+  }
+
+  .expense-item-form-switch-label {
+    @apply block text-sm font-medium text-ink;
+  }
+
+  .expense-item-form-switch-description {
+    @apply mt-0.5 block text-[11.5px] leading-relaxed text-ink-soft;
+  }
+
+  .expense-item-form-error {
+    @apply mt-3 rounded-lg border border-danger/20 bg-danger-soft/60 p-2.5 text-xs text-danger;
+  }
+
+  .expense-item-form-actions {
+    @apply mt-4 flex flex-wrap justify-end gap-2;
+  }
+}

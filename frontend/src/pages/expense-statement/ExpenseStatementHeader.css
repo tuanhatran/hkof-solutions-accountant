@@ -1,0 +1,33 @@
+@reference "../../index.css";
+
+@layer components {
+  .expense-statement-header-month {
+    @apply items-center gap-1.5 rounded-full border border-line bg-surface/70 px-3 py-2 text-xs font-medium text-ink-soft;
+  }
+
+  /* Layout only: the border and background overrides stay inline utilities so
+     they keep winning over the `card` primitive. */
+  .expense-statement-header-banner {
+    @apply mb-4 flex flex-wrap items-center justify-between gap-3 p-4;
+  }
+
+  .expense-statement-header-banner-main {
+    @apply flex items-start gap-3;
+  }
+
+  .expense-statement-header-banner-icon {
+    @apply grid h-9 w-9 place-items-center rounded-full bg-surface text-accent;
+  }
+
+  .expense-statement-header-banner-title {
+    @apply text-sm font-semibold text-ink;
+  }
+
+  .expense-statement-header-banner-text {
+    @apply text-xs text-ink-soft;
+  }
+
+  .expense-statement-header-banner-actions {
+    @apply flex flex-wrap gap-2;
+  }
+}

@@ -1,0 +1,31 @@
+@reference "../../index.css";
+
+@layer components {
+  .expense-result-card-head {
+    @apply flex items-start gap-3 bg-accent-soft/60 px-5 py-4;
+  }
+
+  .expense-result-card-icon {
+    @apply grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent text-white;
+  }
+
+  .expense-result-card-body {
+    @apply min-w-0 flex-1;
+  }
+
+  .expense-result-card-title {
+    @apply text-sm font-bold text-accent;
+  }
+
+  .expense-result-card-meta {
+    @apply mt-0.5 text-sm text-ink;
+  }
+
+  .expense-result-card-note {
+    @apply mt-0.5 text-xs text-ink-soft;
+  }
+
+  .expense-result-card-actions {
+    @apply flex flex-wrap gap-2 px-5 py-4;
+  }
+}

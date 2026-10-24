@@ -1,0 +1,27 @@
+@reference "../../index.css";
+
+@layer components {
+  .expense-lines-card-title {
+    @apply mt-1 text-[22px] text-ink;
+  }
+
+  .expense-lines-card-badges {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .expense-lines-card-empty {
+    @apply flex flex-col items-center justify-center px-5 py-10 text-center;
+  }
+
+  .expense-lines-card-empty-icon {
+    @apply grid h-11 w-11 place-items-center rounded-full bg-paper-deep/70 text-ink-soft;
+  }
+
+  .expense-lines-card-empty-title {
+    @apply mt-3 text-sm font-semibold text-ink;
+  }
+
+  .expense-lines-card-empty-text {
+    @apply mt-1 max-w-sm text-xs text-ink-soft;
+  }
+}

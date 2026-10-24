@@ -1,0 +1,39 @@
+@reference "../../index.css";
+
+@layer components {
+  .lease-section {
+    @apply overflow-hidden;
+  }
+
+  .lease-section-body {
+    @apply space-y-4;
+  }
+
+  .lease-section-list {
+    @apply space-y-3;
+  }
+
+  .lease-section-item {
+    @apply flex flex-wrap items-start gap-3 rounded-xl border border-line bg-paper/40 p-3;
+  }
+
+  .lease-section-item-body {
+    @apply min-w-0 flex-1;
+  }
+
+  .lease-section-item-title {
+    @apply text-sm font-semibold text-ink;
+  }
+
+  .lease-section-item-address {
+    @apply mt-0.5 text-xs text-ink-soft;
+  }
+
+  .lease-section-item-amounts {
+    @apply mt-1 text-xs text-ink-soft;
+  }
+
+  .lease-section-item-total {
+    @apply font-semibold text-ink;
+  }
+}

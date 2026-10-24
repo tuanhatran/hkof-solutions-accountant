@@ -1,0 +1,15 @@
+@reference "../../index.css";
+
+@layer components {
+  .expense-type-and-pro-rata-grid {
+    @apply grid gap-4 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)];
+  }
+
+  .expense-type-and-pro-rata-prorata {
+    @apply relative;
+  }
+
+  .expense-type-and-pro-rata-unit {
+    @apply pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft;
+  }
+}

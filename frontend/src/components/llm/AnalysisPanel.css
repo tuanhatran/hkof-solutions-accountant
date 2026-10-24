@@ -1,0 +1,71 @@
+@reference "../../index.css";
+
+@layer components {
+  .analysis-panel {
+    @apply rounded-xl border px-3.5 py-3 text-xs;
+  }
+
+  .analysis-panel-failed {
+    @apply border-warning/25 bg-warning-soft/40 text-warning;
+  }
+
+  .analysis-panel-done {
+    @apply border-copper/20 bg-copper-soft/50 text-ink;
+  }
+
+  .analysis-panel-running {
+    @apply border-accent/20 bg-accent-soft/45 text-ink;
+  }
+
+  .analysis-panel-idle {
+    @apply border-line bg-paper/50 text-ink-soft;
+  }
+
+  .analysis-panel-progress {
+    @apply flex flex-wrap items-center justify-between gap-2;
+  }
+
+  .analysis-panel-progress-text {
+    @apply flex items-center gap-2 font-medium;
+  }
+
+  .analysis-panel-result {
+    @apply space-y-2;
+  }
+
+  .analysis-panel-result-title {
+    @apply flex items-center gap-2 font-semibold text-ink;
+  }
+
+  .analysis-panel-result-icon {
+    @apply text-copper;
+  }
+
+  .analysis-panel-meta {
+    @apply flex flex-wrap items-center gap-2 text-[11px] text-ink-soft;
+  }
+
+  .analysis-panel-confidence-low {
+    @apply font-semibold text-warning;
+  }
+
+  .analysis-panel-note {
+    @apply text-[11px];
+  }
+
+  .analysis-panel-excerpt {
+    @apply border-l-2 border-copper/30 pl-2 text-[11px] italic text-ink-soft;
+  }
+
+  .analysis-panel-hint {
+    @apply text-[11px] text-ink-soft;
+  }
+
+  .analysis-panel-failure {
+    @apply flex items-start gap-2;
+  }
+
+  .analysis-panel-failure-icon {
+    @apply mt-0.5 shrink-0;
+  }
+}

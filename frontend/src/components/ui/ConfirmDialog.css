@@ -1,0 +1,47 @@
+@reference "../../index.css";
+
+@layer components {
+  .confirm-dialog-overlay {
+    @apply fixed inset-0 z-50 flex items-end justify-center bg-ink/35 p-4 backdrop-blur-[2px] sm:items-center;
+  }
+
+  .confirm-dialog-panel {
+    @apply w-full max-w-md rounded-2xl border border-line bg-surface p-5 shadow-floating sm:p-6;
+  }
+
+  .confirm-dialog-header {
+    @apply flex items-start gap-3;
+  }
+
+  .confirm-dialog-icon {
+    @apply mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-full;
+  }
+
+  .confirm-dialog-icon-danger {
+    @apply bg-danger-soft text-danger;
+  }
+
+  .confirm-dialog-icon-warning {
+    @apply bg-warning-soft text-warning;
+  }
+
+  .confirm-dialog-body {
+    @apply min-w-0 flex-1;
+  }
+
+  .confirm-dialog-title {
+    @apply text-xl text-ink;
+  }
+
+  .confirm-dialog-message {
+    @apply mt-2 text-sm leading-relaxed text-ink-soft;
+  }
+
+  .confirm-dialog-close {
+    @apply rounded-lg p-1.5 text-ink-soft transition hover:bg-paper-deep hover:text-ink;
+  }
+
+  .confirm-dialog-actions {
+    @apply mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end;
+  }
+}

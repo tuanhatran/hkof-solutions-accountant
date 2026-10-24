@@ -1,0 +1,75 @@
+@reference "../../index.css";
+
+@layer components {
+  .llm-advanced-section {
+    @apply overflow-hidden;
+  }
+
+  .llm-advanced-section-summary {
+    @apply cursor-pointer list-none;
+  }
+
+  .llm-advanced-section-heading {
+    @apply flex items-start gap-3;
+  }
+
+  .llm-advanced-section-icon {
+    @apply grid h-9 w-9 place-items-center rounded-lg bg-paper-deep text-ink-soft;
+  }
+
+  .llm-advanced-section-title {
+    @apply text-xl text-ink;
+  }
+
+  .llm-advanced-section-subtitle {
+    @apply mt-0.5 text-xs text-ink-soft;
+  }
+
+  .llm-advanced-section-more {
+    @apply text-xs font-medium text-ink-soft group-open:hidden;
+  }
+
+  .llm-advanced-section-less {
+    @apply hidden text-xs font-medium text-ink-soft group-open:inline;
+  }
+
+  .llm-advanced-section-body {
+    @apply space-y-5 border-t border-line;
+  }
+
+  .llm-advanced-section-grid {
+    @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4;
+  }
+
+  .llm-advanced-section-ocr {
+    @apply flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-paper/35 p-3;
+  }
+
+  .llm-advanced-section-checkbox {
+    @apply mt-0.5 h-4 w-4 rounded border-line accent-accent;
+  }
+
+  .llm-advanced-section-ocr-title {
+    @apply block text-sm font-medium text-ink;
+  }
+
+  .llm-advanced-section-ocr-text {
+    @apply mt-0.5 block text-[11.5px] leading-relaxed text-ink-soft;
+  }
+
+  .llm-advanced-section-prompt-header {
+    @apply flex flex-wrap items-center justify-between gap-2;
+  }
+
+  .llm-advanced-section-prompt {
+    @apply resize-y font-mono text-[12.5px] leading-relaxed;
+  }
+
+  .llm-advanced-section-note {
+    @apply flex items-start gap-2 rounded-xl border border-line bg-paper/30 p-3 text-[11.5px] leading-relaxed text-ink-soft;
+  }
+
+  .llm-advanced-section-note-icon {
+    @apply mt-0.5 shrink-0 text-accent;
+  }
+}

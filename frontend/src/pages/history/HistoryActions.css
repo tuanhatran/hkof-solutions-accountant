@@ -1,0 +1,11 @@
+@reference "../../index.css";
+
+@layer components {
+  .history-actions-pdf-link {
+    @apply inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] font-medium text-accent transition hover:bg-accent-soft;
+  }
+
+  .history-actions-open-link {
+    @apply inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] font-medium text-ink-soft transition hover:bg-paper-deep hover:text-ink;
+  }
+}

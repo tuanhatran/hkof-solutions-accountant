@@ -1,0 +1,15 @@
+@reference "../../index.css";
+
+@layer components {
+  .settings-company-section-body {
+    @apply grid gap-4 sm:grid-cols-2;
+  }
+
+  .settings-company-section-code {
+    @apply font-mono;
+  }
+
+  .settings-company-section-textarea {
+    @apply resize-y;
+  }
+}

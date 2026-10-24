@@ -1,0 +1,39 @@
+@reference "../../index.css";
+
+@layer components {
+  .template-import-form {
+    @apply rounded-xl border border-line bg-paper/35 p-4;
+  }
+
+  .template-import-form-title {
+    @apply flex items-center gap-2 text-[15px] font-semibold text-ink;
+  }
+
+  .template-import-form-title-icon {
+    @apply text-accent;
+  }
+
+  .template-import-form-intro {
+    @apply mt-1 text-xs leading-relaxed text-ink-soft;
+  }
+
+  .template-import-form-body {
+    @apply mt-3 space-y-3;
+  }
+
+  .template-import-form-error {
+    @apply rounded-lg border border-danger/20 bg-danger-soft/60 p-3 text-xs font-medium text-danger;
+  }
+
+  .template-import-form-actions {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .template-import-form-actions-note {
+    @apply text-[11px] text-ink-soft;
+  }
+
+  .template-import-form-followup {
+    @apply flex flex-wrap items-center gap-2;
+  }
+}

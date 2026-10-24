@@ -1,0 +1,11 @@
+@reference "../../index.css";
+
+@layer components {
+  .admin-llm-page-form {
+    @apply space-y-6;
+  }
+
+  .admin-llm-page-error {
+    @apply rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-sm text-danger;
+  }
+}

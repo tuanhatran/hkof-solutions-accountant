@@ -1,0 +1,27 @@
+@reference "../../index.css";
+
+@layer components {
+  .rent-receipt-amount-fields-grid {
+    @apply grid gap-4 sm:grid-cols-2;
+  }
+
+  .rent-receipt-amount-fields-amount {
+    @apply relative;
+  }
+
+  .rent-receipt-amount-fields-unit {
+    @apply pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft;
+  }
+
+  .rent-receipt-amount-fields-total {
+    @apply flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/15 bg-accent-soft/45 px-4 py-3.5;
+  }
+
+  .rent-receipt-amount-fields-total-value {
+    @apply mt-1 font-display text-[28px] leading-none text-accent-strong;
+  }
+
+  .rent-receipt-amount-fields-total-note {
+    @apply max-w-[240px] text-right text-[11px] leading-snug text-ink-soft;
+  }
+}

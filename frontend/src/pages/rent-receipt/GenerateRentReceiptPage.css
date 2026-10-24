@@ -1,0 +1,19 @@
+@reference "../../index.css";
+
+@layer components {
+  .generate-rent-receipt-page-month {
+    @apply items-center gap-1.5 rounded-full border border-line bg-surface/70 px-3 py-2 text-xs font-medium text-ink-soft;
+  }
+
+  .generate-rent-receipt-page-tabs {
+    @apply mb-4 flex items-center justify-between gap-3 lg:hidden;
+  }
+
+  .generate-rent-receipt-page-grid {
+    @apply grid items-start gap-5 lg:grid-cols-[minmax(0,1.02fr)_minmax(400px,0.98fr)] xl:gap-6;
+  }
+
+  .generate-rent-receipt-page-input {
+    @apply min-w-0 space-y-4;
+  }
+}

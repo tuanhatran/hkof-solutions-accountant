@@ -1,0 +1,43 @@
+@reference "../../index.css";
+
+@layer components {
+  .states-spinner {
+    @apply animate-spin text-accent;
+  }
+
+  .states-loading {
+    @apply flex items-center gap-3 p-6 text-sm text-ink-soft;
+  }
+
+  .states-error {
+    @apply flex flex-col items-start gap-3 p-6;
+  }
+
+  .states-error-title {
+    @apply flex items-center gap-2 font-semibold text-danger;
+  }
+
+  .states-error-message {
+    @apply text-sm text-ink-soft;
+  }
+
+  .states-empty {
+    @apply flex flex-col items-center justify-center px-6 py-12 text-center;
+  }
+
+  .states-empty-icon {
+    @apply grid h-12 w-12 place-items-center rounded-full bg-paper-deep/70 text-ink-soft;
+  }
+
+  .states-empty-title {
+    @apply mt-4 text-lg text-ink;
+  }
+
+  .states-empty-description {
+    @apply mt-1.5 max-w-sm text-sm text-ink-soft;
+  }
+
+  .states-empty-action {
+    @apply mt-5;
+  }
+}

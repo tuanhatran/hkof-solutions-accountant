@@ -1,0 +1,71 @@
+@reference "../../index.css";
+
+@layer components {
+  .expense-lines-table-scroll {
+    @apply overflow-x-auto;
+  }
+
+  .expense-lines-table {
+    @apply min-w-[760px];
+  }
+
+  .expense-lines-table-col-right {
+    @apply text-right;
+  }
+
+  .expense-lines-table-col-narrow {
+    @apply w-px whitespace-nowrap text-right;
+  }
+
+  .expense-lines-table-item {
+    @apply font-semibold text-ink;
+  }
+
+  .expense-lines-table-receipt {
+    @apply mt-0.5 max-w-[160px] truncate text-[11px] text-ink-soft;
+  }
+
+  .expense-lines-table-supplier {
+    @apply text-ink-soft;
+  }
+
+  .expense-lines-table-amount {
+    @apply whitespace-nowrap text-right;
+  }
+
+  .expense-lines-table-ai {
+    @apply inline-flex align-middle;
+  }
+
+  .expense-lines-table-amount-value {
+    @apply ml-2 font-semibold text-ink;
+  }
+
+  .expense-lines-table-prorata {
+    @apply w-px whitespace-nowrap text-right text-ink-soft;
+  }
+
+  .expense-lines-table-claimed {
+    @apply w-px whitespace-nowrap text-right;
+  }
+
+  .expense-lines-table-claimed-value {
+    @apply font-semibold text-accent-strong;
+  }
+
+  .expense-lines-table-pending {
+    @apply text-xs text-ink-soft;
+  }
+
+  .expense-lines-table-actions {
+    @apply flex items-center justify-end gap-1;
+  }
+
+  .expense-lines-table-action {
+    @apply rounded-lg p-1.5 text-ink-soft transition hover:bg-paper-deep hover:text-ink;
+  }
+
+  .expense-lines-table-action-danger {
+    @apply hover:bg-danger-soft hover:text-danger;
+  }
+}

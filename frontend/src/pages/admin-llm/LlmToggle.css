@@ -1,0 +1,27 @@
+@reference "../../index.css";
+
+@layer components {
+  .llm-toggle {
+    @apply relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors;
+  }
+
+  .llm-toggle-on {
+    @apply bg-accent;
+  }
+
+  .llm-toggle-off {
+    @apply bg-line-strong;
+  }
+
+  .llm-toggle-knob {
+    @apply inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform;
+  }
+
+  .llm-toggle-knob-on {
+    @apply translate-x-[22px];
+  }
+
+  .llm-toggle-knob-off {
+    @apply translate-x-0.5;
+  }
+}

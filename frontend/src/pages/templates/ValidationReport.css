@@ -1,0 +1,55 @@
+@reference "../../index.css";
+
+@layer components {
+  .validation-report {
+    @apply space-y-3 rounded-xl border border-line bg-paper/45 p-4;
+  }
+
+  .validation-report-header {
+    @apply flex flex-wrap items-center justify-between gap-2;
+  }
+
+  .validation-report-title {
+    @apply text-sm font-semibold text-ink;
+  }
+
+  .validation-report-variable-title {
+    @apply text-[11px] font-bold uppercase tracking-[0.1em] text-ink-soft;
+  }
+
+  .validation-report-variables {
+    @apply mt-1.5 flex flex-wrap gap-1.5;
+  }
+
+  .validation-report-variable {
+    @apply rounded-md border px-1.5 py-0.5 font-mono text-[11px];
+  }
+
+  .validation-report-variable-accent {
+    @apply border-accent/15 bg-accent-soft text-accent;
+  }
+
+  .validation-report-variable-danger {
+    @apply border-danger/25 bg-danger-soft text-danger;
+  }
+
+  .validation-report-variable-warning {
+    @apply border-warning/25 bg-warning-soft text-warning;
+  }
+
+  .validation-report-errors {
+    @apply rounded-lg border border-danger/20 bg-danger-soft/60 p-3;
+  }
+
+  .validation-report-errors-title {
+    @apply text-[11px] font-bold uppercase tracking-[0.1em] text-danger;
+  }
+
+  .validation-report-errors-list {
+    @apply mt-1.5 list-disc space-y-1 pl-4 text-xs text-danger;
+  }
+
+  .validation-report-warning {
+    @apply text-xs text-warning;
+  }
+}

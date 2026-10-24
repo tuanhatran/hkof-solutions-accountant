@@ -1,0 +1,35 @@
+@reference "../../index.css";
+
+@layer components {
+  .llm-badge-dark {
+    @apply border-white/15 bg-white/10 text-white/90;
+  }
+
+  .llm-badge-dot {
+    @apply h-1.5 w-1.5 rounded-full;
+  }
+
+  .llm-badge-dot-accent {
+    @apply bg-accent;
+  }
+
+  .llm-badge-dot-warning {
+    @apply bg-warning;
+  }
+
+  .llm-badge-dot-danger {
+    @apply bg-danger;
+  }
+
+  .llm-badge-dot-neutral {
+    @apply bg-ink-soft/60;
+  }
+
+  .llm-badge-dot-pulse {
+    @apply animate-pulse;
+  }
+
+  .llm-badge-link {
+    @apply rounded-full;
+  }
+}

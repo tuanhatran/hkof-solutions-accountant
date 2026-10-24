@@ -1,0 +1,11 @@
+@reference "../../index.css";
+
+@layer components {
+  .history-page-error {
+    @apply mb-4;
+  }
+
+  .history-page-months {
+    @apply space-y-4;
+  }
+}

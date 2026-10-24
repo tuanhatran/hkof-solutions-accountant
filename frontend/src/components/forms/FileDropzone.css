@@ -1,0 +1,63 @@
+@reference "../../index.css";
+
+@layer components {
+  .file-dropzone-zone {
+    @apply flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-7 text-center transition;
+  }
+
+  .file-dropzone-zone-active {
+    @apply border-accent bg-accent-soft/70;
+  }
+
+  .file-dropzone-zone-error {
+    @apply border-danger/50 bg-danger-soft/30;
+  }
+
+  .file-dropzone-zone-idle {
+    @apply border-line-strong/70 bg-paper/40 hover:border-accent/50 hover:bg-accent-soft/30;
+  }
+
+  .file-dropzone-zone-disabled {
+    @apply cursor-not-allowed opacity-60;
+  }
+
+  .file-dropzone-icon {
+    @apply grid h-11 w-11 place-items-center rounded-full bg-surface text-accent shadow-sm transition group-hover:scale-105;
+  }
+
+  .file-dropzone-title {
+    @apply mt-3 text-sm font-semibold text-ink;
+  }
+
+  .file-dropzone-hint {
+    @apply mt-1 text-xs text-ink-soft;
+  }
+
+  .file-dropzone-meta {
+    @apply mt-3 text-[11px] text-ink-soft/80;
+  }
+
+  .file-dropzone-selected {
+    @apply flex items-center gap-3 rounded-xl border border-line bg-paper/50 p-3;
+  }
+
+  .file-dropzone-selected-icon {
+    @apply grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-surface text-accent;
+  }
+
+  .file-dropzone-selected-body {
+    @apply min-w-0 flex-1;
+  }
+
+  .file-dropzone-selected-name {
+    @apply truncate text-sm font-semibold text-ink;
+  }
+
+  .file-dropzone-selected-meta {
+    @apply text-xs text-ink-soft;
+  }
+
+  .file-dropzone-remove {
+    @apply rounded-lg p-2 text-ink-soft transition hover:bg-danger-soft hover:text-danger disabled:cursor-not-allowed disabled:opacity-40;
+  }
+}

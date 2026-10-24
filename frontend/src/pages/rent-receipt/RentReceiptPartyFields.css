@@ -1,0 +1,23 @@
+@reference "../../index.css";
+
+@layer components {
+  .rent-receipt-party-fields-grid {
+    @apply grid gap-4 sm:grid-cols-2;
+  }
+
+  .rent-receipt-party-fields-alert {
+    @apply rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger;
+  }
+
+  .rent-receipt-party-fields-lease {
+    @apply rounded-xl border border-accent/15 bg-accent-soft/45 px-4 py-3;
+  }
+
+  .rent-receipt-party-fields-lease-pair {
+    @apply mt-1 text-sm font-semibold text-ink;
+  }
+
+  .rent-receipt-party-fields-lease-address {
+    @apply text-xs text-ink-soft;
+  }
+}

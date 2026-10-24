@@ -1,0 +1,27 @@
+@reference "../../index.css";
+
+@layer components {
+  .signature-card {
+    @apply flex items-center gap-3 rounded-xl border border-line bg-paper/40 p-3;
+  }
+
+  .signature-card-image {
+    @apply h-14 w-24 shrink-0 rounded-lg border border-line bg-white object-contain p-1;
+  }
+
+  .signature-card-body {
+    @apply min-w-0 flex-1;
+  }
+
+  .signature-card-name {
+    @apply truncate text-sm font-semibold text-ink;
+  }
+
+  .signature-card-badge {
+    @apply mt-1;
+  }
+
+  .signature-card-meta {
+    @apply mt-1 text-[11px] text-ink-soft;
+  }
+}

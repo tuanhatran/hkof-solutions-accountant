@@ -1,0 +1,95 @@
+@reference "../../index.css";
+
+@layer components {
+  .reference-variables {
+    @apply border-t border-line px-5 py-4 sm:px-6;
+  }
+
+  .reference-variables-summary {
+    @apply flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold text-ink;
+  }
+
+  .reference-variables-heading {
+    @apply flex items-center gap-2;
+  }
+
+  .reference-variables-icon {
+    @apply text-accent;
+  }
+
+  .reference-variables-more {
+    @apply text-xs font-medium text-ink-soft group-open:hidden;
+  }
+
+  .reference-variables-less {
+    @apply hidden text-xs font-medium text-ink-soft group-open:inline;
+  }
+
+  .reference-variables-message {
+    @apply mt-3 text-xs text-ink-soft;
+  }
+
+  .reference-variables-error {
+    @apply mt-3 text-xs text-danger;
+  }
+
+  .reference-variables-body {
+    @apply mt-4 space-y-3;
+  }
+
+  .reference-variables-intro {
+    @apply text-xs leading-relaxed text-ink-soft;
+  }
+
+  .reference-variables-loop {
+    @apply rounded-xl border border-line bg-paper/50 p-3;
+  }
+
+  .reference-variables-loop-title {
+    @apply text-[11px] font-bold uppercase tracking-[0.1em] text-ink-soft;
+  }
+
+  .reference-variables-loop-code {
+    @apply mt-2 overflow-x-auto rounded-lg bg-accent-strong p-3 font-mono text-[11.5px] leading-relaxed text-white/90;
+  }
+
+  .reference-variables-loop-note {
+    @apply mt-2 text-xs leading-relaxed text-ink-soft;
+  }
+
+  .reference-variables-code {
+    @apply font-mono;
+  }
+
+  .reference-variables-table-wrapper {
+    @apply overflow-x-auto;
+  }
+
+  .reference-variables-copy-column {
+    @apply w-16 text-right;
+  }
+
+  .reference-variables-name {
+    @apply rounded bg-paper-deep/60 px-1.5 py-0.5 font-mono text-[11.5px] text-ink;
+  }
+
+  .reference-variables-required {
+    @apply ml-1.5 text-[10px] font-bold uppercase text-copper;
+  }
+
+  .reference-variables-description {
+    @apply text-xs text-ink-soft;
+  }
+
+  .reference-variables-example {
+    @apply text-xs text-ink-soft/80;
+  }
+
+  .reference-variables-copy-cell {
+    @apply text-right;
+  }
+
+  .reference-variables-copy {
+    @apply rounded-lg p-1.5 text-ink-soft transition hover:bg-accent-soft hover:text-accent;
+  }
+}

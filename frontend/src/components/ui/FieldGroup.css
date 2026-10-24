@@ -1,0 +1,7 @@
+@reference "../../index.css";
+
+@layer components {
+  .field-group-header {
+    @apply flex items-center justify-between gap-2;
+  }
+}

@@ -1,0 +1,55 @@
+@reference "../../index.css";
+
+@layer components {
+  .llm-status-card {
+    @apply mb-6 overflow-hidden;
+  }
+
+  .llm-status-card-header {
+    @apply flex flex-wrap items-start justify-between gap-3 px-5 py-4 sm:px-6;
+  }
+
+  .llm-status-card-main {
+    @apply flex items-start gap-3;
+  }
+
+  .llm-status-card-icon {
+    @apply grid h-10 w-10 place-items-center rounded-xl;
+  }
+
+  .llm-status-card-icon-ready {
+    @apply bg-accent-soft text-accent;
+  }
+
+  .llm-status-card-icon-off {
+    @apply bg-paper-deep text-ink-soft;
+  }
+
+  .llm-status-card-icon-warning {
+    @apply bg-warning-soft text-warning;
+  }
+
+  .llm-status-card-title-row {
+    @apply mt-1 flex flex-wrap items-center gap-2;
+  }
+
+  .llm-status-card-title {
+    @apply text-lg text-ink;
+  }
+
+  .llm-status-card-dot {
+    @apply h-1.5 w-1.5 rounded-full;
+  }
+
+  .llm-status-card-description {
+    @apply mt-1 max-w-2xl text-xs leading-relaxed text-ink-soft;
+  }
+
+  .llm-status-card-actions {
+    @apply flex items-center gap-2;
+  }
+
+  .llm-status-card-reachability {
+    @apply hidden text-[11px] text-ink-soft sm:inline;
+  }
+}

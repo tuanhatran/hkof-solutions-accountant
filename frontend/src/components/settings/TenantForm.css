@@ -1,0 +1,23 @@
+@reference "../../index.css";
+
+@layer components {
+  .tenant-form {
+    @apply rounded-xl border border-accent/20 bg-accent-soft/25 p-4;
+  }
+
+  .tenant-form-title {
+    @apply text-[15px] font-semibold text-ink;
+  }
+
+  .tenant-form-grid {
+    @apply mt-3 grid gap-3 sm:grid-cols-2;
+  }
+
+  .tenant-form-error {
+    @apply mt-3 rounded-lg border border-danger/20 bg-danger-soft/60 p-2.5 text-xs text-danger;
+  }
+
+  .tenant-form-actions {
+    @apply mt-4 flex flex-wrap justify-end gap-2;
+  }
+}

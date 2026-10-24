@@ -1,0 +1,19 @@
+@reference "../../index.css";
+
+@layer components {
+  .settings-page-tabs {
+    @apply mb-6 w-full max-w-sm;
+  }
+
+  .settings-page-tab {
+    @apply flex-1;
+  }
+
+  .settings-page-sections {
+    @apply space-y-6;
+  }
+
+  .settings-page-form {
+    @apply space-y-6;
+  }
+}

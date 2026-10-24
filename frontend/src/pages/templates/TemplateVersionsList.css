@@ -1,0 +1,51 @@
+@reference "../../index.css";
+
+@layer components {
+  .template-versions-list-header {
+    @apply flex items-center justify-between gap-2;
+  }
+
+  .template-versions-list-title {
+    @apply text-[15px] font-semibold text-ink;
+  }
+
+  .template-versions-list-count {
+    @apply text-xs text-ink-soft;
+  }
+
+  .template-versions-list {
+    @apply mt-2 divide-y divide-line rounded-xl border border-line;
+  }
+
+  .template-versions-list-item {
+    @apply flex flex-wrap items-center justify-between gap-2 px-3 py-2.5;
+  }
+
+  .template-versions-list-main {
+    @apply min-w-0;
+  }
+
+  .template-versions-list-name-row {
+    @apply flex flex-wrap items-center gap-1.5 text-sm font-medium text-ink;
+  }
+
+  .template-versions-list-name {
+    @apply truncate;
+  }
+
+  .template-versions-list-active {
+    @apply text-[10px] font-bold uppercase text-accent;
+  }
+
+  .template-versions-list-meta {
+    @apply mt-0.5 text-[11px] text-ink-soft;
+  }
+
+  .template-versions-list-actions {
+    @apply flex flex-wrap items-center gap-1;
+  }
+
+  .template-versions-list-empty {
+    @apply mt-2 text-xs text-ink-soft;
+  }
+}

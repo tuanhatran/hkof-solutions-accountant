@@ -1,0 +1,25 @@
+@reference "../../index.css";
+
+@layer components {
+  /* Layout only: the border and background overrides stay inline utilities so
+     they keep winning over the `card` primitive. */
+  .active-rent-receipt-banner {
+    @apply flex flex-wrap items-center justify-between gap-3 p-4;
+  }
+
+  .active-rent-receipt-banner-main {
+    @apply flex items-start gap-3;
+  }
+
+  .active-rent-receipt-banner-icon {
+    @apply grid h-9 w-9 place-items-center rounded-full bg-surface text-accent;
+  }
+
+  .active-rent-receipt-banner-title {
+    @apply text-sm font-semibold text-ink;
+  }
+
+  .active-rent-receipt-banner-text {
+    @apply text-xs text-ink-soft;
+  }
+}

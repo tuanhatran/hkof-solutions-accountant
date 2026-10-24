@@ -1,0 +1,11 @@
+@reference "../../index.css";
+
+@layer components {
+  .rent-receipt-signature-field-grid {
+    @apply grid gap-4 sm:grid-cols-2;
+  }
+
+  .rent-receipt-signature-field-alert {
+    @apply rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-xs text-danger;
+  }
+}

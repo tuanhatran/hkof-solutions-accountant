@@ -1,0 +1,31 @@
+@reference "../../index.css";
+
+@layer components {
+  .amount-confirm-button-root {
+    @apply flex flex-wrap items-center gap-2.5;
+  }
+
+  .amount-confirm-button {
+    @apply grid h-8 w-8 shrink-0 place-items-center rounded-lg border transition;
+  }
+
+  .amount-confirm-button-confirmed {
+    @apply cursor-default border-line bg-paper-deep/70 text-ink-soft;
+  }
+
+  .amount-confirm-button-idle {
+    @apply border-accent/40 bg-accent-soft text-accent-strong hover:border-accent hover:bg-accent-soft/70;
+  }
+
+  .amount-confirm-button-text {
+    @apply text-[11px] leading-snug;
+  }
+
+  .amount-confirm-button-text-confirmed {
+    @apply text-ink-soft;
+  }
+
+  .amount-confirm-button-text-idle {
+    @apply font-medium text-accent-strong;
+  }
+}

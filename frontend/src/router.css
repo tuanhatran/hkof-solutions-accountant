@@ -1,0 +1,47 @@
+@reference "./index.css";
+
+@layer components {
+  .router-not-found {
+    @apply mx-auto mt-10 flex max-w-lg flex-col items-center px-6 py-14 text-center;
+  }
+
+  .router-not-found-icon {
+    @apply grid h-14 w-14 place-items-center rounded-full bg-accent-soft text-accent;
+  }
+
+  .router-not-found-eyebrow {
+    @apply mt-5;
+  }
+
+  .router-not-found-title {
+    @apply mt-2 text-3xl text-ink;
+  }
+
+  .router-not-found-text {
+    @apply mt-2 text-sm leading-relaxed text-ink-soft;
+  }
+
+  .router-not-found-action {
+    @apply mt-6;
+  }
+
+  .router-error {
+    @apply mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 text-center;
+  }
+
+  .router-error-title {
+    @apply mt-2 text-4xl text-ink;
+  }
+
+  .router-error-message {
+    @apply mt-3 max-w-lg text-sm leading-relaxed text-ink-soft;
+  }
+
+  .router-error-note {
+    @apply mt-2 max-w-lg text-xs text-ink-soft;
+  }
+
+  .router-error-action {
+    @apply mt-6;
+  }
+}

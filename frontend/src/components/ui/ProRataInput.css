@@ -1,0 +1,11 @@
+@reference "../../index.css";
+
+@layer components {
+  .pro-rata-input {
+    @apply relative w-[92px];
+  }
+
+  .pro-rata-input-suffix {
+    @apply pointer-events-none absolute inset-y-0 right-2 flex items-center text-[11px] text-ink-soft;
+  }
+}

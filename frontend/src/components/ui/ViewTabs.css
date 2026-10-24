@@ -1,0 +1,15 @@
+@reference "../../index.css";
+
+@layer components {
+  .view-tabs {
+    @apply w-full;
+  }
+
+  .view-tabs-item {
+    @apply flex-1;
+  }
+
+  .view-tabs-dot {
+    @apply h-1.5 w-1.5 rounded-full bg-accent;
+  }
+}
