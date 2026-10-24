@@ -69,7 +69,7 @@ exit code and the spec/test counts; a run with a failing test, or a test green o
 retry, is not evidence.
 
 When dispatching `reviewer`, pass the goal, the full diff (`git diff <base-branch>...`) and the
-builder's test evidence in the dispatch prompt: the reviewer is read-only and cannot run commands.
+builder's test evidence in the dispatch prompt: the reviewer is read-only and runs only read-only checks.
 
 ## Models
 
@@ -88,6 +88,9 @@ or routes involved, and the affected test files from `codegraph affected`. Every
 (goal, out of scope, constraints, acceptance criteria, commands) stays one line per item.
 
 Never rewrite evidence lines written by another agent; append only.
+
+Keep your diff minimal: edit only the handoff lines you own (status, `Round:`, appended evidence).
+Never rewrite the whole file, reformat it, or touch anything outside `.handoff/`.
 
 Coverage gate: every task keeps JaCoCo bundle coverage >= 90% LINE and >= 90% BRANCH
 (`cd backend && ./mvnw -B verify`) and Vitest global coverage >= 90% lines, statements,

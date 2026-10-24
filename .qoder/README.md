@@ -40,7 +40,7 @@ OpenCode settings live in `.opencode/opencode.json`; the Qoder equivalents live 
 | ----------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `default_agent: lead`                           | `"agent": "lead"` in `.qoder/settings.json` (restart required)                          |
 | `lead`/`builder`/`reviewer` model pin           | `model: DeepSeek-Flash` in every agent file                                             |
-| `reviewer` edit/shell/execute deny              | `disallowedTools: [Write, Edit, NotebookEdit, Bash, Agent]` + `permissionMode: dontAsk` |
+| `reviewer` edit deny (shell allowed, read-only checks) | `disallowedTools: [Write, Edit, NotebookEdit, Agent]` + `permissionMode: dontAsk` |
 | `experimental.subagent_depth: 2`                | Nested dispatch works while the `Agent` tool stays enabled                              |
 | `skills: [".qoder/skills"]`                     | Default discovery; no setting needed                                                    |
 | Git guards in `permissions`                     | `permissions.deny` with `Bash(git ...)` rules                                           |
