@@ -51,81 +51,16 @@
     @apply text-[11px] text-white/50;
   }
 
-  .app-shell-company {
-    @apply mt-5;
-  }
-
-  .app-shell-company-label {
-    @apply mb-1.5 block text-[10px] font-bold uppercase tracking-[0.2em] text-white/35;
-  }
-
-  .app-shell-company-select {
-    @apply w-full rounded-xl border border-white/10 bg-white/[0.06] px-2.5 py-2 text-[13px] font-medium text-white outline-none transition focus:border-copper-light;
-  }
-
-  .app-shell-company-select option {
-    color: var(--color-ink);
-    background-color: var(--color-paper);
-  }
-
-  .app-shell-company-empty {
-    @apply mt-5 text-[11.5px] leading-relaxed text-white/45;
-  }
-
-  .app-shell-mobile-company .app-shell-company {
+  .app-shell-mobile-company .app-company-select {
     @apply mt-3;
   }
 
-  .app-shell-mobile-company .app-shell-company-empty {
+  .app-shell-mobile-company .app-company-select-empty {
     @apply mt-3;
   }
 
-  .app-shell-mobile-company .app-shell-company-select {
+  .app-shell-mobile-company .app-company-select-field {
     @apply py-1.5;
-  }
-
-  .app-shell-nav {
-    @apply mt-8 flex-1 space-y-6;
-  }
-
-  .app-shell-nav-section {
-    @apply px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35;
-  }
-
-  .app-shell-nav-group {
-    @apply mt-3 pl-6 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30;
-  }
-
-  .app-shell-nav-links {
-    @apply mt-2 space-y-1;
-  }
-
-  .app-shell-nav-link {
-    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium transition;
-  }
-
-  .app-shell-nav-link-active {
-    @apply bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)];
-  }
-
-  .app-shell-nav-link-idle {
-    @apply text-white/60 hover:bg-white/[0.06] hover:text-white/90;
-  }
-
-  .app-shell-nav-icon {
-    @apply shrink-0 transition;
-  }
-
-  .app-shell-nav-icon-active {
-    @apply text-copper-light;
-  }
-
-  .app-shell-nav-icon-idle {
-    @apply text-white/45 group-hover:text-white/70;
-  }
-
-  .app-shell-nav-dot {
-    @apply h-1.5 w-1.5 rounded-full bg-copper-light;
   }
 
   .app-shell-info-card {
@@ -154,22 +89,6 @@
 
   .app-shell-mobile-top {
     @apply flex items-center justify-between gap-3;
-  }
-
-  .app-shell-mobile-nav {
-    @apply -mx-1 mt-3 flex gap-1 overflow-x-auto pb-0.5;
-  }
-
-  .app-shell-mobile-link {
-    @apply flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition;
-  }
-
-  .app-shell-mobile-link-active {
-    @apply bg-white/12 text-white;
-  }
-
-  .app-shell-mobile-link-idle {
-    @apply text-white/60 hover:text-white/90;
   }
 
   .app-shell-main {

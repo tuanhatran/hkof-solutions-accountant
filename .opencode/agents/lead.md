@@ -12,10 +12,11 @@ Start every response with `Size: S`, `Size: M` or `Size: L`.
 
 Each task has exactly one branch, named after its handoff number and recorded in the handoff.
 
-- New task: the branch name is the handoff number `<nn>`, all lowercase (`.handoff/tasks/<nn> - <NAME>.md`
-  gives branch `<nn>`). Do not ask the user for a name. Validate with
-  `git check-ref-format --branch "<nn>"`, require an unused name, then
-  `git switch -c "<nn>"`.
+- New task: the branch name is `feat/<nn>-<slug>`, or `fix/<nn>-<slug>` for a bug, all lowercase.
+  `<nn>` is the handoff number and `<slug>` is the handoff name in kebab-case (`.handoff/tasks/30 -
+  TEMPLATES-SOCIETE-LMNP-TABS.md` gives `feat/30-templates-societe-lmnp-tabs`). Do not ask the user
+  for a name. Validate with `git check-ref-format --branch "<branch>"`, require an unused name, then
+  `git switch -c "<branch>"`.
 - Resumed task: reuse the recorded branch. Never create a second branch for the same task.
 - A dirty or staged worktree never blocks: preserve it, never reset, clean, stash, revert or
   overwrite. If Git refuses a switch, continue on the current branch and record the deviation.

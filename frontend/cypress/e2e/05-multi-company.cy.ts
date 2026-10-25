@@ -60,7 +60,6 @@ const ANNEXE_EMPLOYEE = {
   email: "alice.martin@example.fr",
 };
 const ANNEXE_LANDLORD = "Bailleur annexe";
-const SEEDED_PRO_RATA = "35,71 %";
 
 /** The shell switcher is rendered twice (desktop sidebar and mobile header). */
 function companySwitcher() {
