@@ -18,13 +18,15 @@ import { PERIODICITIES } from "./settingsValues";
 /** List of expense items with create/edit/delete actions. */
 export function ExpenseItemsManager({
   companyId,
+  leaseId,
   defaultProRata: defaultProRata,
 }: {
   companyId: number;
+  leaseId: number | null;
   defaultProRata: string;
 }) {
   const queryClient = useQueryClient();
-  const expenseItems = useExpenseItems(companyId, true);
+  const expenseItems = useExpenseItems(companyId, true, leaseId);
   const [formOpen, setFormOpen] = useState(false);
   const [editedItem, setEditedItem] = useState<ExpenseItemDto | null>(null);
   const [toDelete, setToDelete] = useState<ExpenseItemDto | null>(null);
@@ -94,6 +96,7 @@ export function ExpenseItemsManager({
           <ExpenseItemForm
             item={editedItem}
             companyId={companyId}
+            leaseId={leaseId}
             defaultProRata={defaultProRata}
             defaultOrder={defaultOrder}
             onClose={() => {

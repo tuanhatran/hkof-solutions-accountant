@@ -52,6 +52,7 @@ class ExpenseStatementServiceTest {
     private StorageService storage;
     private ExpenseStatementLineCalculator lineCalculator;
     private ExpenseStatementDocumentService documents;
+    private LeaseService leases;
     private ExpenseStatementService service;
 
     @BeforeEach
@@ -64,10 +65,13 @@ class ExpenseStatementServiceTest {
         storage = mock(StorageService.class);
         lineCalculator = mock(ExpenseStatementLineCalculator.class);
         documents = mock(ExpenseStatementDocumentService.class);
+        leases = mock(LeaseService.class);
         service = new ExpenseStatementService(repository, companies, expenseItemService, rentReceiptService,
-                templateDataService, storage, lineCalculator, documents);
+                templateDataService, storage, lineCalculator, documents, leases);
         when(companies.entity(COMPANY_ID)).thenReturn(company());
         when(companies.find(COMPANY_ID)).thenReturn(Optional.of(company()));
+        when(leases.proRata(any(), any())).thenReturn(
+                new LeaseService.ProRata(new BigDecimal("35.71"), "Surface pro 25 m² / 70 m² = 35,71 %"));
     }
 
     private Company company() {
@@ -96,7 +100,7 @@ class ExpenseStatementServiceTest {
     }
 
     private ExpenseItemDto itemDto(Long id, String code, String label) {
-        return new ExpenseItemDto(id, COMPANY_ID, code, label, null, "100.00", "MONTHLY", true, 10, false);
+        return new ExpenseItemDto(id, COMPANY_ID, null, code, label, null, "100.00", "MONTHLY", true, 10, false);
     }
 
     private StatementDto statementDto(ExpenseStatement statement, ExpenseLine... lines) {
@@ -111,11 +115,8 @@ class ExpenseStatementServiceTest {
         ExpenseItem gaz = item("gaz", "Gaz", 20);
         when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of(calculatedLine(gaz)));
         when(lineCalculator.toDto(any())).thenCallRealMethod();
-        when(companies.proRataBase(any())).thenReturn(new BigDecimal("35.71"));
-        when(companies.proRataDetail(any())).thenReturn("Surface pro 25 m² / 70 m² = 35,71 %");
-
         CalculationResponse response = service.calculate(
-                new StatementCalculationRequest(COMPANY_ID, "2026-10", List.of()));
+                new StatementCalculationRequest(COMPANY_ID, null, "2026-10", List.of()));
 
         assertThat(response.total()).isEqualTo("50.00");
         assertThat(response.totalInWords()).isEqualTo("cinquante euros");
@@ -127,12 +128,10 @@ class ExpenseStatementServiceTest {
     @DisplayName("A draft without rent receipt only lists missing items")
     void draftWithoutReceipt() {
         when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(null);
-        when(expenseItemService.list(COMPANY_ID, false)).thenReturn(List.of(
+        when(expenseItemService.list(COMPANY_ID, null, false)).thenReturn(List.of(
                 itemDto(1L, "loyer", "Loyer"), itemDto(2L, "gaz", "Gaz")));
-        when(companies.proRataBase(any())).thenReturn(new BigDecimal("35.71"));
-        when(companies.proRataDetail(any())).thenReturn("détail");
 
-        DraftDto draft = service.draft(COMPANY_ID, "2026-10");
+        DraftDto draft = service.draft(COMPANY_ID, "2026-10", null);
 
         assertThat(draft.rentReceipt()).isNull();
         assertThat(draft.lines()).isEmpty();
@@ -152,11 +151,9 @@ class ExpenseStatementServiceTest {
         when(rentReceiptService.toDto(rentReceipt)).thenReturn(receiptDto);
         when(expenseItemService.entity(COMPANY_ID, "loyer"))
                 .thenReturn(item("loyer", "Quittance de loyer", 10));
-        when(expenseItemService.list(COMPANY_ID, false)).thenReturn(List.of(itemDto(1L, "loyer", "Loyer")));
-        when(companies.proRataBase(any())).thenReturn(new BigDecimal("35.71"));
-        when(companies.proRataDetail(any())).thenReturn("détail");
+        when(expenseItemService.list(COMPANY_ID, null, false)).thenReturn(List.of(itemDto(1L, "loyer", "Loyer")));
 
-        DraftDto draft = service.draft(COMPANY_ID, "2026-10");
+        DraftDto draft = service.draft(COMPANY_ID, "2026-10", null);
 
         assertThat(draft.rentReceipt()).isSameAs(receiptDto);
         assertThat(draft.lines()).hasSize(1);
@@ -169,13 +166,13 @@ class ExpenseStatementServiceTest {
     @DisplayName("Preview delegates to the document collaborator")
     void preview() {
         when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of());
-        when(documents.preview(any(), any(), any(), any())).thenReturn(new byte[]{1});
+        when(documents.preview(any(), any(), any(), any(), any())).thenReturn(new byte[]{1});
 
         byte[] pdf = service.preview(
-                new StatementPreviewRequest(COMPANY_ID, "2026-10", null, false, List.of(), null));
+                new StatementPreviewRequest(COMPANY_ID, null, "2026-10", null, false, List.of(), null));
 
         assertThat(pdf).containsExactly(1);
-        verify(documents).preview(eq(YearMonth.of(2026, 10)), any(), any(), any());
+        verify(documents).preview(eq(YearMonth.of(2026, 10)), any(), any(), any(), any());
     }
 
     @Test
@@ -183,7 +180,7 @@ class ExpenseStatementServiceTest {
     void generateRequiresLines() {
         when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of());
         assertThatThrownBy(() -> service.generate(
-                new StatementGenerationRequest(COMPANY_ID, "2026-10", null, List.of(), null)))
+                new StatementGenerationRequest(COMPANY_ID, null, "2026-10", null, List.of(), null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Ajoutez au moins un frais avant de générer la note.");
     }
@@ -215,7 +212,7 @@ class ExpenseStatementServiceTest {
         generated.setMonth("2026-10");
         generated.setStatus(DocumentStatus.ACTIVE);
         generated.setLines(List.of());
-        when(documents.generate(any(), any(), eq(6), eq(template), eq("signature"), any()))
+        when(documents.generate(any(), any(), eq(6), eq(template), eq("signature"), any(), any()))
                 .thenReturn(new ExpenseStatementDocumentService.GeneratedStatement(generated, new byte[]{1},
                         new byte[]{2}));
         when(storage.storePdf(anyString(), any())).thenReturn("/data/note.pdf");
@@ -225,7 +222,7 @@ class ExpenseStatementServiceTest {
             return saved;
         });
 
-        StatementDto dto = service.generate(new StatementGenerationRequest(COMPANY_ID, "2026-10", null,
+        StatementDto dto = service.generate(new StatementGenerationRequest(COMPANY_ID, null, "2026-10", null,
                 List.of(new ExpenseLineRequest("gaz", "100", "50", null, null, null, null)), null));
 
         assertThat(dto.id()).isEqualTo(20L);
@@ -252,13 +249,13 @@ class ExpenseStatementServiceTest {
         generated.setMonth("2026-10");
         generated.setStatus(DocumentStatus.ACTIVE);
         generated.setLines(List.of());
-        when(documents.generate(any(), any(), eq(1), any(), any(), any()))
+        when(documents.generate(any(), any(), eq(1), any(), any(), any(), any()))
                 .thenReturn(new ExpenseStatementDocumentService.GeneratedStatement(generated, new byte[]{1},
                         new byte[]{2}));
         when(storage.storePdf(anyString(), any())).thenReturn("/data/note.pdf");
         when(repository.saveAndFlush(any())).thenReturn(generated);
 
-        service.generate(new StatementGenerationRequest(COMPANY_ID, "2026-10", null,
+        service.generate(new StatementGenerationRequest(COMPANY_ID, null, "2026-10", null,
                 List.of(new ExpenseLineRequest("gaz", "100", "50", null, null, null, null)), null));
 
         verify(repository, never()).flush();
@@ -276,9 +273,9 @@ class ExpenseStatementServiceTest {
         when(repository.findByCompanyIdAndMonthOrderByVersionDesc(COMPANY_ID, "2026-10"))
                 .thenReturn(List.of(statement));
 
-        assertThat(service.list(COMPANY_ID, null)).hasSize(1);
-        assertThat(service.list(COMPANY_ID, " ")).hasSize(1);
-        assertThat(service.list(COMPANY_ID, "2026-10")).hasSize(1);
+        assertThat(service.list(COMPANY_ID, null, null)).hasSize(1);
+        assertThat(service.list(COMPANY_ID, " ", null)).hasSize(1);
+        assertThat(service.list(COMPANY_ID, "2026-10", null)).hasSize(1);
     }
 
     @Test

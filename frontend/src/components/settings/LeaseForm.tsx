@@ -18,25 +18,27 @@ import { cn } from "@/lib/cn";
 import { formatEUR, parseAmount } from "@/lib/format";
 import { leaseSchema, type LeaseFormValues } from "@/lib/validation";
 import { toast } from "@/state/toasts";
-import { cents, decimalFormatter } from "./settingsMoney";
+import { cents } from "./settingsMoney";
+import { buildLeaseDefaults } from "./leaseFormDefaults";
 
 /** Create/update form for a lease, with an indicative total. */
 export function LeaseForm({
   item,
   persons,
   companies,
+  presetCompanyId = null,
   onSaved,
   onClose,
 }: {
   item: LeaseDto | null;
   persons: PersonDto[];
   companies: CompanyDto[];
+  presetCompanyId?: number | null;
   onSaved?: (lease: LeaseDto) => void;
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
   const [requestError, setRequestError] = useState<string | null>(null);
-  const companyLease = item?.companyLease ?? false;
   const {
     register,
     handleSubmit,
@@ -46,25 +48,7 @@ export function LeaseForm({
   } = useForm<LeaseFormValues>({
     resolver: zodResolver(leaseSchema),
     mode: "onChange",
-    defaultValues: {
-      companyLease,
-      landlordId: item?.landlordId === undefined ? "" : String(item.landlordId),
-      tenantId:
-        companyLease || item?.tenantId === undefined || item.tenantId === null
-          ? ""
-          : String(item.tenantId),
-      companyId:
-        !companyLease ||
-        item?.companyId === undefined ||
-        item.companyId === null
-          ? ""
-          : String(item.companyId),
-      propertyAddress: item?.propertyAddress ?? "",
-      rentExclCharges: decimalFormatter(item?.rentExclCharges),
-      charges: decimalFormatter(item?.charges),
-      totalArea: decimalFormatter(item?.totalArea),
-      businessArea: decimalFormatter(item?.businessArea),
-    },
+    defaultValues: buildLeaseDefaults(item, presetCompanyId),
   });
 
   const rent = watch("rentExclCharges");

@@ -11,6 +11,7 @@ import {
 interface CompanySummary {
   id: number;
   name: string;
+  leaseId?: number | null;
 }
 
 interface EmployeeSummary {
@@ -44,6 +45,14 @@ const ANNEXE_LEASE = {
   charges: "50",
   totalArea: "80",
   businessArea: "20",
+};
+const ANNEXE_SECOND_LANDLORD = "Bailleur annexe 2";
+const ANNEXE_SECOND_LEASE = {
+  propertyAddress: "20 rue Annexe Bis, 75003 Paris",
+  rent: "800",
+  charges: "40",
+  totalArea: "100",
+  businessArea: "25",
 };
 const ANNEXE_EMPLOYEE = {
   firstName: "Alice",
@@ -155,6 +164,24 @@ function createAnnexeLease(annexeCompanyId: number): Cypress.Chainable<number> {
   });
 }
 
+/** Locates the annexe company's lease that is not the first one. */
+function secondAnnexeLease(
+  annexeCompanyId: number,
+  firstLeaseId: number,
+): Cypress.Chainable<number> {
+  return cy.request<LeaseSummary[]>("/api/leases").then(({ body }) => {
+    const lease = body.find(
+      (candidate) =>
+        candidate.companyId === annexeCompanyId &&
+        candidate.id !== firstLeaseId,
+    );
+    if (!lease) {
+      throw new Error("Second annexe lease was not created.");
+    }
+    return lease.id;
+  });
+}
+
 /** Creates the second company and its lease through the UI; it becomes active. */
 function createAnnexeCompany(): void {
   cy.visit("/configuration");
@@ -194,19 +221,90 @@ function createAnnexeCompany(): void {
       cy.get('[data-cy="tab-configuration"]').click();
       cy.get('[data-cy="select-societe"]').select(String(annexe.id));
       cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
-      cy.get('[data-cy="btn-modifier-bail-societe"]').click();
-      cy.get(`[data-cy="select-bail-societe"] option[value="${leaseId}"]`, {
-        timeout: 20_000,
-      }).should("exist");
-      cy.get('[data-cy="select-bail-societe"]').select(String(leaseId));
-      waitForText('[data-cy="prorata-indicatif"]', ANNEXE_COMPANY.proRata);
-      cy.get('[data-cy="btn-enregistrer-bail-societe"]').click();
-      cy.contains("Société enregistrée.", { timeout: 20_000 }).should(
-        "be.visible",
-      );
-      cy.get('[data-cy="dialogue-formulaire-bail-societe"]').should(
-        "not.exist",
-      );
+
+      // The "Bail & Frais" tab lists the company leases and preselects the
+      // active one, whose pro-rata is the backend's.
+      cy.get(`[data-cy="bail-societe-${leaseId}"]`, { timeout: 20_000 })
+        .should("contain.text", ANNEXE_LEASE.propertyAddress)
+        .and("contain.text", "Bail actif");
+      waitForText('[data-cy="prorata-bail-societe"]', ANNEXE_COMPANY.proRata);
+
+      // A second landlord so the company holds a second lease; reload so the
+      // lease form knows the new person.
+      createPerson(ANNEXE_SECOND_LANDLORD).then((landlordId) => {
+        cy.reload();
+        cy.get('[data-cy="tab-configuration"]').click();
+        cy.get('[data-cy="select-societe"]').select(String(annexe.id));
+        cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+
+        // "Ajouter un bail": the LMNP form opens with "Bail société" checked
+        // and the company prefilled as tenant.
+        cy.get('[data-cy="btn-ajouter-bail-societe"]', {
+          timeout: 20_000,
+        }).click();
+        cy.get('[data-cy="formulaire-bail"]').should("be.visible");
+        cy.get('[data-cy="input-bail-societe-type"]').should("be.checked");
+        cy.get('[data-cy="select-bail-locataire-societe"]').should(
+          "have.value",
+          String(annexe.id),
+        );
+        cy.get('[data-cy="select-bail-bailleur"]').select(String(landlordId));
+        cy.get('[data-cy="input-bail-adresse"]').type(
+          ANNEXE_SECOND_LEASE.propertyAddress,
+        );
+        cy.get('[data-cy="input-bail-loyer"]')
+          .clear()
+          .type(ANNEXE_SECOND_LEASE.rent);
+        cy.get('[data-cy="input-bail-charges"]')
+          .clear()
+          .type(ANNEXE_SECOND_LEASE.charges);
+        cy.get('[data-cy="input-surface-totale"]').type(
+          ANNEXE_SECOND_LEASE.totalArea,
+        );
+        cy.get('[data-cy="input-surface-pro"]').type(
+          ANNEXE_SECOND_LEASE.businessArea,
+        );
+        cy.get('[data-cy="btn-enregistrer-bail"]').click();
+        cy.contains("Bail ajouté.", { timeout: 20_000 }).should("be.visible");
+        cy.get('[data-cy="formulaire-bail"]').should("not.exist");
+
+        secondAnnexeLease(annexe.id, leaseId).then((secondLeaseId) => {
+          cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`, {
+            timeout: 20_000,
+          })
+            .should("contain.text", ANNEXE_SECOND_LEASE.propertyAddress)
+            .and("not.contain.text", "Bail actif");
+
+          // The dropdown switches the active lease and the switch is persisted.
+          cy.intercept("PUT", "/api/companies/*").as("lierBail");
+          cy.get('[data-cy="select-bail-actif"]', { timeout: 20_000 })
+            .should("have.value", String(leaseId))
+            .select(String(secondLeaseId));
+          cy.wait("@lierBail");
+          cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`).should(
+            "contain.text",
+            "Bail actif",
+          );
+          cy.get(`[data-cy="bail-societe-${leaseId}"]`).should(
+            "not.contain.text",
+            "Bail actif",
+          );
+          cy.request<CompanySummary>(`/api/companies/${annexe.id}`).then(
+            ({ body }) => {
+              expect(body.leaseId).to.eq(secondLeaseId);
+            },
+          );
+
+          // Back to the first lease: the rest of the spec assumes it is active.
+          cy.get('[data-cy="select-bail-actif"]').select(String(leaseId));
+          cy.wait("@lierBail");
+          cy.request<CompanySummary>(`/api/companies/${annexe.id}`).then(
+            ({ body }) => {
+              expect(body.leaseId).to.eq(leaseId);
+            },
+          );
+        });
+      });
     });
   });
 }

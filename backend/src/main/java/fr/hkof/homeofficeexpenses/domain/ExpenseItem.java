@@ -22,6 +22,10 @@ public class ExpenseItem {
     @Column(name = "company_id", nullable = false)
     private Long companyId;
 
+    /** Active company lease this item belongs to; null for an inherited, unassigned item. */
+    @Column(name = "lease_id")
+    private Long leaseId;
+
     @Column(nullable = false, length = 40)
     private String code;
 
@@ -64,6 +68,14 @@ public class ExpenseItem {
 
     public void setCompanyId(Long companyId) {
         this.companyId = companyId;
+    }
+
+    public Long getLeaseId() {
+        return leaseId;
+    }
+
+    public void setLeaseId(Long leaseId) {
+        this.leaseId = leaseId;
     }
 
     public String getCode() {

@@ -117,6 +117,51 @@ class LeaseServiceTest {
         assertThat(result.get(1).tenantId()).isNull();
         assertThat(result.get(1).tenantName()).isEqualTo("Société locataire");
         assertThat(result.get(1).companyId()).isEqualTo(7L);
+        assertThat(result.get(0).proRataBase()).isNull();
+        assertThat(result.get(0).proRataBaseDetail()).isNull();
+        assertThat(result.get(1).proRataBase()).isEqualTo("35.71");
+        assertThat(result.get(1).proRataBaseDetail())
+                .isEqualTo("Surface pro 25,00 m² / 70,00 m² = 35,71\u00A0%");
+    }
+
+    @Test
+    @DisplayName("The expense lease resolves the requested or the first active lease")
+    void resolvesExpenseLease() {
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(7L))
+                .thenReturn(Optional.of(companyLease()));
+        assertThat(service.resolveExpenseLease(7L, null).getId()).isEqualTo(5L);
+        when(leases.findByIdAndDeletedFalse(5L)).thenReturn(Optional.of(companyLease()));
+        assertThat(service.resolveExpenseLease(7L, 5L).getId()).isEqualTo(5L);
+
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(8L)).thenReturn(Optional.empty());
+        assertThat(service.resolveExpenseLease(8L, null)).isNull();
+
+        when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.resolveExpenseLease(7L, 6L))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Bail introuvable.");
+
+        Lease foreign = companyLease();
+        foreign.setId(6L);
+        when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.of(foreign));
+        assertThatThrownBy(() -> service.resolveExpenseLease(9L, 6L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Ce bail n'appartient pas à la société.");
+    }
+
+    @Test
+    @DisplayName("The lease pro-rata is computed by CalculationService with scale 2")
+    void computesLeaseProRata() {
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(7L))
+                .thenReturn(Optional.of(companyLease()));
+        LeaseService.ProRata proRata = service.proRata(7L, null);
+        assertThat(proRata.base()).isEqualByComparingTo("35.71");
+        assertThat(proRata.detail()).isEqualTo("Surface pro 25,00 m² / 70,00 m² = 35,71\u00A0%");
+
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(8L)).thenReturn(Optional.empty());
+        LeaseService.ProRata withoutLease = service.proRata(8L, null);
+        assertThat(withoutLease.base()).isEqualByComparingTo("0.00");
+        assertThat(withoutLease.detail()).isEqualTo("Surfaces non configurées");
     }
 
     @Test
@@ -271,19 +316,41 @@ class LeaseServiceTest {
     }
 
     @Test
-    @DisplayName("A company already linked to another active lease is rejected on both shapes")
-    void companyAlreadyLinkedIsRejected() {
+    @DisplayName("A second active company lease for the same company is allowed with another landlord")
+    void secondCompanyLeaseIsAllowed() {
+        when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(companies.entity(7L)).thenReturn(company(7L, "Société"));
+        when(companies.find(7L)).thenReturn(Optional.of(company(7L, "Société")));
+        when(leases.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        LeaseDto created = service.createLease(
+                new LeaseRequest(true, 1L, 7L, null, "12 rue", "900", null, "70", "25"));
+
+        assertThat(created.companyLease()).isTrue();
+        assertThat(created.companyId()).isEqualTo(7L);
+    }
+
+    @Test
+    @DisplayName("A normal lease cannot duplicate the pro-rata company link")
+    void normalLeaseAlreadyLinkedIsRejected() {
         when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
         when(persons.findNaturalPersonById(2L)).thenReturn(Optional.of(person(2L, "Locataire")));
         when(companies.entity(7L)).thenReturn(company(7L, "Société"));
-        when(leases.existsByCompanyIdAndDeletedFalse(7L)).thenReturn(true);
+        when(leases.existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalse(7L)).thenReturn(true);
 
         assertThatThrownBy(() -> service.createLease(
-                new LeaseRequest(true, 1L, 7L, null, "12 rue", "900", null, "70", "25")))
+                new LeaseRequest(false, 1L, 7L, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Cette société est déjà liée à un bail actif.");
 
-        assertThatThrownBy(() -> service.createLease(
+        when(leases.existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalseAndIdNot(7L, 5L)).thenReturn(true);
+        Lease existing = companyLease();
+        existing.setCompanyLease(false);
+        existing.setTenant(person(8L, "Locataire 8"));
+        existing.setTotalArea(null);
+        existing.setBusinessArea(null);
+        when(leases.findByIdAndDeletedFalse(5L)).thenReturn(Optional.of(existing));
+        assertThatThrownBy(() -> service.updateLease(5L,
                 new LeaseRequest(false, 1L, 7L, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Cette société est déjà liée à un bail actif.");
@@ -301,17 +368,17 @@ class LeaseServiceTest {
         Lease existing = normalLease();
         existing.setCompanyId(9L);
         when(leases.findByIdAndDeletedFalse(3L)).thenReturn(Optional.of(existing));
-        when(leases.existsByCompanyIdAndDeletedFalseAndIdNot(9L, 3L)).thenReturn(false);
+        when(leases.existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalseAndIdNot(9L, 3L)).thenReturn(false);
 
         LeaseDto updated = service.updateLease(3L,
                 new LeaseRequest(false, 1L, 9L, 2L, "13 rue", "950", null, null, null));
         assertThat(updated.companyId()).isEqualTo(9L);
-        verify(leases).existsByCompanyIdAndDeletedFalseAndIdNot(9L, 3L);
+        verify(leases).existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalseAndIdNot(9L, 3L);
 
         LeaseDto withoutCompany = service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null));
         assertThat(withoutCompany.companyId()).isNull();
-        verify(leases, never()).existsByCompanyIdAndDeletedFalse(anyLong());
+        verify(leases, never()).existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalse(anyLong());
     }
 
     @Test

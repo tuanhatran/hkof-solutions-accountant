@@ -28,6 +28,10 @@ public class ExpenseStatement {
     @Column(name = "company_id", nullable = false)
     private Long companyId;
 
+    /** Active company lease this statement belongs to; null for an inherited, unassigned statement. */
+    @Column(name = "lease_id")
+    private Long leaseId;
+
     @Column(name = "billing_month", nullable = false, length = 7)
     private String month;
 
@@ -85,6 +89,14 @@ public class ExpenseStatement {
 
     public void setCompanyId(Long companyId) {
         this.companyId = companyId;
+    }
+
+    public Long getLeaseId() {
+        return leaseId;
+    }
+
+    public void setLeaseId(Long leaseId) {
+        this.leaseId = leaseId;
     }
 
     public String getMonth() {

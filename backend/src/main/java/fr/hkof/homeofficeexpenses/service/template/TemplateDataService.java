@@ -97,7 +97,7 @@ public class TemplateDataService {
         data.put("lignes", lines);
         data.put("total", Amounts.formatEUR(statement.getTotal()));
         data.put("total_en_lettres", NumberToWords.toWords(statement.getTotal()));
-        data.put("base_prorata", proRataDetail(company));
+        data.put("base_prorata", statementProRataDetail(company, statement));
         data.put("date_emission", Amounts.formatDate(LocalDate.now()));
         data.put("lieu", text(company.getIssuePlace()));
         data.put("complete", complete);
@@ -196,6 +196,14 @@ public class TemplateDataService {
 
     public String proRataDetail(Company company) {
         return companyService.proRataDetail(company);
+    }
+
+    /**
+     * Pro-rata detail of the lease attached to the statement; a statement without lease keeps the
+     * historical base, so screen, preview and generated PDF always show one backend calculation.
+     */
+    private String statementProRataDetail(Company company, ExpenseStatement statement) {
+        return leaseService.proRata(company.getId(), statement.getLeaseId()).detail();
     }
 
     private String text(String value) {

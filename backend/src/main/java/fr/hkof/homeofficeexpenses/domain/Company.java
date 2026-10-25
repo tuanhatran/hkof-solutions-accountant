@@ -48,6 +48,10 @@ public class Company {
     @Column(name = "issue_place")
     private String issuePlace;
 
+    /** Active lease of the company among the leases it owns; null falls back to the oldest lease. */
+    @Column(name = "active_lease_id")
+    private Long activeLeaseId;
+
     @Column(name = "deleted", nullable = false)
     private boolean deleted;
 
@@ -135,6 +139,14 @@ public class Company {
 
     public void setIssuePlace(String issuePlace) {
         this.issuePlace = issuePlace;
+    }
+
+    public Long getActiveLeaseId() {
+        return activeLeaseId;
+    }
+
+    public void setActiveLeaseId(Long activeLeaseId) {
+        this.activeLeaseId = activeLeaseId;
     }
 
     public boolean isDeleted() {

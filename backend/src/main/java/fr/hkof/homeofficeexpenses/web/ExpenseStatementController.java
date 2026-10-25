@@ -32,8 +32,9 @@ public class ExpenseStatementController {
     }
 
     @PostMapping("/draft")
-    public DraftDto createStatementDraft(@RequestParam Long companyId, @RequestParam String month) {
-        return service.draft(companyId, month);
+    public DraftDto createStatementDraft(@RequestParam Long companyId, @RequestParam String month,
+            @RequestParam(required = false) Long leaseId) {
+        return service.draft(companyId, month, leaseId);
     }
 
     @PostMapping("/calculation")
@@ -54,8 +55,9 @@ public class ExpenseStatementController {
 
     @GetMapping
     public List<StatementDto> listExpenseStatements(@RequestParam Long companyId,
-            @RequestParam(required = false) String month) {
-        return service.list(companyId, month);
+            @RequestParam(required = false) String month,
+            @RequestParam(required = false) Long leaseId) {
+        return service.list(companyId, month, leaseId);
     }
 
     @GetMapping("/active")

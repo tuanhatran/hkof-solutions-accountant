@@ -124,6 +124,14 @@ describe("company and directory endpoints", () => {
     await api.expenseItems.list(3, true);
     expect(lastCall()[0]).toBe("/api/expense-items?companyId=3&all=true");
 
+    await api.expenseItems.list(3, false, 7);
+    expect(lastCall()[0]).toBe(
+      "/api/expense-items?companyId=3&leaseId=7&all=false",
+    );
+
+    await api.expenseItems.list(3, false, null);
+    expect(lastCall()[0]).toBe("/api/expense-items?companyId=3&all=false");
+
     await api.expenseItems.create({ companyId: 3, code: "gaz", label: "Gaz" });
     expect(lastCall()[1]).toMatchObject({ method: "POST" });
 
@@ -190,6 +198,9 @@ describe("expense statement endpoints", () => {
     expect(lastCall()[0]).toBe(
       "/api/expense-statements?companyId=3&month=2026-02",
     );
+
+    await api.expenseStatements.list(3, undefined, 7);
+    expect(lastCall()[0]).toBe("/api/expense-statements?companyId=3&leaseId=7");
 
     fetchMock.mockResolvedValue(jsonResponse(null));
     await expect(

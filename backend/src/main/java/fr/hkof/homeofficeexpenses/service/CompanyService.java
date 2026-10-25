@@ -26,8 +26,9 @@ import fr.hkof.homeofficeexpenses.web.dto.CompanyDtos.CompanyRequest;
 
 /**
  * Company directory. A company owns its identity, its employees, its expense items and
- * expense statements. It may be linked to at most one lease, which supplies the dwelling
- * surfaces used by the pro-rata. Logical deletion keeps its history reachable.
+ * expense statements. It may own several leases; one of them is its active lease, which
+ * supplies the dwelling surfaces used by the pro-rata. Logical deletion keeps its history
+ * reachable.
  */
 @Service
 public class CompanyService {
@@ -89,14 +90,21 @@ public class CompanyService {
     }
 
     /**
-     * Links the selected lease or unlinks the previous one. A lease belongs to at most one
-     * company: selecting a lease already linked elsewhere is rejected in French.
+     * Selects the company's active lease. The target must belong to this company or to nobody:
+     * a lease already linked to another company is rejected in French, and an unowned lease is
+     * acquired. Switching between two leases of the same company only moves the active pointer;
+     * no lease is released, so a company lease always keeps its tenant company.
      */
     @Transactional
     public void linkLease(Company company, Long leaseId) {
-        Optional<Lease> current = leases.findFirstByCompanyIdAndDeletedFalse(company.getId());
+        Optional<Lease> current = linkedLease(company);
         if (leaseId == null) {
             current.ifPresent(this::releaseLease);
+            setActiveLease(company, null);
+            return;
+        }
+        if (current.filter(lease -> lease.getId().equals(leaseId)).isPresent()) {
+            setActiveLease(company, leaseId);
             return;
         }
         Lease target = leases.findByIdAndDeletedFalse(leaseId)
@@ -104,9 +112,12 @@ public class CompanyService {
         if (target.getCompanyId() != null && !target.getCompanyId().equals(company.getId())) {
             throw new BusinessException("Ce bail est déjà lié à une autre société.");
         }
-        current.filter(lease -> !lease.getId().equals(leaseId)).ifPresent(this::releaseLease);
-        target.setCompanyId(company.getId());
-        leases.save(target);
+        if (target.getCompanyId() == null) {
+            current.ifPresent(this::releaseLease);
+            target.setCompanyId(company.getId());
+            leases.save(target);
+        }
+        setActiveLease(company, leaseId);
     }
 
     /**
@@ -157,6 +168,7 @@ public class CompanyService {
         for (Lease lease : leases.findAllByCompanyIdAndDeletedFalse(id)) {
             unlink(lease);
         }
+        company.setActiveLeaseId(null);
         company.setDeleted(true);
         company.setUpdatedAt(now);
         repository.save(company);
@@ -188,15 +200,9 @@ public class CompanyService {
     }
 
     public String proRataDetail(Company company, BigDecimal proRataBase) {
-        return linkedLease(company).map(lease -> {
-            if (lease.getBusinessArea() == null || lease.getTotalArea() == null) {
-                return "Surfaces non configurées";
-            }
-            return "Surface pro %s m² / %s m² = %s".formatted(
-                    Amounts.apiValue(lease.getBusinessArea()).replace(".", ","),
-                    Amounts.apiValue(lease.getTotalArea()).replace(".", ","),
-                    Amounts.formatPercentage(proRataBase));
-        }).orElse("Surfaces non configurées");
+        return linkedLease(company)
+                .map(lease -> Amounts.proRataDetail(lease.getBusinessArea(), lease.getTotalArea(), proRataBase))
+                .orElse("Surfaces non configurées");
     }
 
     public CompanyDto toDto(Company company) {
@@ -220,9 +226,19 @@ public class CompanyService {
     }
 
     private Optional<Lease> linkedLease(Company company) {
-        return company.getId() == null
+        if (company.getId() == null) {
+            return Optional.empty();
+        }
+        Optional<Lease> active = company.getActiveLeaseId() == null
                 ? Optional.empty()
-                : leases.findFirstByCompanyIdAndDeletedFalse(company.getId());
+                : leases.findByIdAndDeletedFalse(company.getActiveLeaseId())
+                        .filter(lease -> company.getId().equals(lease.getCompanyId()));
+        return active.or(() -> leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(company.getId()));
+    }
+
+    private void setActiveLease(Company company, Long leaseId) {
+        company.setActiveLeaseId(leaseId);
+        repository.save(company);
     }
 
     private void unlink(Lease lease) {

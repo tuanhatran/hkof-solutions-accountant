@@ -176,7 +176,9 @@ class TemplateDataServiceTest {
         statement.setNumber("NF-2026-10");
         statement.setTotal(new BigDecimal("42.85"));
         statement.setLines(List.of(line));
-        when(companyService.proRataDetail(any())).thenReturn("Surface pro 25 m² / 70 m² = 35,71 %");
+        statement.setLeaseId(5L);
+        when(leaseService.proRata(COMPANY_ID, 5L)).thenReturn(new LeaseService.ProRata(
+                new BigDecimal("35.71"), "Surface pro 25 m² / 70 m² = 35,71 %"));
 
         Map<String, Object> data = service.dataStatement(company(), statement, true, "signature");
 

@@ -130,4 +130,18 @@ public final class Amounts {
     public static String apiValue(BigDecimal amount) {
         return amount == null ? null : amount.setScale(SCALE, ROUND).toPlainString();
     }
+
+    /**
+     * Readable French detail of a pro-rata base computed from dwelling surfaces; shared by the
+     * company and lease services so the formatting is never duplicated.
+     */
+    public static String proRataDetail(BigDecimal businessArea, BigDecimal totalArea, BigDecimal base) {
+        if (businessArea == null || totalArea == null) {
+            return "Surfaces non configurées";
+        }
+        return "Surface pro %s m² / %s m² = %s".formatted(
+                apiValue(businessArea).replace(".", ","),
+                apiValue(totalArea).replace(".", ","),
+                formatPercentage(base));
+    }
 }

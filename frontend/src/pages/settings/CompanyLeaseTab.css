@@ -1,0 +1,47 @@
+@reference "../../index.css";
+
+@layer components {
+  .company-lease-tab {
+    @apply flex flex-col gap-4;
+  }
+
+  .company-lease-tab-body {
+    @apply flex flex-col gap-4;
+  }
+
+  .company-lease-tab-selector {
+    @apply flex max-w-md flex-col gap-1.5;
+  }
+
+  .company-lease-tab-selector-label {
+    @apply text-xs font-semibold text-ink-soft;
+  }
+
+  .company-lease-tab-select {
+    @apply w-full;
+  }
+
+  .company-lease-tab-list {
+    @apply flex flex-col gap-2;
+  }
+
+  .company-lease-tab-item {
+    @apply flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3;
+  }
+
+  .company-lease-tab-item-selected {
+    @apply border-accent/40 bg-accent-soft/35;
+  }
+
+  .company-lease-tab-item-main {
+    @apply flex min-w-0 flex-col;
+  }
+
+  .company-lease-tab-item-address {
+    @apply truncate text-sm font-semibold text-ink;
+  }
+
+  .company-lease-tab-item-meta {
+    @apply mt-0.5 text-xs text-ink-soft;
+  }
+}

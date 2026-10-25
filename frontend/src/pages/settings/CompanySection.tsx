@@ -4,7 +4,7 @@ import { Building2, Plus, Star, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
-import { queryKeys, useCompanies, useLeases } from "@/api/queries";
+import { queryKeys, useCompanies } from "@/api/queries";
 import type { CompanyDto } from "@/api/types";
 import {
   EmptyState,
@@ -18,10 +18,8 @@ import { useCompanyStore } from "@/state/company";
 import { toast } from "@/state/toasts";
 import { CompanyIdentityModal } from "./CompanyIdentityModal";
 import { CompanyIdentityView } from "./CompanyIdentityView";
-import { CompanyLeaseModal } from "./CompanyLeaseModal";
-import { CompanyLeaseView } from "./CompanyLeaseView";
+import { CompanyLeaseTab } from "./CompanyLeaseTab";
 import { EmployeeSection } from "./EmployeeSection";
-import { ExpenseItemsManager } from "./ExpenseItemsManager";
 
 const TABS: ViewTab[] = [
   {
@@ -45,7 +43,6 @@ const TABS: ViewTab[] = [
 export function CompanySection() {
   const queryClient = useQueryClient();
   const companies = useCompanies();
-  const leases = useLeases();
   const activeCompanyId = useCompanyStore((state) => state.activeCompanyId);
   const setActiveCompany = useCompanyStore((state) => state.setActiveCompany);
   const [selectedId, setSelectedId] = useState<number | null>(activeCompanyId);
@@ -53,7 +50,6 @@ export function CompanySection() {
   const [identityTarget, setIdentityTarget] = useState<
     CompanyDto | "new" | null
   >(null);
-  const [leaseEditing, setLeaseEditing] = useState(false);
   const [toDelete, setToDelete] = useState<CompanyDto | null>(null);
 
   const list = useMemo(() => companies.data ?? [], [companies.data]);
@@ -70,15 +66,9 @@ export function CompanySection() {
   }, [selectedId]);
 
   const selected = list.find((company) => company.id === selectedId) ?? null;
-  const leaseList = useMemo(() => leases.data ?? [], [leases.data]);
-  const selectedLease =
-    selected?.leaseId === undefined || selected?.leaseId === null
-      ? null
-      : (leaseList.find((lease) => lease.id === selected.leaseId) ?? null);
 
   const closeModals = () => {
     setIdentityTarget(null);
-    setLeaseEditing(false);
   };
 
   const remove = useMutation({
@@ -215,17 +205,11 @@ export function CompanySection() {
           />
         ) : null}
         {selected && tab === "bail-frais" ? (
-          <>
-            <CompanyLeaseView
-              lease={selectedLease}
-              proRataBase={selected.proRataBase ?? null}
-              onEdit={() => setLeaseEditing(true)}
-            />
-            <ExpenseItemsManager
-              companyId={selected.id as number}
-              defaultProRata={selected.proRataBase ?? "100.00"}
-            />
-          </>
+          <CompanyLeaseTab
+            key={String(selected.id)}
+            company={selected}
+            companies={list}
+          />
         ) : null}
         {selected && tab === "salaries" ? (
           <EmployeeSection companyId={selected.id as number} />
@@ -250,17 +234,6 @@ export function CompanySection() {
               setActiveCompany(saved.id);
             }
           }}
-        />
-      ) : null}
-
-      {leaseEditing && selected ? (
-        <CompanyLeaseModal
-          key={String(selected.id)}
-          open
-          company={selected}
-          leases={leaseList}
-          onClose={() => setLeaseEditing(false)}
-          onSaved={() => setLeaseEditing(false)}
         />
       ) : null}
 

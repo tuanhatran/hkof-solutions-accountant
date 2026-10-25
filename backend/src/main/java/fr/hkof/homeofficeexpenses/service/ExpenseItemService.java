@@ -21,19 +21,26 @@ public class ExpenseItemService {
 
     private final ExpenseItemRepository repository;
     private final CompanyService companies;
+    private final LeaseService leases;
 
-    public ExpenseItemService(ExpenseItemRepository repository, CompanyService companies) {
+    public ExpenseItemService(ExpenseItemRepository repository, CompanyService companies, LeaseService leases) {
         this.repository = repository;
         this.companies = companies;
+        this.leases = leases;
     }
 
     @Transactional(readOnly = true)
-    public List<ExpenseItemDto> list(Long companyId, boolean includeDeleted) {
+    public List<ExpenseItemDto> list(Long companyId, Long leaseId, boolean includeDeleted) {
         companies.entity(companyId);
+        var lease = leaseId == null ? null : leases.resolveExpenseLease(companyId, leaseId);
         List<ExpenseItem> items = includeDeleted
                 ? repository.findByCompanyIdAndDeletedFalseOrderBySortOrderAscIdAsc(companyId)
                 : repository.findByCompanyIdAndDeletedFalseAndActiveTrueOrderBySortOrderAscIdAsc(companyId);
-        return items.stream().map(this::toDto).toList();
+        return items.stream()
+                .filter(item -> lease == null || item.getLeaseId() == null
+                        || item.getLeaseId().equals(lease.getId()))
+                .map(this::toDto)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -48,6 +55,9 @@ public class ExpenseItemService {
             throw new BusinessException("Sélectionnez une société.");
         }
         companies.entity(request.companyId());
+        if (request.leaseId() != null) {
+            leases.resolveExpenseLease(request.companyId(), request.leaseId());
+        }
         if (request.label() == null || request.label().isBlank()) {
             throw new BusinessException("Le libellé du poste est obligatoire.");
         }
@@ -59,6 +69,7 @@ public class ExpenseItemService {
         }
         ExpenseItem expenseItem = new ExpenseItem();
         expenseItem.setCompanyId(request.companyId());
+        expenseItem.setLeaseId(request.leaseId());
         expenseItem.setCode(code);
         apply(expenseItem, request);
         expenseItem.setDeleted(false);
@@ -68,6 +79,10 @@ public class ExpenseItemService {
     @Transactional
     public ExpenseItemDto update(Long id, ExpenseItemRequest request) {
         ExpenseItem expenseItem = activeItem(id);
+        if (request.leaseId() != null) {
+            leases.resolveExpenseLease(expenseItem.getCompanyId(), request.leaseId());
+        }
+        expenseItem.setLeaseId(request.leaseId());
         apply(expenseItem, request);
         return toDto(repository.save(expenseItem));
     }
@@ -130,6 +145,7 @@ public class ExpenseItemService {
         return new ExpenseItemDto(
                 expenseItem.getId(),
                 expenseItem.getCompanyId(),
+                expenseItem.getLeaseId(),
                 expenseItem.getCode(),
                 expenseItem.getLabel(),
                 expenseItem.getSupplier(),
