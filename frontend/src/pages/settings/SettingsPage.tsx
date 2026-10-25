@@ -8,7 +8,7 @@ export function SettingsPage() {
     <>
       <PageHeader
         eyebrow="Réglages"
-        title="Entreprise"
+        title="Société"
         description="Gérez vos sociétés, leurs salariés signataires et leurs postes de frais. Les calculs restent effectués par le backend."
       />
       <CompanySection />

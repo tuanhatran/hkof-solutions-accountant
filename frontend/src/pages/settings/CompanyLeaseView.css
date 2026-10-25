@@ -1,7 +1,7 @@
 @reference "../../index.css";
 
 @layer components {
-  .company-lease-view-body {
+  .company-lease-view {
     @apply flex flex-col gap-3;
   }
 

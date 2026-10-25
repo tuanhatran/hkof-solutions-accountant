@@ -29,7 +29,7 @@ const TABS: ViewTab[] = [
   },
   {
     value: "bail-frais",
-    label: "Bail & Frais",
+    label: "Baux & Frais",
     dataCy: "onglet-entreprise-bail-frais",
   },
   {

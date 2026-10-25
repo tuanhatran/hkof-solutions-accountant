@@ -7,7 +7,7 @@ Round: 2/2
 
 ## Goal
 
-Reorganise the Entreprise page into 3 tabs (Info générale / Bail & Frais / Salariés) under the always-visible company selector, with company create/edit, lease link, expense-item and employee forms as `FormModal` dialogs (Annuler/Valider), per plan `docs/superpowers/plans/2026-10-25-entreprise-page-tabs.md` (tasks 1-8, execute in order). Out of scope: backend, `openapi/openapi.yaml`, LMNP page, monetary calculation.
+Reorganise the Entreprise page into 3 tabs (Info générale / Baux & Frais / Salariés) under the always-visible company selector, with company create/edit, lease link, expense-item and employee forms as `FormModal` dialogs (Annuler/Valider), per plan `docs/superpowers/plans/2026-10-25-entreprise-page-tabs.md` (tasks 1-8, execute in order). Out of scope: backend, `openapi/openapi.yaml`, LMNP page, monetary calculation.
 
 ## Files
 
@@ -22,7 +22,7 @@ Contract: none · Money: `CalculationService` only (prorata server-side, untouch
 ## Acceptance
 
 - [x] Selector + 3 tabs always rendered; default tab Info générale read-only; "Modifier"/"Nouvelle société" open identity modal with Annuler/Valider
-- [x] Bail & Frais: read-only lease + `CompanyLeaseModal`; expense items add/edit in modal; Salariés add/edit in modal
+- [x] Baux & Frais: read-only lease + `CompanyLeaseModal`; expense items add/edit in modal; Salariés add/edit in modal
 - [x] E2E specs 00 and 05 migrated to tab→modal flows, one full suite run green
 - [x] Coverage gates met: frontend `npm run test:coverage` >= 90% lines/statements/functions/branches; backend `cd backend && ./mvnw -B verify` stays >= 90% LINE/BRANCH (untouched); lint + format:check + build clean
 

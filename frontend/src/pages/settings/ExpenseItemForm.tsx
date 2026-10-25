@@ -102,7 +102,7 @@ export function ExpenseItemForm({
       open
       wide
       title={
-        expenseItem ? "Modifier le type de frais" : "Ajouter un type de frais"
+        expenseItem ? "Modifier le type de frais" : "Ajouter un frais de frais"
       }
       onClose={onClose}
       onSubmit={handleSubmit((values) => {

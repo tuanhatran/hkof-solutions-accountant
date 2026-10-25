@@ -6,7 +6,7 @@
   }
 
   .company-identity-view-row {
-    @apply flex items-baseline justify-between gap-3 rounded-xl border border-line bg-paper/40 px-4 py-2.5;
+    @apply flex items-baseline justify-between gap-3 rounded-xl px-4 py-2.5;
   }
 
   .company-identity-view-row-label {

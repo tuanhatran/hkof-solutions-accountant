@@ -20,10 +20,10 @@ already do.
   visible at all times, including during creation and when no company exists yet.
 - "Nouvelle société" opens the identity `FormModal` empty (no lease field); on
   "Valider" the created company becomes selected and active, and its lease is
-  attached later from the "Bail & Frais" tab.
+  attached later from the "Baux & Frais" tab.
 - "Info générale" is read-only company identity, edited through a "Modifier" modal.
-- "Bail & Frais" shows the company's linked lease read-only, with its own "Modifier"
-  modal, and the "Types de frais" table: "Ajouter un type" and "Modifier" open modals.
+- "Baux & Frais" shows the company's linked lease read-only, with its own "Modifier"
+  modal, and the "Types de frais" table: "Ajouter un frais" and "Modifier" open modals.
 - "Salariés": "Ajouter un salarié" and "Modifier" open modals.
 - Every tab and modal keeps its `data-cy` hooks; existing tests are migrated, not deleted.
 
@@ -53,7 +53,7 @@ already do.
   `CompanyForm` into `useCompanyForm`; thin read-only views feed the tab bodies, and
   small modal forms use the hook for the fields they own.
 - **B — wrap `CompanyForm` as-is** in the Info générale modal: cheapest, but mixes
-  identity and lease editing in one modal and leaves Bail & Frais read-only —
+  identity and lease editing in one modal and leaves Baux & Frais read-only —
   contradicts the requested split.
 - **C — one mega form, tabs only hide sections**: one save commits all tabs at once —
   rejected by the anti-goal above.
@@ -67,7 +67,7 @@ already do.
   one tab body at a time. Tab state is local `useState`, no routing.
 - Creation and empty case: with no company selected (or none exists), the selector and
   tabs stay rendered; "Nouvelle société" opens `CompanyIdentityModal` with empty
-  fields and no lease section; "Bail & Frais" and "Salariés" show their empty states.
+  fields and no lease section; "Baux & Frais" and "Salariés" show their empty states.
   `CompanyForm` (identity + lease inline) is removed completely, replaced by
   `useCompanyForm` + the modals.
 
@@ -81,7 +81,7 @@ already do.
 - Bail/`leaseId`/prorata fields are removed from this modal (decided: they belong to
   the next tab).
 
-### Bail & Frais tab
+### Baux & Frais tab
 
 - Lease block: linked lease summary read-only (address, loyer, charges, surfaces,
   prorata indicatif, `proRataBase`) reusing `SettingsLeaseSection`'s display pieces.
@@ -90,7 +90,7 @@ already do.
   the full identity payload (only `leaseId` is editable there).
   No-lease case keeps "Aucun bail sélectionné…" wording.
 - `ExpenseItemsManager` below, unchanged table, but `ExpenseItemForm` is rendered
-  inside a `FormModal` (title "Ajouter un type de frais" / "Modifier le type de frais").
+  inside a `FormModal` (title "Ajouter un frais de frais" / "Modifier le type de frais").
 
 ### Salariés tab
 
@@ -142,11 +142,11 @@ already do.
 ## Decisions and their owner
 
 - User: 3-tab layout, selector always visible above the tabs, read-only "Info générale"
-  with a "Modifier" modal, "Bail & Frais" = lease + types de frais, "Salariés" tab;
+  with a "Modifier" modal, "Baux & Frais" = lease + types de frais, "Salariés" tab;
   all add/edit forms are modals with Annuler/Valider; creation via the identity modal
   (no inline creation flow), confirmed after the builder check.
-- Lead's calls, not objected to: lease-link editing lives in Bail & Frais (the identity
-  modal has no lease field); tab labels exactly "Info générale", "Bail & Frais",
+- Lead's calls, not objected to: lease-link editing lives in Baux & Frais (the identity
+  modal has no lease field); tab labels exactly "Info générale", "Baux & Frais",
   "Salariés"; `ViewTabs` extended with optional per-tab `dataCy`; E2E sequence rewrites
   count as migration while hook names are preserved; if the E2E gate cannot run
   (e.g. Docker unavailable) the task stops at `BLOCKED`, never `DONE`.

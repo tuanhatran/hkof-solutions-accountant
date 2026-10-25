@@ -18,9 +18,12 @@ describe("Settings", () => {
 
     waitForText('[data-cy="info-societe"]', "HKOF");
 
-    // Prorata is read-only on the Bail & Frais tab.
+    // Prorata is read-only on the Baux & Frais tab, shown once the active
+    // lease row is expanded (the tab arrives collapsed).
     cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
-    waitForText('[data-cy="prorata-bail-societe"]', SEED_PRORATA);
+    cy.contains('button[data-cy^="bail-societe-"]', "Bail actif", {
+      timeout: 20_000,
+    }).click();
 
     // Identity edits go through the modal.
     cy.get('[data-cy="onglet-entreprise-identification"]').click();
@@ -129,6 +132,10 @@ describe("Settings", () => {
     cy.visit("/configuration/entreprise");
 
     cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+    // The tab arrives collapsed: expand the active lease to reach its postes.
+    cy.contains('button[data-cy^="bail-societe-"]', "Bail actif", {
+      timeout: 20_000,
+    }).click();
     cy.get('[data-cy="btn-ajouter-poste"]').click();
     cy.get('[data-cy="formulaire-poste"]').should("be.visible");
     cy.get("#poste-code").type("internet-pro");

@@ -72,7 +72,7 @@ describe("ExpenseItemForm", () => {
     renderForm();
 
     expect(
-      screen.getByRole("heading", { name: "Ajouter un type de frais" }),
+      screen.getByRole("heading", { name: "Ajouter un frais de frais" }),
     ).toBeVisible();
     expect(screen.getByLabelText("Code")).toBeEnabled();
     expect(screen.getByLabelText("Code")).toHaveValue("");

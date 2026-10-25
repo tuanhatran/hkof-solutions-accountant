@@ -72,7 +72,7 @@ export function ExpenseItemsManager({
             <ReceiptText size={17} aria-hidden="true" />
           </span>
           <div>
-            <h2 className="expense-items-manager-title">Types de frais</h2>
+            <h2 className="expense-items-manager-title">Frais</h2>
             <p className="expense-items-manager-description">
               Libellés, fournisseurs, prorata par défaut et périodicité
               alimentent la note de frais. Suppression logique uniquement.
@@ -87,7 +87,7 @@ export function ExpenseItemsManager({
           disabled={formOpen && editedItem === null}
           data-cy="btn-ajouter-poste"
         >
-          Ajouter un type
+          Ajouter un frais
         </Button>
       </div>
 

@@ -1,11 +1,11 @@
 import "./CompanyLeaseTab.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { KeyRound, Plus } from "lucide-react";
+import { KeyRound, PencilLine, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys, useLeases, usePersons } from "@/api/queries";
-import type { CompanyDto, CompanyRequest } from "@/api/types";
+import type { CompanyDto, CompanyRequest, LeaseDto } from "@/api/types";
 import { LeaseForm } from "@/components/settings/LeaseForm";
 import {
   EmptyState,
@@ -20,11 +20,15 @@ import { CompanyLeaseView } from "./CompanyLeaseView";
 import { ExpenseItemsManager } from "./ExpenseItemsManager";
 
 /**
- * "Bail & Frais" tab: the leases owned by the company, a dropdown selecting the
- * active lease (which leases' postes are listed and which lease new postes and
- * notes are keyed to), and the shared LMNP LeaseForm for adding a lease.
- * Switching the active lease is persisted through `PUT /api/companies/{id}`:
- * the backend stores it and answers the authoritative pro-rata.
+ * "Baux & Frais" tab: the leases owned by the company as a compact accordion
+ * list. Every row arrives collapsed, including the active lease, and the
+ * active lease is listed first. Clicking a collapsed row selects it as bail
+ * actif (persisted through `PUT /api/companies/{id}` only when it was not
+ * already active; the backend answers the authoritative pro-rata) and expands
+ * its details and postes inline; clicking the expanded row collapses it and
+ * keeps it active. Each item also offers a "Modifier" button opening the
+ * shared LMNP LeaseForm in edit mode, without touching selection or
+ * expansion.
  */
 export function CompanyLeaseTab({
   company,
@@ -39,7 +43,9 @@ export function CompanyLeaseTab({
   const [selectedLeaseId, setSelectedLeaseId] = useState<number | null>(
     company.leaseId ?? null,
   );
+  const [expandedLeaseId, setExpandedLeaseId] = useState<number | null>(null);
   const [addingLease, setAddingLease] = useState(false);
+  const [editingLease, setEditingLease] = useState<LeaseDto | null>(null);
 
   const linkLease = useMutation({
     mutationFn: (leaseId: number | null) => {
@@ -64,6 +70,7 @@ export function CompanyLeaseTab({
     },
     onError: (error) => {
       setSelectedLeaseId(company.leaseId ?? null);
+      setExpandedLeaseId(null);
       toast.error(errorMessage(error));
     },
   });
@@ -75,8 +82,29 @@ export function CompanyLeaseTab({
       ),
     [leases.data, company.id],
   );
+  const orderedLeases = useMemo(() => {
+    const active = companyLeases.filter(
+      (lease) => lease.id === selectedLeaseId,
+    );
+    const others = companyLeases.filter(
+      (lease) => lease.id !== selectedLeaseId,
+    );
+    return [...active, ...others];
+  }, [companyLeases, selectedLeaseId]);
   const selectedLease =
     companyLeases.find((lease) => lease.id === selectedLeaseId) ?? null;
+
+  function toggleLease(leaseId: number) {
+    if (leaseId === expandedLeaseId) {
+      setExpandedLeaseId(null);
+      return;
+    }
+    setExpandedLeaseId(leaseId);
+    if (leaseId !== selectedLeaseId) {
+      setSelectedLeaseId(leaseId);
+      linkLease.mutate(leaseId);
+    }
+  }
 
   return (
     <div className="company-lease-tab">
@@ -84,7 +112,7 @@ export function CompanyLeaseTab({
         <SectionHeader
           icon={KeyRound}
           title="Baux de la société"
-          description="Une société peut être locataire de plusieurs baux. Sélectionnez le bail actif : postes et notes de frais suivent ce bail."
+          description="Une société peut être locataire de plusieurs baux. Cliquez sur un bail pour l’activer et déplier ses frais : postes et notes de frais suivent ce bail."
           action={
             <Button
               variant="primary"
@@ -99,35 +127,6 @@ export function CompanyLeaseTab({
           }
         />
         <div className="card-body company-lease-tab-body">
-          <div className="company-lease-tab-selector">
-            <label
-              htmlFor="bail-actif-societe"
-              className="company-lease-tab-selector-label"
-            >
-              Bail sélectionné
-            </label>
-            <select
-              id="bail-actif-societe"
-              className="field company-lease-tab-select"
-              value={selectedLeaseId === null ? "" : String(selectedLeaseId)}
-              onChange={(event) => {
-                const value =
-                  event.target.value === "" ? null : Number(event.target.value);
-                setSelectedLeaseId(value);
-                linkLease.mutate(value);
-              }}
-              disabled={linkLease.isPending}
-              data-cy="select-bail-actif"
-            >
-              <option value="">Aucun bail</option>
-              {companyLeases.map((lease) => (
-                <option key={lease.id} value={lease.id}>
-                  {lease.propertyAddress ?? "Bail sans adresse"}
-                </option>
-              ))}
-            </select>
-          </div>
-
           {leases.isError ? (
             <ErrorState
               message={errorMessage(leases.error)}
@@ -142,48 +141,86 @@ export function CompanyLeaseTab({
             />
           ) : (
             <ul className="company-lease-tab-list">
-              {companyLeases.map((lease) => (
-                <li
-                  key={lease.id}
-                  className={cn(
-                    "company-lease-tab-item",
-                    lease.id === selectedLeaseId &&
-                      "company-lease-tab-item-selected",
-                  )}
-                  data-cy={`bail-societe-${lease.id}`}
-                >
-                  <div className="company-lease-tab-item-main">
-                    <p className="company-lease-tab-item-address">
-                      {lease.propertyAddress ?? "Bail sans adresse"}
-                    </p>
-                    <p className="company-lease-tab-item-meta">
-                      Bailleur {lease.landlordName ?? "—"} · Loyer{" "}
-                      {formatEUR(lease.rentExclCharges ?? "0.00")} · Charges{" "}
-                      {formatEUR(lease.charges ?? "0.00")}
-                    </p>
-                  </div>
-                  {lease.id === selectedLeaseId ? (
-                    <span className="badge badge-accent">Bail actif</span>
-                  ) : null}
-                </li>
-              ))}
+              {orderedLeases.map((lease) => {
+                const selected = lease.id === selectedLeaseId;
+                const expanded = lease.id === expandedLeaseId;
+                return (
+                  <li key={lease.id} className="company-lease-tab-list-item">
+                    <div
+                      className={cn(
+                        "company-lease-tab-item",
+                        selected && "company-lease-tab-item-selected",
+                      )}
+                    >
+                      <button
+                        type="button"
+                        className="company-lease-tab-item-toggle"
+                        onClick={() => toggleLease(lease.id as number)}
+                        aria-expanded={expanded}
+                        disabled={linkLease.isPending}
+                        data-cy={`bail-societe-${lease.id}`}
+                      >
+                        <span className="company-lease-tab-item-main">
+                          <span className="company-lease-tab-item-address">
+                            {lease.propertyAddress ?? "Bail sans adresse"}
+                          </span>
+                          <span className="company-lease-tab-item-meta">
+                            Bailleur {lease.landlordName ?? "—"} · Loyer{" "}
+                            {formatEUR(lease.rentExclCharges ?? "0.00")} ·
+                            Charges {formatEUR(lease.charges ?? "0.00")}
+                          </span>
+                        </span>
+                        {selected ? (
+                          <span className="badge badge-accent">Bail actif</span>
+                        ) : null}
+                      </button>
+                      <Button
+                        variant="ghost"
+                        small
+                        icon={<PencilLine size={13} />}
+                        onClick={() => setEditingLease(lease)}
+                        data-cy={`btn-modifier-bail-societe-${lease.id}`}
+                      >
+                        Modifier
+                      </Button>
+                    </div>
+                    {expanded ? (
+                      <div className="company-lease-tab-item-expanded">
+                        <CompanyLeaseView
+                          lease={lease}
+                          proRataBase={lease.proRataBase ?? null}
+                        />
+                        <ExpenseItemsManager
+                          companyId={company.id as number}
+                          leaseId={lease.id as number}
+                          defaultProRata={
+                            lease.proRataBase ?? company.proRataBase ?? "100.00"
+                          }
+                        />
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
       </section>
 
-      <CompanyLeaseView
-        lease={selectedLease}
-        proRataBase={selectedLease?.proRataBase ?? null}
-      />
-
-      <ExpenseItemsManager
-        companyId={company.id as number}
-        leaseId={selectedLeaseId}
-        defaultProRata={
-          selectedLease?.proRataBase ?? company.proRataBase ?? "100.00"
-        }
-      />
+      {!leases.isPending && selectedLease === null ? (
+        <>
+          <section className="card company-lease-tab-none">
+            <div className="card-body">
+              <CompanyLeaseView lease={null} proRataBase={null} />
+            </div>
+          </section>
+          <ExpenseItemsManager
+            companyId={company.id as number}
+            leaseId={null}
+            defaultProRata={company.proRataBase ?? "100.00"}
+          />
+        </>
+      ) : null}
 
       {addingLease ? (
         <LeaseForm
@@ -193,6 +230,15 @@ export function CompanyLeaseTab({
           companies={companies}
           presetCompanyId={company.id as number}
           onClose={() => setAddingLease(false)}
+        />
+      ) : null}
+      {editingLease ? (
+        <LeaseForm
+          key={`edit-company-lease-${editingLease.id}`}
+          item={editingLease}
+          persons={persons.data ?? []}
+          companies={companies}
+          onClose={() => setEditingLease(null)}
         />
       ) : null}
     </div>

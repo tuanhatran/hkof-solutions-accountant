@@ -6,7 +6,7 @@ import { useCompanyForm } from "./useCompanyForm";
 
 /**
  * Create/update modal of the company identity. The lease link is edited from
- * the "Bail & Frais" tab, so this modal never shows a lease field.
+ * the "Baux & Frais" tab, so this modal never shows a lease field.
  */
 export function CompanyIdentityModal({
   open,
