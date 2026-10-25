@@ -16,17 +16,25 @@ describe("Settings", () => {
     cy.visit("/configuration");
     cy.location("pathname").should("eq", "/configuration/entreprise");
 
-    waitForValue('[data-cy="input-raison-sociale"]', "HKOF");
-    waitForText('[data-cy="prorata-indicatif"]', SEED_PRORATA);
+    waitForText('[data-cy="info-societe"]', "HKOF");
 
+    // Prorata is read-only on the Bail & Frais tab.
+    cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+    waitForText('[data-cy="prorata-bail-societe"]', SEED_PRORATA);
+
+    // Identity edits go through the modal.
+    cy.get('[data-cy="onglet-entreprise-identification"]').click();
+    cy.get('[data-cy="btn-modifier-societe"]').click();
+    waitForValue('[data-cy="input-raison-sociale"]', "HKOF");
     cy.get('[data-cy="input-raison-sociale"]').clear().type("HKOF E2E");
     cy.get('[data-cy="btn-enregistrer-configuration-bas"]').click();
-    cy.contains("Toutes les valeurs sont à jour.", { timeout: 15_000 }).should(
+    cy.contains("Société enregistrée.", { timeout: 15_000 }).should(
       "be.visible",
     );
+    cy.get('[data-cy="dialogue-formulaire-societe"]').should("not.exist");
 
     cy.reload();
-    waitForValue('[data-cy="input-raison-sociale"]', "HKOF E2E");
+    waitForText('[data-cy="info-societe"]', "HKOF E2E");
   });
 
   it("edits the seeded lease amounts in the LMNP Baux et adresses tab", () => {
@@ -120,6 +128,7 @@ describe("Settings", () => {
   it("adds, edits then removes an expense type", () => {
     cy.visit("/configuration/entreprise");
 
+    cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
     cy.get('[data-cy="btn-ajouter-poste"]').click();
     cy.get('[data-cy="formulaire-poste"]').should("be.visible");
     cy.get("#poste-code").type("internet-pro");

@@ -87,12 +87,8 @@ const SECTIONS: NavigationSection[] = [
         icon: LayoutTemplate,
         dataCy: "tab-templates",
       },
-      { to: "/admin", 
-        label: "Admin IA", 
-        icon: Bot, 
-        dataCy: "tab-admin" 
-      },
-    ]
+      { to: "/admin", label: "Admin IA", icon: Bot, dataCy: "tab-admin" },
+    ],
   },
 ];
 

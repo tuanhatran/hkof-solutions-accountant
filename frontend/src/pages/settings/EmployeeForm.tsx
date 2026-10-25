@@ -1,7 +1,6 @@
 import "./EmployeeSection.css";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, X } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { errorMessage } from "@/api/client";
@@ -9,16 +8,16 @@ import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
 import type { EmployeeDto, EmployeeRequest } from "@/api/types";
 import { PersonSignatureSection } from "@/components/settings/PersonSignatureSection";
-import { Button } from "@/components/ui/Button";
 import { FieldGroup } from "@/components/ui/FieldGroup";
+import { FormModal } from "@/components/ui/FormModal";
 import { cn } from "@/lib/cn";
 import { employeeSchema, type EmployeeFormValues } from "@/lib/validation";
 import { toast } from "@/state/toasts";
 import { EMPLOYEE_TITLES } from "./settingsValues";
 
 /**
- * Create or update form of an employee of the active company. After creation
- * the form stays open so the employee can receive signatures immediately.
+ * Create or update modal for an employee of the active company. After creation
+ * the modal stays open so the employee can receive signatures immediately.
  */
 export function EmployeeForm({
   companyId,
@@ -76,16 +75,18 @@ export function EmployeeForm({
   });
 
   return (
-    <form
-      className="employee-form"
+    <FormModal
+      open
+      wide
+      title={savedId === null ? "Ajouter un salarié" : "Modifier le salarié"}
+      onClose={onClose}
       onSubmit={handleSubmit((values) => save.mutate(values))}
-      noValidate
-      data-cy="formulaire-salarie"
+      formDataCy="formulaire-salarie"
+      submitDataCy="btn-enregistrer-salarie"
+      pending={save.isPending}
+      error={save.isError ? errorMessage(save.error) : null}
+      formClassName="employee-form"
     >
-      <h3 className="employee-form-title">
-        {savedId === null ? "Ajouter un salarié" : "Modifier le salarié"}
-      </h3>
-
       <div className="employee-form-grid">
         <FieldGroup
           id="salarie-prenom"
@@ -162,43 +163,14 @@ export function EmployeeForm({
         </FieldGroup>
       </div>
 
-      {save.isError ? (
-        <p className="employee-form-error" role="alert">
-          {errorMessage(save.error)}
-        </p>
-      ) : null}
-
       {savedId === null ? (
         <p className="employee-form-hint">
-          Enregistrez le salarié pour ajouter ses signatures sans fermer ce
-          formulaire.
+          Enregistrez le salarié pour ajouter ses signatures sans fermer cette
+          fenêtre.
         </p>
       ) : (
         <PersonSignatureSection personId={savedId} />
       )}
-
-      <div className="employee-form-actions">
-        <Button
-          variant="ghost"
-          small
-          type="button"
-          icon={<X size={14} />}
-          onClick={onClose}
-          disabled={save.isPending}
-        >
-          Fermer
-        </Button>
-        <Button
-          variant="primary"
-          small
-          type="submit"
-          loading={save.isPending}
-          icon={<Check size={14} />}
-          data-cy="btn-enregistrer-salarie"
-        >
-          {savedId === null ? "Ajouter le salarié" : "Enregistrer le salarié"}
-        </Button>
-      </div>
-    </form>
+    </FormModal>
   );
 }

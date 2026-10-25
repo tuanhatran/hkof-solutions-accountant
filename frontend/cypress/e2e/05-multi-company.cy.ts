@@ -6,7 +6,6 @@ import {
   waitForAmount,
   waitForSelectedFile,
   waitForText,
-  waitForValue,
 } from "../support/helpers";
 
 interface CompanySummary {
@@ -159,12 +158,11 @@ function createAnnexeLease(annexeCompanyId: number): Cypress.Chainable<number> {
 /** Creates the second company and its lease through the UI; it becomes active. */
 function createAnnexeCompany(): void {
   cy.visit("/configuration");
-  waitForValue('[data-cy="input-raison-sociale"]', SEEDED_COMPANY);
+  waitForText('[data-cy="info-societe"]', SEEDED_COMPANY);
 
   cy.get('[data-cy="btn-nouvelle-societe"]').click();
-  cy.get('[data-cy="select-societe"]').should("not.exist");
-  cy.get('[data-cy="btn-supprimer-societe"]').should("not.exist");
-  cy.get('[data-cy="formulaire-societe"]').should("be.visible");
+  cy.get('[data-cy="dialogue-formulaire-societe"]').should("be.visible");
+  cy.get('[data-cy="select-societe"]').should("be.visible");
   cy.get('[data-cy="input-raison-sociale"]').clear().type(ANNEXE_COMPANY.name);
   cy.get('[data-cy="input-siren"]').clear().type(ANNEXE_COMPANY.siren);
   cy.get('[data-cy="input-managerName"]')
@@ -195,14 +193,19 @@ function createAnnexeCompany(): void {
     createAnnexeLease(annexe.id).then((leaseId) => {
       cy.get('[data-cy="tab-configuration"]').click();
       cy.get('[data-cy="select-societe"]').select(String(annexe.id));
+      cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+      cy.get('[data-cy="btn-modifier-bail-societe"]').click();
       cy.get(`[data-cy="select-bail-societe"] option[value="${leaseId}"]`, {
         timeout: 20_000,
       }).should("exist");
       cy.get('[data-cy="select-bail-societe"]').select(String(leaseId));
       waitForText('[data-cy="prorata-indicatif"]', ANNEXE_COMPANY.proRata);
-      cy.get('[data-cy="btn-enregistrer-configuration-bas"]').click();
+      cy.get('[data-cy="btn-enregistrer-bail-societe"]').click();
       cy.contains("Société enregistrée.", { timeout: 20_000 }).should(
         "be.visible",
+      );
+      cy.get('[data-cy="dialogue-formulaire-bail-societe"]').should(
+        "not.exist",
       );
     });
   });
@@ -212,6 +215,7 @@ function createAnnexeCompany(): void {
 function createAnnexeEmployee(companyId: number): void {
   cy.get('[data-cy="tab-configuration"]').click();
   cy.get('[data-cy="select-societe"]').should("have.value", String(companyId));
+  cy.get('[data-cy="onglet-entreprise-salaries"]').click();
   cy.get('[data-cy="aucun-salarie"]').should("be.visible");
 
   cy.get('[data-cy="btn-ajouter-salarie"]').click();
@@ -254,8 +258,12 @@ function createAnnexeEmployee(companyId: number): void {
 }
 
 function createAnnexeExpenseItem(companyId: number): void {
+  // The employee modal stays open after creation for signatures; close it here.
+  cy.contains("button", "Annuler").click();
+  cy.get('[data-cy="dialogue-formulaire-salarie"]').should("not.exist");
   cy.get('[data-cy="tab-configuration"]').click();
   cy.get('[data-cy="select-societe"]').should("have.value", String(companyId));
+  cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
   cy.contains("Aucun poste configuré.", { timeout: 20_000 }).should(
     "be.visible",
   );
@@ -275,14 +283,16 @@ function assertSettingsIsolation(
   annexeCompanyId: number,
 ): void {
   cy.get('[data-cy="select-societe"]').select(String(seededCompanyId));
-  waitForValue('[data-cy="input-raison-sociale"]', SEEDED_COMPANY);
-  waitForText('[data-cy="prorata-indicatif"]', SEEDED_PRO_RATA);
+  waitForText('[data-cy="info-societe"]', SEEDED_COMPANY);
+  cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+  waitForText('[data-cy="prorata-bail-societe"]', SEEDED_PRO_RATA);
   cy.contains("td", "Téléphone", { timeout: 20_000 }).should("be.visible");
   cy.contains("td", "Gaz annexe").should("not.exist");
 
   cy.get('[data-cy="select-societe"]').select(String(annexeCompanyId));
-  waitForValue('[data-cy="input-raison-sociale"]', ANNEXE_COMPANY.name);
-  waitForText('[data-cy="prorata-indicatif"]', ANNEXE_COMPANY.proRata);
+  waitForText('[data-cy="info-societe"]', ANNEXE_COMPANY.name);
+  cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+  waitForText('[data-cy="prorata-bail-societe"]', ANNEXE_COMPANY.proRata);
   cy.contains("td", "Gaz annexe", { timeout: 20_000 }).should("be.visible");
   cy.contains("td", "Téléphone").should("not.exist");
 }
@@ -293,12 +303,14 @@ function assertEmployeeIsolation(
 ): void {
   cy.get('[data-cy="tab-configuration"]').click();
   cy.get('[data-cy="select-societe"]').select(String(seededCompanyId));
+  cy.get('[data-cy="onglet-entreprise-salaries"]').click();
   cy.contains('[data-cy^="salarie-"]', "Gérant", { timeout: 20_000 }).should(
     "be.visible",
   );
   cy.contains('[data-cy^="salarie-"]', "Alice Martin").should("not.exist");
 
   cy.get('[data-cy="select-societe"]').select(String(annexeCompanyId));
+  cy.get('[data-cy="onglet-entreprise-salaries"]').click();
   cy.contains('[data-cy^="salarie-"]', "Alice Martin", {
     timeout: 20_000,
   }).should("be.visible");

@@ -1,0 +1,35 @@
+@reference "../../index.css";
+
+@layer components {
+  .company-lease-view-body {
+    @apply flex flex-col gap-3;
+  }
+
+  .company-lease-view-details {
+    @apply grid gap-1 rounded-xl border border-line bg-paper/40 px-4 py-3;
+  }
+
+  .company-lease-view-details-address {
+    @apply text-sm font-semibold text-ink;
+  }
+
+  .company-lease-view-details-meta {
+    @apply text-xs text-ink-soft;
+  }
+
+  .company-lease-view-empty {
+    @apply text-xs text-ink-soft;
+  }
+
+  .company-lease-view-prorata {
+    @apply flex items-baseline justify-between gap-3 rounded-xl border border-accent/15 bg-accent-soft/45 px-4 py-3;
+  }
+
+  .company-lease-view-prorata-label {
+    @apply text-[10.5px] font-bold uppercase tracking-[0.1em] text-accent;
+  }
+
+  .company-lease-view-prorata-value {
+    @apply font-display text-2xl text-accent-strong;
+  }
+}

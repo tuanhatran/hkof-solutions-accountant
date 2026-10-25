@@ -1,15 +1,15 @@
 import "./ExpenseItemForm.css";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, PencilLine } from "lucide-react";
+import { PencilLine } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
 import type { ExpenseItemDto, ExpenseItemRequest } from "@/api/types";
-import { Button } from "@/components/ui/Button";
 import { FieldGroup } from "@/components/ui/FieldGroup";
+import { FormModal } from "@/components/ui/FormModal";
 import { cn } from "@/lib/cn";
 import { parsePercentage } from "@/lib/format";
 import {
@@ -17,48 +17,20 @@ import {
   type ExpenseItemFormValues,
 } from "@/lib/validation";
 import { toast } from "@/state/toasts";
+import { ExpenseItemSwitchField } from "./ExpenseItemSwitchField";
 import {
   decimalFormatter,
   PERIODICITIES,
   type Periodicity,
 } from "./settingsValues";
 
-function SwitchField({
-  id,
-  label: labelText,
-  description,
-  register,
-}: {
-  id: string;
-  label: string;
-  description: string;
-  register: ReturnType<typeof useForm<ExpenseItemFormValues>>["register"];
-}) {
-  return (
-    <label htmlFor={id} className="expense-item-form-switch">
-      <input
-        id={id}
-        type="checkbox"
-        className="expense-item-form-switch-input"
-        {...register(id === "poste-actif" ? "active" : "multipleLinesAllowed")}
-      />
-      <span>
-        <span className="expense-item-form-switch-label">{labelText}</span>
-        <span className="expense-item-form-switch-description">
-          {description}
-        </span>
-      </span>
-    </label>
-  );
-}
-
-/** Create/update form of an expense item. */
+/** Create/update modal of an expense item. */
 export function ExpenseItemForm({
   item: expenseItem,
   companyId,
-  defaultProRata: defaultProRata,
+  defaultProRata,
   defaultOrder,
-  onClose: onClose,
+  onClose,
 }: {
   item: ExpenseItemDto | null;
   companyId: number;
@@ -122,27 +94,29 @@ export function ExpenseItemForm({
   });
 
   return (
-    <form
-      className="expense-item-form"
+    <FormModal
+      open
+      wide
+      title={
+        expenseItem ? "Modifier le type de frais" : "Ajouter un type de frais"
+      }
+      onClose={onClose}
       onSubmit={handleSubmit((values) => {
         setErrorText(null);
         save.mutate(values);
       })}
-      data-cy="formulaire-poste"
+      formDataCy="formulaire-poste"
+      submitDataCy="btn-enregistrer-poste"
+      pending={save.isPending}
+      error={errorText}
+      formClassName="expense-item-form"
     >
-      <div className="expense-item-form-header">
-        <h3 className="expense-item-form-title">
-          {expenseItem
-            ? `Modifier le poste « ${expenseItem.label} »`
-            : "Ajouter un type de frais"}
-        </h3>
-        {expenseItem ? (
-          <span className="badge badge-neutral">
-            <PencilLine size={11} aria-hidden="true" />
-            {expenseItem.code}
-          </span>
-        ) : null}
-      </div>
+      {expenseItem ? (
+        <span className="badge badge-neutral">
+          <PencilLine size={11} aria-hidden="true" />
+          {expenseItem.code}
+        </span>
+      ) : null}
 
       <div className="expense-item-form-grid">
         <FieldGroup
@@ -242,46 +216,21 @@ export function ExpenseItemForm({
       </div>
 
       <div className="expense-item-form-switches">
-        <SwitchField
+        <ExpenseItemSwitchField
           id="poste-actif"
           label="Poste actif"
           description="Apparaît dans la liste déroulante de la note de frais."
           register={register}
+          field="active"
         />
-        <SwitchField
+        <ExpenseItemSwitchField
           id="poste-plusieurs-lignes"
           label="Plusieurs lignes autorisées"
           description="Autorise plusieurs frais de ce type pour un même mois (ex. téléphone)."
           register={register}
+          field="multipleLinesAllowed"
         />
       </div>
-
-      {errorText ? (
-        <p className="expense-item-form-error" role="alert">
-          {errorText}
-        </p>
-      ) : null}
-
-      <div className="expense-item-form-actions">
-        <Button
-          variant="ghost"
-          small
-          onClick={onClose}
-          disabled={save.isPending}
-        >
-          Annuler
-        </Button>
-        <Button
-          variant="primary"
-          small
-          type="submit"
-          loading={save.isPending}
-          icon={<Check size={14} />}
-          data-cy="btn-enregistrer-poste"
-        >
-          {expenseItem ? "Enregistrer le poste" : "Ajouter le poste"}
-        </Button>
-      </div>
-    </form>
+    </FormModal>
   );
 }

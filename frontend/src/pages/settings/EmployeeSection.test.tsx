@@ -79,6 +79,7 @@ function toastMessages(): string[] {
 
 beforeEach(() => {
   employeesState = readyQuery([CEO]);
+  vi.mocked(api.employees.create).mockReset();
   vi.mocked(api.employees.update).mockReset();
   vi.mocked(api.employees.delete).mockReset();
   useToasts.setState({ toasts: [] });
@@ -168,9 +169,7 @@ describe("EmployeeSection", () => {
     await user.clear(screen.getByLabelText("Nom"));
     await user.type(screen.getByLabelText("Nom"), "Durand");
     await user.selectOptions(screen.getByLabelText("Intitulé"), "CFO");
-    await user.click(
-      screen.getByRole("button", { name: "Enregistrer le salarié" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
       expect(api.employees.update).toHaveBeenCalledWith(3, {
@@ -191,6 +190,36 @@ describe("EmployeeSection", () => {
     expect(screen.getByText("Signatures")).toBeVisible();
   });
 
+  it("renders the form in a modal and closes on Annuler or Escape without saving", async () => {
+    renderSection();
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter un salarié" }),
+    );
+    expect(
+      document.querySelector(
+        '[data-cy="dialogue-formulaire-salarie"] [data-cy="formulaire-salarie"]',
+      ),
+    ).not.toBeNull();
+
+    await user.type(screen.getByLabelText("Prénom"), "Alex");
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
+    expect(api.employees.create).not.toHaveBeenCalled();
+    expect(
+      document.querySelector('[data-cy="dialogue-formulaire-salarie"]'),
+    ).toBeNull();
+
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter un salarié" }),
+    );
+    await user.keyboard("{Escape}");
+    expect(api.employees.create).not.toHaveBeenCalled();
+    expect(
+      document.querySelector('[data-cy="dialogue-formulaire-salarie"]'),
+    ).toBeNull();
+  });
+
   it("surfaces an update failure in the form", async () => {
     vi.mocked(api.employees.update).mockRejectedValue(
       new Error("Mise à jour refusée"),
@@ -203,9 +232,7 @@ describe("EmployeeSection", () => {
         name: "Modifier le salarié Camille Martin",
       }),
     );
-    await user.click(
-      screen.getByRole("button", { name: "Enregistrer le salarié" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Mise à jour refusée",

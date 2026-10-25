@@ -160,6 +160,9 @@ describe("ExpenseItemsManager", () => {
     await user.click(screen.getByRole("button", { name: "Ajouter un type" }));
 
     expect(
+      document.querySelector('[data-cy="dialogue-formulaire-poste"]'),
+    ).not.toBeNull();
+    expect(
       screen.getByRole("heading", { name: "Ajouter un type de frais" }),
     ).toBeVisible();
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
@@ -181,7 +184,7 @@ describe("ExpenseItemsManager", () => {
     await user.click(screen.getAllByRole("button", { name: "Modifier" })[0]);
 
     expect(
-      screen.getByRole("heading", { name: "Modifier le poste « Loyer »" }),
+      screen.getByRole("heading", { name: "Modifier le type de frais" }),
     ).toBeVisible();
     expect(screen.getByLabelText("Code")).toHaveValue("loyer");
     expect(screen.getByLabelText("Code")).toBeDisabled();

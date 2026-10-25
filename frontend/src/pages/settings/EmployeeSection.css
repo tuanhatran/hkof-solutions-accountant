@@ -42,11 +42,7 @@
   }
 
   .employee-form {
-    @apply space-y-4 rounded-xl border border-line bg-paper/40 p-4;
-  }
-
-  .employee-form-title {
-    @apply text-sm font-semibold text-ink;
+    @apply flex flex-col gap-4;
   }
 
   .employee-form-grid {
@@ -55,13 +51,5 @@
 
   .employee-form-hint {
     @apply rounded-lg border border-line bg-paper/60 px-3 py-2 text-[11px] text-ink-soft;
-  }
-
-  .employee-form-error {
-    @apply rounded-xl border border-danger/20 bg-danger-soft/60 p-3 text-sm text-danger;
-  }
-
-  .employee-form-actions {
-    @apply flex justify-end gap-2;
   }
 }

@@ -8,6 +8,8 @@ export interface ViewTab {
   updated?: boolean;
   /** Extra classes for the tab button. */
   className?: string;
+  /** E2E hook placed on the tab button. */
+  dataCy?: string;
 }
 
 interface ViewTabsProps {
@@ -28,6 +30,7 @@ export function ViewTabs({ ariaLabel, tabs, active, onChange }: ViewTabsProps) {
           role="tab"
           aria-selected={active === tab.value}
           onClick={() => onChange(tab.value)}
+          data-cy={tab.dataCy}
           className={cn(
             "segmented-item view-tabs-item",
             tab.className,
