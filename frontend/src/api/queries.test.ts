@@ -83,12 +83,19 @@ describe("query hooks", () => {
 
     const active = renderHook(() => useExpenseItems(3), { wrapper });
     const all = renderHook(() => useExpenseItems(3, true), { wrapper });
+    const leaseScoped = renderHook(() => useExpenseItems(3, true, 7), {
+      wrapper,
+    });
     const scoped = renderHook(() => useExpenseItems(null), { wrapper });
 
     await waitFor(() => expect(active.result.current.isSuccess).toBe(true));
     await waitFor(() => expect(all.result.current.isSuccess).toBe(true));
-    expect(api.expenseItems.list).toHaveBeenCalledWith(3, false);
-    expect(api.expenseItems.list).toHaveBeenCalledWith(3, true);
+    await waitFor(() =>
+      expect(leaseScoped.result.current.isSuccess).toBe(true),
+    );
+    expect(api.expenseItems.list).toHaveBeenCalledWith(3, false, null);
+    expect(api.expenseItems.list).toHaveBeenCalledWith(3, true, null);
+    expect(api.expenseItems.list).toHaveBeenCalledWith(3, true, 7);
     expect(scoped.result.current.fetchStatus).toBe("idle");
   });
 
@@ -208,6 +215,9 @@ describe("query hooks", () => {
       wrapper,
     });
     const allStatements = renderHook(() => useStatements(3), { wrapper });
+    const leaseStatements = renderHook(() => useStatements(3, "2026-10", 7), {
+      wrapper,
+    });
     const companyless = renderHook(() => useStatements(null), { wrapper });
 
     await waitFor(() =>
@@ -218,11 +228,15 @@ describe("query hooks", () => {
         allStatements.result.current.isSuccess,
       ]).toEqual([true, true, true, true]),
     );
+    await waitFor(() =>
+      expect(leaseStatements.result.current.isSuccess).toBe(true),
+    );
     expect(api.rentReceipts.list).toHaveBeenCalledWith(3, "2026-10");
     expect(api.rentReceipts.list).toHaveBeenCalledWith(3, undefined);
     expect(api.rentReceipts.list).toHaveBeenCalledTimes(2);
-    expect(api.expenseStatements.list).toHaveBeenCalledWith(3, "2026-10");
-    expect(api.expenseStatements.list).toHaveBeenCalledWith(3, undefined);
+    expect(api.expenseStatements.list).toHaveBeenCalledWith(3, "2026-10", null);
+    expect(api.expenseStatements.list).toHaveBeenCalledWith(3, undefined, null);
+    expect(api.expenseStatements.list).toHaveBeenCalledWith(3, "2026-10", 7);
     expect(noReceipts.result.current.fetchStatus).toBe("idle");
     expect(companyless.result.current.fetchStatus).toBe("idle");
   });
@@ -265,16 +279,21 @@ describe("company query invalidation", () => {
 });
 
 describe("expense item query invalidation", () => {
-  it("invalidates every expense item list, whatever the company and all flag", () => {
+  it("invalidates every expense item list, whatever the company, all flag and lease", () => {
     const queryClient = new QueryClient();
     queryClient.setQueryData(queryKeys.expenseItems(1, true), []);
     queryClient.setQueryData(queryKeys.expenseItems(2, false), []);
+    queryClient.setQueryData(queryKeys.expenseItems(1, true, 7), []);
     queryClient.setQueryData(queryKeys.companies, []);
 
     void queryClient.invalidateQueries({ queryKey: queryKeys.expenseItemsAll });
 
     expect(
       queryClient.getQueryState(queryKeys.expenseItems(1, true))?.isInvalidated,
+    ).toBe(true);
+    expect(
+      queryClient.getQueryState(queryKeys.expenseItems(1, true, 7))
+        ?.isInvalidated,
     ).toBe(true);
     expect(
       queryClient.getQueryState(queryKeys.expenseItems(2, false))

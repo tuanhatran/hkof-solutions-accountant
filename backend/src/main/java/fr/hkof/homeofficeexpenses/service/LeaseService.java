@@ -97,6 +97,47 @@ public class LeaseService {
         return leases.findFirstByDeletedFalseOrderByIdAsc().orElse(null);
     }
 
+    /**
+     * Resolves the active lease used by the expenses of a company: the requested one, validated
+     * against the company, or the first active lease when no lease is requested.
+     */
+    @Transactional(readOnly = true)
+    public Lease resolveExpenseLease(Long companyId, Long leaseId) {
+        if (leaseId == null) {
+            return leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(companyId).orElse(null);
+        }
+        Lease lease = leases.findByIdAndDeletedFalse(leaseId)
+                .orElseThrow(() -> new NotFoundException("Bail introuvable."));
+        if (lease.getCompanyId() == null || !lease.getCompanyId().equals(companyId)) {
+            throw new BusinessException("Ce bail n'appartient pas à la société.");
+        }
+        return lease;
+    }
+
+    /** Pro-rata base and readable detail of the resolved lease, shared by screen, preview and PDF. */
+    @Transactional(readOnly = true)
+    public ProRata proRata(Long companyId, Long leaseId) {
+        Lease lease = resolveExpenseLease(companyId, leaseId);
+        if (lease == null) {
+            return new ProRata(ZERO, "Surfaces non configurées");
+        }
+        BigDecimal base = CalculationService.proRataBase(lease.getBusinessArea(), lease.getTotalArea());
+        return new ProRata(base, Amounts.proRataDetail(lease.getBusinessArea(), lease.getTotalArea(), base));
+    }
+
+    /** Pro-rata of the lease itself; null values when the lease carries no surfaces. */
+    public static ProRata proRataOf(Lease lease) {
+        if (lease == null || lease.getTotalArea() == null || lease.getBusinessArea() == null) {
+            return null;
+        }
+        BigDecimal base = CalculationService.proRataBase(lease.getBusinessArea(), lease.getTotalArea());
+        return new ProRata(base, Amounts.proRataDetail(lease.getBusinessArea(), lease.getTotalArea(), base));
+    }
+
+    /** Read-only holder: base in decimal percent plus its French detail. */
+    public record ProRata(BigDecimal base, String detail) {
+    }
+
     private void apply(Lease lease, LeaseRequest request, Long currentId, Long currentCompanyId) {
         if (request.landlordId() == null) {
             throw new BusinessException("Sélectionnez un bailleur.");
@@ -144,10 +185,10 @@ public class LeaseService {
             companyId = request.companyId() != null ? companies.entity(request.companyId()).getId()
                     : currentCompanyId;
         }
-        if (companyId != null) {
+        if (companyId != null && !companyLease) {
             boolean companyTaken = currentId == null
-                    ? leases.existsByCompanyIdAndDeletedFalse(companyId)
-                    : leases.existsByCompanyIdAndDeletedFalseAndIdNot(companyId, currentId);
+                    ? leases.existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalse(companyId)
+                    : leases.existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalseAndIdNot(companyId, currentId);
             if (companyTaken) {
                 throw new BusinessException("Cette société est déjà liée à un bail actif.");
             }
@@ -205,6 +246,7 @@ public class LeaseService {
         String tenantName = lease.isCompanyLease()
                 ? companyName
                 : lease.getTenant() == null ? null : lease.getTenant().getName();
+        ProRata proRata = proRataOf(lease);
         return new LeaseDto(
                 lease.getId(),
                 lease.getAddress().getId(),
@@ -219,6 +261,8 @@ public class LeaseService {
                 Amounts.apiValue(lease.getRentExclCharges()),
                 Amounts.apiValue(lease.getCharges()),
                 Amounts.apiValue(lease.getTotalArea()),
-                Amounts.apiValue(lease.getBusinessArea()));
+                Amounts.apiValue(lease.getBusinessArea()),
+                proRata == null ? null : Amounts.apiValue(proRata.base()),
+                proRata == null ? null : proRata.detail());
     }
 }

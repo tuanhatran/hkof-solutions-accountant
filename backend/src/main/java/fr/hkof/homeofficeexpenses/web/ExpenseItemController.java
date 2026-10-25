@@ -30,8 +30,9 @@ public class ExpenseItemController {
 
     @GetMapping
     public List<ExpenseItemDto> listExpenseItems(@RequestParam Long companyId,
+            @RequestParam(required = false) Long leaseId,
             @RequestParam(defaultValue = "false") boolean all) {
-        return service.list(companyId, all);
+        return service.list(companyId, leaseId, all);
     }
 
     @PostMapping

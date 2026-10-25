@@ -28,12 +28,14 @@ import {
 export function ExpenseItemForm({
   item: expenseItem,
   companyId,
+  leaseId,
   defaultProRata,
   defaultOrder,
   onClose,
 }: {
   item: ExpenseItemDto | null;
   companyId: number;
+  leaseId: number | null;
   defaultProRata: string;
   defaultOrder: number;
   onClose: () => void;
@@ -64,6 +66,8 @@ export function ExpenseItemForm({
     mutationFn: (values: ExpenseItemFormValues) => {
       const requestBody: ExpenseItemRequest = {
         companyId,
+        // A new poste is keyed to the selected lease; an edit keeps the item's own lease.
+        leaseId: expenseItem ? (expenseItem.leaseId ?? null) : leaseId,
         label: values.label.trim(),
         supplier: values.supplier.trim() || undefined,
         proRataPct: parsePercentage(values.proRataPct) ?? "0",

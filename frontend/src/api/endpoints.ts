@@ -124,9 +124,9 @@ export const api = {
   },
 
   expenseItems: {
-    list: (companyId: number, all = false) =>
+    list: (companyId: number, all = false, leaseId?: number | null) =>
       request<ExpenseItemDto[]>(
-        `/api/expense-items${query({ companyId, all })}`,
+        `/api/expense-items${query({ companyId, leaseId, all })}`,
       ),
     create: (requestBody: ExpenseItemRequest) =>
       request<ExpenseItemDto>(
@@ -178,9 +178,9 @@ export const api = {
   },
 
   expenseStatements: {
-    list: (companyId: number, month?: string) =>
+    list: (companyId: number, month?: string, leaseId?: number | null) =>
       request<StatementDto[]>(
-        `/api/expense-statements${query({ companyId, month })}`,
+        `/api/expense-statements${query({ companyId, month, leaseId })}`,
       ),
     active: async (
       companyId: number,

@@ -1,6 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { LeaseDto } from "@/api/types";
 import { CompanyLeaseView } from "./CompanyLeaseView";
 
@@ -18,11 +17,8 @@ const LEASE: LeaseDto = {
 };
 
 describe("CompanyLeaseView", () => {
-  it("renders the linked lease summary and the prorata read-only", async () => {
-    const onEdit = vi.fn();
-    render(
-      <CompanyLeaseView lease={LEASE} proRataBase="35.71" onEdit={onEdit} />,
-    );
+  it("renders the linked lease summary and the prorata read-only", () => {
+    render(<CompanyLeaseView lease={LEASE} proRataBase="35.71" />);
 
     const details = document.querySelector('[data-cy="bail-societe-lie"]');
     expect(details).not.toBeNull();
@@ -34,17 +30,13 @@ describe("CompanyLeaseView", () => {
     expect(
       document.querySelector('[data-cy="prorata-bail-societe"]'),
     ).toHaveTextContent("35,71 %");
-
-    const edit = screen.getByRole("button", { name: "Modifier" });
-    expect(edit).toHaveAttribute("data-cy", "btn-modifier-bail-societe");
-    await userEvent.setup().click(edit);
-    expect(onEdit).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("button", { name: "Modifier" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows the French no-lease sentence when the company has no lease", () => {
-    render(
-      <CompanyLeaseView lease={null} proRataBase={null} onEdit={vi.fn()} />,
-    );
+    render(<CompanyLeaseView lease={null} proRataBase={null} />);
 
     expect(document.querySelector('[data-cy="bail-societe-lie"]')).toBeNull();
     expect(screen.getByText(/^Aucun bail sélectionné/)).toBeVisible();
@@ -61,7 +53,6 @@ describe("CompanyLeaseView", () => {
       <CompanyLeaseView
         lease={{ ...LEASE, businessArea: undefined, totalArea: "" }}
         proRataBase={null}
-        onEdit={vi.fn()}
       />,
     );
 

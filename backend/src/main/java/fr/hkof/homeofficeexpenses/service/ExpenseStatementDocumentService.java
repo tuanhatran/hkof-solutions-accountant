@@ -63,8 +63,8 @@ public class ExpenseStatementDocumentService {
     }
 
     public byte[] preview(YearMonth month, List<CalculatedLine> lines, Company company,
-            StatementPreviewRequest request) {
-        ExpenseStatement statement = buildStatement(month, lines, null, null, company);
+            StatementPreviewRequest request, Long leaseId) {
+        ExpenseStatement statement = buildStatement(month, lines, null, null, company, leaseId);
         boolean complete = Boolean.TRUE.equals(request.complete());
         String signature = signatureDataUri(request.signatureId(), company.getId());
         TemplateDocument template = templateForStatement(request.templateId());
@@ -78,8 +78,8 @@ public class ExpenseStatementDocumentService {
     }
 
     public GeneratedStatement generate(YearMonth month, List<CalculatedLine> lines, int version,
-            TemplateDocument template, String signature, Company company) {
-        ExpenseStatement statement = buildStatement(month, lines, version, template, company);
+            TemplateDocument template, String signature, Company company, Long leaseId) {
+        ExpenseStatement statement = buildStatement(month, lines, version, template, company, leaseId);
         String html = templateService.render(template,
                 templateDataService.dataStatement(company, statement, true, signature));
         byte[] pdf = pdfService.renderHtmlToPdf(html);
@@ -153,9 +153,10 @@ public class ExpenseStatementDocumentService {
     }
 
     private ExpenseStatement buildStatement(YearMonth month, List<CalculatedLine> lines, Integer version,
-            TemplateDocument template, Company company) {
+            TemplateDocument template, Company company, Long leaseId) {
         ExpenseStatement statement = new ExpenseStatement();
         statement.setCompanyId(company.getId());
+        statement.setLeaseId(leaseId);
         statement.setMonth(month.toString());
         statement.setNumber("NF-" + month);
         statement.setVersion(version == null ? 1 : version);

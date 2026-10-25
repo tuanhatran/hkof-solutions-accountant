@@ -42,11 +42,13 @@ public class ExpenseStatementService {
     private final StorageService storage;
     private final ExpenseStatementLineCalculator lineCalculator;
     private final ExpenseStatementDocumentService documents;
+    private final LeaseService leases;
 
     public ExpenseStatementService(ExpenseStatementRepository repository, CompanyService companies,
             ExpenseItemService expenseItemService, RentReceiptService rentReceiptService,
             TemplateDataService templateDataService, StorageService storage,
-            ExpenseStatementLineCalculator lineCalculator, ExpenseStatementDocumentService documents) {
+            ExpenseStatementLineCalculator lineCalculator, ExpenseStatementDocumentService documents,
+            LeaseService leases) {
         this.repository = repository;
         this.companies = companies;
         this.expenseItemService = expenseItemService;
@@ -55,26 +57,29 @@ public class ExpenseStatementService {
         this.storage = storage;
         this.lineCalculator = lineCalculator;
         this.documents = documents;
+        this.leases = leases;
     }
 
     @Transactional(readOnly = true)
     public CalculationResponse calculate(StatementCalculationRequest request) {
         YearMonth month = Amounts.month(request.month());
         Company company = companies.entity(request.companyId());
+        LeaseService.ProRata proRata = leases.proRata(company.getId(), request.leaseId());
         List<CalculatedLine> lines = lineCalculator.calculateLines(company.getId(), request.lines());
         BigDecimal total = CalculationService.total(lines.stream().map(CalculatedLine::claimedAmount).toList());
         return new CalculationResponse(
                 lines.stream().map(lineCalculator::toDto).toList(),
                 Amounts.apiValue(total),
                 NumberToWords.toWords(total),
-                Amounts.apiValue(companies.proRataBase(company)),
-                companies.proRataDetail(company));
+                Amounts.apiValue(proRata.base()),
+                proRata.detail());
     }
 
     @Transactional(readOnly = true)
-    public DraftDto draft(Long companyId, String monthText) {
+    public DraftDto draft(Long companyId, String monthText, Long leaseId) {
         YearMonth month = Amounts.month(monthText);
         Company company = companies.entity(companyId);
+        LeaseService.ProRata proRata = leases.proRata(company.getId(), leaseId);
         // Expense statements keep a month-scoped rent receipt: pair selection is out of scope.
         RentReceipt rentReceipt = rentReceiptService.activeForMonth(company.getId(), month.toString(), null, null, null);
         List<ExpenseLineDto> lines = new ArrayList<>();
@@ -88,7 +93,7 @@ public class ExpenseStatementService {
                     Amounts.apiValue(rentReceipt.getTotal()),
                     null, null, AmountSource.MANUAL.name(), null, null));
         }
-        List<String> missing = expenseItemService.list(company.getId(), false).stream()
+        List<String> missing = expenseItemService.list(company.getId(), leaseId, false).stream()
                 .filter(expenseItem -> !expenseItem.code().equals("loyer"))
                 .map(expenseItem -> expenseItem.label().toLowerCase(Locale.FRENCH))
                 .toList();
@@ -96,8 +101,8 @@ public class ExpenseStatementService {
                 month.toString(),
                 rentReceipt == null ? null : rentReceiptService.toDto(rentReceipt),
                 lines,
-                Amounts.apiValue(companies.proRataBase(company)),
-                companies.proRataDetail(company),
+                Amounts.apiValue(proRata.base()),
+                proRata.detail(),
                 missing);
     }
 
@@ -105,14 +110,16 @@ public class ExpenseStatementService {
     public byte[] preview(StatementPreviewRequest request) {
         YearMonth month = Amounts.month(request.month());
         Company company = companies.entity(request.companyId());
+        var lease = leases.resolveExpenseLease(company.getId(), request.leaseId());
         List<CalculatedLine> lines = lineCalculator.calculateLines(company.getId(), request.lines());
-        return documents.preview(month, lines, company, request);
+        return documents.preview(month, lines, company, request, lease == null ? null : lease.getId());
     }
 
     @Transactional
     public StatementDto generate(StatementGenerationRequest request) {
         YearMonth month = Amounts.month(request.month());
         Company company = companies.entity(request.companyId());
+        var lease = leases.resolveExpenseLease(company.getId(), request.leaseId());
         List<CalculatedLine> lines = lineCalculator.calculateLines(company.getId(), request.lines());
         if (lines.isEmpty()) {
             throw new BusinessException("Ajoutez au moins un frais avant de générer la note.");
@@ -124,8 +131,8 @@ public class ExpenseStatementService {
                 .map(n -> n.getVersion() + 1)
                 .orElse(1);
         archive(company.getId(), month.toString());
-        ExpenseStatementDocumentService.GeneratedStatement generated =
-                documents.generate(month, lines, version, template, signature, company);
+        ExpenseStatementDocumentService.GeneratedStatement generated = documents.generate(
+                month, lines, version, template, signature, company, request.leaseId());
         ExpenseStatement statement = generated.statement();
         statement.setPdfPath(storage.storePdf("note_frais_" + month + "_v" + version + ".pdf", generated.pdf()));
         statement.setFullPdfPath(
@@ -135,12 +142,17 @@ public class ExpenseStatementService {
     }
 
     @Transactional(readOnly = true)
-    public List<StatementDto> list(Long companyId, String month) {
+    public List<StatementDto> list(Long companyId, String month, Long leaseId) {
         companies.entity(companyId);
+        var lease = leaseId == null ? null : leases.resolveExpenseLease(companyId, leaseId);
         List<ExpenseStatement> statements = month == null || month.isBlank()
                 ? repository.findByCompanyIdOrderByMonthDescVersionDesc(companyId)
                 : repository.findByCompanyIdAndMonthOrderByVersionDesc(companyId, Amounts.month(month).toString());
-        return statements.stream().map(this::toDto).toList();
+        return statements.stream()
+                .filter(statement -> lease == null || statement.getLeaseId() == null
+                        || statement.getLeaseId().equals(lease.getId()))
+                .map(this::toDto)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -214,6 +226,7 @@ public class ExpenseStatementService {
         return new StatementDto(
                 statement.getId(),
                 statement.getCompanyId(),
+                statement.getLeaseId(),
                 companyName,
                 statement.getMonth(),
                 statement.getNumber(),

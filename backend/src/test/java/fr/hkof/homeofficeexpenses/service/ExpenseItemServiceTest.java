@@ -16,6 +16,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
+import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.Periodicity;
 import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
 import fr.hkof.homeofficeexpenses.web.dto.ExpenseItemDtos.ExpenseItemDto;
@@ -27,19 +28,26 @@ class ExpenseItemServiceTest {
 
     private ExpenseItemRepository repository;
     private CompanyService companies;
+    private LeaseService leases;
     private ExpenseItemService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(ExpenseItemRepository.class);
         companies = mock(CompanyService.class);
-        service = new ExpenseItemService(repository, companies);
+        leases = mock(LeaseService.class);
+        service = new ExpenseItemService(repository, companies, leases);
     }
 
     private ExpenseItem item(Long id, String code, String label, boolean deleted) {
+        return item(id, code, label, deleted, null);
+    }
+
+    private ExpenseItem item(Long id, String code, String label, boolean deleted, Long leaseId) {
         ExpenseItem item = new ExpenseItem();
         item.setId(id);
         item.setCompanyId(COMPANY_ID);
+        item.setLeaseId(leaseId);
         item.setCode(code);
         item.setLabel(label);
         item.setSupplier("EDF");
@@ -52,7 +60,7 @@ class ExpenseItemServiceTest {
     }
 
     private ExpenseItemRequest request(String code, String label, String periodicity) {
-        return new ExpenseItemRequest(COMPANY_ID, code, label, "  EDF  ", "35,71", periodicity, null, null, null);
+        return new ExpenseItemRequest(COMPANY_ID, null, code, label, "  EDF  ", "35,71", periodicity, null, null, null);
     }
 
     @Test
@@ -63,8 +71,8 @@ class ExpenseItemServiceTest {
         when(repository.findByCompanyIdAndDeletedFalseAndActiveTrueOrderBySortOrderAscIdAsc(COMPANY_ID))
                 .thenReturn(List.of(item(2L, "loyer", "Loyer", false)));
 
-        assertThat(service.list(COMPANY_ID, true)).extracting(ExpenseItemDto::code).containsExactly("gaz");
-        assertThat(service.list(COMPANY_ID, false)).extracting(ExpenseItemDto::code).containsExactly("loyer");
+        assertThat(service.list(COMPANY_ID, null, true)).extracting(ExpenseItemDto::code).containsExactly("gaz");
+        assertThat(service.list(COMPANY_ID, null, false)).extracting(ExpenseItemDto::code).containsExactly("loyer");
     }
 
     @Test
@@ -142,7 +150,7 @@ class ExpenseItemServiceTest {
         when(repository.save(any(ExpenseItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ExpenseItemDto dto = service.update(1L,
-                new ExpenseItemRequest(COMPANY_ID, null, " Gaz ", " EDF ", "50", " annual ", false, 7, true));
+                new ExpenseItemRequest(COMPANY_ID, null, null, " Gaz ", " EDF ", "50", " annual ", false, 7, true));
 
         assertThat(dto.label()).isEqualTo("Gaz");
         assertThat(dto.supplier()).isEqualTo("EDF");
@@ -190,5 +198,37 @@ class ExpenseItemServiceTest {
         assertThat(item.isDeleted()).isTrue();
         assertThat(item.isActive()).isFalse();
         verify(repository).save(item);
+    }
+
+    @Test
+    @DisplayName("Items created with a lease keep it and the lease filter keeps legacy rows")
+    void createsAndFiltersByLease() {
+        Lease lease = new Lease();
+        lease.setId(5L);
+        lease.setCompanyId(COMPANY_ID);
+        when(leases.resolveExpenseLease(COMPANY_ID, 5L)).thenReturn(lease);
+        when(repository.existsByCompanyIdAndCode(COMPANY_ID, "eau")).thenReturn(false);
+        when(repository.save(any(ExpenseItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ExpenseItemDto created = service.create(new ExpenseItemRequest(
+                COMPANY_ID, 5L, "eau", "Eau", null, "20", null, null, null, null));
+        assertThat(created.leaseId()).isEqualTo(5L);
+
+        when(repository.findByCompanyIdAndDeletedFalseAndActiveTrueOrderBySortOrderAscIdAsc(COMPANY_ID))
+                .thenReturn(List.of(item(1L, "eau", "Eau", false, 5L), item(2L, "heritage", "Hérité", false),
+                        item(3L, "autre", "Autre bail", false, 6L)));
+        assertThat(service.list(COMPANY_ID, 5L, false)).extracting(ExpenseItemDto::code)
+                .containsExactly("eau", "heritage");
+    }
+
+    @Test
+    @DisplayName("A lease of another company is rejected on create in French")
+    void createRejectsForeignLease() {
+        when(leases.resolveExpenseLease(COMPANY_ID, 6L))
+                .thenThrow(new BusinessException("Ce bail n'appartient pas à la société."));
+        assertThatThrownBy(() -> service.create(new ExpenseItemRequest(
+                COMPANY_ID, 6L, "vol", "Volé", null, "10", null, null, null, null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Ce bail n'appartient pas à la société.");
     }
 }

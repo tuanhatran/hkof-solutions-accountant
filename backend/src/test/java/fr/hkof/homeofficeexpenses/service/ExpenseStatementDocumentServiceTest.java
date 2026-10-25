@@ -113,7 +113,7 @@ class ExpenseStatementDocumentServiceTest {
     }
 
     private StatementPreviewRequest previewRequest(Long templateId, boolean complete) {
-        return new StatementPreviewRequest(COMPANY_ID, "2026-10", templateId, complete, List.of(), null);
+        return new StatementPreviewRequest(COMPANY_ID, null, "2026-10", templateId, complete, List.of(), null);
     }
 
     private void stubDocumentRendering(TemplateDocument template, String html) {
@@ -133,7 +133,7 @@ class ExpenseStatementDocumentServiceTest {
         stubDocumentRendering(template, "<html></html>");
 
         byte[] pdf = service.preview(YearMonth.of(2026, 10), List.of(line(item("gaz", "Gaz", 20), null)),
-                company(), previewRequest(null, false));
+                company(), previewRequest(null, false), null);
 
         assertThat(pdf).containsExactly(9);
         verify(pdfService, never()).merge(any());
@@ -170,7 +170,7 @@ class ExpenseStatementDocumentServiceTest {
                 line(item("fibre", "Fibre", 40), textReceipt),
                 line(item("gaz", "Gaz", 20), pdfReceipt));
 
-        byte[] pdf = service.preview(YearMonth.of(2026, 10), lines, company(), previewRequest(null, true));
+        byte[] pdf = service.preview(YearMonth.of(2026, 10), lines, company(), previewRequest(null, true), null);
 
         assertThat(pdf).containsExactly(9);
         @SuppressWarnings("unchecked")
@@ -192,7 +192,7 @@ class ExpenseStatementDocumentServiceTest {
                 line(item("gaz", "Gaz", 20), null),
                 line(item("electricite", "Électricité", 30), null));
 
-        service.preview(YearMonth.of(2026, 10), lines, company(), previewRequest(null, true));
+        service.preview(YearMonth.of(2026, 10), lines, company(), previewRequest(null, true), null);
 
         @SuppressWarnings("unchecked")
         org.mockito.ArgumentCaptor<List<byte[]>> merged = org.mockito.ArgumentCaptor.forClass(List.class);
@@ -206,11 +206,11 @@ class ExpenseStatementDocumentServiceTest {
         TemplateDocument template = template(4L, TemplateType.EXPENSE_STATEMENT);
         when(templateService.byId(4L)).thenReturn(template);
         stubDocumentRendering(template, "<html></html>");
-        service.preview(YearMonth.of(2026, 10), List.of(), company(), previewRequest(4L, false));
+        service.preview(YearMonth.of(2026, 10), List.of(), company(), previewRequest(4L, false), null);
 
         when(templateService.byId(9L)).thenReturn(template(9L, TemplateType.RENT_RECEIPT));
         assertThatThrownBy(() -> service.preview(YearMonth.of(2026, 10), List.of(), company(),
-                previewRequest(9L, false)))
+                previewRequest(9L, false), null))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Le template sélectionné n'est pas un template de note de frais.");
     }
@@ -223,7 +223,7 @@ class ExpenseStatementDocumentServiceTest {
         when(signatureService.resolveForCompanyCeo(COMPANY_ID, null)).thenReturn(java.util.Optional.empty());
 
         assertThatThrownBy(() -> service.preview(YearMonth.of(2026, 10), List.of(), company(),
-                previewRequest(null, false)))
+                previewRequest(null, false), null))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Aucune signature configurée pour le gérant. Ajoutez une signature au salarié gérant dans la page LMNP.");
     }
@@ -237,9 +237,10 @@ class ExpenseStatementDocumentServiceTest {
         when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(null);
 
         ExpenseStatementDocumentService.GeneratedStatement generated = service.generate(YearMonth.of(2026, 10),
-                List.of(line(item("gaz", "Gaz", 20), null)), 3, template, "signature", company());
+                List.of(line(item("gaz", "Gaz", 20), null)), 3, template, "signature", company(), 5L);
 
         assertThat(generated.statement().getCompanyId()).isEqualTo(COMPANY_ID);
+        assertThat(generated.statement().getLeaseId()).isEqualTo(5L);
         assertThat(generated.statement().getVersion()).isEqualTo(3);
         assertThat(generated.statement().getMonth()).isEqualTo("2026-10");
         assertThat(generated.statement().getNumber()).isEqualTo("NF-2026-10");

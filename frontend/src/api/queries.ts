@@ -14,8 +14,13 @@ export const queryKeys = {
   expenseItemsAll: ["expenseItems"] as const,
   expenseItemsForCompany: (companyId: number) =>
     ["expenseItems", companyId] as const,
-  expenseItems: (companyId: number, all: boolean) =>
-    ["expenseItems", companyId, all] as const,
+  expenseItems: (companyId: number, all: boolean, leaseId?: number | null) =>
+    [
+      "expenseItems",
+      companyId,
+      all,
+      leaseId === null || leaseId === undefined ? "all-leases" : leaseId,
+    ] as const,
   templates: (type: TemplateType) => ["templates", type] as const,
   variables: (type: TemplateType) => ["templates", type, "variables"] as const,
   llmConfig: ["llm", "config"] as const,
@@ -45,8 +50,17 @@ export const queryKeys = {
   statementsAll: ["statements"] as const,
   rentReceipts: (companyId?: number | null, month?: string) =>
     ["rentReceipts", companyId ?? "all", month ?? "all"] as const,
-  statements: (companyId: number | null, month?: string) =>
-    ["statements", companyId ?? "all", month ?? "all"] as const,
+  statements: (
+    companyId: number | null,
+    month?: string,
+    leaseId?: number | null,
+  ) =>
+    [
+      "statements",
+      companyId ?? "all",
+      month ?? "all",
+      leaseId ?? "all-leases",
+    ] as const,
 };
 
 export function useCompanies() {
@@ -90,10 +104,14 @@ export function useLeases() {
   });
 }
 
-export function useExpenseItems(companyId: number | null, all = false) {
+export function useExpenseItems(
+  companyId: number | null,
+  all = false,
+  leaseId: number | null = null,
+) {
   return useQuery({
-    queryKey: queryKeys.expenseItems(companyId ?? 0, all),
-    queryFn: () => api.expenseItems.list(companyId as number, all),
+    queryKey: queryKeys.expenseItems(companyId ?? 0, all, leaseId),
+    queryFn: () => api.expenseItems.list(companyId as number, all, leaseId),
     enabled: companyId !== null,
     staleTime: 30_000,
   });
@@ -197,10 +215,15 @@ export function useRentReceipts(companyId: number | null, month?: string) {
   });
 }
 
-export function useStatements(companyId: number | null, month?: string) {
+export function useStatements(
+  companyId: number | null,
+  month?: string,
+  leaseId: number | null = null,
+) {
   return useQuery({
-    queryKey: queryKeys.statements(companyId, month),
-    queryFn: () => api.expenseStatements.list(companyId as number, month),
+    queryKey: queryKeys.statements(companyId, month, leaseId),
+    queryFn: () =>
+      api.expenseStatements.list(companyId as number, month, leaseId),
     enabled: companyId !== null,
     staleTime: 10_000,
   });

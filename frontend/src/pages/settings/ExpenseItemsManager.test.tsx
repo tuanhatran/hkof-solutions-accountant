@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
+import { useExpenseItems } from "@/api/queries";
 import type { ExpenseItemDto } from "@/api/types";
 import { useToasts } from "@/state/toasts";
 import { ExpenseItemsManager } from "./ExpenseItemsManager";
@@ -32,7 +33,7 @@ vi.mock("@/api/queries", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/queries")>();
   return {
     ...actual,
-    useExpenseItems: () => itemsState,
+    useExpenseItems: vi.fn(() => itemsState),
   };
 });
 
@@ -81,13 +82,20 @@ function readyState(data: ExpenseItemDto[]): QueryLike<ExpenseItemDto[]> {
   };
 }
 
-function renderManager(defaultProRata = "35.71") {
+function renderManager(
+  defaultProRata = "35.71",
+  leaseId: number | null = null,
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   const view = render(
     <QueryClientProvider client={queryClient}>
-      <ExpenseItemsManager companyId={1} defaultProRata={defaultProRata} />
+      <ExpenseItemsManager
+        companyId={1}
+        leaseId={leaseId}
+        defaultProRata={defaultProRata}
+      />
     </QueryClientProvider>,
   );
   return { queryClient, unmount: view.unmount };
@@ -100,6 +108,31 @@ describe("ExpenseItemsManager", () => {
     vi.mocked(api.expenseItems.update).mockReset();
     vi.mocked(api.expenseItems.delete).mockReset();
     useToasts.setState({ toasts: [] });
+  });
+
+  it("scopes the poste list query to the selected lease", () => {
+    renderManager("35.71", 7);
+
+    expect(vi.mocked(useExpenseItems)).toHaveBeenCalledWith(1, true, 7);
+  });
+
+  it("creates a new poste for the selected lease", async () => {
+    vi.mocked(api.expenseItems.create).mockResolvedValue({
+      id: 10,
+      label: "Gaz",
+    });
+    renderManager("35.71", 7);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Ajouter un type" }));
+    await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    await waitFor(() =>
+      expect(api.expenseItems.create).toHaveBeenCalledWith(
+        expect.objectContaining({ companyId: 1, leaseId: 7, label: "Gaz" }),
+      ),
+    );
   });
 
   it("lists the expense items with their formatted options", () => {

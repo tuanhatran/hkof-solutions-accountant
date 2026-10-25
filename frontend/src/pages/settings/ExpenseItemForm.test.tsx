@@ -45,6 +45,7 @@ function renderForm(
     <ExpenseItemForm
       item={null}
       companyId={1}
+      leaseId={null}
       defaultProRata="35.71"
       defaultOrder={4}
       onClose={onClose}
@@ -165,6 +166,7 @@ describe("ExpenseItemForm", () => {
     await waitFor(() =>
       expect(api.expenseItems.create).toHaveBeenCalledWith({
         companyId: 1,
+        leaseId: null,
         code: "gaz-2",
         label: "Gaz",
         supplier: "EDF",
@@ -233,6 +235,7 @@ describe("ExpenseItemForm", () => {
     await waitFor(() =>
       expect(api.expenseItems.update).toHaveBeenCalledWith(9, {
         companyId: 1,
+        leaseId: null,
         label: "Gaz",
         supplier: "EDF",
         proRataPct: "12.5",
@@ -244,6 +247,44 @@ describe("ExpenseItemForm", () => {
     );
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     expect(toastMessages()).toContain("Poste « Gaz » mis à jour.");
+  });
+
+  it("creates the poste for the selected lease", async () => {
+    vi.mocked(api.expenseItems.create).mockResolvedValue({
+      id: 1,
+      label: "Gaz",
+    });
+    renderForm({ leaseId: 7 });
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    await waitFor(() =>
+      expect(api.expenseItems.create).toHaveBeenCalledWith(
+        expect.objectContaining({ companyId: 1, leaseId: 7, label: "Gaz" }),
+      ),
+    );
+  });
+
+  it("keeps the item's own lease when editing, not the selected lease", async () => {
+    vi.mocked(api.expenseItems.update).mockResolvedValue({
+      id: 9,
+      label: "Gaz",
+      leaseId: 3,
+    });
+    renderForm({ item: { ...ITEM, leaseId: 3 }, leaseId: 7 });
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    await waitFor(() =>
+      expect(api.expenseItems.update).toHaveBeenCalledWith(
+        9,
+        expect.objectContaining({ leaseId: 3 }),
+      ),
+    );
   });
 
   it("surfaces a request error, clears it and closes with Annuler", async () => {

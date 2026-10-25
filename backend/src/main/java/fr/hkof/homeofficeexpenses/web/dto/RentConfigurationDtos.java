@@ -48,6 +48,8 @@ public final class RentConfigurationDtos {
             String rentExclCharges,
             String charges,
             String totalArea,
-            String businessArea) {
+            String businessArea,
+            String proRataBase,
+            String proRataBaseDetail) {
     }
 }

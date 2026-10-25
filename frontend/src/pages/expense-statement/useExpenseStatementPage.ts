@@ -20,6 +20,7 @@ import type {
   ExpenseItemDto,
   LineRequest,
   StatementDto,
+  StatementCalculationRequest,
   StatementGenerationRequest,
   StatementPreviewRequest,
 } from "@/api/types";
@@ -87,9 +88,16 @@ export function useExpenseStatementPage() {
   const activeCompany =
     (companies.data ?? []).find((company) => company.id === activeCompanyId) ??
     null;
+  // Statements and postes are scoped to the active company's derived lease.
+  // A company without a lease keeps the historical unscoped behaviour.
+  const selectedLeaseId = activeCompany?.leaseId ?? null;
 
   // Every company-scoped request carries the active company; a null id disables them.
-  const expenseItemsQuery = useExpenseItems(activeCompanyId);
+  const expenseItemsQuery = useExpenseItems(
+    activeCompanyId,
+    false,
+    selectedLeaseId,
+  );
   const templates = useTemplates("EXPENSE_STATEMENT");
   const rentReceipt = useActiveRentReceipt(month, activeCompanyId);
   const activeStatement = useActiveStatement(activeCompanyId, month);
@@ -608,8 +616,14 @@ export function useExpenseStatementPage() {
   }, [orderedLines]);
 
   const calculationSignature = useMemo(
-    () => JSON.stringify({ activeCompanyId, month, lines: requests.values }),
-    [activeCompanyId, month, requests],
+    () =>
+      JSON.stringify({
+        activeCompanyId,
+        selectedLeaseId,
+        month,
+        lines: requests.values,
+      }),
+    [activeCompanyId, selectedLeaseId, month, requests],
   );
 
   const [calculation, setCalculation] = useState<CalculationResponse | null>(
@@ -640,8 +654,16 @@ export function useExpenseStatementPage() {
     setCalculationError(null);
     const timer = window.setTimeout(async () => {
       try {
+        const calculationRequest: StatementCalculationRequest = {
+          companyId: activeCompanyId,
+          month,
+          lines: validRequests,
+        };
+        if (selectedLeaseId !== null) {
+          calculationRequest.leaseId = selectedLeaseId;
+        }
         const reply = await api.expenseStatements.calculate(
-          { companyId: activeCompanyId, month, lines: validRequests },
+          calculationRequest,
           controller.signal,
         );
         if (controller.signal.aborted) {
@@ -663,7 +685,13 @@ export function useExpenseStatementPage() {
       controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCompanyId, calculationSignature, month, requests.error]);
+  }, [
+    activeCompanyId,
+    selectedLeaseId,
+    calculationSignature,
+    month,
+    requests.error,
+  ]);
 
   const calculationUpToDate =
     calculatedSignature === calculationSignature &&
@@ -684,6 +712,9 @@ export function useExpenseStatementPage() {
       complete,
       lines: requests.values,
     };
+    if (selectedLeaseId !== null) {
+      requestBody.leaseId = selectedLeaseId;
+    }
     if (selectedTemplate !== null) {
       requestBody.templateId = selectedTemplate;
     }
@@ -693,6 +724,7 @@ export function useExpenseStatementPage() {
     return requestBody;
   }, [
     activeCompanyId,
+    selectedLeaseId,
     month,
     complete,
     selectedTemplate,
@@ -732,6 +764,9 @@ export function useExpenseStatementPage() {
         month,
         lines: requests.values,
       };
+      if (selectedLeaseId !== null) {
+        requestBody.leaseId = selectedLeaseId;
+      }
       if (selectedTemplate !== null) {
         requestBody.templateId = selectedTemplate;
       }

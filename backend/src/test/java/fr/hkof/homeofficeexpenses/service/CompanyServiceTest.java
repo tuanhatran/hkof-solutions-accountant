@@ -109,7 +109,7 @@ class CompanyServiceTest {
         when(repository.findAllByDeletedFalseOrderByNameAscIdAsc()).thenReturn(List.of(company()));
         when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(company()));
         when(repository.findById(COMPANY_ID)).thenReturn(Optional.of(company()));
-        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID))
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID))
                 .thenReturn(Optional.of(lease(LEASE_ID, COMPANY_ID)));
 
         List<CompanyDto> list = service.list();
@@ -126,7 +126,7 @@ class CompanyServiceTest {
     @Test
     @DisplayName("A company without lease maps a zero base and an explicit detail")
     void mapsWithoutLease() {
-        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.empty());
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.empty());
 
         CompanyDto dto = service.toDto(company());
 
@@ -141,7 +141,7 @@ class CompanyServiceTest {
         Lease lease = lease(LEASE_ID, COMPANY_ID);
         lease.setTotalArea(null);
         lease.setBusinessArea(null);
-        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(lease));
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.of(lease));
 
         CompanyDto dto = service.toDto(company());
 
@@ -153,7 +153,7 @@ class CompanyServiceTest {
     @DisplayName("Creating a company trims optional values and rejects a duplicate SIREN")
     void createsAndRejectsDuplicateSiren() {
         stubSave();
-        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.empty());
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.empty());
 
         CompanyDto created = service.create(request("  HKOF  ", " 123 456 789 ", null));
 
@@ -181,7 +181,7 @@ class CompanyServiceTest {
         Company existing = company();
         when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.empty());
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.empty());
         when(repository.existsBySirenAndDeletedFalseAndIdNot("000 000 000", COMPANY_ID)).thenReturn(false);
         when(repository.existsBySirenAndDeletedFalseAndIdNot("999 999 999", COMPANY_ID)).thenReturn(true);
 
@@ -197,7 +197,7 @@ class CompanyServiceTest {
     void linksLeaseOnCreate() {
         stubSave();
         Lease lease = lease(LEASE_ID, null);
-        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID))
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID))
                 .thenReturn(Optional.empty())
                 .thenReturn(Optional.of(lease));
         when(leases.findByIdAndDeletedFalse(LEASE_ID)).thenReturn(Optional.of(lease));
@@ -217,7 +217,7 @@ class CompanyServiceTest {
         Lease selected = lease(6L, null);
         when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(previous));
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.of(previous));
         when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.of(selected));
 
         service.update(COMPANY_ID, request("HKOF", null, 6L));
@@ -235,7 +235,7 @@ class CompanyServiceTest {
         Lease previous = normalLease(LEASE_ID, COMPANY_ID);
         when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(previous));
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.of(previous));
 
         service.update(COMPANY_ID, request("HKOF", null, null));
 
@@ -250,7 +250,7 @@ class CompanyServiceTest {
         Lease previous = lease(LEASE_ID, COMPANY_ID);
         when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(previous));
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.of(previous));
 
         assertThatThrownBy(() -> service.update(COMPANY_ID, request("HKOF", null, null)))
                 .isInstanceOf(BusinessException.class)
@@ -261,13 +261,94 @@ class CompanyServiceTest {
     }
 
     @Test
+    @DisplayName("Switching the active lease to another company lease keeps both and moves the pointer")
+    void switchesActiveLeaseBetweenCompanyLeases() {
+        Company existing = company();
+        Lease previous = lease(LEASE_ID, COMPANY_ID);
+        Lease next = lease(6L, COMPANY_ID);
+        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
+        when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.of(previous));
+        when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.of(next));
+
+        CompanyDto updated = service.update(COMPANY_ID, request("HKOF", null, 6L));
+
+        assertThat(updated.leaseId()).isEqualTo(6L);
+        assertThat(existing.getActiveLeaseId()).isEqualTo(6L);
+        assertThat(previous.getCompanyId()).isEqualTo(COMPANY_ID);
+        verify(leases, never()).save(any(Lease.class));
+    }
+
+    @Test
+    @DisplayName("Re-selecting the active lease persists the pointer without touching the leases")
+    void persistsPointerWhenReselectingTheActiveLease() {
+        Company existing = company();
+        Lease currentLease = lease(LEASE_ID, COMPANY_ID);
+        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
+        when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID))
+                .thenReturn(Optional.of(currentLease));
+        when(leases.findByIdAndDeletedFalse(LEASE_ID)).thenReturn(Optional.of(currentLease));
+
+        CompanyDto updated = service.update(COMPANY_ID, request("HKOF", null, LEASE_ID));
+
+        assertThat(updated.leaseId()).isEqualTo(LEASE_ID);
+        assertThat(existing.getActiveLeaseId()).isEqualTo(LEASE_ID);
+        verify(leases, never()).save(any(Lease.class));
+    }
+
+    @Test
+    @DisplayName("The DTO and the pro-rata follow the stored active lease, not the lowest id")
+    void toDtoPrefersTheStoredActiveLease() {
+        Company existing = company();
+        existing.setActiveLeaseId(6L);
+        Lease newer = lease(6L, COMPANY_ID);
+        newer.setTotalArea(new java.math.BigDecimal("60.00"));
+        newer.setBusinessArea(new java.math.BigDecimal("30.00"));
+        when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.of(newer));
+
+        CompanyDto dto = service.toDto(existing);
+
+        assertThat(dto.leaseId()).isEqualTo(6L);
+        assertThat(dto.proRataBase()).isEqualTo("50.00");
+    }
+
+    @Test
+    @DisplayName("A deleted active lease falls back to the oldest company lease")
+    void fallsBackToOldestLeaseWhenActiveLeaseIsGone() {
+        Company existing = company();
+        existing.setActiveLeaseId(6L);
+        when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.empty());
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID))
+                .thenReturn(Optional.of(lease(LEASE_ID, COMPANY_ID)));
+
+        CompanyDto dto = service.toDto(existing);
+
+        assertThat(dto.leaseId()).isEqualTo(LEASE_ID);
+    }
+
+    @Test
+    @DisplayName("An active lease owned by another company is ignored by the fallback")
+    void ignoresActiveLeaseOwnedByAnotherCompany() {
+        Company existing = company();
+        existing.setActiveLeaseId(6L);
+        when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.of(lease(6L, 2L)));
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID))
+                .thenReturn(Optional.of(lease(LEASE_ID, COMPANY_ID)));
+
+        CompanyDto dto = service.toDto(existing);
+
+        assertThat(dto.leaseId()).isEqualTo(LEASE_ID);
+    }
+
+    @Test
     @DisplayName("A lease already linked to another company is rejected in French")
     void rejectsLeaseLinkedToAnotherCompany() {
         Company existing = company();
         Lease foreign = lease(6L, 2L);
         when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.empty());
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.empty());
         when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.of(foreign));
 
         assertThatThrownBy(() -> service.update(COMPANY_ID, request("HKOF", null, 6L)))
@@ -282,7 +363,7 @@ class CompanyServiceTest {
     void rejectsUnknownLease() {
         when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(company()));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.empty());
+        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.empty());
         when(leases.findByIdAndDeletedFalse(9L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.update(COMPANY_ID, request("HKOF", null, 9L)))

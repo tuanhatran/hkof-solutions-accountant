@@ -776,7 +776,7 @@ export interface components {
             managerName?: string;
             /**
              * Format: int64
-             * @description Bail lié à la société ; facultatif. Un bail appartient à au plus une société et la société porte au plus un bail.
+             * @description Bail lié à la société ; facultatif. Une société peut posséder plusieurs baux société ; ce champ désigne son bail actif, qui peut être re-pointé vers un autre bail de la même société. Sans valeur enregistrée, le bail actif est son premier bail (plus petit id). Un bail appartient à au plus une société.
              */
             leaseId?: number | null;
             /** @description Base de prorata calculée, en pourcentage décimal. */
@@ -910,6 +910,10 @@ export interface components {
             charges?: string;
             totalArea?: string;
             businessArea?: string;
+            /** @description Base de prorata du bail, en pourcentage décimal (surface professionnelle / surface totale) ; null pour un bail sans surfaces (bail LMNP classique). */
+            readonly proRataBase?: string | null;
+            /** @description Détail lisible du calcul de la base de prorata du bail. */
+            readonly proRataBaseDetail?: string | null;
         };
         ProblemDetail: {
             type?: string;
@@ -924,6 +928,11 @@ export interface components {
              * @description Société propriétaire du poste de frais.
              */
             companyId: number;
+            /**
+             * Format: int64
+             * @description Bail société auquel le poste est rattaché ; facultatif. Doit être un bail actif de la société, sinon 400. NULL = poste hérité non affecté.
+             */
+            leaseId?: number | null;
             /** @description Code unique au sein de la société. */
             code?: string;
             label?: string;
@@ -940,6 +949,11 @@ export interface components {
             id?: number;
             /** Format: int64 */
             companyId?: number;
+            /**
+             * Format: int64
+             * @description Bail société auquel le poste est rattaché ; null pour un poste hérité.
+             */
+            leaseId?: number | null;
             code?: string;
             label?: string;
             supplier?: string;
@@ -1107,6 +1121,11 @@ export interface components {
              * @description Société propriétaire de la note de frais.
              */
             companyId: number;
+            /**
+             * Format: int64
+             * @description Bail société actif retenu pour le prorata de la note générée ; doit être un bail actif de la société, sinon 400. NULL = note héritée sans bail (prorata historique).
+             */
+            leaseId?: number | null;
             month?: string;
             /** Format: int64 */
             templateId?: number;
@@ -1136,6 +1155,11 @@ export interface components {
             id?: number;
             /** Format: int64 */
             companyId?: number;
+            /**
+             * Format: int64
+             * @description Bail société rattaché à la note ; null pour une note héritée.
+             */
+            leaseId?: number | null;
             companyName?: string;
             month?: string;
             number?: string;
@@ -1160,6 +1184,11 @@ export interface components {
              * @description Société propriétaire de la note de frais.
              */
             companyId: number;
+            /**
+             * Format: int64
+             * @description Bail société actif retenu pour le prorata du document ; doit être un bail actif de la société, sinon 400. NULL = prorata historique (premier bail de la société).
+             */
+            leaseId?: number | null;
             month?: string;
             /** Format: int64 */
             templateId?: number;
@@ -1182,6 +1211,11 @@ export interface components {
              * @description Société propriétaire de la note de frais.
              */
             companyId: number;
+            /**
+             * Format: int64
+             * @description Bail société actif retenu pour la base de prorata du calcul ; doit être un bail actif de la société, sinon 400. NULL = base de prorata historique.
+             */
+            leaseId?: number | null;
             month?: string;
             lines?: components["schemas"]["ExpenseLineRequest"][];
         };
@@ -1917,6 +1951,8 @@ export interface operations {
             query: {
                 /** @description Identifiant de la société propriétaire des notes de frais. */
                 companyId: number;
+                /** @description Filtrer sur un bail société : retourne les notes de ce bail ainsi que les notes héritées sans bail (lease_id NULL). Sans ce paramètre, toutes les notes de la société. */
+                leaseId?: number;
                 month?: string;
             };
             header?: never;
@@ -1990,6 +2026,8 @@ export interface operations {
                 /** @description Identifiant de la société. */
                 companyId: number;
                 month: string;
+                /** @description Bail société actif retenu pour le prorata et les postes manquants ; les postes hérités sans bail restent inclus. Sans ce paramètre, comportement historique. */
+                leaseId?: number;
             };
             header?: never;
             path?: never;
@@ -2037,6 +2075,8 @@ export interface operations {
             query: {
                 /** @description Identifiant de la société propriétaire des postes de frais. */
                 companyId: number;
+                /** @description Filtrer sur un bail société : retourne les postes de ce bail ainsi que les postes hérités sans bail (lease_id NULL). Sans ce paramètre, tous les postes de la société. Doit être un bail actif de la société, sinon 400. */
+                leaseId?: number;
                 all?: boolean;
             };
             header?: never;

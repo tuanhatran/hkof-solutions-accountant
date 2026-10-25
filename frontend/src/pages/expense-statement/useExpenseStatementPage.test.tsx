@@ -165,7 +165,7 @@ const TEMPLATES: TemplateDto[] = [
   { id: 6, name: "Modele archive", active: false, builtIn: false },
 ];
 
-const COMPANY: CompanyDto = { id: 1, name: "HKOF" };
+const COMPANY: CompanyDto = { id: 1, name: "HKOF", leaseId: 5 };
 const CEO_EMPLOYEE: EmployeeDto = {
   id: 9,
   companyId: 1,
@@ -1074,6 +1074,7 @@ describe("useExpenseStatementPage calculation, preview and generation", () => {
     expect(api.expenseStatements.calculate).toHaveBeenCalledWith(
       {
         companyId: 1,
+        leaseId: 5,
         month: MONTH,
         lines: [
           expect.objectContaining({
@@ -1089,6 +1090,7 @@ describe("useExpenseStatementPage calculation, preview and generation", () => {
     expect(result.current.calculationInProgress).toBe(false);
     expect(result.current.previewRequest).toEqual({
       companyId: 1,
+      leaseId: 5,
       month: MONTH,
       complete: true,
       lines: [
@@ -1178,6 +1180,7 @@ describe("useExpenseStatementPage calculation, preview and generation", () => {
     await waitFor(() => expect(result.current.result?.id).toBe(12));
     expect(api.expenseStatements.create).toHaveBeenCalledWith({
       companyId: 1,
+      leaseId: 5,
       month: MONTH,
       lines: [
         {
@@ -1214,6 +1217,7 @@ describe("useExpenseStatementPage calculation, preview and generation", () => {
 
     expect(api.expenseStatements.create).toHaveBeenCalledWith({
       companyId: 1,
+      leaseId: 5,
       month: MONTH,
       lines: [
         {

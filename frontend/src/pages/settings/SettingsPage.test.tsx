@@ -58,6 +58,7 @@ const LEASE: LeaseDto = {
   charges: "50.00",
   totalArea: "70.00",
   businessArea: "25.00",
+  proRataBase: "35.71",
 };
 
 const CEO: EmployeeDto = {
@@ -71,6 +72,7 @@ const CEO: EmployeeDto = {
 
 let companiesState: QueryLike<CompanyDto[]>;
 let employeesState: QueryLike<EmployeeDto[]>;
+let leasesState: QueryLike<LeaseDto[]>;
 
 function readyQuery<T>(data: T[]): QueryLike<T[]> {
   return {
@@ -120,10 +122,11 @@ vi.mock("@/api/queries", async (importOriginal) => {
     useEmployees: (companyId: number | null) =>
       companyId === 2 ? readyQuery([]) : employeesState,
     useExpenseItems: () => readyQuery([]),
+    usePersons: () => readyQuery([]),
     useSignatures: () => readyQuery([]),
     useAddresses: () =>
       readyQuery([{ id: 3, label: "12 rue des Lilas, 75011 Paris" }]),
-    useLeases: () => readyQuery([LEASE]),
+    useLeases: () => leasesState,
   };
 });
 
@@ -151,6 +154,7 @@ function queryByCy(cy: string): Element | null {
 describe("SettingsPage tabs", () => {
   beforeEach(() => {
     companiesState = readyQuery([COMPANY]);
+    leasesState = readyQuery([LEASE]);
     employeesState = readyQuery([CEO]);
     useCompanyStore.setState({ activeCompanyId: 1 });
     vi.mocked(api.companies.update).mockReset();
@@ -197,7 +201,9 @@ describe("SettingsPage tabs", () => {
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
 
     expect(queryByCy("bail-societe-lie")).not.toBeNull();
-    expect(screen.getByText("12 rue des Lilas, 75011 Paris")).toBeVisible();
+    expect(queryByCy("bail-societe-lie")).toHaveTextContent(
+      "12 rue des Lilas, 75011 Paris",
+    );
     expect(
       screen.getByRole("heading", { name: "Types de frais" }),
     ).toBeVisible();
@@ -205,7 +211,7 @@ describe("SettingsPage tabs", () => {
     expect(
       document.querySelectorAll('[data-cy="prorata-bail-societe"]'),
     ).toHaveLength(1);
-    expect(queryByCy("select-bail-societe")).toBeNull();
+    expect(queryByCy("select-bail-actif")).not.toBeNull();
   });
 
   it("shows the employees on the Salariés tab", async () => {
@@ -388,36 +394,17 @@ describe("SettingsPage tabs", () => {
     expect(queryByCy("prorata-bail-societe")).toHaveTextContent("—");
   });
 
-  it("opens the lease modal, unlinks the lease and preserves the identity", async () => {
-    vi.mocked(api.companies.update).mockResolvedValue({
-      ...COMPANY,
-      leaseId: null,
-    });
+  it("lists the company's leases with the active lease dropdown, without the legacy modal", async () => {
     renderPage();
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
-    await user.click(queryByCy("btn-modifier-bail-societe") as HTMLElement);
 
-    expect(queryByCy("dialogue-formulaire-bail-societe")).not.toBeNull();
-    expect(queryByCy("select-bail-societe")).toHaveValue("5");
-    expect(queryByCy("prorata-indicatif")).toHaveTextContent("35,71 %");
-
-    await user.selectOptions(
-      queryByCy("select-bail-societe") as HTMLElement,
-      "",
-    );
-    await user.click(screen.getByRole("button", { name: "Valider" }));
-
-    await waitFor(() =>
-      expect(api.companies.update).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({ leaseId: null, name: "HKOF" }),
-      ),
-    );
-    await waitFor(() =>
-      expect(queryByCy("dialogue-formulaire-bail-societe")).toBeNull(),
-    );
+    expect(queryByCy("select-bail-actif")).toHaveValue("5");
+    expect(queryByCy("bail-societe-5")).not.toBeNull();
+    expect(queryByCy("dialogue-formulaire-bail-societe")).toBeNull();
+    expect(queryByCy("btn-modifier-bail-societe")).toBeNull();
+    expect(screen.getByText("Bail actif")).toBeVisible();
   });
 
   it("makes another company active", async () => {
@@ -504,6 +491,7 @@ describe("SettingsPage tabs", () => {
 
   it("falls back on the default pro-rata for a new expense item", async () => {
     companiesState = readyQuery([{ ...COMPANY, proRataBase: undefined }]);
+    leasesState = readyQuery([{ ...LEASE, proRataBase: null }]);
     renderPage();
     const user = userEvent.setup();
 
