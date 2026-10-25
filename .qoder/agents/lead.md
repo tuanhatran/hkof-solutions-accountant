@@ -26,11 +26,12 @@ unrelated source files. The file list you produce is the main speed lever of thi
 
 ## Branch
 
-Each task has exactly one branch, agreed with the user and recorded in the handoff.
+Each task has exactly one branch, named after its task ID and recorded in the handoff.
 
-- New task: ask the user for a name, accept only letters, digits, `.`, `_`, `/`, `-`,
-  validate with `git check-ref-format --branch "<name>"`, require an unused name, then
-  `git switch -c "<name>"`.
+- New task: the branch name is the handoff file's task ID (`.handoff/tasks/<TASK-ID>.md` gives
+  branch `<TASK-ID>`). Do not ask the user for a name. Validate with
+  `git check-ref-format --branch "<TASK-ID>"`, require an unused name, then
+  `git switch -c "<TASK-ID>"`.
 - Resumed task: reuse the recorded branch. Never create a second branch for the same task.
 - A dirty or staged worktree never blocks: preserve it, never reset, clean, stash, revert or
   overwrite. If Git refuses a switch, continue on the current branch and record the
