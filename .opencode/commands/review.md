@@ -15,4 +15,5 @@ Load the `requesting-code-review` skill if available. Focus on:
 - template or LLM input trusted without validation;
 - secrets or real personal data exposed.
 
-List findings by severity with file and line references. Do not edit files.
+Report blockers only, at most 5, one line each: `file:line — behaviour that breaks — why it matters`,
+then `VERDICT: PASS` or `VERDICT: BLOCKERS (n)`. Do not edit files.
