@@ -168,14 +168,14 @@ describe("SettingsPage tabs", () => {
     renderPage();
 
     expect(
-      screen.getByRole("heading", { name: "Entreprise", level: 1 }),
+      screen.getByRole("heading", { name: "Société", level: 1 }),
     ).toBeVisible();
     expect(screen.getByLabelText("Société à configurer")).toHaveValue("1");
     expect(screen.getByRole("tab", { name: "Info générale" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
-    expect(screen.getByRole("tab", { name: "Bail & Frais" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Baux & Frais" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Salariés" })).toBeVisible();
     expect(queryByCy("info-societe")).not.toBeNull();
     expect(queryByCy("onglet-entreprise-identification")).not.toBeNull();
@@ -194,24 +194,29 @@ describe("SettingsPage tabs", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows the lease view and the expense items on the Bail & Frais tab", async () => {
+  it("shows the lease view and the expense items on the Baux & Frais tab", async () => {
     renderPage();
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
 
-    expect(queryByCy("bail-societe-lie")).not.toBeNull();
-    expect(queryByCy("bail-societe-lie")).toHaveTextContent(
-      "12 rue des Lilas, 75011 Paris",
+    // Arriving on the tab, every lease is collapsed, even the active one.
+    expect(queryByCy("bail-societe-5")).toHaveAttribute(
+      "aria-expanded",
+      "false",
     );
-    expect(
-      screen.getByRole("heading", { name: "Types de frais" }),
-    ).toBeVisible();
-    expect(screen.getAllByText("35,71 %").length).toBeGreaterThanOrEqual(1);
-    expect(
-      document.querySelectorAll('[data-cy="prorata-bail-societe"]'),
-    ).toHaveLength(1);
-    expect(queryByCy("select-bail-actif")).not.toBeNull();
+    expect(queryByCy("bail-societe-lie")).toBeNull();
+
+    await user.click(queryByCy("bail-societe-5") as Element);
+
+    expect(queryByCy("bail-societe-lie")).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Frais" })).toBeVisible();
+    expect(queryByCy("select-bail-actif")).toBeNull();
+    expect(queryByCy("bail-societe-5")).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(api.companies.update).not.toHaveBeenCalled();
   });
 
   it("shows the employees on the Salariés tab", async () => {
@@ -391,19 +396,22 @@ describe("SettingsPage tabs", () => {
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
 
     expect(screen.getByText(/^Aucun bail sélectionné/)).toBeVisible();
-    expect(queryByCy("prorata-bail-societe")).toHaveTextContent("—");
   });
 
-  it("lists the company's leases with the active lease dropdown, without the legacy modal", async () => {
+  it("lists the company's leases as click-to-select items with edit buttons, without the legacy modal", async () => {
     renderPage();
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
 
-    expect(queryByCy("select-bail-actif")).toHaveValue("5");
-    expect(queryByCy("bail-societe-5")).not.toBeNull();
+    expect(queryByCy("select-bail-actif")).toBeNull();
+    expect(queryByCy("bail-societe-5")).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
     expect(queryByCy("dialogue-formulaire-bail-societe")).toBeNull();
     expect(queryByCy("btn-modifier-bail-societe")).toBeNull();
+    expect(queryByCy("btn-modifier-bail-societe-5")).not.toBeNull();
     expect(screen.getByText("Bail actif")).toBeVisible();
   });
 
@@ -477,12 +485,13 @@ describe("SettingsPage tabs", () => {
     await waitFor(() => expect(toastMessages()).toContain("Société créée."));
   });
 
-  it("opens the expense item form from the Bail & Frais tab", async () => {
+  it("opens the expense item form from the Baux & Frais tab", async () => {
     renderPage();
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
-    await user.click(screen.getByRole("button", { name: "Ajouter un type" }));
+    await user.click(queryByCy("bail-societe-5") as Element);
+    await user.click(screen.getByRole("button", { name: "Ajouter un frais" }));
 
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
       "35,71",
@@ -496,7 +505,8 @@ describe("SettingsPage tabs", () => {
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
-    await user.click(screen.getByRole("button", { name: "Ajouter un type" }));
+    await user.click(queryByCy("bail-societe-5") as Element);
+    await user.click(screen.getByRole("button", { name: "Ajouter un frais" }));
 
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
       "100,00",

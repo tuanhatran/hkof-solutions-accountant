@@ -124,7 +124,7 @@ describe("ExpenseItemsManager", () => {
     renderManager("35.71", 7);
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Ajouter un type" }));
+    await user.click(screen.getByRole("button", { name: "Ajouter un frais" }));
     await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
     await user.click(screen.getByRole("button", { name: "Valider" }));
 
@@ -190,20 +190,20 @@ describe("ExpenseItemsManager", () => {
     renderManager("20,00");
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Ajouter un type" }));
+    await user.click(screen.getByRole("button", { name: "Ajouter un frais" }));
 
     expect(
       document.querySelector('[data-cy="dialogue-formulaire-poste"]'),
     ).not.toBeNull();
     expect(
-      screen.getByRole("heading", { name: "Ajouter un type de frais" }),
+      screen.getByRole("heading", { name: "Ajouter un frais de frais" }),
     ).toBeVisible();
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
       "20,00",
     );
     expect(screen.getByLabelText("Ordre d’affichage")).toHaveValue(4);
     expect(
-      screen.getByRole("button", { name: "Ajouter un type" }),
+      screen.getByRole("button", { name: "Ajouter un frais" }),
     ).toBeDisabled();
 
     await user.click(screen.getByRole("button", { name: "Annuler" }));
@@ -225,7 +225,7 @@ describe("ExpenseItemsManager", () => {
       "35,71",
     );
     expect(
-      screen.getByRole("button", { name: "Ajouter un type" }),
+      screen.getByRole("button", { name: "Ajouter un frais" }),
     ).not.toBeDisabled();
   });
 

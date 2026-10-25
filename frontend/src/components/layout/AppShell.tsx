@@ -71,7 +71,7 @@ const SECTIONS: NavigationSection[] = [
     links: [
       {
         to: "/configuration/entreprise",
-        label: "Entreprise",
+        label: "Société",
         icon: Building2,
         dataCy: "tab-configuration",
       },

@@ -78,7 +78,7 @@ describe("AppShell", () => {
     expect(within(navigation).getByText("Suivi")).toBeVisible();
     expect(within(navigation).getByText("Réglages")).toBeVisible();
     expect(
-      within(navigation).getByRole("link", { name: /Entreprise/ }),
+      within(navigation).getByRole("link", { name: /Société/ }),
     ).toHaveAttribute("href", "/configuration/entreprise");
     expect(
       within(navigation).getByRole("link", { name: /LMNP/ }),
@@ -139,7 +139,7 @@ describe("AppShell", () => {
       "Quittance de loyer",
       "Note de frais",
       "Historique",
-      "Entreprise",
+      "Société",
       "LMNP",
       "Templates",
       "Admin IA",

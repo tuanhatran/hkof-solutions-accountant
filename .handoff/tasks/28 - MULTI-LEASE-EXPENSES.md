@@ -7,12 +7,12 @@ Round: 0/2
 
 ## Goal
 
-A company can hold several leases: the "Bail & Frais" tab lists the company's leases, a dropdown picks the active one, "Ajouter un bail" opens the LMNP `LeaseForm` modal with "Bail société" ticked and the company prefilled as tenant, and expenses (postes + notes de frais) are tied per lease. Out of scope: LMNP/person leases, rent receipts, templates, LLM.
+A company can hold several leases: the "Baux & Frais" tab lists the company's leases, a dropdown picks the active one, "Ajouter un bail" opens the LMNP `LeaseForm` modal with "Bail société" ticked and the company prefilled as tenant, and expenses (postes + notes de frais) are tied per lease. Out of scope: LMNP/person leases, rent receipts, templates, LLM.
 
 ## Plan
 
 1. Backend: `leaseId` on `ExpenseItem` + `ExpenseStatement`, Flyway `V10` backfill from `Company.leaseId` (unassigned otherwise), services/filtering, contract, tests.
-2. Frontend: lease list + active-lease dropdown in "Bail & Frais", reuse `LeaseForm` for add (company prefilled), expense managers keyed to the selected lease.
+2. Frontend: lease list + active-lease dropdown in "Baux & Frais", reuse `LeaseForm` for add (company prefilled), expense managers keyed to the selected lease.
 3. Money: pro-rata and totals recomputed from the selected lease via `CalculationService`; one backend total shared by screen/preview/PDF.
 
 ## Files
@@ -27,7 +27,7 @@ Contract: `openapi/openapi.yaml` — add `leaseId` to expense item/statement sch
 
 ## Acceptance
 
-- [ ] "Bail & Frais" lists only leases with `companyId` = selected company; dropdown selects the active lease and drives pro-rata
+- [ ] "Baux & Frais" lists only leases with `companyId` = selected company; dropdown selects the active lease and drives pro-rata
 - [ ] "Ajouter un bail" reuses the LMNP `LeaseForm` modal with "Bail société" checked and the company prefilled; created lease appears in the list
 - [ ] Switching the active lease switches the postes/notes shown; each new poste/note records the selected `leaseId`
 - [ ] V10 migration backfills `leaseId` from `Company.leaseId`, leaves orphans unassigned, never deletes rows

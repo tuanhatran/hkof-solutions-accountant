@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Reorganise the "Réglages › Entreprise" page into 3 tabs (Info générale, Bail & Frais, Salariés) under the always-visible company selector, and move every company / expense-item / employee create-edit form into `FormModal` dialogs with Annuler/Valider.
+**Goal:** Reorganise the "Réglages › Entreprise" page into 3 tabs (Info générale, Baux & Frais, Salariés) under the always-visible company selector, and move every company / expense-item / employee create-edit form into `FormModal` dialogs with Annuler/Valider.
 
 **Architecture:** Approach A of the spec — a shared `useCompanyForm` hook holds the react-hook-form + Zod + mutation logic extracted from today's `CompanyForm`; thin read-only views fill the tabs and small `FormModal` front-ends edit the fields they own. `ExpenseItemForm` / `EmployeeForm` keep their save logic and are only re-wrapped in `FormModal`, the way `PersonForm` already is.
 
@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Frontend only: no change to `openapi/openapi.yaml`, backend DTOs, generated types, or any monetary calculation (prorata stays computed server-side on company save).
-- UI strings in French, exact labels: tabs "Info générale", "Bail & Frais", "Salariés"; modal footer buttons come from `FormModal` ("Annuler" / "Valider").
+- UI strings in French, exact labels: tabs "Info générale", "Baux & Frais", "Salariés"; modal footer buttons come from `FormModal` ("Annuler" / "Valider").
 - `data-cy` hook names are preserved; read-only views get new hooks; no two elements share a hook in the DOM at once.
 - Reuse `@/components/ui/FormModal`; do not create a second modal primitive.
 - Every production file stays under 300 lines; per-file CSS under 300 lines, following `.opencode/instructions/30-frontend.md` (colocated, prefixed, `@reference`/`@layer components`, token-only).
@@ -25,7 +25,7 @@
 
 Failure modes the spec implies that no single task's happy-path test covers — each is pinned by a named test in the owning task:
 
-1. **Company without a lease** (or lease without surfaces): the "Bail & Frais" read-only block must show "Aucun bail sélectionné…" / prorata "—", and saving the lease modal with "Aucun bail" must not blank the identity fields. → Task 4, Task 5.
+1. **Company without a lease** (or lease without surfaces): the "Baux & Frais" read-only block must show "Aucun bail sélectionné…" / prorata "—", and saving the lease modal with "Aucun bail" must not blank the identity fields. → Task 4, Task 5.
 2. **Switching company while a modal is open, or after deleting the selected company**: modals must close and views must not render a stale company. → Task 6.
 3. **Annuler / Escape / overlay click must not save**: no mutation fires, the list is unchanged. → Task 3, Task 7.
 4. **Duplicate `data-cy` in the DOM** (read-only view + open modal at once) breaks Cypress single-element assertions. → Task 8 (suite run is the proof; unit tests assert the renamed read-only hooks).
@@ -221,7 +221,7 @@ Save builds the full `CompanyRequest` from the **current `company` DTO** (name/l
 **Interfaces:**
 
 - Consumes: `FormModal`; both forms keep their current props (`item/companyId/defaultProRata/defaultOrder/onClose`, `companyId/employee/onClose`) so `ExpenseItemsManager` and `EmployeeSection` only change how the form is positioned.
-- Produces: `ExpenseItemForm` renders `<FormModal formDataCy="formulaire-poste" submitDataCy="btn-enregistrer-poste" title="Ajouter un type de frais"|"Modifier le type de frais">`; `EmployeeForm` renders `<FormModal formDataCy="formulaire-salarie" submitDataCy="btn-enregistrer-salarie" title="Ajouter un salarié"|"Modifier le salarié">`. Hooks `btn-ajouter-poste`, `btn-ajouter-salarie`, `btn-modifier-poste-*`, row hooks unchanged.
+- Produces: `ExpenseItemForm` renders `<FormModal formDataCy="formulaire-poste" submitDataCy="btn-enregistrer-poste" title="Ajouter un frais de frais"|"Modifier le type de frais">`; `EmployeeForm` renders `<FormModal formDataCy="formulaire-salarie" submitDataCy="btn-enregistrer-salarie" title="Ajouter un salarié"|"Modifier le salarié">`. Hooks `btn-ajouter-poste`, `btn-ajouter-salarie`, `btn-modifier-poste-*`, row hooks unchanged.
 
 - [ ] **Step 1: Update the failing tests** — existing assertions mostly survive (`formulaire-poste` etc. still exist); add: form appears inside `[role="dialog"]` (`dialogue-formulaire-poste` / `dialogue-formulaire-salarie`), "Annuler" click → `onClose` and no `api.expenseItems.*` / `api.employees.*` call (Review Focus 3), Escape → closed, save flow keeps current invalidations/toasts ("Poste ajouté." wording unchanged, employee toast unchanged).
 

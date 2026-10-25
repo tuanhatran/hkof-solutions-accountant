@@ -17,19 +17,19 @@ const LEASE: LeaseDto = {
 };
 
 describe("CompanyLeaseView", () => {
-  it("renders the linked lease summary and the prorata read-only", () => {
+  it("renders the expanded lease summary inline, without a card header", () => {
     render(<CompanyLeaseView lease={LEASE} proRataBase="35.71" />);
 
     const details = document.querySelector('[data-cy="bail-societe-lie"]');
     expect(details).not.toBeNull();
-    expect(details).toHaveTextContent("12 rue des Lilas, 75011 Paris");
-    expect(details).toHaveTextContent("Loyer 900,00 € · Charges 50,00 €");
+    expect(details).toHaveClass("company-lease-view-details");
     expect(details).toHaveTextContent(
       "Surface professionnelle 25,00 m² · Surface totale 70,00 m²",
     );
+    expect(details).toHaveTextContent("35,71 %");
     expect(
-      document.querySelector('[data-cy="prorata-bail-societe"]'),
-    ).toHaveTextContent("35,71 %");
+      screen.queryByRole("heading", { name: "Bail de la société" }),
+    ).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Modifier" }),
     ).not.toBeInTheDocument();
@@ -43,9 +43,6 @@ describe("CompanyLeaseView", () => {
     expect(
       document.querySelector('[data-cy="aucun-bail-societe"]'),
     ).not.toBeNull();
-    expect(
-      document.querySelector('[data-cy="prorata-bail-societe"]'),
-    ).toHaveTextContent("—");
   });
 
   it("never shows NaN when the lease surfaces are missing", () => {

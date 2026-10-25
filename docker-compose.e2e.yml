@@ -40,10 +40,11 @@ services:
     image: cypress/included:16.2.0
     working_dir: /e2e
     entrypoint: ["/bin/sh", "-c"]
-    command: ["npm ci --no-audit --no-fund && cypress run"]
+    command: ["npm ci --no-audit --no-fund && cypress run $${E2E_SPEC:+--spec $${E2E_SPEC}}"]
     environment:
       CYPRESS_BASE_URL: http://frontend:80
       CYPRESS_INSTALL_BINARY: "0"
+      E2E_SPEC: ${E2E_SPEC:-}
     volumes:
       - ./frontend:/e2e
       - cypress_node_modules:/e2e/node_modules
