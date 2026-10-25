@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HomeOfficeExpenses — physical schema (expense subsystem)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #bf4520;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1200px; width: 100%; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 960px; display: block; }
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Database Schema · Diagram Design</p>
+    <h1>Physical schema — expense-subsystem detail</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 960 860" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="hkof-db-schema-title hkof-db-schema-desc">
+        <title id="hkof-db-schema-title">Physical schema of the expense-note subsystem</title>
+        <desc id="hkof-db-schema-desc">Five PostgreSQL tables with real column types and constraints: each expense_line references its statement, its catalogue item and an optional receipt; statement and item are scoped to a company. Deleting a statement cascades to its lines — the schema's only destructive edge.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+        <!-- ================= FK connectors: column row -> column row ================= -->
+        <!-- expense_line.statement_id -> expense_statement.id : ON DELETE CASCADE (focal, accent) -->
+        <line x1="248" y1="520" x2="248" y2="484" stroke="#bf4520" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+        <!-- expense_line.item_id -> expense_item.id : NO ACTION -->
+        <line x1="352" y1="584" x2="456" y2="584" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- expense_statement.company_id -> company.id : NOT NULL -->
+        <path d="M 216,232 V 224 Q 216,216 224,216 H 280 Q 288,216 288,208 V 128 Q 288,120 280,120 H 272"
+              fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- expense_line.receipt_id -> receipt.id : nullable; hops the item->company run at y=72 -->
+        <path d="M 96,608 H 56 Q 48,608 48,600 V 64 Q 48,56 56,56 H 536 Q 544,56 544,64 V 68 A 8,8 0 0,1 544,84 V 248 Q 544,256 552,256 H 576"
+              fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- expense_item.company_id -> company.id : NOT NULL -->
+        <path d="M 688,608 H 808 Q 816,608 816,600 V 80 Q 816,72 808,72 H 248 Q 240,72 240,80"
+              fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+        <!-- ================= FK action + cardinality labels ================= -->
+        <rect x="128" y="492" width="112" height="8" rx="2" fill="#f5f5f5"/>
+        <text x="184" y="499" fill="#bf4520" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">ON DELETE CASCADE</text>
+        <rect x="258" y="492" width="12" height="10" rx="2" fill="#f5f5f5"/>
+        <text x="264" y="500" fill="#5a6580" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">1</text>
+        <rect x="258" y="506" width="12" height="10" rx="2" fill="#f5f5f5"/>
+        <text x="264" y="514" fill="#5a6580" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">N</text>
+
+        <rect x="376" y="566" width="64" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="408" y="575" fill="#5a6580" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">NO ACTION</text>
+        <rect x="360" y="590" width="12" height="10" rx="2" fill="#f5f5f5"/>
+        <text x="366" y="598" fill="#5a6580" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">N</text>
+        <rect x="436" y="590" width="12" height="10" rx="2" fill="#f5f5f5"/>
+        <text x="442" y="598" fill="#5a6580" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">1</text>
+
+        <rect x="300" y="160" width="64" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="356" y="169" fill="#5a6580" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end" letter-spacing="0.06em">NOT NULL</text>
+        <rect x="300" y="184" width="12" height="10" rx="2" fill="#f5f5f5"/>
+        <text x="306" y="192" fill="#5a6580" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">N</text>
+        <rect x="278" y="104" width="12" height="10" rx="2" fill="#f5f5f5"/>
+        <text x="284" y="112" fill="#5a6580" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">1</text>
+
+        <rect x="168" y="300" width="64" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="200" y="309" fill="#5a6580" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">NULLABLE</text>
+
+        <rect x="600" y="52" width="64" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="632" y="61" fill="#5a6580" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">NOT NULL</text>
+        <rect x="700" y="590" width="12" height="10" rx="2" fill="#f5f5f5"/>
+        <text x="706" y="598" fill="#5a6580" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">N</text>
+
+        <!-- ================= Tables ================= -->
+        <!-- public.expense_statement : the cascade target (header band tint only) -->
+        <rect x="96" y="232" width="256" height="252" rx="6" fill="#f5f5f5"/>
+        <rect x="96" y="232" width="256" height="252" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="97" y="233" width="254" height="34" rx="5" fill="rgba(191,69,32,0.08)"/>
+        <line x1="96" y1="268" x2="352" y2="268" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+        <rect x="104" y="242" width="32" height="12" rx="2" fill="transparent" stroke="rgba(191,69,32,0.40)" stroke-width="0.8"/>
+        <text x="120" y="251" fill="rgba(191,69,32,0.9)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">TABLE</text>
+        <text x="144" y="251" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif">public.expense_statement</text>
+        <text x="104" y="288" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">id</text>
+        <rect x="128" y="277" width="14" height="10" rx="2" fill="transparent" stroke="rgba(191,69,32,0.40)" stroke-width="0.8"/>
+        <text x="135" y="285" fill="#bf4520" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">PK</text>
+        <text x="344" y="288" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">bigint identity</text>
+        <rect x="97" y="296" width="254" height="20" rx="3" fill="rgba(45,49,66,0.02)"/>
+        <text x="104" y="312" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">billing_month</text>
+        <text x="344" y="312" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">varchar(7) NN</text>
+        <text x="104" y="336" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">statement_number</text>
+        <text x="344" y="336" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">varchar(20) NN</text>
+        <rect x="97" y="344" width="254" height="20" rx="3" fill="rgba(45,49,66,0.02)"/>
+        <text x="104" y="360" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">total</text>
+        <text x="344" y="360" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">numeric(12,2) NN</text>
+        <text x="104" y="384" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">company_id</text>
+        <rect x="192" y="373" width="26" height="10" rx="2" fill="transparent" stroke="rgba(79,93,117,0.40)" stroke-width="0.8"/>
+        <text x="205" y="381" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">FK NN</text>
+        <text x="344" y="384" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">bigint</text>
+        <rect x="97" y="392" width="254" height="20" rx="3" fill="rgba(45,49,66,0.02)"/>
+        <text x="104" y="408" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">version · status</text>
+        <text x="344" y="408" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">int · varchar(20)</text>
+        <text x="104" y="432" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">+ template_* · pdf_* · created_at</text>
+        <line x1="96" y1="438" x2="352" y2="438" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+        <text x="104" y="450" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">INDEXES</text>
+        <text x="104" y="462" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">ux_active · uq(company_id, month, ver)</text>
+
+        <!-- public.company -->
+        <rect x="144" y="80" width="128" height="128" rx="6" fill="#f5f5f5"/>
+        <rect x="144" y="80" width="128" height="128" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="152" y="88" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="168" y="97" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">TABLE</text>
+        <text x="192" y="97" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif">company</text>
+        <line x1="144" y1="104" x2="272" y2="104" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+        <text x="152" y="120" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">id</text>
+        <rect x="168" y="109" width="14" height="10" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="175" y="117" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">PK</text>
+        <text x="264" y="120" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">bigint</text>
+        <rect x="145" y="128" width="126" height="20" rx="3" fill="rgba(45,49,66,0.02)"/>
+        <text x="152" y="144" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">name</text>
+        <text x="264" y="144" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">varchar NN</text>
+        <text x="152" y="168" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">siret</text>
+        <text x="264" y="168" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">varchar(14)</text>
+        <text x="152" y="188" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">+ 8 tables reference</text>
+        <text x="152" y="200" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">company_id (V7)</text>
+
+        <!-- public.receipt -->
+        <rect x="576" y="216" width="232" height="128" rx="6" fill="#f5f5f5"/>
+        <rect x="576" y="216" width="232" height="128" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="584" y="224" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="600" y="233" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">TABLE</text>
+        <text x="624" y="233" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif">public.receipt</text>
+        <line x1="576" y1="240" x2="808" y2="240" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+        <text x="584" y="256" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">id</text>
+        <rect x="600" y="245" width="14" height="10" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="607" y="253" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">PK</text>
+        <text x="800" y="256" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">bigint identity</text>
+        <rect x="577" y="264" width="230" height="20" rx="3" fill="rgba(45,49,66,0.02)"/>
+        <text x="584" y="280" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">file_path</text>
+        <text x="800" y="280" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">varchar(1000) NN</text>
+        <text x="584" y="304" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">file_name</text>
+        <text x="800" y="304" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">varchar(255) NN</text>
+        <rect x="577" y="312" width="230" height="20" rx="3" fill="rgba(45,49,66,0.02)"/>
+        <text x="584" y="328" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">+ mime_type · file_size · hash_sha256</text>
+        <text x="584" y="340" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">+ created_at · deleted</text>
+
+        <!-- public.expense_line -->
+        <rect x="96" y="520" width="256" height="196" rx="6" fill="#f5f5f5"/>
+        <rect x="96" y="520" width="256" height="196" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="104" y="528" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="120" y="537" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">TABLE</text>
+        <text x="144" y="537" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif">public.expense_line</text>
+        <line x1="96" y1="544" x2="352" y2="544" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+        <text x="104" y="560" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">statement_id</text>
+        <rect x="196" y="549" width="26" height="10" rx="2" fill="transparent" stroke="rgba(191,69,32,0.40)" stroke-width="0.8"/>
+        <text x="209" y="557" fill="#bf4520" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">FK NN</text>
+        <text x="344" y="560" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">bigint</text>
+        <rect x="97" y="568" width="254" height="20" rx="3" fill="rgba(45,49,66,0.02)"/>
+        <text x="104" y="584" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">item_id</text>
+        <rect x="152" y="573" width="26" height="10" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="165" y="581" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">FK NN</text>
+        <text x="344" y="584" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">bigint</text>
+        <text x="104" y="608" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">receipt_id</text>
+        <rect x="176" y="597" width="14" height="10" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="183" y="605" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">FK</text>
+        <text x="344" y="608" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">bigint</text>
+        <rect x="97" y="616" width="254" height="20" rx="3" fill="rgba(45,49,66,0.02)"/>
+        <text x="104" y="632" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">amount_incl_vat</text>
+        <text x="344" y="632" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">numeric(12,2) NN</text>
+        <text x="104" y="656" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">claimed_amount</text>
+        <text x="344" y="656" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">numeric(12,2) NN</text>
+        <rect x="97" y="664" width="254" height="20" rx="3" fill="rgba(45,49,66,0.02)"/>
+        <text x="104" y="680" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">monthly_amount</text>
+        <text x="344" y="680" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">numeric(12,2) NN</text>
+        <text x="104" y="704" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">+ pro_rata_pct · ai_* · snapshots · CHECK ≥ 0</text>
+
+        <!-- public.expense_item : shifted down 24 so id row centres on item_id -->
+        <rect x="456" y="544" width="232" height="172" rx="6" fill="#f5f5f5"/>
+        <rect x="456" y="544" width="232" height="172" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="464" y="552" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="480" y="561" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">TABLE</text>
+        <text x="504" y="561" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif">public.expense_item</text>
+        <line x1="456" y1="568" x2="688" y2="568" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+        <text x="464" y="584" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">id</text>
+        <rect x="480" y="573" width="14" height="10" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="487" y="581" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">PK</text>
+        <text x="680" y="584" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">bigint identity</text>
+        <rect x="457" y="592" width="230" height="20" rx="3" fill="rgba(45,49,66,0.02)"/>
+        <text x="464" y="608" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">company_id</text>
+        <rect x="552" y="597" width="26" height="10" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="565" y="605" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">FK NN</text>
+        <text x="680" y="608" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">bigint</text>
+        <text x="464" y="632" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">code</text>
+        <rect x="512" y="621" width="16" height="10" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="520" y="629" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">UQ</text>
+        <text x="680" y="632" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">varchar(40) NN</text>
+        <rect x="457" y="640" width="230" height="20" rx="3" fill="rgba(45,49,66,0.02)"/>
+        <text x="464" y="656" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">label</text>
+        <text x="680" y="656" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">varchar(255) NN</text>
+        <text x="464" y="680" fill="#2d3142" font-size="12" font-family="'Geist', system-ui, sans-serif">periodicity</text>
+        <text x="680" y="680" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">varchar(20) NN</text>
+        <rect x="457" y="688" width="230" height="20" rx="3" fill="rgba(45,49,66,0.02)"/>
+        <text x="464" y="704" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">+ supplier · active · deleted · UQ(company_id, code)</text>
+
+        <!-- Editorial callout -->
+        <text x="496" y="392" fill="#2d3142" font-size="13" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">Five of the model's fifteen tables —</text>
+        <text x="496" y="410" fill="#2d3142" font-size="13" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">the expense subsystem. The rental</text>
+        <text x="496" y="428" fill="#2d3142" font-size="13" font-style="italic" font-family="'Instrument Serif', 'Noto Serif', serif">side keeps the same shape.</text>
+
+        <!-- ================= Legend ================= -->
+        <line x1="30" y1="760" x2="930" y2="760" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+        <text x="30" y="784" fill="#5a6580" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">LEGEND</text>
+        <line x1="104" y1="780" x2="144" y2="780" stroke="#bf4520" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+        <text x="154" y="784" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">ON DELETE CASCADE — the only destructive edge</text>
+        <line x1="480" y1="780" x2="520" y2="780" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <text x="530" y="784" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">FK column → referenced column</text>
+        <text x="760" y="784" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">PK · FK · UQ · NN = constraints</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

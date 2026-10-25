@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "e430ba2d-034c-41f3-8369-95ef609ebbeb",
+  "status": "current",
+  "command": "deliver",
+  "type": "sequence",
+  "input": "/home/thtran/Projects/hkof-solutions-accountant/.archify/sequence-cache-miss-20261025-132353/candidate.json",
+  "output": "/home/thtran/Projects/hkof-solutions-accountant/.archify/sequence-cache-miss-20261025-132353/browser-cache-miss-request.html",
+  "specification": {
+    "sha256": "4130a8b325f0d7461530526cd8b361bf4c40b0ecce0037acd6bf3fd37bda690b",
+    "bytes": 2671
+  },
+  "artifact": {
+    "sha256": "07711ad5bf20f88af1e336c0a98c783aad28b6d52ee11ef08bb68b5b9e9f1400",
+    "bytes": 833064
+  }
+}

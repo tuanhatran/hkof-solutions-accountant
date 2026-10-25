@@ -68,34 +68,31 @@ const SECTIONS: NavigationSection[] = [
   },
   {
     title: "Réglages",
-    groups: [
-      {
-        title: "Configuration",
-        links: [
-          {
-            to: "/configuration/entreprise",
-            label: "Entreprise",
-            icon: Building2,
-            dataCy: "tab-configuration",
-          },
-          {
-            to: "/configuration/lmnp",
-            label: "LMNP",
-            icon: Home,
-            dataCy: "tab-lmnp",
-          },
-        ],
-      },
-    ],
     links: [
+      {
+        to: "/configuration/entreprise",
+        label: "Entreprise",
+        icon: Building2,
+        dataCy: "tab-configuration",
+      },
+      {
+        to: "/configuration/lmnp",
+        label: "LMNP",
+        icon: Home,
+        dataCy: "tab-lmnp",
+      },
       {
         to: "/templates",
         label: "Templates",
         icon: LayoutTemplate,
         dataCy: "tab-templates",
       },
-      { to: "/admin", label: "Admin IA", icon: Bot, dataCy: "tab-admin" },
-    ],
+      { to: "/admin", 
+        label: "Admin IA", 
+        icon: Bot, 
+        dataCy: "tab-admin" 
+      },
+    ]
   },
 ];
 
@@ -243,6 +240,11 @@ function SideNavigation() {
       {SECTIONS.map((section) => (
         <div key={section.title}>
           <p className="app-shell-nav-section">{section.title}</p>
+          <div className="app-shell-nav-links">
+            {section.links.map((link) => (
+              <SideNavigationLink key={link.to} link={link} />
+            ))}
+          </div>
           {section.groups?.map((group) => (
             <div key={group.title} data-cy={`groupe-${group.title}`}>
               <p className="app-shell-nav-group">{group.title}</p>
@@ -253,11 +255,6 @@ function SideNavigation() {
               </div>
             </div>
           ))}
-          <div className="app-shell-nav-links">
-            {section.links.map((link) => (
-              <SideNavigationLink key={link.to} link={link} />
-            ))}
-          </div>
         </div>
       ))}
     </nav>

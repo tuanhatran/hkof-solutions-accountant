@@ -77,7 +77,6 @@ describe("AppShell", () => {
     expect(within(navigation).getByText("Générer")).toBeVisible();
     expect(within(navigation).getByText("Suivi")).toBeVisible();
     expect(within(navigation).getByText("Réglages")).toBeVisible();
-    expect(within(navigation).getByText("Configuration")).toBeVisible();
     expect(
       within(navigation).getByRole("link", { name: /Entreprise/ }),
     ).toHaveAttribute("href", "/configuration/entreprise");

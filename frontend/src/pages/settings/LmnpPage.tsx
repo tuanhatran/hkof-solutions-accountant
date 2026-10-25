@@ -25,7 +25,7 @@ export function LmnpPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Réglages · Configuration"
+        eyebrow="Réglages"
         title="LMNP"
         description="Baux et adresses du logement, et personnes physiques bailleurs ou locataires avec leurs signatures."
       />

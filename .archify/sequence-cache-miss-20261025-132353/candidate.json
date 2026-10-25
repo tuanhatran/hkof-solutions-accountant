@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Cache-Miss Web Request",
+    "locale": "en",
+    "output": ".archify/sequence-cache-miss-20261025-132353/browser-cache-miss-request.html",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    { "id": "browser", "type": "external", "label": "Browser", "sublabel": "user session" },
+    { "id": "api", "type": "backend", "label": "API", "sublabel": "request handler" },
+    { "id": "redis", "type": "database", "label": "Redis", "sublabel": "read-through cache" },
+    { "id": "pg", "type": "database", "label": "PostgreSQL", "sublabel": "source of truth" }
+  ],
+  "segments": [
+    { "from": 150, "to": 232, "label": "Request + cache check" },
+    { "from": 242, "to": 302, "label": "Miss: query database" },
+    { "from": 312, "to": 400, "label": "Fill cache + respond" }
+  ],
+  "messages": [
+    { "id": "page-request", "from": "browser", "to": "api", "y": 165, "label": "GET /report", "variant": "emphasis" },
+    { "id": "cache-get", "from": "api", "to": "redis", "y": 195, "label": "GET report:<id>", "variant": "default" },
+    { "id": "cache-miss", "from": "redis", "to": "api", "y": 226, "label": "MISS", "variant": "return" },
+    { "id": "db-query", "from": "api", "to": "pg", "y": 258, "label": "SELECT report row", "variant": "emphasis" },
+    { "id": "db-rows", "from": "pg", "to": "api", "y": 288, "label": "row set", "variant": "return" },
+    { "id": "cache-set", "from": "api", "to": "redis", "y": 328, "label": "SET report:<id> + TTL", "variant": "dashed", "note": "Fresh value cached, so a later request for the same id is served without touching PostgreSQL." },
+    { "id": "response", "from": "api", "to": "browser", "y": 392, "label": "200 JSON", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "api", "from": 165, "to": 396, "type": "backend" },
+    { "participant": "redis", "from": 192, "to": 226, "type": "database" },
+    { "participant": "pg", "from": 255, "to": 292, "type": "database" },
+    { "participant": "redis", "from": 325, "to": 334, "type": "database" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Miss path",
+      "items": [
+        "PostgreSQL is queried only after Redis reports MISS",
+        "The API owns both the read and the cache fill",
+        "The browser still receives one 200 JSON response"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Cache fill",
+      "items": [
+        "The SET is async-friendly (dashed) and carries a TTL",
+        "TTL bounds staleness of the cached row set",
+        "On a hit, the two database-lane messages disappear entirely"
+      ]
+    }
+  ]
+}

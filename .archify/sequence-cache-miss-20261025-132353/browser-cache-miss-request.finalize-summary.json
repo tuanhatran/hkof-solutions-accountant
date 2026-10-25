@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "skipped",
+  "type": "sequence",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/thtran/Projects/hkof-solutions-accountant/.archify/sequence-cache-miss-20261025-132353/candidate.json",
+    "sha256": "4130a8b325f0d7461530526cd8b361bf4c40b0ecce0037acd6bf3fd37bda690b",
+    "bytes": 2671
+  },
+  "artifact": {
+    "path": "/home/thtran/Projects/hkof-solutions-accountant/.archify/sequence-cache-miss-20261025-132353/browser-cache-miss-request.html",
+    "sha256": "07711ad5bf20f88af1e336c0a98c783aad28b6d52ee11ef08bb68b5b9e9f1400",
+    "bytes": 833064
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "skipped"
+  },
+  "failedStage": "browser-check",
+  "diagnostics": [
+    {
+      "code": "viewer/chrome-unavailable",
+      "severity": "warning",
+      "message": "No supported browser found. Install Chrome/Chromium (or Microsoft Edge), or set ARCHIFY_CHROME to its executable path.",
+      "subject": {
+        "artifact": "/home/thtran/Projects/hkof-solutions-accountant/.archify/sequence-cache-miss-20261025-132353/browser-cache-miss-request.html"
+      },
+      "evidence": {
+        "executable": null
+      },
+      "supportedFixes": [
+        "set ARCHIFY_CHROME to a Chrome/Chromium executable (or Microsoft Edge) and rerun browser-check"
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/thtran/Projects/hkof-solutions-accountant/.archify/sequence-cache-miss-20261025-132353/browser-cache-miss-request.finalize.json",
+    "summaryReceipt": "/home/thtran/Projects/hkof-solutions-accountant/.archify/sequence-cache-miss-20261025-132353/browser-cache-miss-request.finalize-summary.json",
+    "browserCheckReceipt": "/home/thtran/Projects/hkof-solutions-accountant/.archify/sequence-cache-miss-20261025-132353/browser-cache-miss-request.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-25T12:24:25.052Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 855,
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  }
+}
