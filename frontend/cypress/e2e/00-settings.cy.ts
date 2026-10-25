@@ -1,5 +1,4 @@
 import {
-  SEED_PRORATA,
   SEED_RENT_INPUT,
   SEED_TOTAL,
   personByName,

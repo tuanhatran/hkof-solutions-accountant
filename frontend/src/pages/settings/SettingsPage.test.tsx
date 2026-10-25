@@ -4,7 +4,13 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
-import type { CompanyDto, EmployeeDto, LeaseDto } from "@/api/types";
+import type {
+  CompanyDto,
+  EmployeeDto,
+  LeaseDto,
+  TemplateDto,
+  TemplateType,
+} from "@/api/types";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { useCompanyStore } from "@/state/company";
 import { useToasts } from "@/state/toasts";
@@ -74,6 +80,19 @@ let companiesState: QueryLike<CompanyDto[]>;
 let employeesState: QueryLike<EmployeeDto[]>;
 let leasesState: QueryLike<LeaseDto[]>;
 
+const EXPENSE_BUILT_IN: TemplateDto = {
+  id: 3,
+  type: "EXPENSE_STATEMENT",
+  name: "Note de frais intégrée",
+  version: 1,
+  format: "HTML",
+  active: true,
+  builtIn: true,
+  createdAt: "2026-02-01T10:00:00Z",
+};
+
+let templatesByType: Record<TemplateType, TemplateDto[]>;
+
 function readyQuery<T>(data: T[]): QueryLike<T[]> {
   return {
     data,
@@ -83,6 +102,10 @@ function readyQuery<T>(data: T[]): QueryLike<T[]> {
     refetch: vi.fn(),
   };
 }
+
+vi.mock("@/components/pdf/PdfViewer", () => ({
+  PdfViewer: () => null,
+}));
 
 vi.mock("@/api/endpoints", () => ({
   api: {
@@ -127,6 +150,8 @@ vi.mock("@/api/queries", async (importOriginal) => {
     useAddresses: () =>
       readyQuery([{ id: 3, label: "12 rue des Lilas, 75011 Paris" }]),
     useLeases: () => leasesState,
+    useTemplates: (type: TemplateType) => readyQuery(templatesByType[type]),
+    useTemplateVariables: () => readyQuery([]),
   };
 });
 
@@ -156,6 +181,10 @@ describe("SettingsPage tabs", () => {
     companiesState = readyQuery([COMPANY]);
     leasesState = readyQuery([LEASE]);
     employeesState = readyQuery([CEO]);
+    templatesByType = {
+      RENT_RECEIPT: [],
+      EXPENSE_STATEMENT: [EXPENSE_BUILT_IN],
+    };
     useCompanyStore.setState({ activeCompanyId: 1 });
     vi.mocked(api.companies.update).mockReset();
     vi.mocked(api.companies.create).mockReset();
@@ -164,7 +193,7 @@ describe("SettingsPage tabs", () => {
     useToasts.setState({ toasts: [] });
   });
 
-  it("renders the selector, the three tabs and the read-only identity by default", () => {
+  it("renders the selector, the four tabs and the read-only identity by default", () => {
     renderPage();
 
     expect(
@@ -177,9 +206,29 @@ describe("SettingsPage tabs", () => {
     );
     expect(screen.getByRole("tab", { name: "Baux & Frais" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Salariés" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Templates" })).toBeVisible();
     expect(queryByCy("info-societe")).not.toBeNull();
     expect(queryByCy("onglet-entreprise-identification")).not.toBeNull();
     expect(queryByCy("input-raison-sociale")).toBeNull();
+  });
+
+  it("shows only the expense statement template card on the Templates tab", async () => {
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(queryByCy("onglet-entreprise-templates") as Element);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Note de frais d’occupation",
+      }),
+    ).toBeVisible();
+    expect(queryByCy("dropzone-template-note")).not.toBeNull();
+    expect(queryByCy("dropzone-template-quittance")).toBeNull();
+    expect(
+      screen.getByText(/Les templates ne peuvent exécuter aucun code/),
+    ).toBeVisible();
+    expect(queryByCy("info-societe")).toBeNull();
   });
 
   it("no longer renders the legacy Quittances directories", () => {

@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorState, LoadingState } from "@/components/ui/States";
 import { ViewTabs, type ViewTab } from "@/components/ui/ViewTabs";
+import { EXPENSE_STATEMENT_CONFIGURATION } from "@/pages/templates/templateTypes";
+import { TemplatesTab } from "@/pages/templates/TemplatesTab";
 import { useCompanyStore } from "@/state/company";
 import { toast } from "@/state/toasts";
 import { CompanyIdentityModal } from "./CompanyIdentityModal";
@@ -37,9 +39,14 @@ const TABS: ViewTab[] = [
     label: "Salariés",
     dataCy: "onglet-entreprise-salaries",
   },
+  {
+    value: "templates",
+    label: "Templates",
+    dataCy: "onglet-entreprise-templates",
+  },
 ];
 
-/** Company directory: selector plus three tabs with modal-based editing. */
+/** Company directory: selector plus four tabs with modal-based editing. */
 export function CompanySection() {
   const queryClient = useQueryClient();
   const companies = useCompanies();
@@ -213,6 +220,9 @@ export function CompanySection() {
         ) : null}
         {selected && tab === "salaries" ? (
           <EmployeeSection companyId={selected.id as number} />
+        ) : null}
+        {tab === "templates" ? (
+          <TemplatesTab configuration={EXPENSE_STATEMENT_CONFIGURATION} />
         ) : null}
       </div>
 

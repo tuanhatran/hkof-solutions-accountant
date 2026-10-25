@@ -1,9 +1,17 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
-import { NotFoundPage, routeErrorMessage } from "./router";
+import { NotFoundPage, routeErrorMessage, router } from "./router";
 
 describe("router", () => {
+  it("no longer exposes a /templates route", () => {
+    const paths = (router.routes[0]?.children ?? []).map((route) => route.path);
+
+    expect(paths).not.toContain("templates");
+    expect(paths).toContain("configuration/entreprise");
+    expect(paths).toContain("configuration/lmnp");
+  });
+
   it("renders the French not-found page with a link back to generation", () => {
     render(
       <MemoryRouter>

@@ -111,7 +111,8 @@ describe("AI admin and templates", () => {
   });
 
   it("imports, previews, activates a template then reverts to the built-in model", () => {
-    cy.visit("/templates");
+    cy.visit("/configuration/lmnp");
+    cy.get('[data-cy="onglet-lmnp-templates"]').click();
     cy.get('[data-cy="dropzone-template-quittance"]', {
       timeout: 20_000,
     }).should("exist");
@@ -190,7 +191,8 @@ describe("AI admin and templates", () => {
       },
     );
 
-    cy.get('[data-cy="tab-templates"]').click();
+    cy.visit("/configuration/lmnp");
+    cy.get('[data-cy="onglet-lmnp-templates"]').click();
     cy.get('[data-cy="input-template-nom"]', { timeout: 20_000 })
       .first()
       .clear()

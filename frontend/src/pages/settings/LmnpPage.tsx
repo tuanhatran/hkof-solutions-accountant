@@ -5,10 +5,13 @@ import { LeaseSection } from "@/components/settings/LeaseSection";
 import { PersonnesSection } from "@/components/settings/PersonnesSection";
 import { useRentReceiptSettings } from "@/components/settings/useRentReceiptSettings";
 import { cn } from "@/lib/cn";
+import { RENT_RECEIPT_CONFIGURATION } from "@/pages/templates/templateTypes";
+import { TemplatesTab } from "@/pages/templates/TemplatesTab";
 
 const TABS = [
   { value: "baux", label: "Baux et adresses", dataCy: "onglet-baux" },
   { value: "personnes", label: "Personnes", dataCy: "onglet-personnes" },
+  { value: "templates", label: "Templates", dataCy: "onglet-lmnp-templates" },
 ] as const;
 
 type Tab = (typeof TABS)[number]["value"];
@@ -18,7 +21,7 @@ function LeasesTab() {
   return <LeaseSection c={c} />;
 }
 
-/** LMNP settings: leases and addresses first, then natural persons. */
+/** LMNP settings: leases and addresses, natural persons, rent receipt templates. */
 export function LmnpPage() {
   const [tab, setTab] = useState<Tab>("baux");
 
@@ -54,7 +57,11 @@ export function LmnpPage() {
       </div>
 
       <div className="lmnp-page-sections">
-        {tab === "baux" ? <LeasesTab /> : <PersonnesSection />}
+        {tab === "baux" ? <LeasesTab /> : null}
+        {tab === "personnes" ? <PersonnesSection /> : null}
+        {tab === "templates" ? (
+          <TemplatesTab configuration={RENT_RECEIPT_CONFIGURATION} />
+        ) : null}
       </div>
     </>
   );

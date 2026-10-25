@@ -11,7 +11,12 @@ import type {
   ValidationReportDto,
 } from "@/api/types";
 import { useToasts } from "@/state/toasts";
-import { TemplatesPage } from "./TemplatesPage";
+import { TemplatesTab } from "./TemplatesTab";
+import {
+  EXPENSE_STATEMENT_CONFIGURATION,
+  RENT_RECEIPT_CONFIGURATION,
+  type ConfigurationType,
+} from "./templateTypes";
 
 let templatesByType: Record<TemplateType, TemplateDto[]>;
 let templatesPending = false;
@@ -118,23 +123,25 @@ const EXPENSE_ACTIVE: TemplateDto = {
   createdAt: "2026-02-01T10:00:00Z",
 };
 
-function renderPage() {
+function renderTab(
+  configuration: ConfigurationType = RENT_RECEIPT_CONFIGURATION,
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  render(
+  return render(
     <QueryClientProvider client={queryClient}>
-      <TemplatesPage />
+      <TemplatesTab configuration={configuration} />
     </QueryClientProvider>,
   );
 }
 
-function cardFor(title: string): HTMLElement {
-  const card = screen.getByRole("heading", { name: title }).closest("section");
-  if (!card) {
-    throw new Error(`Card ${title} not found`);
+function card(): HTMLElement {
+  const section = document.querySelector("section.templates-card");
+  if (!section) {
+    throw new Error("Templates card not found");
   }
-  return card;
+  return section as HTMLElement;
 }
 
 function toastMessages(): string[] {
@@ -196,11 +203,31 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("TemplatesPage", () => {
-  it("renders the active model, previous versions and the variable reference", async () => {
-    renderPage();
+describe("TemplatesTab", () => {
+  it("renders only the rent receipt card with the sandbox warning", () => {
+    renderTab();
 
-    const rent = cardFor("Quittance de loyer");
+    expect(
+      screen.getByRole("heading", { name: "Quittance de loyer" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: "Note de frais d’occupation" }),
+    ).toBeNull();
+    expect(
+      screen.getByText(/Les templates ne peuvent exécuter aucun code/),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/Mustache sans logique, HTML assaini/),
+    ).toBeVisible();
+    expect(
+      document.querySelector('[data-cy="dropzone-template-quittance"]'),
+    ).not.toBeNull();
+  });
+
+  it("renders the active model, previous versions and the variable reference", () => {
+    renderTab();
+
+    const rent = card();
     expect(within(rent).getAllByText("Quittance 2026").length).toBeGreaterThan(
       0,
     );
@@ -212,45 +239,52 @@ describe("TemplatesPage", () => {
     ).toBeInTheDocument();
     expect(within(rent).getByText("{{montant}}")).toBeInTheDocument();
     expect(within(rent).getByText("requis")).toBeInTheDocument();
+  });
 
-    const expense = cardFor("Note de frais d’occupation");
+  it("renders the expense statement card when configured for it", () => {
+    renderTab(EXPENSE_STATEMENT_CONFIGURATION);
+
+    const expense = card();
+    expect(
+      within(expense).getByRole("heading", {
+        name: "Note de frais d’occupation",
+      }),
+    ).toBeVisible();
     expect(
       within(expense).getByText("Aucune version précédente archivée."),
     ).toBeInTheDocument();
     expect(within(expense).getByText("1 version")).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-cy="dropzone-template-note"]'),
+    ).not.toBeNull();
   });
 
   it("shows the loading and error states of the template list", async () => {
     templatesPending = true;
-    const { unmount } = render(
-      <QueryClientProvider client={new QueryClient()}>
-        <TemplatesPage />
-      </QueryClientProvider>,
-    );
-    expect(screen.getAllByText("Chargement des modèles…").length).toBe(2);
-    unmount();
+    const loading = renderTab();
+    expect(screen.getByText("Chargement des modèles…")).toBeInTheDocument();
+    loading.unmount();
 
     templatesPending = false;
     templatesError = new Error("Service indisponible");
-    renderPage();
+    renderTab();
     expect(
-      screen.getAllByText("Impossible de charger les données").length,
-    ).toBe(2);
-    expect(screen.getAllByText("Service indisponible").length).toBe(2);
+      screen.getByText("Impossible de charger les données"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Service indisponible")).toBeInTheDocument();
 
     await userEvent
       .setup()
-      .click(screen.getAllByRole("button", { name: "Réessayer" })[0]);
+      .click(screen.getByRole("button", { name: "Réessayer" }));
     expect(refetch).toHaveBeenCalled();
   });
 
-  it("downloads the built-in model of both document types", async () => {
+  it("downloads the built-in model of the rent receipt type", async () => {
     const user = userEvent.setup();
-    renderPage();
+    renderTab();
 
-    const rent = cardFor("Quittance de loyer");
     await user.click(
-      within(rent).getByRole("button", {
+      within(card()).getByRole("button", {
         name: "Télécharger le modèle par défaut intégré",
       }),
     );
@@ -261,15 +295,19 @@ describe("TemplatesPage", () => {
       expect.any(Blob),
       "modele-quittance-defaut.html",
     );
+  });
 
-    const expense = cardFor("Note de frais d’occupation");
+  it("downloads the built-in model of the expense statement type", async () => {
+    const user = userEvent.setup();
+    renderTab(EXPENSE_STATEMENT_CONFIGURATION);
+
     await user.click(
-      within(expense).getByRole("button", {
+      within(card()).getByRole("button", {
         name: "Télécharger le modèle par défaut intégré",
       }),
     );
     await waitFor(() =>
-      expect(api.templates.getDefault).toHaveBeenLastCalledWith(
+      expect(api.templates.getDefault).toHaveBeenCalledWith(
         "EXPENSE_STATEMENT",
       ),
     );
@@ -285,7 +323,7 @@ describe("TemplatesPage", () => {
       active: true,
     });
     const user = userEvent.setup();
-    renderPage();
+    renderTab();
 
     const row = screen.getByText("Quittance archivée").closest("li");
     if (!row) {
@@ -313,12 +351,11 @@ describe("TemplatesPage", () => {
 
   it("closes the preview with Escape and the close button", async () => {
     const user = userEvent.setup();
-    renderPage();
+    renderTab();
 
-    const activePreview = within(cardFor("Quittance de loyer")).getAllByRole(
-      "button",
-      { name: "Aperçu" },
-    )[0];
+    const activePreview = within(card()).getAllByRole("button", {
+      name: "Aperçu",
+    })[0];
     await user.click(activePreview);
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
     await user.keyboard("{Escape}");
@@ -351,9 +388,9 @@ describe("TemplatesPage", () => {
     });
 
     const user = userEvent.setup();
-    renderPage();
+    renderTab();
 
-    const rent = cardFor("Quittance de loyer");
+    const rent = card();
     const file = new File(["<html></html>"], "modele.html", {
       type: "text/html",
     });
@@ -408,9 +445,9 @@ describe("TemplatesPage", () => {
     vi.mocked(api.templates.upload).mockResolvedValue(imported);
 
     const user = userEvent.setup();
-    renderPage();
+    renderTab();
 
-    const rent = cardFor("Quittance de loyer");
+    const rent = card();
     await user.upload(
       within(rent).getByLabelText("Choisir un fichier template HTML"),
       new File(["<html></html>"], "modele.html", { type: "text/html" }),
@@ -433,9 +470,9 @@ describe("TemplatesPage", () => {
     );
 
     const user = userEvent.setup();
-    renderPage();
+    renderTab();
 
-    const rent = cardFor("Quittance de loyer");
+    const rent = card();
     await user.upload(
       within(rent).getByLabelText("Choisir un fichier template HTML"),
       new File(["<html></html>"], "modele.html", { type: "text/html" }),
@@ -453,7 +490,7 @@ describe("TemplatesPage", () => {
   it("deletes a previous version after confirmation and supports cancel", async () => {
     vi.mocked(api.templates.delete).mockResolvedValue(undefined);
     const user = userEvent.setup();
-    renderPage();
+    renderTab();
 
     const row = screen.getByText("Quittance archivée").closest("li");
     if (!row) {
@@ -478,11 +515,10 @@ describe("TemplatesPage", () => {
     );
   });
 
-  it("keeps the active and built-in versions undeletable", async () => {
-    renderPage();
+  it("keeps the active and built-in versions undeletable", () => {
+    renderTab();
 
-    const rent = cardFor("Quittance de loyer");
-    const rows = within(rent).getAllByRole("listitem");
+    const rows = within(card()).getAllByRole("listitem");
     const activeRow = rows.find((row) =>
       row.textContent?.includes("Quittance 2026"),
     );
@@ -505,7 +541,7 @@ describe("TemplatesPage", () => {
       new Error("Suppression refusée"),
     );
     const user = userEvent.setup();
-    renderPage();
+    renderTab();
 
     const row = screen.getByText("Quittance archivée").closest("li");
     if (!row) {
@@ -531,11 +567,10 @@ describe("TemplatesPage", () => {
       active: true,
     });
     const user = userEvent.setup();
-    renderPage();
+    renderTab();
 
-    const rent = cardFor("Quittance de loyer");
     await user.click(
-      within(rent).getByRole("button", {
+      within(card()).getByRole("button", {
         name: "Revenir au modèle par défaut",
       }),
     );
@@ -558,14 +593,14 @@ describe("TemplatesPage", () => {
   });
 
   it("reports a reset failure and offers restore when no model is active", async () => {
-    templatesByType.RENT_RECEIPT = [RENT_OLD];
+    templatesByType = { ...templatesByType, RENT_RECEIPT: [RENT_OLD] };
     vi.mocked(api.templates.resetDefault).mockRejectedValue(
       new Error("Restauration impossible"),
     );
     const user = userEvent.setup();
-    renderPage();
+    renderTab();
 
-    const rent = cardFor("Quittance de loyer");
+    const rent = card();
     expect(within(rent).getByText("Aucun modèle actif.")).toBeInTheDocument();
     await user.click(
       within(rent).getByRole("button", { name: "Restaurer le modèle intégré" }),
@@ -588,7 +623,7 @@ describe("TemplatesPage", () => {
 
   it("downloads a version with a sanitised file name", async () => {
     const user = userEvent.setup();
-    renderPage();
+    renderTab();
 
     const row = screen.getByText("Quittance archivée").closest("li");
     if (!row) {
@@ -608,7 +643,7 @@ describe("TemplatesPage", () => {
       new Error("PDF indisponible"),
     );
     const user = userEvent.setup();
-    renderPage();
+    renderTab();
 
     const row = screen.getByText("Quittance archivée").closest("li");
     if (!row) {
@@ -625,9 +660,9 @@ describe("TemplatesPage", () => {
       value: { writeText },
       configurable: true,
     });
-    renderPage();
+    renderTab();
 
-    const rent = cardFor("Quittance de loyer");
+    const rent = card();
     await user.click(
       within(rent).getByRole("button", {
         name: "Copier la variable montant",
@@ -667,9 +702,9 @@ describe("TemplatesPage", () => {
     vi.mocked(api.templates.upload).mockResolvedValue(imported);
 
     const user = userEvent.setup();
-    renderPage();
+    renderTab();
 
-    const rent = cardFor("Quittance de loyer");
+    const rent = card();
     await user.upload(
       within(rent).getByLabelText("Choisir un fichier template HTML"),
       new File(["<html></html>"], "modele.html", { type: "text/html" }),

@@ -11,23 +11,22 @@ export interface ConfigurationType {
   icon: typeof FileText;
 }
 
-export const TYPES: ConfigurationType[] = [
-  {
-    type: "RENT_RECEIPT",
-    title: "Quittance de loyer",
-    description: "Modèle utilisé pour les quittances mensuelles.",
-    dataCy: "dropzone-template-quittance",
-    icon: ReceiptText,
-  },
-  {
-    type: "EXPENSE_STATEMENT",
-    title: "Note de frais d’occupation",
-    description:
-      "Modèle utilisé pour les notes de frais et leur version complète.",
-    dataCy: "dropzone-template-note",
-    icon: FileText,
-  },
-];
+export const RENT_RECEIPT_CONFIGURATION: ConfigurationType = {
+  type: "RENT_RECEIPT",
+  title: "Quittance de loyer",
+  description: "Modèle utilisé pour les quittances mensuelles.",
+  dataCy: "dropzone-template-quittance",
+  icon: ReceiptText,
+};
+
+export const EXPENSE_STATEMENT_CONFIGURATION: ConfigurationType = {
+  type: "EXPENSE_STATEMENT",
+  title: "Note de frais d’occupation",
+  description:
+    "Modèle utilisé pour les notes de frais et leur version complète.",
+  dataCy: "dropzone-template-note",
+  icon: FileText,
+};
 
 export function downloadFileName(
   name: string | undefined,

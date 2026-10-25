@@ -1,101 +1,13 @@
 import "./AppShell.css";
-import {
-  Bot,
-  Building2,
-  FileText,
-  History,
-  Home,
-  LayoutTemplate,
-  ReceiptText,
-  ShieldCheck,
-} from "lucide-react";
-import { useEffect, useId } from "react";
-import { NavLink, Outlet } from "react-router-dom";
-import { useCompanies } from "@/api/queries";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ShieldCheck } from "lucide-react";
+import { Outlet } from "react-router-dom";
+import { AppCompanySelect } from "@/components/layout/AppCompanySelect";
+import { MobileNavigation, SideNavigation } from "@/components/layout/AppNav";
 import { LlmBadge } from "@/components/llm/LlmBadge";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ToastHost } from "@/components/ui/ToastHost";
 import { useDraftBlock } from "@/hooks/useDraftBlock";
 import { cn } from "@/lib/cn";
-import { resolveActiveCompanyId, useCompanyStore } from "@/state/company";
-
-interface NavigationLink {
-  to: string;
-  label: string;
-  icon: typeof ReceiptText;
-  dataCy: string;
-}
-
-interface NavigationGroup {
-  title: string;
-  links: NavigationLink[];
-}
-
-interface NavigationSection {
-  title: string;
-  links: NavigationLink[];
-  groups?: NavigationGroup[];
-}
-
-const SECTIONS: NavigationSection[] = [
-  {
-    title: "Générer",
-    links: [
-      {
-        to: "/generer/quittance",
-        label: "Quittance de loyer",
-        icon: ReceiptText,
-        dataCy: "tab-quittance",
-      },
-      {
-        to: "/generer/note-frais",
-        label: "Note de frais",
-        icon: FileText,
-        dataCy: "tab-note-frais",
-      },
-    ],
-  },
-  {
-    title: "Suivi",
-    links: [
-      {
-        to: "/historique",
-        label: "Historique",
-        icon: History,
-        dataCy: "tab-historique",
-      },
-    ],
-  },
-  {
-    title: "Réglages",
-    links: [
-      {
-        to: "/configuration/entreprise",
-        label: "Société",
-        icon: Building2,
-        dataCy: "tab-configuration",
-      },
-      {
-        to: "/configuration/lmnp",
-        label: "LMNP",
-        icon: Home,
-        dataCy: "tab-lmnp",
-      },
-      {
-        to: "/templates",
-        label: "Templates",
-        icon: LayoutTemplate,
-        dataCy: "tab-templates",
-      },
-      { to: "/admin", label: "Admin IA", icon: Bot, dataCy: "tab-admin" },
-    ],
-  },
-];
-
-const MOBILE_LINKS = SECTIONS.flatMap((section) => [
-  ...(section.groups?.flatMap((group) => group.links) ?? []),
-  ...section.links,
-]);
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
@@ -132,131 +44,6 @@ function Brand({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function CompanySwitcher() {
-  const selectId = useId();
-  const companies = useCompanies();
-  const activeCompanyId = useCompanyStore((state) => state.activeCompanyId);
-  const setActiveCompany = useCompanyStore((state) => state.setActiveCompany);
-
-  useEffect(() => {
-    if (!companies.isSuccess) {
-      return;
-    }
-    const resolved = resolveActiveCompanyId(activeCompanyId, companies.data);
-    if (resolved !== activeCompanyId) {
-      setActiveCompany(resolved);
-    }
-  }, [companies.isSuccess, companies.data, activeCompanyId, setActiveCompany]);
-
-  if (companies.isPending) {
-    return <p className="app-shell-company-empty">Chargement des sociétés…</p>;
-  }
-  if (companies.isError) {
-    return (
-      <p role="alert" className="app-shell-company-empty">
-        Impossible de charger les sociétés.
-      </p>
-    );
-  }
-  const list = companies.data ?? [];
-  if (list.length === 0) {
-    return (
-      <p className="app-shell-company-empty">
-        Aucune société configurée. Ajoutez-en une dans Configuration.
-      </p>
-    );
-  }
-
-  return (
-    <div className="app-shell-company">
-      <label htmlFor={selectId} className="app-shell-company-label">
-        Société active
-      </label>
-      <select
-        id={selectId}
-        className="app-shell-company-select"
-        value={activeCompanyId === null ? "" : String(activeCompanyId)}
-        onChange={(event) =>
-          setActiveCompany(
-            event.target.value === "" ? null : Number(event.target.value),
-          )
-        }
-        data-cy="select-societe-active"
-      >
-        {activeCompanyId === null ? (
-          <option value="">Sélectionnez une société</option>
-        ) : null}
-        {list.map((company) => (
-          <option key={String(company.id)} value={String(company.id)}>
-            {company.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function SideNavigationLink({ link }: { link: NavigationLink }) {
-  return (
-    <NavLink
-      to={link.to}
-      data-cy={link.dataCy}
-      className={({ isActive }) =>
-        cn(
-          "group app-shell-nav-link",
-          isActive ? "app-shell-nav-link-active" : "app-shell-nav-link-idle",
-        )
-      }
-    >
-      {({ isActive }) => (
-        <>
-          <link.icon
-            size={17}
-            className={cn(
-              "app-shell-nav-icon",
-              isActive
-                ? "app-shell-nav-icon-active"
-                : "app-shell-nav-icon-idle",
-            )}
-            aria-hidden="true"
-          />
-          <span className="flex-1">{link.label}</span>
-          {isActive ? (
-            <span className="app-shell-nav-dot" aria-hidden="true" />
-          ) : null}
-        </>
-      )}
-    </NavLink>
-  );
-}
-
-function SideNavigation() {
-  return (
-    <nav className="app-shell-nav" aria-label="Navigation principale">
-      {SECTIONS.map((section) => (
-        <div key={section.title}>
-          <p className="app-shell-nav-section">{section.title}</p>
-          <div className="app-shell-nav-links">
-            {section.links.map((link) => (
-              <SideNavigationLink key={link.to} link={link} />
-            ))}
-          </div>
-          {section.groups?.map((group) => (
-            <div key={group.title} data-cy={`groupe-${group.title}`}>
-              <p className="app-shell-nav-group">{group.title}</p>
-              <div className="app-shell-nav-links">
-                {group.links.map((link) => (
-                  <SideNavigationLink key={link.to} link={link} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      ))}
-    </nav>
-  );
-}
-
 export function AppShell() {
   const blocker = useDraftBlock();
 
@@ -269,7 +56,7 @@ export function AppShell() {
       <aside className="app-shell-sidebar hidden lg:flex">
         <div className="px-2">
           <Brand />
-          <CompanySwitcher />
+          <AppCompanySelect />
         </div>
         <SideNavigation />
         <div className="app-shell-info-card">
@@ -299,30 +86,9 @@ export function AppShell() {
             <LlmBadge dark />
           </div>
           <div className="app-shell-mobile-company">
-            <CompanySwitcher />
+            <AppCompanySelect />
           </div>
-          <nav
-            className="app-shell-mobile-nav"
-            aria-label="Navigation principale mobile"
-          >
-            {MOBILE_LINKS.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                className={({ isActive }) =>
-                  cn(
-                    "app-shell-mobile-link",
-                    isActive
-                      ? "app-shell-mobile-link-active"
-                      : "app-shell-mobile-link-idle",
-                  )
-                }
-              >
-                <link.icon size={13} aria-hidden="true" />
-                {link.label}
-              </NavLink>
-            ))}
-          </nav>
+          <MobileNavigation />
         </header>
 
         <main id="contenu" className="app-shell-main">
