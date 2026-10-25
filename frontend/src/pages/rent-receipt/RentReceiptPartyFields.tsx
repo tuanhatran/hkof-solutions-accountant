@@ -63,23 +63,23 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
           id="quittance-bailleur"
           label="Bailleur"
           error={c.errors.landlordId?.message}
-          help="Bailleur du bail actif."
+          help="Personne physique bailleur du bail actif."
         >
           <select
             id="quittance-bailleur"
             className={cn("field", c.errors.landlordId && "field-error")}
             data-cy="select-bailleur"
             aria-invalid={Boolean(c.errors.landlordId)}
-            disabled={c.landlords.isPending}
+            disabled={c.persons.isPending}
             {...c.register("landlordId", {
               onChange: (event) =>
-                c.selectPair(event.target.value, c.values.tenantId),
+                c.selectPair(event.target.value, c.values.tenantKey),
             })}
           >
             <option value="">Sélectionnez un bailleur</option>
-            {c.landlordRows.map((landlord) => (
-              <option key={landlord.id} value={landlord.id}>
-                {landlord.name}
+            {c.personRows.map((person) => (
+              <option key={person.id} value={person.id}>
+                {person.name}
               </option>
             ))}
           </select>
@@ -88,32 +88,45 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
         <FieldGroup
           id="quittance-locataire"
           label="Locataire"
-          error={c.errors.tenantId?.message}
-          help="Locataire du bail actif."
+          error={c.errors.tenantKey?.message}
+          help="Personne physique, ou société pour un bail société."
         >
           <select
             id="quittance-locataire"
-            className={cn("field", c.errors.tenantId && "field-error")}
+            className={cn("field", c.errors.tenantKey && "field-error")}
             data-cy="select-locataire"
-            aria-invalid={Boolean(c.errors.tenantId)}
-            disabled={c.tenants.isPending}
-            {...c.register("tenantId", {
+            aria-invalid={Boolean(c.errors.tenantKey)}
+            disabled={c.persons.isPending || c.companies.isPending}
+            {...c.register("tenantKey", {
               onChange: (event) =>
                 c.selectPair(c.values.landlordId, event.target.value),
             })}
           >
             <option value="">Sélectionnez un locataire</option>
-            {c.tenantRows.map((tenant) => (
-              <option key={tenant.id} value={tenant.id}>
-                {tenant.name}
-              </option>
-            ))}
+            {c.personTenantOptions.length > 0 ? (
+              <optgroup label="Personnes">
+                {c.personTenantOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </optgroup>
+            ) : null}
+            {c.companyTenantOptions.length > 0 ? (
+              <optgroup label="Sociétés">
+                {c.companyTenantOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </optgroup>
+            ) : null}
           </select>
         </FieldGroup>
       </div>
 
       {c.values.landlordId &&
-      c.values.tenantId &&
+      c.values.tenantKey &&
       !c.selectedLease &&
       !c.leases.isPending ? (
         <p
@@ -123,8 +136,8 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
         >
           Aucun bail actif pour ce bailleur et ce locataire. Créez le bail dans
           la page{" "}
-          <Link to="/configuration" className="link">
-            Configuration
+          <Link to="/configuration/lmnp" className="link">
+            LMNP
           </Link>
           .
         </p>
@@ -132,7 +145,9 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
 
       {c.selectedLease ? (
         <div className="rent-receipt-party-fields-lease" data-cy="detail-bail">
-          <p className="eyebrow text-accent">Bail sélectionné</p>
+          <p className="eyebrow text-accent">
+            {c.selectedLease.companyLease ? "Bail société" : "Bail"} sélectionné
+          </p>
           <p className="rent-receipt-party-fields-lease-pair">
             {c.selectedLease.landlordName} → {c.selectedLease.tenantName}
           </p>

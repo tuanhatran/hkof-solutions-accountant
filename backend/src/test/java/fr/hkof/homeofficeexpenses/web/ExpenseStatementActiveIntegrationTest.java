@@ -40,15 +40,15 @@ class ExpenseStatementActiveIntegrationTest {
 
     @BeforeEach
     void ensureSignature() throws Exception {
-        String list = mockMvc.perform(get("/api/signatures"))
+        long ceoId = ceoEmployeeId();
+        String list = mockMvc.perform(get("/api/signatures").param("personId", String.valueOf(ceoId)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        List<?> existing = JsonPath.read(list, "$[?(@.type == 'ENTREPRISE_CEO')]");
+        List<?> existing = JsonPath.read(list, "$[?(@.personId == " + ceoId + ")]");
         if (existing.isEmpty()) {
             mockMvc.perform(multipart("/api/signatures")
                             .file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
-                            .param("type", "ENTREPRISE_CEO")
-                            .param("employeeId", String.valueOf(ceoEmployeeId()))
+                            .param("personId", String.valueOf(ceoId))
                             .param("name", "Signature gérant"))
                     .andExpect(status().isCreated());
         }

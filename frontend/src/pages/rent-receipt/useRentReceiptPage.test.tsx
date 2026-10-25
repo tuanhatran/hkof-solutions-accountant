@@ -6,10 +6,9 @@ import { downloadBlob } from "@/api/client";
 import { api } from "@/api/endpoints";
 import type {
   CompanyDto,
-  LandlordDto,
   LeaseDto,
+  PersonDto,
   SignatureDto,
-  TenantDto,
 } from "@/api/types";
 import { formatEUR } from "@/lib/format";
 import { useCompanyStore } from "@/state/company";
@@ -26,8 +25,7 @@ interface QueryLike<T> {
   refetch: ReturnType<typeof vi.fn>;
 }
 
-let landlordsState: QueryLike<LandlordDto[]>;
-let tenantsState: QueryLike<TenantDto[]>;
+let personsState: QueryLike<PersonDto[]>;
 let leasesState: QueryLike<LeaseDto[]>;
 let templatesState: QueryLike<{ id: number; active?: boolean }[]>;
 let signaturesState: QueryLike<SignatureDto[]>;
@@ -63,11 +61,18 @@ vi.mock("@/api/queries", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/queries")>();
   return {
     ...actual,
-    useLandlords: () => landlordsState,
-    useTenants: () => tenantsState,
+    usePersons: () => personsState,
     useLeases: () => leasesState,
     useTemplates: () => templatesState,
-    useSignatures: () => signaturesState,
+    useSignatures: (personId: number | null) => ({
+      ...signaturesState,
+      data:
+        personId === null || signaturesState.data === undefined
+          ? []
+          : signaturesState.data.filter(
+              (signature) => signature.personId === personId,
+            ),
+    }),
     useCompanies: () => companiesState,
     useActiveRentReceipt: () => activeReceiptState,
   };
@@ -133,7 +138,7 @@ function snapshot() {
     issueDate: "",
     templateId: null as number | null,
     landlordId: null as number | null,
-    tenantId: null as number | null,
+    tenantKey: null as string | null,
     initialized: false,
     dirty: false,
   };
@@ -154,19 +159,26 @@ function toastMessages(): string[] {
 }
 
 beforeEach(() => {
-  landlordsState = readyQuery([{ id: 1, name: "M. Bailleur", address: "" }]);
-  tenantsState = readyQuery([{ id: 2, name: "Mme Locataire", address: "" }]);
+  personsState = readyQuery([
+    { id: 1, name: "M. Bailleur", address: "" },
+    { id: 2, name: "Mme Locataire", address: "" },
+  ]);
   leasesState = readyQuery([LEASE]);
   templatesState = readyQuery([{ id: 5, active: true }]);
-  signaturesState = readyQuery([
+  signaturesState = readyQuery<SignatureDto[]>([
     {
       id: 7,
-      type: "LANDLORD",
+      personId: 1,
+      personName: "M. Bailleur",
       name: "Signature bailleur",
-      landlordId: 1,
     },
-    { id: 9, type: "LANDLORD", name: "Ancienne signature", landlordId: null },
-    { id: 4, type: "ENTREPRISE_CEO", name: "Gérant" },
+    {
+      id: 12,
+      personId: 3,
+      personName: "Mme Propriétaire",
+      name: "Signature propriétaire",
+    },
+    { id: 4, personId: 9, personName: "Camille Martin", name: "Gérant" },
   ]);
   companiesState = readyQuery([{ id: 3, name: "HKOF" }]);
   activeReceiptState = readyQuery(null);
@@ -203,7 +215,7 @@ describe("useRentReceiptPage lease selection", () => {
     const { result } = renderController();
 
     expect(result.current.values.landlordId).toBe("1");
-    expect(result.current.values.tenantId).toBe("2");
+    expect(result.current.values.tenantKey).toBe("person:2");
     expect(result.current.values.rentExclCharges).toBe("1300.00");
     expect(result.current.values.charges).toBe("50.00");
     expect(result.current.selectedLease?.id).toBe(10);
@@ -219,7 +231,7 @@ describe("useRentReceiptPage lease selection", () => {
       tenantId: 4,
     };
     leasesState = readyQuery([OTHER, LEASE]);
-    resetDraft({ landlordId: 1, tenantId: 2 });
+    resetDraft({ landlordId: 1, tenantKey: "person:2" });
 
     const { result } = renderController();
     expect(result.current.selectedLease?.id).toBe(10);
@@ -271,55 +283,64 @@ describe("useRentReceiptPage lease selection", () => {
     const { result } = renderController();
 
     expect(result.current.values.landlordId).toBe("");
-    expect(result.current.values.tenantId).toBe("");
+    expect(result.current.values.tenantKey).toBe("");
   });
 });
 
 describe("useRentReceiptPage signatures and money", () => {
-  it("lists every landlord signature without a selected pair and falls back", () => {
+  it("offers no signature before a landlord is selected and falls back", () => {
+    resetDraft({ initialized: true });
     const { result } = renderController();
 
+    expect(result.current.availableSignatures).toEqual([]);
+    expect(result.current.selectedSignatureId).toBeNull();
+    expect(result.current.signatureAvailable).toBe(false);
+    expect(result.current.landlordWithoutSignature).toBe(false);
+  });
+
+  it("lists only the selected landlord's signatures and resets the choice on landlord change", () => {
+    const { result } = renderController();
+    act(() => result.current.selectPair("1", "person:2"));
+
     expect(result.current.availableSignatures.map((item) => item.id)).toEqual([
-      7, 9,
+      7,
     ]);
     expect(result.current.selectedSignatureId).toBe(7);
 
-    act(() => result.current.setChosenSignatureId(9));
-    expect(result.current.selectedSignatureId).toBe(9);
+    act(() => result.current.selectPair("3", "person:4"));
+    expect(result.current.availableSignatures.map((item) => item.id)).toEqual([
+      12,
+    ]);
+    expect(result.current.selectedSignatureId).toBe(12);
+  });
+
+  it("falls back on the first signature when the chosen one is not owned", () => {
+    const { result } = renderController();
+    act(() => result.current.selectPair("1", "person:2"));
 
     act(() => result.current.setChosenSignatureId(999));
     expect(result.current.selectedSignatureId).toBe(7);
-  });
 
-  it("keeps linked and legacy signatures, then resets the choice on landlord change", () => {
-    const { result } = renderController();
-    act(() => result.current.selectPair("1", "2"));
-
-    expect(result.current.availableSignatures.map((item) => item.id)).toEqual([
-      7, 9,
-    ]);
-    act(() => result.current.setChosenSignatureId(9));
-    expect(result.current.selectedSignatureId).toBe(9);
-
-    act(() => result.current.selectPair("3", "4"));
-    expect(result.current.selectedSignatureId).toBe(9);
+    act(() => result.current.setChosenSignatureId(undefined as never));
+    expect(result.current.selectedSignatureId).toBe(7);
   });
 
   it("warns when the selected landlord has no signature", () => {
     signaturesState = readyQuery([
-      { id: 4, type: "ENTREPRISE_CEO", name: "Gérant" },
+      { id: 4, personId: 9, personName: "Camille Martin", name: "Gérant" },
     ]);
     const { result } = renderController();
     expect(result.current.signatureAvailable).toBe(false);
 
-    act(() => result.current.selectPair("1", "2"));
+    act(() => result.current.selectPair("1", "person:2"));
+    expect(result.current.availableSignatures).toEqual([]);
     expect(result.current.landlordWithoutSignature).toBe(true);
   });
 
   it("does not warn while signatures are loading", () => {
     signaturesState = { ...readyQuery<SignatureDto[]>([]), isPending: true };
     const { result } = renderController();
-    act(() => result.current.selectPair("1", "2"));
+    act(() => result.current.selectPair("1", "person:2"));
 
     expect(result.current.signatureAvailable).toBe(false);
     expect(result.current.landlordWithoutSignature).toBe(false);
@@ -327,7 +348,7 @@ describe("useRentReceiptPage signatures and money", () => {
 
   it("computes the estimated total and tolerates invalid amounts", () => {
     const valid = renderController();
-    act(() => valid.result.current.selectPair("1", "2"));
+    act(() => valid.result.current.selectPair("1", "person:2"));
     expect(valid.result.current.estimatedTotal).toBe(formatEUR(1350));
     valid.unmount();
 
@@ -340,39 +361,39 @@ describe("useRentReceiptPage signatures and money", () => {
   it("selects a pair with and without a lease", () => {
     const { result } = renderController();
 
-    act(() => result.current.selectPair("1", "2"));
+    act(() => result.current.selectPair("1", "person:2"));
     expect(useRentReceiptDraft.getState()).toMatchObject({
       landlordId: 1,
-      tenantId: 2,
+      tenantKey: "person:2",
       rentExclCharges: "1300.00",
       charges: "50.00",
       initialized: true,
     });
     expect(result.current.selectedLease?.id).toBe(10);
 
-    act(() => result.current.selectPair("3", "4"));
+    act(() => result.current.selectPair("3", "person:4"));
     expect(useRentReceiptDraft.getState()).toMatchObject({
       landlordId: 3,
-      tenantId: 4,
+      tenantKey: "person:4",
     });
     expect(result.current.selectedLease).toBeNull();
 
     act(() => result.current.selectPair("", ""));
     expect(useRentReceiptDraft.getState()).toMatchObject({
       landlordId: null,
-      tenantId: null,
+      tenantKey: null,
     });
   });
 
   it("resumes the amounts of the selected lease", () => {
     const { result } = renderController();
-    act(() => result.current.selectPair("1", "2"));
+    act(() => result.current.selectPair("1", "person:2"));
 
     act(() => result.current.resumeLease());
     expect(toastMessages()).toContain("Montants repris depuis le bail.");
     expect(useRentReceiptDraft.getState().dirty).toBe(true);
 
-    act(() => result.current.selectPair("3", "4"));
+    act(() => result.current.selectPair("3", "person:4"));
     act(() => result.current.resumeLease());
     expect(
       toastMessages().filter(
@@ -411,7 +432,7 @@ describe("useRentReceiptPage preview and generation", () => {
 
   it("builds the request from the form and previews it", async () => {
     const { result } = renderController();
-    act(() => result.current.selectPair("1", "2"));
+    act(() => result.current.selectPair("1", "person:2"));
 
     expect(result.current.validation.success).toBe(true);
     expect(lastPreviewOptions?.active).toBe(true);
@@ -437,7 +458,7 @@ describe("useRentReceiptPage preview and generation", () => {
   it("uses the draft template over the active one", async () => {
     resetDraft({ templateId: 8 });
     const { result } = renderController();
-    act(() => result.current.selectPair("1", "2"));
+    act(() => result.current.selectPair("1", "person:2"));
     await lastPreviewLoader?.(new AbortController().signal);
 
     expect(result.current.selectedModel).toBe(8);
@@ -463,7 +484,7 @@ describe("useRentReceiptPage preview and generation", () => {
 
   it("generates a receipt from a complete form", async () => {
     const { result } = renderController();
-    act(() => result.current.selectPair("1", "2"));
+    act(() => result.current.selectPair("1", "person:2"));
     await act(async () => {
       result.current.submit(result.current.values as never);
     });
@@ -497,7 +518,7 @@ describe("useRentReceiptPage preview and generation", () => {
       { ...LEASE, companyId: 9, companyName: "Bailleur SARL" },
     ]);
     const { result } = renderController();
-    act(() => result.current.selectPair("1", "2"));
+    act(() => result.current.selectPair("1", "person:2"));
 
     expect(result.current.companyName).toBe("Bailleur SARL");
     await act(async () => {
@@ -511,12 +532,51 @@ describe("useRentReceiptPage preview and generation", () => {
     );
   });
 
+  it("sends the company tenant of an enterprise lease as tenantCompanyId", async () => {
+    const COMPANY_LEASE: LeaseDto = {
+      ...LEASE,
+      id: 12,
+      companyLease: true,
+      companyId: 9,
+      companyName: "HKOF",
+      tenantId: null,
+      tenantName: "HKOF",
+    };
+    leasesState = readyQuery([COMPANY_LEASE]);
+    resetDraft({
+      initialized: true,
+      landlordId: 1,
+      tenantKey: "company:9",
+      rentExclCharges: "1300.00",
+      charges: "50.00",
+    });
+    const { result } = renderController();
+
+    expect(result.current.selectedLease?.id).toBe(12);
+    await act(async () => {
+      result.current.submit(result.current.values as never);
+    });
+
+    await waitFor(() =>
+      expect(api.rentReceipts.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          companyId: 9,
+          landlordId: 1,
+          tenantCompanyId: 9,
+        }),
+      ),
+    );
+    expect(api.rentReceipts.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({ tenantId: expect.anything() }),
+    );
+  });
+
   it("surfaces a generation failure", async () => {
     vi.mocked(api.rentReceipts.create).mockRejectedValue(
       new Error("Génération refusée"),
     );
     const { result } = renderController();
-    act(() => result.current.selectPair("1", "2"));
+    act(() => result.current.selectPair("1", "person:2"));
     await act(async () => {
       result.current.submit(result.current.values as never);
     });
@@ -575,7 +635,7 @@ describe("useRentReceiptPage preview and generation", () => {
   it("exposes the active receipt summary, mobile panel and total", () => {
     activeReceiptState = readyQuery({ id: 40, total: "1350.00", version: 3 });
     const { result } = renderController();
-    act(() => result.current.selectPair("1", "2"));
+    act(() => result.current.selectPair("1", "person:2"));
 
     expect(result.current.activePairReceipt?.id).toBe(40);
     expect(result.current.activeVersion).toBe(3);

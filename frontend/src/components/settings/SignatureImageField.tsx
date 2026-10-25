@@ -1,7 +1,8 @@
+import "./SignatureImageField.css";
 import { X } from "lucide-react";
 import { FileDropzone } from "@/components/forms/FileDropzone";
 import { formatBytes } from "@/lib/format";
-import { MAX_SIGNATURE_SIZE, SIGNATURE_FORMATS } from "./signatureConstants";
+import { MAX_SIGNATURE_SIZE, SIGNATURE_FORMATS } from "./signatureUpload";
 
 interface SignatureImageFieldProps {
   file: File | null;
@@ -12,7 +13,7 @@ interface SignatureImageFieldProps {
   onRemove: () => void;
 }
 
-/** Dropzone and local preview of the signature image. */
+/** Dropzone and local preview of a signature image. */
 export function SignatureImageField({
   file,
   previewUrl,
@@ -23,7 +24,7 @@ export function SignatureImageField({
 }: SignatureImageFieldProps) {
   return (
     <>
-      <div className="signature-form-dropzone">
+      <div className="signature-image-field-dropzone">
         <FileDropzone
           onFile={onFile}
           disabled={pending}
@@ -38,20 +39,20 @@ export function SignatureImageField({
       </div>
 
       {file ? (
-        <div className="signature-form-preview">
+        <div className="signature-image-field-preview">
           {previewUrl ? (
             <img
               src={previewUrl}
               alt={`Aperçu de ${file.name}`}
-              className="signature-form-preview-image"
+              className="signature-image-field-preview-image"
               data-cy="apercu-signature"
             />
           ) : null}
-          <div className="signature-form-preview-body">
-            <p className="signature-form-preview-name" title={file.name}>
+          <div className="signature-image-field-preview-body">
+            <p className="signature-image-field-preview-name" title={file.name}>
               {file.name}
             </p>
-            <p className="signature-form-preview-size">
+            <p className="signature-image-field-preview-size">
               {formatBytes(file.size)}
             </p>
           </div>
@@ -59,7 +60,7 @@ export function SignatureImageField({
             type="button"
             onClick={onRemove}
             disabled={pending}
-            className="signature-form-remove"
+            className="signature-image-field-remove"
             aria-label="Retirer l’image de la signature"
             data-cy="btn-retirer-signature-image"
           >

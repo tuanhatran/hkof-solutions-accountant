@@ -108,7 +108,7 @@ public class ExpenseStatementDocumentService {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream();
                 ZipOutputStream zip = new ZipOutputStream(out, StandardCharsets.UTF_8)) {
             addEntry(zip, "note_frais_" + month + ".pdf", storage.read(statement.getPdfPath()));
-            RentReceipt rentReceipt = rentReceiptService.activeForMonth(statement.getCompanyId(), month, null, null);
+            RentReceipt rentReceipt = rentReceiptService.activeForMonth(statement.getCompanyId(), month, null, null, null);
             if (rentReceipt != null && rentReceipt.getPdfPath() != null
                     && !rentReceipt.getPdfPath().isBlank()) {
                 addEntry(zip, "quittance_" + month + ".pdf", storage.read(rentReceipt.getPdfPath()));
@@ -136,9 +136,9 @@ public class ExpenseStatementDocumentService {
     }
 
     public String signatureDataUri(Long requestedId, Long companyId) {
-        Signature signature = signatureService.resolveForCompany(companyId, requestedId)
+        Signature signature = signatureService.resolveForCompanyCeo(companyId, requestedId)
                 .orElseThrow(() -> new BusinessException(
-                        "Aucune signature configurée. Configurez une signature dans la page Paramètres."));
+                        "Aucune signature configurée pour le gérant. Ajoutez une signature au salarié gérant dans la page LMNP."));
         return signatureService.dataUri(signature.getId());
     }
 
@@ -192,7 +192,7 @@ public class ExpenseStatementDocumentService {
         List<byte[]> pdfs = new ArrayList<>();
         pdfs.add(statementPdf);
         // Expense statements keep a month-scoped rent receipt: pair selection is out of scope.
-        RentReceipt rentReceipt = rentReceiptService.activeForMonth(companyId, month.toString(), null, null);
+        RentReceipt rentReceipt = rentReceiptService.activeForMonth(companyId, month.toString(), null, null, null);
         if (rentReceipt != null && rentReceipt.getPdfPath() != null) {
             pdfs.add(storage.read(rentReceipt.getPdfPath()));
         }

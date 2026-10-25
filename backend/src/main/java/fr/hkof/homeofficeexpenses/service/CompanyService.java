@@ -96,7 +96,7 @@ public class CompanyService {
     public void linkLease(Company company, Long leaseId) {
         Optional<Lease> current = leases.findFirstByCompanyIdAndDeletedFalse(company.getId());
         if (leaseId == null) {
-            current.ifPresent(this::unlink);
+            current.ifPresent(this::releaseLease);
             return;
         }
         Lease target = leases.findByIdAndDeletedFalse(leaseId)
@@ -104,9 +104,21 @@ public class CompanyService {
         if (target.getCompanyId() != null && !target.getCompanyId().equals(company.getId())) {
             throw new BusinessException("Ce bail est déjà lié à une autre société.");
         }
-        current.filter(lease -> !lease.getId().equals(leaseId)).ifPresent(this::unlink);
+        current.filter(lease -> !lease.getId().equals(leaseId)).ifPresent(this::releaseLease);
         target.setCompanyId(company.getId());
         leases.save(target);
+    }
+
+    /**
+     * A company lease keeps its tenant company and can never be released from the company form;
+     * a normal lease only carries the optional pro-rata link and is unlinked.
+     */
+    private void releaseLease(Lease lease) {
+        if (lease.isCompanyLease()) {
+            throw new BusinessException(
+                    "Ce bail est un bail société : la société en est le locataire et ne peut pas être dissociée.");
+        }
+        unlink(lease);
     }
 
     @Transactional
@@ -118,6 +130,10 @@ public class CompanyService {
             throw new BusinessException(
                     "Cette société est utilisée par des données et ne peut pas être supprimée.");
         }
+        if (leases.existsByCompanyIdAndCompanyLeaseTrueAndDeletedFalse(id)) {
+            throw new BusinessException(
+                    "Cette société est locataire d'un bail actif et ne peut pas être supprimée.");
+        }
         Instant now = Instant.now(clock);
         List<Employee> companyEmployees =
                 employees.findAllByCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(id);
@@ -128,7 +144,9 @@ public class CompanyService {
         if (!companyEmployees.isEmpty()) {
             employees.saveAll(companyEmployees);
         }
-        List<Signature> companySignatures = signatures.findByCompanyIdAndDeletedFalse(id);
+        List<Long> employeeIds = companyEmployees.stream().map(Employee::getId).toList();
+        List<Signature> companySignatures = employeeIds.isEmpty() ? List.of()
+                : signatures.findAllByPersonIdInAndDeletedFalse(employeeIds);
         for (Signature signature : companySignatures) {
             signature.setDeleted(true);
             signature.setUpdatedAt(now);

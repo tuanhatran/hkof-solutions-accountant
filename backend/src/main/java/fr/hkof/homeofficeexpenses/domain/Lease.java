@@ -23,11 +23,12 @@ public class Lease {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "landlord_id", nullable = false)
-    private Landlord landlord;
+    private Person landlord;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "tenant_id", nullable = false)
-    private Tenant tenant;
+    /** Natural person tenant; null for a company lease whose tenant is {@link #companyId}. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id")
+    private Person tenant;
 
     /** Optional company: when set, the rent receipt uses that company's identity and data. */
     @Column(name = "company_id")
@@ -67,19 +68,19 @@ public class Lease {
         this.id = id;
     }
 
-    public Landlord getLandlord() {
+    public Person getLandlord() {
         return landlord;
     }
 
-    public void setLandlord(Landlord landlord) {
+    public void setLandlord(Person landlord) {
         this.landlord = landlord;
     }
 
-    public Tenant getTenant() {
+    public Person getTenant() {
         return tenant;
     }
 
-    public void setTenant(Tenant tenant) {
+    public void setTenant(Person tenant) {
         this.tenant = tenant;
     }
 

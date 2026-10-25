@@ -81,7 +81,15 @@ vi.mock("@/api/queries", async (importOriginal) => {
     useTemplates: () => templatesState,
     useActiveRentReceipt: () => rentReceiptState,
     useActiveStatement: () => activeStatementState,
-    useSignatures: () => signaturesState,
+    useSignatures: (personId: number | null) => ({
+      ...signaturesState,
+      data:
+        personId === null || signaturesState.data === undefined
+          ? []
+          : signaturesState.data.filter(
+              (signature) => signature.personId === personId,
+            ),
+    }),
   };
 });
 
@@ -165,13 +173,37 @@ const CEO_EMPLOYEE: EmployeeDto = {
   lastName: "Martin",
   title: "CEO",
 };
+const SECOND_CEO_EMPLOYEE: EmployeeDto = {
+  id: 12,
+  companyId: 1,
+  firstName: "Dominique",
+  lastName: "Bernard",
+  title: "CEO",
+};
 const CEO: SignatureDto = {
   id: 4,
-  type: "EMPLOYEE",
+  personId: 9,
+  personName: "Camille Martin",
   name: "Gérant",
-  employeeId: 9,
 };
-const LANDLORD: SignatureDto = { id: 3, type: "LANDLORD", name: "Bailleur" };
+const CEO_V2: SignatureDto = {
+  id: 5,
+  personId: 9,
+  personName: "Camille Martin",
+  name: "Gérant 2026",
+};
+const SECOND_CEO_SIGNATURE: SignatureDto = {
+  id: 8,
+  personId: 12,
+  personName: "Dominique Bernard",
+  name: "Gérant secondaire",
+};
+const LANDLORD: SignatureDto = {
+  id: 3,
+  personId: 3,
+  personName: "M. Bailleur",
+  name: "Bailleur",
+};
 
 const MONTH = "2026-01";
 
@@ -236,7 +268,7 @@ beforeEach(() => {
   activeStatementState = readyQuery(
     null as unknown as { id: number; version: number },
   );
-  signaturesState = readyQuery([LANDLORD, CEO]);
+  signaturesState = readyQuery([LANDLORD, CEO, CEO_V2]);
   analysisState = { status: "idle" };
   mediaMobile = false;
   lastPreviewLoader = null;
@@ -387,16 +419,43 @@ describe("useExpenseStatementPage defaults", () => {
     expect(result.current.optionDisabled(internet!)).toBe(false);
   });
 
-  it("falls back to the first signature and the built-in template", () => {
-    signaturesState = readyQuery([LANDLORD]);
+  it("lists only the CEO signatures, falls back to the first and uses the built-in template", () => {
     templatesState = readyQuery([{ id: 6, name: "Ancien", active: false }]);
 
     const { result } = renderController();
 
-    expect(result.current.selectedSignatureId).toBe(3);
+    expect(result.current.signatureList.map((item) => item.id)).toEqual([4, 5]);
+    expect(result.current.selectedSignatureId).toBe(4);
+    act(() => result.current.setChosenSignatureId(5));
+    expect(result.current.selectedSignatureId).toBe(5);
+    act(() => result.current.setChosenSignatureId(999));
+    expect(result.current.selectedSignatureId).toBe(4);
     expect(result.current.activeModel).toBeNull();
     expect(result.current.selectedTemplate).toBeNull();
     expect(result.current.currentTemplate).toBe("modèle intégré");
+  });
+
+  it("preselects the lowest-id CEO when several CEOs exist", () => {
+    employeesState = readyQuery([SECOND_CEO_EMPLOYEE, CEO_EMPLOYEE]);
+    signaturesState = readyQuery([CEO, CEO_V2, SECOND_CEO_SIGNATURE]);
+
+    const { result } = renderController();
+
+    expect(result.current.ceo?.id).toBe(9);
+    expect(result.current.signatureList.map((item) => item.id)).toEqual([4, 5]);
+    expect(result.current.selectedSignatureId).toBe(4);
+    expect(result.current.signatureAvailable).toBe(true);
+  });
+
+  it("offers no signature when the active company has no CEO", () => {
+    employeesState = readyQuery([{ ...CEO_EMPLOYEE, id: 10, title: "CFO" }]);
+    signaturesState = readyQuery([CEO, CEO_V2]);
+    const { result } = renderController();
+
+    expect(result.current.ceo).toBeNull();
+    expect(result.current.signatureList).toEqual([]);
+    expect(result.current.selectedSignatureId).toBeNull();
+    expect(result.current.signatureAvailable).toBe(false);
   });
 
   it("exposes the mobile viewport and panel", () => {
@@ -1063,9 +1122,9 @@ describe("useExpenseStatementPage calculation, preview and generation", () => {
     });
     const { result } = renderController();
 
-    act(() => result.current.setChosenSignatureId(3));
+    act(() => result.current.setChosenSignatureId(5));
     expect(result.current.previewRequest?.complete).toBe(false);
-    expect(result.current.previewRequest?.signatureId).toBe(3);
+    expect(result.current.previewRequest?.signatureId).toBe(5);
   });
 
   it("rejects an inactive preview and reports invalid lines", async () => {
@@ -1281,5 +1340,312 @@ describe("useExpenseStatementPage calculation, preview and generation", () => {
       }),
     );
     expect(result.current.displayedRetainedAmount).toBe("—");
+  });
+});
+
+describe("useExpenseStatementPage edge branches", () => {
+  it("adopts the first company when the stored id no longer exists", async () => {
+    useCompanyStore.setState({ activeCompanyId: 999 });
+    const { result } = renderController();
+
+    await waitFor(() =>
+      expect(useCompanyStore.getState().activeCompanyId).toBe(1),
+    );
+    expect(result.current.activeCompanyId).toBe(1);
+  });
+
+  it("falls back to 100% when changing to an unknown type", () => {
+    const { result } = renderController();
+
+    act(() => result.current.changeType("unknown"));
+
+    expect(result.current.values.itemCode).toBe("unknown");
+    expect(result.current.values.proRataPct).toBe("100");
+  });
+
+  it("keeps the edited receipt when switching to the rent type", () => {
+    resetDraft([line({ key: "edit-me", receiptId: 55 })]);
+    const { result } = renderController();
+
+    act(() =>
+      result.current.editLine(
+        useStatementDraft.getState().linesByMonth[MONTH][0],
+      ),
+    );
+    act(() => result.current.changeType("loyer"));
+
+    expect(result.current.receipt?.id).toBe(55);
+    expect(result.current.values.amountInclVat).toBe("1300.00");
+  });
+
+  it("applies the rent receipt total when the rent type is selected", () => {
+    const { result, rerender } = renderController();
+
+    act(() => result.current.changeType("loyer"));
+    rentReceiptState = readyQuery({ id: 8, total: "1400.00" });
+    rerender();
+
+    expect(result.current.values.amountInclVat).toBe("1400.00");
+  });
+
+  it("releases the attached receipt when changing month", async () => {
+    vi.mocked(api.receipts.upload).mockResolvedValue({
+      id: 9,
+      fileName: "facture.pdf",
+    });
+    const { result } = renderController();
+    await act(async () => {
+      await result.current.upload(new File(["a"], "a.pdf"));
+    });
+
+    act(() => result.current.changeMonth("2026-02"));
+
+    expect(api.receipts.delete).toHaveBeenCalledWith(9);
+    expect(result.current.receipt).toBeNull();
+  });
+
+  it("releases a receipt that arrives after the selection changed", async () => {
+    let resolveUpload: (value: {
+      id: number;
+      fileName: string;
+    }) => void = () => {};
+    vi.mocked(api.receipts.upload).mockImplementation(
+      () =>
+        new Promise<{ id: number; fileName: string }>((resolve) => {
+          resolveUpload = resolve;
+        }),
+    );
+    const { result } = renderController();
+    let pending: Promise<void> = Promise.resolve();
+
+    act(() => {
+      pending = result.current.upload(new File(["a"], "a.pdf"));
+    });
+    act(() => result.current.removeFile());
+    await act(async () => {
+      resolveUpload({ id: 99, fileName: "tardif.pdf" });
+      await pending;
+    });
+
+    expect(api.receipts.delete).toHaveBeenCalledWith(99);
+    expect(result.current.receipt).toBeNull();
+  });
+
+  it("ignores a late upload failure after the selection changed", async () => {
+    let rejectUpload: (reason: Error) => void = () => {};
+    vi.mocked(api.receipts.upload).mockImplementation(
+      () =>
+        new Promise<{ id: number }>((_resolve, reject) => {
+          rejectUpload = reject;
+        }),
+    );
+    const { result } = renderController();
+    let pending: Promise<void> = Promise.resolve();
+
+    act(() => {
+      pending = result.current.upload(new File(["a"], "a.pdf"));
+    });
+    act(() => result.current.removeFile());
+    await act(async () => {
+      rejectUpload(new Error("trop tard"));
+      await pending;
+    });
+
+    expect(result.current.fileError).toBeNull();
+    expect(result.current.receipt).toBeNull();
+  });
+
+  it("applies an amount without a known type and flags low confidence", async () => {
+    vi.mocked(api.receipts.upload).mockResolvedValue({ id: 9 });
+    const { result, rerender } = renderController();
+    await act(async () => {
+      await result.current.upload(new File(["a"], "a.pdf"));
+    });
+
+    analysisState = {
+      status: "done",
+      analysis: {
+        id: 30,
+        receiptId: 9,
+        result: {
+          suggestedType: "inconnu",
+          amountInclVat: "40,00",
+          currency: "EUR",
+          confidence: "basse",
+        },
+      },
+    };
+    rerender();
+
+    await waitFor(() =>
+      expect(result.current.values.amountInclVat).toBe("40.00"),
+    );
+    expect(result.current.values.itemCode).toBe("");
+    expect(result.current.ai).toMatchObject({
+      type: false,
+      amount: true,
+      confidence: "basse",
+    });
+    expect(result.current.lowConfidenceError).toBe(true);
+  });
+
+  it("ignores a missing detected amount in euros", async () => {
+    vi.mocked(api.receipts.upload).mockResolvedValue({ id: 9 });
+    const { result, rerender } = renderController();
+    await act(async () => {
+      await result.current.upload(new File(["a"], "a.pdf"));
+    });
+
+    analysisState = {
+      status: "done",
+      analysis: {
+        id: 31,
+        receiptId: 9,
+        result: { suggestedType: "gaz", currency: "EUR" },
+      },
+    };
+    rerender();
+
+    await waitFor(() => expect(result.current.values.itemCode).toBe("gaz"));
+    expect(result.current.ai.type).toBe(true);
+    expect(result.current.ai.amount).toBe(false);
+    expect(result.current.ai.detectedAmount).toBeNull();
+  });
+
+  it("does not preselect a single-line type already present", async () => {
+    vi.mocked(api.receipts.upload).mockResolvedValue({ id: 9 });
+    resetDraft([line({ key: "internet-1", itemCode: "internet" })]);
+    const { result, rerender } = renderController();
+    await act(async () => {
+      await result.current.upload(new File(["a"], "a.pdf"));
+    });
+
+    analysisState = {
+      status: "done",
+      analysis: {
+        id: 32,
+        receiptId: 9,
+        result: {
+          suggestedType: "internet",
+          amountInclVat: "20,00",
+          currency: "EUR",
+        },
+      },
+    };
+    rerender();
+
+    await waitFor(() =>
+      expect(result.current.values.amountInclVat).toBe("20.00"),
+    );
+    expect(result.current.values.itemCode).toBe("");
+    expect(result.current.ai.type).toBe(false);
+    expect(result.current.ai.amount).toBe(true);
+  });
+
+  it("resets the form when removing the line being edited", () => {
+    resetDraft([line({ key: "edit-remove" })]);
+    const { result } = renderController();
+    const target = useStatementDraft.getState().linesByMonth[MONTH][0];
+
+    act(() => result.current.editLine(target));
+    act(() => result.current.setLineToRemove(target));
+    act(() => result.current.removeLine());
+
+    expect(result.current.lineBeingEdited).toBeNull();
+    expect(result.current.values.itemCode).toBe("");
+  });
+
+  it("drops a calculation that resolves after the month changed", async () => {
+    resetDraft([line()]);
+    let resolveCalculation: (value: {
+      total: string;
+      lines: never[];
+    }) => void = () => {};
+    vi.mocked(api.expenseStatements.calculate).mockImplementation(
+      () =>
+        new Promise<{ total: string; lines: never[] }>((resolve) => {
+          resolveCalculation = resolve;
+        }),
+    );
+    const { result } = renderController();
+
+    await waitFor(
+      () => expect(api.expenseStatements.calculate).toHaveBeenCalled(),
+      { timeout: 2000 },
+    );
+    act(() => result.current.changeMonth("2026-02"));
+    await act(async () => {
+      resolveCalculation({ total: "1.00", lines: [] });
+      await Promise.resolve();
+    });
+
+    expect(result.current.calculation).toBeNull();
+  });
+
+  it("ignores a cancelled calculation", async () => {
+    resetDraft([line()]);
+    vi.mocked(api.expenseStatements.calculate).mockRejectedValue(
+      new DOMException("Aborted", "AbortError"),
+    );
+    const { result } = renderController();
+
+    await waitFor(
+      () => expect(api.expenseStatements.calculate).toHaveBeenCalled(),
+      { timeout: 2000 },
+    );
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(result.current.calculationError).toBeNull();
+    expect(result.current.calculation).toBeNull();
+  });
+
+  it("generates without a signature id when the signature has no id", async () => {
+    signaturesState = readyQuery([{ personId: 9, name: "Sans identifiant" }]);
+    resetDraft([line()]);
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.calculationUpToDate).toBe(true), {
+      timeout: 2000,
+    });
+
+    await act(async () => {
+      await result.current.generateStatement();
+    });
+
+    expect(result.current.signatureAvailable).toBe(true);
+    expect(
+      vi.mocked(api.expenseStatements.create).mock.calls[0][0],
+    ).not.toHaveProperty("signatureId");
+  });
+
+  it("releases a newly uploaded receipt attached to a saved rent line", async () => {
+    vi.mocked(api.receipts.upload).mockResolvedValue({
+      id: 9,
+      fileName: "facture.pdf",
+    });
+    resetDraft([
+      line({ key: "gaz-edit", receiptId: 55, receiptName: "ancien.pdf" }),
+    ]);
+    const { result } = renderController();
+
+    act(() =>
+      result.current.editLine(
+        useStatementDraft.getState().linesByMonth[MONTH][0],
+      ),
+    );
+    await act(async () => {
+      await result.current.upload(new File(["a"], "a.pdf"));
+    });
+    act(() => result.current.changeType("loyer"));
+    act(() =>
+      result.current.saveExpense({
+        itemCode: "loyer",
+        amountInclVat: "1300,00",
+        proRataPct: "100",
+      }),
+    );
+
+    expect(api.receipts.delete).toHaveBeenCalledWith(9);
   });
 });

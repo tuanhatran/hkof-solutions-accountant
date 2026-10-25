@@ -10,6 +10,7 @@ public final class EmployeeDtos {
             String firstName,
             String lastName,
             String email,
+            String address,
             String title) {
     }
 
@@ -19,6 +20,8 @@ public final class EmployeeDtos {
             String firstName,
             String lastName,
             String email,
+            String address,
+            int signatureCount,
             String title) {
     }
 }

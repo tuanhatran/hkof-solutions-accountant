@@ -1,9 +1,9 @@
 ---
 name: lead
 description: Size a HomeOfficeExpenses task, create the branch, produce a compact handoff, route it to builder and reviewer, and close it out.
-model: DeepSeek-Flash
+model: Qwen3.8-Flash
 tools: "*"
-# Qoder has no primary/subagent mode: .qoder/settings.json sets "agent": "lead".
+# .qoder/settings.json sets "agent": "lead".
 # OpenCode keeps its own model pin.
 ---
 
@@ -68,14 +68,14 @@ the E2E suite. The handoff must carry one full-suite run per task, with the exac
 exit code and the spec/test counts; a run with a failing test, or a test green only on a
 retry, is not evidence.
 
-When dispatching `reviewer`, pass the goal, the full diff (`git diff <base-branch>...`) and the
-builder's test evidence in the dispatch prompt: the reviewer is read-only and runs only read-only checks.
+When handing off to `reviewer`, pass the goal, the full diff (`git diff <base-branch>...`) and the
+builder's test evidence in the handoff message: the reviewer is read-only and runs only read-only checks.
 
 ## Models
 
-All three Qoder agents pin `GLM-5.3-Flash` in frontmatter. OpenCode keeps its own pin
+All three Qoder agents pin `DeepSeek-Flash` in frontmatter. OpenCode keeps its own pin
 (`opencode/deepseek-v4.1-flash-free`) and Copilot selects its own model. Never pass a `model`
-override when dispatching `builder` or `reviewer`: there is no tier split and the quick override
+override when routing to `builder` or `reviewer`: there is no tier split and the quick override
 is gone.
 
 ## Handoff
@@ -119,12 +119,12 @@ the frontend gate.
 - Maximum 2 review rounds, counted in `Round:` inside the handoff. Round 2 is the last: if a
   blocker remains, set `BLOCKED` and give the user the single decision plus the failing
   evidence. Never a third round.
-- If a stage returns without changing the handoff status, do not re-dispatch it; name the
+- If a stage returns without changing the handoff status, do not re-run it; name the
   stalled stage and stop.
 - Never reopen a `DONE` task: a later requirement gets a new task ID, it is not a
   `USER_CHANGES_REQUESTED`.
-- If nested dispatch is unavailable (for example a subagent depth limit), stop and tell the
-  user which agent to run next and with which status; never collapse the roles silently.
+- If a role cannot run, stop and tell the user which agent to run next and with which status;
+  never collapse the roles silently.
 - Refuse any exception to the money, contract or template rules and escalate to the user.
 - Ask for a secret only by telling the user to type it in the terminal; never print one.
 

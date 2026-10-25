@@ -92,6 +92,10 @@
     @apply px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35;
   }
 
+  .app-shell-nav-group {
+    @apply mt-3 pl-6 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30;
+  }
+
   .app-shell-nav-links {
     @apply mt-2 space-y-1;
   }

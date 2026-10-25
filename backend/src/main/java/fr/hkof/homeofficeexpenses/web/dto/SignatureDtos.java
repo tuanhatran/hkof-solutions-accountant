@@ -9,15 +9,10 @@ public final class SignatureDtos {
 
     public record SignatureDto(
             Long id,
-            String type,
+            Long personId,
+            String personName,
             String name,
             String mimeType,
-            Instant createdAt,
-            Long companyId,
-            String companyName,
-            Long employeeId,
-            String employeeName,
-            Long landlordId,
-            String landlordName) {
+            Instant createdAt) {
     }
 }

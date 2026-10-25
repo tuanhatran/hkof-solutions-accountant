@@ -25,12 +25,22 @@ vi.mock("@/api/endpoints", () => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
+    signatures: {
+      list: vi.fn(),
+      create: vi.fn(),
+      remove: vi.fn(),
+      imageUrl: (id: number) => `/api/signatures/${id}/image`,
+    },
   },
 }));
 
 vi.mock("@/api/queries", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/queries")>();
-  return { ...actual, useEmployees: () => employeesState };
+  return {
+    ...actual,
+    useEmployees: () => employeesState,
+    useSignatures: () => readyQuery([]),
+  };
 });
 
 const CEO: EmployeeDto = {
@@ -81,6 +91,8 @@ describe("EmployeeSection", () => {
     expect(screen.getByText("Camille Martin")).toBeVisible();
     expect(screen.getByText("PDG")).toBeVisible();
     expect(screen.getByText("camille.martin@exemple.fr")).toBeVisible();
+    expect(screen.getByText("Adresse non renseignée")).toBeVisible();
+    expect(screen.getByText("0 signature")).toBeVisible();
     expect(
       screen.getByRole("button", {
         name: "Modifier le salarié Camille Martin",
@@ -165,6 +177,7 @@ describe("EmployeeSection", () => {
         companyId: 1,
         firstName: "Camille",
         lastName: "Durand",
+        address: null,
         email: "camille.martin@exemple.fr",
         title: "CFO",
       }),
@@ -173,8 +186,9 @@ describe("EmployeeSection", () => {
       expect(toastMessages()).toContain("Salarié mis à jour."),
     );
     expect(
-      screen.queryByRole("heading", { name: "Modifier le salarié" }),
-    ).toBeNull();
+      screen.getByRole("heading", { name: "Modifier le salarié" }),
+    ).toBeVisible();
+    expect(screen.getByText("Signatures")).toBeVisible();
   });
 
   it("surfaces an update failure in the form", async () => {

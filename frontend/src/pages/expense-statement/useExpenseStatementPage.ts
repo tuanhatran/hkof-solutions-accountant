@@ -93,25 +93,29 @@ export function useExpenseStatementPage() {
   const templates = useTemplates("EXPENSE_STATEMENT");
   const rentReceipt = useActiveRentReceipt(month, activeCompanyId);
   const activeStatement = useActiveStatement(activeCompanyId, month);
-  const signatures = useSignatures(activeCompanyId);
   const employees = useEmployees(activeCompanyId);
+
+  // The statement uses the company CEO's signature. The backend resolves the
+  // lowest-id CEO, so mirror it here instead of relying on the list order.
+  const ceo = useMemo(() => {
+    const candidates = (employees.data ?? []).filter(
+      (employee) => employee.title === "CEO",
+    );
+    return candidates.sort((a, b) => Number(a.id) - Number(b.id))[0] ?? null;
+  }, [employees.data]);
+  const signatures = useSignatures(ceo?.id ?? null);
 
   const signatureList = signatures.data ?? [];
   const [chosenSignatureId, setChosenSignatureId] = useState<number | null>(
     null,
   );
-  // The statement uses the company CEO's signature, mirroring the backend default.
-  const ceoId =
-    (employees.data ?? []).find((employee) => employee.title === "CEO")?.id ??
-    null;
-  const defaultSignature =
-    signatureList.find(
-      (candidate) => ceoId !== null && candidate.employeeId === ceoId,
-    ) ??
-    signatureList[0] ??
-    null;
-  const selectedSignatureId = chosenSignatureId ?? defaultSignature?.id ?? null;
-  const signatureAvailable = signatureList.length > 0;
+  const chosenSignatureAvailable = signatureList.some(
+    (candidate) => candidate.id === chosenSignatureId,
+  );
+  const selectedSignatureId = chosenSignatureAvailable
+    ? chosenSignatureId
+    : (signatureList[0]?.id ?? null);
+  const signatureAvailable = ceo !== null && signatureList.length > 0;
 
   const expenseItems = useMemo<ExpenseItemDto[]>(
     () =>
@@ -835,6 +839,8 @@ export function useExpenseStatementPage() {
     rentReceipt,
     activeStatement,
     signatures,
+    employees,
+    ceo,
     signatureList,
     selectedSignatureId,
     setChosenSignatureId,

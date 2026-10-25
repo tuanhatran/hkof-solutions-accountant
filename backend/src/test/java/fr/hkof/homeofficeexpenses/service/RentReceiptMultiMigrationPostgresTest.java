@@ -48,7 +48,7 @@ class RentReceiptMultiMigrationPostgresTest {
                     """);
         }
 
-        migrate();
+        migrateTo("6");
 
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
             assertThat(singleLong(statement,
@@ -76,7 +76,7 @@ class RentReceiptMultiMigrationPostgresTest {
                     """);
         }
 
-        migrate();
+        migrateTo("6");
 
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
             assertThat(count(statement, "SELECT COUNT(*) FROM signature WHERE landlord_id IS NULL"))
@@ -111,7 +111,7 @@ class RentReceiptMultiMigrationPostgresTest {
             statement.execute(receiptInsert("2026-01", firstLandlord, firstTenant, 1, "ACTIVE"));
         }
 
-        migrate();
+        migrateTo("6");
 
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
             // The old (billing_month, version) constraint and the one-active index are gone.
@@ -154,10 +154,6 @@ class RentReceiptMultiMigrationPostgresTest {
                 .clean();
     }
 
-    private void migrate() {
-        flyway().migrate();
-    }
-
     private void migrateTo(String target) {
         Flyway.configure()
                 .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
@@ -165,13 +161,6 @@ class RentReceiptMultiMigrationPostgresTest {
                 .target(target)
                 .load()
                 .migrate();
-    }
-
-    private Flyway flyway() {
-        return Flyway.configure()
-                .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
-                .locations("classpath:db/migration")
-                .load();
     }
 
     private long count(Statement statement, String sql) throws SQLException {

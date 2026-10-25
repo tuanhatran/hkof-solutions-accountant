@@ -15,41 +15,6 @@ tester. Pipeline by size: `S` = builder only, `M` = builder + one review, `L` = 
 most two review rounds. Money, contract, migration, template sandbox, LLM path or secrets in
 the diff forces a review whatever the size.
 
-## Models
-
-All three agents use DeepSeek Flash:
-
-| Agent      | Model (OpenCode)                    | Model (Qoder)    | Role                     |
-| ---------- | ----------------------------------- | ---------------- | ------------------------ |
-| `lead`     | `opencode/deepseek-v4.1-flash-free` | `DeepSeek-Flash` | sizing, handoff, routing |
-| `builder`  | `opencode/deepseek-v4.1-flash-free` | `DeepSeek-Flash` | implementation and tests |
-| `reviewer` | `opencode/deepseek-v4.1-flash-free` | `DeepSeek-Flash` | blocker-only diff review |
-
-- `.opencode/agents/*.md` pins `opencode/deepseek-v4.1-flash-free` in frontmatter.
-- `.qoder/agents/*.md` pins Qoder's own model name, `DeepSeek-Flash`.
-- `.github/agents/*.agent.md` carries no model: Copilot selects its own.
-
-Do not copy an OpenCode provider ID into a Qoder agent; use the Qoder model name.
-
-## Runtime settings
-
-OpenCode settings live in `.opencode/opencode.json`; the Qoder equivalents live in
-`.qoder/settings.json` and in the agent frontmatter:
-
-| OpenCode                                        | Qoder equivalent                                                                        |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `default_agent: lead`                           | `"agent": "lead"` in `.qoder/settings.json` (restart required)                          |
-| `lead`/`builder`/`reviewer` model pin           | `model: DeepSeek-Flash` in every agent file                                             |
-| `reviewer` edit deny (shell allowed, read-only checks) | `disallowedTools: [Write, Edit, NotebookEdit, Agent]` + `permissionMode: dontAsk` |
-| `experimental.subagent_depth: 2`                | Nested dispatch works while the `Agent` tool stays enabled                              |
-| `skills: [".qoder/skills"]`                     | Default discovery; no setting needed                                                    |
-| Git guards in `permissions`                     | `permissions.deny` with `Bash(git ...)` rules                                           |
-| `instructions: [".opencode/instructions/*.md"]` | No glob loader; the agents read these files on demand                                   |
-
-Qoder frontmatter requires `name` and `description`; a file without them is reported as a
-load error. The agent README lives at `.qoder/README.md`, not under `.qoder/agents/`, because
-Qoder parses every `.md` file in that directory as an agent.
-
 ## Handoff
 
 One file per task: `.handoff/tasks/<TASK-ID>.md`, created from `.handoff/TEMPLATE.md`.
@@ -75,25 +40,6 @@ The file graph is the local CodeGraph index in `.codegraph/` (SQLite, gitignored
 committed), never a hand-maintained document. Stage agents use the `codegraph` CLI:
 `context "<task>"`, `files`, `query`, `node`, `impact`, `affected`, and `sync` after a
 change.
-
-## Mirrors
-
-The same three agents exist in three formats:
-
-| Directory                   | Format                | Role            |
-| --------------------------- | --------------------- | --------------- |
-| `.qoder/agents/*.md`        | Qoder custom agents   | source of truth |
-| `.opencode/agents/*.md`     | OpenCode subagents    | mirror          |
-| `.github/agents/*.agent.md` | GitHub Copilot agents | mirror          |
-
-When a workflow rule changes, update the source first, then the two mirrors, and only when
-the user explicitly requests the cross-folder change.
-
-## Settings folder ownership
-
-Touch only your own settings folder (agents, instructions, skills, commands): `.qoder/` for
-Qoder, `.opencode/` for OpenCode, `.github/` for Copilot. Never edit another configuration
-folder unless the user explicitly requests that cross-folder change.
 
 ## Git rules
 

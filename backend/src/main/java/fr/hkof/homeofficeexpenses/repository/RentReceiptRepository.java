@@ -26,8 +26,14 @@ public interface RentReceiptRepository extends JpaRepository<RentReceipt, Long> 
     Optional<RentReceipt> findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
             String month, Long landlordId, Long tenantId, DocumentStatus status);
 
+    Optional<RentReceipt> findFirstByMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
+            String month, Long landlordId, Long tenantCompanyId, DocumentStatus status);
+
     Optional<RentReceipt> findFirstByMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc(
             String month, Long landlordId, Long tenantId);
+
+    Optional<RentReceipt> findFirstByMonthAndLandlordIdAndTenantCompanyIdOrderByVersionDescIdDesc(
+            String month, Long landlordId, Long tenantCompanyId);
 
     boolean existsByCompanyId(Long companyId);
 }

@@ -1,6 +1,6 @@
 import type { RentReceiptRequest } from "@/api/types";
 import { parseAmount } from "@/lib/format";
-import type { RentReceiptFormValues } from "@/lib/validation";
+import { parseTenantKey, type RentReceiptFormValues } from "@/lib/validation";
 
 export function requestFromValues(
   values: RentReceiptFormValues,
@@ -8,15 +8,20 @@ export function requestFromValues(
   signatureId: number | null,
   companyId: number | null = null,
 ): RentReceiptRequest {
+  const { tenantId, tenantCompanyId } = parseTenantKey(values.tenantKey);
   const request: RentReceiptRequest = {
     month: values.month,
     landlordId: Number(values.landlordId),
-    tenantId: Number(values.tenantId),
     periodStart: values.periodStart,
     periodEnd: values.periodEnd,
     rentExclCharges: parseAmount(values.rentExclCharges) ?? "",
     charges: parseAmount(values.charges) ?? "",
   };
+  if (tenantCompanyId !== null) {
+    request.tenantCompanyId = tenantCompanyId;
+  } else if (tenantId !== null) {
+    request.tenantId = tenantId;
+  }
   if (companyId !== null) {
     request.companyId = companyId;
   }

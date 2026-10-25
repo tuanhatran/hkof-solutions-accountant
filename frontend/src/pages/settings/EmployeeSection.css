@@ -33,6 +33,14 @@
     @apply break-all;
   }
 
+  .employee-section-item-address {
+    @apply mt-1 text-xs text-ink-soft;
+  }
+
+  .employee-section-item-signatures {
+    @apply mt-1 text-[11px] font-semibold text-accent;
+  }
+
   .employee-form {
     @apply space-y-4 rounded-xl border border-line bg-paper/40 p-4;
   }
@@ -43,6 +51,10 @@
 
   .employee-form-grid {
     @apply grid gap-3 sm:grid-cols-2;
+  }
+
+  .employee-form-hint {
+    @apply rounded-lg border border-line bg-paper/60 px-3 py-2 text-[11px] text-ink-soft;
   }
 
   .employee-form-error {

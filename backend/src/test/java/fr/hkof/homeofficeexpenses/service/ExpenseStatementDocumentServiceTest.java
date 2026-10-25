@@ -37,7 +37,6 @@ import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
 import fr.hkof.homeofficeexpenses.domain.Receipt;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
 import fr.hkof.homeofficeexpenses.domain.Signature;
-import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.service.extraction.DocumentTextExtractor;
@@ -122,7 +121,7 @@ class ExpenseStatementDocumentServiceTest {
         when(templateService.render(eq(template), any())).thenReturn(html);
         when(pdfService.renderHtmlToPdf(html)).thenReturn(new byte[]{1});
         when(pdfService.addWatermark(any())).thenReturn(new byte[]{9});
-        when(signatureService.resolveForCompany(eq(COMPANY_ID), any())).thenReturn(OptionalSignature.present());
+        when(signatureService.resolveForCompanyCeo(eq(COMPANY_ID), any())).thenReturn(OptionalSignature.present());
         when(signatureService.dataUri(7L)).thenReturn("data:image/png;base64,AAAA");
     }
 
@@ -150,7 +149,7 @@ class ExpenseStatementDocumentServiceTest {
 
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setPdfPath("/data/quittance.pdf");
-        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null)).thenReturn(rentReceipt);
+        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(rentReceipt);
         when(storage.read("/data/quittance.pdf")).thenReturn(new byte[]{3});
 
         Receipt pdfReceipt = receipt(1L, "application/pdf", "/data/gaz.pdf", "gaz.pdf");
@@ -187,7 +186,7 @@ class ExpenseStatementDocumentServiceTest {
         when(templateService.active(TemplateType.EXPENSE_STATEMENT)).thenReturn(template);
         stubDocumentRendering(template, "<html></html>");
         when(pdfService.merge(any())).thenReturn(new byte[]{2});
-        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null)).thenReturn(null);
+        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(null);
 
         List<CalculatedLine> lines = List.of(
                 line(item("gaz", "Gaz", 20), null),
@@ -221,12 +220,12 @@ class ExpenseStatementDocumentServiceTest {
     void previewWithoutSignature() {
         TemplateDocument template = template(4L, TemplateType.EXPENSE_STATEMENT);
         when(templateService.active(TemplateType.EXPENSE_STATEMENT)).thenReturn(template);
-        when(signatureService.resolveForCompany(COMPANY_ID, null)).thenReturn(java.util.Optional.empty());
+        when(signatureService.resolveForCompanyCeo(COMPANY_ID, null)).thenReturn(java.util.Optional.empty());
 
         assertThatThrownBy(() -> service.preview(YearMonth.of(2026, 10), List.of(), company(),
                 previewRequest(null, false)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Aucune signature configurée. Configurez une signature dans la page Paramètres.");
+                .hasMessage("Aucune signature configurée pour le gérant. Ajoutez une signature au salarié gérant dans la page LMNP.");
     }
 
     @Test
@@ -235,7 +234,7 @@ class ExpenseStatementDocumentServiceTest {
         TemplateDocument template = template(4L, TemplateType.EXPENSE_STATEMENT);
         stubDocumentRendering(template, "<html></html>");
         when(pdfService.merge(any())).thenReturn(new byte[]{2});
-        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null)).thenReturn(null);
+        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(null);
 
         ExpenseStatementDocumentService.GeneratedStatement generated = service.generate(YearMonth.of(2026, 10),
                 List.of(line(item("gaz", "Gaz", 20), null)), 3, template, "signature", company());
@@ -296,7 +295,7 @@ class ExpenseStatementDocumentServiceTest {
 
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setPdfPath("/data/quittance.pdf");
-        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null)).thenReturn(rentReceipt);
+        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(rentReceipt);
         when(storage.read("/data/quittance.pdf"))
                 .thenReturn("%PDF-quittance".getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
@@ -333,7 +332,7 @@ class ExpenseStatementDocumentServiceTest {
 
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setPdfPath(" ");
-        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null)).thenReturn(rentReceipt);
+        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(rentReceipt);
 
         Receipt blankName = receipt(2L, "application/pdf", "/data/x.pdf", " ");
         ExpenseLine line = new ExpenseLine();
@@ -352,14 +351,14 @@ class ExpenseStatementDocumentServiceTest {
     }
 
     @Test
-    @DisplayName("The signature resolver defaults to the company signature and rejects a missing one")
+    @DisplayName("The signature resolver uses the company CEO signature and rejects a missing one")
     void signatureDataUri() {
-        when(signatureService.resolveForCompany(COMPANY_ID, null)).thenReturn(OptionalSignature.present());
+        when(signatureService.resolveForCompanyCeo(COMPANY_ID, null)).thenReturn(OptionalSignature.present());
         when(signatureService.dataUri(7L)).thenReturn("data:image/png;base64,AAAA");
         assertThat(service.signatureDataUri(null, COMPANY_ID))
                 .isEqualTo("data:image/png;base64,AAAA");
 
-        when(signatureService.resolveForCompany(COMPANY_ID, null)).thenReturn(java.util.Optional.empty());
+        when(signatureService.resolveForCompanyCeo(COMPANY_ID, null)).thenReturn(java.util.Optional.empty());
         assertThatThrownBy(() -> service.signatureDataUri(null, COMPANY_ID))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Aucune signature configurée");
@@ -369,7 +368,6 @@ class ExpenseStatementDocumentServiceTest {
         private static java.util.Optional<Signature> present() {
             Signature signature = new Signature();
             signature.setId(7L);
-            signature.setType(SignatureType.ENTREPRISE_CEO);
             return java.util.Optional.of(signature);
         }
     }

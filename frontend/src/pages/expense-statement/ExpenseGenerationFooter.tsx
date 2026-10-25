@@ -5,7 +5,6 @@ import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { Spinner } from "@/components/ui/States";
-import { signatureTypeLabel } from "@/components/signatures/signatureConstants";
 import { formatEUR } from "@/lib/format";
 import type { ExpenseStatementController } from "./useExpenseStatementPage";
 
@@ -68,7 +67,7 @@ export function ExpenseGenerationFooter({
         <FieldGroup
           id="note-signature"
           label="Signature"
-          help="Image apposée au bas de la note de frais générée."
+          help="Signatures du PDG de la société active, apposées au bas de la note."
           badge={<span className="badge badge-neutral">PNG / JPEG</span>}
         >
           <select
@@ -88,7 +87,7 @@ export function ExpenseGenerationFooter({
             ) : null}
             {c.signatureList.map((candidate) => (
               <option key={candidate.id} value={candidate.id}>
-                {candidate.name} — {signatureTypeLabel(candidate.type)}
+                {candidate.name}
               </option>
             ))}
           </select>
@@ -103,15 +102,29 @@ export function ExpenseGenerationFooter({
             Les signatures n’ont pas pu être chargées :{" "}
             {errorMessage(c.signatures.error)}
           </p>
+        ) : !c.ceo && !c.employees.isPending ? (
+          <p
+            className="expense-generation-footer-alert"
+            role="alert"
+            data-cy="alerte-pdg-manquant"
+          >
+            Aucun PDG dans cette société. Ajoutez un salarié avec l’intitulé PDG
+            dans la page{" "}
+            <Link to="/configuration/entreprise" className="link">
+              Entreprise
+            </Link>
+            .
+          </p>
         ) : !c.signatureAvailable && !c.signatures.isPending ? (
           <p
             className="expense-generation-footer-alert"
             role="alert"
             data-cy="alerte-signature-manquante"
           >
-            Aucune signature trouvée. Configurez une signature dans la page{" "}
-            <Link to="/configuration" className="link">
-              Paramètres
+            Aucune signature pour le PDG. Ajoutez-en une dans sa fiche salarié,
+            page{" "}
+            <Link to="/configuration/entreprise" className="link">
+              Entreprise
             </Link>
             .
           </p>

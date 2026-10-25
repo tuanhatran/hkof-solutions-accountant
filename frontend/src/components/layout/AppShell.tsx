@@ -1,12 +1,13 @@
 import "./AppShell.css";
 import {
   Bot,
+  Building2,
   FileText,
   History,
+  Home,
   LayoutTemplate,
   ReceiptText,
   ShieldCheck,
-  SlidersHorizontal,
 } from "lucide-react";
 import { useEffect, useId } from "react";
 import { NavLink, Outlet } from "react-router-dom";
@@ -18,7 +19,25 @@ import { useDraftBlock } from "@/hooks/useDraftBlock";
 import { cn } from "@/lib/cn";
 import { resolveActiveCompanyId, useCompanyStore } from "@/state/company";
 
-const SECTIONS = [
+interface NavigationLink {
+  to: string;
+  label: string;
+  icon: typeof ReceiptText;
+  dataCy: string;
+}
+
+interface NavigationGroup {
+  title: string;
+  links: NavigationLink[];
+}
+
+interface NavigationSection {
+  title: string;
+  links: NavigationLink[];
+  groups?: NavigationGroup[];
+}
+
+const SECTIONS: NavigationSection[] = [
   {
     title: "Générer",
     links: [
@@ -49,13 +68,26 @@ const SECTIONS = [
   },
   {
     title: "Réglages",
-    links: [
+    groups: [
       {
-        to: "/configuration",
-        label: "Configuration",
-        icon: SlidersHorizontal,
-        dataCy: "tab-configuration",
+        title: "Configuration",
+        links: [
+          {
+            to: "/configuration/entreprise",
+            label: "Entreprise",
+            icon: Building2,
+            dataCy: "tab-configuration",
+          },
+          {
+            to: "/configuration/lmnp",
+            label: "LMNP",
+            icon: Home,
+            dataCy: "tab-lmnp",
+          },
+        ],
       },
+    ],
+    links: [
       {
         to: "/templates",
         label: "Templates",
@@ -67,7 +99,10 @@ const SECTIONS = [
   },
 ];
 
-const MOBILE_LINKS = SECTIONS.flatMap((section) => section.links);
+const MOBILE_LINKS = SECTIONS.flatMap((section) => [
+  ...(section.groups?.flatMap((group) => group.links) ?? []),
+  ...section.links,
+]);
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
@@ -168,46 +203,59 @@ function CompanySwitcher() {
   );
 }
 
+function SideNavigationLink({ link }: { link: NavigationLink }) {
+  return (
+    <NavLink
+      to={link.to}
+      data-cy={link.dataCy}
+      className={({ isActive }) =>
+        cn(
+          "group app-shell-nav-link",
+          isActive ? "app-shell-nav-link-active" : "app-shell-nav-link-idle",
+        )
+      }
+    >
+      {({ isActive }) => (
+        <>
+          <link.icon
+            size={17}
+            className={cn(
+              "app-shell-nav-icon",
+              isActive
+                ? "app-shell-nav-icon-active"
+                : "app-shell-nav-icon-idle",
+            )}
+            aria-hidden="true"
+          />
+          <span className="flex-1">{link.label}</span>
+          {isActive ? (
+            <span className="app-shell-nav-dot" aria-hidden="true" />
+          ) : null}
+        </>
+      )}
+    </NavLink>
+  );
+}
+
 function SideNavigation() {
   return (
     <nav className="app-shell-nav" aria-label="Navigation principale">
       {SECTIONS.map((section) => (
         <div key={section.title}>
           <p className="app-shell-nav-section">{section.title}</p>
+          {section.groups?.map((group) => (
+            <div key={group.title} data-cy={`groupe-${group.title}`}>
+              <p className="app-shell-nav-group">{group.title}</p>
+              <div className="app-shell-nav-links">
+                {group.links.map((link) => (
+                  <SideNavigationLink key={link.to} link={link} />
+                ))}
+              </div>
+            </div>
+          ))}
           <div className="app-shell-nav-links">
             {section.links.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                data-cy={link.dataCy}
-                className={({ isActive }) =>
-                  cn(
-                    "group app-shell-nav-link",
-                    isActive
-                      ? "app-shell-nav-link-active"
-                      : "app-shell-nav-link-idle",
-                  )
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <link.icon
-                      size={17}
-                      className={cn(
-                        "app-shell-nav-icon",
-                        isActive
-                          ? "app-shell-nav-icon-active"
-                          : "app-shell-nav-icon-idle",
-                      )}
-                      aria-hidden="true"
-                    />
-                    <span className="flex-1">{link.label}</span>
-                    {isActive ? (
-                      <span className="app-shell-nav-dot" aria-hidden="true" />
-                    ) : null}
-                  </>
-                )}
-              </NavLink>
+              <SideNavigationLink key={link.to} link={link} />
             ))}
           </div>
         </div>

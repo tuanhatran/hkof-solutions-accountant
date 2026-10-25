@@ -1,0 +1,35 @@
+@reference "../../index.css";
+
+@layer components {
+  .personnes-section {
+    @apply overflow-hidden;
+  }
+
+  .personnes-section-body {
+    @apply space-y-4;
+  }
+
+  .personnes-section-list {
+    @apply grid gap-3 sm:grid-cols-2;
+  }
+
+  .personnes-section-item {
+    @apply flex flex-wrap items-start gap-3 rounded-xl border border-line bg-paper/40 p-3;
+  }
+
+  .personnes-section-item-body {
+    @apply min-w-0 flex-1;
+  }
+
+  .personnes-section-item-name {
+    @apply truncate text-sm font-semibold text-ink;
+  }
+
+  .personnes-section-item-address {
+    @apply mt-0.5 text-xs text-ink-soft;
+  }
+
+  .personnes-section-item-meta {
+    @apply mt-1 text-[11px] font-semibold text-accent;
+  }
+}

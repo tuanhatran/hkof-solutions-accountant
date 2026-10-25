@@ -10,25 +10,23 @@ import {
   useCompanies,
   useEmployees,
   useExpenseItems,
-  useLandlords,
   useLeases,
   useLlmConfig,
   useLlmModels,
   useLlmStatus,
+  usePersons,
   useRentReceipts,
   useSignatures,
   useStatements,
   useTemplates,
   useTemplateVariables,
-  useTenants,
 } from "./queries";
 
 vi.mock("./endpoints", () => ({
   api: {
     companies: { list: vi.fn() },
     employees: { list: vi.fn() },
-    landlords: { list: vi.fn() },
-    tenants: { list: vi.fn() },
+    persons: { list: vi.fn() },
     leases: { list: vi.fn() },
     expenseItems: { list: vi.fn() },
     templates: { list: vi.fn(), variables: vi.fn() },
@@ -50,14 +48,12 @@ describe("query hooks", () => {
   it("loads the companies, employees and rent directories", async () => {
     vi.mocked(api.companies.list).mockResolvedValue([{ id: 1, name: "HKOF" }]);
     vi.mocked(api.employees.list).mockResolvedValue([]);
-    vi.mocked(api.landlords.list).mockResolvedValue([]);
-    vi.mocked(api.tenants.list).mockResolvedValue([]);
+    vi.mocked(api.persons.list).mockResolvedValue([]);
     vi.mocked(api.leases.list).mockResolvedValue([]);
 
     const companies = renderHook(() => useCompanies(), { wrapper });
     const employees = renderHook(() => useEmployees(1), { wrapper });
-    const landlords = renderHook(() => useLandlords(), { wrapper });
-    const tenants = renderHook(() => useTenants(), { wrapper });
+    const persons = renderHook(() => usePersons(), { wrapper });
     const leases = renderHook(() => useLeases(), { wrapper });
 
     await waitFor(() =>
@@ -66,10 +62,9 @@ describe("query hooks", () => {
     await waitFor(() =>
       expect([
         employees.result.current.isSuccess,
-        landlords.result.current.isSuccess,
-        tenants.result.current.isSuccess,
+        persons.result.current.isSuccess,
         leases.result.current.isSuccess,
-      ]).toEqual([true, true, true, true]),
+      ]).toEqual([true, true, true]),
     );
     expect(api.employees.list).toHaveBeenCalledWith(1);
   });
@@ -126,10 +121,7 @@ describe("query hooks", () => {
     });
     vi.mocked(api.llm.models).mockResolvedValue([]);
 
-    const signatures = renderHook(() => useSignatures(), { wrapper });
-    const employeeSignatures = renderHook(() => useSignatures(3, 6), {
-      wrapper,
-    });
+    const signatures = renderHook(() => useSignatures(4), { wrapper });
     const config = renderHook(() => useLlmConfig(), { wrapper });
     const status = renderHook(() => useLlmStatus(), { wrapper });
     const models = renderHook(() => useLlmModels("http://ollama"), { wrapper });
@@ -137,14 +129,12 @@ describe("query hooks", () => {
     await waitFor(() =>
       expect([
         signatures.result.current.isSuccess,
-        employeeSignatures.result.current.isSuccess,
         config.result.current.isSuccess,
         status.result.current.isSuccess,
         models.result.current.isSuccess,
-      ]).toEqual([true, true, true, true, true]),
+      ]).toEqual([true, true, true, true]),
     );
-    expect(api.signatures.list).toHaveBeenCalledWith(null, null);
-    expect(api.signatures.list).toHaveBeenCalledWith(3, 6);
+    expect(api.signatures.list).toHaveBeenCalledWith(4);
     expect(api.llm.models).toHaveBeenCalledTimes(1);
   });
 
@@ -177,6 +167,7 @@ describe("query hooks", () => {
     expect(api.rentReceipts.active).toHaveBeenCalledWith(
       "2026-10",
       3,
+      null,
       null,
       null,
     );
@@ -242,7 +233,7 @@ describe("company query invalidation", () => {
     const queryClient = new QueryClient();
     queryClient.setQueryData(queryKeys.companies, []);
     queryClient.setQueryData(queryKeys.company(1), { id: 1 });
-    queryClient.setQueryData(queryKeys.landlords, []);
+    queryClient.setQueryData(queryKeys.persons, []);
 
     void queryClient.invalidateQueries({ queryKey: queryKeys.companiesAll });
 
@@ -252,23 +243,23 @@ describe("company query invalidation", () => {
     expect(queryClient.getQueryState(queryKeys.company(1))?.isInvalidated).toBe(
       true,
     );
-    expect(queryClient.getQueryState(queryKeys.landlords)?.isInvalidated).toBe(
+    expect(queryClient.getQueryState(queryKeys.persons)?.isInvalidated).toBe(
       false,
     );
   });
 
   it("invalidates every signature scope", () => {
     const queryClient = new QueryClient();
-    queryClient.setQueryData(queryKeys.signatures(), []);
-    queryClient.setQueryData(queryKeys.signatures(3, 6), []);
+    queryClient.setQueryData(queryKeys.signatures(0), []);
+    queryClient.setQueryData(queryKeys.signatures(3), []);
 
     void queryClient.invalidateQueries({ queryKey: queryKeys.signaturesAll });
 
     expect(
-      queryClient.getQueryState(queryKeys.signatures())?.isInvalidated,
+      queryClient.getQueryState(queryKeys.signatures(0))?.isInvalidated,
     ).toBe(true);
     expect(
-      queryClient.getQueryState(queryKeys.signatures(3, 6))?.isInvalidated,
+      queryClient.getQueryState(queryKeys.signatures(3))?.isInvalidated,
     ).toBe(true);
   });
 });
@@ -296,10 +287,9 @@ describe("expense item query invalidation", () => {
 });
 
 describe("rent configuration query invalidation", () => {
-  it("keeps the landlord, tenant and lease directories independent", () => {
+  it("keeps the person and lease directories independent", () => {
     const queryClient = new QueryClient();
-    queryClient.setQueryData(queryKeys.landlords, []);
-    queryClient.setQueryData(queryKeys.tenants, []);
+    queryClient.setQueryData(queryKeys.persons, []);
     queryClient.setQueryData(queryKeys.leases, []);
     queryClient.setQueryData(queryKeys.companies, []);
 
@@ -308,10 +298,7 @@ describe("rent configuration query invalidation", () => {
     expect(queryClient.getQueryState(queryKeys.leases)?.isInvalidated).toBe(
       true,
     );
-    expect(queryClient.getQueryState(queryKeys.landlords)?.isInvalidated).toBe(
-      false,
-    );
-    expect(queryClient.getQueryState(queryKeys.tenants)?.isInvalidated).toBe(
+    expect(queryClient.getQueryState(queryKeys.persons)?.isInvalidated).toBe(
       false,
     );
     expect(queryClient.getQueryState(queryKeys.companies)?.isInvalidated).toBe(
@@ -368,10 +355,13 @@ describe("generated document query invalidation", () => {
   it("keeps the active rent receipt pair-scoped and invalidates every pair", () => {
     const queryClient = new QueryClient();
     queryClient.setQueryData(queryKeys.rentReceiptActive(month, 3, 1, 2), null);
-    queryClient.setQueryData(queryKeys.rentReceiptActive(month, 3, 5, 6), null);
+    queryClient.setQueryData(
+      queryKeys.rentReceiptActive(month, 3, 1, null, 2),
+      null,
+    );
 
     expect(queryKeys.rentReceiptActive(month, 3, 1, 2)).not.toEqual(
-      queryKeys.rentReceiptActive(month, 3, 5, 6),
+      queryKeys.rentReceiptActive(month, 3, 1, null, 2),
     );
 
     void queryClient.invalidateQueries({ queryKey: queryKeys.rentReceiptsAll });
@@ -381,8 +371,9 @@ describe("generated document query invalidation", () => {
         ?.isInvalidated,
     ).toBe(true);
     expect(
-      queryClient.getQueryState(queryKeys.rentReceiptActive(month, 3, 5, 6))
-        ?.isInvalidated,
+      queryClient.getQueryState(
+        queryKeys.rentReceiptActive(month, 3, 1, null, 2),
+      )?.isInvalidated,
     ).toBe(true);
   });
 });

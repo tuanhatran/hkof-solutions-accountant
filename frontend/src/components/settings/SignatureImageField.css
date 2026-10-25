@@ -1,0 +1,31 @@
+@reference "../../index.css";
+
+@layer components {
+  .signature-image-field-dropzone {
+    @apply mt-3;
+  }
+
+  .signature-image-field-preview {
+    @apply mt-3 flex items-center gap-3 rounded-xl border border-line bg-paper/50 p-3;
+  }
+
+  .signature-image-field-preview-image {
+    @apply h-14 w-24 shrink-0 rounded-lg border border-line bg-white object-contain p-1;
+  }
+
+  .signature-image-field-preview-body {
+    @apply min-w-0 flex-1;
+  }
+
+  .signature-image-field-preview-name {
+    @apply truncate text-sm font-semibold text-ink;
+  }
+
+  .signature-image-field-preview-size {
+    @apply text-xs text-ink-soft;
+  }
+
+  .signature-image-field-remove {
+    @apply rounded-lg p-2 text-ink-soft transition hover:bg-danger-soft hover:text-danger disabled:cursor-not-allowed disabled:opacity-40;
+  }
+}

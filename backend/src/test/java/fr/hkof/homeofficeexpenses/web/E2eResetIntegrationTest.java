@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
@@ -53,14 +54,14 @@ class E2eResetIntegrationTest {
                                 """.formatted(leaseId)))
                 .andExpect(status().isOk());
 
-        String landlord = mockMvc.perform(post("/api/landlords")
+        String landlord = mockMvc.perform(post("/api/persons")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Bailleur Test e2e","address":"1 rue du Test, 75001 Paris"}
                                 """))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String tenant = mockMvc.perform(post("/api/tenants")
+        String tenant = mockMvc.perform(post("/api/persons")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Locataire Test e2e","address":"2 rue du Test, 75001 Paris"}
@@ -70,8 +71,8 @@ class E2eResetIntegrationTest {
         mockMvc.perform(post("/api/leases")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"landlordId":%d,"tenantId":%d,"propertyAddress":"9 rue du Test, 75001 Paris",
-                                 "rentExclCharges":"800.00"}
+                                {"companyLease":false,"landlordId":%d,"tenantId":%d,
+                                 "propertyAddress":"9 rue du Test, 75001 Paris","rentExclCharges":"800.00"}
                                 """.formatted(((Number) JsonPath.read(landlord, "$.id")).longValue(),
                         ((Number) JsonPath.read(tenant, "$.id")).longValue())))
                 .andExpect(status().isCreated());
@@ -99,31 +100,37 @@ class E2eResetIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].name").value("HKOF"));
-        mockMvc.perform(get("/api/landlords"))
+        String persons = mockMvc.perform(get("/api/persons"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].name").value("Nom du bailleur"))
-                .andExpect(jsonPath("$[?(@.name == 'Bailleur Test e2e')]").isEmpty());
-        mockMvc.perform(get("/api/tenants"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].name").value("Nom du locataire"));
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[?(@.name == 'Nom du bailleur')]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.name == 'Nom du locataire')]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.name == 'Bailleur Test e2e')]").isEmpty())
+                .andReturn().getResponse().getContentAsString();
+        long landlordId = idByName(persons, "Nom du bailleur");
+        long tenantId = idByName(persons, "Nom du locataire");
+
         String resetAddresses = mockMvc.perform(get("/api/addresses"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].label").value("12 rue de la République, 75000 Paris"))
                 .andReturn().getResponse().getContentAsString();
         long addressId = ((Number) JsonPath.read(resetAddresses, "$[0].id")).longValue();
-        mockMvc.perform(get("/api/leases"))
+
+        String leases = mockMvc.perform(get("/api/leases"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].addressId").value(addressId))
-                .andExpect(jsonPath("$[0].propertyAddress").value("12 rue de la République, 75000 Paris"))
-                .andExpect(jsonPath("$[0].rentExclCharges").value("1300.00"))
-                .andExpect(jsonPath("$[0].charges").value("0.00"))
-                .andExpect(jsonPath("$[0].companyLease").value(true))
-                .andExpect(jsonPath("$[0].totalArea").value("70.00"))
-                .andExpect(jsonPath("$[0].businessArea").value("25.00"));
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[?(@.companyLease == true && @.landlordId == " + landlordId
+                        + " && @.tenantId == null)]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.companyLease == false && @.landlordId == " + landlordId
+                        + " && @.tenantId == " + tenantId + ")]").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
+        List<Number> companyLeaseAddresses = JsonPath.read(leases,
+                "$[?(@.companyLease == true)].addressId");
+        assertThat(companyLeaseAddresses.stream().map(Number::longValue).toList()).containsExactly(addressId);
+        assertThat(JsonPath.<List<String>>read(leases, "$[*].propertyAddress"))
+                .containsOnly("12 rue de la République, 75000 Paris");
+
         mockMvc.perform(get("/api/rent-receipts"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
@@ -135,6 +142,58 @@ class E2eResetIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("The e2e reset drops custom signatures and seeds one signature per seeded person")
+    void resetSeedsDefaultSignatures() throws Exception {
+        String persons = mockMvc.perform(get("/api/persons"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long landlordId = idByName(persons, "Nom du bailleur");
+
+        mockMvc.perform(multipart("/api/signatures")
+                        .file(new MockMultipartFile("file", "signature-personnalisee.png", "image/png", PNG))
+                        .param("personId", String.valueOf(landlordId))
+                        .param("name", CUSTOM_SIGNATURE_NAME))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/e2e/reset"))
+                .andExpect(status().isNoContent());
+
+        String resetPersons = mockMvc.perform(get("/api/persons"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long landlordPersonId = idByName(resetPersons, "Nom du bailleur");
+        long tenantPersonId = idByName(resetPersons, "Nom du locataire");
+        long ceoId = ceoEmployeeId();
+
+        List<Long> seededPersonIds = new ArrayList<>();
+        List<String> seededPersonNames = new ArrayList<>();
+        for (long personId : List.of(landlordPersonId, tenantPersonId, ceoId)) {
+            String signatures = mockMvc.perform(get("/api/signatures")
+                            .param("personId", String.valueOf(personId)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(1))
+                    .andExpect(jsonPath("$[?(@.name == '" + CUSTOM_SIGNATURE_NAME + "')]").isEmpty())
+                    .andExpect(jsonPath("$[?(@.mimeType != 'image/png')]").isEmpty())
+                    .andReturn().getResponse().getContentAsString();
+            seededPersonIds.addAll(signaturePersonIds(signatures));
+            seededPersonNames.addAll(JsonPath.read(signatures, "$[*].personName"));
+        }
+        assertThat(seededPersonIds)
+                .containsExactlyInAnyOrder(landlordPersonId, tenantPersonId, ceoId);
+        assertThat(seededPersonNames)
+                .contains("Nom du bailleur", "Nom du locataire", "Gérant");
+    }
+
+    private List<Long> signaturePersonIds(String signatures) {
+        return JsonPath.<List<Number>>read(signatures, "$[*].personId").stream().map(Number::longValue).toList();
+    }
+
+    private long idByName(String body, String name) {
+        List<Number> ids = JsonPath.read(body, "$[?(@.name == '" + name + "')].id");
+        return ids.get(0).longValue();
+    }
+
     private long firstId(String path) throws Exception {
         String body = mockMvc.perform(get(path))
                 .andExpect(status().isOk())
@@ -142,37 +201,10 @@ class E2eResetIntegrationTest {
         return ((Number) JsonPath.read(body, "$[0].id")).longValue();
     }
 
-    @Test
-    @DisplayName("The e2e reset drops custom signatures and seeds one linked landlord and one CEO signature")
-    void resetSeedsDefaultSignatures() throws Exception {
-        String landlords = mockMvc.perform(get("/api/landlords"))
+    private long ceoEmployeeId() throws Exception {
+        String body = mockMvc.perform(get("/api/companies/{companyId}/employees", firstId("/api/companies")))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        long landlordId = ((Number) JsonPath.read(landlords, "$[0].id")).longValue();
-
-        mockMvc.perform(multipart("/api/signatures")
-                        .file(new MockMultipartFile("file", "signature-personnalisee.png", "image/png", PNG))
-                        .param("type", "LANDLORD")
-                        .param("landlordId", String.valueOf(landlordId))
-                        .param("name", CUSTOM_SIGNATURE_NAME))
-                .andExpect(status().isCreated());
-
-        mockMvc.perform(post("/api/e2e/reset"))
-                .andExpect(status().isNoContent());
-
-        String signatures = mockMvc.perform(get("/api/signatures"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[?(@.type == 'LANDLORD')]").isNotEmpty())
-                .andExpect(jsonPath("$[?(@.type == 'ENTREPRISE_CEO')]").isNotEmpty())
-                .andExpect(jsonPath("$[?(@.mimeType != 'image/png')]").isEmpty())
-                .andExpect(jsonPath("$[?(@.name == '" + CUSTOM_SIGNATURE_NAME + "')]").isEmpty())
-                .andReturn().getResponse().getContentAsString();
-
-        List<?> landlordSignatures = JsonPath.read(signatures,
-                "$[?(@.type == 'LANDLORD' && @.landlordName == 'Nom du bailleur')]");
-        assertThat(landlordSignatures).hasSize(1);
-        List<?> ceoSignatures = JsonPath.read(signatures, "$[?(@.type == 'ENTREPRISE_CEO')].landlordId");
-        assertThat(ceoSignatures).containsOnlyNulls();
+        return ((Number) JsonPath.read(body, "$[0].id")).longValue();
     }
 }

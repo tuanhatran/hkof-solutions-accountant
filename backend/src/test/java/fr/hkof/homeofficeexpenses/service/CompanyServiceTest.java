@@ -22,7 +22,6 @@ import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.Employee;
 import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.Signature;
-import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
@@ -81,6 +80,14 @@ class CompanyServiceTest {
         lease.setTotalArea(new java.math.BigDecimal("70.00"));
         lease.setBusinessArea(new java.math.BigDecimal("25.00"));
         lease.setDeleted(false);
+        return lease;
+    }
+
+    private Lease normalLease(Long id, Long companyId) {
+        Lease lease = lease(id, companyId);
+        lease.setCompanyLease(false);
+        lease.setTotalArea(null);
+        lease.setBusinessArea(null);
         return lease;
     }
 
@@ -206,7 +213,7 @@ class CompanyServiceTest {
     @DisplayName("Updating a company unlinks the previous lease and links the selected one")
     void replacesLinkedLease() {
         Company existing = company();
-        Lease previous = lease(LEASE_ID, COMPANY_ID);
+        Lease previous = normalLease(LEASE_ID, COMPANY_ID);
         Lease selected = lease(6L, null);
         when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -225,7 +232,7 @@ class CompanyServiceTest {
     @DisplayName("Selecting no lease unlinks the previous one")
     void unlinksWhenNoLeaseSelected() {
         Company existing = company();
-        Lease previous = lease(LEASE_ID, COMPANY_ID);
+        Lease previous = normalLease(LEASE_ID, COMPANY_ID);
         when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(previous));
@@ -234,6 +241,23 @@ class CompanyServiceTest {
 
         assertThat(previous.getCompanyId()).isNull();
         verify(leases).save(previous);
+    }
+
+    @Test
+    @DisplayName("An enterprise lease cannot be detached from its tenant company")
+    void rejectsUnlinkingCompanyLease() {
+        Company existing = company();
+        Lease previous = lease(LEASE_ID, COMPANY_ID);
+        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
+        when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(leases.findFirstByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(previous));
+
+        assertThatThrownBy(() -> service.update(COMPANY_ID, request("HKOF", null, null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Ce bail est un bail société : la société en est le locataire "
+                        + "et ne peut pas être dissociée.");
+        assertThat(previous.getCompanyId()).isEqualTo(COMPANY_ID);
+        verify(leases, never()).save(previous);
     }
 
     @Test
@@ -290,12 +314,11 @@ class CompanyServiceTest {
         employee.setCompanyId(COMPANY_ID);
         Signature signature = new Signature();
         signature.setId(8L);
-        signature.setCompanyId(COMPANY_ID);
-        signature.setType(SignatureType.ENTREPRISE_CEO);
+        signature.setPersonId(7L);
         Lease linked = lease(LEASE_ID, COMPANY_ID);
         when(employees.findAllByCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(COMPANY_ID))
                 .thenReturn(List.of(employee));
-        when(signatures.findByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(List.of(signature));
+        when(signatures.findAllByPersonIdInAndDeletedFalse(List.of(7L))).thenReturn(List.of(signature));
         when(leases.findAllByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(List.of(linked));
 
         service.delete(COMPANY_ID);
@@ -317,7 +340,7 @@ class CompanyServiceTest {
         when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(managed));
         when(employees.findAllByCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(COMPANY_ID))
                 .thenReturn(List.of());
-        when(signatures.findByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(List.of());
+        when(signatures.findAllByPersonIdInAndDeletedFalse(List.of())).thenReturn(List.of());
         when(leases.findAllByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(List.of());
 
         service.delete(COMPANY_ID);

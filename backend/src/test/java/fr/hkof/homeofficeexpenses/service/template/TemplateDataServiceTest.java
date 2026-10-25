@@ -20,14 +20,13 @@ import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
 import fr.hkof.homeofficeexpenses.domain.ExpenseLine;
 import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
-import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Lease;
+import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
 import fr.hkof.homeofficeexpenses.domain.Signature;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
-import fr.hkof.homeofficeexpenses.domain.Tenant;
 import fr.hkof.homeofficeexpenses.service.CompanyService;
-import fr.hkof.homeofficeexpenses.service.RentConfigurationService;
+import fr.hkof.homeofficeexpenses.service.LeaseService;
 import fr.hkof.homeofficeexpenses.service.SignatureService;
 import fr.hkof.homeofficeexpenses.web.dto.CompanyDtos.CompanyDto;
 
@@ -37,15 +36,15 @@ class TemplateDataServiceTest {
 
     private CompanyService companyService;
     private SignatureService signatureService;
-    private RentConfigurationService rentConfigurationService;
+    private LeaseService leaseService;
     private TemplateDataService service;
 
     @BeforeEach
     void setUp() {
         companyService = mock(CompanyService.class);
         signatureService = mock(SignatureService.class);
-        rentConfigurationService = mock(RentConfigurationService.class);
-        service = new TemplateDataService(companyService, signatureService, rentConfigurationService);
+        leaseService = mock(LeaseService.class);
+        service = new TemplateDataService(companyService, signatureService, leaseService);
     }
 
     private Company company() {
@@ -72,16 +71,16 @@ class TemplateDataServiceTest {
         when(companyService.entity(COMPANY_ID)).thenReturn(company());
     }
 
-    private Landlord landlord() {
-        Landlord landlord = new Landlord();
+    private Person landlord() {
+        Person landlord = new Person();
         landlord.setId(1L);
         landlord.setName("Bailleur");
         landlord.setAddress("1 rue du Bail");
         return landlord;
     }
 
-    private Tenant tenant() {
-        Tenant tenant = new Tenant();
+    private Person tenant() {
+        Person tenant = new Person();
         tenant.setId(2L);
         tenant.setName("Locataire");
         tenant.setAddress("2 rue du Locataire");
@@ -122,7 +121,7 @@ class TemplateDataServiceTest {
     @Test
     @DisplayName("Rent receipt data maps every documented variable")
     void rentReceiptData() {
-        Map<String, Object> data = service.dataRentReceipt(company(), landlord(), tenant(), lease(), rentReceipt(),
+        Map<String, Object> data = service.dataRentReceipt(company(), landlord(), tenant(), null, lease(), rentReceipt(),
                 "data:image/png;base64,AAAA");
 
         assertThat(data).containsKeys("bailleur", "locataire", "logement", "mois_libelle", "periode", "loyer_hc",
@@ -134,12 +133,26 @@ class TemplateDataServiceTest {
     }
 
     @Test
+    @DisplayName("Rent receipt data uses the company tenant of a company lease")
+    void rentReceiptDataWithCompanyTenant() {
+        Company tenantCompany = new Company();
+        tenantCompany.setName("Société Locataire");
+        tenantCompany.setAddress("5 avenue de la Société");
+
+        Map<String, Object> data = service.dataRentReceipt(company(), landlord(), null, tenantCompany, lease(),
+                rentReceipt(), null);
+
+        assertThat(data.get("locataire")).isEqualTo(
+                Map.of("nom", "Société Locataire", "adresse", "5 avenue de la Société"));
+    }
+
+    @Test
     @DisplayName("Rent receipt data tolerates a missing landlord, tenant or lease")
     void rentReceiptDataWithNulls() {
         Company company = company();
         RentReceipt receipt = rentReceipt();
 
-        Map<String, Object> data = service.dataRentReceipt(company, null, null, null, receipt, null);
+        Map<String, Object> data = service.dataRentReceipt(company, null, null, null, null, receipt, null);
 
         assertThat(data.get("bailleur")).isEqualTo(Map.of("nom", "", "adresse", ""));
         assertThat(data.get("locataire")).isEqualTo(Map.of("nom", "", "adresse", ""));
@@ -180,9 +193,9 @@ class TemplateDataServiceTest {
         stubExampleCompany();
         Signature signature = new Signature();
         signature.setId(7L);
-        when(signatureService.resolveForCompany(COMPANY_ID, null)).thenReturn(Optional.of(signature));
+        when(signatureService.resolveForCompanyCeo(COMPANY_ID, null)).thenReturn(Optional.of(signature));
         when(signatureService.dataUri(7L)).thenReturn("data:image/png;base64,AAAA");
-        when(rentConfigurationService.exampleLease()).thenReturn(lease());
+        when(leaseService.exampleLease()).thenReturn(lease());
 
         Map<String, Object> data = service.dataExample(TemplateType.RENT_RECEIPT);
 
@@ -194,8 +207,8 @@ class TemplateDataServiceTest {
     @DisplayName("The preview example falls back to a transparent signature and default amounts")
     void rentReceiptExampleFallbacks() {
         stubExampleCompany();
-        when(signatureService.resolveForCompany(COMPANY_ID, null)).thenReturn(Optional.empty());
-        when(rentConfigurationService.exampleLease()).thenReturn(null);
+        when(signatureService.resolveForCompanyCeo(COMPANY_ID, null)).thenReturn(Optional.empty());
+        when(leaseService.exampleLease()).thenReturn(null);
 
         Map<String, Object> data = service.dataExample(TemplateType.RENT_RECEIPT);
 
@@ -211,9 +224,9 @@ class TemplateDataServiceTest {
         stubExampleCompany();
         Signature signature = new Signature();
         signature.setId(7L);
-        when(signatureService.resolveForCompany(COMPANY_ID, null)).thenReturn(Optional.of(signature));
+        when(signatureService.resolveForCompanyCeo(COMPANY_ID, null)).thenReturn(Optional.of(signature));
         when(signatureService.dataUri(7L)).thenReturn(" ");
-        when(rentConfigurationService.exampleLease()).thenReturn(null);
+        when(leaseService.exampleLease()).thenReturn(null);
 
         Map<String, Object> data = service.dataExample(TemplateType.RENT_RECEIPT);
 
@@ -224,7 +237,7 @@ class TemplateDataServiceTest {
     @DisplayName("The preview example for a statement maps the sample lines")
     void statementExample() {
         stubExampleCompany();
-        when(signatureService.resolveForCompany(COMPANY_ID, null)).thenReturn(Optional.empty());
+        when(signatureService.resolveForCompanyCeo(COMPANY_ID, null)).thenReturn(Optional.empty());
         when(companyService.proRataDetail(any())).thenReturn("Surface pro 25 m² / 70 m² = 35,71 %");
 
         Map<String, Object> data = service.dataExample(TemplateType.EXPENSE_STATEMENT);

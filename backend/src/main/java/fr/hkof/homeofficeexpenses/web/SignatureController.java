@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import fr.hkof.homeofficeexpenses.domain.SignatureType;
 import fr.hkof.homeofficeexpenses.service.SignatureService;
 import fr.hkof.homeofficeexpenses.web.dto.SignatureDtos.SignatureDto;
 
@@ -29,17 +28,15 @@ public class SignatureController {
     }
 
     @GetMapping
-    public List<SignatureDto> listSignatures(@RequestParam(required = false) Long companyId,
-            @RequestParam(required = false) Long employeeId) {
-        return service.list(companyId, employeeId);
+    public List<SignatureDto> listSignatures(@RequestParam Long personId) {
+        return service.list(personId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public SignatureDto createSignature(@RequestParam SignatureType type,
-            @RequestParam(required = false) Long landlordId, @RequestParam(required = false) Long employeeId,
-            @RequestParam String name, @RequestParam("file") MultipartFile file) {
-        return service.create(type, landlordId, employeeId, name, file);
+    public SignatureDto createSignature(@RequestParam Long personId, @RequestParam String name,
+            @RequestParam("file") MultipartFile file) {
+        return service.create(personId, name, file);
     }
 
     @DeleteMapping("/{id}")

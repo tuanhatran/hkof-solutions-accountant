@@ -10,13 +10,14 @@ import {
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { AdminLlmPage } from "@/pages/admin-llm/AdminLlmPage";
+import { LmnpPage } from "@/pages/settings/LmnpPage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { GenerateExpenseStatementPage } from "@/pages/expense-statement/GenerateExpenseStatementPage";
 import { GenerateRentReceiptPage } from "@/pages/rent-receipt/GenerateRentReceiptPage";
 import { HistoryPage } from "@/pages/history/HistoryPage";
 import { TemplatesPage } from "@/pages/templates/TemplatesPage";
 
-function NotFoundPage() {
+export function NotFoundPage() {
   return (
     <div className="card router-not-found">
       <span className="router-not-found-icon">
@@ -39,11 +40,7 @@ function NotFoundPage() {
 
 function AppError() {
   const errorText = useRouteError();
-  const message = isRouteErrorResponse(errorText)
-    ? `${errorText.status} — ${errorText.statusText}`
-    : errorText instanceof Error
-      ? errorText.message
-      : "Une erreur inattendue est survenue.";
+  const message = routeErrorMessage(errorText);
 
   return (
     <div className="router-error">
@@ -68,6 +65,17 @@ function AppError() {
   );
 }
 
+/** French message displayed by the router error page. */
+export function routeErrorMessage(errorText: unknown): string {
+  if (isRouteErrorResponse(errorText)) {
+    return `${errorText.status} — ${errorText.statusText}`;
+  }
+  if (errorText instanceof Error) {
+    return errorText.message;
+  }
+  return "Une erreur inattendue est survenue.";
+}
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -82,7 +90,12 @@ export const router = createBrowserRouter([
       { path: "generer/quittance", element: <GenerateRentReceiptPage /> },
       { path: "generer/note-frais", element: <GenerateExpenseStatementPage /> },
       { path: "historique", element: <HistoryPage /> },
-      { path: "configuration", element: <SettingsPage /> },
+      {
+        path: "configuration",
+        element: <Navigate to="/configuration/entreprise" replace />,
+      },
+      { path: "configuration/entreprise", element: <SettingsPage /> },
+      { path: "configuration/lmnp", element: <LmnpPage /> },
       { path: "templates", element: <TemplatesPage /> },
       { path: "admin", element: <AdminLlmPage /> },
       { path: "*", element: <NotFoundPage /> },

@@ -2,11 +2,13 @@ import "./EmployeeSection.css";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, X } from "lucide-react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
-import type { EmployeeDto } from "@/api/types";
+import type { EmployeeDto, EmployeeRequest } from "@/api/types";
+import { PersonSignatureSection } from "@/components/settings/PersonSignatureSection";
 import { Button } from "@/components/ui/Button";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
@@ -14,7 +16,10 @@ import { employeeSchema, type EmployeeFormValues } from "@/lib/validation";
 import { toast } from "@/state/toasts";
 import { EMPLOYEE_TITLES } from "./settingsValues";
 
-/** Create or update form of an employee of the active company. */
+/**
+ * Create or update form of an employee of the active company. After creation
+ * the form stays open so the employee can receive signatures immediately.
+ */
 export function EmployeeForm({
   companyId,
   employee,
@@ -25,6 +30,7 @@ export function EmployeeForm({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  const [savedId, setSavedId] = useState<number | null>(employee?.id ?? null);
   const {
     register,
     handleSubmit,
@@ -35,6 +41,7 @@ export function EmployeeForm({
     defaultValues: {
       firstName: employee?.firstName ?? "",
       lastName: employee?.lastName ?? "",
+      address: employee?.address ?? "",
       email: employee?.email ?? "",
       title: employee?.title ?? "EMPLOYEE",
     },
@@ -42,25 +49,30 @@ export function EmployeeForm({
 
   const save = useMutation({
     mutationFn: (values: EmployeeFormValues) => {
-      const requestBody = {
+      const requestBody: EmployeeRequest = {
         companyId,
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
+        address: values.address.trim() === "" ? null : values.address.trim(),
         email: values.email.trim() === "" ? null : values.email.trim(),
         title: values.title,
       };
-      return employee?.id
-        ? api.employees.update(employee.id, requestBody)
-        : api.employees.create(companyId, requestBody);
+      return savedId === null
+        ? api.employees.create(companyId, requestBody)
+        : api.employees.update(savedId, requestBody);
     },
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      const creating = savedId === null;
       void queryClient.invalidateQueries({
         queryKey: queryKeys.employees(companyId),
       });
       void queryClient.invalidateQueries({ queryKey: queryKeys.employeesAll });
-      toast.success(employee ? "Salarié mis à jour." : "Salarié ajouté.");
-      onClose();
+      if (saved.id !== undefined) {
+        setSavedId(saved.id);
+      }
+      toast.success(creating ? "Salarié ajouté." : "Salarié mis à jour.");
     },
+    onError: (error) => toast.error(errorMessage(error)),
   });
 
   return (
@@ -71,7 +83,7 @@ export function EmployeeForm({
       data-cy="formulaire-salarie"
     >
       <h3 className="employee-form-title">
-        {employee ? "Modifier le salarié" : "Ajouter un salarié"}
+        {savedId === null ? "Ajouter un salarié" : "Modifier le salarié"}
       </h3>
 
       <div className="employee-form-grid">
@@ -133,6 +145,21 @@ export function EmployeeForm({
             ))}
           </select>
         </FieldGroup>
+        <FieldGroup
+          id="salarie-adresse"
+          label="Adresse personnelle"
+          error={errors.address?.message}
+          help="Facultative."
+          className="sm:col-span-2"
+        >
+          <input
+            id="salarie-adresse"
+            className="field"
+            placeholder="1 avenue du Parc, 75011 Paris"
+            {...register("address")}
+            data-cy="input-salarie-adresse"
+          />
+        </FieldGroup>
       </div>
 
       {save.isError ? (
@@ -141,15 +168,25 @@ export function EmployeeForm({
         </p>
       ) : null}
 
+      {savedId === null ? (
+        <p className="employee-form-hint">
+          Enregistrez le salarié pour ajouter ses signatures sans fermer ce
+          formulaire.
+        </p>
+      ) : (
+        <PersonSignatureSection personId={savedId} />
+      )}
+
       <div className="employee-form-actions">
         <Button
           variant="ghost"
           small
+          type="button"
           icon={<X size={14} />}
           onClick={onClose}
           disabled={save.isPending}
         >
-          Annuler
+          Fermer
         </Button>
         <Button
           variant="primary"
@@ -159,7 +196,7 @@ export function EmployeeForm({
           icon={<Check size={14} />}
           data-cy="btn-enregistrer-salarie"
         >
-          {employee ? "Enregistrer le salarié" : "Ajouter le salarié"}
+          {savedId === null ? "Ajouter le salarié" : "Enregistrer le salarié"}
         </Button>
       </div>
     </form>

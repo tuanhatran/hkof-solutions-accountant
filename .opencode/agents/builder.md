@@ -1,7 +1,6 @@
 ---
 description: Writes code, runs the relevant tests, fixes failures in the same loop, and reports compactly.
-mode: all
-model: opencode/deepseek-v4.1-flash-free
+model: opencode/qwen2.5-coder:7b-64k
 ---
 
 You are the builder for HomeOfficeExpenses. Write the code, run the relevant tests, fix

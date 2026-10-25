@@ -62,7 +62,7 @@ class EmployeeServiceTest {
     }
 
     private EmployeeRequest request(Long companyId, String firstName, String lastName, String email, String title) {
-        return new EmployeeRequest(companyId, firstName, lastName, email, title);
+        return new EmployeeRequest(companyId, firstName, lastName, email, null, title);
     }
 
     @Test
@@ -89,11 +89,13 @@ class EmployeeServiceTest {
             return saved;
         });
 
-        EmployeeDto dto = service.create(1L, request(null, "  Camille ", " Martin ", " camille@example.fr ", "cfo"));
+        EmployeeDto dto = service.create(1L, new EmployeeRequest(null, "  Camille ", " Martin ",
+                " camille@example.fr ", " 2 rue du Salarié ", "cfo"));
 
         assertThat(dto.id()).isEqualTo(7L);
         assertThat(dto.firstName()).isEqualTo("Camille");
         assertThat(dto.email()).isEqualTo("camille@example.fr");
+        assertThat(dto.address()).isEqualTo("2 rue du Salarié");
         assertThat(dto.title()).isEqualTo("CFO");
         assertThat(dto.companyId()).isEqualTo(1L);
     }
@@ -164,13 +166,13 @@ class EmployeeServiceTest {
     void deletes() {
         Employee existing = employee();
         when(repository.findByIdAndDeletedFalse(7L)).thenReturn(Optional.of(existing));
-        when(signatures.existsByEmployeeIdAndDeletedFalse(7L)).thenReturn(true);
+        when(signatures.existsByPersonIdAndDeletedFalse(7L)).thenReturn(true);
         assertThatThrownBy(() -> service.delete(7L))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Ce salarié porte des signatures et ne peut pas être supprimé.");
         verify(repository, never()).save(any());
 
-        when(signatures.existsByEmployeeIdAndDeletedFalse(7L)).thenReturn(false);
+        when(signatures.existsByPersonIdAndDeletedFalse(7L)).thenReturn(false);
         service.delete(7L);
 
         assertThat(existing.isDeleted()).isTrue();

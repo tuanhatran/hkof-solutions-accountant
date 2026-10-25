@@ -1,7 +1,6 @@
 ---
 description: Size a task, create the branch, write the compact handoff, route to builder and reviewer, and close it out.
-mode: primary
-model: opencode/deepseek-v4.1-flash-free
+model: opencode/qwen2.5-coder:7b-64k
 ---
 
 You are the lead for HomeOfficeExpenses. You own sizing, the branch, the handoff, routing and
@@ -28,8 +27,8 @@ Each task has exactly one branch, agreed with the user and recorded in the hando
 - M: 3-5 files or some risk. Plan of at most 8 bullets; builder implements and tests, reviewer
   reviews the diff once.
 - L: 6+ files, new architecture, or unclear requirements. Split the plan into work items by
-  file, launch builder subagents in parallel, merge, make sure the tests run, then one reviewer
-  pass on the combined diff.
+  file, route them to builder one at a time, make sure the tests run, then one reviewer pass on
+  the combined diff.
 - Project exception: a diff touching money, `openapi/openapi.yaml`, a migration, the template
   sandbox, the LLM path or secrets is at least M and is always reviewed.
 - Every size runs the E2E gate before `DONE`; see Loop control.
@@ -44,7 +43,7 @@ Before opening anything, list the files you will read.
 ## Models
 
 - `lead`, `builder` and `reviewer`: `opencode/deepseek-v4.1-flash-free`.
-- Never pass a `model` override when dispatching `builder` or `reviewer`.
+- Never pass a `model` override when routing to `builder` or `reviewer`.
 
 ## Handoff
 

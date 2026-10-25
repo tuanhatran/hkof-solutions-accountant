@@ -65,7 +65,7 @@ class MultiCompanyMigrationPostgresTest {
                     """);
         }
 
-        migrate();
+        migrateTo("7");
 
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
             assertThat(singleString(statement, "SELECT name FROM company WHERE id = 1")).isEqualTo("HKOF");
@@ -113,7 +113,7 @@ class MultiCompanyMigrationPostgresTest {
                     """);
         }
 
-        migrate();
+        migrateTo("7");
 
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
             statement.execute("""
@@ -163,10 +163,6 @@ class MultiCompanyMigrationPostgresTest {
                 .clean();
     }
 
-    private void migrate() {
-        flyway().migrate();
-    }
-
     private void migrateTo(String target) {
         Flyway.configure()
                 .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
@@ -174,13 +170,6 @@ class MultiCompanyMigrationPostgresTest {
                 .target(target)
                 .load()
                 .migrate();
-    }
-
-    private Flyway flyway() {
-        return Flyway.configure()
-                .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
-                .locations("classpath:db/migration")
-                .load();
     }
 
     private long count(Statement statement, String sql) throws SQLException {

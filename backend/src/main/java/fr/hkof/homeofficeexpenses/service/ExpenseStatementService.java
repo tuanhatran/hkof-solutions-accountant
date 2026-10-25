@@ -76,7 +76,7 @@ public class ExpenseStatementService {
         YearMonth month = Amounts.month(monthText);
         Company company = companies.entity(companyId);
         // Expense statements keep a month-scoped rent receipt: pair selection is out of scope.
-        RentReceipt rentReceipt = rentReceiptService.activeForMonth(company.getId(), month.toString(), null, null);
+        RentReceipt rentReceipt = rentReceiptService.activeForMonth(company.getId(), month.toString(), null, null, null);
         List<ExpenseLineDto> lines = new ArrayList<>();
         if (rentReceipt != null) {
             ExpenseItem rentItem = expenseItemService.entity(company.getId(), "loyer");

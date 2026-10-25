@@ -2,6 +2,7 @@ import "./LeaseSection.css";
 import { Home, PencilLine, Plus, Trash2 } from "lucide-react";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { ErrorState, LoadingState } from "@/components/ui/States";
 import { formatEUR } from "@/lib/format";
@@ -69,8 +70,8 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
           <LeaseForm
             key={c.leaseForm === "new" ? "new" : c.leaseForm.id}
             item={c.leaseForm === "new" ? null : c.leaseForm}
-            landlords={c.landlordList}
-            tenants={c.tenantList}
+            persons={c.personList}
+            companies={c.companyList}
             onSaved={c.handleLeaseSaved}
             onClose={() => c.setLeaseForm(null)}
           />
@@ -149,6 +150,25 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
           </ul>
         )}
       </div>
+
+      <ConfirmDialog
+        open={c.leaseToDelete !== null}
+        title="Supprimer ce bail ?"
+        message={
+          c.leaseToDelete
+            ? `Le bail de « ${c.leaseToDelete.tenantName ?? "ce locataire"} » ne sera plus proposé lors de la génération. Les quittances existantes restent inchangées.`
+            : ""
+        }
+        confirmLabel="Supprimer le bail"
+        variant="danger"
+        onConfirm={() => {
+          if (c.leaseToDelete) {
+            c.removeLease.mutate(c.leaseToDelete);
+          }
+        }}
+        onCancel={() => c.setLeaseToDelete(null)}
+        dataCy="dialogue-supprimer-bail"
+      />
     </section>
   );
 }

@@ -17,7 +17,7 @@ import { useRentReceiptPage } from "./useRentReceiptPage";
 export function GenerateRentReceiptPage() {
   const c = useRentReceiptPage();
   const hasDirectoryError =
-    c.landlords.isError || c.tenants.isError || c.leases.isError;
+    c.persons.isError || c.companies.isError || c.leases.isError;
 
   return (
     <>
@@ -55,11 +55,11 @@ export function GenerateRentReceiptPage() {
         <div className="mb-4">
           <ErrorState
             message={errorMessage(
-              c.leases.error ?? c.tenants.error ?? c.landlords.error,
+              c.leases.error ?? c.persons.error ?? c.companies.error,
             )}
             onRetry={() => {
-              void c.landlords.refetch();
-              void c.tenants.refetch();
+              void c.persons.refetch();
+              void c.companies.refetch();
               void c.leases.refetch();
             }}
           />

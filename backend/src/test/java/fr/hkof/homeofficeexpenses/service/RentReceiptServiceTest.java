@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -25,17 +24,15 @@ import org.junit.jupiter.api.Test;
 import fr.hkof.homeofficeexpenses.domain.Address;
 import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
-import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Lease;
+import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
 import fr.hkof.homeofficeexpenses.domain.Signature;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateFormat;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
-import fr.hkof.homeofficeexpenses.domain.Tenant;
-import fr.hkof.homeofficeexpenses.repository.LandlordRepository;
+import fr.hkof.homeofficeexpenses.repository.PersonRepository;
 import fr.hkof.homeofficeexpenses.repository.RentReceiptRepository;
-import fr.hkof.homeofficeexpenses.repository.TenantRepository;
 import fr.hkof.homeofficeexpenses.service.template.TemplateDataService;
 import fr.hkof.homeofficeexpenses.service.template.TemplateService;
 import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.RentReceiptDto;
@@ -44,12 +41,12 @@ import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.RentReceiptRequest;
 class RentReceiptServiceTest {
 
     private static final Long COMPANY_ID = 1L;
+    private static final Long TENANT_COMPANY_ID = 5L;
 
     private RentReceiptRepository repository;
     private CompanyService companies;
-    private RentConfigurationService rentConfigurationService;
-    private LandlordRepository landlordRepository;
-    private TenantRepository tenantRepository;
+    private LeaseService leaseService;
+    private PersonRepository persons;
     private TemplateService templateService;
     private TemplateDataService templateDataService;
     private SignatureService signatureService;
@@ -61,43 +58,58 @@ class RentReceiptServiceTest {
     void setUp() {
         repository = mock(RentReceiptRepository.class);
         companies = mock(CompanyService.class);
-        rentConfigurationService = mock(RentConfigurationService.class);
-        landlordRepository = mock(LandlordRepository.class);
-        tenantRepository = mock(TenantRepository.class);
+        leaseService = mock(LeaseService.class);
+        persons = mock(PersonRepository.class);
         templateService = mock(TemplateService.class);
         templateDataService = mock(TemplateDataService.class);
         signatureService = mock(SignatureService.class);
         pdfService = mock(PdfService.class);
         storage = mock(StorageService.class);
-        service = new RentReceiptService(repository, companies, rentConfigurationService, landlordRepository,
-                tenantRepository, templateService, templateDataService, signatureService, pdfService, storage,
+        service = new RentReceiptService(repository, companies, leaseService, persons, templateService,
+                templateDataService, signatureService, pdfService, storage,
                 Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
-    private Company company() {
+    private Company company(Long id, String name) {
         Company company = new Company();
-        company.setId(COMPANY_ID);
-        company.setName("HKOF");
+        company.setId(id);
+        company.setName(name);
         return company;
     }
 
-    private Lease lease() {
-        Landlord landlord = new Landlord();
-        landlord.setId(1L);
-        landlord.setName("Bailleur");
-        landlord.setAddress("1 rue du Bail");
-        Tenant tenant = new Tenant();
-        tenant.setId(2L);
-        tenant.setName("Locataire");
-        tenant.setAddress("2 rue du Locataire");
+    private Person person(Long id, String name, String address) {
+        Person person = new Person();
+        person.setId(id);
+        person.setName(name);
+        person.setAddress(address);
+        return person;
+    }
+
+    private Lease normalLease() {
         Address address = new Address();
         address.setId(4L);
         address.setLabel("12 rue de la République");
         Lease lease = new Lease();
         lease.setId(3L);
         lease.setCompanyId(COMPANY_ID);
-        lease.setLandlord(landlord);
-        lease.setTenant(tenant);
+        lease.setLandlord(person(1L, "Bailleur", "1 rue du Bail"));
+        lease.setTenant(person(2L, "Locataire", "2 rue du Locataire"));
+        lease.setAddress(address);
+        lease.setRentExclCharges(new BigDecimal("900.00"));
+        lease.setCharges(new BigDecimal("50.00"));
+        return lease;
+    }
+
+    private Lease companyLease() {
+        Address address = new Address();
+        address.setId(4L);
+        address.setLabel("12 rue de la République");
+        Lease lease = new Lease();
+        lease.setId(3L);
+        lease.setCompanyId(TENANT_COMPANY_ID);
+        lease.setCompanyLease(true);
+        lease.setLandlord(person(1L, "Bailleur", "1 rue du Bail"));
+        lease.setTenant(null);
         lease.setAddress(address);
         lease.setRentExclCharges(new BigDecimal("900.00"));
         lease.setCharges(new BigDecimal("50.00"));
@@ -117,19 +129,24 @@ class RentReceiptServiceTest {
 
     private RentReceiptRequest request(String month, String periodStart, String periodEnd, String rent, String charges,
             Long templateId, Long signatureId) {
-        return new RentReceiptRequest(month, COMPANY_ID, 1L, 2L, periodStart, periodEnd, rent, charges, null, null,
+        return new RentReceiptRequest(month, COMPANY_ID, 1L, 2L, null, periodStart, periodEnd, rent, charges, null, null,
+                templateId, signatureId);
+    }
+
+    private RentReceiptRequest companyRequest(String month, Long templateId, Long signatureId) {
+        return new RentReceiptRequest(month, COMPANY_ID, 1L, null, TENANT_COMPANY_ID, null, null, null, null, null, null,
                 templateId, signatureId);
     }
 
     private void stubGenerationDependencies(TemplateDocument template) {
-        when(companies.entity(COMPANY_ID)).thenReturn(company());
-        when(companies.find(COMPANY_ID)).thenReturn(Optional.of(company()));
-        when(rentConfigurationService.resolveLease(1L, 2L)).thenReturn(lease());
+        when(companies.entity(COMPANY_ID)).thenReturn(company(COMPANY_ID, "HKOF"));
+        when(companies.find(COMPANY_ID)).thenReturn(Optional.of(company(COMPANY_ID, "HKOF")));
+        when(leaseService.resolveLease(1L, 2L, null)).thenReturn(normalLease());
         when(templateService.active(TemplateType.RENT_RECEIPT)).thenReturn(template);
         Signature signature = new Signature();
         signature.setId(7L);
-        when(signatureService.resolveForLandlord(null, 1L)).thenReturn(Optional.of(signature));
-        when(signatureService.resolveForLandlord(7L, 1L)).thenReturn(Optional.of(signature));
+        when(signatureService.resolveForPerson(null, 1L)).thenReturn(Optional.of(signature));
+        when(signatureService.resolveForPerson(7L, 1L)).thenReturn(Optional.of(signature));
         when(signatureService.dataUri(7L)).thenReturn("data:image/png;base64,AAAA");
         when(templateService.render(any(), any())).thenReturn("<html></html>");
         when(pdfService.renderHtmlToPdf("<html></html>")).thenReturn(new byte[]{1});
@@ -139,8 +156,8 @@ class RentReceiptServiceTest {
             saved.setId(10L);
             return saved;
         });
-        when(landlordRepository.findById(1L)).thenReturn(Optional.of(lease().getLandlord()));
-        when(tenantRepository.findById(2L)).thenReturn(Optional.of(lease().getTenant()));
+        when(persons.findById(1L)).thenReturn(Optional.of(person(1L, "Bailleur", "1 rue du Bail")));
+        when(persons.findById(2L)).thenReturn(Optional.of(person(2L, "Locataire", "2 rue du Locataire")));
     }
 
     @Test
@@ -161,11 +178,14 @@ class RentReceiptServiceTest {
         assertThat(dto.status()).isEqualTo("ACTIVE");
         assertThat(dto.landlordName()).isEqualTo("Bailleur");
         assertThat(dto.tenantName()).isEqualTo("Locataire");
+        assertThat(dto.tenantId()).isEqualTo(2L);
+        assertThat(dto.tenantCompanyId()).isNull();
         assertThat(dto.pdfAvailable()).isTrue();
         assertThat(dto.periodStart()).isEqualTo(LocalDate.of(2026, 10, 1));
         assertThat(dto.periodEnd()).isEqualTo(LocalDate.of(2026, 10, 31));
         assertThat(dto.issueDate()).isEqualTo(LocalDate.of(2026, 10, 1));
         assertThat(dto.paymentDate()).isEqualTo(LocalDate.of(2026, 10, 1));
+        verify(storage).storePdf("quittance_2026-10_l1_t2_v1.pdf", new byte[]{1});
     }
 
     @Test
@@ -188,13 +208,38 @@ class RentReceiptServiceTest {
     }
 
     @Test
+    @DisplayName("A company lease stores the tenant company and keeps its own version sequence")
+    void generateCompanyLease() {
+        TemplateDocument template = template(4L, TemplateType.RENT_RECEIPT, "Quittance", 2);
+        stubGenerationDependencies(template);
+        when(companies.entity(TENANT_COMPANY_ID)).thenReturn(company(TENANT_COMPANY_ID, "Société Locataire"));
+        when(companies.find(TENANT_COMPANY_ID)).thenReturn(Optional.of(company(TENANT_COMPANY_ID, "Société Locataire")));
+        when(leaseService.resolveLease(1L, null, TENANT_COMPANY_ID)).thenReturn(companyLease());
+        RentReceipt existing = new RentReceipt();
+        existing.setVersion(1);
+        when(repository.findFirstByMonthAndLandlordIdAndTenantCompanyIdOrderByVersionDescIdDesc(
+                "2026-10", 1L, TENANT_COMPANY_ID)).thenReturn(Optional.of(existing));
+
+        RentReceiptDto dto = service.generate(companyRequest("2026-10", null, null));
+
+        assertThat(dto.companyId()).isEqualTo(TENANT_COMPANY_ID);
+        assertThat(dto.companyName()).isEqualTo("Société Locataire");
+        assertThat(dto.landlordName()).isEqualTo("Bailleur");
+        assertThat(dto.tenantId()).isNull();
+        assertThat(dto.tenantCompanyId()).isEqualTo(TENANT_COMPANY_ID);
+        assertThat(dto.tenantName()).isEqualTo("Société Locataire");
+        assertThat(dto.version()).isEqualTo(2);
+        verify(storage).storePdf("quittance_2026-10_l1_c5_v2.pdf", new byte[]{1});
+    }
+
+    @Test
     @DisplayName("Generation rejects an inverted period and a template of another type")
     void generateRejectsInvalidInputs() {
-        when(companies.entity(COMPANY_ID)).thenReturn(company());
-        when(rentConfigurationService.resolveLease(1L, 2L)).thenReturn(lease());
+        when(companies.entity(COMPANY_ID)).thenReturn(company(COMPANY_ID, "HKOF"));
+        when(leaseService.resolveLease(1L, 2L, null)).thenReturn(normalLease());
         Signature signature = new Signature();
         signature.setId(7L);
-        when(signatureService.resolveForLandlord(null, 1L)).thenReturn(Optional.of(signature));
+        when(signatureService.resolveForPerson(null, 1L)).thenReturn(Optional.of(signature));
         when(signatureService.dataUri(7L)).thenReturn("data:image/png;base64,AAAA");
 
         assertThatThrownBy(() -> service.generate(request("2026-10", "2026-10-31", "2026-10-01", null, null, null, null)))
@@ -209,17 +254,17 @@ class RentReceiptServiceTest {
     }
 
     @Test
-    @DisplayName("Generation without a configured signature is rejected in French")
+    @DisplayName("Generation without a configured landlord signature is rejected in French")
     void generateWithoutSignature() {
-        when(companies.entity(COMPANY_ID)).thenReturn(company());
-        when(rentConfigurationService.resolveLease(1L, 2L)).thenReturn(lease());
+        when(companies.entity(COMPANY_ID)).thenReturn(company(COMPANY_ID, "HKOF"));
+        when(leaseService.resolveLease(1L, 2L, null)).thenReturn(normalLease());
         when(templateService.active(TemplateType.RENT_RECEIPT))
                 .thenReturn(template(1L, TemplateType.RENT_RECEIPT, "Quittance", 1));
-        when(signatureService.resolveForLandlord(null, 1L)).thenReturn(Optional.empty());
+        when(signatureService.resolveForPerson(null, 1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.generate(request("2026-10", null, null, null, null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Aucune signature configurée. Configurez une signature dans la page Paramètres.");
+                .hasMessage("Aucune signature configurée. Ajoutez une signature au bailleur dans la page LMNP.");
     }
 
     @Test
@@ -237,11 +282,11 @@ class RentReceiptServiceTest {
     @Test
     @DisplayName("Preview rejects an inverted period and a template of another type")
     void previewRejectsInvalidInputs() {
-        when(companies.entity(COMPANY_ID)).thenReturn(company());
-        when(rentConfigurationService.resolveLease(1L, 2L)).thenReturn(lease());
+        when(companies.entity(COMPANY_ID)).thenReturn(company(COMPANY_ID, "HKOF"));
+        when(leaseService.resolveLease(1L, 2L, null)).thenReturn(normalLease());
         Signature signature = new Signature();
         signature.setId(7L);
-        when(signatureService.resolveForLandlord(null, 1L)).thenReturn(Optional.of(signature));
+        when(signatureService.resolveForPerson(null, 1L)).thenReturn(Optional.of(signature));
         when(signatureService.dataUri(7L)).thenReturn("data:image/png;base64,AAAA");
 
         assertThatThrownBy(() -> service.preview(request("2026-10", "2026-10-31", "2026-10-01", null, null, null, null)))
@@ -286,33 +331,36 @@ class RentReceiptServiceTest {
     }
 
     @Test
-    @DisplayName("The active receipt is selected by pair, then by company and month, then by month")
+    @DisplayName("The active receipt is selected by tenant pair, then by company and month, then by month")
     void activeForMonth() {
         RentReceipt receipt = new RentReceipt();
         receipt.setId(10L);
         receipt.setStatus(DocumentStatus.ACTIVE);
         when(repository.findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
                 "2026-10", 1L, 2L, DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
-        assertThat(service.activeForMonth(COMPANY_ID, "2026-10", 1L, 2L)).isSameAs(receipt);
+        when(repository.findFirstByMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
+                "2026-10", 1L, TENANT_COMPANY_ID, DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
+        assertThat(service.activeForMonth(COMPANY_ID, "2026-10", 1L, 2L, null)).isSameAs(receipt);
+        assertThat(service.activeForMonth(COMPANY_ID, "2026-10", 1L, null, TENANT_COMPANY_ID)).isSameAs(receipt);
 
         when(repository.findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
                 COMPANY_ID, "2026-10", DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
         when(repository.findFirstByMonthAndStatusOrderByVersionDescIdDesc("2026-10", DocumentStatus.ACTIVE))
                 .thenReturn(Optional.of(receipt));
-        assertThat(service.activeForMonth(COMPANY_ID, "2026-10", null, 2L)).isSameAs(receipt);
-        assertThat(service.activeForMonth(COMPANY_ID, "2026-10", 1L, null)).isSameAs(receipt);
-        assertThat(service.activeForMonth(COMPANY_ID, "2026-10", null, null)).isSameAs(receipt);
-        assertThat(service.activeForMonth(null, "2026-10", null, null)).isSameAs(receipt);
+        assertThat(service.activeForMonth(COMPANY_ID, "2026-10", null, 2L, null)).isSameAs(receipt);
+        assertThat(service.activeForMonth(COMPANY_ID, "2026-10", 1L, null, null)).isSameAs(receipt);
+        assertThat(service.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).isSameAs(receipt);
+        assertThat(service.activeForMonth(null, "2026-10", null, null, null)).isSameAs(receipt);
 
         when(repository.findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
                 "2026-10", 3L, 4L, DocumentStatus.ACTIVE)).thenReturn(Optional.empty());
-        assertThat(service.activeForMonth(COMPANY_ID, "2026-10", 3L, 4L)).isNull();
+        assertThat(service.activeForMonth(COMPANY_ID, "2026-10", 3L, 4L, null)).isNull();
         when(repository.findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
                 COMPANY_ID, "2026-11", DocumentStatus.ACTIVE)).thenReturn(Optional.empty());
-        assertThat(service.activeForMonth(COMPANY_ID, "2026-11", null, null)).isNull();
+        assertThat(service.activeForMonth(COMPANY_ID, "2026-11", null, null, null)).isNull();
         when(repository.findFirstByMonthAndStatusOrderByVersionDescIdDesc("2026-11", DocumentStatus.ACTIVE))
                 .thenReturn(Optional.empty());
-        assertThat(service.activeForMonth(null, "2026-11", null, null)).isNull();
+        assertThat(service.activeForMonth(null, "2026-11", null, null, null)).isNull();
     }
 
     @Test
@@ -332,7 +380,7 @@ class RentReceiptServiceTest {
     }
 
     @Test
-    @DisplayName("Mapping a receipt tolerates missing landlord and tenant records")
+    @DisplayName("Mapping a receipt tolerates missing person and company records")
     void toDtoWithMissingDirectoryEntries() {
         RentReceipt receipt = new RentReceipt();
         receipt.setId(10L);
@@ -345,9 +393,9 @@ class RentReceiptServiceTest {
         receipt.setTotal(new BigDecimal("950"));
         receipt.setStatus(DocumentStatus.ACTIVE);
         receipt.setPdfPath("/data/out/quittance.pdf");
-        when(landlordRepository.findById(5L)).thenReturn(Optional.empty());
-        when(tenantRepository.findById(6L)).thenReturn(Optional.empty());
-        when(companies.find(COMPANY_ID)).thenReturn(Optional.of(company()));
+        when(persons.findById(5L)).thenReturn(Optional.empty());
+        when(persons.findById(6L)).thenReturn(Optional.empty());
+        when(companies.find(COMPANY_ID)).thenReturn(Optional.of(company(COMPANY_ID, "HKOF")));
 
         RentReceiptDto dto = service.toDto(receipt);
 
@@ -355,6 +403,26 @@ class RentReceiptServiceTest {
         assertThat(dto.landlordName()).isNull();
         assertThat(dto.tenantName()).isNull();
         assertThat(dto.pdfAvailable()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Mapping a company-tenant receipt falls back to the company name")
+    void toDtoWithTenantCompanyOnly() {
+        RentReceipt receipt = new RentReceipt();
+        receipt.setId(10L);
+        receipt.setMonth("2026-10");
+        receipt.setLandlordId(1L);
+        receipt.setTenantCompanyId(TENANT_COMPANY_ID);
+        receipt.setStatus(DocumentStatus.ACTIVE);
+        when(persons.findById(1L)).thenReturn(Optional.of(person(1L, "Bailleur", null)));
+        when(companies.find(TENANT_COMPANY_ID)).thenReturn(Optional.of(company(TENANT_COMPANY_ID, "Société Locataire")));
+
+        RentReceiptDto dto = service.toDto(receipt);
+
+        assertThat(dto.landlordName()).isEqualTo("Bailleur");
+        assertThat(dto.tenantId()).isNull();
+        assertThat(dto.tenantCompanyId()).isEqualTo(TENANT_COMPANY_ID);
+        assertThat(dto.tenantName()).isEqualTo("Société Locataire");
     }
 
     @Test
@@ -373,10 +441,10 @@ class RentReceiptServiceTest {
         assertThat(dto.companyName()).isNull();
         assertThat(dto.landlordId()).isNull();
         assertThat(dto.tenantId()).isNull();
+        assertThat(dto.tenantCompanyId()).isNull();
         assertThat(dto.landlordName()).isNull();
         assertThat(dto.tenantName()).isNull();
         assertThat(dto.pdfAvailable()).isFalse();
-        verify(landlordRepository, never()).findById(any());
-        verify(tenantRepository, never()).findById(any());
+        verify(persons, never()).findById(any());
     }
 }

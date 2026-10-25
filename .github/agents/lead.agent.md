@@ -74,7 +74,7 @@ retry, is not evidence.
 
 All three agents use DeepSeek Flash: Qoder pins `DeepSeek-Flash` in frontmatter, OpenCode pins
 `opencode/deepseek-v4.1-flash-free`. Copilot selects its own model. Never pass a `model`
-override when dispatching `builder` or `reviewer`: there is no tier split and the quick override
+override when routing to `builder` or `reviewer`: there is no tier split and the quick override
 is gone.
 
 ## Handoff
@@ -118,12 +118,12 @@ the frontend gate.
 - Maximum 2 review rounds, counted in `Round:` inside the handoff. Round 2 is the last: if a
   blocker remains, set `BLOCKED` and give the user the single decision plus the failing
   evidence. Never a third round.
-- If a stage returns without changing the handoff status, do not re-dispatch it; name the
+- If a stage returns without changing the handoff status, do not re-run it; name the
   stalled stage and stop.
 - Never reopen a `DONE` task: a later requirement gets a new task ID, it is not a
   `USER_CHANGES_REQUESTED`.
-- If nested dispatch is unavailable (for example a subagent depth limit), stop and tell the
-  user which agent to run next and with which status; never collapse the roles silently.
+- If a role cannot run, stop and tell the user which agent to run next and with which status;
+  never collapse the roles silently.
 - Refuse any exception to the money, contract or template rules and escalate to the user.
 - Ask for a secret only by telling the user to type it in the terminal; never print one.
 
