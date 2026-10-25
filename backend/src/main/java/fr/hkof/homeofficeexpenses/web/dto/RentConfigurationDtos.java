@@ -5,31 +5,22 @@ public final class RentConfigurationDtos {
     private RentConfigurationDtos() {
     }
 
-    public record LandlordRequest(
+    public record PersonRequest(
             String name,
             String address) {
     }
 
-    public record LandlordDto(
+    public record PersonDto(
             Long id,
             String name,
-            String address) {
-    }
-
-    public record TenantRequest(
-            String name,
-            String address) {
-    }
-
-    public record TenantDto(
-            Long id,
-            String name,
-            String address) {
+            String address,
+            int signatureCount) {
     }
 
     public record LeaseRequest(
             Boolean companyLease,
             Long landlordId,
+            Long companyId,
             Long tenantId,
             String propertyAddress,
             String rentExclCharges,

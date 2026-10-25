@@ -13,16 +13,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
-import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Lease;
+import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
-import fr.hkof.homeofficeexpenses.domain.Tenant;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.service.Amounts;
 import fr.hkof.homeofficeexpenses.service.CalculationService;
 import fr.hkof.homeofficeexpenses.service.CompanyService;
+import fr.hkof.homeofficeexpenses.service.LeaseService;
 import fr.hkof.homeofficeexpenses.service.NumberToWords;
-import fr.hkof.homeofficeexpenses.service.RentConfigurationService;
 import fr.hkof.homeofficeexpenses.service.SignatureService;
 
 @Service
@@ -37,24 +36,26 @@ public class TemplateDataService {
 
     private final CompanyService companyService;
     private final SignatureService signatureService;
-    private final RentConfigurationService rentConfigurationService;
+    private final LeaseService leaseService;
 
     public TemplateDataService(CompanyService companyService, SignatureService signatureService,
-            RentConfigurationService rentConfigurationService) {
+            LeaseService leaseService) {
         this.companyService = companyService;
         this.signatureService = signatureService;
-        this.rentConfigurationService = rentConfigurationService;
+        this.leaseService = leaseService;
     }
 
-    public Map<String, Object> dataRentReceipt(Company company, Landlord landlord, Tenant tenant, Lease lease,
-            RentReceipt rentReceipt, String signature) {
+    public Map<String, Object> dataRentReceipt(Company company, Person landlord, Person tenant, Company tenantCompany,
+            Lease lease, RentReceipt rentReceipt, String signature) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("bailleur", Map.of(
                 "nom", landlord == null ? "" : text(landlord.getName()),
                 "adresse", landlord == null ? "" : text(landlord.getAddress())));
         data.put("locataire", Map.of(
-                "nom", tenant == null ? "" : text(tenant.getName()),
-                "adresse", tenant == null ? "" : text(tenant.getAddress())));
+                "nom", tenant != null ? text(tenant.getName())
+                        : tenantCompany != null ? text(tenantCompany.getName()) : "",
+                "adresse", tenant != null ? text(tenant.getAddress())
+                        : tenantCompany != null ? text(tenantCompany.getAddress()) : ""));
         data.put("logement", Map.of(
                 "adresse", lease == null || lease.getAddress() == null ? "" : text(lease.getAddress().getLabel())));
         data.put("mois_libelle", Amounts.formatMonth(YearMonth.parse(rentReceipt.getMonth())));
@@ -109,12 +110,12 @@ public class TemplateDataService {
         Company company = companyService.list().isEmpty()
                 ? new Company()
                 : companyService.entity(companyService.list().get(0).id());
-        String signature = signatureService.resolveForCompany(company.getId(), null)
+        String signature = signatureService.resolveForCompanyCeo(company.getId(), null)
                 .map(stored -> signatureService.dataUri(stored.getId()))
                 .orElse(null);
         String effectiveSignature = signature == null || signature.isBlank() ? PREVIEW_SIGNATURE : signature;
         if (type == TemplateType.RENT_RECEIPT) {
-            Lease lease = rentConfigurationService.exampleLease();
+            Lease lease = leaseService.exampleLease();
             RentReceipt rentReceipt = new RentReceipt();
             rentReceipt.setMonth("2026-10");
             rentReceipt.setPeriodStart(LocalDate.of(2026, 10, 1));
@@ -125,10 +126,13 @@ public class TemplateDataService {
                     rentReceipt.getCharges()));
             rentReceipt.setPaymentDate(LocalDate.of(2026, 10, 5));
             rentReceipt.setIssueDate(LocalDate.of(2026, 10, 1));
+            Company tenantCompany = lease == null || !lease.isCompanyLease() || lease.getCompanyId() == null
+                    ? null
+                    : companyService.find(lease.getCompanyId()).orElse(null);
             return dataRentReceipt(company,
                     lease == null ? null : lease.getLandlord(),
                     lease == null ? null : lease.getTenant(),
-                    lease, rentReceipt, effectiveSignature);
+                    tenantCompany, lease, rentReceipt, effectiveSignature);
         }
         ExpenseStatement statement = new ExpenseStatement();
         statement.setMonth("2026-10");

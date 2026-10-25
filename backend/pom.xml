@@ -35,7 +35,7 @@
 		<jsoup.version>1.21.1</jsoup.version>
 		<jmustache.version>1.16</jmustache.version>
 		<wiremock.version>3.13.2</wiremock.version>
-		<testcontainers.version>1.21.3</testcontainers.version>
+		<testcontainers.version>1.21.4</testcontainers.version>
 		<jacoco.version>0.8.13</jacoco.version>
 	</properties>
 	<dependencies>

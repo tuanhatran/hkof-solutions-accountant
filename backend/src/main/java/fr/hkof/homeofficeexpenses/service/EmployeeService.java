@@ -73,7 +73,7 @@ public class EmployeeService {
     @Transactional
     public void delete(Long id) {
         Employee employee = entity(id);
-        if (signatures.existsByEmployeeIdAndDeletedFalse(id)) {
+        if (signatures.existsByPersonIdAndDeletedFalse(id)) {
             throw new BusinessException(
                     "Ce salarié porte des signatures et ne peut pas être supprimé.");
         }
@@ -89,12 +89,16 @@ public class EmployeeService {
     }
 
     public EmployeeDto toDto(Employee employee) {
+        long signatureCount = employee.getId() == null ? 0
+                : signatures.countByPersonIdAndDeletedFalse(employee.getId());
         return new EmployeeDto(
                 employee.getId(),
                 employee.getCompanyId(),
                 employee.getFirstName(),
                 employee.getLastName(),
                 employee.getEmail(),
+                employee.getAddress(),
+                (int) signatureCount,
                 employee.getTitle().name());
     }
 
@@ -115,6 +119,7 @@ public class EmployeeService {
             }
         }
         employee.setEmail(email);
+        employee.setAddress(optionalText(request.address()));
         employee.setTitle(title(request.title()));
     }
 

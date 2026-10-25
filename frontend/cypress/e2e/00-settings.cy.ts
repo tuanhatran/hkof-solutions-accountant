@@ -2,15 +2,19 @@ import {
   SEED_PRORATA,
   SEED_RENT_INPUT,
   SEED_TOTAL,
+  personByName,
   seededLease,
   selectAddressForLease,
   waitForText,
   waitForValue,
 } from "../support/helpers";
 
+const SEEDED_LANDLORD = "Nom du bailleur";
+
 describe("Settings", () => {
-  it("saves the company tab and keeps it after reload", () => {
+  it("redirects /configuration to Entreprise and keeps the company after reload", () => {
     cy.visit("/configuration");
+    cy.location("pathname").should("eq", "/configuration/entreprise");
 
     waitForValue('[data-cy="input-raison-sociale"]', "HKOF");
     waitForText('[data-cy="prorata-indicatif"]', SEED_PRORATA);
@@ -25,9 +29,13 @@ describe("Settings", () => {
     waitForValue('[data-cy="input-raison-sociale"]', "HKOF E2E");
   });
 
-  it("edits the seeded lease amounts in the Quittances tab", () => {
-    cy.visit("/configuration");
-    cy.get('[data-cy="onglet-quittances"]').click();
+  it("edits the seeded lease amounts in the LMNP Baux et adresses tab", () => {
+    cy.visit("/configuration/lmnp");
+    cy.get('[data-cy="onglet-baux"]').should(
+      "have.attr",
+      "aria-selected",
+      "true",
+    );
 
     seededLease().then((lease) => {
       selectAddressForLease(lease);
@@ -45,7 +53,6 @@ describe("Settings", () => {
     });
 
     cy.reload();
-    cy.get('[data-cy="onglet-quittances"]').click();
     seededLease().then((lease) => {
       selectAddressForLease(lease);
       waitForText(`[data-cy="total-bail-${lease.id}"]`, "1 350,00 €");
@@ -55,43 +62,63 @@ describe("Settings", () => {
     });
   });
 
-  it("adds, edits then removes a landlord", () => {
-    cy.visit("/configuration");
-    cy.get('[data-cy="onglet-quittances"]').click();
+  it("adds, edits then removes a natural person in the Personnes tab", () => {
+    cy.visit("/configuration/lmnp");
+    cy.get('[data-cy="onglet-personnes"]').click();
 
-    cy.get('[data-cy="btn-ajouter-bailleur"]').click();
-    cy.get('[data-cy="input-bailleur-nom"]').type("Bailleur E2E");
-    cy.get('[data-cy="input-bailleur-adresse"]').type(
+    cy.get('[data-cy="btn-ajouter-personne"]').click();
+    cy.get('[data-cy="formulaire-personne"]').should("be.visible");
+    cy.get('[data-cy="input-personne-nom"]').type("Personne E2E");
+    cy.get('[data-cy="input-personne-adresse"]').type(
       "2 rue du Test, 75001 Paris",
     );
-    cy.get('[data-cy="btn-enregistrer-bailleur"]').click();
-    cy.contains('[data-cy^="bailleur-"]', "Bailleur E2E", {
+    cy.get('[data-cy="btn-enregistrer-personne"]').click();
+
+    cy.contains("Personne « Personne E2E » ajoutée.", {
       timeout: 15_000,
     }).should("be.visible");
+    // The modal stays open in saved mode so signatures can be added.
+    cy.get('[data-cy="personne-enregistree"]').should("be.visible");
 
-    cy.contains('[data-cy^="bailleur-"]', "Bailleur E2E").within(() => {
-      cy.get('[data-cy^="btn-modifier-bailleur-"]').click();
-    });
-    cy.get('[data-cy="input-bailleur-nom"]')
-      .clear()
-      .type("Bailleur E2E modifié");
-    cy.get('[data-cy="btn-enregistrer-bailleur"]').click();
-    cy.contains('[data-cy^="bailleur-"]', "Bailleur E2E modifié", {
-      timeout: 15_000,
-    }).should("be.visible");
+    personByName("Personne E2E").then((person) => {
+      cy.get(
+        '[data-cy="dialogue-formulaire-personne"] button[aria-label="Fermer"]',
+      ).click();
+      cy.get('[data-cy="formulaire-personne"]').should("not.exist");
+      cy.get(`[data-cy="personne-${person.id}"]`)
+        .should("contain.text", "Personne E2E")
+        .and("contain.text", "2 rue du Test, 75001 Paris");
 
-    cy.contains('[data-cy^="bailleur-"]', "Bailleur E2E modifié").within(() => {
-      cy.get('[data-cy^="btn-supprimer-bailleur-"]').click();
+      cy.get(`[data-cy="btn-modifier-personne-${person.id}"]`).click();
+      cy.get('[data-cy="input-personne-nom"]')
+        .clear()
+        .type("Personne E2E modifiée");
+      cy.get('[data-cy="btn-enregistrer-personne"]').click();
+      cy.contains("Personne « Personne E2E modifiée » mise à jour.", {
+        timeout: 15_000,
+      }).should("be.visible");
+
+      cy.get(
+        '[data-cy="dialogue-formulaire-personne"] button[aria-label="Fermer"]',
+      ).click();
+      cy.get(`[data-cy="personne-${person.id}"]`).should(
+        "contain.text",
+        "Personne E2E modifiée",
+      );
+
+      cy.get(`[data-cy="btn-supprimer-personne-${person.id}"]`).click();
+      cy.get('[data-cy="dialogue-supprimer-personne"]').should("be.visible");
+      cy.get('[data-cy="dialogue-confirmer"]').click();
+
+      cy.contains("Personne supprimée.", { timeout: 15_000 }).should(
+        "be.visible",
+      );
+      cy.get(`[data-cy="personne-${person.id}"]`).should("not.exist");
     });
-    cy.get('[data-cy="dialogue-supprimer-bailleur"]').should("be.visible");
-    cy.get('[data-cy="dialogue-confirmer"]').click();
-    cy.contains('[data-cy^="bailleur-"]', "Bailleur E2E modifié", {
-      timeout: 15_000,
-    }).should("not.exist");
   });
 
   it("adds, edits then removes an expense type", () => {
-    cy.visit("/configuration");
+    cy.visit("/configuration/entreprise");
 
     cy.get('[data-cy="btn-ajouter-poste"]').click();
     cy.get('[data-cy="formulaire-poste"]').should("be.visible");
@@ -126,37 +153,35 @@ describe("Settings", () => {
     );
   });
 
-  it("adds a landlord signature linked to the seeded bailleur", () => {
-    cy.visit("/configuration");
-    cy.get('[data-cy="onglet-quittances"]').click();
+  it("adds a signature to the seeded natural person from her form", () => {
+    cy.visit("/configuration/lmnp");
+    cy.get('[data-cy="onglet-personnes"]').click();
 
-    cy.request<{ id: number; name: string }[]>("/api/landlords").then(
-      ({ body }) => {
-        const landlord = body[0];
-        if (!landlord) {
-          throw new Error("seeded landlord missing");
-        }
+    personByName(SEEDED_LANDLORD).then((landlord) => {
+      cy.get(`[data-cy="btn-modifier-personne-${landlord.id}"]`).click();
+      cy.get('[data-cy="formulaire-personne"]').should("be.visible");
 
-        cy.get('[data-cy="btn-ajouter-signature"]').click();
-        cy.get('[data-cy="formulaire-signature"]').should("be.visible");
-        cy.get('[data-cy="input-signature-nom"]').type(
-          "Signature E2E bailleur",
-        );
-        cy.get('[data-cy="select-bailleur-signature"]').select(
-          String(landlord.id),
-        );
-        cy.get('[data-cy="input-signature-image"]').selectFile(
-          "cypress/fixtures/signature-e2e.png",
-          { force: true },
-        );
-        cy.get('[data-cy="btn-enregistrer-signature"]').click();
+      cy.get('[data-cy="input-signature-personne-nom"]').type(
+        "Signature E2E bailleur",
+      );
+      cy.get('[data-cy="input-signature-image"]').selectFile(
+        "cypress/fixtures/signature-e2e.png",
+        { force: true },
+      );
+      cy.get('[data-cy="btn-ajouter-signature-personne"]').click();
 
-        cy.contains('[data-cy^="signature-"]', "Signature E2E bailleur", {
+      cy.contains("Signature « Signature E2E bailleur » ajoutée.", {
+        timeout: 15_000,
+      }).should("be.visible");
+      cy.contains(
+        '[data-cy^="signature-personne-"]',
+        "Signature E2E bailleur",
+        {
           timeout: 15_000,
-        })
-          .should("be.visible")
-          .and("contain.text", `Bailleur : ${landlord.name}`);
-      },
-    );
+        },
+      )
+        .should("be.visible")
+        .and("contain.text", "Ajoutée le");
+    });
   });
 });

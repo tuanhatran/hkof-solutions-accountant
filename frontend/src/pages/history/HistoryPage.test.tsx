@@ -157,7 +157,7 @@ function resetDrafts() {
     issueDate: "",
     templateId: null,
     landlordId: null,
-    tenantId: null,
+    tenantKey: null,
     initialized: false,
     dirty: false,
   });

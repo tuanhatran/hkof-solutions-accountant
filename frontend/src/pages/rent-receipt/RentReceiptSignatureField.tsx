@@ -2,10 +2,9 @@ import "./RentReceiptSignatureField.css";
 import { Link } from "react-router-dom";
 import { errorMessage } from "@/api/client";
 import { FieldGroup } from "@/components/ui/FieldGroup";
-import { signatureTypeLabel } from "@/components/signatures/signatureConstants";
 import type { RentReceiptController } from "./useRentReceiptPage";
 
-/** Signature picker plus its three possible alerts. */
+/** Signature picker of the selected landlord plus its alerts. */
 export function RentReceiptSignatureField({ c }: { c: RentReceiptController }) {
   return (
     <>
@@ -13,7 +12,7 @@ export function RentReceiptSignatureField({ c }: { c: RentReceiptController }) {
         <FieldGroup
           id="quittance-signature"
           label="Signature"
-          help="Image apposée au bas du PDF généré."
+          help="Signatures du bailleur sélectionné, apposées au bas du PDF."
           badge={<span className="badge badge-neutral">PNG / JPEG</span>}
         >
           <select
@@ -35,7 +34,7 @@ export function RentReceiptSignatureField({ c }: { c: RentReceiptController }) {
             ) : null}
             {c.availableSignatures.map((candidate) => (
               <option key={candidate.id} value={candidate.id}>
-                {candidate.name} — {signatureTypeLabel(candidate.type)}
+                {candidate.name}
               </option>
             ))}
           </select>
@@ -52,28 +51,15 @@ export function RentReceiptSignatureField({ c }: { c: RentReceiptController }) {
           Les signatures n’ont pas pu être chargées :{" "}
           {errorMessage(c.signatures.error)}
         </p>
-      ) : (c.signatures.data ?? []).length === 0 && !c.signatures.isPending ? (
-        <p
-          className="rent-receipt-signature-field-alert"
-          role="alert"
-          data-cy="alerte-signature-manquante"
-        >
-          Aucune signature trouvée. Configurez une signature dans la page{" "}
-          <Link to="/configuration" className="link">
-            Paramètres
-          </Link>
-          .
-        </p>
       ) : c.landlordWithoutSignature ? (
         <p
           className="rent-receipt-signature-field-alert"
           role="alert"
           data-cy="alerte-signature-bailleur"
         >
-          Aucune signature pour ce bailleur. Ajoutez une signature liée à ce
-          bailleur dans la page{" "}
-          <Link to="/configuration" className="link">
-            Paramètres
+          Aucune signature pour ce bailleur. Ajoutez-en une dans sa fiche, page{" "}
+          <Link to="/configuration/lmnp" className="link">
+            LMNP · Personnes
           </Link>
           .
         </p>

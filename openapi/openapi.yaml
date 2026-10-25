@@ -854,6 +854,14 @@ paths:
         - name: tenantId
           in: query
           required: false
+          description: Personne physique locataire ; exclusif avec tenantCompanyId.
+          schema:
+            type: integer
+            format: int64
+        - name: tenantCompanyId
+          in: query
+          required: false
+          description: Société locataire ; exclusif avec tenantId.
           schema:
             type: integer
             format: int64
@@ -1103,19 +1111,12 @@ paths:
       tags:
         - signature-controller
       operationId: listSignatures
-      description: Liste les signatures, éventuellement filtrées par société ou salarié.
+      description: Liste les signatures non supprimées de la personne demandée.
       parameters:
-        - name: companyId
+        - name: personId
           in: query
-          required: false
-          description: Identifiant de la société.
-          schema:
-            type: integer
-            format: int64
-        - name: employeeId
-          in: query
-          required: false
-          description: Identifiant du salarié.
+          required: true
+          description: Identifiant de la personne (personne physique ou salarié), obligatoire.
           schema:
             type: integer
             format: int64
@@ -1133,37 +1134,25 @@ paths:
         - signature-controller
       operationId: createSignature
       description: >-
-        Dépose une signature. Les types EMPLOYEE et ENTREPRISE_CEO exigent
-        employeeId ; le type LANDLORD exige landlordId.
+        Dépose une signature pour une personne. Plusieurs signatures peuvent
+        coexister pour une même personne.
       requestBody:
         content:
           multipart/form-data:
             schema:
               type: object
               properties:
-                type:
-                  type: string
-                  enum:
-                    - LANDLORD
-                    - ENTREPRISE_CEO
-                    - EMPLOYEE
+                personId:
+                  type: integer
+                  format: int64
+                  description: Personne propriétaire de la signature.
                 name:
                   type: string
-                landlordId:
-                  type: integer
-                  format: int64
-                  description: Obligatoire pour une signature de type LANDLORD.
-                employeeId:
-                  type: integer
-                  format: int64
-                  description: >-
-                    Obligatoire pour une signature de type EMPLOYEE ou
-                    ENTREPRISE_CEO.
                 file:
                   type: string
                   format: binary
               required:
-                - type
+                - personId
                 - name
                 - file
         required: true
@@ -1258,11 +1247,14 @@ paths:
                     type: integer
                   detail:
                     type: string
-  /api/landlords:
+  /api/persons:
     get:
       tags:
-        - rent-configuration-controller
-      operationId: listLandlords
+        - person-controller
+      operationId: listPersons
+      description: >-
+        Liste les personnes physiques non supprimées, triées par nom. Les
+        salariés sont exclus de cette liste.
       responses:
         "200":
           description: OK
@@ -1271,16 +1263,16 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/LandlordDto"
+                  $ref: "#/components/schemas/PersonDto"
     post:
       tags:
-        - rent-configuration-controller
-      operationId: createLandlord
+        - person-controller
+      operationId: createPerson
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/LandlordRequest"
+              $ref: "#/components/schemas/PersonRequest"
         required: true
       responses:
         "201":
@@ -1288,18 +1280,18 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/LandlordDto"
+                $ref: "#/components/schemas/PersonDto"
         "400":
           description: Bad Request
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-  /api/landlords/{id}:
+  /api/persons/{id}:
     put:
       tags:
-        - rent-configuration-controller
-      operationId: updateLandlord
+        - person-controller
+      operationId: updatePerson
       parameters:
         - name: id
           in: path
@@ -1311,7 +1303,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/LandlordRequest"
+              $ref: "#/components/schemas/PersonRequest"
         required: true
       responses:
         "200":
@@ -1319,7 +1311,7 @@ paths:
           content:
             "*/*":
               schema:
-                $ref: "#/components/schemas/LandlordDto"
+                $ref: "#/components/schemas/PersonDto"
         "400":
           description: Bad Request
           content:
@@ -1334,108 +1326,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
     delete:
       tags:
-        - rent-configuration-controller
-      operationId: deleteLandlord
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-  /api/tenants:
-    get:
-      tags:
-        - rent-configuration-controller
-      operationId: listTenants
-      responses:
-        "200":
-          description: OK
-          content:
-            "*/*":
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TenantDto"
-    post:
-      tags:
-        - rent-configuration-controller
-      operationId: createTenant
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TenantRequest"
-        required: true
-      responses:
-        "201":
-          description: Created
-          content:
-            "*/*":
-              schema:
-                $ref: "#/components/schemas/TenantDto"
-        "400":
-          description: Bad Request
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-  /api/tenants/{id}:
-    put:
-      tags:
-        - rent-configuration-controller
-      operationId: updateTenant
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TenantRequest"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            "*/*":
-              schema:
-                $ref: "#/components/schemas/TenantDto"
-        "400":
-          description: Bad Request
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-    delete:
-      tags:
-        - rent-configuration-controller
-      operationId: deleteTenant
+        - person-controller
+      operationId: deletePerson
       parameters:
         - name: id
           in: path
@@ -1582,12 +1474,15 @@ components:
         id:
           type: integer
           format: int64
-        type:
-          type: string
-          enum:
-            - LANDLORD
-            - ENTREPRISE_CEO
-            - EMPLOYEE
+        personId:
+          type: integer
+          format: int64
+          description: Personne propriétaire de la signature.
+        personName:
+          type:
+            - string
+            - "null"
+          description: Nom lisible de la personne, personne physique ou salarié.
         name:
           type: string
         mimeType:
@@ -1595,35 +1490,6 @@ components:
         createdAt:
           type: string
           format: date-time
-        companyId:
-          type:
-            - integer
-            - "null"
-          format: int64
-          description: Société de la signature salariée ; absente pour un bailleur.
-        companyName:
-          type:
-            - string
-            - "null"
-        employeeId:
-          type:
-            - integer
-            - "null"
-          format: int64
-          description: Salarié propriétaire de la signature ; absent pour un bailleur.
-        employeeName:
-          type:
-            - string
-            - "null"
-        landlordId:
-          type:
-            - integer
-            - "null"
-          format: int64
-        landlordName:
-          type:
-            - string
-            - "null"
     CompanyRequest:
       type: object
       required:
@@ -1709,6 +1575,11 @@ components:
             - string
             - "null"
           description: Adresse électronique, unique par société lorsqu'elle est renseignée.
+        address:
+          type:
+            - string
+            - "null"
+          description: Adresse personnelle facultative du salarié.
         title:
           type: string
           enum:
@@ -1736,6 +1607,15 @@ components:
           type:
             - string
             - "null"
+        address:
+          type:
+            - string
+            - "null"
+        signatureCount:
+          type: integer
+          format: int32
+          readOnly: true
+          description: Nombre de signatures non supprimées du salarié.
         title:
           type: string
           enum:
@@ -1743,31 +1623,20 @@ components:
             - CFO
             - ACCOUNTANT
             - EMPLOYEE
-    LandlordRequest:
+    PersonRequest:
       type: object
+      required:
+        - name
       properties:
         name:
           type: string
+          description: Nom de la personne physique.
         address:
-          type: string
-    LandlordDto:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        name:
-          type: string
-        address:
-          type: string
-    TenantRequest:
-      type: object
-      properties:
-        name:
-          type: string
-        address:
-          type: string
-    TenantDto:
+          type:
+            - string
+            - "null"
+          description: Adresse personnelle facultative.
+    PersonDto:
       type: object
       properties:
         id:
@@ -1776,7 +1645,14 @@ components:
         name:
           type: string
         address:
-          type: string
+          type:
+            - string
+            - "null"
+        signatureCount:
+          type: integer
+          format: int32
+          readOnly: true
+          description: Nombre de signatures non supprimées de la personne.
     AddressDto:
       type: object
       properties:
@@ -1791,14 +1667,25 @@ components:
         companyLease:
           type: boolean
           description: >-
-            Bail société : affiche et rend obligatoires les surfaces du logement.
-            Le lien à une société se fait depuis la société, jamais depuis le bail.
+            Bail société : le locataire est une société (companyId obligatoire) et
+            le bailleur une personne physique. Sinon le bailleur et le locataire
+            sont deux personnes physiques distinctes.
         landlordId:
           type: integer
           format: int64
-        tenantId:
-          type: integer
+          description: Personne physique bailleur.
+        companyId:
+          type:
+            - integer
+            - "null"
           format: int64
+          description: Société locataire, obligatoire pour un bail société.
+        tenantId:
+          type:
+            - integer
+            - "null"
+          format: int64
+          description: Personne physique locataire, obligatoire hors bail société.
         propertyAddress:
           type: string
           description: >-
@@ -1831,7 +1718,7 @@ components:
             - "null"
           format: int64
           readOnly: true
-          description: Société liée ; définie uniquement depuis la société.
+          description: Société liée ; société locataire pour un bail société.
         companyName:
           type:
             - string
@@ -1843,12 +1730,16 @@ components:
           type: integer
           format: int64
         tenantId:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int64
         landlordName:
           type: string
         tenantName:
-          type: string
+          type:
+            - string
+            - "null"
         propertyAddress:
           type: string
         rentExclCharges:
@@ -2034,7 +1925,6 @@ components:
       type: object
       required:
         - landlordId
-        - tenantId
       properties:
         month:
           type: string
@@ -2049,9 +1939,19 @@ components:
         landlordId:
           type: integer
           format: int64
+          description: Personne physique bailleur.
         tenantId:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int64
+          description: Personne physique locataire ; exclusif avec tenantCompanyId.
+        tenantCompanyId:
+          type:
+            - integer
+            - "null"
+          format: int64
+          description: Société locataire ; exclusif avec tenantId.
         periodStart:
           type: string
         periodEnd:
@@ -2091,12 +1991,21 @@ components:
           type: integer
           format: int64
         tenantId:
-          type: integer
+          type:
+            - integer
+            - "null"
+          format: int64
+        tenantCompanyId:
+          type:
+            - integer
+            - "null"
           format: int64
         landlordName:
           type: string
         tenantName:
-          type: string
+          type:
+            - string
+            - "null"
         periodStart:
           type: string
           format: date

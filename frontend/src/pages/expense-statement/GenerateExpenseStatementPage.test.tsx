@@ -141,8 +141,13 @@ vi.mock("@/api/queries", async (importOriginal) => {
       data: activeStatementData,
       isPending: false,
     }),
-    useSignatures: () => ({
-      data: signatureList,
+    useSignatures: (personId: number | null) => ({
+      data:
+        personId === null
+          ? []
+          : signatureList.filter(
+              (signature) => signature.personId === personId,
+            ),
       isPending: signaturePending,
       isError: signatureError !== null,
       error: signatureError,
@@ -155,7 +160,8 @@ const MONTH = "2026-01";
 
 const LANDLORD: SignatureDto = {
   id: 3,
-  type: "LANDLORD",
+  personId: 3,
+  personName: "M. Bailleur",
   name: "Bailleur",
   mimeType: "image/png",
   createdAt: "2026-10-23T10:00:00Z",
@@ -163,11 +169,20 @@ const LANDLORD: SignatureDto = {
 
 const CEO: SignatureDto = {
   id: 4,
-  type: "EMPLOYEE",
+  personId: 9,
+  personName: "Camille Martin",
   name: "Gérant",
   mimeType: "image/jpeg",
   createdAt: "2026-10-23T10:00:00Z",
-  employeeId: 9,
+};
+
+const CEO_V2: SignatureDto = {
+  id: 5,
+  personId: 9,
+  personName: "Camille Martin",
+  name: "Gérant 2026",
+  mimeType: "image/jpeg",
+  createdAt: "2026-10-23T10:00:00Z",
 };
 
 function renderPage() {
@@ -184,7 +199,7 @@ function renderPage() {
 describe("GenerateExpenseStatementPage signatures", () => {
   beforeEach(() => {
     lastPreviewLoader = null;
-    signatureList = [LANDLORD, CEO];
+    signatureList = [LANDLORD, CEO, CEO_V2];
     signatureError = null;
     signaturePending = false;
     companiesError = null;
@@ -279,33 +294,37 @@ describe("GenerateExpenseStatementPage signatures", () => {
     );
   });
 
-  it("refreshes the preview with the newly selected signature", async () => {
+  it("lists only the CEO signatures and refreshes the preview with the newly selected one", async () => {
     renderPage();
 
     const select = await screen.findByLabelText("Signature");
     expect(select).toHaveValue("4");
+    const options = Array.from(
+      select.querySelectorAll<HTMLOptionElement>("option"),
+    ).map((option) => option.value);
+    expect(options).toEqual(["4", "5"]);
 
-    await userEvent.setup().selectOptions(select, "3");
-    expect(select).toHaveValue("3");
+    await userEvent.setup().selectOptions(select, "5");
+    expect(select).toHaveValue("5");
 
     await lastPreviewLoader?.(new AbortController().signal);
     expect(api.expenseStatements.preview).toHaveBeenLastCalledWith(
-      expect.objectContaining({ signatureId: 3 }),
+      expect.objectContaining({ signatureId: 5 }),
       expect.anything(),
     );
   });
 
-  it("warns and blocks generation when no signature is configured", async () => {
+  it("warns and blocks generation when the CEO has no signature", async () => {
     signatureList = [];
 
     renderPage();
 
-    expect(
-      await screen.findByText(/Aucune signature trouvée/),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Paramètres" })).toHaveAttribute(
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveAttribute("data-cy", "alerte-signature-manquante");
+    expect(alert).toHaveTextContent(/Aucune signature pour le PDG/);
+    expect(screen.getByRole("link", { name: "Entreprise" })).toHaveAttribute(
       "href",
-      "/configuration",
+      "/configuration/entreprise",
     );
 
     await waitFor(() =>
@@ -328,7 +347,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     expect(alert).toHaveTextContent(
       "Les signatures n’ont pas pu être chargées : Service indisponible",
     );
-    expect(screen.queryByText(/Aucune signature trouvée/)).toBeNull();
+    expect(screen.queryByText(/Aucune signature pour le PDG/)).toBeNull();
 
     await waitFor(() =>
       expect(api.expenseStatements.calculate).toHaveBeenCalled(),
@@ -573,7 +592,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     renderPage();
 
     expect(screen.getByLabelText("Signature")).toBeDisabled();
-    expect(screen.queryByText(/Aucune signature trouvée/)).toBeNull();
+    expect(screen.queryByText(/Aucune signature pour le PDG/)).toBeNull();
   });
 
   it("selects a template and toggles the complete preview", async () => {

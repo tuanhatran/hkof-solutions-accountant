@@ -19,15 +19,27 @@ public interface LeaseRepository extends JpaRepository<Lease, Long> {
 
     Optional<Lease> findFirstByLandlordIdAndTenantIdAndDeletedFalse(Long landlordId, Long tenantId);
 
+    Optional<Lease> findFirstByLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalse(Long landlordId,
+            Long companyId);
+
     Optional<Lease> findFirstByDeletedFalseOrderByIdAsc();
 
     boolean existsByLandlordIdAndTenantIdAndDeletedFalse(Long landlordId, Long tenantId);
 
     boolean existsByLandlordIdAndTenantIdAndDeletedFalseAndIdNot(Long landlordId, Long tenantId, Long id);
 
+    boolean existsByLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalse(Long landlordId, Long companyId);
+
+    boolean existsByLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalseAndIdNot(Long landlordId, Long companyId,
+            Long id);
+
     boolean existsByLandlordIdAndDeletedFalse(Long landlordId);
 
     boolean existsByTenantIdAndDeletedFalse(Long tenantId);
 
     boolean existsByCompanyIdAndDeletedFalse(Long companyId);
+
+    boolean existsByCompanyIdAndDeletedFalseAndIdNot(Long companyId, Long id);
+
+    boolean existsByCompanyIdAndCompanyLeaseTrueAndDeletedFalse(Long companyId);
 }

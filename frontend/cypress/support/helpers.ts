@@ -66,8 +66,17 @@ export interface LeaseSummary {
   id?: number;
   addressId?: number;
   landlordId?: number;
-  tenantId?: number;
+  tenantId?: number | null;
+  tenantCompanyId?: number | null;
+  companyLease?: boolean;
   propertyAddress?: string;
+}
+
+export interface PersonSummary {
+  id: number;
+  name?: string;
+  address?: string | null;
+  signatureCount?: number;
 }
 
 /** Selects the address of a lease in the « Baux et adresses » dropdown. */
@@ -80,7 +89,7 @@ export function selectAddressForLease(lease: LeaseSummary): void {
   );
 }
 
-/** Reads the seeded active lease; the E2E reset recreates exactly one. */
+/** Reads the seeded active lease; the E2E reset recreates the lease directory. */
 export function seededLease(): Cypress.Chainable<LeaseSummary> {
   return cy.request<LeaseSummary[]>("/api/leases").then(({ body }) => {
     expect(body, "seeded leases").to.have.length.greaterThan(0);
@@ -88,23 +97,60 @@ export function seededLease(): Cypress.Chainable<LeaseSummary> {
   });
 }
 
+/**
+ * Reads the seeded normal lease (two natural persons). The E2E reset seeds a
+ * company lease next to it, so receipt specs must select the normal pair.
+ */
+export function normalLease(): Cypress.Chainable<LeaseSummary> {
+  return cy.request<LeaseSummary[]>("/api/leases").then(({ body }) => {
+    const lease = body.find(
+      (candidate) =>
+        candidate.companyLease !== true &&
+        candidate.tenantId !== undefined &&
+        candidate.tenantId !== null,
+    );
+    if (!lease) {
+      throw new Error("seeded normal lease missing");
+    }
+    return lease;
+  });
+}
+
+/** Reads a natural person by name through the `/api/persons` directory. */
+export function personByName(name: string): Cypress.Chainable<PersonSummary> {
+  return cy.request<PersonSummary[]>("/api/persons").then(({ body }) => {
+    const person = body.find((candidate) => candidate.name === name);
+    if (!person) {
+      throw new Error(`natural person not found: ${name}`);
+    }
+    return person;
+  });
+}
+
 export function createRentReceipt(month: string = MONTHS): void {
-  seededLease().then((lease) => {
-    cy.request({
-      method: "POST",
-      url: "/api/rent-receipts",
-      body: {
-        month,
-        landlordId: lease.landlordId,
-        tenantId: lease.tenantId,
-        periodStart: `${month}-01`,
-        periodEnd: endOfMonth(month),
-        rentExclCharges: "900.00",
-        charges: "50.00",
-      },
-    })
-      .its("status")
-      .should("eq", 201);
+  normalLease().then((lease) => {
+    cy.request<{ id: number }[]>("/api/companies").then(({ body }) => {
+      const companyId = body[0]?.id;
+      if (companyId === undefined) {
+        throw new Error("seeded company missing");
+      }
+      cy.request({
+        method: "POST",
+        url: "/api/rent-receipts",
+        body: {
+          month,
+          companyId,
+          landlordId: lease.landlordId,
+          tenantId: lease.tenantId,
+          periodStart: `${month}-01`,
+          periodEnd: endOfMonth(month),
+          rentExclCharges: "900.00",
+          charges: "50.00",
+        },
+      })
+        .its("status")
+        .should("eq", 201);
+    });
   });
 }
 

@@ -14,23 +14,21 @@ import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.Employee;
 import fr.hkof.homeofficeexpenses.domain.EmployeeTitle;
 import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
-import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.LlmConfig;
 import fr.hkof.homeofficeexpenses.domain.LlmProvider;
+import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateFormat;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
-import fr.hkof.homeofficeexpenses.domain.Tenant;
 import fr.hkof.homeofficeexpenses.repository.AddressRepository;
 import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
-import fr.hkof.homeofficeexpenses.repository.LandlordRepository;
 import fr.hkof.homeofficeexpenses.repository.LeaseRepository;
 import fr.hkof.homeofficeexpenses.repository.LlmConfigRepository;
+import fr.hkof.homeofficeexpenses.repository.PersonRepository;
 import fr.hkof.homeofficeexpenses.repository.TemplateDocumentRepository;
-import fr.hkof.homeofficeexpenses.repository.TenantRepository;
 import fr.hkof.homeofficeexpenses.service.llm.DefaultPrompt;
 
 @Component
@@ -40,15 +38,12 @@ public class DataInitializer implements ApplicationRunner {
     private static final String DEFAULT_HOME_ADDRESS = "12 rue de la République, 75000 Paris";
     private static final String DEFAULT_LANDLORD_NAME = "Nom du bailleur";
     private static final String DEFAULT_LANDLORD_ADDRESS = "Adresse du bailleur";
-    private static final String DEFAULT_TENANT_NAME = "Nom du locataire";
-    private static final String DEFAULT_TENANT_ADDRESS = "Adresse du locataire";
     private static final String DEFAULT_RENT_EXCL_CHARGES = "1300.00";
     private static final String DEFAULT_CHARGES = "0.00";
 
     private final CompanyRepository companyRepository;
     private final EmployeeRepository employeeRepository;
-    private final LandlordRepository landlordRepository;
-    private final TenantRepository tenantRepository;
+    private final PersonRepository personRepository;
     private final LeaseRepository leaseRepository;
     private final AddressRepository addressRepository;
     private final ExpenseItemRepository expenseItemRepository;
@@ -58,14 +53,12 @@ public class DataInitializer implements ApplicationRunner {
     private final Clock clock;
 
     public DataInitializer(CompanyRepository companyRepository, EmployeeRepository employeeRepository,
-            LandlordRepository landlordRepository, TenantRepository tenantRepository,
-            LeaseRepository leaseRepository, AddressRepository addressRepository,
+            PersonRepository personRepository, LeaseRepository leaseRepository, AddressRepository addressRepository,
             ExpenseItemRepository expenseItemRepository, TemplateDocumentRepository templateRepository,
             LlmConfigRepository llmConfigRepository, AppProperties properties, Clock clock) {
         this.companyRepository = companyRepository;
         this.employeeRepository = employeeRepository;
-        this.landlordRepository = landlordRepository;
-        this.tenantRepository = tenantRepository;
+        this.personRepository = personRepository;
         this.leaseRepository = leaseRepository;
         this.addressRepository = addressRepository;
         this.expenseItemRepository = expenseItemRepository;
@@ -122,10 +115,8 @@ public class DataInitializer implements ApplicationRunner {
     }
 
     private void initRentConfiguration(Company company) {
-        Landlord landlord = landlordRepository.findFirstByDeletedFalseOrderByNameAsc()
-                .orElseGet(this::createDefaultLandlord);
-        Tenant tenant = tenantRepository.findFirstByDeletedFalseOrderByNameAsc()
-                .orElseGet(this::createDefaultTenant);
+        Person landlord = personRepository.findAllNaturalPersons().stream().findFirst()
+                .orElseGet(this::createDefaultPerson);
         if (leaseRepository.findFirstByDeletedFalseOrderByIdAsc().isPresent()) {
             return;
         }
@@ -133,7 +124,7 @@ public class DataInitializer implements ApplicationRunner {
                 .orElseGet(this::createDefaultAddress);
         Lease lease = new Lease();
         lease.setLandlord(landlord);
-        lease.setTenant(tenant);
+        lease.setTenant(null);
         lease.setCompanyId(company.getId());
         lease.setCompanyLease(true);
         lease.setTotalArea(new BigDecimal("70.00"));
@@ -146,13 +137,14 @@ public class DataInitializer implements ApplicationRunner {
         leaseRepository.save(lease);
     }
 
-    private Landlord createDefaultLandlord() {
-        Landlord landlord = new Landlord();
-        landlord.setName(DEFAULT_LANDLORD_NAME);
-        landlord.setAddress(DEFAULT_LANDLORD_ADDRESS);
-        landlord.setDeleted(false);
-        landlord.setCreatedAt(Instant.now(clock));
-        return landlordRepository.save(landlord);
+    private Person createDefaultPerson() {
+        Person person = new Person();
+        person.setName(DEFAULT_LANDLORD_NAME);
+        person.setAddress(DEFAULT_LANDLORD_ADDRESS);
+        person.setDeleted(false);
+        person.setCreatedAt(Instant.now(clock));
+        person.setUpdatedAt(Instant.now(clock));
+        return personRepository.save(person);
     }
 
     private Address createDefaultAddress() {
@@ -161,15 +153,6 @@ public class DataInitializer implements ApplicationRunner {
         address.setDeleted(false);
         address.setCreatedAt(Instant.now(clock));
         return addressRepository.save(address);
-    }
-
-    private Tenant createDefaultTenant() {
-        Tenant tenant = new Tenant();
-        tenant.setName(DEFAULT_TENANT_NAME);
-        tenant.setAddress(DEFAULT_TENANT_ADDRESS);
-        tenant.setDeleted(false);
-        tenant.setCreatedAt(Instant.now(clock));
-        return tenantRepository.save(tenant);
     }
 
     private void initItems(Company company) {

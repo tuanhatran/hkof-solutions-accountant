@@ -19,10 +19,8 @@ import type {
   EmployeeDto,
   EmployeeRequest,
   AddressDto,
-  LandlordDto,
-  LandlordRequest,
-  TenantDto,
-  TenantRequest,
+  PersonDto,
+  PersonRequest,
   LeaseDto,
   LeaseRequest,
   ExpenseItemDto,
@@ -30,7 +28,6 @@ import type {
   RentReceiptDto,
   RentReceiptRequest,
   SignatureDto,
-  SignatureType,
   TemplateDto,
   TemplateVariableDto,
   TemplateType,
@@ -90,36 +87,20 @@ export const api = {
       request<void>(`/api/employees/${id}`, { method: "DELETE" }),
   },
 
-  landlords: {
-    list: () => request<LandlordDto[]>("/api/landlords"),
-    create: (requestBody: LandlordRequest) =>
-      request<LandlordDto>(
-        "/api/landlords",
+  persons: {
+    list: () => request<PersonDto[]>("/api/persons"),
+    create: (requestBody: PersonRequest) =>
+      request<PersonDto>(
+        "/api/persons",
         json({ method: "POST", body: JSON.stringify(requestBody) }),
       ),
-    update: (id: number, requestBody: LandlordRequest) =>
-      request<LandlordDto>(
-        `/api/landlords/${id}`,
+    update: (id: number, requestBody: PersonRequest) =>
+      request<PersonDto>(
+        `/api/persons/${id}`,
         json({ method: "PUT", body: JSON.stringify(requestBody) }),
       ),
-    delete: (id: number) =>
-      request<void>(`/api/landlords/${id}`, { method: "DELETE" }),
-  },
-
-  tenants: {
-    list: () => request<TenantDto[]>("/api/tenants"),
-    create: (requestBody: TenantRequest) =>
-      request<TenantDto>(
-        "/api/tenants",
-        json({ method: "POST", body: JSON.stringify(requestBody) }),
-      ),
-    update: (id: number, requestBody: TenantRequest) =>
-      request<TenantDto>(
-        `/api/tenants/${id}`,
-        json({ method: "PUT", body: JSON.stringify(requestBody) }),
-      ),
-    delete: (id: number) =>
-      request<void>(`/api/tenants/${id}`, { method: "DELETE" }),
+    remove: (id: number) =>
+      request<void>(`/api/persons/${id}`, { method: "DELETE" }),
   },
 
   addresses: {
@@ -171,9 +152,10 @@ export const api = {
       companyId?: number | null,
       landlordId?: number | null,
       tenantId?: number | null,
+      tenantCompanyId?: number | null,
     ): Promise<RentReceiptDto | null> => {
       const result = await request<RentReceiptDto | undefined>(
-        `/api/rent-receipts/active${query({ month, companyId, landlordId, tenantId })}`,
+        `/api/rent-receipts/active${query({ month, companyId, landlordId, tenantId, tenantCompanyId })}`,
       );
       return result ?? null;
     },
@@ -247,28 +229,18 @@ export const api = {
   },
 
   signatures: {
-    list: (companyId?: number | null, employeeId?: number | null) =>
-      request<SignatureDto[]>(
-        `/api/signatures${query({ companyId, employeeId })}`,
-      ),
+    list: (personId?: number | null) =>
+      request<SignatureDto[]>(`/api/signatures${query({ personId })}`),
     // The browser must set the multipart boundary: never set Content-Type here.
     create: (
-      type: SignatureType,
+      personId: number,
       name: string,
       file: File,
-      landlordId: number | null = null,
-      employeeId: number | null = null,
     ): Promise<SignatureDto> => {
       const payload = new FormData();
-      payload.append("type", type);
+      payload.append("personId", String(personId));
       payload.append("name", name);
       payload.append("file", file);
-      if (landlordId !== null) {
-        payload.append("landlordId", String(landlordId));
-      }
-      if (employeeId !== null) {
-        payload.append("employeeId", String(employeeId));
-      }
       return request<SignatureDto>("/api/signatures", {
         method: "POST",
         body: payload,

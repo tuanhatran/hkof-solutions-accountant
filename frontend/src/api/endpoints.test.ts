@@ -86,33 +86,19 @@ describe("company and directory endpoints", () => {
     expect(lastCall()[1]).toMatchObject({ method: "DELETE" });
   });
 
-  it("manages landlords", async () => {
-    await api.landlords.list();
-    expect(lastCall()[0]).toBe("/api/landlords");
+  it("manages persons", async () => {
+    await api.persons.list();
+    expect(lastCall()[0]).toBe("/api/persons");
 
-    await api.landlords.create({ name: "M. Bailleur" });
+    await api.persons.create({ name: "M. Bailleur" });
     expect(lastCall()[1]).toMatchObject({ method: "POST" });
 
-    await api.landlords.update(3, { name: "Autre" });
-    expect(lastCall()[0]).toBe("/api/landlords/3");
+    await api.persons.update(3, { name: "Autre" });
+    expect(lastCall()[0]).toBe("/api/persons/3");
     expect(lastCall()[1]).toMatchObject({ method: "PUT" });
 
-    await api.landlords.delete(3);
-    expect(lastCall()[0]).toBe("/api/landlords/3");
-    expect(lastCall()[1]).toMatchObject({ method: "DELETE" });
-  });
-
-  it("manages tenants", async () => {
-    await api.tenants.list();
-    expect(lastCall()[0]).toBe("/api/tenants");
-
-    await api.tenants.create({ name: "Mme Locataire" });
-    expect(lastCall()[1]).toMatchObject({ method: "POST" });
-
-    await api.tenants.update(2, { name: "Autre" });
-    expect(lastCall()[0]).toBe("/api/tenants/2");
-
-    await api.tenants.delete(2);
+    await api.persons.remove(3);
+    expect(lastCall()[0]).toBe("/api/persons/3");
     expect(lastCall()[1]).toMatchObject({ method: "DELETE" });
   });
 
@@ -256,26 +242,19 @@ describe("signature, receipt and analysis endpoints", () => {
     await api.signatures.list();
     expect(lastCall()[0]).toBe("/api/signatures");
 
-    await api.signatures.list(3, 6);
-    expect(lastCall()[0]).toBe("/api/signatures?companyId=3&employeeId=6");
+    await api.signatures.list(4);
+    expect(lastCall()[0]).toBe("/api/signatures?personId=4");
 
     const file = new File(["png"], "signature.png", { type: "image/png" });
-    await api.signatures.create("LANDLORD", "Bailleur", file, 4);
+    await api.signatures.create(4, "Bailleur", file);
     const [path, init] = lastCall();
     expect(path).toBe("/api/signatures");
     expect(init?.method).toBe("POST");
     expect(init?.body).toBeInstanceOf(FormData);
     const payload = init?.body as FormData;
-    expect(payload.get("type")).toBe("LANDLORD");
+    expect(payload.get("personId")).toBe("4");
     expect(payload.get("name")).toBe("Bailleur");
-    expect(payload.get("landlordId")).toBe("4");
-    expect(payload.get("employeeId")).toBeNull();
     expect(payload.get("file")).toBeInstanceOf(File);
-
-    await api.signatures.create("EMPLOYEE", "Gérant", file, null, 6);
-    const employeePayload = lastCall()[1]?.body as FormData;
-    expect(employeePayload.get("landlordId")).toBeNull();
-    expect(employeePayload.get("employeeId")).toBe("6");
 
     await api.signatures.remove(5);
     expect(lastCall()[1]).toMatchObject({ method: "DELETE" });

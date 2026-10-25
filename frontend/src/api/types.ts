@@ -6,10 +6,8 @@ export type CompanyDto = Schemas["CompanyDto"];
 export type CompanyRequest = Schemas["CompanyRequest"];
 export type EmployeeDto = Schemas["EmployeeDto"];
 export type EmployeeRequest = Schemas["EmployeeRequest"];
-export type LandlordDto = Schemas["LandlordDto"];
-export type LandlordRequest = Schemas["LandlordRequest"];
-export type TenantDto = Schemas["TenantDto"];
-export type TenantRequest = Schemas["TenantRequest"];
+export type PersonDto = Schemas["PersonDto"];
+export type PersonRequest = Schemas["PersonRequest"];
 export type AddressDto = Schemas["AddressDto"];
 export type LeaseDto = Schemas["LeaseDto"];
 export type LeaseRequest = Schemas["LeaseRequest"];
@@ -41,7 +39,6 @@ export type TemplateVariableDto = Schemas["TemplateVariableDto"];
 export type ValidationReportDto = Schemas["ValidationReportDto"];
 
 export type TemplateType = "RENT_RECEIPT" | "EXPENSE_STATEMENT";
-export type SignatureType = "LANDLORD" | "ENTREPRISE_CEO" | "EMPLOYEE";
 export type AnalysisStatus =
   "PENDING" | "RUNNING" | "DONE" | "FAILED" | "CANCELLED";
 export type AiConfidence = "haute" | "moyenne" | "basse";

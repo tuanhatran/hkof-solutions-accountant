@@ -35,11 +35,46 @@ export const expenseSchema = z.object({
 
 export type ExpenseFormValues = z.infer<typeof expenseSchema>;
 
+/** Encoded tenant of a rent receipt: `person:<id>` or `company:<id>`. */
+export const TENANT_KEY_PATTERN = /^(person|company):[1-9]\d*$/;
+
+export interface TenantKeyParts {
+  tenantId: number | null;
+  tenantCompanyId: number | null;
+}
+
+export function parseTenantKey(key: string): TenantKeyParts {
+  const [kind, rawId] = key.split(":");
+  const id = Number(rawId);
+  if (!Number.isInteger(id) || id <= 0) {
+    return { tenantId: null, tenantCompanyId: null };
+  }
+  return kind === "company"
+    ? { tenantId: null, tenantCompanyId: id }
+    : { tenantId: id, tenantCompanyId: null };
+}
+
+export function tenantKeyFromLease(lease: {
+  companyLease?: boolean;
+  companyId?: number | null;
+  tenantId?: number | null;
+}): string {
+  if (lease.companyLease && lease.companyId) {
+    return `company:${lease.companyId}`;
+  }
+  if (lease.tenantId) {
+    return `person:${lease.tenantId}`;
+  }
+  return "";
+}
+
 export const rentReceiptSchema = z
   .object({
     month: z.string().refine(isValidMonth, "Choisissez un mois valide."),
     landlordId: z.string().min(1, "Sélectionnez un bailleur."),
-    tenantId: z.string().min(1, "Sélectionnez un locataire."),
+    tenantKey: z
+      .string()
+      .regex(TENANT_KEY_PATTERN, "Sélectionnez un locataire."),
     periodStart: z.string().refine(isValidDate, "Date de début invalide."),
     periodEnd: z.string().refine(isValidDate, "Date de fin invalide."),
     rentExclCharges: z
@@ -93,6 +128,7 @@ export type CompanyFormValues = z.infer<typeof companySchema>;
 export const employeeSchema = z.object({
   firstName: z.string().trim().min(1, "Le prénom du salarié est obligatoire."),
   lastName: z.string().trim().min(1, "Le nom du salarié est obligatoire."),
+  address: z.string(),
   email: z
     .string()
     .trim()
@@ -107,25 +143,19 @@ export const employeeSchema = z.object({
 
 export type EmployeeFormValues = z.infer<typeof employeeSchema>;
 
-export const landlordSchema = z.object({
-  name: z.string().trim().min(1, "Le nom du bailleur est obligatoire."),
+export const personSchema = z.object({
+  name: z.string().trim().min(1, "Le nom de la personne est obligatoire."),
   address: z.string(),
 });
 
-export type LandlordFormValues = z.infer<typeof landlordSchema>;
-
-export const tenantSchema = z.object({
-  name: z.string().trim().min(1, "Le nom du locataire est obligatoire."),
-  address: z.string(),
-});
-
-export type TenantFormValues = z.infer<typeof tenantSchema>;
+export type PersonFormValues = z.infer<typeof personSchema>;
 
 export const leaseSchema = z
   .object({
     companyLease: z.boolean(),
     landlordId: z.string().min(1, "Sélectionnez un bailleur."),
-    tenantId: z.string().min(1, "Sélectionnez un locataire."),
+    tenantId: z.string(),
+    companyId: z.string(),
     propertyAddress: z
       .string()
       .trim()
@@ -145,6 +175,25 @@ export const leaseSchema = z
     totalArea: optionalSurface("Surface totale invalide."),
     businessArea: optionalSurface("Surface professionnelle invalide."),
   })
+  .refine((values) => !values.companyLease || values.companyId !== "", {
+    path: ["companyId"],
+    message: "Sélectionnez la société locataire.",
+  })
+  .refine((values) => values.companyLease || values.tenantId !== "", {
+    path: ["tenantId"],
+    message: "Sélectionnez un locataire.",
+  })
+  .refine(
+    (values) =>
+      values.companyLease ||
+      values.tenantId === "" ||
+      values.tenantId !== values.landlordId,
+    {
+      path: ["tenantId"],
+      message:
+        "Le bailleur et le locataire doivent être deux personnes distinctes.",
+    },
+  )
   .refine((values) => !values.companyLease || values.totalArea.trim() !== "", {
     path: ["totalArea"],
     message: "La surface totale est obligatoire pour un bail société.",

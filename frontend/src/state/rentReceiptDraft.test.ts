@@ -21,7 +21,7 @@ function resetDraft() {
     issueDate: "2026-01-05",
     templateId: null,
     landlordId: null,
-    tenantId: null,
+    tenantKey: null,
     initialized: false,
     dirty: false,
   });
@@ -68,11 +68,11 @@ describe("useRentReceiptDraft", () => {
   });
 
   it("selects a pair and copies the lease amounts", () => {
-    useRentReceiptDraft.getState().selectPair(4, 7, LEASE);
+    useRentReceiptDraft.getState().selectPair(4, "person:7", LEASE);
 
     const state = useRentReceiptDraft.getState();
     expect(state.landlordId).toBe(4);
-    expect(state.tenantId).toBe(7);
+    expect(state.tenantKey).toBe("person:7");
     expect(state.rentExclCharges).toBe("1300.00");
     expect(state.charges).toBe("50.00");
     expect(state.initialized).toBe(true);
@@ -86,7 +86,7 @@ describe("useRentReceiptDraft", () => {
 
     const state = useRentReceiptDraft.getState();
     expect(state.landlordId).toBe(4);
-    expect(state.tenantId).toBeNull();
+    expect(state.tenantKey).toBeNull();
     expect(state.rentExclCharges).toBe("900.00");
     expect(state.initialized).toBe(true);
     expect(state.dirty).toBe(true);
@@ -97,7 +97,7 @@ describe("useRentReceiptDraft", () => {
 
     const state = useRentReceiptDraft.getState();
     expect(state.landlordId).toBe(4);
-    expect(state.tenantId).toBe(7);
+    expect(state.tenantKey).toBe("person:7");
     expect(state.rentExclCharges).toBe("1300.00");
     expect(state.charges).toBe("50.00");
     expect(state.initialized).toBe(true);
@@ -109,7 +109,7 @@ describe("useRentReceiptDraft", () => {
 
     const state = useRentReceiptDraft.getState();
     expect(state.landlordId).toBeNull();
-    expect(state.tenantId).toBeNull();
+    expect(state.tenantKey).toBeNull();
     expect(state.rentExclCharges).toBe("");
     expect(state.charges).toBe("");
   });

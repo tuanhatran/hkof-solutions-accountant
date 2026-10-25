@@ -33,6 +33,9 @@ public class RentReceipt {
     @Column(name = "tenant_id")
     private Long tenantId;
 
+    @Column(name = "tenant_company_id")
+    private Long tenantCompanyId;
+
     @Column(name = "period_start", nullable = false)
     private LocalDate periodStart;
 
@@ -114,6 +117,14 @@ public class RentReceipt {
 
     public void setTenantId(Long tenantId) {
         this.tenantId = tenantId;
+    }
+
+    public Long getTenantCompanyId() {
+        return tenantCompanyId;
+    }
+
+    public void setTenantCompanyId(Long tenantCompanyId) {
+        this.tenantCompanyId = tenantCompanyId;
     }
 
     public LocalDate getPeriodStart() {

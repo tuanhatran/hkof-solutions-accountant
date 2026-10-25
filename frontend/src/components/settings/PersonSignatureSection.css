@@ -1,0 +1,63 @@
+@reference "../../index.css";
+
+@layer components {
+  .person-signature-section {
+    @apply mt-4 rounded-xl border border-line bg-paper/40 p-3;
+  }
+
+  .person-signature-section-header {
+    @apply flex flex-col gap-0.5;
+  }
+
+  .person-signature-section-title {
+    @apply text-sm font-semibold text-ink;
+  }
+
+  .person-signature-section-hint {
+    @apply text-[10.5px] text-ink-soft;
+  }
+
+  .person-signature-section-grid {
+    @apply mt-3 grid gap-3 sm:grid-cols-2;
+  }
+
+  .person-signature-section-error {
+    @apply mt-2 rounded-lg border border-danger/20 bg-danger-soft/60 p-2.5 text-xs text-danger;
+  }
+
+  .person-signature-section-actions {
+    @apply mt-3 flex justify-end;
+  }
+
+  .person-signature-section-empty {
+    @apply mt-3 rounded-xl border border-dashed border-line-strong p-4 text-center text-xs text-ink-soft;
+  }
+
+  .person-signature-section-list {
+    @apply mt-3 grid gap-2;
+  }
+
+  .person-signature-section-item {
+    @apply flex items-center gap-3 rounded-xl border border-line bg-white/70 p-2.5;
+  }
+
+  .person-signature-section-image {
+    @apply h-10 w-20 shrink-0 rounded-lg border border-line bg-white object-contain p-1;
+  }
+
+  .person-signature-section-item-body {
+    @apply min-w-0 flex-1;
+  }
+
+  .person-signature-section-item-name {
+    @apply truncate text-sm font-semibold text-ink;
+  }
+
+  .person-signature-section-item-meta {
+    @apply text-[11px] text-ink-soft;
+  }
+
+  .person-signature-section-add-hint {
+    @apply mt-2 flex items-center gap-1 text-[10.5px] text-ink-soft;
+  }
+}

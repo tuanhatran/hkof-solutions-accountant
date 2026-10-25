@@ -1,7 +1,0 @@
-@reference "../../index.css";
-
-@layer components {
-  .rent-receipt-settings {
-    @apply space-y-6;
-  }
-}

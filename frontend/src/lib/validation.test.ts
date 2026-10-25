@@ -6,8 +6,9 @@ import {
   employeeSchema,
   expenseItemSchema,
   rentReceiptSchema,
-  landlordSchema,
-  tenantSchema,
+  personSchema,
+  parseTenantKey,
+  tenantKeyFromLease,
   leaseSchema,
 } from "./validation";
 
@@ -58,7 +59,7 @@ describe("rentReceiptSchema", () => {
   const VALID = {
     month: "2026-10",
     landlordId: "1",
-    tenantId: "2",
+    tenantKey: "person:2",
     periodStart: "2026-10-01",
     periodEnd: "2026-10-31",
     rentExclCharges: "900,00",
@@ -76,7 +77,10 @@ describe("rentReceiptSchema", () => {
       rentReceiptSchema.safeParse({ ...VALID, landlordId: "" }).success,
     ).toBe(false);
     expect(
-      rentReceiptSchema.safeParse({ ...VALID, tenantId: "" }).success,
+      rentReceiptSchema.safeParse({ ...VALID, tenantKey: "" }).success,
+    ).toBe(false);
+    expect(
+      rentReceiptSchema.safeParse({ ...VALID, tenantKey: "societe:2" }).success,
     ).toBe(false);
   });
 
@@ -133,6 +137,7 @@ describe("employeeSchema", () => {
   const VALID = {
     firstName: "Camille",
     lastName: "Martin",
+    address: "",
     email: "camille@example.fr",
     title: "CEO" as const,
   };
@@ -190,22 +195,42 @@ describe("expenseItemSchema", () => {
 });
 
 describe("directory schemas", () => {
-  it("requires a landlord and a tenant name", () => {
-    expect(landlordSchema.safeParse({ name: " ", address: "" }).success).toBe(
-      false,
-    );
-    expect(tenantSchema.safeParse({ name: "", address: "" }).success).toBe(
+  it("requires a person name", () => {
+    expect(personSchema.safeParse({ name: " ", address: "" }).success).toBe(
       false,
     );
     expect(
-      landlordSchema.safeParse({
+      personSchema.safeParse({ name: "", address: "1 avenue du Parc" }).success,
+    ).toBe(false);
+    expect(
+      personSchema.safeParse({
         name: "M. Bailleur",
         address: "1 avenue du Parc",
       }).success,
     ).toBe(true);
     expect(
-      tenantSchema.safeParse({ name: "Mme Locataire", address: "" }).success,
+      personSchema.safeParse({ name: "Mme Locataire", address: "" }).success,
     ).toBe(true);
+  });
+
+  it("parses a tenant key into exactly one party", () => {
+    expect(parseTenantKey("person:2")).toEqual({
+      tenantId: 2,
+      tenantCompanyId: null,
+    });
+    expect(parseTenantKey("company:3")).toEqual({
+      tenantId: null,
+      tenantCompanyId: 3,
+    });
+    expect(parseTenantKey("invalide")).toEqual({
+      tenantId: null,
+      tenantCompanyId: null,
+    });
+    expect(tenantKeyFromLease({ tenantId: 2 })).toBe("person:2");
+    expect(tenantKeyFromLease({ companyLease: true, companyId: 3 })).toBe(
+      "company:3",
+    );
+    expect(tenantKeyFromLease({})).toBe("");
   });
 
   it("requires a pair, a property address and valid lease amounts", () => {
@@ -213,6 +238,7 @@ describe("directory schemas", () => {
       companyLease: false,
       landlordId: "1",
       tenantId: "2",
+      companyId: "",
       propertyAddress: "12 rue de la République, 75000 Paris",
       rentExclCharges: "1300,00",
       charges: "0,00",
@@ -226,6 +252,9 @@ describe("directory schemas", () => {
     expect(leaseSchema.safeParse({ ...valid, tenantId: "" }).success).toBe(
       false,
     );
+    expect(leaseSchema.safeParse({ ...valid, tenantId: "1" }).success).toBe(
+      false,
+    );
     expect(
       leaseSchema.safeParse({ ...valid, propertyAddress: " " }).success,
     ).toBe(false);
@@ -237,18 +266,21 @@ describe("directory schemas", () => {
     );
   });
 
-  it("requires and validates the surfaces of a company lease", () => {
+  it("requires a company tenant and validates the surfaces of a company lease", () => {
     const valid = {
       companyLease: true,
       landlordId: "1",
-      tenantId: "2",
+      tenantId: "",
+      companyId: "3",
       propertyAddress: "12 rue de la République, 75000 Paris",
       rentExclCharges: "1300,00",
       charges: "0,00",
       totalArea: "",
       businessArea: "",
     };
-    expect(leaseSchema.safeParse(valid).success).toBe(false);
+    expect(leaseSchema.safeParse({ ...valid, companyId: "" }).success).toBe(
+      false,
+    );
     expect(leaseSchema.safeParse({ ...valid, totalArea: "70" }).success).toBe(
       false,
     );

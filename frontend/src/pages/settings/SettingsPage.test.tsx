@@ -121,8 +121,6 @@ vi.mock("@/api/queries", async (importOriginal) => {
       companyId === 2 ? readyQuery([]) : employeesState,
     useExpenseItems: () => readyQuery([]),
     useSignatures: () => readyQuery([]),
-    useLandlords: () => readyQuery([]),
-    useTenants: () => readyQuery([]),
     useAddresses: () =>
       readyQuery([{ id: 3, label: "12 rue des Lilas, 75011 Paris" }]),
     useLeases: () => readyQuery([LEASE]),
@@ -158,44 +156,29 @@ describe("SettingsPage tabs", () => {
     useToasts.setState({ toasts: [] });
   });
 
-  it("opens on the Entreprise tab with the company form", () => {
+  it("renders the Entreprise settings with the company form", () => {
     renderPage();
 
-    expect(screen.getByRole("tab", { name: "Entreprise" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    expect(
+      screen.getByRole("heading", { name: "Entreprise", level: 1 }),
+    ).toBeVisible();
     expect(screen.getByLabelText("Raison sociale")).toHaveValue("HKOF");
     expect(screen.queryByRole("heading", { name: "Bailleurs" })).toBeNull();
     expect(screen.queryByRole("tab", { name: "Salariés" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Quittances" })).toBeNull();
     expect(screen.getByText("Location bail")).toBeVisible();
   });
 
-  it("switches to the Quittances tab with the directories and signatures", async () => {
+  it("no longer renders the legacy Quittances directories", () => {
     renderPage();
-    const user = userEvent.setup();
 
-    await user.click(screen.getByRole("tab", { name: "Quittances" }));
-
-    expect(
-      await screen.findByRole("heading", { name: "Bailleurs" }),
-    ).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Locataires" })).toBeVisible();
-    expect(
-      screen.getByRole("heading", { name: "Baux et adresses" }),
-    ).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Signatures" })).toBeVisible();
-    expect(screen.queryByLabelText("Raison sociale")).toBeNull();
-    expect(screen.getByRole("tab", { name: "Quittances" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    expect(screen.queryByRole("heading", { name: "Bailleurs" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Locataires" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Signatures" })).toBeNull();
+    expect(screen.getByLabelText("Raison sociale")).toHaveValue("HKOF");
     expect(
       screen.queryByRole("button", { name: "Enregistrer" }),
     ).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole("tab", { name: "Entreprise" }));
-    expect(screen.getByLabelText("Raison sociale")).toHaveValue("HKOF");
   });
 
   it("lists the employees of the selected company with their French title", async () => {
@@ -496,6 +479,7 @@ describe("SettingsPage tabs", () => {
         companyId: 1,
         firstName: "Alex",
         lastName: "Durand",
+        address: null,
         email: null,
         title: "EMPLOYEE",
       }),

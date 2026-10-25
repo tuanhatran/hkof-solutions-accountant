@@ -1,7 +1,6 @@
 ---
 description: Reviews a diff only and reports blockers, with at most three optional notes.
-mode: subagent
-model: opencode/deepseek-v4.1-flash-free
+model: opencode/qwen2.5-coder:7b-64k
 permissions:
   - action: edit
     resource: "*"

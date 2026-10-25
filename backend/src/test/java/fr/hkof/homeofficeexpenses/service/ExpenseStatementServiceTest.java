@@ -126,7 +126,7 @@ class ExpenseStatementServiceTest {
     @Test
     @DisplayName("A draft without rent receipt only lists missing items")
     void draftWithoutReceipt() {
-        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null)).thenReturn(null);
+        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(null);
         when(expenseItemService.list(COMPANY_ID, false)).thenReturn(List.of(
                 itemDto(1L, "loyer", "Loyer"), itemDto(2L, "gaz", "Gaz")));
         when(companies.proRataBase(any())).thenReturn(new BigDecimal("35.71"));
@@ -145,8 +145,8 @@ class ExpenseStatementServiceTest {
     void draftWithReceipt() {
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setTotal(new BigDecimal("950.00"));
-        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null)).thenReturn(rentReceipt);
-        RentReceiptDto receiptDto = new RentReceiptDto(9L, COMPANY_ID, "HKOF", "2026-10", 1L, 2L,
+        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(rentReceipt);
+        RentReceiptDto receiptDto = new RentReceiptDto(9L, COMPANY_ID, "HKOF", "2026-10", 1L, 2L, null,
                 "Bailleur", "Locataire", null, null, "900.00", "50.00", "950.00", null, null, 1, "ACTIVE",
                 1L, "Quittance", 1, null, true);
         when(rentReceiptService.toDto(rentReceipt)).thenReturn(receiptDto);

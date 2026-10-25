@@ -9,11 +9,10 @@ import {
   queryKeys,
   useActiveRentReceipt,
   useCompanies,
-  useLandlords,
   useLeases,
+  usePersons,
   useSignatures,
   useTemplates,
-  useTenants,
 } from "@/api/queries";
 import type { RentReceiptDto } from "@/api/types";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -21,7 +20,9 @@ import { usePdfPreview } from "@/hooks/usePdfPreview";
 import { periodOfMonth } from "@/lib/dates";
 import { formatEUR, formatMonth, parseAmount } from "@/lib/format";
 import {
+  parseTenantKey,
   rentReceiptSchema,
+  tenantKeyFromLease,
   type RentReceiptFormValues,
 } from "@/lib/validation";
 import { resolveActiveCompanyId, useCompanyStore } from "@/state/company";
@@ -29,6 +30,12 @@ import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft } from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
 import { requestFromValues } from "./rentReceiptRequest";
+
+/** Option of the tenant select: a natural person or a company. */
+export interface TenantOption {
+  value: string;
+  label: string;
+}
 
 /**
  * Controller for the rent receipt page: lease selection, form, preview and
@@ -46,11 +53,10 @@ export function useRentReceiptPage() {
     null,
   );
 
-  const landlords = useLandlords();
-  const tenants = useTenants();
+  const persons = usePersons();
+  const companies = useCompanies();
   const leases = useLeases();
   const templates = useTemplates("RENT_RECEIPT");
-  const signatures = useSignatures();
 
   const {
     register,
@@ -64,7 +70,7 @@ export function useRentReceiptPage() {
     defaultValues: {
       month: draft.month,
       landlordId: draft.landlordId === null ? "" : String(draft.landlordId),
-      tenantId: draft.tenantId === null ? "" : String(draft.tenantId),
+      tenantKey: draft.tenantKey ?? "",
       periodStart: draft.periodStart,
       periodEnd: draft.periodEnd,
       rentExclCharges: draft.rentExclCharges,
@@ -80,19 +86,23 @@ export function useRentReceiptPage() {
   const selectedLandlordId = values.landlordId
     ? Number(values.landlordId)
     : null;
-  const selectedTenantId = values.tenantId ? Number(values.tenantId) : null;
+  const {
+    tenantId: selectedTenantId,
+    tenantCompanyId: selectedTenantCompanyId,
+  } = parseTenantKey(values.tenantKey ?? "");
+  const selectedTenantKey = values.tenantKey ?? "";
+
   const leaseRows = leases.data ?? [];
   const selectedLease =
     leaseRows.find(
       (lease) =>
         lease.landlordId !== undefined &&
-        lease.tenantId !== undefined &&
         String(lease.landlordId) === values.landlordId &&
-        String(lease.tenantId) === values.tenantId,
+        tenantKeyFromLease(lease) === selectedTenantKey &&
+        selectedTenantKey !== "",
     ) ?? null;
 
   // A company-linked lease wins over the active company selected in the UI.
-  const companies = useCompanies();
   const storedCompanyId = useCompanyStore((state) => state.activeCompanyId);
   const activeCompanyId = resolveActiveCompanyId(
     storedCompanyId,
@@ -108,24 +118,12 @@ export function useRentReceiptPage() {
     receiptCompanyId,
     selectedLandlordId,
     selectedTenantId,
+    selectedTenantCompanyId,
   );
 
-  const signatureList = signatures.data ?? [];
-  const linkedSignatures = signatureList.filter(
-    (candidate) =>
-      candidate.type === "LANDLORD" &&
-      selectedLandlordId !== null &&
-      candidate.landlordId === selectedLandlordId,
-  );
-  const legacySignatures = signatureList.filter(
-    (candidate) =>
-      candidate.type === "LANDLORD" &&
-      (candidate.landlordId === null || candidate.landlordId === undefined),
-  );
-  const availableSignatures =
-    selectedLandlordId === null
-      ? signatureList.filter((candidate) => candidate.type === "LANDLORD")
-      : [...linkedSignatures, ...legacySignatures];
+  // Signatures belong to the selected landlord only: no cross-person fallback.
+  const signatures = useSignatures(selectedLandlordId);
+  const availableSignatures = signatures.data ?? [];
   const chosenSignatureAvailable = availableSignatures.some(
     (candidate) => candidate.id === chosenSignatureId,
   );
@@ -135,8 +133,8 @@ export function useRentReceiptPage() {
   const signatureAvailable = availableSignatures.length > 0;
   const landlordWithoutSignature =
     selectedLandlordId !== null &&
-    signatureList.length > 0 &&
     !signatures.isPending &&
+    !signatures.isError &&
     !signatureAvailable;
 
   useEffect(() => {
@@ -146,11 +144,23 @@ export function useRentReceiptPage() {
   const models = templates.data ?? [];
   const activeModel = models.find((model) => model.active) ?? null;
   const selectedModel = draft.templateId ?? activeModel?.id ?? null;
-  const landlordRows = landlords.data ?? [];
-  const tenantRows = tenants.data ?? [];
+  const personRows = persons.data ?? [];
+  const companyRows = companies.data ?? [];
+  const personTenantOptions: TenantOption[] = personRows
+    .filter((person) => person.id !== undefined)
+    .map((person) => ({
+      value: `person:${person.id}`,
+      label: person.name ?? "Personne",
+    }));
+  const companyTenantOptions: TenantOption[] = companyRows
+    .filter((company) => company.id !== undefined)
+    .map((company) => ({
+      value: `company:${company.id}`,
+      label: company.name ?? "Société",
+    }));
   // Without a full pair the hook falls back to the month-scoped query, whose
   // receipt belongs to no identifiable pair: never surface it on this page.
-  const pairSelected = selectedLandlordId !== null && selectedTenantId !== null;
+  const pairSelected = selectedLandlordId !== null && selectedTenantKey !== "";
   const activePairReceipt = pairSelected
     ? (activeRentReceipt.data ?? null)
     : null;
@@ -189,7 +199,7 @@ export function useRentReceiptPage() {
       candidates.find(
         (lease) =>
           lease.landlordId === draft.landlordId &&
-          lease.tenantId === draft.tenantId,
+          tenantKeyFromLease(lease) === draft.tenantKey,
       ) ?? (candidates.length === 1 ? candidates[0] : null);
     if (!matching) {
       return;
@@ -200,11 +210,9 @@ export function useRentReceiptPage() {
       matching.landlordId === undefined ? "" : String(matching.landlordId),
       { shouldValidate: true },
     );
-    setValue(
-      "tenantId",
-      matching.tenantId === undefined ? "" : String(matching.tenantId),
-      { shouldValidate: true },
-    );
+    setValue("tenantKey", tenantKeyFromLease(matching), {
+      shouldValidate: true,
+    });
     setValue("rentExclCharges", matching.rentExclCharges ?? "", {
       shouldValidate: true,
     });
@@ -273,18 +281,17 @@ export function useRentReceiptPage() {
     navigate("/generer/note-frais");
   }
 
-  function selectPair(nextLandlordId: string, nextTenantId: string) {
+  function selectPair(nextLandlordId: string, nextTenantKey: string) {
     setValue("landlordId", nextLandlordId, { shouldValidate: true });
-    setValue("tenantId", nextTenantId, { shouldValidate: true });
+    setValue("tenantKey", nextTenantKey, { shouldValidate: true });
     const landlordId = nextLandlordId ? Number(nextLandlordId) : null;
-    const tenantId = nextTenantId ? Number(nextTenantId) : null;
     const lease =
       leaseRows.find(
         (candidate) =>
-          candidate.landlordId === landlordId &&
-          candidate.tenantId === tenantId,
+          String(candidate.landlordId ?? "") === nextLandlordId &&
+          tenantKeyFromLease(candidate) === nextTenantKey,
       ) ?? null;
-    draft.selectPair(landlordId, tenantId, lease);
+    draft.selectPair(landlordId, nextTenantKey || null, lease);
     if (lease) {
       setValue("rentExclCharges", lease.rentExclCharges ?? "", {
         shouldValidate: true,
@@ -330,8 +337,8 @@ export function useRentReceiptPage() {
     mobile,
     mobilePanel,
     setMobilePanel,
-    landlords,
-    tenants,
+    persons,
+    companies,
     leases,
     templates,
     signatures,
@@ -342,10 +349,11 @@ export function useRentReceiptPage() {
     values,
     selectedLease,
     leaseRows,
-    companies,
     companyName,
-    landlordRows,
-    tenantRows,
+    personRows,
+    companyRows,
+    personTenantOptions,
+    companyTenantOptions,
     models,
     selectedModel,
     availableSignatures,

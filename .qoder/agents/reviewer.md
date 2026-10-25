@@ -1,10 +1,9 @@
 ---
 name: reviewer
 description: Read-only blocker review of a HomeOfficeExpenses diff. Real bugs only, never style.
-model: DeepSeek-Flash
+model: Qwen3.8-Flash
 disallowedTools: [Write, Edit, NotebookEdit, Agent]
-permissionMode: dontAsk
-# Qoder has no subagent-only mode; file edits are blocked by disallowedTools, shell is allowed for read-only checks.
+# File edits are blocked by disallowedTools; shell is allowed for read-only checks; agent dispatch is denied.
 # OpenCode keeps its own model pin.
 ---
 

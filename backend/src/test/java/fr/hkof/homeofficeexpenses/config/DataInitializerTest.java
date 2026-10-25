@@ -25,27 +25,24 @@ import fr.hkof.homeofficeexpenses.domain.Address;
 import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.Employee;
 import fr.hkof.homeofficeexpenses.domain.EmployeeTitle;
-import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Lease;
+import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
-import fr.hkof.homeofficeexpenses.domain.Tenant;
 import fr.hkof.homeofficeexpenses.repository.AddressRepository;
 import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
-import fr.hkof.homeofficeexpenses.repository.LandlordRepository;
 import fr.hkof.homeofficeexpenses.repository.LeaseRepository;
 import fr.hkof.homeofficeexpenses.repository.LlmConfigRepository;
+import fr.hkof.homeofficeexpenses.repository.PersonRepository;
 import fr.hkof.homeofficeexpenses.repository.TemplateDocumentRepository;
-import fr.hkof.homeofficeexpenses.repository.TenantRepository;
 
 class DataInitializerTest {
 
     private CompanyRepository companyRepository;
     private EmployeeRepository employeeRepository;
-    private LandlordRepository landlordRepository;
-    private TenantRepository tenantRepository;
+    private PersonRepository personRepository;
     private LeaseRepository leaseRepository;
     private AddressRepository addressRepository;
     private ExpenseItemRepository expenseItemRepository;
@@ -57,8 +54,7 @@ class DataInitializerTest {
     void setUp() {
         companyRepository = mock(CompanyRepository.class);
         employeeRepository = mock(EmployeeRepository.class);
-        landlordRepository = mock(LandlordRepository.class);
-        tenantRepository = mock(TenantRepository.class);
+        personRepository = mock(PersonRepository.class);
         leaseRepository = mock(LeaseRepository.class);
         addressRepository = mock(AddressRepository.class);
         expenseItemRepository = mock(ExpenseItemRepository.class);
@@ -66,7 +62,7 @@ class DataInitializerTest {
         llmConfigRepository = mock(LlmConfigRepository.class);
         AppProperties properties = new AppProperties("data", List.of(),
                 new AppProperties.Llm("http://localhost:11434", "qwen2.5vl"));
-        initializer = new DataInitializer(companyRepository, employeeRepository, landlordRepository, tenantRepository,
+        initializer = new DataInitializer(companyRepository, employeeRepository, personRepository,
                 leaseRepository, addressRepository, expenseItemRepository, templateRepository, llmConfigRepository,
                 properties, Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
@@ -80,7 +76,7 @@ class DataInitializerTest {
     }
 
     @Test
-    @DisplayName("An empty database is seeded with a company, its CEO, rent configuration, items, templates and LLM")
+    @DisplayName("An empty database is seeded with a company, its CEO, a person, a company lease, items, templates and LLM")
     void seedsEmptyDatabase() {
         when(companyRepository.findFirstByDeletedFalseOrderByIdAsc()).thenReturn(Optional.empty());
         when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
@@ -89,17 +85,11 @@ class DataInitializerTest {
             return saved;
         });
         when(employeeRepository.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(1L)).thenReturn(Optional.empty());
-        when(landlordRepository.findFirstByDeletedFalseOrderByNameAsc()).thenReturn(Optional.empty());
-        when(landlordRepository.save(any(Landlord.class))).thenAnswer(invocation -> {
-            Landlord landlord = invocation.getArgument(0);
-            landlord.setId(1L);
-            return landlord;
-        });
-        when(tenantRepository.findFirstByDeletedFalseOrderByNameAsc()).thenReturn(Optional.empty());
-        when(tenantRepository.save(any(Tenant.class))).thenAnswer(invocation -> {
-            Tenant tenant = invocation.getArgument(0);
-            tenant.setId(1L);
-            return tenant;
+        when(personRepository.findAllNaturalPersons()).thenReturn(List.of());
+        when(personRepository.save(any(Person.class))).thenAnswer(invocation -> {
+            Person person = invocation.getArgument(0);
+            person.setId(1L);
+            return person;
         });
         when(leaseRepository.findFirstByDeletedFalseOrderByIdAsc()).thenReturn(Optional.empty());
         when(addressRepository.findFirstByDeletedFalseAndLabelIgnoreCase("12 rue de la République, 75000 Paris"))
@@ -137,6 +127,8 @@ class DataInitializerTest {
         assertThat(leases.getValue().getAddress()).isSameAs(addresses.getValue());
         assertThat(leases.getValue().getCompanyId()).isEqualTo(1L);
         assertThat(leases.getValue().isCompanyLease()).isTrue();
+        assertThat(leases.getValue().getTenant()).isNull();
+        assertThat(leases.getValue().getLandlord().getName()).isEqualTo("Nom du bailleur");
         assertThat(leases.getValue().getTotalArea()).isEqualByComparingTo("70.00");
         assertThat(leases.getValue().getBusinessArea()).isEqualByComparingTo("25.00");
         assertThat(companies.getValue().getHomeAddress()).isNull();
@@ -157,8 +149,7 @@ class DataInitializerTest {
         when(companyRepository.findFirstByDeletedFalseOrderByIdAsc()).thenReturn(Optional.of(company()));
         when(employeeRepository.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(1L))
                 .thenReturn(Optional.of(new Employee()));
-        when(landlordRepository.findFirstByDeletedFalseOrderByNameAsc()).thenReturn(Optional.of(new Landlord()));
-        when(tenantRepository.findFirstByDeletedFalseOrderByNameAsc()).thenReturn(Optional.of(new Tenant()));
+        when(personRepository.findAllNaturalPersons()).thenReturn(List.of(new Person()));
         when(leaseRepository.findFirstByDeletedFalseOrderByIdAsc()).thenReturn(Optional.of(new Lease()));
         when(expenseItemRepository.findFirstByCompanyIdAndCode(eq(1L), any()))
                 .thenReturn(Optional.of(new fr.hkof.homeofficeexpenses.domain.ExpenseItem()));

@@ -115,6 +115,16 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
                       </span>
                     ) : null}
                   </p>
+                  <p className="employee-section-item-address">
+                    {employee.address || "Adresse non renseignée"}
+                  </p>
+                  <p
+                    className="employee-section-item-signatures"
+                    data-cy={`signatures-salarie-${employee.id}`}
+                  >
+                    {employee.signatureCount ?? 0} signature
+                    {(employee.signatureCount ?? 0) > 1 ? "s" : ""}
+                  </p>
                 </div>
                 <Button
                   variant="ghost"

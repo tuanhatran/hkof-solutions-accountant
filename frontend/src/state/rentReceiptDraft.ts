@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { LeaseDto } from "@/api/types";
 import { todayDate, currentMonth, periodOfMonth } from "@/lib/dates";
+import { tenantKeyFromLease } from "@/lib/validation";
 
 interface RentReceiptDraftState {
   month: string;
@@ -13,7 +14,8 @@ interface RentReceiptDraftState {
   issueDate: string;
   templateId: number | null;
   landlordId: number | null;
-  tenantId: number | null;
+  /** Encoded tenant: `person:<id>` or `company:<id>`. */
+  tenantKey: string | null;
   initialized: boolean;
   dirty: boolean;
   changeMonth: (month: string) => void;
@@ -33,7 +35,7 @@ interface RentReceiptDraftState {
   setTemplate: (templateId: number | null) => void;
   selectPair: (
     landlordId: number | null,
-    tenantId: number | null,
+    tenantKey: string | null,
     lease: LeaseDto | null,
   ) => void;
   initializeFromLease: (lease: LeaseDto) => void;
@@ -57,7 +59,7 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
       issueDate: today,
       templateId: null,
       landlordId: null,
-      tenantId: null,
+      tenantKey: null,
       initialized: false,
       dirty: false,
 
@@ -78,14 +80,14 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
 
       setTemplate: (templateId) => set({ templateId, dirty: true }),
 
-      selectPair: (landlordId, tenantId, lease) => {
+      selectPair: (landlordId, tenantKey, lease) => {
         if (!lease) {
-          set({ landlordId, tenantId, initialized: true, dirty: true });
+          set({ landlordId, tenantKey, initialized: true, dirty: true });
           return;
         }
         set({
           landlordId,
-          tenantId,
+          tenantKey,
           rentExclCharges: lease.rentExclCharges ?? "",
           charges: lease.charges ?? "",
           initialized: true,
@@ -96,7 +98,7 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
       initializeFromLease: (lease) =>
         set({
           landlordId: lease.landlordId ?? null,
-          tenantId: lease.tenantId ?? null,
+          tenantKey: tenantKeyFromLease(lease) || null,
           rentExclCharges: lease.rentExclCharges ?? "",
           charges: lease.charges ?? "",
           initialized: true,
@@ -106,7 +108,7 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
       resumeFromLease: (lease) =>
         set({
           landlordId: lease.landlordId ?? null,
-          tenantId: lease.tenantId ?? null,
+          tenantKey: tenantKeyFromLease(lease) || null,
           rentExclCharges: lease.rentExclCharges ?? "",
           charges: lease.charges ?? "",
           dirty: true,
@@ -116,7 +118,7 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
     }),
     {
       name: "homeofficeexpenses.receipt-draft",
-      version: 3,
+      version: 4,
       storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
         month: state.month,
@@ -128,7 +130,7 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
         issueDate: state.issueDate,
         templateId: state.templateId,
         landlordId: state.landlordId,
-        tenantId: state.tenantId,
+        tenantKey: state.tenantKey,
         initialized: state.initialized,
         dirty: state.dirty,
       }),

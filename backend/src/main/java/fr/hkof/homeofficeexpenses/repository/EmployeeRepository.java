@@ -25,4 +25,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     boolean existsByCompanyIdAndEmailIgnoreCaseAndDeletedFalseAndIdNot(Long companyId, String email, Long id);
 
     boolean existsByCompanyIdAndDeletedFalse(Long companyId);
+
+    boolean existsByIdAndDeletedFalse(Long id);
 }

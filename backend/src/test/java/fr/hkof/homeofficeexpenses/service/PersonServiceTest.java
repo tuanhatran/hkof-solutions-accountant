@@ -1,0 +1,119 @@
+package fr.hkof.homeofficeexpenses.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import fr.hkof.homeofficeexpenses.domain.Person;
+import fr.hkof.homeofficeexpenses.repository.LeaseRepository;
+import fr.hkof.homeofficeexpenses.repository.PersonRepository;
+import fr.hkof.homeofficeexpenses.repository.SignatureRepository;
+import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.PersonDto;
+import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.PersonRequest;
+
+class PersonServiceTest {
+
+    private PersonRepository persons;
+    private LeaseRepository leases;
+    private SignatureRepository signatures;
+    private PersonService service;
+
+    @BeforeEach
+    void setUp() {
+        persons = mock(PersonRepository.class);
+        leases = mock(LeaseRepository.class);
+        signatures = mock(SignatureRepository.class);
+        service = new PersonService(persons, leases, signatures,
+                Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
+    }
+
+    private Person person(Long id, String name) {
+        Person person = new Person();
+        person.setId(id);
+        person.setName(name);
+        person.setAddress("Adresse");
+        return person;
+    }
+
+    @Test
+    @DisplayName("Natural persons are listed with their signature count")
+    void lists() {
+        when(persons.findAllNaturalPersons()).thenReturn(List.of(person(1L, "Alice")));
+        when(signatures.countByPersonIdAndDeletedFalse(1L)).thenReturn(2L);
+
+        assertThat(service.list()).extracting(PersonDto::name).containsExactly("Alice");
+        assertThat(service.list().get(0).signatureCount()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Persons can be created, updated and logically deleted")
+    void crud() {
+        when(persons.save(any(Person.class))).thenAnswer(invocation -> {
+            Person saved = invocation.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
+        PersonDto created = service.create(new PersonRequest("  Alice ", "  "));
+        assertThat(created.name()).isEqualTo("Alice");
+        assertThat(created.address()).isNull();
+
+        Person existing = person(1L, "Alice");
+        when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(existing));
+        PersonDto updated = service.update(1L, new PersonRequest("Alicia", "2 rue"));
+        assertThat(updated.name()).isEqualTo("Alicia");
+        assertThat(updated.address()).isEqualTo("2 rue");
+
+        service.delete(1L);
+        assertThat(existing.isDeleted()).isTrue();
+    }
+
+    @Test
+    @DisplayName("A person with signatures or an active lease cannot be deleted")
+    void deletionGuards() {
+        when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Alice")));
+        when(signatures.existsByPersonIdAndDeletedFalse(1L)).thenReturn(true);
+        assertThatThrownBy(() -> service.delete(1L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Cette personne porte des signatures et ne peut pas être supprimée.");
+        verify(persons, never()).save(any());
+
+        when(signatures.existsByPersonIdAndDeletedFalse(1L)).thenReturn(false);
+        when(leases.existsByTenantIdAndDeletedFalse(1L)).thenReturn(true);
+        assertThatThrownBy(() -> service.delete(1L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Cette personne est utilisée par un bail actif et ne peut pas être supprimée.");
+    }
+
+    @Test
+    @DisplayName("Blank names and missing persons are rejected in French")
+    void validation() {
+        assertThatThrownBy(() -> service.create(new PersonRequest(null, null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Le nom de la personne est obligatoire.");
+        assertThatThrownBy(() -> service.create(new PersonRequest(" ", null)))
+                .isInstanceOf(BusinessException.class);
+
+        when(persons.findNaturalPersonById(9L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.update(9L, new PersonRequest("x", null)))
+                .isInstanceOf(NotFoundException.class).hasMessage("Personne introuvable.");
+        assertThatThrownBy(() -> service.delete(9L))
+                .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> service.entity(null))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Sélectionnez une personne.");
+    }
+}

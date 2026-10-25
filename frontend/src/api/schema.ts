@@ -617,10 +617,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Liste les signatures, éventuellement filtrées par société ou salarié. */
+        /** @description Liste les signatures non supprimées de la personne demandée. */
         get: operations["listSignatures"];
         put?: never;
-        /** @description Dépose une signature. Les types EMPLOYEE et ENTREPRISE_CEO exigent employeeId ; le type LANDLORD exige landlordId. */
+        /** @description Dépose une signature pour une personne. Plusieurs signatures peuvent coexister pour une même personne. */
         post: operations["createSignature"];
         delete?: never;
         options?: never;
@@ -660,23 +660,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/landlords": {
+    "/api/persons": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["listLandlords"];
+        /** @description Liste les personnes physiques non supprimées, triées par nom. Les salariés sont exclus de cette liste. */
+        get: operations["listPersons"];
         put?: never;
-        post: operations["createLandlord"];
+        post: operations["createPerson"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/landlords/{id}": {
+    "/api/persons/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -684,41 +685,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["updateLandlord"];
+        put: operations["updatePerson"];
         post?: never;
-        delete: operations["deleteLandlord"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/tenants": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listTenants"];
-        put?: never;
-        post: operations["createTenant"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/tenants/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put: operations["updateTenant"];
-        post?: never;
-        delete: operations["deleteTenant"];
+        delete: operations["deletePerson"];
         options?: never;
         head?: never;
         patch?: never;
@@ -782,27 +751,17 @@ export interface components {
         SignatureDto: {
             /** Format: int64 */
             id?: number;
-            /** @enum {string} */
-            type?: "LANDLORD" | "ENTREPRISE_CEO" | "EMPLOYEE";
+            /**
+             * Format: int64
+             * @description Personne propriétaire de la signature.
+             */
+            personId?: number;
+            /** @description Nom lisible de la personne, personne physique ou salarié. */
+            personName?: string | null;
             name?: string;
             mimeType?: string;
             /** Format: date-time */
             createdAt?: string;
-            /**
-             * Format: int64
-             * @description Société de la signature salariée ; absente pour un bailleur.
-             */
-            companyId?: number | null;
-            companyName?: string | null;
-            /**
-             * Format: int64
-             * @description Salarié propriétaire de la signature ; absent pour un bailleur.
-             */
-            employeeId?: number | null;
-            employeeName?: string | null;
-            /** Format: int64 */
-            landlordId?: number | null;
-            landlordName?: string | null;
         };
         CompanyRequest: {
             /** @description Raison sociale de la société. */
@@ -851,6 +810,8 @@ export interface components {
             lastName: string;
             /** @description Adresse électronique, unique par société lorsqu'elle est renseignée. */
             email?: string | null;
+            /** @description Adresse personnelle facultative du salarié. */
+            address?: string | null;
             /**
              * @description Intitulé descriptif du salarié ; il ne donne aucun droit tant que le contrôle d'accès n'est pas implémenté.
              * @enum {string}
@@ -865,28 +826,31 @@ export interface components {
             firstName?: string;
             lastName?: string;
             email?: string | null;
+            address?: string | null;
+            /**
+             * Format: int32
+             * @description Nombre de signatures non supprimées du salarié.
+             */
+            readonly signatureCount?: number;
             /** @enum {string} */
             title?: "CEO" | "CFO" | "ACCOUNTANT" | "EMPLOYEE";
         };
-        LandlordRequest: {
-            name?: string;
-            address?: string;
+        PersonRequest: {
+            /** @description Nom de la personne physique. */
+            name: string;
+            /** @description Adresse personnelle facultative. */
+            address?: string | null;
         };
-        LandlordDto: {
+        PersonDto: {
             /** Format: int64 */
             id?: number;
             name?: string;
-            address?: string;
-        };
-        TenantRequest: {
-            name?: string;
-            address?: string;
-        };
-        TenantDto: {
-            /** Format: int64 */
-            id?: number;
-            name?: string;
-            address?: string;
+            address?: string | null;
+            /**
+             * Format: int32
+             * @description Nombre de signatures non supprimées de la personne.
+             */
+            readonly signatureCount?: number;
         };
         AddressDto: {
             /** Format: int64 */
@@ -894,12 +858,23 @@ export interface components {
             label?: string;
         };
         LeaseRequest: {
-            /** @description Bail société : affiche et rend obligatoires les surfaces du logement. Le lien à une société se fait depuis la société, jamais depuis le bail. */
+            /** @description Bail société : le locataire est une société (companyId obligatoire) et le bailleur une personne physique. Sinon le bailleur et le locataire sont deux personnes physiques distinctes. */
             companyLease?: boolean;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Personne physique bailleur.
+             */
             landlordId?: number;
-            /** Format: int64 */
-            tenantId?: number;
+            /**
+             * Format: int64
+             * @description Société locataire, obligatoire pour un bail société.
+             */
+            companyId?: number | null;
+            /**
+             * Format: int64
+             * @description Personne physique locataire, obligatoire hors bail société.
+             */
+            tenantId?: number | null;
             /** @description Libellé de l'adresse du bien. Le backend réutilise l'adresse existante pour un libellé identique, sans tenir compte de la casse ni des espaces. */
             propertyAddress?: string;
             rentExclCharges?: string;
@@ -919,7 +894,7 @@ export interface components {
             readonly addressId?: number;
             /**
              * Format: int64
-             * @description Société liée ; définie uniquement depuis la société.
+             * @description Société liée ; société locataire pour un bail société.
              */
             readonly companyId?: number | null;
             readonly companyName?: string | null;
@@ -927,9 +902,9 @@ export interface components {
             /** Format: int64 */
             landlordId?: number;
             /** Format: int64 */
-            tenantId?: number;
+            tenantId?: number | null;
             landlordName?: string;
-            tenantName?: string;
+            tenantName?: string | null;
             propertyAddress?: string;
             rentExclCharges?: string;
             charges?: string;
@@ -1037,10 +1012,21 @@ export interface components {
              * @description Société utilisée pour l'identité et les données de domicile ; la société du bail est prioritaire lorsqu'elle existe.
              */
             companyId?: number | null;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Personne physique bailleur.
+             */
             landlordId: number;
-            /** Format: int64 */
-            tenantId: number;
+            /**
+             * Format: int64
+             * @description Personne physique locataire ; exclusif avec tenantCompanyId.
+             */
+            tenantId?: number | null;
+            /**
+             * Format: int64
+             * @description Société locataire ; exclusif avec tenantId.
+             */
+            tenantCompanyId?: number | null;
             periodStart?: string;
             periodEnd?: string;
             rentExclCharges?: string;
@@ -1062,9 +1048,11 @@ export interface components {
             /** Format: int64 */
             landlordId?: number;
             /** Format: int64 */
-            tenantId?: number;
+            tenantId?: number | null;
+            /** Format: int64 */
+            tenantCompanyId?: number | null;
             landlordName?: string;
-            tenantName?: string;
+            tenantName?: string | null;
             /** Format: date */
             periodStart?: string;
             /** Format: date */
@@ -2225,7 +2213,10 @@ export interface operations {
                 /** @description Société utilisée pour l'identité et les données de domicile. */
                 companyId?: number;
                 landlordId?: number;
+                /** @description Personne physique locataire ; exclusif avec tenantCompanyId. */
                 tenantId?: number;
+                /** @description Société locataire ; exclusif avec tenantId. */
+                tenantCompanyId?: number;
             };
             header?: never;
             path?: never;
@@ -2526,11 +2517,9 @@ export interface operations {
     };
     listSignatures: {
         parameters: {
-            query?: {
-                /** @description Identifiant de la société. */
-                companyId?: number;
-                /** @description Identifiant du salarié. */
-                employeeId?: number;
+            query: {
+                /** @description Identifiant de la personne (personne physique ou salarié), obligatoire. */
+                personId: number;
             };
             header?: never;
             path?: never;
@@ -2559,19 +2548,12 @@ export interface operations {
         requestBody: {
             content: {
                 "multipart/form-data": {
-                    /** @enum {string} */
-                    type: "LANDLORD" | "ENTREPRISE_CEO" | "EMPLOYEE";
+                    /**
+                     * Format: int64
+                     * @description Personne propriétaire de la signature.
+                     */
+                    personId: number;
                     name: string;
-                    /**
-                     * Format: int64
-                     * @description Obligatoire pour une signature de type LANDLORD.
-                     */
-                    landlordId?: number;
-                    /**
-                     * Format: int64
-                     * @description Obligatoire pour une signature de type EMPLOYEE ou ENTREPRISE_CEO.
-                     */
-                    employeeId?: number;
                     /** Format: binary */
                     file: string;
                 };
@@ -2674,7 +2656,7 @@ export interface operations {
             };
         };
     };
-    listLandlords: {
+    listPersons: {
         parameters: {
             query?: never;
             header?: never;
@@ -2689,12 +2671,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["LandlordDto"][];
+                    "*/*": components["schemas"]["PersonDto"][];
                 };
             };
         };
     };
-    createLandlord: {
+    createPerson: {
         parameters: {
             query?: never;
             header?: never;
@@ -2703,7 +2685,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["LandlordRequest"];
+                "application/json": components["schemas"]["PersonRequest"];
             };
         };
         responses: {
@@ -2713,7 +2695,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["LandlordDto"];
+                    "*/*": components["schemas"]["PersonDto"];
                 };
             };
             /** @description Bad Request */
@@ -2727,7 +2709,7 @@ export interface operations {
             };
         };
     };
-    updateLandlord: {
+    updatePerson: {
         parameters: {
             query?: never;
             header?: never;
@@ -2738,7 +2720,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["LandlordRequest"];
+                "application/json": components["schemas"]["PersonRequest"];
             };
         };
         responses: {
@@ -2748,7 +2730,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["LandlordDto"];
+                    "*/*": components["schemas"]["PersonDto"];
                 };
             };
             /** @description Bad Request */
@@ -2771,142 +2753,7 @@ export interface operations {
             };
         };
     };
-    deleteLandlord: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-        };
-    };
-    listTenants: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TenantDto"][];
-                };
-            };
-        };
-    };
-    createTenant: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TenantRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TenantDto"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-        };
-    };
-    updateTenant: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TenantRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TenantDto"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-        };
-    };
-    deleteTenant: {
+    deletePerson: {
         parameters: {
             query?: never;
             header?: never;

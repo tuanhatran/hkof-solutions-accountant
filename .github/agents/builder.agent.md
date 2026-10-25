@@ -37,12 +37,10 @@ overwrite. Never create a second branch. Never commit or push.
 6. On a failure, find the root cause (`systematic-debugging` skill) before changing code.
    Self-fix up to 2 attempts per block. Still red: stop and report, never weaken it.
 
-## Parallelism
+## Block order
 
-When the handoff contains blocks on disjoint files or modules, dispatch them as parallel
-subagents; never two agents in one file. Start the long gate on block A while block B is
-still being written. If nested subagents are unavailable, note it in the evidence and run
-serially.
+Run the handoff blocks one at a time, in handoff order, inline in this session. Never run two
+builds or gates at once on the same working tree.
 
 ## Non-negotiable rules
 

@@ -7,10 +7,10 @@ import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
 import type {
-  LandlordDto,
+  CompanyDto,
   LeaseDto,
   LeaseRequest,
-  TenantDto,
+  PersonDto,
 } from "@/api/types";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { FormModal } from "@/components/ui/FormModal";
@@ -23,31 +23,42 @@ import { cents, decimalFormatter } from "./settingsMoney";
 /** Create/update form for a lease, with an indicative total. */
 export function LeaseForm({
   item,
-  landlords,
-  tenants,
+  persons,
+  companies,
   onSaved,
   onClose,
 }: {
   item: LeaseDto | null;
-  landlords: LandlordDto[];
-  tenants: TenantDto[];
+  persons: PersonDto[];
+  companies: CompanyDto[];
   onSaved?: (lease: LeaseDto) => void;
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
   const [requestError, setRequestError] = useState<string | null>(null);
+  const companyLease = item?.companyLease ?? false;
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<LeaseFormValues>({
     resolver: zodResolver(leaseSchema),
     mode: "onChange",
     defaultValues: {
-      companyLease: item?.companyLease ?? false,
+      companyLease,
       landlordId: item?.landlordId === undefined ? "" : String(item.landlordId),
-      tenantId: item?.tenantId === undefined ? "" : String(item.tenantId),
+      tenantId:
+        companyLease || item?.tenantId === undefined || item.tenantId === null
+          ? ""
+          : String(item.tenantId),
+      companyId:
+        !companyLease ||
+        item?.companyId === undefined ||
+        item.companyId === null
+          ? ""
+          : String(item.companyId),
       propertyAddress: item?.propertyAddress ?? "",
       rentExclCharges: decimalFormatter(item?.rentExclCharges),
       charges: decimalFormatter(item?.charges),
@@ -58,7 +69,7 @@ export function LeaseForm({
 
   const rent = watch("rentExclCharges");
   const charges = watch("charges");
-  const companyLease = watch("companyLease");
+  const isCompanyLease = watch("companyLease");
   const total = formatEUR((cents(rent) + cents(charges)) / 100);
 
   const save = useMutation({
@@ -66,17 +77,19 @@ export function LeaseForm({
       const requestBody: LeaseRequest = {
         companyLease: values.companyLease,
         landlordId: Number(values.landlordId),
-        tenantId: Number(values.tenantId),
         propertyAddress: values.propertyAddress.trim(),
         rentExclCharges: parseAmount(values.rentExclCharges) ?? "0.00",
         charges: parseAmount(values.charges) ?? "0.00",
-        totalArea: values.companyLease
-          ? (parseAmount(values.totalArea) ?? undefined)
-          : undefined,
-        businessArea: values.companyLease
-          ? (parseAmount(values.businessArea) ?? undefined)
-          : undefined,
       };
+      if (values.companyLease) {
+        requestBody.companyId = Number(values.companyId);
+        requestBody.tenantId = null;
+        requestBody.totalArea = parseAmount(values.totalArea) ?? undefined;
+        requestBody.businessArea =
+          parseAmount(values.businessArea) ?? undefined;
+      } else {
+        requestBody.tenantId = Number(values.tenantId);
+      }
       return item?.id
         ? api.leases.update(item.id, requestBody)
         : api.leases.create(requestBody);
@@ -112,20 +125,28 @@ export function LeaseForm({
           <input
             type="checkbox"
             className="lease-form-company-lease-input"
-            {...register("companyLease")}
+            {...register("companyLease", {
+              onChange: (event) => {
+                if (event.target.checked) {
+                  setValue("tenantId", "", { shouldValidate: true });
+                } else {
+                  setValue("companyId", "", { shouldValidate: true });
+                }
+              },
+            })}
             data-cy="input-bail-societe-type"
           />
           <span>
             <span className="lease-form-company-lease-title">Bail société</span>
             <span className="lease-form-company-lease-hint">
-              Renseignez les surfaces du logement pour calculer la quote-part
-              professionnelle.
+              Le locataire est une société : renseignez les surfaces du logement
+              pour calculer la quote-part professionnelle.
             </span>
           </span>
         </label>
         <FieldGroup
           id="bail-bailleur"
-          label="Bailleur du bail"
+          label="Bailleur"
           error={errors.landlordId?.message}
         >
           <select
@@ -135,32 +156,56 @@ export function LeaseForm({
             data-cy="select-bail-bailleur"
           >
             <option value="">Sélectionnez un bailleur</option>
-            {landlords.map((landlord) => (
-              <option key={landlord.id} value={landlord.id}>
-                {landlord.name}
+            {persons.map((person) => (
+              <option key={person.id} value={person.id}>
+                {person.name}
               </option>
             ))}
           </select>
         </FieldGroup>
-        <FieldGroup
-          id="bail-locataire"
-          label="Locataire du bail"
-          error={errors.tenantId?.message}
-        >
-          <select
-            id="bail-locataire"
-            className={cn("field", errors.tenantId && "field-error")}
-            {...register("tenantId")}
-            data-cy="select-bail-locataire"
+
+        {isCompanyLease ? (
+          <FieldGroup
+            id="bail-locataire-societe"
+            label="Locataire (société)"
+            error={errors.companyId?.message}
           >
-            <option value="">Sélectionnez un locataire</option>
-            {tenants.map((tenant) => (
-              <option key={tenant.id} value={tenant.id}>
-                {tenant.name}
-              </option>
-            ))}
-          </select>
-        </FieldGroup>
+            <select
+              id="bail-locataire-societe"
+              className={cn("field", errors.companyId && "field-error")}
+              {...register("companyId")}
+              data-cy="select-bail-locataire-societe"
+            >
+              <option value="">Sélectionnez une société</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          </FieldGroup>
+        ) : (
+          <FieldGroup
+            id="bail-locataire"
+            label="Locataire"
+            error={errors.tenantId?.message}
+          >
+            <select
+              id="bail-locataire"
+              className={cn("field", errors.tenantId && "field-error")}
+              {...register("tenantId")}
+              data-cy="select-bail-locataire"
+            >
+              <option value="">Sélectionnez un locataire</option>
+              {persons.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.name}
+                </option>
+              ))}
+            </select>
+          </FieldGroup>
+        )}
+
         <FieldGroup
           id="bail-adresse"
           label="Adresse du bien"
@@ -203,7 +248,7 @@ export function LeaseForm({
             data-cy="input-bail-charges"
           />
         </FieldGroup>
-        {companyLease ? (
+        {isCompanyLease ? (
           <>
             <FieldGroup
               id="bail-surface-totale"

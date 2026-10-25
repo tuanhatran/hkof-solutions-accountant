@@ -11,6 +11,7 @@ import {
   createRentReceipt,
   disableLlm,
   downloadAndReadPdf,
+  normalLease,
 } from "../support/helpers";
 
 describe("AI admin and templates", () => {
@@ -152,6 +153,10 @@ describe("AI admin and templates", () => {
 
     cy.intercept("POST", "/api/rent-receipts/preview").as("preview");
     cy.get('[data-cy="tab-quittance"]').click();
+    normalLease().then((lease) => {
+      cy.get('[data-cy="select-bailleur"]').select(String(lease.landlordId));
+      cy.get('[data-cy="select-locataire"]').select(`person:${lease.tenantId}`);
+    });
     waitForValue("#quittance-loyer", SEED_RENT);
     cy.wait("@preview", { timeout: 30_000 });
     cy.waitForPreview();

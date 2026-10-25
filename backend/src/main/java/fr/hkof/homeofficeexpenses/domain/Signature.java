@@ -4,8 +4,6 @@ import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -15,8 +13,8 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 /**
- * A named signature image (PNG or JPEG) stored as bytes, logically deleted so a
- * previous version is never overwritten.
+ * A named signature image (PNG or JPEG) attached to one person, stored as bytes and
+ * logically deleted so a previous version is never overwritten.
  */
 @Entity
 @Table(name = "signature")
@@ -26,21 +24,9 @@ public class Signature {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false, length = 20)
-    private SignatureType type;
-
-    /** Linked landlord for a {@code LANDLORD} signature; null on employee signatures. */
-    @Column(name = "landlord_id")
-    private Long landlordId;
-
-    /** Company owning an employee signature; null on a landlord signature. */
-    @Column(name = "company_id")
-    private Long companyId;
-
-    /** Employee owning an {@code EMPLOYEE} or {@code ENTREPRISE_CEO} signature. */
-    @Column(name = "employee_id")
-    private Long employeeId;
+    /** Person owning the signature; null only on logically deleted legacy rows. */
+    @Column(name = "person_id")
+    private Long personId;
 
     @Column(name = "name", nullable = false)
     private String name;
@@ -72,36 +58,12 @@ public class Signature {
         this.id = id;
     }
 
-    public SignatureType getType() {
-        return type;
+    public Long getPersonId() {
+        return personId;
     }
 
-    public void setType(SignatureType type) {
-        this.type = type;
-    }
-
-    public Long getLandlordId() {
-        return landlordId;
-    }
-
-    public void setLandlordId(Long landlordId) {
-        this.landlordId = landlordId;
-    }
-
-    public Long getCompanyId() {
-        return companyId;
-    }
-
-    public void setCompanyId(Long companyId) {
-        this.companyId = companyId;
-    }
-
-    public Long getEmployeeId() {
-        return employeeId;
-    }
-
-    public void setEmployeeId(Long employeeId) {
-        this.employeeId = employeeId;
+    public void setPersonId(Long personId) {
+        this.personId = personId;
     }
 
     public String getName() {
