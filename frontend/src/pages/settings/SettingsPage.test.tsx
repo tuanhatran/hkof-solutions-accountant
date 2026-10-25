@@ -33,7 +33,7 @@ const COMPANY: CompanyDto = {
 const OTHER: CompanyDto = {
   id: 2,
   name: "Autre SARL",
-  legalForm: "SAS",
+  legalForm: "SARL",
   siren: "987 654 321",
   address: "2 rue du Marché, 75003 Paris",
   managerName: "Alex Durand",
@@ -144,6 +144,10 @@ function toastMessages(): string[] {
   return useToasts.getState().toasts.map((element) => element.message);
 }
 
+function queryByCy(cy: string): Element | null {
+  return document.querySelector(`[data-cy="${cy}"]`);
+}
+
 describe("SettingsPage tabs", () => {
   beforeEach(() => {
     companiesState = readyQuery([COMPANY]);
@@ -156,17 +160,22 @@ describe("SettingsPage tabs", () => {
     useToasts.setState({ toasts: [] });
   });
 
-  it("renders the Entreprise settings with the company form", () => {
+  it("renders the selector, the three tabs and the read-only identity by default", () => {
     renderPage();
 
     expect(
       screen.getByRole("heading", { name: "Entreprise", level: 1 }),
     ).toBeVisible();
-    expect(screen.getByLabelText("Raison sociale")).toHaveValue("HKOF");
-    expect(screen.queryByRole("heading", { name: "Bailleurs" })).toBeNull();
-    expect(screen.queryByRole("tab", { name: "Salariés" })).toBeNull();
-    expect(screen.queryByRole("tab", { name: "Quittances" })).toBeNull();
-    expect(screen.getByText("Location bail")).toBeVisible();
+    expect(screen.getByLabelText("Société à configurer")).toHaveValue("1");
+    expect(screen.getByRole("tab", { name: "Info générale" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.getByRole("tab", { name: "Bail & Frais" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Salariés" })).toBeVisible();
+    expect(queryByCy("info-societe")).not.toBeNull();
+    expect(queryByCy("onglet-entreprise-identification")).not.toBeNull();
+    expect(queryByCy("input-raison-sociale")).toBeNull();
   });
 
   it("no longer renders the legacy Quittances directories", () => {
@@ -175,37 +184,60 @@ describe("SettingsPage tabs", () => {
     expect(screen.queryByRole("heading", { name: "Bailleurs" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "Locataires" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "Signatures" })).toBeNull();
-    expect(screen.getByLabelText("Raison sociale")).toHaveValue("HKOF");
+    expect(queryByCy("info-societe")).toHaveTextContent("HKOF");
     expect(
       screen.queryByRole("button", { name: "Enregistrer" }),
     ).not.toBeInTheDocument();
   });
 
-  it("lists the employees of the selected company with their French title", async () => {
+  it("shows the lease view and the expense items on the Bail & Frais tab", async () => {
     renderPage();
+    const user = userEvent.setup();
+
+    await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
+
+    expect(queryByCy("bail-societe-lie")).not.toBeNull();
+    expect(screen.getByText("12 rue des Lilas, 75011 Paris")).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Types de frais" }),
+    ).toBeVisible();
+    expect(screen.getAllByText("35,71 %").length).toBeGreaterThanOrEqual(1);
+    expect(
+      document.querySelectorAll('[data-cy="prorata-bail-societe"]'),
+    ).toHaveLength(1);
+    expect(queryByCy("select-bail-societe")).toBeNull();
+  });
+
+  it("shows the employees on the Salariés tab", async () => {
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(queryByCy("onglet-entreprise-salaries") as Element);
 
     expect(
-      await screen.findByRole("heading", { name: "Salariés" }),
+      await screen.findByRole("heading", { name: "Salariés", level: 2 }),
     ).toBeVisible();
     expect(screen.getByText("Camille Martin")).toBeVisible();
     expect(screen.getByText("PDG")).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "Ajouter un salarié" }),
-    ).toBeEnabled();
-    expect(screen.getByLabelText("Raison sociale")).toHaveValue("HKOF");
   });
 
-  it("scopes the employees to the company selected in the Entreprise tab", async () => {
+  it("scopes the employees to the company selected in the selector", async () => {
     companiesState = readyQuery([COMPANY, OTHER]);
     renderPage();
     const user = userEvent.setup();
 
+    await user.click(queryByCy("onglet-entreprise-salaries") as Element);
     expect(await screen.findByText("Camille Martin")).toBeVisible();
 
     await user.selectOptions(
       screen.getByLabelText("Société à configurer"),
       "2",
     );
+    expect(queryByCy("onglet-entreprise-identification")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await user.click(queryByCy("onglet-entreprise-salaries") as Element);
 
     expect(
       await screen.findByText(
@@ -215,19 +247,18 @@ describe("SettingsPage tabs", () => {
     expect(screen.queryByText("Camille Martin")).toBeNull();
   });
 
-  it("saves the company configuration and confirms in French", async () => {
+  it("opens the identity modal from Modifier with prefilled fields and saves it", async () => {
     vi.mocked(api.companies.update).mockResolvedValue(COMPANY);
     renderPage();
     const user = userEvent.setup();
 
-    expect(screen.getByText("Toutes les valeurs sont à jour.")).toBeVisible();
-    await user.clear(screen.getByLabelText("Raison sociale"));
-    await user.type(screen.getByLabelText("Raison sociale"), "HKOF 2");
-    expect(screen.getByText("Modifications non enregistrées.")).toBeVisible();
+    await user.click(queryByCy("btn-modifier-societe") as HTMLElement);
+    expect(queryByCy("dialogue-formulaire-societe")).not.toBeNull();
+    expect(queryByCy("input-raison-sociale")).toHaveValue("HKOF");
 
-    await user.click(
-      screen.getByRole("button", { name: "Enregistrer la configuration" }),
-    );
+    await user.clear(queryByCy("input-raison-sociale") as HTMLElement);
+    await user.type(queryByCy("input-raison-sociale") as HTMLElement, "HKOF 2");
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
       expect(api.companies.update).toHaveBeenCalledWith(1, {
@@ -245,16 +276,18 @@ describe("SettingsPage tabs", () => {
         "Société enregistrée. Les prochains documents utiliseront ces valeurs.",
       ),
     );
+    await waitFor(() =>
+      expect(queryByCy("dialogue-formulaire-societe")).toBeNull(),
+    );
   });
 
-  it("shows the validation message when the company name is empty", async () => {
+  it("blocks the identity modal save while the name is empty", async () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.clear(screen.getByLabelText("Raison sociale"));
-    await user.click(
-      screen.getByRole("button", { name: "Enregistrer la configuration" }),
-    );
+    await user.click(queryByCy("btn-modifier-societe") as HTMLElement);
+    await user.clear(queryByCy("input-raison-sociale") as HTMLElement);
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     expect(
       await screen.findByText("Le nom de la société est obligatoire."),
@@ -262,52 +295,143 @@ describe("SettingsPage tabs", () => {
     expect(api.companies.update).not.toHaveBeenCalled();
   });
 
-  it("computes the indicative pro-rata from the selected lease surfaces", async () => {
+  it("creates a company through the empty identity modal and activates it", async () => {
+    companiesState = readyQuery([OTHER]);
+    useCompanyStore.setState({ activeCompanyId: 2 });
+    vi.mocked(api.companies.create).mockResolvedValue(COMPANY);
     renderPage();
     const user = userEvent.setup();
 
-    expect(screen.getByText("35,71 %")).toBeVisible();
-    expect(screen.getByLabelText("Bail de la société")).toHaveValue("5");
+    await user.click(screen.getByRole("button", { name: "Nouvelle société" }));
 
-    await user.selectOptions(screen.getByLabelText("Bail de la société"), "");
+    expect(queryByCy("dialogue-formulaire-societe")).not.toBeNull();
+    expect(queryByCy("input-raison-sociale")).toHaveValue("");
+    expect(queryByCy("select-societe")).not.toBeNull();
 
-    expect(
-      document.querySelector('[data-cy="prorata-indicatif"]'),
-    ).toHaveTextContent("—");
+    await user.type(queryByCy("input-raison-sociale") as HTMLElement, "HKOF");
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    await waitFor(() =>
+      expect(api.companies.create).toHaveBeenCalledWith({
+        name: "HKOF",
+        legalForm: "",
+        siren: "",
+        address: "",
+        managerName: "",
+        leaseId: null,
+        issuePlace: "",
+      }),
+    );
+    await waitFor(() => expect(toastMessages()).toContain("Société créée."));
+    expect(useCompanyStore.getState().activeCompanyId).toBe(1);
+    await waitFor(() =>
+      expect(queryByCy("dialogue-formulaire-societe")).toBeNull(),
+    );
   });
 
-  it("unlinks the lease when Aucun bail is selected", async () => {
-    vi.mocked(api.companies.update).mockResolvedValue(OTHER);
+  it("closes modals and resets the tab when switching company", async () => {
+    companiesState = readyQuery([COMPANY, OTHER]);
     renderPage();
     const user = userEvent.setup();
 
-    await user.selectOptions(screen.getByLabelText("Bail de la société"), "");
-    await user.click(
-      screen.getByRole("button", { name: "Enregistrer la configuration" }),
+    await user.click(queryByCy("btn-modifier-societe") as HTMLElement);
+    expect(queryByCy("dialogue-formulaire-societe")).not.toBeNull();
+
+    await user.selectOptions(
+      screen.getByLabelText("Société à configurer"),
+      "2",
     );
+
+    expect(queryByCy("dialogue-formulaire-societe")).toBeNull();
+    expect(queryByCy("onglet-entreprise-identification")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(queryByCy("info-societe")).toHaveTextContent("Autre SARL");
+  });
+
+  it("closes the identity modal when the selected company is deleted", async () => {
+    vi.mocked(api.companies.delete).mockResolvedValue(undefined);
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(queryByCy("btn-modifier-societe") as HTMLElement);
+    expect(queryByCy("dialogue-formulaire-societe")).not.toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Supprimer" }));
+    await user.click(
+      screen.getByRole("button", { name: "Supprimer la société" }),
+    );
+
+    await waitFor(() => expect(api.companies.delete).toHaveBeenCalledWith(1));
+    await waitFor(() =>
+      expect(toastMessages()).toContain("Société supprimée."),
+    );
+    expect(queryByCy("dialogue-formulaire-societe")).toBeNull();
+  });
+
+  it("shows the no-lease sentence for a company without a lease", async () => {
+    companiesState = readyQuery([
+      COMPANY,
+      { ...OTHER, proRataBase: undefined },
+    ]);
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.selectOptions(
+      screen.getByLabelText("Société à configurer"),
+      "2",
+    );
+    await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
+
+    expect(screen.getByText(/^Aucun bail sélectionné/)).toBeVisible();
+    expect(queryByCy("prorata-bail-societe")).toHaveTextContent("—");
+  });
+
+  it("opens the lease modal, unlinks the lease and preserves the identity", async () => {
+    vi.mocked(api.companies.update).mockResolvedValue({
+      ...COMPANY,
+      leaseId: null,
+    });
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
+    await user.click(queryByCy("btn-modifier-bail-societe") as HTMLElement);
+
+    expect(queryByCy("dialogue-formulaire-bail-societe")).not.toBeNull();
+    expect(queryByCy("select-bail-societe")).toHaveValue("5");
+    expect(queryByCy("prorata-indicatif")).toHaveTextContent("35,71 %");
+
+    await user.selectOptions(
+      queryByCy("select-bail-societe") as HTMLElement,
+      "",
+    );
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
       expect(api.companies.update).toHaveBeenCalledWith(
         1,
-        expect.objectContaining({ leaseId: null }),
+        expect.objectContaining({ leaseId: null, name: "HKOF" }),
       ),
+    );
+    await waitFor(() =>
+      expect(queryByCy("dialogue-formulaire-bail-societe")).toBeNull(),
     );
   });
 
-  it("surfaces the save error in the save bar", async () => {
-    vi.mocked(api.companies.update).mockRejectedValue(
-      new Error("Enregistrement impossible."),
-    );
+  it("makes another company active", async () => {
+    companiesState = readyQuery([COMPANY, OTHER]);
     renderPage();
     const user = userEvent.setup();
 
-    await user.clear(screen.getByLabelText("Raison sociale"));
-    await user.type(screen.getByLabelText("Raison sociale"), "HKOF 3");
-    await user.click(
-      screen.getByRole("button", { name: "Enregistrer la configuration" }),
+    await user.selectOptions(
+      screen.getByLabelText("Société à configurer"),
+      "2",
     );
+    await user.click(screen.getByRole("button", { name: "Rendre active" }));
 
-    expect(await screen.findByText("Enregistrement impossible.")).toBeVisible();
+    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
   });
 
   it("shows the loading then error states of the companies", async () => {
@@ -354,107 +478,44 @@ describe("SettingsPage tabs", () => {
       screen.getByText("Aucune société configurée. Créez la première société."),
     ).toBeVisible();
 
-    await user.type(screen.getByLabelText("Raison sociale"), "HKOF");
-    await user.click(screen.getByRole("button", { name: "Créer la société" }));
+    await user.click(screen.getByRole("button", { name: "Nouvelle société" }));
+    await user.type(queryByCy("input-raison-sociale") as HTMLElement, "HKOF");
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
-      expect(api.companies.create).toHaveBeenCalledWith({
-        name: "HKOF",
-        legalForm: "",
-        siren: "",
-        address: "",
-        managerName: "",
-        leaseId: null,
-        issuePlace: "",
-      }),
+      expect(api.companies.create).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "HKOF", leaseId: null }),
+      ),
     );
     await waitFor(() => expect(toastMessages()).toContain("Société créée."));
   });
 
-  it("makes another company active", async () => {
-    companiesState = readyQuery([COMPANY, OTHER]);
+  it("opens the expense item form from the Bail & Frais tab", async () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.selectOptions(
-      screen.getByLabelText("Société à configurer"),
-      "2",
-    );
-    await user.click(screen.getByRole("button", { name: "Rendre active" }));
+    await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
+    await user.click(screen.getByRole("button", { name: "Ajouter un type" }));
 
-    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
-  });
-
-  it("hides the company selector while creating a new company", async () => {
-    companiesState = readyQuery([COMPANY, OTHER]);
-    renderPage();
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole("button", { name: "Nouvelle société" }));
-
-    expect(screen.queryByLabelText("Société à configurer")).toBeNull();
-    expect(
-      screen.queryByText(
-        "Aucune société configurée. Créez la première société.",
-      ),
-    ).toBeNull();
-    expect(screen.queryByRole("button", { name: "Supprimer" })).toBeNull();
-    expect(screen.queryByRole("heading", { name: "Salariés" })).toBeNull();
-    expect(
-      document.querySelector('[data-cy="formulaire-societe"]'),
-    ).toBeVisible();
-
-    await user.click(screen.getByRole("button", { name: "Annuler" }));
-
-    const selector = screen.getByLabelText("Société à configurer");
-    await user.selectOptions(selector, "2");
-    expect(selector).toHaveValue("2");
-  });
-
-  it("hides the company selector while creating a new company", async () => {
-    companiesState = readyQuery([COMPANY, OTHER]);
-    renderPage();
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole("button", { name: "Nouvelle société" }));
-
-    expect(screen.queryByLabelText("Société à configurer")).toBeNull();
-    expect(
-      screen.queryByText(
-        "Aucune société configurée. Créez la première société.",
-      ),
-    ).toBeNull();
-    expect(
-      document.querySelector('[data-cy="formulaire-societe"]'),
-    ).toBeVisible();
-
-    await user.click(screen.getByRole("button", { name: "Annuler" }));
-
-    const selector = screen.getByLabelText("Société à configurer");
-    await user.selectOptions(selector, "2");
-    expect(selector).toHaveValue("2");
-  });
-
-  it("deletes a company after confirmation", async () => {
-    vi.mocked(api.companies.delete).mockResolvedValue(undefined);
-    renderPage();
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole("button", { name: "Supprimer" }));
-    expect(await screen.findByText("Supprimer cette société ?")).toBeVisible();
-    expect(screen.getByText(/et ses salariés seront supprimés/)).toBeVisible();
-    expect(screen.getByText(/baux seront détachés/)).toBeVisible();
-    await user.click(
-      screen.getByRole("button", { name: "Supprimer la société" }),
-    );
-
-    await waitFor(() => expect(api.companies.delete).toHaveBeenCalledWith(1));
-    await waitFor(() =>
-      expect(toastMessages()).toContain("Société supprimée."),
+    expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
+      "35,71",
     );
   });
 
-  it("adds an employee to the active company", async () => {
+  it("falls back on the default pro-rata for a new expense item", async () => {
+    companiesState = readyQuery([{ ...COMPANY, proRataBase: undefined }]);
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
+    await user.click(screen.getByRole("button", { name: "Ajouter un type" }));
+
+    expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
+      "100,00",
+    );
+  });
+
+  it("adds an employee from the Salariés tab", async () => {
     vi.mocked(api.employees.create).mockResolvedValue({
       id: 4,
       companyId: 1,
@@ -465,14 +526,13 @@ describe("SettingsPage tabs", () => {
     renderPage();
     const user = userEvent.setup();
 
+    await user.click(queryByCy("onglet-entreprise-salaries") as Element);
     await user.click(
       screen.getByRole("button", { name: "Ajouter un salarié" }),
     );
-    await user.type(screen.getByLabelText("Prénom"), "Alex");
-    await user.type(screen.getByLabelText("Nom"), "Durand");
-    await user.click(
-      screen.getByRole("button", { name: "Ajouter le salarié" }),
-    );
+    await user.type(queryByCy("input-salarie-prenom") as HTMLElement, "Alex");
+    await user.type(queryByCy("input-salarie-nom") as HTMLElement, "Durand");
+    await user.click(queryByCy("btn-enregistrer-salarie") as HTMLElement);
 
     await waitFor(() =>
       expect(api.employees.create).toHaveBeenCalledWith(1, {
@@ -483,18 +543,6 @@ describe("SettingsPage tabs", () => {
         email: null,
         title: "EMPLOYEE",
       }),
-    );
-  });
-
-  it("falls back on the default pro-rata for a new expense item", async () => {
-    companiesState = readyQuery([{ ...COMPANY, proRataBase: undefined }]);
-    renderPage();
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole("button", { name: "Ajouter un type" }));
-
-    expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
-      "100,00",
     );
   });
 });

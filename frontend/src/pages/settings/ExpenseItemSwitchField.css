@@ -1,0 +1,19 @@
+@reference "../../index.css";
+
+@layer components {
+  .expense-item-switch-field {
+    @apply flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-paper/35 p-3 transition hover:border-line-strong;
+  }
+
+  .expense-item-switch-field-input {
+    @apply mt-0.5 h-4 w-4 shrink-0 rounded border-line text-accent accent-accent;
+  }
+
+  .expense-item-switch-field-label {
+    @apply block text-sm font-medium text-ink;
+  }
+
+  .expense-item-switch-field-description {
+    @apply mt-0.5 block text-[11.5px] leading-relaxed text-ink-soft;
+  }
+}

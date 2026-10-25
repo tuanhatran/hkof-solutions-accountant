@@ -83,16 +83,34 @@ describe("ExpenseItemForm", () => {
     expect(
       screen.getByLabelText(/Plusieurs lignes autorisées/),
     ).not.toBeChecked();
+    expect(screen.getByRole("button", { name: "Valider" })).toBeInTheDocument();
+  });
+
+  it("renders inside a form modal and closes without saving on Annuler or Escape", async () => {
+    const { onClose } = renderForm();
+    const user = userEvent.setup();
+
     expect(
-      screen.getByRole("button", { name: "Ajouter le poste" }),
-    ).toBeInTheDocument();
+      document.querySelector(
+        '[data-cy="dialogue-formulaire-poste"] [data-cy="formulaire-poste"]',
+      ),
+    ).not.toBeNull();
+
+    await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(api.expenseItems.create).not.toHaveBeenCalled();
+
+    await user.keyboard("{Escape}");
+    expect(onClose).toHaveBeenCalledTimes(2);
+    expect(api.expenseItems.create).not.toHaveBeenCalled();
   });
 
   it("rejects an empty label and an invalid prorata", async () => {
     renderForm();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Ajouter le poste" }));
+    await user.click(screen.getByRole("button", { name: "Valider" }));
     expect(
       await screen.findByText("Le libellé est obligatoire."),
     ).toBeVisible();
@@ -101,7 +119,7 @@ describe("ExpenseItemForm", () => {
     await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
     await user.clear(screen.getByLabelText("Prorata par défaut (%)"));
     await user.type(screen.getByLabelText("Prorata par défaut (%)"), "120");
-    await user.click(screen.getByRole("button", { name: "Ajouter le poste" }));
+    await user.click(screen.getByRole("button", { name: "Valider" }));
     expect(
       await screen.findByText("Prorata attendu entre 0 et 100."),
     ).toBeVisible();
@@ -114,7 +132,7 @@ describe("ExpenseItemForm", () => {
 
     await user.type(screen.getByLabelText("Code"), "bad code");
     await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
-    await user.click(screen.getByRole("button", { name: "Ajouter le poste" }));
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     expect(
       await screen.findByText(
@@ -142,7 +160,7 @@ describe("ExpenseItemForm", () => {
     await user.selectOptions(screen.getByLabelText("Périodicité"), "ANNUAL");
     await user.click(screen.getByLabelText(/Plusieurs lignes autorisées/));
     await user.click(screen.getByLabelText(/Poste actif/));
-    await user.click(screen.getByRole("button", { name: "Ajouter le poste" }));
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
       expect(api.expenseItems.create).toHaveBeenCalledWith({
@@ -175,7 +193,7 @@ describe("ExpenseItemForm", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText("Libellé affiché"), "Eau");
-    await user.click(screen.getByRole("button", { name: "Ajouter le poste" }));
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
       expect(api.expenseItems.create).toHaveBeenCalledWith(
@@ -195,7 +213,7 @@ describe("ExpenseItemForm", () => {
     const { onClose } = renderForm({ item: ITEM });
 
     expect(
-      screen.getByRole("heading", { name: "Modifier le poste « Gaz »" }),
+      screen.getByRole("heading", { name: "Modifier le type de frais" }),
     ).toBeVisible();
     expect(screen.getByText("gaz")).toBeVisible();
     expect(screen.getByLabelText("Code")).toBeDisabled();
@@ -210,7 +228,7 @@ describe("ExpenseItemForm", () => {
 
     await userEvent
       .setup()
-      .click(screen.getByRole("button", { name: "Enregistrer le poste" }));
+      .click(screen.getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
       expect(api.expenseItems.update).toHaveBeenCalledWith(9, {
@@ -236,7 +254,7 @@ describe("ExpenseItemForm", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
-    await user.click(screen.getByRole("button", { name: "Ajouter le poste" }));
+    await user.click(screen.getByRole("button", { name: "Valider" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Poste déjà existant");

@@ -33,4 +33,37 @@ describe("ViewTabs", () => {
     await userEvent.setup().click(saisie);
     expect(onChange).toHaveBeenCalledWith("saisie");
   });
+
+  it("puts the per-tab data-cy on the tab button and omits it when absent", async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ViewTabs
+        ariaLabel="Sections"
+        active="a"
+        onChange={onChange}
+        tabs={[
+          { value: "a", label: "Section A", dataCy: "onglet-a" },
+          { value: "b", label: "Section B", dataCy: "onglet-b" },
+          { value: "c", label: "Section C" },
+        ]}
+      />,
+    );
+
+    const tabA = document.querySelector('[data-cy="onglet-a"]');
+    const tabB = document.querySelector('[data-cy="onglet-b"]');
+    expect(tabA).not.toBeNull();
+    expect(tabB).not.toBeNull();
+    expect(tabA).toHaveAttribute("role", "tab");
+    expect(tabA).toHaveAttribute("aria-selected", "true");
+    expect(tabB).toHaveAttribute("aria-selected", "false");
+
+    if (tabB instanceof HTMLElement) {
+      await user.click(tabB);
+    }
+    expect(onChange).toHaveBeenCalledWith("b");
+
+    const tabC = screen.getByRole("tab", { name: "Section C" });
+    expect(tabC).not.toHaveAttribute("data-cy");
+  });
 });
