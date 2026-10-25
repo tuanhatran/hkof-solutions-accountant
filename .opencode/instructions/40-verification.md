@@ -17,7 +17,9 @@ cd backend && ./mvnw -B test
 cd backend && ./mvnw -B verify          # tests + JaCoCo 90% LINE / 90% BRANCH gate
 cd frontend && npm ci && npm test && npm run build
 cd frontend && npm run test:coverage   # Vitest 90% gate
-cd frontend && npm run typecheck
+cd frontend && npm run lint            # ESLint
+cd frontend && npm run format:check    # Prettier
+cd frontend && npm run build           # tsc + Vite build, same as CI
 cd frontend && npm run gen:api         # after an OpenAPI change
 make up / make down
 ```
@@ -31,6 +33,12 @@ make up / make down
 - Every production class stays under 300 lines. A class crossing 300 lines is split, never
   shrunk by deleting comments only.
 - The handoff carries one evidence line with the real coverage numbers of the task.
+
+## Gates by change type
+
+The table in `builder.md` (End of task) is the single source: docs-only, tests-only and CSS-only
+changes skip coverage and E2E; production code, contract, migration or Docker/E2E config run the
+matching coverage gates (frontend includes `npm run build`) plus one full E2E run.
 
 ## Evidence before claims
 

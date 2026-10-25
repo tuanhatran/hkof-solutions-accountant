@@ -38,8 +38,8 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
   `builder` and `reviewer` one after the other, inline, never as nested subagents; `builder` has
   full edit and shell; `reviewer` is read-only (`edit` denied).
 - Models pinned in frontmatter: `lead`, `builder` and `reviewer`
-  `opencode/deepseek-v4.1-flash-free`. Qoder pins the equivalent `DeepSeek-Flash`; Copilot
-  selects its own model.
+  `opencode/deepseek-v4.1-flash-free`. Qoder pins `DeepSeek-Flash` (lead) and `Qwen3.8-Max`
+  (builder, reviewer); Copilot selects its own model.
 - Sizing: `S` = 1-2 files, builder only; `M` = 3-5 files or some risk, builder then one review;
   `L` = 6+ files, new architecture or unclear requirements, builder work items run one at a time
   then one review on the combined diff. Money, contract, migration, template sandbox, LLM or secrets always
@@ -58,13 +58,14 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
 | Root rules         | `AGENTS.md`                       | loaded directly               |
 | Copilot guidance   | `.github/copilot-instructions.md` | same conventions              |
 | Superpowers skills | `.qoder/skills`                   | registered in `opencode.json` |
-| Agent workflow     | `.opencode/agents/*.md`           | upstream (source of truth)    |
+| Agent workflow     | `.qoder/agents/*.md`              | `.opencode/` and `.github/` copies: same body, frontmatter differs |
 | Task handoffs      | `.handoff/tasks/*.md`             | same shared tree              |
 | File graph         | CodeGraph index in `.codegraph/`  | `codegraph` CLI, shared       |
 | Detailed rules     | this directory                    | instructions                  |
 
-When a rule changes, update `.opencode` first, then mirror it to `.qoder/agents` and
-`.github/agents`. Do not let `.opencode/agents`, `.qoder/agents` and `.github/agents`
+When a rule changes, update `.qoder/agents` first, then copy the body unchanged to
+`.opencode/agents` and `.github/agents` (only frontmatter and the Inputs/Models lines of `lead`
+differ). Do not let `.opencode/agents`, `.qoder/agents` and `.github/agents`
 diverge: the same agents, scope and exit criteria must appear in all three.
 
 ## Language policy

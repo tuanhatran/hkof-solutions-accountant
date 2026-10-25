@@ -101,7 +101,7 @@ make up / make down
 - Agent workflow: `lead` → `builder` → `reviewer`, one task per shared handoff in `.handoff/tasks/<TASK-ID>.md`. `lead` absorbs the former orchestrator and planner, `builder` absorbs the former coder and tester.
 - Pipeline by size: `S` = builder only, `M` = builder + one review, `L` = builder + at most two review rounds. Money, contract, migration, template sandbox, LLM or secrets in the diff forces a review whatever the size.
 - Statuses: `TODO` → `REVIEW` → `USER_REVIEW` → `DONE`, gated by the user. The pipeline stops at `REVIEW` (awaiting the reviewer) or `USER_REVIEW` (awaiting the user); only the lead sets `DONE`, after explicit user acceptance. User feedback before acceptance sets `USER_CHANGES_REQUESTED` and returns to `builder`; reviewer blockers set `CHANGES_REQUESTED`, and `BLOCKED` carries the single decision for the user.
-- Each task runs on one dedicated branch, created after the user agrees on a name; a resumed task reuses its recorded branch. Never create a second branch for the same task.
+- Each task runs on one dedicated branch, created by the lead with an automatic name, `feat/<nn>-<slug>` (`fix/<nn>-<slug>` for a bug), without asking the user; a resumed task reuses its recorded branch. Never create a second branch for the same task.
 - File graph: query the local CodeGraph index in `.codegraph/` (`codegraph context`, `affected`, `impact`, `sync`); never commit or hand-edit it.
 - Behavior change: write the failing test first.
 - Bug or unexpected result: investigate the root cause before changing code.

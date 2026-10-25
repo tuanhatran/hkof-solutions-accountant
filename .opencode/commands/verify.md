@@ -6,11 +6,8 @@ Load the `verification-before-completion` skill and verify this change: $ARGUMEN
 
 Run the relevant commands from `.opencode/instructions/40-verification.md`:
 
-```bash
-make test
-cd frontend && npm run typecheck
-```
-
-Also run `make e2e` when the change affects a user flow, unless Docker or time makes it
-impossible. Report the exact commands, the actual output, test counts, failures and
+Follow the gate table in the builder agent (End of task): run only the gates the change type
+requires, once, and `make e2e` (the full E2E run) when the table requires it. Frontend gates
+are `npm run test:coverage`, `npm run lint`, `npm run format:check`, `npm run build`.
+If Docker or time makes a required gate impossible, report it as unverified. Report the exact commands, the actual output, test counts, failures and
 anything left unverified. Do not claim success without evidence.

@@ -61,8 +61,9 @@ truth; re-read them before acting when in doubt.
 - Never log or hand off a secret value (LLM key, database password). The LLM key is
   never returned by a `GET`.
 - Personal documents in `data/` are never committed, pasted into logs or sent off the machine.
-- Never commit, push, reset, clean or stash. One dedicated branch per task is created after
-  the user agrees on a name; a resumed task reuses its recorded branch. No worktree or
+- Never commit, push, reset, clean or stash. One dedicated branch per task is created by the
+  lead with an automatic name, `feat/<nn>-<slug>` (`fix/<nn>-<slug>` for a bug); the user is not
+  asked. A resumed task reuses its recorded branch. No worktree or
   branch finishing without an explicit user request.
 
 ## Settings folder ownership

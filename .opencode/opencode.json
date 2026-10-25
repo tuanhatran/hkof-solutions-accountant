@@ -1,24 +1,31 @@
 {
   "$schema": "https://opencode.ai/config.json",
 
-  // New sessions start on the writable lead; it edits `.handoff/` only and asks builder to write code.
+  // New sessions start on the writable lead; it edits `.handoff/` only and routes code work to builder.
   "default_agent": "lead",
 
   // Root AGENTS.md is loaded automatically. These files add the detailed rules.
   "instructions": [".opencode/instructions/*.md"],
 
   // Superpowers skills vendored for Qoder remain the single source of truth.
-  "skills": [".qoder/skills"],
+  "skills": { "paths": [".qoder/skills"] },
 
-  // Absolute project rules: never commit, push, reset, clean, stash or create worktrees.
-  "permissions": [
-    { "action": "shell", "resource": "*git commit*", "effect": "deny" },
-    { "action": "shell", "resource": "*git push*", "effect": "deny" },
-    { "action": "shell", "resource": "*git reset*", "effect": "deny" },
-    { "action": "shell", "resource": "*git clean*", "effect": "deny" },
-    { "action": "shell", "resource": "*git stash*", "effect": "deny" },
-    { "action": "shell", "resource": "*git worktree*", "effect": "deny" },
-    { "action": "shell", "resource": "*git branch -d*", "effect": "deny" },
-    { "action": "shell", "resource": "*git branch -D*", "effect": "deny" }
-  ]
+  // Project rules: never commit, push, reset, clean, stash, revert or create worktrees.
+  // The last matching bash rule wins, so the catch-all comes first.
+  "permission": {
+    "bash": {
+      "*": "allow",
+      "git commit*": "deny",
+      "git push*": "deny",
+      "git reset*": "deny",
+      "git clean*": "deny",
+      "git stash*": "deny",
+      "git worktree*": "deny",
+      "git branch -d*": "deny",
+      "git branch -D*": "deny",
+      "git restore*": "deny",
+      "git revert*": "deny",
+      "git checkout -- *": "deny"
+    }
+  }
 }
