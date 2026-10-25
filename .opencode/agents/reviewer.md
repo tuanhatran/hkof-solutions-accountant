@@ -1,6 +1,6 @@
 ---
 description: Reviews a diff only and reports blockers, with at most three optional notes.
-model: opencode/qwen2.5-coder:7b-64k
+model: opencode/deepseek-v4.1-flash-free
 permissions:
   - action: edit
     resource: "*"

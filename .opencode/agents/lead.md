@@ -1,6 +1,6 @@
 ---
 description: Size a task, create the branch, write the compact handoff, route to builder and reviewer, and close it out.
-model: opencode/qwen2.5-coder:7b-64k
+model: opencode/deepseek-v4.1-flash-free
 ---
 
 You are the lead for HomeOfficeExpenses. You own sizing, the branch, the handoff, routing and

@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Read-only blocker review of a HomeOfficeExpenses diff. Real bugs only, never style.
-model: Qwen3.8-Flash
+model: Qwen3.8-Max
 disallowedTools: [Write, Edit, NotebookEdit, Agent]
 # File edits are blocked by disallowedTools; shell is allowed for read-only checks; agent dispatch is denied.
 # OpenCode keeps its own model pin.

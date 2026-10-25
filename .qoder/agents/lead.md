@@ -1,7 +1,7 @@
 ---
 name: lead
 description: Size a HomeOfficeExpenses task, create the branch, produce a compact handoff, route it to builder and reviewer, and close it out.
-model: Qwen3.8-Flash
+model: Qwen3.8-Max
 tools: "*"
 # .qoder/settings.json sets "agent": "lead".
 # OpenCode keeps its own model pin.
