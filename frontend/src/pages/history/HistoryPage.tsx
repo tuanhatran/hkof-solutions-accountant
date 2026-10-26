@@ -13,12 +13,17 @@ import type { StatementDto } from "@/api/types";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/States";
 import { formatMonth } from "@/lib/format";
+import { useCompanyStore } from "@/state/company";
 import { useStatementDraft } from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
 import { HistoryEmptyState } from "./HistoryEmptyState";
 import { HistoryMonthSection } from "./HistoryMonthSection";
 import { HistoryReloadDialog } from "./HistoryReloadDialog";
-import { current, groupHistoryByMonthAndAddress } from "./historyHelpers";
+import {
+  current,
+  groupHistoryByMonthAndAddress,
+  resolveLeaseForDocument,
+} from "./historyHelpers";
 
 export function HistoryPage() {
   const navigate = useNavigate();
@@ -77,6 +82,19 @@ export function HistoryPage() {
         ),
       );
     const rentReceipt = current(address?.rentReceipts ?? []);
+    // The statement draft is global: pin the internal company store to the
+    // statement's company so the generation page cannot resolve another one.
+    const lease = resolveLeaseForDocument(
+      statementToReload,
+      leasesQuery.data ?? [],
+    );
+    const companyId =
+      typeof statementToReload.companyId === "number"
+        ? statementToReload.companyId
+        : lease?.companyId;
+    if (typeof companyId === "number") {
+      useCompanyStore.getState().setActiveCompany(companyId);
+    }
     useStatementDraft
       .getState()
       .loadFromStatement(statementToReload, rentReceipt?.id ?? null);
