@@ -14,7 +14,6 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/States";
 import { formatMonth } from "@/lib/format";
 import { resolveActiveCompanyId, useCompanyStore } from "@/state/company";
-import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft } from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
 import { HistoryEmptyState } from "./HistoryEmptyState";
@@ -67,16 +66,6 @@ export function HistoryPage() {
   function reload() {
     void rentReceiptsQuery.refetch();
     void statementsQuery.refetch();
-  }
-
-  function createRentReceipt(month: string) {
-    useRentReceiptDraft.getState().changeMonth(month);
-    navigate("/generer/quittance");
-  }
-
-  function createStatement(month: string) {
-    useStatementDraft.getState().changeMonth(month);
-    navigate("/generer/note-frais");
   }
 
   function confirmReload() {
@@ -140,8 +129,6 @@ export function HistoryPage() {
             <HistoryMonthSection
               key={group.month}
               group={group}
-              onCreateRentReceipt={createRentReceipt}
-              onCreateStatement={createStatement}
               onReloadStatement={setStatementToReload}
             />
           ))}

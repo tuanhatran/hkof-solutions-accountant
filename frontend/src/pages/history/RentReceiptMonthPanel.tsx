@@ -1,7 +1,5 @@
 import "./RentReceiptMonthPanel.css";
-import { FilePlus2, FileText } from "lucide-react";
 import { api } from "@/api/endpoints";
-import { Button } from "@/components/ui/Button";
 import { formatDateTime, formatEUR } from "@/lib/format";
 import { PdfActionLink, OpenPdfLink, VersionBadge } from "./HistoryActions";
 import {
@@ -11,83 +9,54 @@ import {
   type AddressGroup,
 } from "./historyHelpers";
 
-/** Rent receipt column of one address: latest version, actions and history. */
+/** Receipt content of one address: latest version, actions and history. */
 export function RentReceiptMonthPanel({
   month,
   address,
   suffix,
-  onCreate,
 }: {
   month: string;
   address: AddressGroup;
   suffix: string;
-  onCreate: (month: string) => void;
 }) {
   const rentReceipt = latestReceipt(address.rentReceipts);
   const rentReceiptHistory = sortRentReceiptsDesc(address.rentReceipts);
+  if (!rentReceipt) {
+    return null;
+  }
 
   return (
     <div className="rent-receipt-month-panel">
       <div className="rent-receipt-month-panel-header">
-        <div className="rent-receipt-month-panel-heading">
-          <span className="rent-receipt-month-panel-icon">
-            <FileText size={17} aria-hidden="true" />
-          </span>
-          <div>
-            <h3 className="rent-receipt-month-panel-title">
-              Quittance de loyer
-            </h3>
-            {rentReceipt ? (
-              <>
-                <p className="rent-receipt-month-panel-meta">
-                  Version {rentReceipt.version ?? 1} ·{" "}
-                  {formatDateTime(rentReceipt.createdAt)}
-                </p>
-                <p
-                  className="rent-receipt-month-panel-meta"
-                  data-cy={`quittance-active-${month}${suffix}`}
-                >
-                  {pairLabel(rentReceipt)}
-                </p>
-              </>
-            ) : (
-              <p className="rent-receipt-month-panel-meta">
-                Aucune version pour ce mois.
-              </p>
-            )}
-          </div>
-        </div>
-        {rentReceipt ? (
-          <p className="number rent-receipt-month-panel-total">
-            {formatEUR(rentReceipt.total)}
+        <div className="rent-receipt-month-panel-meta-block">
+          <p
+            className="rent-receipt-month-panel-meta"
+            data-cy={`quittance-active-${month}${suffix}`}
+          >
+            {pairLabel(rentReceipt)}
           </p>
-        ) : null}
+          <p className="rent-receipt-month-panel-meta">
+            Version {rentReceipt.version ?? 1} ·{" "}
+            {formatDateTime(rentReceipt.createdAt)}
+          </p>
+        </div>
+        <p className="number rent-receipt-month-panel-total">
+          {formatEUR(rentReceipt.total)}
+        </p>
       </div>
 
-      {rentReceipt ? (
-        <div className="rent-receipt-month-panel-actions">
-          {rentReceipt.id ? (
-            <>
-              <PdfActionLink
-                href={api.rentReceipts.pdfUrl(rentReceipt.id)}
-                label="Télécharger le PDF"
-                dataCy={`btn-telecharger-quittance-${month}${suffix}`}
-              />
-              <OpenPdfLink href={api.rentReceipts.pdfUrl(rentReceipt.id)} />
-            </>
-          ) : null}
-        </div>
-      ) : (
-        <Button
-          variant="secondary"
-          small
-          icon={<FilePlus2 size={13} />}
-          className="mt-4"
-          onClick={() => onCreate(month)}
-        >
-          Générer la quittance
-        </Button>
-      )}
+      <div className="rent-receipt-month-panel-actions">
+        {rentReceipt.id ? (
+          <>
+            <PdfActionLink
+              href={api.rentReceipts.pdfUrl(rentReceipt.id)}
+              label="Télécharger le PDF"
+              dataCy={`btn-telecharger-quittance-${month}${suffix}`}
+            />
+            <OpenPdfLink href={api.rentReceipts.pdfUrl(rentReceipt.id)} />
+          </>
+        ) : null}
+      </div>
 
       {address.rentReceipts.length > 1 ? (
         <details

@@ -212,6 +212,16 @@ function toastMessages(): string[] {
   return useToasts.getState().toasts.map((element) => element.message);
 }
 
+function columnOf(month: string, kind: "quittance" | "note"): HTMLElement {
+  const column = document.querySelector(
+    `[data-cy="historique-colonne-${kind}-${month}"]`,
+  );
+  if (!(column instanceof HTMLElement)) {
+    throw new Error(`Column ${kind} of ${month} not found`);
+  }
+  return column;
+}
+
 function resetDrafts() {
   useRentReceiptDraft.setState({
     month: "2025-12",
@@ -373,6 +383,21 @@ describe("HistoryPage", () => {
     if (!jan) {
       throw new Error("January section not found");
     }
+    expect(
+      Array.from(jan.querySelectorAll('[data-cy^="historique-colonne-"]')).map(
+        (column) => column.getAttribute("data-cy"),
+      ),
+    ).toEqual([
+      "historique-colonne-quittance-2026-01",
+      "historique-colonne-note-2026-01",
+    ]);
+    expect(
+      within(jan).getByRole("heading", { name: "Quittance de loyer" }),
+    ).toBeInTheDocument();
+    expect(
+      within(jan).getByRole("heading", { name: "Note de frais d’occupation" }),
+    ).toBeInTheDocument();
+    expect(within(jan).getAllByText("Adresse inconnue")).toHaveLength(2);
     expect(within(jan).getByText("Quittance (2)")).toBeInTheDocument();
     expect(within(jan).getByText("Note v2")).toBeInTheDocument();
     expect(
@@ -485,26 +510,43 @@ describe("HistoryPage", () => {
     );
   });
 
-  it("starts a missing document of a month from its panel", async () => {
+  it("shows a French empty state in a column without a generated document and no generate buttons", async () => {
     receiptsState = readyQuery([RENT_FEB]);
     statementsState = readyQuery([STATEMENT_JAN_ACTIVE]);
-    const user = userEvent.setup();
     renderPage();
     await screen.findByText("2 mois suivis");
 
-    expect(screen.getAllByText("Aucune version pour ce mois.")).toHaveLength(2);
-    await user.click(
-      screen.getByRole("button", { name: "Générer la quittance" }),
-    );
-    expect(useRentReceiptDraft.getState().month).toBe("2026-01");
-    expect(currentPath()).toBe("/generer/quittance");
+    const februaryNote = columnOf("2026-02", "note");
+    expect(
+      within(februaryNote).getByText(
+        "Aucune note de frais générée pour ce mois.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      februaryNote.querySelector(
+        '[data-cy^="historique-adresse-note-2026-02"]',
+      ),
+    ).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "Générer la note" }));
-    expect(useStatementDraft.getState().month).toBe("2026-02");
-    expect(currentPath()).toBe("/generer/note-frais");
+    const januaryReceipt = columnOf("2026-01", "quittance");
+    expect(
+      within(januaryReceipt).getByText(
+        "Aucune quittance générée pour ce mois.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      januaryReceipt.querySelector('[data-cy^="historique-adresse-2026-01"]'),
+    ).toBeNull();
+
+    expect(
+      screen.queryByRole("button", { name: "Générer la quittance" }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Générer la note" }),
+    ).toBeNull();
   });
 
-  it("splits a month into one row per lease address, A→Z then unknown", async () => {
+  it("lists each document type in its own column, addresses A→Z then unknown", async () => {
     receiptsState = readyQuery([
       RECEIPT_ALPHA_JAN,
       RECEIPT_ZULU_JAN,
@@ -516,16 +558,25 @@ describe("HistoryPage", () => {
     renderPage();
 
     await screen.findByText("Quittance (3)");
-    const rows = Array.from(
-      document.querySelectorAll('[data-cy^="historique-adresse-2026-01"]'),
+    const receiptRows = Array.from(
+      document.querySelectorAll('[data-cy^="historique-adresse-2026-01-"]'),
     ) as HTMLElement[];
-    expect(rows.map((row) => row.getAttribute("data-cy"))).toEqual([
+    expect(receiptRows.map((row) => row.getAttribute("data-cy"))).toEqual([
       "historique-adresse-2026-01-address-51",
       "historique-adresse-2026-01-address-61",
       "historique-adresse-2026-01-inconnue",
     ]);
 
-    const [alpha, zulu, unknown] = rows;
+    const statementRows = Array.from(
+      document.querySelectorAll(
+        '[data-cy^="historique-adresse-note-2026-01-"]',
+      ),
+    ) as HTMLElement[];
+    expect(statementRows.map((row) => row.getAttribute("data-cy"))).toEqual([
+      "historique-adresse-note-2026-01-address-61",
+    ]);
+
+    const [alpha, zulu, unknown] = receiptRows;
     expect(within(alpha).getByText("1 avenue Alpha")).toBeInTheDocument();
     expect(
       within(alpha).getByText("Bailleur Alpha → Locataire Alpha"),
@@ -537,13 +588,16 @@ describe("HistoryPage", () => {
     ).toHaveAttribute("href", "/api/rent-receipts/31/pdf");
     expect(within(alpha).getByText(/100,00/)).toBeInTheDocument();
     expect(within(alpha).queryByText(/200,00/)).toBeNull();
-    expect(
-      within(alpha).getByText("Aucune version pour ce mois."),
-    ).toBeInTheDocument();
+    expect(within(alpha).queryByText("Note de frais d’occupation")).toBeNull();
 
     expect(within(zulu).getByText("9 rue Zulu")).toBeInTheDocument();
-    expect(within(zulu).getByText(/50,00/)).toBeInTheDocument();
+    expect(within(zulu).getByText(/200,00/)).toBeInTheDocument();
     expect(within(zulu).queryByText(/100,00/)).toBeNull();
+
+    const [zuluNote] = statementRows;
+    expect(within(zuluNote).getByText("9 rue Zulu")).toBeInTheDocument();
+    expect(within(zuluNote).getByText(/50,00/)).toBeInTheDocument();
+    expect(within(zuluNote).queryByText(/200,00/)).toBeNull();
     expect(
       document.querySelector(
         '[data-cy="btn-telecharger-note-2026-01-address-61"]',
@@ -568,6 +622,31 @@ describe("HistoryPage", () => {
     expect(dialog).toHaveTextContent(/version 1 de Janvier 2026/);
     await user.click(within(dialog).getByRole("button", { name: "Annuler" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("always shows the address label of a single-address month", async () => {
+    receiptsState = readyQuery([RECEIPT_ALPHA_JAN]);
+    statementsState = readyQuery([]);
+    leasesState = readyQuery([LEASE_ALPHA]);
+    renderPage();
+
+    expect(await screen.findByText("1 avenue Alpha")).toBeInTheDocument();
+    expect(
+      document.querySelectorAll(
+        '[data-cy="historique-adresse-2026-01-address-51"]',
+      ),
+    ).toHaveLength(1);
+    expect(
+      document.querySelector('[data-cy="btn-telecharger-quittance-2026-01"]'),
+    ).toHaveAttribute("href", "/api/rent-receipts/31/pdf");
+    expect(
+      document.querySelector(
+        '[data-cy="btn-telecharger-quittance-2026-01-address-51"]',
+      ),
+    ).toBeNull();
+    expect(
+      screen.getByText("Aucune note de frais générée pour ce mois."),
+    ).toBeInTheDocument();
   });
 
   it("ignores documents without a month and older versions of a month", async () => {

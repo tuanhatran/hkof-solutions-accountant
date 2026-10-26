@@ -1,5 +1,5 @@
 import "./StatementMonthPanel.css";
-import { FileCheck2, FilePlus2, PencilLine } from "lucide-react";
+import { PencilLine } from "lucide-react";
 import { api } from "@/api/endpoints";
 import type { StatementDto } from "@/api/types";
 import { Button } from "@/components/ui/Button";
@@ -7,94 +7,68 @@ import { formatDateTime, formatEUR } from "@/lib/format";
 import { PdfActionLink, OpenPdfLink, VersionBadge } from "./HistoryActions";
 import { current, type AddressGroup } from "./historyHelpers";
 
-/** Expense statement column of one address: latest version, actions, history. */
+/** Statement content of one address: latest version, actions, history. */
 export function StatementMonthPanel({
   month,
   address,
   suffix,
-  onCreate,
   onReload,
 }: {
   month: string;
   address: AddressGroup;
   suffix: string;
-  onCreate: (month: string) => void;
   onReload: (statement: StatementDto) => void;
 }) {
   const statement = current(address.statements);
+  if (!statement) {
+    return null;
+  }
+
   return (
     <div className="statement-month-panel">
       <div className="statement-month-panel-header">
-        <div className="statement-month-panel-heading">
-          <span className="statement-month-panel-icon">
-            <FileCheck2 size={17} aria-hidden="true" />
-          </span>
-          <div>
-            <h3 className="statement-month-panel-title">
-              Note de frais d’occupation
-            </h3>
-            {statement ? (
-              <p className="statement-month-panel-meta">
-                Version {statement.version ?? 1} ·{" "}
-                {formatDateTime(statement.createdAt)}
-                {statement.templateName
-                  ? ` · ${statement.templateName} v${statement.templateVersion ?? 1}`
-                  : ""}
-              </p>
-            ) : (
-              <p className="statement-month-panel-meta">
-                Aucune version pour ce mois.
-              </p>
-            )}
-          </div>
-        </div>
-        {statement ? (
-          <p className="number statement-month-panel-total">
-            {formatEUR(statement.total)}
+        <div className="statement-month-panel-meta-block">
+          <p className="statement-month-panel-meta">
+            Version {statement.version ?? 1} ·{" "}
+            {formatDateTime(statement.createdAt)}
+            {statement.templateName
+              ? ` · ${statement.templateName} v${statement.templateVersion ?? 1}`
+              : ""}
           </p>
-        ) : null}
+        </div>
+        <p className="number statement-month-panel-total">
+          {formatEUR(statement.total)}
+        </p>
       </div>
 
-      {statement ? (
-        <div className="statement-month-panel-actions">
-          {statement.id ? (
-            <>
-              <PdfActionLink
-                href={api.expenseStatements.pdfUrl(statement.id, false)}
-                label="Note seule"
-                dataCy={`btn-telecharger-note-${month}${suffix}`}
-              />
-              <PdfActionLink
-                href={api.expenseStatements.zipUrl(statement.id)}
-                label="Note complète (ZIP)"
-                dataCy={`btn-telecharger-note-complete-${month}${suffix}`}
-              />
-              <OpenPdfLink
-                href={api.expenseStatements.pdfUrl(statement.id, true)}
-              />
-            </>
-          ) : null}
-          <Button
-            variant="ghost"
-            small
-            icon={<PencilLine size={13} />}
-            onClick={() => onReload(statement)}
-            data-cy={`btn-rouvrir-note-${month}${suffix}`}
-          >
-            Rouvrir et modifier
-          </Button>
-        </div>
-      ) : (
+      <div className="statement-month-panel-actions">
+        {statement.id ? (
+          <>
+            <PdfActionLink
+              href={api.expenseStatements.pdfUrl(statement.id, false)}
+              label="Note seule"
+              dataCy={`btn-telecharger-note-${month}${suffix}`}
+            />
+            <PdfActionLink
+              href={api.expenseStatements.zipUrl(statement.id)}
+              label="Note complète (ZIP)"
+              dataCy={`btn-telecharger-note-complete-${month}${suffix}`}
+            />
+            <OpenPdfLink
+              href={api.expenseStatements.pdfUrl(statement.id, true)}
+            />
+          </>
+        ) : null}
         <Button
-          variant="secondary"
+          variant="ghost"
           small
-          icon={<FilePlus2 size={13} />}
-          className="mt-4"
-          onClick={() => onCreate(month)}
+          icon={<PencilLine size={13} />}
+          onClick={() => onReload(statement)}
+          data-cy={`btn-rouvrir-note-${month}${suffix}`}
         >
-          Générer la note
+          Rouvrir et modifier
         </Button>
-      )}
+      </div>
 
       {address.statements.length > 1 ? (
         <details className="statement-month-panel-history">
