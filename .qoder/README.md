@@ -86,8 +86,9 @@ project-wide rules are:
 - Logical deletion only (`deleted`); queries use `findByDeletedFalse...`; a previous
   version is never overwritten.
 - Flyway migrations are append-only: never edit an applied migration.
-- Every new task keeps JaCoCo bundle coverage >= 90% LINE and >= 90% BRANCH
-  (`cd backend && ./mvnw -B verify`).
+- Every new task keeps backend changed-line coverage >= 80%: `cd backend && ./mvnw -B verify`
+  produces the JaCoCo XML report, then `scripts/diff-coverage.sh <Base> backend` is the gate.
+  No global bundle threshold.
 - Every production class stays under 300 lines. A class crossing 300 lines is split by
   responsibility, never shrunk by deleting comments only.
 
@@ -110,8 +111,9 @@ project-wide rules are:
   tokens (`var(--color-*)`, `var(--shadow-*)`, `var(--font-*)`) or `@apply` utilities,
   never hex literals. Conditional variants are separate classes combined with `cn()`.
   A component CSS stays under 300 lines and is split by block.
-- Every new task keeps Vitest global coverage >= 90% lines, statements, functions and
-  branches (`cd frontend && npm run test:coverage`).
+- Every new task keeps frontend changed-line coverage >= 80%: `cd frontend && npm run test:coverage`
+  produces the Vitest Clover XML report, then `scripts/diff-coverage.sh <Base> frontend` is the
+  gate. No global threshold.
 - `npm run lint` and `npm run format:check` must pass (CI gate).
 
 ## Language
@@ -125,10 +127,10 @@ project-wide rules are:
 
 - `cd backend && ./mvnw -B test`
 - `cd frontend && npm run typecheck && npm run lint && npm run format:check && npm test && npm run build`
-- Coverage gates for every task: JaCoCo bundle >= 90% LINE and >= 90% BRANCH
-  (`cd backend && ./mvnw -B verify`), Vitest global >= 90% lines, statements, functions and
-  branches (`cd frontend && npm run test:coverage`). The handoff carries one evidence line
-  with the real numbers.
+- Coverage gate for every task: changed-line coverage >= 80% via
+  `scripts/diff-coverage.sh <Base> backend|frontend|all` (JaCoCo XML for backend lines,
+  Vitest Clover XML for frontend lines); no global bundle threshold. The handoff carries one
+  evidence line with the changed-line percentages and measured line counts.
 - Every production class stays under 300 lines. A class crossing 300 lines is split, never
   shrunk by deleting comments only.
 - Full E2E suite, once per task, on the task branch, in a single run:

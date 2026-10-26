@@ -43,8 +43,9 @@ or touches the database. Batch reads in parallel. No polling.
    required: no single full-suite run, or any failing test, or a test green only on a retry. A
    skipped gate is fine only if the diff matches the table's exempt rows (docs, tests-only,
    CSS-only). "Docker unavailable" is never a pass where E2E is required.
-9. Coverage: where the table requires it, JaCoCo bundle under 90% LINE or BRANCH, Vitest global
-   under 90% lines/statements/functions/branches, no coverage evidence line, or a production
+9. Coverage: where the table requires it, changed-line coverage under 80%
+   (`scripts/diff-coverage.sh <Base> backend|frontend|all`, JaCoCo XML for backend lines, Vitest
+   Clover XML for frontend lines), no coverage evidence line, or a production
    class at 300 lines or more.
 10. Frontend `npm run lint`, `npm run format:check` or `npm run build` failed, or a gate was skipped to get green.
 

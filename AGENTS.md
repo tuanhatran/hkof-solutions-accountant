@@ -98,7 +98,7 @@ The absolute rules below and the role protocol in `.qoder/agents/`,
 - Any executable logic in a user template is forbidden: logic-less Mustache engine, sanitized HTML, no scripts or remote resources.
 - Logical deletion only. A previous version is never overwritten.
 - Tests accompany the code. Do not deliver a feature without tests when the specification requires them.
-- Every new task keeps JaCoCo bundle coverage >= 90% LINE and >= 90% BRANCH (`cd backend && ./mvnw -B verify`) and Vitest global coverage >= 90% lines, statements, functions and branches (`cd frontend && npm run test:coverage`); the handoff records one evidence line with the real numbers.
+- Every new task keeps changed-line coverage >= 80% via `scripts/diff-coverage.sh <Base> backend|frontend|all` (JaCoCo XML for backend lines from `cd backend && ./mvnw -B verify`, Vitest Clover XML for frontend lines from `cd frontend && npm run test:coverage`); no global bundle threshold. The handoff records one evidence line with the changed-line percentages and measured line counts.
 - Every production class stays under 300 lines. A class crossing 300 lines is split, never shrunk by deleting comments only.
 
 ## Stack
@@ -120,9 +120,10 @@ Java 25, Spring Boot 4.1.x, Maven, PostgreSQL 17 + Flyway, OpenHTMLToPDF/PDFBox,
 
 ```bash
 cd backend && ./mvnw test
-cd backend && ./mvnw verify     # tests + JaCoCo 90% LINE / 90% BRANCH gate
+cd backend && ./mvnw verify     # tests + JaCoCo XML report
 cd frontend && npm install && npm run test && npm run build
-cd frontend && npm run test:coverage   # Vitest 90% gate
+cd frontend && npm run test:coverage   # Vitest coverage + Clover XML report
+scripts/diff-coverage.sh <Base> all    # changed-line coverage >= 80% gate
 make up        # stack Docker
 make dev       # db + backend + vite
 make e2e

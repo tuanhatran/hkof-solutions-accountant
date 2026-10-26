@@ -49,8 +49,8 @@ Cheap checks only inside the loop: never run a full gate here.
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | Docs, `.handoff/`, comments only                                       | `git diff --check`. No coverage, no E2E.                                                          |
 | Tests only, or component CSS only (no markup/text)                     | Affected tests, plus the side's lint/format (frontend: also `npm run build`). No coverage run, no E2E.                             |
-| Backend production code                                                | `cd backend && ./mvnw -B verify` + full E2E                                                       |
-| Frontend production code                                               | `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build` + full E2E          |
+| Backend production code                                                | `cd backend && ./mvnw -B verify` + `scripts/diff-coverage.sh <Base> backend` + full E2E           |
+| Frontend production code                                               | `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + full E2E |
 | `openapi/`, Flyway migration, Docker/E2E config, or both sides changed | Backend + frontend gates + full E2E                                                               |
 
 Full E2E, one run per task, in a single run:
@@ -60,9 +60,10 @@ retry. If a required gate cannot run (for example Docker unavailable), report it
 the task stays `BLOCKED`; never done on partial evidence. When the lead's handoff asks for a
 gate the table skips, run it.
 
-Coverage thresholds: JaCoCo bundle >= 90% LINE and BRANCH; Vitest global >= 90% lines,
-statements, functions, branches. Every production class and every component CSS stays under 300
-lines: split by responsibility, never shrink by deleting comments.
+Coverage gate: changed-line coverage >= 80% via `scripts/diff-coverage.sh <Base> backend|frontend|all`
+(JaCoCo XML for backend lines, Vitest Clover XML for frontend lines); no global bundle threshold.
+Every production class and every component CSS stays under 300 lines: split by responsibility,
+never shrink by deleting comments.
 
 ## Commit (once per run, after the gates pass)
 

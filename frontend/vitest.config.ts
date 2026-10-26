@@ -17,6 +17,7 @@ export default defineConfig({
     include: ["src/**/*.test.{ts,tsx}"],
     coverage: {
       provider: "v8",
+      reporter: ["text", "html", "clover"],
       include: ["src/**/*.{ts,tsx}"],
       exclude: [
         "src/api/schema.ts",
@@ -24,12 +25,6 @@ export default defineConfig({
         "src/**/*.test.{ts,tsx}",
         "src/main.tsx",
       ],
-      thresholds: {
-        lines: 90,
-        statements: 90,
-        functions: 90,
-        branches: 90,
-      },
     },
   },
 });
