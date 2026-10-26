@@ -215,6 +215,18 @@ export function useRentReceipts(companyId: number | null, month?: string) {
   });
 }
 
+/**
+ * Every rent receipt, all pairs and versions, under the shared
+ * `rentReceiptsAll` prefix so the lease receipt modal refreshes it.
+ */
+export function useAllRentReceipts() {
+  return useQuery({
+    queryKey: queryKeys.rentReceiptsAll,
+    queryFn: () => api.rentReceipts.list(),
+    staleTime: 10_000,
+  });
+}
+
 export function useStatements(
   companyId: number | null,
   month?: string,

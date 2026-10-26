@@ -1,0 +1,51 @@
+@reference "../../index.css";
+
+@layer components {
+  .lease-receipt-history {
+    @apply w-full basis-full rounded-xl border border-line bg-paper/60 p-3;
+  }
+
+  .lease-receipt-history-title {
+    @apply text-xs font-semibold text-ink-soft uppercase tracking-wide;
+  }
+
+  .lease-receipt-history-empty {
+    @apply mt-2 text-xs text-ink-soft italic;
+  }
+
+  .lease-receipt-history-months {
+    @apply mt-2 space-y-2;
+  }
+
+  .lease-receipt-history-month {
+    @apply rounded-lg border border-line bg-paper;
+  }
+
+  .lease-receipt-history-summary {
+    @apply flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-xs font-medium text-ink;
+  }
+
+  .lease-receipt-history-count {
+    @apply shrink-0;
+  }
+
+  .lease-receipt-history-list {
+    @apply space-y-1 border-t border-line px-3 py-2;
+  }
+
+  .lease-receipt-history-item {
+    @apply flex flex-wrap items-center justify-between gap-2 text-xs;
+  }
+
+  .lease-receipt-history-meta {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .lease-receipt-history-date {
+    @apply text-ink-soft;
+  }
+
+  .lease-receipt-history-total {
+    @apply font-semibold text-ink;
+  }
+}

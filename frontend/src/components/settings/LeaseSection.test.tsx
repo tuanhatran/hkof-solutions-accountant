@@ -7,9 +7,11 @@ import type {
   CompanyDto,
   LeaseDto,
   PersonDto,
+  RentReceiptDto,
   SignatureDto,
   TemplateDto,
 } from "@/api/types";
+import { formatMonth } from "@/lib/format";
 import { LeaseSection } from "./LeaseSection";
 import { useRentReceiptSettings } from "./useRentReceiptSettings";
 
@@ -67,6 +69,9 @@ const SIGNATURE: SignatureDto = {
 
 let signatureRows: SignatureDto[] = [];
 let signaturesPending = false;
+let allRentReceiptRows: RentReceiptDto[] = [];
+let allRentReceiptsFailing = false;
+let allRentReceiptsRefetch = vi.fn();
 
 vi.mock("@/components/pdf/PdfViewer", () => ({
   PdfViewer: () => <div data-cy="apercu-quittance-bail" />,
@@ -87,6 +92,7 @@ vi.mock("@/api/endpoints", () => ({
       imageUrl: (id: number) => `/api/signatures/${id}/image`,
     },
     rentReceipts: {
+      list: vi.fn(),
       preview: vi.fn(),
       create: vi.fn(),
       pdf: vi.fn(),
@@ -114,6 +120,16 @@ vi.mock("@/api/queries", async (importOriginal) => {
           }
         : readyQuery(personId === 1 ? signatureRows : []),
     useTemplates: () => readyQuery([TEMPLATE]),
+    useAllRentReceipts: () =>
+      allRentReceiptsFailing
+        ? {
+            data: undefined,
+            isPending: false,
+            isError: true,
+            error: new Error("historique indisponible"),
+            refetch: allRentReceiptsRefetch,
+          }
+        : readyQuery(allRentReceiptRows),
   };
 });
 
@@ -136,6 +152,9 @@ function renderSection() {
 beforeEach(() => {
   signatureRows = [SIGNATURE];
   signaturesPending = false;
+  allRentReceiptRows = [];
+  allRentReceiptsFailing = false;
+  allRentReceiptsRefetch = vi.fn();
 });
 
 describe("LeaseSection rent receipt", () => {
@@ -185,5 +204,68 @@ describe("LeaseSection rent receipt", () => {
       "title",
       "Vérification des signatures…",
     );
+  });
+});
+
+describe("LeaseSection receipt history", () => {
+  const MATCHING_RECEIPT: RentReceiptDto = {
+    id: 101,
+    month: "2026-09",
+    landlordId: 1,
+    tenantId: 2,
+    tenantCompanyId: null,
+    total: "1350.00",
+    version: 1,
+    status: "ACTIVE",
+    createdAt: "2026-09-30T10:00:00Z",
+  };
+  const OTHER_TENANT_RECEIPT: RentReceiptDto = {
+    ...MATCHING_RECEIPT,
+    id: 202,
+    tenantId: 999,
+  };
+
+  it("shows the lease receipts in a full-width subsection below the row actions", () => {
+    allRentReceiptRows = [MATCHING_RECEIPT, OTHER_TENANT_RECEIPT];
+    renderSection();
+
+    const row = document.querySelector('[data-cy="bail-10"]');
+    const history = document.querySelector('[data-cy="quittances-bail-10"]');
+    expect(row).not.toBeNull();
+    expect(history).not.toBeNull();
+    expect(row?.lastElementChild).toBe(history);
+    expect(history?.textContent).toContain(formatMonth("2026-09"));
+    expect(
+      document.querySelector('[data-cy="telecharger-quittance-bail-101"]'),
+    ).not.toBeNull();
+    expect(
+      document.querySelector('[data-cy="telecharger-quittance-bail-202"]'),
+    ).toBeNull();
+  });
+
+  it("shows a French empty state in the subsection when the lease has no receipt", () => {
+    allRentReceiptRows = [OTHER_TENANT_RECEIPT];
+    renderSection();
+
+    const history = document.querySelector('[data-cy="quittances-bail-10"]');
+    expect(history).not.toBeNull();
+    expect(history?.textContent).toContain(
+      "Aucune quittance générée pour ce bail.",
+    );
+  });
+
+  it("keeps the row usable and offers a retry when the history query fails", async () => {
+    allRentReceiptsFailing = true;
+    renderSection();
+
+    const history = document.querySelector('[data-cy="quittances-bail-10"]');
+    expect(history?.textContent).toContain("Impossible de charger les données");
+    expect(history?.textContent).toContain("historique indisponible");
+    expect(
+      screen.getByRole("button", { name: "Quittance du bail 10" }),
+    ).toBeEnabled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Réessayer" }));
+    expect(allRentReceiptsRefetch).toHaveBeenCalledTimes(1);
   });
 });
