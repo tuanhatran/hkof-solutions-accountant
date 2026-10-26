@@ -4,34 +4,41 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { errorMessage } from "@/api/client";
 import {
+  useAllRentReceipts,
+  useAllStatements,
   useCompanies,
   useLeases,
-  useRentReceipts,
-  useStatements,
 } from "@/api/queries";
 import type { StatementDto } from "@/api/types";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/States";
 import { formatMonth } from "@/lib/format";
-import { resolveActiveCompanyId, useCompanyStore } from "@/state/company";
+import { useCompanyStore } from "@/state/company";
 import { useStatementDraft } from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
 import { HistoryEmptyState } from "./HistoryEmptyState";
 import { HistoryMonthSection } from "./HistoryMonthSection";
 import { HistoryReloadDialog } from "./HistoryReloadDialog";
-import { current, groupHistoryByMonthAndAddress } from "./historyHelpers";
+import {
+  current,
+  groupHistoryByMonthAndAddress,
+  resolveLeaseForDocument,
+} from "./historyHelpers";
 
 export function HistoryPage() {
   const navigate = useNavigate();
   const companies = useCompanies();
-  const storedCompanyId = useCompanyStore((state) => state.activeCompanyId);
-  const activeCompanyId = resolveActiveCompanyId(
-    storedCompanyId,
-    companies.data,
+  const companyIds = useMemo(
+    () =>
+      (companies.data ?? [])
+        .map((company) => company.id)
+        .filter((id): id is number => typeof id === "number"),
+    [companies.data],
   );
-  // History is company-scoped: the active company owns every listed document.
-  const rentReceiptsQuery = useRentReceipts(activeCompanyId);
-  const statementsQuery = useStatements(activeCompanyId);
+  // History spans every company: rent receipts are global, statements are
+  // fetched once per company.
+  const rentReceiptsQuery = useAllRentReceipts();
+  const statementsQuery = useAllStatements(companyIds);
   const leasesQuery = useLeases();
   const [statementToReload, setStatementToReload] =
     useState<StatementDto | null>(null);
@@ -42,14 +49,8 @@ export function HistoryPage() {
         rentReceiptsQuery.data ?? [],
         statementsQuery.data ?? [],
         leasesQuery.data ?? [],
-        activeCompanyId,
       ),
-    [
-      rentReceiptsQuery.data,
-      statementsQuery.data,
-      leasesQuery.data,
-      activeCompanyId,
-    ],
+    [rentReceiptsQuery.data, statementsQuery.data, leasesQuery.data],
   );
 
   const loading =
@@ -81,6 +82,19 @@ export function HistoryPage() {
         ),
       );
     const rentReceipt = current(address?.rentReceipts ?? []);
+    // The statement draft is global: pin the internal company store to the
+    // statement's company so the generation page cannot resolve another one.
+    const lease = resolveLeaseForDocument(
+      statementToReload,
+      leasesQuery.data ?? [],
+    );
+    const companyId =
+      typeof statementToReload.companyId === "number"
+        ? statementToReload.companyId
+        : lease?.companyId;
+    if (typeof companyId === "number") {
+      useCompanyStore.getState().setActiveCompany(companyId);
+    }
     useStatementDraft
       .getState()
       .loadFromStatement(statementToReload, rentReceipt?.id ?? null);
@@ -96,7 +110,7 @@ export function HistoryPage() {
       <PageHeader
         eyebrow="Suivi"
         title="Historique"
-        description="Toutes les versions de vos quittances et notes de frais, classées par mois. Les versions archivées restent téléchargeables et consultables."
+        description="Toutes les versions de vos quittances et notes de frais, toutes sociétés confondues, classées par mois. Les versions archivées restent téléchargeables et consultables."
         actions={
           <span className="badge badge-neutral">
             <History size={12} aria-hidden="true" />
@@ -113,10 +127,10 @@ export function HistoryPage() {
 
       {loading && groups.length === 0 ? (
         <LoadingState message="Chargement de l’historique…" />
-      ) : activeCompanyId === null ? (
+      ) : companyIds.length === 0 ? (
         <EmptyState
-          title="Aucune société active"
-          description="Créez ou sélectionnez une société dans la configuration pour consulter son historique."
+          title="Aucune société configurée"
+          description="Créez une société dans la configuration pour consulter son historique."
         />
       ) : groups.length === 0 && !errorText ? (
         <HistoryEmptyState

@@ -26,6 +26,7 @@ let receiptsState: QueryLike<RentReceiptDto[]>;
 let statementsState: QueryLike<StatementDto[]>;
 let companiesState: QueryLike<CompanyDto[]>;
 let leasesState: QueryLike<LeaseDto[]>;
+let statementsCompanyIds: number[][];
 
 vi.mock("@/api/endpoints", () => ({
   api: {
@@ -45,8 +46,11 @@ vi.mock("@/api/queries", async (importOriginal) => {
   return {
     ...actual,
     useCompanies: () => companiesState,
-    useRentReceipts: () => receiptsState,
-    useStatements: () => statementsState,
+    useAllRentReceipts: () => receiptsState,
+    useAllStatements: (companyIds: number[]) => {
+      statementsCompanyIds.push(companyIds);
+      return statementsState;
+    },
     useLeases: () => leasesState,
   };
 });
@@ -246,6 +250,37 @@ const STATEMENT_ZULU_JAN: StatementDto = {
   total: "50.00",
 };
 
+const STATEMENT_ANNEXE_JAN_ACTIVE: StatementDto = {
+  ...STATEMENT_JAN_ACTIVE,
+  id: 71,
+  companyId: 2,
+  leaseId: 6,
+};
+
+const STATEMENT_ANNEXE_JAN_OLD: StatementDto = {
+  ...STATEMENT_JAN_OLD,
+  id: 70,
+  companyId: 2,
+  leaseId: 6,
+};
+
+const STATEMENT_ANNEXE_JAN_UNLABELLED_ACTIVE: StatementDto = {
+  ...STATEMENT_JAN_ACTIVE,
+  id: 73,
+  leaseId: 6,
+};
+
+const STATEMENT_ANNEXE_JAN_UNLABELLED_OLD: StatementDto = {
+  ...STATEMENT_JAN_OLD,
+  id: 72,
+  leaseId: 6,
+};
+
+const LEASE_ZULU_ANNEXE: LeaseDto = {
+  ...LEASE_ZULU,
+  companyId: 2,
+};
+
 function readyQuery<T>(data: T[]): QueryLike<T[]> {
   return {
     data,
@@ -318,24 +353,66 @@ beforeEach(() => {
   ]);
   companiesState = readyQuery([{ id: 1, name: "HKOF" }] as CompanyDto[]);
   leasesState = readyQuery([]);
-  useCompanyStore.setState({ activeCompanyId: 1 });
+  statementsCompanyIds = [];
   resetDrafts();
+  useCompanyStore.setState({ activeCompanyId: 1 });
   useToasts.setState({ toasts: [] });
 });
 
+/** Renders History, loads the first archived statement version and confirms it. */
+async function confirmStatementReload() {
+  const user = userEvent.setup();
+  receiptsState = readyQuery([]);
+  renderPage();
+  await screen.findByText("1 mois suivi");
+  await user.click(screen.getAllByRole("button", { name: "Charger" })[0]);
+  const dialog = screen.getByRole("dialog", { name: "Rouvrir cette note ?" });
+  await user.click(
+    within(dialog).getByRole("button", { name: "Charger les lignes" }),
+  );
+  await waitFor(() => expect(currentPath()).toBe("/generer/note-frais"));
+}
+
 describe("HistoryPage", () => {
-  it("asks to configure a company when none is active", () => {
+  it("asks to configure a company when none exists", () => {
     companiesState = readyQuery([] as CompanyDto[]);
-    useCompanyStore.setState({ activeCompanyId: null });
     receiptsState = readyQuery([]);
     statementsState = readyQuery([]);
 
     renderPage();
 
-    expect(screen.getByText("Aucune société active")).toBeInTheDocument();
+    expect(screen.getByText("Aucune société configurée")).toBeInTheDocument();
     expect(
       screen.queryByText("Aucun document pour le moment"),
     ).not.toBeInTheDocument();
+    expect(statementsCompanyIds.at(-1)).toEqual([]);
+  });
+
+  it("lists the documents of every company without an active company", async () => {
+    companiesState = readyQuery([
+      { id: 1, name: "HKOF" },
+      { id: 2, name: "HKOF Annexe" },
+    ] as CompanyDto[]);
+    receiptsState = readyQuery([RECEIPT_ALPHA_JAN]);
+    statementsState = readyQuery([STATEMENT_ZULU_JAN]);
+    leasesState = readyQuery([LEASE_ALPHA, LEASE_ZULU]);
+
+    renderPage();
+
+    expect(await screen.findByText("1 mois suivi")).toBeInTheDocument();
+    expect(statementsCompanyIds.at(-1)).toEqual([1, 2]);
+    expect(
+      document.querySelector(
+        '[data-cy="historique-adresse-2026-01-address-51"]',
+      ),
+    ).not.toBeNull();
+    expect(
+      document.querySelector(
+        '[data-cy="historique-adresse-note-2026-01-address-61"]',
+      ),
+    ).not.toBeNull();
+    expect(screen.getByText("1 avenue Alpha")).toBeInTheDocument();
+    expect(screen.getByText("9 rue Zulu")).toBeInTheDocument();
   });
 
   it("shows the loading and empty states with the two shortcuts", async () => {
@@ -542,6 +619,54 @@ describe("HistoryPage", () => {
     await waitFor(() => expect(currentPath()).toBe("/historique"));
     const draft = useStatementDraft.getState();
     expect(draft.month).toBe("2025-12");
+  });
+
+  it("pins the statement company before reloading it into the draft", async () => {
+    companiesState = readyQuery([
+      { id: 1, name: "HKOF" },
+      { id: 2, name: "HKOF Annexe" },
+    ] as CompanyDto[]);
+    statementsState = readyQuery([
+      STATEMENT_ANNEXE_JAN_ACTIVE,
+      STATEMENT_ANNEXE_JAN_OLD,
+    ]);
+    leasesState = readyQuery([LEASE_ZULU]);
+
+    await confirmStatementReload();
+
+    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
+  });
+
+  it("falls back to the statement lease company when the statement has none", async () => {
+    companiesState = readyQuery([
+      { id: 1, name: "HKOF" },
+      { id: 2, name: "HKOF Annexe" },
+    ] as CompanyDto[]);
+    statementsState = readyQuery([
+      STATEMENT_ANNEXE_JAN_UNLABELLED_ACTIVE,
+      STATEMENT_ANNEXE_JAN_UNLABELLED_OLD,
+    ]);
+    leasesState = readyQuery([LEASE_ZULU_ANNEXE]);
+
+    await confirmStatementReload();
+
+    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
+  });
+
+  it("keeps the active company when neither the statement nor its lease names one", async () => {
+    companiesState = readyQuery([
+      { id: 1, name: "HKOF" },
+      { id: 2, name: "HKOF Annexe" },
+    ] as CompanyDto[]);
+    statementsState = readyQuery([
+      STATEMENT_ANNEXE_JAN_UNLABELLED_ACTIVE,
+      STATEMENT_ANNEXE_JAN_UNLABELLED_OLD,
+    ]);
+    leasesState = readyQuery([LEASE_ZULU]);
+
+    await confirmStatementReload();
+
+    expect(useCompanyStore.getState().activeCompanyId).toBe(1);
   });
 
   it("shows a French empty state in a column without a generated document and no generate buttons", async () => {

@@ -51,18 +51,6 @@
     @apply text-[11px] text-white/50;
   }
 
-  .app-shell-mobile-company .app-company-select {
-    @apply mt-3;
-  }
-
-  .app-shell-mobile-company .app-company-select-empty {
-    @apply mt-3;
-  }
-
-  .app-shell-mobile-company .app-company-select-field {
-    @apply py-1.5;
-  }
-
   .app-shell-info-card {
     @apply mt-6 rounded-2xl border border-white/10 bg-white/[0.055] p-3.5;
   }

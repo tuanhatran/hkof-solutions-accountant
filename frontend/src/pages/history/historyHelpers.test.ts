@@ -134,31 +134,26 @@ const STATEMENT_COMPANY: StatementDto = {
 describe("resolveLeaseForDocument", () => {
   it("resolves a statement through its leaseId", () => {
     expect(
-      resolveLeaseForDocument(
-        STATEMENT_COMPANY,
-        [LEASE_ALPHA, LEASE_COMPANY],
-        4,
-      ),
+      resolveLeaseForDocument(STATEMENT_COMPANY, [LEASE_ALPHA, LEASE_COMPANY]),
     ).toBe(LEASE_COMPANY);
     expect(
-      resolveLeaseForDocument({ ...STATEMENT_ALPHA, leaseId: 404 }, [], 4),
+      resolveLeaseForDocument({ ...STATEMENT_ALPHA, leaseId: 404 }, []),
     ).toBeNull();
   });
 
   it("resolves a receipt to the lowest-id lease of its landlord+tenant pair", () => {
     expect(
-      resolveLeaseForDocument(
-        RECEIPT_ALPHA,
-        [LEASE_ALPHA_OTHER_ADDRESS, LEASE_ALPHA],
-        4,
-      )?.id,
+      resolveLeaseForDocument(RECEIPT_ALPHA, [
+        LEASE_ALPHA_OTHER_ADDRESS,
+        LEASE_ALPHA,
+      ])?.id,
     ).toBe(5);
     expect(
-      resolveLeaseForDocument(RECEIPT_UNMATCHED, [LEASE_ALPHA], 4),
+      resolveLeaseForDocument(RECEIPT_UNMATCHED, [LEASE_ALPHA]),
     ).toBeNull();
   });
 
-  it("ignores a company lease owned by another company", () => {
+  it("resolves a company lease whatever its companyId", () => {
     const companyReceipt: RentReceiptDto = {
       id: 104,
       month: "2026-01",
@@ -166,12 +161,22 @@ describe("resolveLeaseForDocument", () => {
       tenantId: null,
       tenantCompanyId: 4,
     };
+    expect(resolveLeaseForDocument(companyReceipt, [LEASE_COMPANY])?.id).toBe(
+      9,
+    );
+    // History is no longer filtered by an active company: a lease owned by
+    // company 4 still matches a receipt whose tenant company is another one.
     expect(
-      resolveLeaseForDocument(companyReceipt, [LEASE_COMPANY], 4)?.id,
-    ).toBe(9);
-    expect(
-      resolveLeaseForDocument(companyReceipt, [LEASE_COMPANY], 8),
-    ).toBeNull();
+      resolveLeaseForDocument(
+        {
+          ...RECEIPT_UNMATCHED,
+          landlordId: 3,
+          tenantId: null,
+          tenantCompanyId: 4,
+        },
+        [LEASE_COMPANY],
+      ),
+    ).toBe(LEASE_COMPANY);
   });
 });
 
@@ -180,7 +185,6 @@ describe("groupHistoryByMonthAndAddress", () => {
     [RECEIPT_UNMATCHED, RECEIPT_FEBRUARY, RECEIPT_ALPHA],
     [STATEMENT_COMPANY, STATEMENT_ALPHA],
     [LEASE_ALPHA_OTHER_ADDRESS, LEASE_COMPANY, LEASE_ALPHA],
-    4,
   );
 
   it("keeps months newest first", () => {
@@ -214,7 +218,6 @@ describe("groupHistoryByMonthAndAddress", () => {
       [{ ...RECEIPT_ALPHA, month: undefined }],
       [],
       [LEASE_ALPHA],
-      4,
     );
     expect(result).toEqual([]);
   });

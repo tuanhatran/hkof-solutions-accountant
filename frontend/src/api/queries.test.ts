@@ -1,13 +1,15 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
+import type { StatementDto } from "./types";
 import { api } from "./endpoints";
 import {
   queryKeys,
   useActiveRentReceipt,
   useActiveStatement,
   useAllRentReceipts,
+  useAllStatements,
   useCompanies,
   useEmployees,
   useExpenseItems,
@@ -241,6 +243,51 @@ describe("query hooks", () => {
     expect(noReceipts.result.current.fetchStatus).toBe("idle");
     expect(companyless.result.current.fetchStatus).toBe("idle");
   });
+  it("loads and merges every company's statements", async () => {
+    vi.mocked(api.expenseStatements.list).mockClear();
+    const first: StatementDto = { id: 1, companyId: 3, month: "2026-01" };
+    const second: StatementDto = { id: 2, companyId: 4, month: "2026-01" };
+    vi.mocked(api.expenseStatements.list).mockImplementation((companyId) =>
+      Promise.resolve(companyId === 3 ? [first] : [second]),
+    );
+
+    const all = renderHook(() => useAllStatements([3, 4]), { wrapper });
+
+    await waitFor(() => expect(all.result.current.isPending).toBe(false));
+    expect(api.expenseStatements.list).toHaveBeenCalledWith(3);
+    expect(api.expenseStatements.list).toHaveBeenCalledWith(4);
+    expect(all.result.current.data).toEqual([first, second]);
+    expect(all.result.current.isError).toBe(false);
+    expect(all.result.current.error).toBeNull();
+  });
+
+  it("merges the statement failures and refetches every company", async () => {
+    vi.mocked(api.expenseStatements.list).mockClear();
+    vi.mocked(api.expenseStatements.list).mockImplementation((companyId) =>
+      companyId === 4
+        ? Promise.reject(new Error("Notes indisponibles"))
+        : Promise.resolve([]),
+    );
+
+    const all = renderHook(() => useAllStatements([3, 4]), { wrapper });
+
+    await waitFor(() => expect(all.result.current.isError).toBe(true));
+    expect(all.result.current.error?.message).toBe("Notes indisponibles");
+    await act(async () => {
+      await all.result.current.refetch();
+    });
+    expect(api.expenseStatements.list).toHaveBeenCalledTimes(4);
+  });
+
+  it("skips the statement fan-out without a company", () => {
+    vi.mocked(api.expenseStatements.list).mockClear();
+    const all = renderHook(() => useAllStatements([]), { wrapper });
+
+    expect(all.result.current.data).toEqual([]);
+    expect(all.result.current.isPending).toBe(false);
+    expect(api.expenseStatements.list).not.toHaveBeenCalled();
+  });
+
   it("loads every rent receipt for the lease history under the shared prefix", async () => {
     vi.mocked(api.rentReceipts.list).mockResolvedValue([]);
 

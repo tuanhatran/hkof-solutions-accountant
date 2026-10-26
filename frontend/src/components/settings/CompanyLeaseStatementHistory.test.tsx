@@ -138,10 +138,10 @@ describe("CompanyLeaseStatementHistory", () => {
 
     const items = within(month).getAllByRole("listitem");
     expect(items).toHaveLength(2);
-    expect(items[0]).toHaveTextContent("v2 · active");
+    expect(items[0]).toHaveTextContent("v2");
     expect(items[0]).toHaveTextContent(formatDateTime("2026-09-30T12:00:00Z"));
     expect(items[0]).toHaveTextContent(collapsed(formatEUR("980.00")));
-    expect(items[1]).toHaveTextContent("v1 · archivée");
+    expect(items[1]).toHaveTextContent("v1");
     expect(items[1]).toHaveTextContent(collapsed(formatEUR("950.00")));
 
     expect(
@@ -230,7 +230,7 @@ describe("CompanyLeaseStatementHistory", () => {
     const month = screen.getByTestId("notes-frais-bail-mois-5-");
     const items = within(month).getAllByRole("listitem");
     expect(items).toHaveLength(1);
-    expect(items[0]).toHaveTextContent("v1 · archivée");
+    expect(items[0]).toHaveTextContent("v1");
     expect(items[0]).toHaveTextContent("—");
     expect(month.querySelector("a")).toBeNull();
   });

@@ -355,7 +355,7 @@ describe("SettingsPage tabs", () => {
     expect(api.companies.update).not.toHaveBeenCalled();
   });
 
-  it("creates a company through the empty identity modal and activates it", async () => {
+  it("creates a company through the empty identity modal and selects it for configuration", async () => {
     companiesState = readyQuery([OTHER]);
     useCompanyStore.setState({ activeCompanyId: 2 });
     vi.mocked(api.companies.create).mockResolvedValue(COMPANY);
@@ -383,7 +383,8 @@ describe("SettingsPage tabs", () => {
       }),
     );
     await waitFor(() => expect(toastMessages()).toContain("Société créée."));
-    expect(useCompanyStore.getState().activeCompanyId).toBe(1);
+    // Creating a company selects it for configuration but never activates it.
+    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
     await waitFor(() =>
       expect(queryByCy("dialogue-formulaire-societe")).toBeNull(),
     );
@@ -464,7 +465,7 @@ describe("SettingsPage tabs", () => {
     expect(screen.getByText("Bail actif")).toBeVisible();
   });
 
-  it("makes another company active", async () => {
+  it("never offers to make another company active", async () => {
     companiesState = readyQuery([COMPANY, OTHER]);
     renderPage();
     const user = userEvent.setup();
@@ -473,9 +474,10 @@ describe("SettingsPage tabs", () => {
       screen.getByLabelText("Société à configurer"),
       "2",
     );
-    await user.click(screen.getByRole("button", { name: "Rendre active" }));
 
-    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
+    expect(screen.queryByRole("button", { name: "Rendre active" })).toBeNull();
+    expect(queryByCy("btn-rendre-active")).toBeNull();
+    expect(useCompanyStore.getState().activeCompanyId).toBe(1);
   });
 
   it("shows the loading then error states of the companies", async () => {

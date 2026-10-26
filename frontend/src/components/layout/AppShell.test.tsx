@@ -192,46 +192,41 @@ describe("AppShell", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("selects the first company and switches the active company", async () => {
+  it("resolves the active company to the first one without a selector", async () => {
     renderShell();
 
-    const selects = screen.getAllByLabelText("Société active");
-    expect(selects).toHaveLength(2);
     await waitFor(() =>
       expect(useCompanyStore.getState().activeCompanyId).toBe(1),
     );
-    expect(selects[0]).toHaveValue("1");
+    expect(screen.queryByLabelText("Société active")).toBeNull();
     expect(
-      within(selects[0]).getByRole("option", { name: "HKOF" }),
-    ).toBeVisible();
-
-    await userEvent.setup().selectOptions(selects[0], "2");
-    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
+      document.querySelector('[data-cy="select-societe-active"]'),
+    ).toBeNull();
+    expect(screen.queryByText("Société active")).toBeNull();
   });
 
   it("keeps a stored company that still exists", async () => {
     useCompanyStore.setState({ activeCompanyId: 2 });
     renderShell();
 
-    const [select] = screen.getAllByLabelText("Société active");
-    await waitFor(() => expect(select).toHaveValue("2"));
-    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
+    await waitFor(() =>
+      expect(useCompanyStore.getState().activeCompanyId).toBe(2),
+    );
+    expect(
+      document.querySelector('[data-cy="select-societe-active"]'),
+    ).toBeNull();
   });
 
-  it("shows the loading, error and empty company states", async () => {
-    companiesState = { isPending: true, isError: false, isSuccess: false };
-    const pending = renderShell();
-    expect(screen.getAllByText("Chargement des sociétés…")).toHaveLength(2);
-    pending.unmount();
+  it("falls back on the first company when the stored id is gone", async () => {
+    useCompanyStore.setState({ activeCompanyId: 99 });
+    renderShell();
 
-    companiesState = { isPending: false, isError: true, isSuccess: false };
-    const failed = renderShell();
-    expect(screen.getAllByRole("alert")).toHaveLength(2);
-    expect(
-      screen.getAllByText("Impossible de charger les sociétés."),
-    ).toHaveLength(2);
-    failed.unmount();
+    await waitFor(() =>
+      expect(useCompanyStore.getState().activeCompanyId).toBe(1),
+    );
+  });
 
+  it("clears the active company when none is configured", async () => {
     companiesState = {
       isPending: false,
       isError: false,
@@ -239,9 +234,12 @@ describe("AppShell", () => {
       data: [],
     };
     renderShell();
+
     await waitFor(() =>
-      expect(screen.getAllByText(/Aucune société configurée/)).toHaveLength(2),
+      expect(useCompanyStore.getState().activeCompanyId).toBeNull(),
     );
-    expect(useCompanyStore.getState().activeCompanyId).toBeNull();
+    expect(
+      document.querySelector('[data-cy="select-societe-active"]'),
+    ).toBeNull();
   });
 });

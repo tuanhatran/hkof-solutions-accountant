@@ -1,13 +1,15 @@
 import "./AppShell.css";
 import { ShieldCheck } from "lucide-react";
+import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
-import { AppCompanySelect } from "@/components/layout/AppCompanySelect";
+import { useCompanies } from "@/api/queries";
 import { MobileNavigation, SideNavigation } from "@/components/layout/AppNav";
 import { LlmBadge } from "@/components/llm/LlmBadge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ToastHost } from "@/components/ui/ToastHost";
 import { useDraftBlock } from "@/hooks/useDraftBlock";
 import { cn } from "@/lib/cn";
+import { resolveActiveCompanyId, useCompanyStore } from "@/state/company";
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
@@ -46,6 +48,21 @@ function Brand({ compact = false }: { compact?: boolean }) {
 
 export function AppShell() {
   const blocker = useDraftBlock();
+  const companies = useCompanies();
+  const activeCompanyId = useCompanyStore((state) => state.activeCompanyId);
+  const setActiveCompany = useCompanyStore((state) => state.setActiveCompany);
+
+  // Internal plumbing only: no UI switches the active company any more, the
+  // stored id is kept when valid and the first company selected otherwise.
+  useEffect(() => {
+    if (!companies.isSuccess) {
+      return;
+    }
+    const resolved = resolveActiveCompanyId(activeCompanyId, companies.data);
+    if (resolved !== activeCompanyId) {
+      setActiveCompany(resolved);
+    }
+  }, [companies.isSuccess, companies.data, activeCompanyId, setActiveCompany]);
 
   return (
     <div className="app-shell">
@@ -56,7 +73,6 @@ export function AppShell() {
       <aside className="app-shell-sidebar hidden lg:flex">
         <div className="px-2">
           <Brand />
-          <AppCompanySelect />
         </div>
         <SideNavigation />
         <div className="app-shell-info-card">
@@ -84,9 +100,6 @@ export function AppShell() {
           <div className="app-shell-mobile-top">
             <Brand compact />
             <LlmBadge dark />
-          </div>
-          <div className="app-shell-mobile-company">
-            <AppCompanySelect />
           </div>
           <MobileNavigation />
         </header>

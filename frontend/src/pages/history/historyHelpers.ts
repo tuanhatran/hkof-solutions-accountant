@@ -54,14 +54,13 @@ export function pairLabel(document: RentReceiptDto): string {
 }
 
 /**
- * Lease owning a history document: a statement names it through `leaseId`, a
- * receipt through the lowest-id lease matching its landlord+tenant pair (a
- * company lease only when it belongs to the active company).
+ * Lease owning a history document, whatever its company: a statement names it
+ * through `leaseId`, a receipt through the lowest-id lease matching its
+ * landlord+tenant pair.
  */
 export function resolveLeaseForDocument(
   document: RentReceiptDto | StatementDto,
   leases: LeaseDto[],
-  activeCompanyId: number | null,
 ): LeaseDto | null {
   const leaseId = (document as StatementDto).leaseId;
   if (typeof leaseId === "number") {
@@ -70,9 +69,6 @@ export function resolveLeaseForDocument(
   const receipt = document as RentReceiptDto;
   let lowest: LeaseDto | null = null;
   for (const lease of leases) {
-    if (lease.companyLease && lease.companyId !== activeCompanyId) {
-      continue;
-    }
     if (!matchesLease(receipt, lease)) {
       continue;
     }
@@ -87,9 +83,8 @@ export function resolveLeaseForDocument(
 function addressOf(
   document: RentReceiptDto | StatementDto,
   leases: LeaseDto[],
-  activeCompanyId: number | null,
 ): { addressKey: string; addressLabel: string } {
-  const lease = resolveLeaseForDocument(document, leases, activeCompanyId);
+  const lease = resolveLeaseForDocument(document, leases);
   const addressId = lease?.addressId;
   const propertyAddress = lease?.propertyAddress?.trim();
   if (addressId === undefined || addressId === null) {
@@ -120,15 +115,15 @@ function compareAddresses(left: AddressGroup, right: AddressGroup): number {
 }
 
 /**
- * History grouping: one card per month (newest first), one row per lease
- * address inside it (A→Z, unknown last). A document keeps exactly one address
- * row, so two addresses of the same month never share a row.
+ * History grouping across every company: one card per month (newest first),
+ * one row per lease address inside it (A→Z, unknown last). A document keeps
+ * exactly one address row, so two addresses of the same month never share a
+ * row.
  */
 export function groupHistoryByMonthAndAddress(
   rentReceipts: RentReceiptDto[],
   statements: StatementDto[],
   leases: LeaseDto[],
-  activeCompanyId: number | null,
 ): MonthGroup[] {
   const byMonth = new Map<string, Map<string, AddressGroup>>();
 
@@ -139,11 +134,7 @@ export function groupHistoryByMonthAndAddress(
     if (!document.month) {
       return null;
     }
-    const { addressKey, addressLabel } = addressOf(
-      document,
-      leases,
-      activeCompanyId,
-    );
+    const { addressKey, addressLabel } = addressOf(document, leases);
     const rows = byMonth.get(document.month) ?? new Map<string, AddressGroup>();
     const row = rows.get(addressKey) ?? {
       addressKey,
