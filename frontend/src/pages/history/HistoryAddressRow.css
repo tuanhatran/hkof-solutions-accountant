@@ -1,0 +1,11 @@
+@reference "../../index.css";
+
+@layer components {
+  .history-address-row + .history-address-row {
+    @apply border-t border-line;
+  }
+
+  .history-address-row-label {
+    @apply px-5 pt-4 text-xs font-semibold uppercase tracking-wide text-ink-soft sm:px-6;
+  }
+}

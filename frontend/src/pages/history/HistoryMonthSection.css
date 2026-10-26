@@ -17,7 +17,27 @@
     @apply flex flex-wrap gap-2;
   }
 
-  .history-month-section-body {
+  .history-month-section-columns {
     @apply grid divide-y divide-line lg:grid-cols-2 lg:divide-x lg:divide-y-0;
+  }
+
+  .history-month-section-column-title {
+    @apply flex items-center gap-2 border-b border-line bg-paper/30 px-5 py-3 text-sm font-semibold text-ink sm:px-6;
+  }
+
+  .history-month-section-column-icon {
+    @apply grid h-7 w-7 place-items-center rounded-lg;
+  }
+
+  .history-month-section-column-icon-quittance {
+    @apply bg-accent-soft text-accent;
+  }
+
+  .history-month-section-column-icon-note {
+    @apply bg-copper-soft text-copper;
+  }
+
+  .history-month-section-empty {
+    @apply px-5 py-8 text-sm text-ink-soft sm:px-6;
   }
 }

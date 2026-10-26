@@ -1,24 +1,44 @@
 import "./HistoryMonthSection.css";
+import { FileCheck2, FileText } from "lucide-react";
 import type { StatementDto } from "@/api/types";
 import { formatMonth } from "@/lib/format";
-import { current, latestReceipt, type MonthGroup } from "./historyHelpers";
-import { RentReceiptMonthPanel } from "./RentReceiptMonthPanel";
-import { StatementMonthPanel } from "./StatementMonthPanel";
+import { HistoryAddressRow } from "./HistoryAddressRow";
+import {
+  current,
+  latestReceipt,
+  type AddressGroup,
+  type MonthGroup,
+} from "./historyHelpers";
 
-/** Month card grouping the rent receipt and the expense statement history. */
+/** Month card: one Quittance column and one Note de frais column. */
 export function HistoryMonthSection({
   group,
-  onCreateRentReceipt,
-  onCreateStatement,
   onReloadStatement,
 }: {
   group: MonthGroup;
-  onCreateRentReceipt: (month: string) => void;
-  onCreateStatement: (month: string) => void;
   onReloadStatement: (statement: StatementDto) => void;
 }) {
-  const rentReceipt = latestReceipt(group.rentReceipts);
-  const statement = current(group.statements);
+  const rentReceipt = latestReceipt(
+    group.addresses.flatMap((address) => address.rentReceipts),
+  );
+  const statement = current(
+    group.addresses.flatMap((address) => address.statements),
+  );
+  const rentReceiptCount = group.addresses.reduce(
+    (count, address) => count + address.rentReceipts.length,
+    0,
+  );
+  const severalAddresses = group.addresses.length > 1;
+  const receiptAddresses = group.addresses.filter(
+    (address) => address.rentReceipts.length > 0,
+  );
+  const statementAddresses = group.addresses.filter(
+    (address) => address.statements.length > 0,
+  );
+
+  function suffixOf(address: AddressGroup): string {
+    return severalAddresses ? `-${address.addressKey}` : "";
+  }
 
   return (
     <section
@@ -39,8 +59,8 @@ export function HistoryMonthSection({
             }
           >
             Quittance{" "}
-            {group.rentReceipts.length > 1
-              ? `(${group.rentReceipts.length})`
+            {rentReceiptCount > 1
+              ? `(${rentReceiptCount})`
               : rentReceipt
                 ? `v${rentReceipt.version ?? 1}`
                 : "non générée"}
@@ -53,18 +73,62 @@ export function HistoryMonthSection({
         </div>
       </div>
 
-      <div className="history-month-section-body">
-        <RentReceiptMonthPanel
-          group={group}
-          rentReceipt={rentReceipt}
-          onCreate={onCreateRentReceipt}
-        />
-        <StatementMonthPanel
-          group={group}
-          statement={statement}
-          onCreate={onCreateStatement}
-          onReload={onReloadStatement}
-        />
+      <div className="history-month-section-columns">
+        <section
+          className="history-month-section-column"
+          data-cy={`historique-colonne-quittance-${group.month}`}
+        >
+          <h3 className="history-month-section-column-title">
+            <span className="history-month-section-column-icon history-month-section-column-icon-quittance">
+              <FileText size={15} aria-hidden="true" />
+            </span>
+            Quittance de loyer
+          </h3>
+          {receiptAddresses.length === 0 ? (
+            <p className="history-month-section-empty">
+              Aucune quittance générée pour ce mois.
+            </p>
+          ) : (
+            receiptAddresses.map((address) => (
+              <HistoryAddressRow
+                key={`receipt-${address.addressKey}`}
+                month={group.month}
+                address={address}
+                suffix={suffixOf(address)}
+                documentType="receipt"
+                onReloadStatement={onReloadStatement}
+              />
+            ))
+          )}
+        </section>
+
+        <section
+          className="history-month-section-column"
+          data-cy={`historique-colonne-note-${group.month}`}
+        >
+          <h3 className="history-month-section-column-title">
+            <span className="history-month-section-column-icon history-month-section-column-icon-note">
+              <FileCheck2 size={15} aria-hidden="true" />
+            </span>
+            Note de frais d’occupation
+          </h3>
+          {statementAddresses.length === 0 ? (
+            <p className="history-month-section-empty">
+              Aucune note de frais générée pour ce mois.
+            </p>
+          ) : (
+            statementAddresses.map((address) => (
+              <HistoryAddressRow
+                key={`statement-${address.addressKey}`}
+                month={group.month}
+                address={address}
+                suffix={suffixOf(address)}
+                documentType="statement"
+                onReloadStatement={onReloadStatement}
+              />
+            ))
+          )}
+        </section>
       </div>
     </section>
   );

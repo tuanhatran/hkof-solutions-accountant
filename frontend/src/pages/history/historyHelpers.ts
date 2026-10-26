@@ -1,10 +1,22 @@
-import type { StatementDto, RentReceiptDto } from "@/api/types";
+import type { LeaseDto, StatementDto, RentReceiptDto } from "@/api/types";
+import { matchesLease } from "@/lib/leaseReceipts";
 
-export interface MonthGroup {
-  month: string;
+/** Documents of one lease address inside a month, never mixed. */
+export interface AddressGroup {
+  addressKey: string;
+  addressLabel: string;
   rentReceipts: RentReceiptDto[];
   statements: StatementDto[];
 }
+
+/** One month card: newest first, then its address rows sorted A→Z. */
+export interface MonthGroup {
+  month: string;
+  addresses: AddressGroup[];
+}
+
+export const UNKNOWN_ADDRESS_KEY = "inconnue";
+export const UNKNOWN_ADDRESS_LABEL = "Adresse inconnue";
 
 /** Preferred document of a list: the active version, else the first one. */
 export function current<T extends { status?: string }>(
@@ -39,4 +51,122 @@ export function pairLabel(document: RentReceiptDto): string {
   return `${document.landlordName ?? "Bailleur inconnu"} → ${
     document.tenantName ?? "Locataire inconnu"
   }`;
+}
+
+/**
+ * Lease owning a history document: a statement names it through `leaseId`, a
+ * receipt through the lowest-id lease matching its landlord+tenant pair (a
+ * company lease only when it belongs to the active company).
+ */
+export function resolveLeaseForDocument(
+  document: RentReceiptDto | StatementDto,
+  leases: LeaseDto[],
+  activeCompanyId: number | null,
+): LeaseDto | null {
+  const leaseId = (document as StatementDto).leaseId;
+  if (typeof leaseId === "number") {
+    return leases.find((lease) => lease.id === leaseId) ?? null;
+  }
+  const receipt = document as RentReceiptDto;
+  let lowest: LeaseDto | null = null;
+  for (const lease of leases) {
+    if (lease.companyLease && lease.companyId !== activeCompanyId) {
+      continue;
+    }
+    if (!matchesLease(receipt, lease)) {
+      continue;
+    }
+    if (lowest === null || (lease.id ?? 0) < (lowest.id ?? 0)) {
+      lowest = lease;
+    }
+  }
+  return lowest;
+}
+
+/** Address row of a document; documents without a lease stay visible. */
+function addressOf(
+  document: RentReceiptDto | StatementDto,
+  leases: LeaseDto[],
+  activeCompanyId: number | null,
+): { addressKey: string; addressLabel: string } {
+  const lease = resolveLeaseForDocument(document, leases, activeCompanyId);
+  const addressId = lease?.addressId;
+  const propertyAddress = lease?.propertyAddress?.trim();
+  if (addressId === undefined || addressId === null) {
+    return {
+      addressKey: UNKNOWN_ADDRESS_KEY,
+      addressLabel: UNKNOWN_ADDRESS_LABEL,
+    };
+  }
+  return {
+    addressKey: `address-${addressId}`,
+    addressLabel: propertyAddress ? propertyAddress : UNKNOWN_ADDRESS_LABEL,
+  };
+}
+
+/** A→Z on the label, the unknown address row always last. */
+function compareAddresses(left: AddressGroup, right: AddressGroup): number {
+  const leftUnknown = left.addressKey === UNKNOWN_ADDRESS_KEY;
+  const rightUnknown = right.addressKey === UNKNOWN_ADDRESS_KEY;
+  if (leftUnknown !== rightUnknown) {
+    return leftUnknown ? 1 : -1;
+  }
+  const byLabel = left.addressLabel.localeCompare(right.addressLabel, "fr", {
+    sensitivity: "base",
+  });
+  return byLabel !== 0
+    ? byLabel
+    : left.addressKey.localeCompare(right.addressKey);
+}
+
+/**
+ * History grouping: one card per month (newest first), one row per lease
+ * address inside it (A→Z, unknown last). A document keeps exactly one address
+ * row, so two addresses of the same month never share a row.
+ */
+export function groupHistoryByMonthAndAddress(
+  rentReceipts: RentReceiptDto[],
+  statements: StatementDto[],
+  leases: LeaseDto[],
+  activeCompanyId: number | null,
+): MonthGroup[] {
+  const byMonth = new Map<string, Map<string, AddressGroup>>();
+
+  function rowOf(document: RentReceiptDto | StatementDto): {
+    month: string;
+    row: AddressGroup;
+  } | null {
+    if (!document.month) {
+      return null;
+    }
+    const { addressKey, addressLabel } = addressOf(
+      document,
+      leases,
+      activeCompanyId,
+    );
+    const rows = byMonth.get(document.month) ?? new Map<string, AddressGroup>();
+    const row = rows.get(addressKey) ?? {
+      addressKey,
+      addressLabel,
+      rentReceipts: [],
+      statements: [],
+    };
+    rows.set(addressKey, row);
+    byMonth.set(document.month, rows);
+    return { month: document.month, row };
+  }
+
+  for (const receipt of rentReceipts) {
+    rowOf(receipt)?.row.rentReceipts.push(receipt);
+  }
+  for (const statement of statements) {
+    rowOf(statement)?.row.statements.push(statement);
+  }
+
+  return [...byMonth.entries()]
+    .sort(([left], [right]) => right.localeCompare(left))
+    .map(([month, rows]) => ({
+      month,
+      addresses: [...rows.values()].sort(compareAddresses),
+    }));
 }
