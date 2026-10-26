@@ -1,17 +1,23 @@
 import "./LeaseSection.css";
-import { Home, PencilLine, Plus, Trash2 } from "lucide-react";
+import { FileText, Home, PencilLine, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { errorMessage } from "@/api/client";
+import { useSignatures } from "@/api/queries";
+import type { LeaseDto } from "@/api/types";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { ErrorState, LoadingState } from "@/components/ui/States";
 import { formatEUR } from "@/lib/format";
 import { LeaseForm } from "./LeaseForm";
+import { LeaseReceiptModal } from "./LeaseReceiptModal";
 import { EmptyState, SectionHeader } from "./SettingsSection";
 import type { RentReceiptSettingsController } from "./useRentReceiptSettings";
 
 /** Leases section: address filter, list, create/update modal and delete triggers. */
 export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
+  const [receiptLease, setReceiptLease] = useState<LeaseDto | null>(null);
+
   return (
     <section className="card lease-section">
       <SectionHeader
@@ -124,6 +130,10 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
                     </span>
                   </p>
                 </div>
+                <LeaseReceiptButton
+                  lease={lease}
+                  onOpen={() => setReceiptLease(lease)}
+                />
                 <Button
                   variant="ghost"
                   small
@@ -169,6 +179,58 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
         onCancel={() => c.setLeaseToDelete(null)}
         dataCy="dialogue-supprimer-bail"
       />
+
+      {receiptLease ? (
+        <LeaseReceiptModal
+          lease={receiptLease}
+          onClose={() => setReceiptLease(null)}
+        />
+      ) : null}
     </section>
+  );
+}
+
+/**
+ * Rent receipt trigger of one lease row. A row owns its own signature query so
+ * the hook never runs in a loop; without a landlord signature the button is
+ * disabled and the wrapping span carries the explanation, because a disabled
+ * button does not show a native tooltip.
+ */
+function LeaseReceiptButton({
+  lease: leaseRow,
+  onOpen,
+}: {
+  lease: LeaseDto;
+  onOpen: () => void;
+}) {
+  const signatures = useSignatures(leaseRow.landlordId ?? null);
+  const hasSignature = (signatures.data ?? []).length > 0;
+  const button = (
+    <Button
+      variant="ghost"
+      small
+      icon={<FileText size={13} />}
+      onClick={onOpen}
+      disabled={!hasSignature}
+      aria-label={`Quittance du bail ${leaseRow.id}`}
+      data-cy={`btn-quittance-bail-${leaseRow.id}`}
+    >
+      Quittance
+    </Button>
+  );
+  if (hasSignature) {
+    return button;
+  }
+  return (
+    <span
+      className="lease-section-signature-warning"
+      title={
+        signatures.isPending
+          ? "Vérification des signatures…"
+          : "Aucune signature enregistrée pour ce bailleur. Ajoutez-en une dans l’onglet « Personnes » pour générer une quittance."
+      }
+    >
+      {button}
+    </span>
   );
 }

@@ -44,4 +44,8 @@
   .lease-section-item-total {
     @apply font-semibold text-ink;
   }
+
+  .lease-section-signature-warning {
+    @apply inline-flex;
+  }
 }
