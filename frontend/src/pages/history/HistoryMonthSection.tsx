@@ -36,6 +36,11 @@ export function HistoryMonthSection({
     (address) => address.statements.length > 0,
   );
 
+  const noteCount = group.addresses.reduce(
+    (count, address) => count + address.statements.length,
+    0,
+  );
+
   function suffixOf(address: AddressGroup): string {
     return severalAddresses ? `-${address.addressKey}` : "";
   }
@@ -62,13 +67,18 @@ export function HistoryMonthSection({
             {rentReceiptCount > 1
               ? `(${rentReceiptCount})`
               : rentReceipt
-                ? `v${rentReceipt.version ?? 1}`
+                ? `(${rentReceiptCount})`
                 : "non générée"}
           </span>
           <span
             className={statement ? "badge badge-accent" : "badge badge-neutral"}
           >
-            Note {statement ? `v${statement.version ?? 1}` : "non générée"}
+            Note{" "}
+            {noteCount > 1
+              ? `(${noteCount})`
+              : noteCount === 1
+                ? `(${noteCount})`
+                : "non générée"}
           </span>
         </div>
       </div>

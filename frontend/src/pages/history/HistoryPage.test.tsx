@@ -503,7 +503,7 @@ describe("HistoryPage", () => {
     renderPage();
 
     expect(await screen.findByText("Notes indisponibles")).toBeInTheDocument();
-    expect(screen.getByText("Quittance v2")).toBeInTheDocument();
+    expect(screen.getByText("Quittance (1)")).toBeInTheDocument();
   });
 
   it("groups both document types by month, newest first", async () => {
@@ -538,7 +538,7 @@ describe("HistoryPage", () => {
     ).toBeInTheDocument();
     expect(within(jan).getAllByText("Adresse inconnue")).toHaveLength(2);
     expect(within(jan).getByText("Quittance (2)")).toBeInTheDocument();
-    expect(within(jan).getByText("Note v2")).toBeInTheDocument();
+    expect(within(jan).getByText("Note (2)")).toBeInTheDocument();
     expect(
       within(jan).getAllByText("M. Bailleur → Mme Locataire").length,
     ).toBeGreaterThan(0);
@@ -550,8 +550,8 @@ describe("HistoryPage", () => {
     if (!feb) {
       throw new Error("February section not found");
     }
-    expect(within(feb).getByText("Quittance v1")).toBeInTheDocument();
-    expect(within(feb).getByText("Note v1")).toBeInTheDocument();
+    expect(within(feb).getByText("Quittance (1)")).toBeInTheDocument();
+    expect(within(feb).getByText("Note (1)")).toBeInTheDocument();
   });
 
   it("exposes the PDF and open links of the latest documents", async () => {
@@ -583,8 +583,14 @@ describe("HistoryPage", () => {
       within(janReceipt as HTMLElement).getByRole("link", { name: "PDF" }),
     ).toHaveAttribute("href", "/api/rent-receipts/10/pdf");
 
-    expect(screen.getByText("Toutes les versions (2)")).toBeInTheDocument();
-    const loadButtons = screen.getAllByRole("button", { name: "Charger" });
+    const februaryNote = columnOf("2026-02", "note");
+    expect(
+      februaryNote.querySelectorAll("li.statement-month-panel-history-item"),
+    ).toHaveLength(1);
+    const januaryNote = columnOf("2026-01", "note");
+    const loadButtons = within(januaryNote).getAllByRole("button", {
+      name: "Charger",
+    });
     expect(loadButtons).toHaveLength(2);
     await user.click(loadButtons[1]);
 
@@ -755,6 +761,42 @@ describe("HistoryPage", () => {
       ) as HTMLElement,
     );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("prefixes the note row with its company and lists versions without collapsing", async () => {
+    receiptsState = readyQuery([RECEIPT_ZULU_JAN]);
+    statementsState = readyQuery([
+      { ...STATEMENT_JAN_ACTIVE, id: 81, leaseId: 6, companyName: "HKOF" },
+      { ...STATEMENT_JAN_OLD, id: 80, leaseId: 6, companyName: "HKOF" },
+    ]);
+    leasesState = readyQuery([LEASE_ZULU]);
+    renderPage();
+
+    await screen.findByText("1 mois suivi");
+    const receiptRow = document.querySelector(
+      '[data-cy="historique-adresse-2026-01-address-61"]',
+    );
+    const noteRow = document.querySelector(
+      '[data-cy="historique-adresse-note-2026-01-address-61"]',
+    );
+    if (
+      !(receiptRow instanceof HTMLElement) ||
+      !(noteRow instanceof HTMLElement)
+    ) {
+      throw new Error("Zulu history rows not found");
+    }
+
+    expect(within(receiptRow).getByText("9 rue Zulu")).toBeInTheDocument();
+    expect(within(noteRow).getByText("HKOF - 9 rue Zulu")).toBeInTheDocument();
+    expect(within(noteRow).queryByText("9 rue Zulu")).toBeNull();
+    expect(within(noteRow).queryByText("undefined")).toBeNull();
+
+    expect(noteRow.querySelector("details, summary")).toBeNull();
+    expect(
+      noteRow.querySelectorAll("li.statement-month-panel-history-item"),
+    ).toHaveLength(2);
+    expect(within(noteRow).getByText("v1")).toBeInTheDocument();
+    expect(within(noteRow).getByText("v2")).toBeInTheDocument();
   });
 
   it("groups receipts by couple: several versions collapse, single versions stay visible", async () => {
