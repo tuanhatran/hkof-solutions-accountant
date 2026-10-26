@@ -84,6 +84,72 @@ const RENT_FEB: RentReceiptDto = {
   createdAt: "2026-02-02T10:00:00Z",
 };
 
+const RENT_MAR_ABADIE: RentReceiptDto = {
+  ...RENT_JAN_ACTIVE,
+  id: 60,
+  month: "2026-03",
+  version: 1,
+  landlordId: 11,
+  tenantId: 12,
+  tenantCompanyId: null,
+  landlordName: "M. Abadie",
+  tenantName: "Mme Blanc",
+  total: "400.00",
+  createdAt: "2026-03-05T10:00:00Z",
+};
+
+const RENT_MAR_DUPONT_OLD: RentReceiptDto = {
+  ...RENT_JAN_OLD,
+  id: 50,
+  month: "2026-03",
+  landlordId: 7,
+  tenantId: 8,
+  tenantCompanyId: null,
+  landlordName: "M. Dupont",
+  tenantName: "Mme Martin",
+  total: "500.00",
+  createdAt: "2026-03-01T10:00:00Z",
+};
+
+const RENT_MAR_DUPONT_ACTIVE: RentReceiptDto = {
+  ...RENT_JAN_ACTIVE,
+  id: 51,
+  month: "2026-03",
+  landlordId: 7,
+  tenantId: 8,
+  tenantCompanyId: null,
+  landlordName: "M. Dupont",
+  tenantName: "Mme Martin",
+  total: "550.00",
+  createdAt: "2026-03-08T10:00:00Z",
+};
+
+const RENT_MAR_ZORRO_OLD: RentReceiptDto = {
+  ...RENT_JAN_OLD,
+  id: 52,
+  month: "2026-03",
+  landlordId: 9,
+  tenantId: 10,
+  tenantCompanyId: null,
+  landlordName: "M. Zorro",
+  tenantName: "Mme Solo",
+  total: "600.00",
+  createdAt: "2026-03-02T10:00:00Z",
+};
+
+const RENT_MAR_ZORRO_ACTIVE: RentReceiptDto = {
+  ...RENT_JAN_ACTIVE,
+  id: 53,
+  month: "2026-03",
+  landlordId: 9,
+  tenantId: 10,
+  tenantCompanyId: null,
+  landlordName: "M. Zorro",
+  tenantName: "Mme Solo",
+  total: "650.00",
+  createdAt: "2026-03-09T10:00:00Z",
+};
+
 const STATEMENT_JAN_ACTIVE: StatementDto = {
   id: 21,
   month: "2026-01",
@@ -441,7 +507,10 @@ describe("HistoryPage", () => {
     await screen.findByText("2 mois suivis");
 
     expect(
-      screen.getByText("Toutes les quittances du mois (2)"),
+      screen.getByText("M. Bailleur → Mme Locataire (2)"),
+    ).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-cy="historique-quittance-11"]'),
     ).toBeInTheDocument();
     const janReceipt = document.querySelector(
       '[data-cy="historique-quittance-10"]',
@@ -604,6 +673,64 @@ describe("HistoryPage", () => {
     expect(dialog).toHaveTextContent(/version 1 de Janvier 2026/);
     await user.click(within(dialog).getByRole("button", { name: "Annuler" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("groups receipts by couple: several versions collapse, single versions stay visible", async () => {
+    receiptsState = readyQuery([
+      RENT_MAR_ZORRO_ACTIVE,
+      RENT_MAR_ABADIE,
+      RENT_MAR_DUPONT_OLD,
+      RENT_MAR_DUPONT_ACTIVE,
+      RENT_MAR_ZORRO_OLD,
+    ]);
+    statementsState = readyQuery([]);
+    renderPage();
+
+    await screen.findByText("1 mois suivi");
+    const panel = document.querySelector(
+      '[data-cy="historique-adresse-2026-03-inconnue"] .rent-receipt-month-panel',
+    );
+    if (!(panel instanceof HTMLElement)) {
+      throw new Error("March receipt panel not found");
+    }
+
+    const sections = Array.from(panel.children).map(
+      (section) =>
+        section.querySelector("summary")?.textContent ??
+        section.querySelector("li .text-ink")?.textContent ??
+        "",
+    );
+    expect(sections).toEqual([
+      "M. Abadie → Mme Blanc",
+      "M. Dupont → Mme Martin (2)",
+      "M. Zorro → Mme Solo (2)",
+    ]);
+
+    const collapses = Array.from(panel.querySelectorAll("details"));
+    expect(collapses).toHaveLength(2);
+    const collapseKeys = collapses.map((element) =>
+      element.getAttribute("data-cy"),
+    );
+    expect(new Set(collapseKeys).size).toBe(2);
+    for (const key of collapseKeys) {
+      expect(key).toMatch(/^quittances-mois-2026-03-/);
+    }
+
+    const dupont = collapses[0];
+    expect(dupont).not.toHaveAttribute("open");
+    expect(
+      Array.from(
+        dupont.querySelectorAll('[data-cy^="historique-quittance-"]'),
+      ).map((item) => item.getAttribute("data-cy")),
+    ).toEqual(["historique-quittance-51", "historique-quittance-50"]);
+
+    const abadie = document.querySelector(
+      '[data-cy="historique-quittance-60"]',
+    );
+    expect(abadie?.closest("details")).toBeNull();
+    expect(abadie?.parentElement).toHaveClass(
+      "rent-receipt-month-panel-history-list",
+    );
   });
 
   it("always shows the address label of a single-address month", async () => {

@@ -104,7 +104,7 @@ describe("Rent receipt", () => {
         "contain.text",
         "Quittance (2)",
       );
-      cy.get(group).contains("Toutes les quittances du mois (2)").click();
+      cy.get(group).contains("Nom du bailleur → Nom du locataire (2)").click();
       cy.get('[data-cy^="historique-quittance-"]').should("have.length", 2);
       cy.get('[data-cy="quittances-mois-2026-01"]')
         .contains("v2 · active")
