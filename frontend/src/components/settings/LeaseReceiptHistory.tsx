@@ -4,34 +4,13 @@ import { api } from "@/api/endpoints";
 import type { LeaseDto, RentReceiptDto } from "@/api/types";
 import { ErrorState, LoadingState } from "@/components/ui/States";
 import { formatDateTime, formatEUR, formatMonth } from "@/lib/format";
+import { matchesLease } from "@/lib/leaseReceipts";
 import { PdfActionLink, VersionBadge } from "@/pages/history/HistoryActions";
 import { sortRentReceiptsDesc } from "@/pages/history/historyHelpers";
 
 interface MonthVersions {
   month: string;
   versions: RentReceiptDto[];
-}
-
-/**
- * A receipt has no leaseId: a natural lease owns the receipts of the same
- * landlord+tenant pair without a company tenant, a company lease owns the
- * receipts whose tenant company is its own company.
- */
-function matchesLease(receipt: RentReceiptDto, lease: LeaseDto): boolean {
-  if (receipt.landlordId !== lease.landlordId) {
-    return false;
-  }
-  if (lease.companyLease) {
-    return (
-      lease.companyId !== undefined &&
-      lease.companyId !== null &&
-      receipt.tenantCompanyId === lease.companyId
-    );
-  }
-  return (
-    (receipt.tenantId ?? null) === (lease.tenantId ?? null) &&
-    (receipt.tenantCompanyId ?? null) === null
-  );
 }
 
 /** Months descending; inside a month, versions from the newest to the oldest. */

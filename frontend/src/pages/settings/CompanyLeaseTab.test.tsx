@@ -2,11 +2,30 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
-import type { CompanyDto, LeaseDto } from "@/api/types";
+import type { CompanyDto, LeaseDto, StatementDto } from "@/api/types";
 import { useToasts } from "@/state/toasts";
 import { CompanyLeaseTab } from "./CompanyLeaseTab";
+
+vi.mock("@/components/pdf/PdfViewer", () => ({
+  PdfViewer: () => <div data-cy="pdf-viewer" />,
+}));
+
+vi.mock("@/hooks/usePdfPreview", () => ({
+  usePdfPreview: () => ({
+    url: null,
+    isPending: false,
+    refresh: () => undefined,
+    download: () => undefined,
+  }),
+}));
+
+vi.mock("@/lib/dates", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/dates")>();
+  return { ...actual, currentMonth: () => "2026-01" };
+});
 
 vi.mock("@/api/endpoints", () => ({
   api: {
@@ -25,6 +44,31 @@ vi.mock("@/api/endpoints", () => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
+    expenseStatements: {
+      list: vi.fn(),
+      active: vi.fn(),
+      calculate: vi.fn(),
+      preview: vi.fn(),
+      create: vi.fn(),
+      pdf: vi.fn(),
+      zip: vi.fn(),
+      pdfUrl: (id: number, complete: boolean) =>
+        `/api/notes/${id}/pdf${complete ? "?complete=1" : ""}`,
+      zipUrl: (id: number) => `/api/notes/${id}/zip`,
+    },
+    rentReceipts: {
+      list: vi.fn(),
+      active: vi.fn(),
+      create: vi.fn(),
+      preview: vi.fn(),
+      pdf: vi.fn(),
+      pdfUrl: (id: number) => `/api/quittances/${id}/pdf`,
+    },
+    templates: { list: vi.fn() },
+    employees: { list: vi.fn() },
+    signatures: { list: vi.fn() },
+    receipts: { upload: vi.fn(), delete: vi.fn(), fileUrl: vi.fn() },
+    analyses: { analyze: vi.fn() },
   },
 }));
 
@@ -93,7 +137,9 @@ function renderTab(current: CompanyDto = COMPANY) {
     },
   });
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>{children}</MemoryRouter>
+    </QueryClientProvider>
   );
   render(
     <CompanyLeaseTab company={current} companies={[current, OTHER_COMPANY]} />,
@@ -114,12 +160,38 @@ beforeEach(() => {
   vi.mocked(api.leases.update).mockReset();
   vi.mocked(api.expenseItems.list).mockReset();
   vi.mocked(api.expenseItems.create).mockReset();
+  vi.mocked(api.expenseStatements.list).mockReset();
+  vi.mocked(api.expenseStatements.active).mockReset();
+  vi.mocked(api.expenseStatements.calculate).mockReset();
+  vi.mocked(api.expenseStatements.preview).mockReset();
+  vi.mocked(api.expenseStatements.create).mockReset();
+  vi.mocked(api.rentReceipts.list).mockReset();
+  vi.mocked(api.rentReceipts.active).mockReset();
+  vi.mocked(api.templates.list).mockReset();
+  vi.mocked(api.employees.list).mockReset();
+  vi.mocked(api.signatures.list).mockReset();
   vi.mocked(api.persons.list).mockResolvedValue([
     { id: 1, name: "M. Bailleur", address: "" },
   ]);
   vi.mocked(api.addresses.list).mockResolvedValue([]);
   vi.mocked(api.leases.list).mockResolvedValue([LEASE5, LEASE6, LEASE7]);
   vi.mocked(api.expenseItems.list).mockResolvedValue([]);
+  vi.mocked(api.companies.list).mockResolvedValue([COMPANY, OTHER_COMPANY]);
+  vi.mocked(api.expenseStatements.list).mockResolvedValue([]);
+  vi.mocked(api.expenseStatements.active).mockResolvedValue(null);
+  vi.mocked(api.expenseStatements.calculate).mockResolvedValue({
+    total: "0.00",
+    lines: [],
+  });
+  vi.mocked(api.expenseStatements.preview).mockResolvedValue({
+    blob: new Blob(),
+    fileName: null,
+  });
+  vi.mocked(api.rentReceipts.list).mockResolvedValue([]);
+  vi.mocked(api.rentReceipts.active).mockResolvedValue(null);
+  vi.mocked(api.templates.list).mockResolvedValue([]);
+  vi.mocked(api.employees.list).mockResolvedValue([]);
+  vi.mocked(api.signatures.list).mockResolvedValue([]);
   useToasts.setState({ toasts: [] });
 });
 
@@ -527,6 +599,93 @@ describe("CompanyLeaseTab", () => {
     expect(queryByCy("dialogue-formulaire-bail")).toBeNull();
     expect(api.leases.update).not.toHaveBeenCalled();
     expect(api.companies.update).not.toHaveBeenCalled();
+  });
+
+  it("shows a note de frais button and an always-visible statement history per lease row", async () => {
+    renderTab();
+
+    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    expect(queryByCy("btn-note-frais-bail-societe-5")).not.toBeNull();
+    expect(queryByCy("btn-note-frais-bail-societe-6")).not.toBeNull();
+    expect(queryByCy("notes-frais-bail-5")).not.toBeNull();
+    expect(queryByCy("notes-frais-bail-6")).not.toBeNull();
+  });
+
+  it("fetches the statements once for the company and shows only the matching lease's notes", async () => {
+    const statements: StatementDto[] = [
+      {
+        id: 100,
+        month: "2026-01",
+        version: 1,
+        leaseId: 5,
+        total: "950.00",
+        status: "ACTIVE",
+        createdAt: "2026-01-05T10:00:00Z",
+      },
+      {
+        id: 101,
+        month: "2026-01",
+        version: 1,
+        leaseId: 6,
+        total: "700.00",
+        status: "ACTIVE",
+        createdAt: "2026-01-06T10:00:00Z",
+      },
+      {
+        id: 102,
+        month: "2026-01",
+        version: 1,
+        leaseId: null,
+        total: "100.00",
+        status: "ACTIVE",
+        createdAt: "2026-01-07T10:00:00Z",
+      },
+    ];
+    vi.mocked(api.expenseStatements.list).mockResolvedValue(statements);
+    renderTab();
+
+    await waitFor(() => expect(queryByCy("notes-frais-bail-5")).not.toBeNull());
+    await waitFor(() =>
+      expect(api.expenseStatements.list).toHaveBeenCalledWith(
+        1,
+        undefined,
+        null,
+      ),
+    );
+    expect(queryByCy("notes-frais-bail-mois-5-2026-01")).not.toBeNull();
+    expect(queryByCy("notes-frais-bail-mois-6-2026-01")).not.toBeNull();
+    expect(
+      withinLease("notes-frais-bail-5").queryByText(/100/),
+    ).not.toBeInTheDocument();
+    expect(queryByCy("telecharger-note-frais-bail-100")).not.toBeNull();
+    expect(queryByCy("telecharger-note-frais-bail-101")).not.toBeNull();
+    expect(queryByCy("telecharger-note-frais-bail-102")).toBeNull();
+  });
+
+  it("opens the scoped note de frais modal for the lease and closes it", async () => {
+    renderTab();
+    const user = userEvent.setup();
+    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+
+    await user.click(queryByCy("btn-note-frais-bail-societe-5") as HTMLElement);
+
+    await waitFor(() =>
+      expect(queryByCy("dialogue-note-frais-bail")).not.toBeNull(),
+    );
+    expect(queryByCy("dialogue-note-frais-bail")).toHaveTextContent(
+      "12 rue des Lilas, 75011 Paris",
+    );
+
+    await user.click(
+      within(queryByCy("dialogue-note-frais-bail") as HTMLElement).getByRole(
+        "button",
+        { name: "Fermer" },
+      ),
+    );
+
+    await waitFor(() =>
+      expect(queryByCy("dialogue-note-frais-bail")).toBeNull(),
+    );
   });
 });
 

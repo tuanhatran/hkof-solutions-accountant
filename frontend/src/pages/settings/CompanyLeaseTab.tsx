@@ -1,11 +1,12 @@
 import "./CompanyLeaseTab.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { KeyRound, PencilLine, Plus } from "lucide-react";
+import { FileText, KeyRound, PencilLine, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
-import { queryKeys, useLeases, usePersons } from "@/api/queries";
+import { queryKeys, useLeases, usePersons, useStatements } from "@/api/queries";
 import type { CompanyDto, CompanyRequest, LeaseDto } from "@/api/types";
+import { CompanyLeaseStatementHistory } from "@/components/settings/CompanyLeaseStatementHistory";
 import { LeaseForm } from "@/components/settings/LeaseForm";
 import {
   EmptyState,
@@ -16,6 +17,7 @@ import { ErrorState, LoadingState } from "@/components/ui/States";
 import { cn } from "@/lib/cn";
 import { formatEUR } from "@/lib/format";
 import { toast } from "@/state/toasts";
+import { CompanyLeaseStatementModal } from "./CompanyLeaseStatementModal";
 import { CompanyLeaseView } from "./CompanyLeaseView";
 import { ExpenseItemsManager } from "./ExpenseItemsManager";
 
@@ -28,7 +30,9 @@ import { ExpenseItemsManager } from "./ExpenseItemsManager";
  * its details and postes inline; clicking the expanded row collapses it and
  * keeps it active. Each item also offers a "Modifier" button opening the
  * shared LMNP LeaseForm in edit mode, without touching selection or
- * expansion.
+ * expansion, and a "Note de frais" button opening the full expense-statement
+ * editor scoped to that company+lease. Below every row its generated
+ * statements are always visible, grouped by month.
  */
 export function CompanyLeaseTab({
   company,
@@ -40,12 +44,14 @@ export function CompanyLeaseTab({
   const queryClient = useQueryClient();
   const leases = useLeases();
   const persons = usePersons();
+  const statements = useStatements(company.id as number, undefined, null);
   const [selectedLeaseId, setSelectedLeaseId] = useState<number | null>(
     company.leaseId ?? null,
   );
   const [expandedLeaseId, setExpandedLeaseId] = useState<number | null>(null);
   const [addingLease, setAddingLease] = useState(false);
   const [editingLease, setEditingLease] = useState<LeaseDto | null>(null);
+  const [statementLease, setStatementLease] = useState<LeaseDto | null>(null);
 
   const linkLease = useMutation({
     mutationFn: (leaseId: number | null) => {
@@ -177,6 +183,15 @@ export function CompanyLeaseTab({
                       <Button
                         variant="ghost"
                         small
+                        icon={<FileText size={13} />}
+                        onClick={() => setStatementLease(lease)}
+                        data-cy={`btn-note-frais-bail-societe-${lease.id}`}
+                      >
+                        Note de frais
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        small
                         icon={<PencilLine size={13} />}
                         onClick={() => setEditingLease(lease)}
                         data-cy={`btn-modifier-bail-societe-${lease.id}`}
@@ -199,6 +214,14 @@ export function CompanyLeaseTab({
                         />
                       </div>
                     ) : null}
+                    <CompanyLeaseStatementHistory
+                      lease={lease}
+                      statements={statements.data}
+                      isPending={statements.isPending}
+                      isError={statements.isError}
+                      error={statements.error}
+                      onRetry={() => void statements.refetch()}
+                    />
                   </li>
                 );
               })}
@@ -239,6 +262,14 @@ export function CompanyLeaseTab({
           persons={persons.data ?? []}
           companies={companies}
           onClose={() => setEditingLease(null)}
+        />
+      ) : null}
+      {statementLease ? (
+        <CompanyLeaseStatementModal
+          key={`note-frais-bail-${statementLease.id}`}
+          lease={statementLease}
+          companyId={company.id as number}
+          onClose={() => setStatementLease(null)}
         />
       ) : null}
     </div>

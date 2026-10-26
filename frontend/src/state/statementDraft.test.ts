@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { StatementDto } from "@/api/types";
 import type { DraftLine } from "@/lib/lines";
 import {
-  useStatementDraft,
+  createStatementDraftStore,
   useStatementDirty,
+  useStatementDraft,
   useStatementLines,
 } from "./statementDraft";
 
@@ -161,5 +162,75 @@ describe("useStatementDraft", () => {
 
     expect(result.current.lines).toEqual([LINE]);
     expect(result.current.dirty).toBe(true);
+  });
+});
+
+describe("createStatementDraftStore", () => {
+  it("starts on the given month with empty per-month maps", () => {
+    const store = createStatementDraftStore("2026-05");
+
+    const state = store.getState();
+    expect(state.month).toBe("2026-05");
+    expect(state.linesByMonth).toEqual({});
+    expect(state.templatesByMonth).toEqual({});
+    expect(state.completeByMonth).toEqual({});
+    expect(state.primedReceiptByMonth).toEqual({});
+    expect(state.dirtyByMonth).toEqual({});
+  });
+
+  it("supports the same actions as the global store", () => {
+    const store = createStatementDraftStore(MONTH);
+
+    store.getState().addLine(LINE);
+    store.getState().updateLine("line-1", { amountInclVat: "90.00" });
+    store.getState().setTemplate(5);
+    store.getState().setComplete(false);
+    store.getState().markReceiptPrimed(8);
+    store.getState().markGenerated();
+
+    const state = store.getState();
+    expect(state.linesByMonth[MONTH]?.[0]?.amountInclVat).toBe("90.00");
+    expect(state.dirtyByMonth[MONTH]).toBe(false);
+    expect(state.templatesByMonth[MONTH]).toBe(5);
+    expect(state.completeByMonth[MONTH]).toBe(false);
+    expect(state.primedReceiptByMonth[MONTH]).toBe(8);
+
+    store.getState().removeLine("line-1");
+    expect(store.getState().linesByMonth[MONTH]).toEqual([]);
+  });
+
+  it("stays isolated from the global persisted draft", () => {
+    const store = createStatementDraftStore(MONTH);
+
+    store.getState().addLine(LINE);
+
+    expect(useStatementDraft.getState().linesByMonth[MONTH]).toBeUndefined();
+    useStatementDraft.getState().addLine({ ...LINE, key: "global" });
+    expect(store.getState().linesByMonth[MONTH]).toHaveLength(1);
+    expect(store.getState().linesByMonth[MONTH]?.[0]?.key).toBe("line-1");
+  });
+
+  it("does not persist to the sessionStorage draft key", () => {
+    sessionStorage.removeItem("homeofficeexpenses.statement-draft");
+    const store = createStatementDraftStore(MONTH);
+
+    store.getState().addLine(LINE);
+
+    expect(
+      sessionStorage.getItem("homeofficeexpenses.statement-draft"),
+    ).toBeNull();
+  });
+
+  it("drives component re-renders through useStore selectors", () => {
+    const store = createStatementDraftStore(MONTH);
+    const { result } = renderHook(() =>
+      store((state) => state.linesByMonth[state.month]),
+    );
+
+    expect(result.current).toBeUndefined();
+    act(() => {
+      store.getState().addLine(LINE);
+    });
+    expect(result.current).toEqual([LINE]);
   });
 });

@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import { useStore } from "zustand";
 import { downloadBlob, errorMessage, isCancellation } from "@/api/client";
 import { api } from "@/api/endpoints";
 import {
@@ -19,6 +20,7 @@ import type {
   CalculationResponse,
   ExpenseItemDto,
   LineRequest,
+  RentReceiptDto,
   StatementDto,
   StatementCalculationRequest,
   StatementGenerationRequest,
@@ -46,7 +48,10 @@ import {
 import { expenseSchema, type ExpenseFormValues } from "@/lib/validation";
 import { resolveActiveCompanyId, useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
-import { useStatementDraft, useStatementLines } from "@/state/statementDraft";
+import {
+  useStatementDraft,
+  type StatementDraftStore,
+} from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
 import {
   AI_EMPTY,
@@ -59,38 +64,73 @@ export type ExpenseStatementController = ReturnType<
   typeof useExpenseStatementPage
 >;
 
+const NO_LINES: DraftLine[] = [];
+
+/** Minimal query shape the controller needs for the month's rent receipt. */
+export interface ExpenseStatementRentReceiptSource {
+  data: RentReceiptDto | null | undefined;
+  isPending: boolean;
+}
+
+/**
+ * Optional scoping of the controller. Without options the hook keeps the
+ * historical page behaviour: global sessionStorage draft, active company and
+ * its derived lease, company active rent receipt and navigation to
+ * /generer/quittance. A scoped editor (the company lease statement modal)
+ * injects its own company, lease, non-persisted draft, rent receipt source
+ * and rent-receipt action; the global draft and company store stay untouched.
+ */
+export interface ExpenseStatementPageOptions {
+  companyId?: number;
+  leaseId?: number | null;
+  draft?: StatementDraftStore;
+  rentReceipt?: ExpenseStatementRentReceiptSource;
+  onGoToRentReceipt?: () => void;
+}
+
 /**
  * Whole page controller for the expense statement screen: form, receipt upload,
  * optional AI extraction, backend calculation and preview/generation. Kept in a
  * hook so the page component only composes presentational sub-components.
  */
-export function useExpenseStatementPage() {
+export function useExpenseStatementPage(
+  options: ExpenseStatementPageOptions = {},
+) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const draft = useStatementDraft();
-  const lines = useStatementLines();
+  const draftStore = options.draft ?? useStatementDraft;
+  const draft = useStore(draftStore);
+  const lines = useMemo(
+    () => draft.linesByMonth[draft.month] ?? NO_LINES,
+    [draft.linesByMonth, draft.month],
+  );
   const mobile = useMediaQuery("(max-width: 1023px)");
   const [mobilePanel, setMobilePanel] = useState<"input" | "preview">("input");
 
   const month = draft.month;
+  const scoped = options.companyId !== undefined;
   const companies = useCompanies();
   const storedCompanyId = useCompanyStore((state) => state.activeCompanyId);
   const setActiveCompany = useCompanyStore((state) => state.setActiveCompany);
-  const activeCompanyId = useMemo(
+  const resolvedCompanyId = useMemo(
     () => resolveActiveCompanyId(storedCompanyId, companies.data),
     [storedCompanyId, companies.data],
   );
   useEffect(() => {
-    if (activeCompanyId !== storedCompanyId) {
-      setActiveCompany(activeCompanyId);
+    if (!scoped && resolvedCompanyId !== storedCompanyId) {
+      setActiveCompany(resolvedCompanyId);
     }
-  }, [activeCompanyId, storedCompanyId, setActiveCompany]);
+  }, [scoped, resolvedCompanyId, storedCompanyId, setActiveCompany]);
+  const activeCompanyId = options.companyId ?? resolvedCompanyId;
   const activeCompany =
     (companies.data ?? []).find((company) => company.id === activeCompanyId) ??
     null;
   // Statements and postes are scoped to the active company's derived lease.
   // A company without a lease keeps the historical unscoped behaviour.
-  const selectedLeaseId = activeCompany?.leaseId ?? null;
+  const selectedLeaseId =
+    options.leaseId !== undefined
+      ? options.leaseId
+      : (activeCompany?.leaseId ?? null);
 
   // Every company-scoped request carries the active company; a null id disables them.
   const expenseItemsQuery = useExpenseItems(
@@ -99,7 +139,9 @@ export function useExpenseStatementPage() {
     selectedLeaseId,
   );
   const templates = useTemplates("EXPENSE_STATEMENT");
-  const rentReceipt = useActiveRentReceipt(month, activeCompanyId);
+  const activeRentReceiptQuery = useActiveRentReceipt(month, activeCompanyId);
+  const rentReceipt: ExpenseStatementRentReceiptSource =
+    options.rentReceipt ?? activeRentReceiptQuery;
   const activeStatement = useActiveStatement(activeCompanyId, month);
   const employees = useEmployees(activeCompanyId);
 
@@ -342,7 +384,7 @@ export function useExpenseStatementPage() {
 
     const current = getValues();
     const currentLines = (
-      useStatementDraft.getState().linesByMonth[month] ?? []
+      draftStore.getState().linesByMonth[month] ?? []
     ).filter((line) => expenseItemByCode.has(line.itemCode));
     let appliedType = false;
     let appliedAmount = false;
@@ -743,6 +785,10 @@ export function useExpenseStatementPage() {
   );
 
   function goToRentReceipt() {
+    if (options.onGoToRentReceipt) {
+      options.onGoToRentReceipt();
+      return;
+    }
     useRentReceiptDraft.getState().changeMonth(month);
     navigate("/generer/quittance");
   }
