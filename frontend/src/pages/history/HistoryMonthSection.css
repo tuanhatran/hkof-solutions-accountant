@@ -16,8 +16,4 @@
   .history-month-section-badges {
     @apply flex flex-wrap gap-2;
   }
-
-  .history-month-section-body {
-    @apply grid divide-y divide-line lg:grid-cols-2 lg:divide-x lg:divide-y-0;
-  }
 }

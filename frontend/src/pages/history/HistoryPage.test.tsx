@@ -2,7 +2,12 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { CompanyDto, RentReceiptDto, StatementDto } from "@/api/types";
+import type {
+  CompanyDto,
+  LeaseDto,
+  RentReceiptDto,
+  StatementDto,
+} from "@/api/types";
 import { useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft } from "@/state/statementDraft";
@@ -20,6 +25,7 @@ interface QueryLike<T> {
 let receiptsState: QueryLike<RentReceiptDto[]>;
 let statementsState: QueryLike<StatementDto[]>;
 let companiesState: QueryLike<CompanyDto[]>;
+let leasesState: QueryLike<LeaseDto[]>;
 
 vi.mock("@/api/endpoints", () => ({
   api: {
@@ -41,6 +47,7 @@ vi.mock("@/api/queries", async (importOriginal) => {
     useCompanies: () => companiesState,
     useRentReceipts: () => receiptsState,
     useStatements: () => statementsState,
+    useLeases: () => leasesState,
   };
 });
 
@@ -114,6 +121,65 @@ const STATEMENT_FEB: StatementDto = {
   createdAt: "2026-02-03T10:00:00Z",
 };
 
+const LEASE_ALPHA: LeaseDto = {
+  id: 5,
+  addressId: 51,
+  propertyAddress: "1 avenue Alpha",
+  landlordId: 1,
+  tenantId: 2,
+  companyLease: false,
+};
+
+const LEASE_ZULU: LeaseDto = {
+  id: 6,
+  addressId: 61,
+  propertyAddress: "9 rue Zulu",
+  landlordId: 3,
+  tenantId: 4,
+  companyLease: false,
+};
+
+const RECEIPT_ALPHA_JAN: RentReceiptDto = {
+  ...RENT_JAN_ACTIVE,
+  id: 31,
+  landlordId: 1,
+  tenantId: 2,
+  tenantCompanyId: null,
+  landlordName: "Bailleur Alpha",
+  tenantName: "Locataire Alpha",
+  total: "100.00",
+};
+
+const RECEIPT_ZULU_JAN: RentReceiptDto = {
+  ...RENT_JAN_ACTIVE,
+  id: 32,
+  landlordId: 3,
+  tenantId: 4,
+  tenantCompanyId: null,
+  landlordName: "Bailleur Zulu",
+  tenantName: "Locataire Zulu",
+  total: "200.00",
+};
+
+const RECEIPT_UNMATCHED_JAN: RentReceiptDto = {
+  ...RENT_JAN_ACTIVE,
+  id: 33,
+  landlordId: 99,
+  tenantId: 99,
+  tenantCompanyId: null,
+  landlordName: "Bailleur Inconnu",
+  tenantName: "Locataire Inconnu",
+  total: "300.00",
+};
+
+const STATEMENT_ZULU_JAN: StatementDto = {
+  ...STATEMENT_JAN_ACTIVE,
+  id: 41,
+  leaseId: 6,
+  version: 1,
+  total: "50.00",
+};
+
 function readyQuery<T>(data: T[]): QueryLike<T[]> {
   return {
     data,
@@ -179,6 +245,7 @@ beforeEach(() => {
     STATEMENT_FEB,
   ]);
   companiesState = readyQuery([{ id: 1, name: "HKOF" }] as CompanyDto[]);
+  leasesState = readyQuery([]);
   useCompanyStore.setState({ activeCompanyId: 1 });
   resetDrafts();
   useToasts.setState({ toasts: [] });
@@ -435,6 +502,72 @@ describe("HistoryPage", () => {
     await user.click(screen.getByRole("button", { name: "Générer la note" }));
     expect(useStatementDraft.getState().month).toBe("2026-02");
     expect(currentPath()).toBe("/generer/note-frais");
+  });
+
+  it("splits a month into one row per lease address, A→Z then unknown", async () => {
+    receiptsState = readyQuery([
+      RECEIPT_ALPHA_JAN,
+      RECEIPT_ZULU_JAN,
+      RECEIPT_UNMATCHED_JAN,
+    ]);
+    statementsState = readyQuery([STATEMENT_ZULU_JAN]);
+    leasesState = readyQuery([LEASE_ZULU, LEASE_ALPHA]);
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText("Quittance (3)");
+    const rows = Array.from(
+      document.querySelectorAll('[data-cy^="historique-adresse-2026-01"]'),
+    ) as HTMLElement[];
+    expect(rows.map((row) => row.getAttribute("data-cy"))).toEqual([
+      "historique-adresse-2026-01-address-51",
+      "historique-adresse-2026-01-address-61",
+      "historique-adresse-2026-01-inconnue",
+    ]);
+
+    const [alpha, zulu, unknown] = rows;
+    expect(within(alpha).getByText("1 avenue Alpha")).toBeInTheDocument();
+    expect(
+      within(alpha).getByText("Bailleur Alpha → Locataire Alpha"),
+    ).toBeInTheDocument();
+    expect(
+      document.querySelector(
+        '[data-cy="btn-telecharger-quittance-2026-01-address-51"]',
+      ),
+    ).toHaveAttribute("href", "/api/rent-receipts/31/pdf");
+    expect(within(alpha).getByText(/100,00/)).toBeInTheDocument();
+    expect(within(alpha).queryByText(/200,00/)).toBeNull();
+    expect(
+      within(alpha).getByText("Aucune version pour ce mois."),
+    ).toBeInTheDocument();
+
+    expect(within(zulu).getByText("9 rue Zulu")).toBeInTheDocument();
+    expect(within(zulu).getByText(/50,00/)).toBeInTheDocument();
+    expect(within(zulu).queryByText(/100,00/)).toBeNull();
+    expect(
+      document.querySelector(
+        '[data-cy="btn-telecharger-note-2026-01-address-61"]',
+      ),
+    ).toHaveAttribute("href", "/api/expense-statements/41/pdf?complete=false");
+    expect(
+      document.querySelector('[data-cy="btn-rouvrir-note-2026-01-address-61"]'),
+    ).toBeInTheDocument();
+
+    expect(within(unknown).getByText("Adresse inconnue")).toBeInTheDocument();
+    expect(within(unknown).getByText(/300,00/)).toBeInTheDocument();
+    expect(
+      within(unknown).getByText("Bailleur Inconnu → Locataire Inconnu"),
+    ).toBeInTheDocument();
+
+    await user.click(
+      document.querySelector(
+        '[data-cy="btn-rouvrir-note-2026-01-address-61"]',
+      ) as HTMLElement,
+    );
+    const dialog = screen.getByRole("dialog", { name: "Rouvrir cette note ?" });
+    expect(dialog).toHaveTextContent(/version 1 de Janvier 2026/);
+    await user.click(within(dialog).getByRole("button", { name: "Annuler" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("ignores documents without a month and older versions of a month", async () => {

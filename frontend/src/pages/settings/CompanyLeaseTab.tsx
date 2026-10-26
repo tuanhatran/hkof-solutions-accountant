@@ -222,7 +222,6 @@ export function CompanyLeaseTab({
                         />
                       </div>
                     ) : null}
-                    
                   </li>
                 );
               })}

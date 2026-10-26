@@ -1,27 +1,30 @@
 import "./RentReceiptMonthPanel.css";
 import { FilePlus2, FileText } from "lucide-react";
 import { api } from "@/api/endpoints";
-import type { RentReceiptDto } from "@/api/types";
 import { Button } from "@/components/ui/Button";
 import { formatDateTime, formatEUR } from "@/lib/format";
 import { PdfActionLink, OpenPdfLink, VersionBadge } from "./HistoryActions";
 import {
+  latestReceipt,
   pairLabel,
   sortRentReceiptsDesc,
-  type MonthGroup,
+  type AddressGroup,
 } from "./historyHelpers";
 
-/** Rent receipt column of a month: latest version, actions and full history. */
+/** Rent receipt column of one address: latest version, actions and history. */
 export function RentReceiptMonthPanel({
-  group,
-  rentReceipt,
+  month,
+  address,
+  suffix,
   onCreate,
 }: {
-  group: MonthGroup;
-  rentReceipt: RentReceiptDto | null;
+  month: string;
+  address: AddressGroup;
+  suffix: string;
   onCreate: (month: string) => void;
 }) {
-  const rentReceiptHistory = sortRentReceiptsDesc(group.rentReceipts);
+  const rentReceipt = latestReceipt(address.rentReceipts);
+  const rentReceiptHistory = sortRentReceiptsDesc(address.rentReceipts);
 
   return (
     <div className="rent-receipt-month-panel">
@@ -42,7 +45,7 @@ export function RentReceiptMonthPanel({
                 </p>
                 <p
                   className="rent-receipt-month-panel-meta"
-                  data-cy={`quittance-active-${group.month}`}
+                  data-cy={`quittance-active-${month}${suffix}`}
                 >
                   {pairLabel(rentReceipt)}
                 </p>
@@ -68,7 +71,7 @@ export function RentReceiptMonthPanel({
               <PdfActionLink
                 href={api.rentReceipts.pdfUrl(rentReceipt.id)}
                 label="Télécharger le PDF"
-                dataCy={`btn-telecharger-quittance-${group.month}`}
+                dataCy={`btn-telecharger-quittance-${month}${suffix}`}
               />
               <OpenPdfLink href={api.rentReceipts.pdfUrl(rentReceipt.id)} />
             </>
@@ -80,19 +83,19 @@ export function RentReceiptMonthPanel({
           small
           icon={<FilePlus2 size={13} />}
           className="mt-4"
-          onClick={() => onCreate(group.month)}
+          onClick={() => onCreate(month)}
         >
           Générer la quittance
         </Button>
       )}
 
-      {group.rentReceipts.length > 1 ? (
+      {address.rentReceipts.length > 1 ? (
         <details
           className="rent-receipt-month-panel-history"
-          data-cy={`quittances-mois-${group.month}`}
+          data-cy={`quittances-mois-${month}${suffix}`}
         >
           <summary className="rent-receipt-month-panel-summary">
-            Toutes les quittances du mois ({group.rentReceipts.length})
+            Toutes les quittances du mois ({address.rentReceipts.length})
           </summary>
           <ul className="rent-receipt-month-panel-history-list">
             {rentReceiptHistory.map((version) => (

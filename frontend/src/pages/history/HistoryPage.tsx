@@ -3,7 +3,12 @@ import { History } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { errorMessage } from "@/api/client";
-import { useCompanies, useRentReceipts, useStatements } from "@/api/queries";
+import {
+  useCompanies,
+  useLeases,
+  useRentReceipts,
+  useStatements,
+} from "@/api/queries";
 import type { StatementDto } from "@/api/types";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/States";
@@ -15,7 +20,7 @@ import { toast } from "@/state/toasts";
 import { HistoryEmptyState } from "./HistoryEmptyState";
 import { HistoryMonthSection } from "./HistoryMonthSection";
 import { HistoryReloadDialog } from "./HistoryReloadDialog";
-import { current, type MonthGroup } from "./historyHelpers";
+import { current, groupHistoryByMonthAndAddress } from "./historyHelpers";
 
 export function HistoryPage() {
   const navigate = useNavigate();
@@ -28,42 +33,31 @@ export function HistoryPage() {
   // History is company-scoped: the active company owns every listed document.
   const rentReceiptsQuery = useRentReceipts(activeCompanyId);
   const statementsQuery = useStatements(activeCompanyId);
+  const leasesQuery = useLeases();
   const [statementToReload, setStatementToReload] =
     useState<StatementDto | null>(null);
 
-  const groups = useMemo<MonthGroup[]>(() => {
-    const byMonth = new Map<string, MonthGroup>();
-    for (const rentReceipt of rentReceiptsQuery.data ?? []) {
-      if (!rentReceipt.month) {
-        continue;
-      }
-      const group = byMonth.get(rentReceipt.month) ?? {
-        month: rentReceipt.month,
-        rentReceipts: [],
-        statements: [],
-      };
-      group.rentReceipts.push(rentReceipt);
-      byMonth.set(rentReceipt.month, group);
-    }
-    for (const statement of statementsQuery.data ?? []) {
-      if (!statement.month) {
-        continue;
-      }
-      const group = byMonth.get(statement.month) ?? {
-        month: statement.month,
-        rentReceipts: [],
-        statements: [],
-      };
-      group.statements.push(statement);
-      byMonth.set(statement.month, group);
-    }
-    return [...byMonth.values()].sort((a, b) => b.month.localeCompare(a.month));
-  }, [rentReceiptsQuery.data, statementsQuery.data]);
+  const groups = useMemo(
+    () =>
+      groupHistoryByMonthAndAddress(
+        rentReceiptsQuery.data ?? [],
+        statementsQuery.data ?? [],
+        leasesQuery.data ?? [],
+        activeCompanyId,
+      ),
+    [
+      rentReceiptsQuery.data,
+      statementsQuery.data,
+      leasesQuery.data,
+      activeCompanyId,
+    ],
+  );
 
   const loading =
     companies.isPending ||
     rentReceiptsQuery.isPending ||
-    statementsQuery.isPending;
+    statementsQuery.isPending ||
+    leasesQuery.isPending;
   const errorText = rentReceiptsQuery.isError
     ? errorMessage(rentReceiptsQuery.error)
     : statementsQuery.isError
@@ -89,10 +83,15 @@ export function HistoryPage() {
     if (!statementToReload?.month) {
       return;
     }
-    const rentReceipt = current(
-      groups.find((group) => group.month === statementToReload.month)
-        ?.rentReceipts ?? [],
-    );
+    const address = groups
+      .find((group) => group.month === statementToReload.month)
+      ?.addresses.find((row) =>
+        row.statements.some(
+          (statement) =>
+            statement.id !== undefined && statement.id === statementToReload.id,
+        ),
+      );
+    const rentReceipt = current(address?.rentReceipts ?? []);
     useStatementDraft
       .getState()
       .loadFromStatement(statementToReload, rentReceipt?.id ?? null);

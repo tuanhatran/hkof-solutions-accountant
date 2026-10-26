@@ -1,0 +1,15 @@
+@reference "../../index.css";
+
+@layer components {
+  .history-address-row + .history-address-row {
+    @apply border-t border-line;
+  }
+
+  .history-address-row-label {
+    @apply px-5 pt-3 text-xs font-semibold uppercase tracking-wide text-ink-soft sm:px-6;
+  }
+
+  .history-address-row-panels {
+    @apply grid divide-y divide-line lg:grid-cols-2 lg:divide-x lg:divide-y-0;
+  }
+}

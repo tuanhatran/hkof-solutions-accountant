@@ -1,11 +1,10 @@
 import "./HistoryMonthSection.css";
 import type { StatementDto } from "@/api/types";
 import { formatMonth } from "@/lib/format";
+import { HistoryAddressRow } from "./HistoryAddressRow";
 import { current, latestReceipt, type MonthGroup } from "./historyHelpers";
-import { RentReceiptMonthPanel } from "./RentReceiptMonthPanel";
-import { StatementMonthPanel } from "./StatementMonthPanel";
 
-/** Month card grouping the rent receipt and the expense statement history. */
+/** Month card: one Quittance | Note de frais row per lease address. */
 export function HistoryMonthSection({
   group,
   onCreateRentReceipt,
@@ -17,8 +16,17 @@ export function HistoryMonthSection({
   onCreateStatement: (month: string) => void;
   onReloadStatement: (statement: StatementDto) => void;
 }) {
-  const rentReceipt = latestReceipt(group.rentReceipts);
-  const statement = current(group.statements);
+  const rentReceipt = latestReceipt(
+    group.addresses.flatMap((address) => address.rentReceipts),
+  );
+  const statement = current(
+    group.addresses.flatMap((address) => address.statements),
+  );
+  const rentReceiptCount = group.addresses.reduce(
+    (count, address) => count + address.rentReceipts.length,
+    0,
+  );
+  const severalAddresses = group.addresses.length > 1;
 
   return (
     <section
@@ -39,8 +47,8 @@ export function HistoryMonthSection({
             }
           >
             Quittance{" "}
-            {group.rentReceipts.length > 1
-              ? `(${group.rentReceipts.length})`
+            {rentReceiptCount > 1
+              ? `(${rentReceiptCount})`
               : rentReceipt
                 ? `v${rentReceipt.version ?? 1}`
                 : "non générée"}
@@ -53,19 +61,18 @@ export function HistoryMonthSection({
         </div>
       </div>
 
-      <div className="history-month-section-body">
-        <RentReceiptMonthPanel
-          group={group}
-          rentReceipt={rentReceipt}
-          onCreate={onCreateRentReceipt}
+      {group.addresses.map((address) => (
+        <HistoryAddressRow
+          key={address.addressKey}
+          month={group.month}
+          address={address}
+          showLabel={severalAddresses}
+          suffix={severalAddresses ? `-${address.addressKey}` : ""}
+          onCreateRentReceipt={onCreateRentReceipt}
+          onCreateStatement={onCreateStatement}
+          onReloadStatement={onReloadStatement}
         />
-        <StatementMonthPanel
-          group={group}
-          statement={statement}
-          onCreate={onCreateStatement}
-          onReload={onReloadStatement}
-        />
-      </div>
+      ))}
     </section>
   );
 }
