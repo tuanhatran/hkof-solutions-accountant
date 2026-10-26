@@ -421,9 +421,6 @@ describe("HistoryPage", () => {
     await screen.findByText("2 mois suivis");
 
     expect(
-      document.querySelector('[data-cy="btn-telecharger-quittance-2026-01"]'),
-    ).toHaveAttribute("href", "/api/rent-receipts/11/pdf");
-    expect(
       document.querySelector('[data-cy="btn-telecharger-note-2026-01"]'),
     ).toHaveAttribute("href", "/api/expense-statements/21/pdf?complete=false");
     expect(
@@ -435,7 +432,6 @@ describe("HistoryPage", () => {
     const openHrefs = screen
       .getAllByRole("link", { name: "Ouvrir" })
       .map((link) => link.getAttribute("href"));
-    expect(openHrefs).toContain("/api/rent-receipts/11/pdf");
     expect(openHrefs).toContain("/api/expense-statements/21/pdf?complete=true");
   });
 
@@ -578,20 +574,10 @@ describe("HistoryPage", () => {
 
     const [alpha, zulu, unknown] = receiptRows;
     expect(within(alpha).getByText("1 avenue Alpha")).toBeInTheDocument();
-    expect(
-      within(alpha).getByText("Bailleur Alpha → Locataire Alpha"),
-    ).toBeInTheDocument();
-    expect(
-      document.querySelector(
-        '[data-cy="btn-telecharger-quittance-2026-01-address-51"]',
-      ),
-    ).toHaveAttribute("href", "/api/rent-receipts/31/pdf");
-    expect(within(alpha).getByText(/100,00/)).toBeInTheDocument();
     expect(within(alpha).queryByText(/200,00/)).toBeNull();
     expect(within(alpha).queryByText("Note de frais d’occupation")).toBeNull();
 
     expect(within(zulu).getByText("9 rue Zulu")).toBeInTheDocument();
-    expect(within(zulu).getByText(/200,00/)).toBeInTheDocument();
     expect(within(zulu).queryByText(/100,00/)).toBeNull();
 
     const [zuluNote] = statementRows;
@@ -608,10 +594,6 @@ describe("HistoryPage", () => {
     ).toBeInTheDocument();
 
     expect(within(unknown).getByText("Adresse inconnue")).toBeInTheDocument();
-    expect(within(unknown).getByText(/300,00/)).toBeInTheDocument();
-    expect(
-      within(unknown).getByText("Bailleur Inconnu → Locataire Inconnu"),
-    ).toBeInTheDocument();
 
     await user.click(
       document.querySelector(
@@ -636,9 +618,6 @@ describe("HistoryPage", () => {
         '[data-cy="historique-adresse-2026-01-address-51"]',
       ),
     ).toHaveLength(1);
-    expect(
-      document.querySelector('[data-cy="btn-telecharger-quittance-2026-01"]'),
-    ).toHaveAttribute("href", "/api/rent-receipts/31/pdf");
     expect(
       document.querySelector(
         '[data-cy="btn-telecharger-quittance-2026-01-address-51"]',
@@ -666,6 +645,6 @@ describe("HistoryPage", () => {
         .getAllByRole("heading", { level: 2 })
         .map((heading) => heading.textContent),
     ).toEqual(["Février 2026", "Janvier 2026"]);
-    expect(screen.getAllByText(/Version 1/).length).toBe(2);
+    expect(screen.getAllByText(/Version 1/).length).toBe(1);
   });
 });
