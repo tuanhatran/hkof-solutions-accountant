@@ -107,10 +107,10 @@ describe("Rent receipt", () => {
       cy.get(group).contains("Nom du bailleur → Nom du locataire (2)").click();
       cy.get('[data-cy^="historique-quittance-"]').should("have.length", 2);
       cy.get('[data-cy="quittances-mois-2026-01"]')
-        .contains("v2 · active")
+        .contains("v2")
         .should("be.visible");
       cy.get('[data-cy="quittances-mois-2026-01"]')
-        .contains("v1 · active")
+        .contains("v1")
         .should("be.visible");
     });
   });

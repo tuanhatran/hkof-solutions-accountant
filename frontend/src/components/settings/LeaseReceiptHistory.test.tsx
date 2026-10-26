@@ -156,10 +156,10 @@ describe("LeaseReceiptHistory", () => {
 
     const items = within(month).getAllByRole("listitem");
     expect(items).toHaveLength(2);
-    expect(items[0]).toHaveTextContent("v2 · active");
+    expect(items[0]).toHaveTextContent("v2");
     expect(items[0]).toHaveTextContent(formatDateTime("2026-09-30T12:00:00Z"));
     expect(items[0]).toHaveTextContent(collapsed(formatEUR("1400.00")));
-    expect(items[1]).toHaveTextContent("v1 · archivée");
+    expect(items[1]).toHaveTextContent("v1");
     expect(items[1]).toHaveTextContent(collapsed(formatEUR("1350.00")));
 
     const download = screen.getByTestId("telecharger-quittance-bail-103");
@@ -273,7 +273,7 @@ describe("LeaseReceiptHistory", () => {
     const month = screen.getByTestId("quittances-bail-mois-10-");
     const items = within(month).getAllByRole("listitem");
     expect(items).toHaveLength(1);
-    expect(items[0]).toHaveTextContent("v1 · archivée");
+    expect(items[0]).toHaveTextContent("v1");
     expect(items[0]).toHaveTextContent("—");
     expect(month.querySelector("a")).toBeNull();
   });

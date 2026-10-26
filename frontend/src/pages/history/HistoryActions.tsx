@@ -43,8 +43,8 @@ export function VersionBadge({
   active: boolean;
 }) {
   return active ? (
-    <span className="badge badge-accent">v{version} · active</span>
+    <span className="badge badge-accent">v{version}</span>
   ) : (
-    <span className="badge badge-neutral">v{version} · archivée</span>
+    <span className="badge badge-neutral">v{version}</span>
   );
 }

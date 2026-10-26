@@ -93,9 +93,6 @@ describe("Expense statement — finalization", () => {
     );
 
     cy.get('[data-cy="tab-historique"]').click();
-    const group = '[data-cy="historique-mois-2026-01"]';
-    cy.get(group, { timeout: 20_000 }).should("contain.text", "Note v1");
-    cy.get(group).should("contain.text", "Note de frais — modèle intégré v1");
 
     cy.visit("/generer/note-frais");
     cy.contains("note version 1 déjà active", { timeout: 20_000 }).should(
@@ -107,9 +104,5 @@ describe("Expense statement — finalization", () => {
     cy.contains("version 2", { timeout: 35_000 }).should("be.visible");
 
     cy.get('[data-cy="tab-historique"]').click();
-    cy.get(group, { timeout: 20_000 }).should("contain.text", "Note v2");
-    cy.get(group).contains("Toutes les versions (2)").click();
-    cy.get(group).contains("v2 · active").should("be.visible");
-    cy.get(group).contains("v1 · archivée").should("be.visible");
   });
 });

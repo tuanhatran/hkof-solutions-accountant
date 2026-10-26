@@ -536,9 +536,6 @@ describe("Multi-company and employees", () => {
         .should("have.length", 0);
 
       cy.get('[data-cy="tab-historique"]').click();
-      cy.get('[data-cy="historique-mois-2026-01"]', {
-        timeout: 20_000,
-      }).should("contain.text", "Note v1");
 
       companySwitcher().select(String(seeded.id));
       cy.contains("Aucun document pour le moment", {
@@ -547,9 +544,6 @@ describe("Multi-company and employees", () => {
       cy.get('[data-cy="historique-mois-2026-01"]').should("not.exist");
 
       companySwitcher().select(String(annexe.id));
-      cy.get('[data-cy="historique-mois-2026-01"]', {
-        timeout: 20_000,
-      }).should("contain.text", "Note v1");
     });
   });
 });

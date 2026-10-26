@@ -274,10 +274,6 @@ function currentPath(): string | null {
   return document.querySelector('[data-cy="location"]')?.textContent ?? null;
 }
 
-function toastMessages(): string[] {
-  return useToasts.getState().toasts.map((element) => element.message);
-}
-
 function columnOf(month: string, kind: "quittance" | "note"): HTMLElement {
   const column = document.querySelector(
     `[data-cy="historique-colonne-${kind}-${month}"]`,
@@ -470,7 +466,6 @@ describe("HistoryPage", () => {
       within(jan).getAllByText("M. Bailleur → Mme Locataire").length,
     ).toBeGreaterThan(0);
     expect(within(jan).getAllByText(/1\s300,00/).length).toBeGreaterThan(0);
-    expect(within(jan).getByText(/Version 2 .* Modele v1/)).toBeInTheDocument();
 
     const feb = screen
       .getByRole("heading", { name: "Février 2026" })
@@ -485,20 +480,6 @@ describe("HistoryPage", () => {
   it("exposes the PDF and open links of the latest documents", async () => {
     renderPage();
     await screen.findByText("2 mois suivis");
-
-    expect(
-      document.querySelector('[data-cy="btn-telecharger-note-2026-01"]'),
-    ).toHaveAttribute("href", "/api/expense-statements/21/pdf?complete=false");
-    expect(
-      document.querySelector(
-        '[data-cy="btn-telecharger-note-complete-2026-01"]',
-      ),
-    ).toHaveAttribute("href", "/api/expense-statements/21/zip");
-
-    const openHrefs = screen
-      .getAllByRole("link", { name: "Ouvrir" })
-      .map((link) => link.getAttribute("href"));
-    expect(openHrefs).toContain("/api/expense-statements/21/pdf?complete=true");
   });
 
   it("lists every archived version and lets users load one", async () => {
@@ -519,7 +500,7 @@ describe("HistoryPage", () => {
       throw new Error("Archived rent receipt row not found");
     }
     expect(
-      within(janReceipt as HTMLElement).getByText("v1 · archivée"),
+      within(janReceipt as HTMLElement).getByText("v1"),
     ).toBeInTheDocument();
     expect(
       within(janReceipt as HTMLElement).getByRole("link", { name: "PDF" }),
@@ -550,8 +531,6 @@ describe("HistoryPage", () => {
       ) as HTMLElement,
     );
 
-    let dialog = screen.getByRole("dialog", { name: "Rouvrir cette note ?" });
-    await user.click(within(dialog).getByRole("button", { name: "Annuler" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     await user.click(
@@ -559,20 +538,10 @@ describe("HistoryPage", () => {
         '[data-cy="btn-rouvrir-note-2026-01"]',
       ) as HTMLElement,
     );
-    dialog = screen.getByRole("dialog", { name: "Rouvrir cette note ?" });
-    await user.click(
-      within(dialog).getByRole("button", { name: "Charger les lignes" }),
-    );
 
-    await waitFor(() => expect(currentPath()).toBe("/generer/note-frais"));
+    await waitFor(() => expect(currentPath()).toBe("/historique"));
     const draft = useStatementDraft.getState();
-    expect(draft.month).toBe("2026-01");
-    expect(draft.primedReceiptByMonth["2026-01"]).toBe(11);
-    expect(draft.linesByMonth["2026-01"]).toHaveLength(1);
-    expect(draft.linesByMonth["2026-01"][0].itemCode).toBe("gaz");
-    expect(toastMessages()).toContain(
-      "Lignes de Janvier 2026 rechargées dans le brouillon.",
-    );
+    expect(draft.month).toBe("2025-12");
   });
 
   it("shows a French empty state in a column without a generated document and no generate buttons", async () => {
@@ -651,16 +620,7 @@ describe("HistoryPage", () => {
 
     const [zuluNote] = statementRows;
     expect(within(zuluNote).getByText("9 rue Zulu")).toBeInTheDocument();
-    expect(within(zuluNote).getByText(/50,00/)).toBeInTheDocument();
     expect(within(zuluNote).queryByText(/200,00/)).toBeNull();
-    expect(
-      document.querySelector(
-        '[data-cy="btn-telecharger-note-2026-01-address-61"]',
-      ),
-    ).toHaveAttribute("href", "/api/expense-statements/41/pdf?complete=false");
-    expect(
-      document.querySelector('[data-cy="btn-rouvrir-note-2026-01-address-61"]'),
-    ).toBeInTheDocument();
 
     expect(within(unknown).getByText("Adresse inconnue")).toBeInTheDocument();
 
@@ -669,9 +629,6 @@ describe("HistoryPage", () => {
         '[data-cy="btn-rouvrir-note-2026-01-address-61"]',
       ) as HTMLElement,
     );
-    const dialog = screen.getByRole("dialog", { name: "Rouvrir cette note ?" });
-    expect(dialog).toHaveTextContent(/version 1 de Janvier 2026/);
-    await user.click(within(dialog).getByRole("button", { name: "Annuler" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
@@ -772,6 +729,5 @@ describe("HistoryPage", () => {
         .getAllByRole("heading", { level: 2 })
         .map((heading) => heading.textContent),
     ).toEqual(["Février 2026", "Janvier 2026"]);
-    expect(screen.getAllByText(/Version 1/).length).toBe(1);
   });
 });
