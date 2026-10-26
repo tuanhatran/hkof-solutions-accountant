@@ -31,7 +31,7 @@ Money: `CalculationService` only · UI French · no `any` · builder commits onc
 
 - [ ] observable check 1
 - [ ] observable check 2
-- [ ] gates for the change type pass (see Commands); where required: JaCoCo >= 90% LINE/BRANCH, Vitest >= 90% lines/statements/functions/branches; production classes and component CSS < 300 lines
+- [ ] gates for the change type pass (see Commands); where required: changed-line coverage >= 80% via `scripts/diff-coverage.sh <Base>` (JaCoCo backend, Vitest frontend); production classes and component CSS < 300 lines
 
 ## Commands
 
@@ -41,6 +41,7 @@ Run once, at the end, only the gates the change type requires (gate table in `bu
 - tests only, or component CSS only: affected tests + the side's lint/format (frontend also `npm run build`)
 - backend: `cd backend && ./mvnw -B verify`
 - frontend: `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build`
+- coverage: `scripts/diff-coverage.sh <Base> backend|frontend|all` (>= 80% changed lines)
 - e2e (backend or frontend production code, contract, migration, Docker/E2E config): `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress`
 
 ## Evidence
@@ -49,7 +50,7 @@ Append one line per event; never rewrite a previous line.
 
 - `YYYY-MM-DD builder:` red → `<key assertion message>`
 - `YYYY-MM-DD builder:` `<command>` `<real counts>` PASS|FAIL
-- `YYYY-MM-DD builder:` coverage backend LINE `<x>%` BRANCH `<x>%` · frontend lines/statements/functions/branches `<x>/<x>/<x>/<x>%`
+- `YYYY-MM-DD builder:` changed-line coverage backend `<x>%` (`<n>` lines) · frontend `<x>%` (`<n>` lines) vs `<Base>`
 - `YYYY-MM-DD builder:` E2E `<exit code>` `<specs>` specs `<tests>` tests PASS | `E2E: skipped, <gate table row>`
 - `YYYY-MM-DD builder:` `Commit: <short-sha> <n> files +<a>/-<d>`
 - `YYYY-MM-DD lead:` `VERDICT: PASS | BLOCKERS (n) | BLOCKED` (reviewer, round n)
