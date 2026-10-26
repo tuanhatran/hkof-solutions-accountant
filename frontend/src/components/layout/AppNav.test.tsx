@@ -15,15 +15,10 @@ describe("SideNavigation", () => {
     const navigation = screen.getByRole("navigation", {
       name: "Navigation principale",
     });
-    expect(within(navigation).getByText("Générer")).toBeVisible();
+    expect(within(navigation).queryByText("Générer")).toBeNull();
+    expect(navigation.querySelector('a[href^="/generer/"]')).toBeNull();
     expect(within(navigation).getByText("Suivi")).toBeVisible();
     expect(within(navigation).getByText("Réglages")).toBeVisible();
-    expect(
-      within(navigation).getByRole("link", { name: /Quittance de loyer/ }),
-    ).toHaveAttribute("href", "/generer/quittance");
-    expect(
-      within(navigation).getByRole("link", { name: /Note de frais/ }),
-    ).toHaveAttribute("href", "/generer/note-frais");
     expect(
       within(navigation).getByRole("link", { name: /Société/ }),
     ).toHaveAttribute("href", "/configuration/entreprise");
@@ -62,8 +57,6 @@ describe("MobileNavigation", () => {
     });
     const links = within(mobileNavigation).getAllByRole("link");
     expect(links.map((link) => link.textContent)).toEqual([
-      "Quittance de loyer",
-      "Note de frais",
       "Historique",
       "Société",
       "LMNP",
