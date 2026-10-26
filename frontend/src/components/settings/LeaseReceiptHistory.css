@@ -2,7 +2,7 @@
 
 @layer components {
   .lease-receipt-history {
-    @apply w-full basis-full rounded-xl border border-line bg-paper/60 p-3;
+    @apply w-full basis-full rounded-xl;
   }
 
   .lease-receipt-history-title {

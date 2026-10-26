@@ -1,5 +1,28 @@
-import type { AiConfidence } from "@/api/types";
+import type { AiConfidence, RentReceiptDto } from "@/api/types";
 import type { ExpenseFormValues } from "@/lib/validation";
+import type { StatementDraftStore } from "@/state/statementDraft";
+
+/** Minimal query shape the controller needs for the month's rent receipt. */
+export interface ExpenseStatementRentReceiptSource {
+  data: RentReceiptDto | null | undefined;
+  isPending: boolean;
+}
+
+/**
+ * Optional scoping of the controller. Without options the hook keeps the
+ * historical page behaviour: global sessionStorage draft, active company and
+ * its derived lease, company active rent receipt and navigation to
+ * /generer/quittance. A scoped editor (the company lease statement modal)
+ * injects its own company, lease, non-persisted draft, rent receipt source
+ * and rent-receipt action; the global draft and company store stay untouched.
+ */
+export interface ExpenseStatementPageOptions {
+  companyId?: number;
+  leaseId?: number | null;
+  draft?: StatementDraftStore;
+  rentReceipt?: ExpenseStatementRentReceiptSource;
+  onGoToRentReceipt?: () => void;
+}
 
 export interface AttachedFile {
   id: number;
