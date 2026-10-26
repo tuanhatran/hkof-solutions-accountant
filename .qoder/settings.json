@@ -2,14 +2,20 @@
   "agent": "lead",
   "permissions": {
     "deny": [
-      "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(git reset:*)",
       "Bash(git clean:*)",
       "Bash(git stash:*)",
       "Bash(git worktree:*)",
       "Bash(git branch -d:*)",
-      "Bash(git branch -D:*)"
+      "Bash(git branch -D:*)",
+      "Bash(git commit --amend:*)",
+      "Bash(git commit -a:*)",
+      "Bash(git add -A:*)",
+      "Bash(git add --all:*)",
+      "Bash(git rebase:*)",
+      "Bash(git revert:*)",
+      "Bash(git restore:*)"
     ]
   }
 }

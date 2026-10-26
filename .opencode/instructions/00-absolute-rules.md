@@ -61,13 +61,15 @@ truth; re-read them before acting when in doubt.
 - Never log or hand off a secret value (LLM key, database password). The LLM key is
   never returned by a `GET`.
 - Personal documents in `data/` are never committed, pasted into logs or sent off the machine.
-- Never commit, push, reset, clean or stash. One dedicated branch per task is created by the
+- Never push, reset, clean or stash. Only `builder` commits, locally, once per run, with explicit paths
+  (never `git add -A` or `commit -a`; see its Commit section). One dedicated branch per task is created by the
   lead with an automatic name, `feat/<nn>-<slug>` (`fix/<nn>-<slug>` for a bug); the user is not
   asked. A resumed task reuses its recorded branch. No worktree or
   branch finishing without an explicit user request.
 
 ## Settings folder ownership
 
-Touch only your own settings folder (agents, instructions, skills, commands): `.qoder/` for
-Qoder, `.opencode/` for OpenCode, `.github/` for Copilot. Never edit another configuration
+Touch only your own settings folder (agents, instructions, commands): `.qoder/` for Qoder, `.opencode/` for
+OpenCode, `.github/` for Copilot. Skills are shared: they live in `.qoder/skills` and are read-only for
+OpenCode and Copilot. Never edit another configuration
 folder unless the user explicitly requests that cross-folder change.

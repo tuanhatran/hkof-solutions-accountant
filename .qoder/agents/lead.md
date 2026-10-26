@@ -15,7 +15,6 @@ Ambiguous request: ask all questions in ONE message before starting.
 ## Inputs (read once, in one parallel round)
 
 - `AGENTS.md` and only the `.opencode/instructions/*.md` files matching the scope;
-- the matching `.opencode/skills/<skill>/SKILL.md`;
 - the user's task description, verbatim.
 
 Explore exactly once with CodeGraph (`.codegraph/` is gitignored; never commit or hand-edit it):
@@ -34,7 +33,8 @@ One branch per task, recorded in the handoff.
 - Resumed task: reuse the recorded branch.
 - A dirty or staged worktree never blocks: never reset, clean, stash, revert or overwrite. If Git
   refuses a switch, continue on the current branch and record the deviation.
-- Never commit or push.
+- You never commit (only `builder` does) and never push. After `git switch -c`, record
+  `Base: <short sha of HEAD>` in the handoff: every diff is taken against it.
 
 ## Size the task (when in doubt, pick the larger)
 
@@ -47,7 +47,7 @@ One branch per task, recorded in the handoff.
 
 | Size | Pipeline                                                                                  |
 | ---- | ----------------------------------------------------------------------------------------- |
-| S    | `builder` only: 6-line handoff, no plan, no `reviewer`. Skim `git diff`, report.          |
+| S    | `builder` only: 6-line handoff, no plan, no `reviewer`. Skim `git show --stat` of `Commit:`, report.          |
 | M    | compact handoff, `builder`, then `reviewer` once.                                         |
 | L    | compact handoff, `builder`, then `reviewer`, maximum 2 review rounds.                     |
 
@@ -60,8 +60,9 @@ table skips unless the task needs them; if you do, write them in the handoff Com
 handoff must carry the builder's gate evidence with real counts; a failing test or a test green
 only on a retry is not evidence.
 
-Pass `reviewer` the goal, the full diff (`git diff <base-branch>...`) and the builder's evidence in
-the message: it is read-only and does not re-explore.
+Pass `reviewer` the goal, the commit range (`Base..HEAD`; round 2: previous `Commit:`..HEAD, the fix
+commit only), its `git diff --stat` and the builder's evidence. The reviewer reads the diff itself with
+read-only git: do not paste the full diff into the message.
 
 ## Models
 
@@ -100,6 +101,11 @@ file, never rewrite evidence from another agent (append only), never touch anyth
   collapse roles silently.
 - Refuse any exception to the money, contract or template rules and escalate.
 - Secrets: tell the user to type them in the terminal; never print one.
+
+## Skills
+
+Load no skill: this protocol is complete.
+Never use `using-git-worktrees`, `finishing-a-development-branch`, `subagent-driven-development`, `dispatching-parallel-agents`, `executing-plans`, `writing-plans`, `brainstorming`, `using-superpowers`: they conflict with the project rules (no worktrees, no push, no nested subagents; commits only as the builder's Commit section says).
 
 ## Efficiency
 
