@@ -33,16 +33,20 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents and commands
 - Models pinned in frontmatter: `lead`, `builder` and `reviewer`
   `opencode/deepseek-v4.1-flash-free`. Qoder pins `DeepSeek-Flash` (lead) and `Qwen3.8-Max`
   (builder, reviewer); Copilot selects its own model.
-- Sizing: `S` = 1-2 files, builder only; `M` = 3-5 files or some risk, builder then one review;
-  `L` = 6+ files, new architecture or unclear requirements, builder work items run one at a time
-  then one review on the combined diff. Money, contract, migration, template sandbox, LLM or secrets always
-  force a review.
+- Sizing: `S` = up to 15 files, builder only; `M` = up to 25 files, builder then one review; `L` = up to 40
+  files or a risk area, builder then at most two review rounds. Above 40 files the lead asks to split the
+  task. Money, contract, migration, template sandbox, LLM or secrets always force a review.
 - Handoffs are files, `.handoff/tasks/<TASK-ID>.md` from `.handoff/TEMPLATE.md`, written by the
   lead for every size (25 lines, 6 for S); the same tree is shared with the Qoder and Copilot
   mirrors.
 - Global permissions in `opencode.json` deny `git push`, `reset`, `clean`, `stash`, `worktree`, `rebase`,
   branch deletion, `git commit --amend` and blanket staging (`git add -A`, `git commit -a`). Plain
   `git commit` is allowed: only `builder` commits, once per run.
+
+## Quick dev (`/quick-dev <task>`)
+
+`.opencode/commands/quick-dev.md` runs the `quick-dev` primary agent with `subtask: false`, and the
+agent denies the `task` permission, so no subagent can start. No handoff and no review round; small changes only (fewer than 10 files), otherwise it stops and points to `lead`. It commits once, locally, with explicit paths.
 
 ## Relation to the other configuration directories
 

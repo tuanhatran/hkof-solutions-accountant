@@ -2,7 +2,7 @@ import "./LeaseSection.css";
 import { FileText, Home, PencilLine, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { errorMessage } from "@/api/client";
-import { useSignatures } from "@/api/queries";
+import { useAllRentReceipts, useSignatures } from "@/api/queries";
 import type { LeaseDto } from "@/api/types";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -10,6 +10,7 @@ import { FieldGroup } from "@/components/ui/FieldGroup";
 import { ErrorState, LoadingState } from "@/components/ui/States";
 import { formatEUR } from "@/lib/format";
 import { LeaseForm } from "./LeaseForm";
+import { LeaseReceiptHistory } from "./LeaseReceiptHistory";
 import { LeaseReceiptModal } from "./LeaseReceiptModal";
 import { EmptyState, SectionHeader } from "./SettingsSection";
 import type { RentReceiptSettingsController } from "./useRentReceiptSettings";
@@ -17,6 +18,9 @@ import type { RentReceiptSettingsController } from "./useRentReceiptSettings";
 /** Leases section: address filter, list, create/update modal and delete triggers. */
 export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
   const [receiptLease, setReceiptLease] = useState<LeaseDto | null>(null);
+  // One shared query for every row's receipt history; the lease receipt modal
+  // refreshes it through the existing `rentReceiptsAll` invalidation.
+  const allRentReceipts = useAllRentReceipts();
 
   return (
     <section className="card lease-section">
@@ -155,6 +159,14 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
                 >
                   Retirer
                 </Button>
+                <LeaseReceiptHistory
+                  lease={lease}
+                  receipts={allRentReceipts.data}
+                  isPending={allRentReceipts.isPending}
+                  isError={allRentReceipts.isError}
+                  error={allRentReceipts.error}
+                  onRetry={() => void allRentReceipts.refetch()}
+                />
               </li>
             ))}
           </ul>

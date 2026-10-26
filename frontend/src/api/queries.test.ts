@@ -7,6 +7,7 @@ import {
   queryKeys,
   useActiveRentReceipt,
   useActiveStatement,
+  useAllRentReceipts,
   useCompanies,
   useEmployees,
   useExpenseItems,
@@ -239,6 +240,21 @@ describe("query hooks", () => {
     expect(api.expenseStatements.list).toHaveBeenCalledWith(3, "2026-10", 7);
     expect(noReceipts.result.current.fetchStatus).toBe("idle");
     expect(companyless.result.current.fetchStatus).toBe("idle");
+  });
+  it("loads every rent receipt for the lease history under the shared prefix", async () => {
+    vi.mocked(api.rentReceipts.list).mockResolvedValue([]);
+
+    const all = renderHook(() => useAllRentReceipts(), { wrapper });
+
+    await waitFor(() => expect(all.result.current.isSuccess).toBe(true));
+    expect(api.rentReceipts.list).toHaveBeenCalledWith();
+
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(queryKeys.rentReceiptsAll, []);
+    void queryClient.invalidateQueries({ queryKey: queryKeys.rentReceiptsAll });
+    expect(
+      queryClient.getQueryState(queryKeys.rentReceiptsAll)?.isInvalidated,
+    ).toBe(true);
   });
 });
 
