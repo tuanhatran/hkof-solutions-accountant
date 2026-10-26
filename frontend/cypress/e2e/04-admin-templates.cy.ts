@@ -153,7 +153,7 @@ describe("AI admin and templates", () => {
     cy.get('[data-cy="btn-modele-defaut"]').first().should("not.be.disabled");
 
     cy.intercept("POST", "/api/rent-receipts/preview").as("preview");
-    cy.get('[data-cy="tab-quittance"]').click();
+    cy.visit("/generer/quittance");
     normalLease().then((lease) => {
       cy.get('[data-cy="select-bailleur"]').select(String(lease.landlordId));
       cy.get('[data-cy="select-locataire"]').select(`person:${lease.tenantId}`);

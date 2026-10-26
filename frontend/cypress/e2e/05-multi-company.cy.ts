@@ -482,10 +482,13 @@ describe("Multi-company and employees", () => {
       createAnnexeEmployee(annexe.id);
       createAnnexeExpenseItem(annexe.id);
 
-      cy.get('[data-cy="tab-note-frais"]').click();
+      cy.visit("/generer/note-frais");
+      // A cold load starts from the stored company, which the shell falls back
+      // to the first one while the list loads: re-select the annexe explicitly.
+      companySwitcher().select(String(annexe.id));
       cy.chooseMonth(MONTHS);
       cy.get('[data-cy="select-type-frais"]').should("not.be.disabled");
-      cy.get('[data-cy="select-type-frais"] option').then(($options) => {
+      cy.get('[data-cy="select-type-frais"] option').should(($options) => {
         const values = [...$options].map(
           (option) => (option as HTMLOptionElement).value,
         );

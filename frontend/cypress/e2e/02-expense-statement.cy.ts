@@ -45,8 +45,8 @@ describe("Expense statement — entry and preview", () => {
     });
     waitForAmount('[data-cy="total-retenu"]', "992,85");
 
-    cy.get('[data-cy="tab-quittance"]').click();
-    cy.get('[data-cy="tab-note-frais"]').click();
+    cy.visit("/generer/quittance");
+    cy.visit("/generer/note-frais");
 
     cy.get('[data-cy="ligne-frais-loyer"]').should("exist");
     cy.get('[data-cy="ligne-frais-gaz"]').should("exist");

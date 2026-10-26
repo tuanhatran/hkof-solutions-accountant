@@ -74,7 +74,8 @@ describe("AppShell", () => {
     const navigation = screen.getByRole("navigation", {
       name: "Navigation principale",
     });
-    expect(within(navigation).getByText("Générer")).toBeVisible();
+    expect(within(navigation).queryByText("Générer")).toBeNull();
+    expect(navigation.querySelector('a[href^="/generer/"]')).toBeNull();
     expect(within(navigation).getByText("Suivi")).toBeVisible();
     expect(within(navigation).getByText("Réglages")).toBeVisible();
     expect(
@@ -138,8 +139,6 @@ describe("AppShell", () => {
     });
     const links = within(mobileNavigation).getAllByRole("link");
     expect(links.map((link) => link.textContent)).toEqual([
-      "Quittance de loyer",
-      "Note de frais",
       "Historique",
       "Société",
       "LMNP",

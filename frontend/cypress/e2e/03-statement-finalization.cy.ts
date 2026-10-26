@@ -97,7 +97,7 @@ describe("Expense statement — finalization", () => {
     cy.get(group, { timeout: 20_000 }).should("contain.text", "Note v1");
     cy.get(group).should("contain.text", "Note de frais — modèle intégré v1");
 
-    cy.get('[data-cy="tab-note-frais"]').click();
+    cy.visit("/generer/note-frais");
     cy.contains("note version 1 déjà active", { timeout: 20_000 }).should(
       "be.visible",
     );
