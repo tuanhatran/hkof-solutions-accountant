@@ -1,10 +1,10 @@
 # LEASE-RECEIPT-HISTORY
 
-Status: TODO
+Status: DONE
 Branch: feat/33-lease-receipt-history
 Base: 7a9297d
 Size: M
-Round: 0/2
+Round: 1/2
 
 ## Goal
 
@@ -36,3 +36,18 @@ Money: display each `RentReceiptDto.total` as-is; never sum versions client-side
 ## Evidence
 
 Append one line per event; never rewrite a previous line.
+
+- 2026-10-26 lead: resumed on existing branch; HEAD 2269cad (unrelated user agent-config commit after Base 7a9297d); task review range = builder commit only.
+- 2026-10-26 builder r0: files: queries.ts (+useAllRentReceipts), queries.test.ts, new LeaseReceiptHistory.tsx/.css/.test.tsx, LeaseSection.tsx/.test.tsx.
+- red→green: queries.test.ts useAllRentReceipts 1 failed→file 17 passed; LeaseReceiptHistory.test.tsx module-missing red→12 passed; LeaseSection.test.tsx history 2 failed→6 passed.
+- deviation: jsdom gives summary no button role and no Enter activation; test asserts focusability then expands via click (native details stays keyboard-accessible in browsers).
+- PASS full vitest run: 582 passed; after coverage tests 587 passed / 59 files.
+- PASS npm run typecheck · PASS npm run lint · PASS npm run format:check.
+- coverage first run RED (branches 89.98% < 90): added 5 defensive-branch tests, no production change.
+- PASS npm run test:coverage: global 97.22% stmts / 90.17% branch / 95.04% funcs / 97.36% lines.
+- PASS npm run build (pre-existing >500 kB chunk warning).
+- E2E: docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress → exit 0; 6 specs, 26/26 tests passed, 0 retries; down -v --remove-orphans → exit 0.
+- Contract: none (reused GET /api/rent-receipts and /{id}/pdf).
+- Commit: 1065b43 7 files +637/-1 (.handoff excluded; user commit 2269cad untouched).
+- 2026-10-26 lead: VERDICT: PASS (reviewer, round 1) — targeted LeaseReceiptHistory.test.tsx 12/12; gate evidence accepted; task at USER_REVIEW.
+- 2026-10-26 lead: DONE — user accepted
