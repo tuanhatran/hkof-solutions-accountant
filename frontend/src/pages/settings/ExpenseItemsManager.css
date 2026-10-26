@@ -2,11 +2,11 @@
 
 @layer components {
   .expense-items-manager {
-    @apply mt-6 overflow-hidden;
+    @apply mt-2 overflow-hidden;
   }
 
   .expense-items-manager-heading {
-    @apply flex items-start gap-3;
+    @apply flex items-start gap-1;
   }
 
   .expense-items-manager-icon {

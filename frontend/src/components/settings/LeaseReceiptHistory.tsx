@@ -58,6 +58,7 @@ export function LeaseReceiptHistory({
       className="lease-receipt-history"
       data-cy={`quittances-bail-${lease.id}`}
     >
+      <hr className="my-2 border-t border-[var(--color-accent)]/20" />
       <p className="lease-receipt-history-title">Quittances générées</p>
       {isError ? (
         <ErrorState message={errorMessage(error)} onRetry={onRetry} />

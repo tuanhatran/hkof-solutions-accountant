@@ -199,6 +199,14 @@ export function CompanyLeaseTab({
                         Modifier
                       </Button>
                     </div>
+                    <CompanyLeaseStatementHistory
+                      lease={lease}
+                      statements={statements.data}
+                      isPending={statements.isPending}
+                      isError={statements.isError}
+                      error={statements.error}
+                      onRetry={() => void statements.refetch()}
+                    />
                     {expanded ? (
                       <div className="company-lease-tab-item-expanded">
                         <CompanyLeaseView
@@ -214,14 +222,7 @@ export function CompanyLeaseTab({
                         />
                       </div>
                     ) : null}
-                    <CompanyLeaseStatementHistory
-                      lease={lease}
-                      statements={statements.data}
-                      isPending={statements.isPending}
-                      isError={statements.isError}
-                      error={statements.error}
-                      onRetry={() => void statements.refetch()}
-                    />
+                    
                   </li>
                 );
               })}
