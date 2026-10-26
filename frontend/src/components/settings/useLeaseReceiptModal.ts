@@ -4,11 +4,17 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { downloadBlob, errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
-import { queryKeys, useSignatures, useTemplates } from "@/api/queries";
+import {
+  queryKeys,
+  useCompanies,
+  useSignatures,
+  useTemplates,
+} from "@/api/queries";
 import type { LeaseDto, RentReceiptDto, RentReceiptRequest } from "@/api/types";
 import { usePdfPreview } from "@/hooks/usePdfPreview";
 import { currentMonth, periodOfMonth } from "@/lib/dates";
 import { formatMonth } from "@/lib/format";
+import { resolveActiveCompanyId, useCompanyStore } from "@/state/company";
 import {
   rentReceiptSchema,
   tenantKeyFromLease,
@@ -27,6 +33,17 @@ export function useLeaseReceiptModal(leaseRow: LeaseDto) {
   const queryClient = useQueryClient();
   const templates = useTemplates("RENT_RECEIPT");
   const signatures = useSignatures(leaseRow.landlordId ?? null);
+  const companies = useCompanies();
+  const storedCompanyId = useCompanyStore((state) => state.activeCompanyId);
+  // Same resolution as /generer/quittance: the lease company wins, otherwise
+  // the stored active company (the first one when it no longer exists).
+  const companyId =
+    leaseRow.companyId ??
+    resolveActiveCompanyId(storedCompanyId, companies.data);
+  const companyName =
+    leaseRow.companyName ??
+    (companies.data ?? []).find((company) => company.id === companyId)?.name ??
+    null;
   const template =
     (templates.data ?? []).find((candidate) => candidate.active) ?? null;
   const signatureId = signatures.data?.[0]?.id ?? null;
@@ -58,7 +75,7 @@ export function useLeaseReceiptModal(leaseRow: LeaseDto) {
         validation.data,
         template?.id ?? null,
         signatureId,
-        leaseRow.companyId ?? null,
+        companyId,
       )
     : null;
   const preview = usePdfPreview(
@@ -110,7 +127,7 @@ export function useLeaseReceiptModal(leaseRow: LeaseDto) {
         parsed.data,
         template?.id ?? null,
         signatureId,
-        leaseRow.companyId ?? null,
+        companyId,
       ),
     );
   });
@@ -134,6 +151,7 @@ export function useLeaseReceiptModal(leaseRow: LeaseDto) {
     register: form.register,
     errors: form.formState.errors,
     values,
+    companyName,
     preview,
     changeMonth,
     result,

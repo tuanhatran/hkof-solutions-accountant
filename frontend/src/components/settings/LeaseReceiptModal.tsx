@@ -92,7 +92,7 @@ export function LeaseReceiptModal({
               className="lease-receipt-modal-identity-value"
               data-cy="societe-quittance-bail"
             >
-              {leaseRow.companyName ?? "Aucune société"}
+              {c.companyName ?? "Aucune société"}
             </dd>
           </div>
           <div>

@@ -4,9 +4,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { downloadBlob } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
-import type { LeaseDto, SignatureDto, TemplateDto } from "@/api/types";
+import type {
+  CompanyDto,
+  LeaseDto,
+  SignatureDto,
+  TemplateDto,
+} from "@/api/types";
 import { currentMonth, periodOfMonth } from "@/lib/dates";
 import { formatEUR, formatMonth, formatPeriod } from "@/lib/format";
+import { useCompanyStore } from "@/state/company";
 import { useToasts } from "@/state/toasts";
 import { LeaseReceiptModal } from "./LeaseReceiptModal";
 
@@ -61,6 +67,7 @@ const LEASE: LeaseDto = {
 
 let templateRows: TemplateDto[] = [TEMPLATE];
 let signatureRows: SignatureDto[] = [SIGNATURE];
+let companyRows: CompanyDto[] = [];
 
 vi.mock("@/components/pdf/PdfViewer", () => ({
   PdfViewer: ({
@@ -103,6 +110,7 @@ vi.mock("@/api/queries", async (importOriginal) => {
     ...actual,
     useTemplates: () => readyQuery(templateRows),
     useSignatures: () => readyQuery(signatureRows),
+    useCompanies: () => readyQuery(companyRows),
   };
 });
 
@@ -124,6 +132,8 @@ function renderModal(
 beforeEach(() => {
   templateRows = [TEMPLATE];
   signatureRows = [SIGNATURE];
+  companyRows = [{ id: 3, name: "HKOF" }];
+  useCompanyStore.setState({ activeCompanyId: null });
   vi.mocked(api.rentReceipts.preview).mockReset();
   vi.mocked(api.rentReceipts.preview).mockResolvedValue({
     blob: new Blob(["pdf"]),
@@ -155,14 +165,16 @@ describe("LeaseReceiptModal", () => {
     ).toBeVisible();
     expect(screen.getByText("M. Bailleur")).toBeVisible();
     expect(screen.getByText("Mme Locataire")).toBeVisible();
-    expect(screen.getByText("Aucune société")).toBeVisible();
+    expect(
+      document.querySelector('[data-cy="societe-quittance-bail"]'),
+    ).toHaveTextContent("HKOF");
     expect(screen.getByLabelText("Loyer hors charges")).toHaveValue("1300,00");
     expect(screen.getByLabelText("Provision pour charges")).toHaveValue(
       "50,00",
     );
   });
 
-  it("sends the lease pair, lease company, period and amounts to the preview", async () => {
+  it("sends the active company for a natural-person lease without a company", async () => {
     renderModal();
 
     const month = currentMonth();
@@ -173,6 +185,7 @@ describe("LeaseReceiptModal", () => {
           month,
           landlordId: 1,
           tenantId: 2,
+          companyId: 3,
           periodStart: period.start,
           periodEnd: period.end,
           rentExclCharges: "1300.00",
@@ -188,6 +201,35 @@ describe("LeaseReceiptModal", () => {
         document.querySelector('[data-cy="apercu-quittance-bail"]'),
       ).toHaveAttribute("data-url", "blob:apercu"),
     );
+  });
+
+  it("prefers the stored active company over the first company", async () => {
+    companyRows = [
+      { id: 3, name: "HKOF" },
+      { id: 9, name: "MARTIN" },
+    ];
+    useCompanyStore.setState({ activeCompanyId: 9 });
+    renderModal();
+
+    expect(
+      document.querySelector('[data-cy="societe-quittance-bail"]'),
+    ).toHaveTextContent("MARTIN");
+    await waitFor(() =>
+      expect(api.rentReceipts.preview).toHaveBeenCalledWith(
+        expect.objectContaining({ companyId: 9 }),
+        expect.any(AbortSignal),
+      ),
+    );
+  });
+
+  it("shows Aucune société and sends no company when none exists at all", async () => {
+    companyRows = [];
+    renderModal();
+
+    expect(screen.getByText("Aucune société")).toBeVisible();
+    await waitFor(() => expect(api.rentReceipts.preview).toHaveBeenCalled());
+    const previewBody = vi.mocked(api.rentReceipts.preview).mock.calls[0][0];
+    expect(previewBody.companyId).toBeUndefined();
   });
 
   it("updates the read-only period and the preview when the month changes", async () => {
@@ -276,6 +318,7 @@ describe("LeaseReceiptModal", () => {
         month,
         landlordId: 1,
         tenantId: 2,
+        companyId: 3,
         periodStart: period.start,
         periodEnd: period.end,
         rentExclCharges: "1400.00",
