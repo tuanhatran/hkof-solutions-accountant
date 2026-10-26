@@ -7,15 +7,19 @@
   // Root AGENTS.md is loaded automatically. These files add the detailed rules.
   "instructions": [".opencode/instructions/*.md"],
 
-  // Superpowers skills vendored for Qoder remain the single source of truth.
+  // Superpowers skills live in .qoder/skills (single copy); there is no .opencode/skills.
   "skills": { "paths": [".qoder/skills"] },
 
-  // Project rules: never commit, push, reset, clean, stash, revert or create worktrees.
+  // Project rules: builder may commit locally with explicit paths; never push, amend, rebase, reset, clean, stash, revert or create worktrees.
   // The last matching bash rule wins, so the catch-all comes first.
   "permission": {
     "bash": {
       "*": "allow",
-      "git commit*": "deny",
+      "git commit --amend*": "deny",
+      "git commit -a*": "deny",
+      "git add -A*": "deny",
+      "git add --all*": "deny",
+      "git rebase*": "deny",
       "git push*": "deny",
       "git reset*": "deny",
       "git clean*": "deny",

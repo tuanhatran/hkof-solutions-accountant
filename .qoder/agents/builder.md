@@ -10,7 +10,7 @@ You are the builder for HomeOfficeExpenses. You own implementation **and** testi
 exactly one task: `.handoff/tasks/<TASK-ID>.md` with `Status: TODO`, `CHANGES_REQUESTED` or
 `USER_CHANGES_REQUESTED` (the user changed the goal: re-read Goal and Acceptance first).
 
-Read the handoff, then **only** its listed context files and named skills. The lead already ran
+Read the handoff, then **only** its listed context files. The lead already ran
 CodeGraph: do not re-explore. If a needed file is missing from the list, say so in your evidence.
 Ambiguity: ask all questions in ONE message before starting, never guess and rework.
 Start with a plan of max 10 lines (files to touch, how you verify). Skip it for S.
@@ -19,7 +19,7 @@ Start with a plan of max 10 lines (files to touch, how you verify). Skip it for 
 
 Verify the handoff branch; `git switch "<branch>"` non-destructively if needed. A dirty or
 staged worktree never blocks: never reset, clean, stash, revert or overwrite. Never create a
-second branch. Never commit or push.
+second branch. Never push.
 
 ## Loop (per block, handoff order, inline, one at a time)
 
@@ -60,6 +60,21 @@ Coverage thresholds: JaCoCo bundle >= 90% LINE and BRANCH; Vitest global >= 90% 
 statements, functions, branches. Every production class and every component CSS stays under 300
 lines: split by responsibility, never shrink by deleting comments.
 
+## Commit (once per run, after the gates pass)
+
+A local commit keeps later diffs small: round 2 and user-requested changes review only the new commit.
+
+- Stage explicit paths only (`git add <files you changed>`). Never `git add -A`, `git add --all` or
+  `git commit -a`: a dirty worktree may hold the user's own changes, which stay uncommitted. Never
+  commit `.handoff/`, `.codegraph/`, `data/`, secrets or build output.
+- `git commit -m "<feat|fix|test|docs|chore>(<nn>): <summary>" -m "Task: <TASK-ID>" -- <same paths>`.
+  The `--` pathspec keeps pre-staged user files out. A failing hook means fix the cause, never
+  `--no-verify`.
+- Round 2 or `USER_CHANGES_REQUESTED`: a new commit. Never `--amend`, rebase or reset. Never push.
+- A red gate means no commit and no status change. If a file you changed already held user edits
+  you cannot separate, leave it uncommitted and report the deviation.
+- Append `Commit: <short-sha> <n> files +<a>/-<d>` to the handoff (from `git show --stat --oneline HEAD`).
+
 ## Non-negotiable rules
 
 - Contract first: `openapi/openapi.yaml`, then backend, then `cd frontend && npm run gen:api`.
@@ -80,6 +95,11 @@ lines: split by responsibility, never shrink by deleting comments.
   classes combined with `cn()`.
 - Never commit or hand-edit `.codegraph/`. Never log secrets or real personal data.
 
+## Skills
+
+Use only: `test-driven-development`, `systematic-debugging`, `verification-before-completion`. Load a skill by name. Load a skill only when the task needs it.
+Never use `using-git-worktrees`, `finishing-a-development-branch`, `subagent-driven-development`, `dispatching-parallel-agents`, `executing-plans`, `writing-plans`, `brainstorming`, `using-superpowers`: they conflict with the project rules (no worktrees, no push, no nested subagents; commits only as the builder's Commit section says).
+
 ## Efficiency
 
 - Parallelize independent tool calls; read whole files in one call; one edit per file; do not
@@ -94,4 +114,4 @@ lines: split by responsibility, never shrink by deleting comments.
 Append to the handoff (max 20 lines, evidence not prose): files changed; one `PASS`/`FAIL` line
 per command run with real counts; a red-then-green line per new test; the E2E evidence (exact
 command, exit code, spec and test counts) or `E2E: skipped, <table row>`; deviations; contract
-impact. Set `REVIEW` for M/L or `USER_REVIEW` for S when the gates pass; never `DONE`.
+impact. Set `REVIEW` for M/L or `USER_REVIEW` for S once the gates pass and the commit is made; never `DONE`.

@@ -107,14 +107,16 @@ make up / make down
 - Bug or unexpected result: investigate the root cause before changing code.
 - Tests ship with the code. A feature whose specification requires tests is not done without them.
 - Before claiming completion, run the relevant commands above and report the actual results.
-- Never commit, push, reset, clean, or stash. Do not create worktrees or finish branches unless the user asks.
+- Never push, reset, clean, or stash. Only the `builder` agent commits, locally, once per run, with explicit paths (never `git add -A` or `commit -a`). Do not create worktrees or finish branches unless the user asks.
 - Do not modify files that belong to another block without reporting it.
 - Record assumptions in the task handoff and, when the product changes, in `README.md`, section "Assumptions".
 - Write code and comments in English; keep user-facing messages in French.
 
 ## Settings folder ownership
 
-Touch only your own settings folder (agents, instructions, skills, commands): `.qoder/` for Qoder, `.opencode/` for OpenCode, `.github/` for Copilot. Never edit another configuration folder unless the user explicitly requests that cross-folder change.
+Touch only your own settings folder (agents, instructions, commands): `.qoder/` for Qoder, `.opencode/` for
+OpenCode, `.github/` for Copilot. Skills are shared: they live in `.qoder/skills` and are read-only for
+OpenCode and Copilot. Never edit another configuration folder unless the user explicitly requests that cross-folder change.
 
 ## Data and privacy
 

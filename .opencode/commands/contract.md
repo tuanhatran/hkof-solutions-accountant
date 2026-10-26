@@ -2,7 +2,7 @@
 description: Plan and apply an OpenAPI contract change
 ---
 
-Load the `openapi-contract` skill.
+Follow `.opencode/instructions/10-openapi-contract.md`.
 
 Change the contract for: $ARGUMENTS
 

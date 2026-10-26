@@ -1,6 +1,6 @@
 # `.opencode` — OpenCode configuration
 
-OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and commands.
+OpenCode project setup for HomeOfficeExpenses: instructions, agents and commands (skills live in `.qoder/skills`).
 
 ## Layout
 
@@ -16,13 +16,6 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
 │   ├── 40-verification.md
 │   └── 50-security-data.md
 ├── agents/                    # lead, builder, reviewer
-├── skills/                    # project skills (English)
-│   ├── openapi-contract/
-│   ├── backend-delivery/
-│   ├── frontend-delivery/
-│   ├── pdf-templates/
-│   ├── llm-extraction/
-│   └── e2e-delivery/
 └── commands/                  # /verify, /contract, /review
 ```
 
@@ -30,9 +23,9 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
 
 - `AGENTS.md` at the repository root is loaded automatically.
 - `opencode.json` adds `.opencode/instructions/*.md` through the `instructions` array.
-- `.qoder/skills` is registered as an extra skill source, so the vendored Superpowers
-  skills remain the single copy.
-- `.opencode/skills/*/SKILL.md` are project skills, advertised by their `description`.
+- Skills: only the vendored Superpowers skills in `.qoder/skills` remain. OpenCode registers that
+  folder through `skills.paths`; each agent's `permission.skill` is an allowlist. Copilot agents read
+  the files by path. There is no `.opencode/skills`.
 - `.opencode/agents/*.md` define the workflow: `lead` (`mode: primary`) is writable — it may
   edit `.handoff/` only, create the task branch with `git switch -c`, and route work to
   `builder` and `reviewer` one after the other, inline, never as nested subagents; `builder` has
@@ -47,8 +40,9 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
 - Handoffs are files, `.handoff/tasks/<TASK-ID>.md` from `.handoff/TEMPLATE.md`, written by the
   lead for every size (25 lines, 6 for S); the same tree is shared with the Qoder and Copilot
   mirrors.
-- Global permissions in `opencode.json` deny `git commit`, `push`, `reset`, `clean`,
-  `stash`, `worktree` and branch deletion.
+- Global permissions in `opencode.json` deny `git push`, `reset`, `clean`, `stash`, `worktree`, `rebase`,
+  branch deletion, `git commit --amend` and blanket staging (`git add -A`, `git commit -a`). Plain
+  `git commit` is allowed: only `builder` commits, once per run.
 
 ## Relation to the other configuration directories
 
@@ -57,7 +51,7 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents, skills and 
 | Product spec       | `product_prompt.md`               | read directly                 |
 | Root rules         | `AGENTS.md`                       | loaded directly               |
 | Copilot guidance   | `.github/copilot-instructions.md` | same conventions              |
-| Superpowers skills | `.qoder/skills`                   | registered in `opencode.json` |
+| Skills (all)       | `.qoder/skills`                   | `skills.paths` in `opencode.json` |
 | Agent workflow     | `.qoder/agents/*.md`              | `.opencode/` and `.github/` copies: same body, frontmatter differs |
 | Task handoffs      | `.handoff/tasks/*.md`             | same shared tree              |
 | File graph         | CodeGraph index in `.codegraph/`  | `codegraph` CLI, shared       |

@@ -43,14 +43,15 @@ change.
 
 ## Git rules
 
-Each task runs on one dedicated branch, created by the lead after the user agrees on a name
-(`git switch -c`, validated with `git check-ref-format --branch`).
+Each task runs on one dedicated branch, created by the lead with an automatic name, `feat/<nn>-<slug>` (`fix/<nn>-<slug>` for a bug); the user is
+not asked (`git switch -c`, validated with `git check-ref-format --branch`). The lead records `Base: <sha>`.
 Resumed tasks reuse the branch recorded in their handoff. Dirty or staged changes are
 preserved: agents never reset, clean, stash or overwrite them, and report a deviation if
 Git refuses a switch.
 
-No agent commits, pushes, resets, cleans, stashes, creates worktrees, deletes branches or
-creates a second branch for the same task.
+Only `builder` commits: one local commit per run, explicit paths, never amended, never pushed.
+No agent pushes, resets, cleans, stashes, creates worktrees, deletes branches or creates a second
+branch for the same task. Reviews diff the commit range (`Base..HEAD`; round 2 the fix commit only).
 
 ## Contract
 
