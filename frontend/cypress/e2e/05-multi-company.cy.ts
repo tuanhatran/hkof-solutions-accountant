@@ -1,10 +1,8 @@
 import {
   MONTHS,
+  addExpense,
   disableLlm,
-  downloadAndReadPdf,
-  uploadReceipt,
   waitForAmount,
-  waitForSelectedFile,
   waitForText,
 } from "../support/helpers";
 
@@ -12,6 +10,14 @@ interface CompanySummary {
   id: number;
   name: string;
   leaseId?: number | null;
+}
+
+interface CompanyDetail extends CompanySummary {
+  legalForm?: string;
+  siren?: string;
+  address?: string;
+  managerName?: string;
+  issuePlace?: string;
 }
 
 interface EmployeeSummary {
@@ -60,11 +66,6 @@ const ANNEXE_EMPLOYEE = {
   email: "alice.martin@example.fr",
 };
 const ANNEXE_LANDLORD = "Bailleur annexe";
-
-/** The shell switcher is rendered twice (desktop sidebar and mobile header). */
-function companySwitcher() {
-  return cy.get('[data-cy="select-societe-active"]').filter(":visible");
-}
 
 /**
  * Expands the active lease row when the "Baux & Frais" tab arrived collapsed.
@@ -199,7 +200,42 @@ function secondAnnexeLease(
   });
 }
 
-/** Creates the second company and its lease through the UI; it becomes active. */
+/** First company lease of a company, used by the API statement. */
+function companyLeaseId(companyId: number): Cypress.Chainable<number> {
+  return cy.request<LeaseSummary[]>("/api/leases").then(({ body }) => {
+    const lease = body.find(
+      (candidate) =>
+        candidate.companyId === companyId && candidate.companyLease === true,
+    );
+    if (!lease) {
+      throw new Error("Company lease was not found.");
+    }
+    return lease.id;
+  });
+}
+
+/** Links a company to its active lease, as the Settings lease row does. */
+function linkCompanyLease(companyId: number, leaseId: number): void {
+  cy.request<CompanyDetail>(`/api/companies/${companyId}`).then(({ body }) => {
+    cy.request({
+      method: "PUT",
+      url: `/api/companies/${companyId}`,
+      body: {
+        name: body.name,
+        legalForm: body.legalForm,
+        siren: body.siren,
+        address: body.address,
+        managerName: body.managerName,
+        leaseId,
+        issuePlace: body.issuePlace,
+      },
+    })
+      .its("status")
+      .should("eq", 200);
+  });
+}
+
+/** Creates the second company and its lease through the UI; it is selected for configuration. */
 function createAnnexeCompany(): void {
   cy.visit("/configuration");
   waitForText('[data-cy="info-societe"]', SEEDED_COMPANY);
@@ -222,7 +258,6 @@ function createAnnexeCompany(): void {
 
   cy.contains("Société créée.", { timeout: 20_000 }).should("be.visible");
   companyIds().then(({ annexe }) => {
-    companySwitcher().should("have.value", String(annexe.id));
     cy.get('[data-cy="select-societe"]').should(
       "have.value",
       String(annexe.id),
@@ -474,7 +509,7 @@ describe("Multi-company and employees", () => {
     });
   });
 
-  it("generates and exports a statement scoped to the active company", () => {
+  it("generates both companies' notes and lists them in History without a switch", () => {
     disableLlm();
     createAnnexeCompany();
 
@@ -482,68 +517,75 @@ describe("Multi-company and employees", () => {
       createAnnexeEmployee(annexe.id);
       createAnnexeExpenseItem(annexe.id);
 
-      cy.visit("/generer/note-frais");
-      // A cold load starts from the stored company, which the shell falls back
-      // to the first one while the list loads: re-select the annexe explicitly.
-      companySwitcher().select(String(annexe.id));
-      cy.chooseMonth(MONTHS);
-      cy.get('[data-cy="select-type-frais"]').should("not.be.disabled");
-      cy.get('[data-cy="select-type-frais"] option').should(($options) => {
-        const values = [...$options].map(
-          (option) => (option as HTMLOptionElement).value,
-        );
-        expect(values).to.include("gaz");
-        expect(values).not.to.include("telephone");
+      // Link HKOF to its company lease so the generated note carries an address.
+      companyLeaseId(seeded.id).then((seededLeaseId) => {
+        linkCompanyLease(seeded.id, seededLeaseId);
       });
 
-      cy.get('[data-cy="select-signature"] option:selected').should(
-        "contain.text",
-        "Signature E2E Alice",
+      // No shell switch exists: a cold generation page falls back to the first
+      // company (HKOF), whose "telephone" poste is not configured on the annexe.
+      cy.visit("/generer/note-frais");
+      cy.chooseMonth(MONTHS);
+      cy.get('[data-cy="select-type-frais"]').should("not.be.disabled");
+      cy.get('[data-cy="select-type-frais"] option[value="telephone"]').should(
+        "exist",
       );
-
-      cy.get('[data-cy="select-type-frais"]').select("gaz");
-      uploadReceipt("facture-gaz.txt");
-      waitForSelectedFile("facture-gaz.txt");
-      cy.get('[data-cy="input-montant-ttc"]').clear().type("100.00");
-      cy.get('[data-cy="input-prorata"]').should("have.value", "25.00");
-      cy.get('[data-cy="btn-ajouter-frais"]').should("not.be.disabled").click();
-      waitForAmount('[data-cy="total-retenu"]', "25,00");
-
+      addExpense({
+        itemCode: "telephone",
+        fixture: "facture-telephone.txt",
+        amountInclVat: "100.00",
+      });
+      waitForAmount('[data-cy="total-retenu"]', "35,71");
       cy.get('[data-cy="btn-generer-note"]').should("not.be.disabled").click();
       cy.contains("Note de frais générée", { timeout: 35_000 }).should(
         "be.visible",
       );
 
-      downloadAndReadPdf(
-        '[data-cy="btn-telecharger-note"]',
-        "note_frais_2026-01.pdf",
-        (text) => {
-          expect(text).to.contain("NOTE DE FRAIS D'OCCUPATION");
-          expect(text).to.contain(ANNEXE_COMPANY.name);
-          expect(text).to.contain(ANNEXE_COMPANY.address);
-          expect(text).to.contain(ANNEXE_COMPANY.siren);
-          expect(text).to.contain("Lyon");
-          expect(text).to.contain(ANNEXE_COMPANY.managerName);
-          expect(text).to.contain("25,00 €");
-        },
-      );
+      // The annexe statement goes through the API: its "gaz" poste exists at
+      // 25 %, and the company must be named explicitly.
+      companyLeaseId(annexe.id).then((leaseId) => {
+        cy.request({
+          method: "POST",
+          url: "/api/expense-statements",
+          body: {
+            companyId: annexe.id,
+            leaseId,
+            month: MONTHS,
+            lines: [
+              { itemCode: "gaz", amountInclVat: "100.00", proRataPct: "25" },
+            ],
+          },
+        })
+          .its("status")
+          .should("eq", 201);
+      });
 
       cy.request(`/api/expense-statements?companyId=${annexe.id}`)
         .its("body")
         .should("have.length", 1);
       cy.request(`/api/expense-statements?companyId=${seeded.id}`)
         .its("body")
-        .should("have.length", 0);
+        .should("have.length", 1);
 
+      // History fans out one statement query per company: both notes show up
+      // with their own lease address, without any active-company switch.
       cy.get('[data-cy="tab-historique"]').click();
-
-      companySwitcher().select(String(seeded.id));
-      cy.contains("Aucun document pour le moment", {
+      cy.get('[data-cy="historique-mois-2026-01"]', {
         timeout: 20_000,
       }).should("be.visible");
-      cy.get('[data-cy="historique-mois-2026-01"]').should("not.exist");
-
-      companySwitcher().select(String(annexe.id));
+      cy.get('[data-cy^="historique-adresse-note-2026-01"]').should(
+        "have.length",
+        2,
+      );
+      cy.contains(
+        '[data-cy^="historique-adresse-note-2026-01"]',
+        "12 rue de la République, 75000 Paris",
+      ).should("be.visible");
+      cy.contains(
+        '[data-cy^="historique-adresse-note-2026-01"]',
+        ANNEXE_LEASE.propertyAddress,
+      ).should("be.visible");
+      cy.get('[data-cy="select-societe-active"]').should("not.exist");
     });
   });
 });

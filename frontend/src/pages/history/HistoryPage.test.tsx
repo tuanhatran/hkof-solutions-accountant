@@ -8,7 +8,6 @@ import type {
   RentReceiptDto,
   StatementDto,
 } from "@/api/types";
-import { useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft } from "@/state/statementDraft";
 import { useToasts } from "@/state/toasts";
@@ -26,6 +25,7 @@ let receiptsState: QueryLike<RentReceiptDto[]>;
 let statementsState: QueryLike<StatementDto[]>;
 let companiesState: QueryLike<CompanyDto[]>;
 let leasesState: QueryLike<LeaseDto[]>;
+let statementsCompanyIds: number[][];
 
 vi.mock("@/api/endpoints", () => ({
   api: {
@@ -45,8 +45,11 @@ vi.mock("@/api/queries", async (importOriginal) => {
   return {
     ...actual,
     useCompanies: () => companiesState,
-    useRentReceipts: () => receiptsState,
-    useStatements: () => statementsState,
+    useAllRentReceipts: () => receiptsState,
+    useAllStatements: (companyIds: number[]) => {
+      statementsCompanyIds.push(companyIds);
+      return statementsState;
+    },
     useLeases: () => leasesState,
   };
 });
@@ -318,24 +321,51 @@ beforeEach(() => {
   ]);
   companiesState = readyQuery([{ id: 1, name: "HKOF" }] as CompanyDto[]);
   leasesState = readyQuery([]);
-  useCompanyStore.setState({ activeCompanyId: 1 });
+  statementsCompanyIds = [];
   resetDrafts();
   useToasts.setState({ toasts: [] });
 });
 
 describe("HistoryPage", () => {
-  it("asks to configure a company when none is active", () => {
+  it("asks to configure a company when none exists", () => {
     companiesState = readyQuery([] as CompanyDto[]);
-    useCompanyStore.setState({ activeCompanyId: null });
     receiptsState = readyQuery([]);
     statementsState = readyQuery([]);
 
     renderPage();
 
-    expect(screen.getByText("Aucune société active")).toBeInTheDocument();
+    expect(screen.getByText("Aucune société configurée")).toBeInTheDocument();
     expect(
       screen.queryByText("Aucun document pour le moment"),
     ).not.toBeInTheDocument();
+    expect(statementsCompanyIds.at(-1)).toEqual([]);
+  });
+
+  it("lists the documents of every company without an active company", async () => {
+    companiesState = readyQuery([
+      { id: 1, name: "HKOF" },
+      { id: 2, name: "HKOF Annexe" },
+    ] as CompanyDto[]);
+    receiptsState = readyQuery([RECEIPT_ALPHA_JAN]);
+    statementsState = readyQuery([STATEMENT_ZULU_JAN]);
+    leasesState = readyQuery([LEASE_ALPHA, LEASE_ZULU]);
+
+    renderPage();
+
+    expect(await screen.findByText("1 mois suivi")).toBeInTheDocument();
+    expect(statementsCompanyIds.at(-1)).toEqual([1, 2]);
+    expect(
+      document.querySelector(
+        '[data-cy="historique-adresse-2026-01-address-51"]',
+      ),
+    ).not.toBeNull();
+    expect(
+      document.querySelector(
+        '[data-cy="historique-adresse-note-2026-01-address-61"]',
+      ),
+    ).not.toBeNull();
+    expect(screen.getByText("1 avenue Alpha")).toBeInTheDocument();
+    expect(screen.getByText("9 rue Zulu")).toBeInTheDocument();
   });
 
   it("shows the loading and empty states with the two shortcuts", async () => {

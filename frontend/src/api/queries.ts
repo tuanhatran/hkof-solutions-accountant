@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { api } from "./endpoints";
 import type { TemplateType } from "./types";
 
@@ -225,6 +225,28 @@ export function useAllRentReceipts() {
     queryFn: () => api.rentReceipts.list(),
     staleTime: 10_000,
   });
+}
+
+/** One statement query per company, merged for the all-company history. */
+export function useAllStatements(companyIds: number[]) {
+  const queries = useQueries({
+    queries: companyIds.map((companyId) => ({
+      queryKey: queryKeys.statements(companyId),
+      queryFn: () => api.expenseStatements.list(companyId),
+      staleTime: 10_000,
+    })),
+  });
+  const failed = queries.find((query) => query.isError);
+
+  return {
+    data: queries.every((query) => query.isSuccess)
+      ? queries.flatMap((query) => query.data ?? [])
+      : undefined,
+    isPending: queries.some((query) => query.isPending),
+    isError: failed !== undefined,
+    error: failed?.error ?? null,
+    refetch: () => Promise.all(queries.map((query) => query.refetch())),
+  };
 }
 
 export function useStatements(

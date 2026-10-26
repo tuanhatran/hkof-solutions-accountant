@@ -1,6 +1,6 @@
 import "./CompanySection.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Building2, Plus, Star, Trash2 } from "lucide-react";
+import { Building2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
@@ -50,9 +50,9 @@ const TABS: ViewTab[] = [
 export function CompanySection() {
   const queryClient = useQueryClient();
   const companies = useCompanies();
-  const activeCompanyId = useCompanyStore((state) => state.activeCompanyId);
-  const setActiveCompany = useCompanyStore((state) => state.setActiveCompany);
-  const [selectedId, setSelectedId] = useState<number | null>(activeCompanyId);
+  const [selectedId, setSelectedId] = useState<number | null>(
+    useCompanyStore.getState().activeCompanyId,
+  );
   const [tab, setTab] = useState("identification");
   const [identityTarget, setIdentityTarget] = useState<
     CompanyDto | "new" | null
@@ -108,21 +108,6 @@ export function CompanySection() {
           description="Chaque société possède son identité, son bail, ses salariés, ses postes de frais et ses notes de frais."
           action={
             <div className="company-section-actions">
-              {selected && selected.id !== activeCompanyId ? (
-                <Button
-                  variant="secondary"
-                  small
-                  icon={<Star size={14} />}
-                  onClick={() => {
-                    if (selected.id !== undefined) {
-                      setActiveCompany(selected.id);
-                    }
-                  }}
-                  data-cy="btn-rendre-active"
-                >
-                  Rendre active
-                </Button>
-              ) : null}
               {selected ? (
                 <Button
                   variant="ghost"
@@ -241,7 +226,6 @@ export function CompanySection() {
             setIdentityTarget(null);
             if (wasNew && saved.id !== undefined) {
               setSelectedId(saved.id);
-              setActiveCompany(saved.id);
             }
           }}
         />
