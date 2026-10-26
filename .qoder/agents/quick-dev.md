@@ -42,15 +42,17 @@ Ambiguous task: ask all questions in ONE message before starting, never guess an
    | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
    | Docs, comments only                                               | `git diff --check`                                                                          |
    | Tests only, or component CSS only (no markup or text)             | Affected tests + that side's lint/format (frontend also `npm run build`). No E2E.           |
-   | Backend production code                                           | `cd backend && ./mvnw -B verify` + full E2E                                                 |
-   | Frontend production code                                          | `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build` + full E2E |
+   | Backend production code                                           | `cd backend && ./mvnw -B verify` + `scripts/diff-coverage.sh <Base> backend` + full E2E     |
+   | Frontend production code                                          | `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + full E2E |
    | Docker or E2E configuration                                       | Backend + frontend gates + full E2E                                                         |
 
    Full E2E, one run, then clean up:
    `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress`,
    then the same command with `down -v --remove-orphans`. Every spec and test green, none only on a
    retry. If a required gate cannot run (for example Docker unavailable), report it as unverified and
-   do not commit. Coverage floors: JaCoCo bundle and Vitest global >= 90%. Every production class and
+   do not commit. Coverage gate: changed-line coverage >= 80% via
+   `scripts/diff-coverage.sh <Base> backend|frontend|all` (JaCoCo XML for backend lines, Vitest
+   Clover XML for frontend lines); no global bundle threshold. Every production class and
    component CSS stays under 300 lines.
 5. **False-green check (replaces the reviewer).** For each new test, confirm it fails without your
    change. No red evidence means the test does not count.

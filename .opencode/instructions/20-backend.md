@@ -46,8 +46,9 @@
   selection (invoice amount, manual override wins).
 - Number to words: 0, 1, 21, 71, 80, 81, 100, 1 000, 1 234.56.
 - LLM tests use WireMock or `mock-ollama`, never a real Ollama instance.
-- JaCoCo bundle coverage stays >= 90% LINE and >= 90% BRANCH for every new task; the only
-  exclusion is the Spring Boot application class. `./mvnw -B verify` is the gate.
+- Changed-line coverage stays >= 80% for every new task: `./mvnw -B verify` produces the JaCoCo
+  XML report (`backend/target/site/jacoco/jacoco.xml`), then `scripts/diff-coverage.sh <Base>
+  backend` is the gate. No global bundle threshold.
 - Every production class stays under 300 lines. A class crossing 300 lines is split, never
   shrunk by deleting comments only.
 
@@ -55,5 +56,6 @@
 
 ```bash
 cd backend && ./mvnw -B test
-cd backend && ./mvnw -B verify    # tests + JaCoCo 90% LINE / 90% BRANCH gate
+cd backend && ./mvnw -B verify    # tests + JaCoCo XML report
+scripts/diff-coverage.sh <Base> backend    # changed-line coverage >= 80% gate
 ```

@@ -14,9 +14,10 @@ make dev                               # database, backend, Vite
 make test                              # backend tests, frontend tests, build
 make e2e                               # Cypress against the Compose stack + mock-ollama
 cd backend && ./mvnw -B test
-cd backend && ./mvnw -B verify          # tests + JaCoCo 90% LINE / 90% BRANCH gate
+cd backend && ./mvnw -B verify          # tests + JaCoCo XML report
 cd frontend && npm ci && npm test && npm run build
-cd frontend && npm run test:coverage   # Vitest 90% gate
+cd frontend && npm run test:coverage   # Vitest coverage + Clover XML report
+scripts/diff-coverage.sh <Base> all    # changed-line coverage >= 80% gate
 cd frontend && npm run lint            # ESLint
 cd frontend && npm run format:check    # Prettier
 cd frontend && npm run build           # tsc + Vite build, same as CI
@@ -26,13 +27,13 @@ make up / make down
 
 ## Coverage and size gate
 
-- Every new task keeps JaCoCo bundle coverage at >= 90% LINE and >= 90% BRANCH:
-  `cd backend && ./mvnw -B verify` is the gate.
-- Every new task keeps Vitest global coverage at >= 90% lines, statements, functions and
-  branches: `cd frontend && npm run test:coverage` is the gate.
+- Every new task keeps changed-line coverage at >= 80%:
+  `scripts/diff-coverage.sh <Base> backend|frontend|all` is the gate (JaCoCo XML for backend
+  lines, Vitest Clover XML for frontend lines). No global bundle threshold.
 - Every production class stays under 300 lines. A class crossing 300 lines is split, never
   shrunk by deleting comments only.
-- The handoff carries one evidence line with the real coverage numbers of the task.
+- The handoff carries one evidence line with the real changed-line percentages and measured
+  line counts of the task.
 
 ## Gates by change type
 
