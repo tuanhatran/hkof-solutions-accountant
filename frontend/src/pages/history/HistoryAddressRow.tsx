@@ -1,6 +1,6 @@
 import "./HistoryAddressRow.css";
 import type { StatementDto } from "@/api/types";
-import type { AddressGroup } from "./historyHelpers";
+import { current, type AddressGroup } from "./historyHelpers";
 import { RentReceiptMonthPanel } from "./RentReceiptMonthPanel";
 import { StatementMonthPanel } from "./StatementMonthPanel";
 
@@ -21,6 +21,13 @@ export function HistoryAddressRow({
   documentType: "receipt" | "statement";
   onReloadStatement: (statement: StatementDto) => void;
 }) {
+  const companyName =
+    documentType === "statement"
+      ? current(address.statements)?.companyName?.trim()
+      : undefined;
+  const label = companyName
+    ? `${companyName} - ${address.addressLabel}`
+    : address.addressLabel;
   return (
     <div
       className="history-address-row"
@@ -30,7 +37,7 @@ export function HistoryAddressRow({
           : `historique-adresse-note-${month}-${address.addressKey}`
       }
     >
-      <p className="history-address-row-label">{address.addressLabel}</p>
+      <p className="history-address-row-label">{label}</p>
       {documentType === "receipt" ? (
         <RentReceiptMonthPanel
           month={month}

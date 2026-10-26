@@ -30,7 +30,7 @@
   }
 
   .statement-month-panel-summary {
-    @apply cursor-pointer text-xs font-semibold text-ink-soft;
+    @apply text-xs font-semibold text-ink-soft;
   }
 
   .statement-month-panel-history-list {

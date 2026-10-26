@@ -22,55 +22,52 @@ export function StatementMonthPanel({
 
   return (
     <div className="statement-month-panel">
-      {address.statements.length > 1 ? (
-        <details className="statement-month-panel-history">
-          <summary className="statement-month-panel-summary">
+      <div className="statement-month-panel-history">
+        {address.statements.length > 1 ? (
+          <p className="statement-month-panel-summary">
             Toutes les versions ({address.statements.length})
-          </summary>
-          <ul className="statement-month-panel-history-list">
-            {address.statements.map((version) => (
-              <li
-                key={version.id}
-                className="statement-month-panel-history-item"
-              >
-                <span className="statement-month-panel-history-meta">
-                  <VersionBadge
-                    version={version.version ?? 1}
-                    active={version.status === "ACTIVE"}
-                  />
-                  <span className="text-ink-soft">
-                    {formatDateTime(version.createdAt)}
-                  </span>
-                  <span className="number statement-month-panel-history-amount">
-                    {formatEUR(version.total)}
-                  </span>
+          </p>
+        ) : null}
+        <ul className="statement-month-panel-history-list">
+          {address.statements.map((version) => (
+            <li key={version.id} className="statement-month-panel-history-item">
+              <span className="statement-month-panel-history-meta">
+                <VersionBadge
+                  version={version.version ?? 1}
+                  active={version.status === "ACTIVE"}
+                />
+                <span className="text-ink-soft">
+                  {formatDateTime(version.createdAt)}
                 </span>
-                <span className="statement-month-panel-history-actions">
-                  {version.id ? (
-                    <>
-                      <PdfActionLink
-                        href={api.expenseStatements.pdfUrl(version.id, false)}
-                        label="PDF"
-                      />
-                      <PdfActionLink
-                        href={api.expenseStatements.pdfUrl(version.id, true)}
-                        label="Complète"
-                      />
-                    </>
-                  ) : null}
-                  <button
-                    type="button"
-                    className="statement-month-panel-history-load"
-                    onClick={() => onReload(version)}
-                  >
-                    Charger
-                  </button>
+                <span className="number statement-month-panel-history-amount">
+                  {formatEUR(version.total)}
                 </span>
-              </li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
+              </span>
+              <span className="statement-month-panel-history-actions">
+                {version.id ? (
+                  <>
+                    <PdfActionLink
+                      href={api.expenseStatements.pdfUrl(version.id, false)}
+                      label="PDF"
+                    />
+                    <PdfActionLink
+                      href={api.expenseStatements.pdfUrl(version.id, true)}
+                      label="Complète"
+                    />
+                  </>
+                ) : null}
+                <button
+                  type="button"
+                  className="statement-month-panel-history-load"
+                  onClick={() => onReload(version)}
+                >
+                  Charger
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
