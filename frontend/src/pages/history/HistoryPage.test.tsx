@@ -503,7 +503,7 @@ describe("HistoryPage", () => {
     renderPage();
 
     expect(await screen.findByText("Notes indisponibles")).toBeInTheDocument();
-    expect(screen.getByText("Quittance v2")).toBeInTheDocument();
+    expect(screen.getByText("Quittance (1)")).toBeInTheDocument();
   });
 
   it("groups both document types by month, newest first", async () => {
@@ -538,7 +538,7 @@ describe("HistoryPage", () => {
     ).toBeInTheDocument();
     expect(within(jan).getAllByText("Adresse inconnue")).toHaveLength(2);
     expect(within(jan).getByText("Quittance (2)")).toBeInTheDocument();
-    expect(within(jan).getByText("Note v2")).toBeInTheDocument();
+    expect(within(jan).getByText("Note (2)")).toBeInTheDocument();
     expect(
       within(jan).getAllByText("M. Bailleur → Mme Locataire").length,
     ).toBeGreaterThan(0);
@@ -550,8 +550,8 @@ describe("HistoryPage", () => {
     if (!feb) {
       throw new Error("February section not found");
     }
-    expect(within(feb).getByText("Quittance v1")).toBeInTheDocument();
-    expect(within(feb).getByText("Note v1")).toBeInTheDocument();
+    expect(within(feb).getByText("Quittance (1)")).toBeInTheDocument();
+    expect(within(feb).getByText("Note (1)")).toBeInTheDocument();
   });
 
   it("exposes the PDF and open links of the latest documents", async () => {
@@ -583,7 +583,6 @@ describe("HistoryPage", () => {
       within(janReceipt as HTMLElement).getByRole("link", { name: "PDF" }),
     ).toHaveAttribute("href", "/api/rent-receipts/10/pdf");
 
-    expect(screen.getByText("Toutes les versions (2)")).toBeInTheDocument();
     const februaryNote = columnOf("2026-02", "note");
     expect(
       februaryNote.querySelectorAll("li.statement-month-panel-history-item"),
@@ -796,9 +795,6 @@ describe("HistoryPage", () => {
     expect(
       noteRow.querySelectorAll("li.statement-month-panel-history-item"),
     ).toHaveLength(2);
-    expect(
-      within(noteRow).getByText("Toutes les versions (2)"),
-    ).toBeInTheDocument();
     expect(within(noteRow).getByText("v1")).toBeInTheDocument();
     expect(within(noteRow).getByText("v2")).toBeInTheDocument();
   });

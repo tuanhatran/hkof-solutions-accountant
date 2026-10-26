@@ -22,11 +22,11 @@
   }
 
   .history-month-section-column-title {
-    @apply flex items-center gap-2 border-b border-line bg-paper/30 px-5 py-3 text-sm font-semibold text-ink sm:px-6;
+    @apply flex items-center gap-2.5 border-b border-line bg-paper/30 px-5 py-3 text-base font-semibold text-ink sm:px-6;
   }
 
   .history-month-section-column-icon {
-    @apply grid h-7 w-7 place-items-center rounded-lg;
+    @apply flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent;
   }
 
   .history-month-section-column-icon-quittance {
