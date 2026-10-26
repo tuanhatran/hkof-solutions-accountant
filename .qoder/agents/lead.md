@@ -38,12 +38,12 @@ One branch per task, recorded in the handoff.
 
 ## Size the task (when in doubt, pick the larger)
 
-- **S**: one deliverable, at most 3 files, and no `openapi/openapi.yaml`, money path
+- **S**: one deliverable, at most 15 files, and no `openapi/openapi.yaml`, money path
   (`CalculationService`, totals, rounding), Flyway migration, template sandbox, LLM or security
   code, cross-module behaviour. Examples: copy fix, CSS, drifted UI test, E2E selector.
-- **M**: one module, at most 10 files, or a localized behaviour change; contract untouched.
-- **L**: contract change, money, migration, template sandbox, LLM path, security, or more than 10
-  files.
+- **M**: one module, at most 25 files, or a localized behaviour change; contract untouched.
+- **L**: contract change, money, migration, template sandbox, LLM path, security, or 26 to 40 files.
+  More than 40 files: do not start; ask the user in ONE message to split it into separate tasks.
 
 | Size | Pipeline                                                                                  |
 | ---- | ----------------------------------------------------------------------------------------- |
@@ -74,7 +74,7 @@ override when routing.
 
 Create or update `.handoff/tasks/<TASK-ID>.md` in the compact format of `.handoff/TEMPLATE.md`,
 max 25 lines (S: 6, no plan). Fill the **Files** block: exact paths for `builder` and `reviewer`,
-the 3-5 symbols or routes involved, and the affected tests from `codegraph affected`. Everything
+the 3-5 symbols or routes involved (for S, give directories or globs when more than 6 files), and the affected tests from `codegraph affected`. Everything
 else is one line per item: goal, out of scope, constraints, acceptance, commands (add the
 coverage and E2E evidence expectation per the builder gate table).
 

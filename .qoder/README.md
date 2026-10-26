@@ -41,6 +41,14 @@ committed), never a hand-maintained document. Stage agents use the `codegraph` C
 `context "<task>"`, `files`, `query`, `node`, `impact`, `affected`, and `sync` after a
 change.
 
+## Quick dev (`/quick-dev <task>`)
+
+One agent, no handoff, no subagents, no review round, for small changes only (fewer than 10 files,
+none of the money, contract, migration, sandbox, LLM or security areas). It stops and sends you back to
+the lead pipeline when the scope is bigger. The protocol lives in `.qoder/agents/quick-dev.md`, which
+sets `disallowedTools: [Agent]`; the command reads it. The agent commits once, locally, with explicit
+paths. There is no independent review: use the lead pipeline when that matters.
+
 ## Git rules
 
 Each task runs on one dedicated branch, created by the lead with an automatic name, `feat/<nn>-<slug>` (`fix/<nn>-<slug>` for a bug); the user is
