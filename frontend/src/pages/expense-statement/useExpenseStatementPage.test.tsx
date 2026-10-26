@@ -8,13 +8,18 @@ import type {
   CompanyDto,
   EmployeeDto,
   ExpenseItemDto,
+  RentReceiptDto,
   SignatureDto,
   TemplateDto,
 } from "@/api/types";
 import type { DraftLine } from "@/lib/lines";
 import { useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
-import { useStatementDraft } from "@/state/statementDraft";
+import {
+  createStatementDraftStore,
+  useStatementDraft,
+  type StatementDraftStore,
+} from "@/state/statementDraft";
 import { useToasts } from "@/state/toasts";
 import type { AnalysisState } from "@/hooks/useAnalysis";
 import { useExpenseStatementPage } from "./useExpenseStatementPage";
@@ -1651,5 +1656,182 @@ describe("useExpenseStatementPage edge branches", () => {
     );
 
     expect(api.receipts.delete).toHaveBeenCalledWith(9);
+  });
+});
+
+describe("useExpenseStatementPage scoped options", () => {
+  const SCOPED_GO_TO_RENT = vi.fn();
+
+  function scopedStore(lines: DraftLine[] = []): StatementDraftStore {
+    const store = createStatementDraftStore(MONTH);
+    for (const entry of lines) {
+      store.getState().addLine(entry);
+    }
+    return store;
+  }
+
+  function renderScoped(
+    store: StatementDraftStore,
+    overrides: Partial<{
+      rentReceipt: { data: unknown; isPending: boolean };
+      onGoToRentReceipt: () => void;
+    }> = {},
+  ) {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    return renderHook(
+      () =>
+        useExpenseStatementPage({
+          companyId: 2,
+          leaseId: 9,
+          draft: store,
+          onGoToRentReceipt: overrides.onGoToRentReceipt ?? SCOPED_GO_TO_RENT,
+          ...(overrides.rentReceipt === undefined
+            ? {}
+            : {
+                rentReceipt: overrides.rentReceipt as {
+                  data: RentReceiptDto | null;
+                  isPending: boolean;
+                },
+              }),
+        }),
+      { wrapper },
+    );
+  }
+
+  beforeEach(() => {
+    SCOPED_GO_TO_RENT.mockReset();
+  });
+
+  it("carries the scoped companyId and leaseId in the calculation and preview bodies", async () => {
+    const store = scopedStore([line()]);
+    const { result } = renderScoped(store);
+
+    await waitFor(() => expect(result.current.calculationUpToDate).toBe(true), {
+      timeout: 2000,
+    });
+    expect(api.expenseStatements.calculate).toHaveBeenCalledWith(
+      expect.objectContaining({ companyId: 2, leaseId: 9, month: MONTH }),
+      expect.anything(),
+    );
+    expect(result.current.previewRequest).toEqual(
+      expect.objectContaining({ companyId: 2, leaseId: 9, month: MONTH }),
+    );
+    expect(result.current.activeCompanyId).toBe(2);
+  });
+
+  it("carries the scoped companyId and leaseId in the generation body", async () => {
+    const store = scopedStore([line()]);
+    const { result } = renderScoped(store);
+    await waitFor(() => expect(result.current.calculationUpToDate).toBe(true), {
+      timeout: 2000,
+    });
+
+    await act(async () => {
+      await result.current.generateStatement();
+    });
+
+    expect(api.expenseStatements.create).toHaveBeenCalledWith(
+      expect.objectContaining({ companyId: 2, leaseId: 9, month: MONTH }),
+    );
+  });
+
+  it("reads and writes the scoped draft store, leaving the global draft untouched", async () => {
+    vi.mocked(api.receipts.upload).mockResolvedValue({
+      id: 9,
+      fileName: "facture.pdf",
+    });
+    const store = scopedStore();
+    const { result } = renderScoped(store);
+    await act(async () => {
+      await result.current.upload(new File(["a"], "a.pdf"));
+    });
+    act(() => result.current.changeType("gaz"));
+
+    act(() =>
+      result.current.saveExpense({
+        itemCode: "gaz",
+        amountInclVat: "80,00",
+        proRataPct: "100",
+      }),
+    );
+
+    expect(store.getState().linesByMonth[MONTH]).toHaveLength(1);
+    expect(store.getState().dirtyByMonth[MONTH]).toBe(true);
+    expect(useStatementDraft.getState().linesByMonth[MONTH]).toBeUndefined();
+    expect(result.current.orderedLines).toHaveLength(1);
+
+    act(() => result.current.changeMonth("2026-02"));
+    expect(store.getState().month).toBe("2026-02");
+    expect(useStatementDraft.getState().month).toBe(MONTH);
+  });
+
+  it("uses the injected rent receipt instead of the company active one", () => {
+    const withReceipt = renderScoped(scopedStore(), {
+      rentReceipt: { data: { id: 21, total: "900.00" }, isPending: false },
+    });
+    expect(withReceipt.result.current.availableRent).toBe(true);
+    act(() => withReceipt.result.current.changeType("loyer"));
+    expect(withReceipt.result.current.values.amountInclVat).toBe("900.00");
+
+    const without = renderScoped(scopedStore(), {
+      rentReceipt: { data: null, isPending: false },
+    });
+    expect(without.result.current.availableRent).toBe(false);
+    act(() => without.result.current.changeType("loyer"));
+    expect(without.result.current.values.amountInclVat).toBe("");
+  });
+
+  it("calls onGoToRentReceipt without navigating or touching the rent receipt draft", () => {
+    const { result } = renderScoped(scopedStore());
+
+    act(() => result.current.goToRentReceipt());
+
+    expect(SCOPED_GO_TO_RENT).toHaveBeenCalledTimes(1);
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(useRentReceiptDraft.getState().month).toBe("2025-12");
+  });
+
+  it("detects an already added single-line type from the scoped draft during AI extraction", async () => {
+    vi.mocked(api.receipts.upload).mockResolvedValue({ id: 9 });
+    const store = scopedStore([
+      line({ key: "internet-1", itemCode: "internet" }),
+    ]);
+    const { result, rerender } = renderScoped(store);
+    await act(async () => {
+      await result.current.upload(new File(["a"], "a.pdf"));
+    });
+
+    analysisState = {
+      status: "done",
+      analysis: {
+        id: 40,
+        receiptId: 9,
+        result: {
+          suggestedType: "internet",
+          amountInclVat: "20,00",
+          currency: "EUR",
+        },
+      },
+    };
+    rerender();
+
+    await waitFor(() =>
+      expect(result.current.values.amountInclVat).toBe("20.00"),
+    );
+    expect(result.current.values.itemCode).toBe("");
+    expect(result.current.ai.type).toBe(false);
+  });
+
+  it("keeps the global company store untouched in scoped mode", () => {
+    useCompanyStore.setState({ activeCompanyId: null });
+    const { result } = renderScoped(scopedStore());
+
+    expect(result.current.activeCompanyId).toBe(2);
+    expect(useCompanyStore.getState().activeCompanyId).toBeNull();
   });
 });
