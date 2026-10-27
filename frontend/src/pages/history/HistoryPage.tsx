@@ -1,5 +1,5 @@
 import "./HistoryPage.css";
-import { History } from "lucide-react";
+import { FileText, History, ReceiptText } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +12,7 @@ import {
 } from "@/api/queries";
 import type { StatementDto } from "@/api/types";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { Button } from "@/components/ui/Button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/States";
 import { formatMonth } from "@/lib/format";
 import { useCompanyStore } from "@/state/company";
@@ -122,10 +123,30 @@ export function HistoryPage() {
         title={t("history.page.title")}
         description={t("history.page.description")}
         actions={
-          <span className="badge badge-neutral">
-            <History size={12} aria-hidden="true" />
-            {t("history.page.monthCount", { count: groups.length })}
-          </span>
+          groups.length > 0 ? (
+            <>
+              <Button
+                variant="primary"
+                icon={<FileText size={14} aria-hidden="true" />}
+                onClick={() => navigate("/generer/quittance")}
+                data-cy="btn-nouvelle-quittance"
+              >
+                {t("history.empty.createRentReceipt")}
+              </Button>
+              <Button
+                variant="secondary"
+                icon={<ReceiptText size={14} aria-hidden="true" />}
+                onClick={() => navigate("/generer/note-frais")}
+                data-cy="btn-nouvelle-note-frais"
+              >
+                {t("history.empty.createStatement")}
+              </Button>
+              <span className="badge badge-neutral">
+                <History size={12} aria-hidden="true" />
+                {t("history.page.monthCount", { count: groups.length })}
+              </span>
+            </>
+          ) : undefined
         }
       />
 

@@ -1,5 +1,12 @@
 import "./AppNav.css";
-import { Bot, Building2, History, Home, ReceiptText } from "lucide-react";
+import {
+  Bot,
+  Building2,
+  FileText,
+  History,
+  Home,
+  ReceiptText,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/cn";
@@ -23,6 +30,23 @@ export interface NavigationSection {
 }
 
 export const SECTIONS: NavigationSection[] = [
+  {
+    titleKey: "navigation.sections.documents",
+    links: [
+      {
+        to: "/generer/quittance",
+        labelKey: "navigation.links.rentReceipt",
+        icon: FileText,
+        dataCy: "tab-quittance",
+      },
+      {
+        to: "/generer/note-frais",
+        labelKey: "navigation.links.expenseStatement",
+        icon: ReceiptText,
+        dataCy: "tab-note-frais",
+      },
+    ],
+  },
   {
     titleKey: "navigation.sections.tracking",
     links: [

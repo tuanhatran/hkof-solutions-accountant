@@ -555,6 +555,31 @@ describe("HistoryPage", () => {
     expect(within(feb).getByText("Note (1)")).toBeInTheDocument();
   });
 
+  it("offers the two generation actions in the populated header", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("2 mois suivis");
+
+    const receiptButton = screen.getByRole("button", {
+      name: "Générer une quittance",
+    });
+    expect(receiptButton).toHaveAttribute("data-cy", "btn-nouvelle-quittance");
+    await user.click(receiptButton);
+    expect(currentPath()).toBe("/generer/quittance");
+
+    const statementButton = screen.getByRole("button", {
+      name: "Générer une note de frais",
+    });
+    expect(statementButton).toHaveAttribute(
+      "data-cy",
+      "btn-nouvelle-note-frais",
+    );
+    await user.click(statementButton);
+    expect(currentPath()).toBe("/generer/note-frais");
+
+    expect(screen.getByText("2 mois suivis")).toBeInTheDocument();
+  });
+
   it("exposes the PDF and open links of the latest documents", async () => {
     renderPage();
     await screen.findByText("2 mois suivis");

@@ -1,32 +1,31 @@
 @import "tailwindcss";
 
 @theme {
-  --color-paper: #f4f0e8;
-  --color-paper-deep: #eae3d7;
-  --color-surface: #fffdf8;
-  --color-ink: #21302b;
-  --color-ink-soft: #5c6a64;
-  --color-line: #ded6c8;
-  --color-line-strong: #c9bfae;
+  --color-paper: #f6f7f5;
+  --color-paper-deep: #eef0ec;
+  --color-surface: #ffffff;
+  --color-ink: #1f2933;
+  --color-ink-soft: #5b6670;
+  --color-line: #e3e5e1;
+  --color-line-strong: #cfd4d0;
   --color-accent: #1b5b49;
-  --color-accent-strong: #123f33;
-  --color-accent-soft: #e3efe9;
-  --color-sidebar-start: #164a3c;
-  --color-sidebar-mid: #113d31;
-  --color-sidebar-end: #0c2f27;
-  --color-copper: #a3613a;
-  --color-copper-soft: #f5e8dd;
-  --color-copper-light: #e7b98f;
-  --color-warning: #925512;
-  --color-warning-soft: #fbf0dc;
+  --color-accent-strong: #144739;
+  --color-accent-soft: #e7efeb;
+  --color-copper: #5b6670;
+  --color-copper-soft: #eef0ec;
+  --color-copper-light: #8a949c;
+  --color-warning: #8a5a12;
+  --color-warning-soft: #f7f0e2;
   --color-danger: #a03d34;
-  --color-danger-soft: #f9e7e3;
-  --font-sans: "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --font-display:
-    "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
-  --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
-  --shadow-soft: 0 24px 60px -42px rgba(33, 48, 43, 0.55);
-  --shadow-floating: 0 30px 80px -30px rgba(18, 63, 51, 0.35);
+  --color-danger-soft: #f8eae7;
+  --font-sans: "Segoe UI", "Noto Sans", system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-sans);
+  --font-mono:
+    "Cascadia Code", "SFMono-Regular", "SF Mono", Consolas, monospace;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.5rem;
+  --shadow-soft: 0 1px 2px rgba(31, 41, 51, 0.06);
+  --shadow-floating: 0 12px 32px -12px rgba(31, 41, 51, 0.22);
 }
 
 @layer base {
@@ -38,18 +37,6 @@
     margin: 0;
     min-height: 100vh;
     background-color: var(--color-paper);
-    background-image:
-      radial-gradient(
-        1100px 520px at 105% -8%,
-        rgba(27, 91, 73, 0.09),
-        transparent 62%
-      ),
-      radial-gradient(
-        900px 460px at -12% 104%,
-        rgba(163, 97, 58, 0.07),
-        transparent 55%
-      );
-    background-attachment: fixed;
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-feature-settings:
@@ -63,11 +50,12 @@
   h3,
   h4 {
     font-family: var(--font-display);
-    letter-spacing: -0.015em;
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
 
   ::selection {
-    background: rgba(27, 91, 73, 0.18);
+    background: rgba(27, 91, 73, 0.16);
   }
 
   :focus-visible {
@@ -97,7 +85,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(33, 48, 43, 0.18);
+    background: rgba(31, 41, 51, 0.18);
     border-radius: 999px;
     border: 2px solid transparent;
     background-clip: padding-box;
@@ -106,7 +94,7 @@
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-line bg-surface shadow-soft;
+    @apply rounded-lg border border-line bg-surface shadow-soft;
   }
 
   .card-header {
@@ -122,7 +110,7 @@
   }
 
   .field {
-    @apply mt-1.5 w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-[15px] text-ink transition placeholder:text-ink-soft/45 hover:border-line-strong focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/10 disabled:cursor-not-allowed disabled:bg-paper-deep/60 disabled:text-ink-soft;
+    @apply mt-1.5 w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink transition placeholder:text-ink-soft hover:border-line-strong focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15 disabled:cursor-not-allowed disabled:bg-paper-deep/60 disabled:text-ink-soft;
   }
 
   .field-error {
@@ -142,15 +130,15 @@
   }
 
   .btn {
-    @apply inline-flex select-none items-center justify-center gap-2 rounded-xl border border-transparent px-4 py-2.5 text-sm font-semibold transition duration-150 disabled:cursor-not-allowed disabled:opacity-45;
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-md border border-transparent px-3.5 py-2 text-sm font-medium transition duration-150 disabled:cursor-not-allowed disabled:opacity-45;
   }
 
   .btn-primary {
-    @apply bg-accent text-white shadow-[0_10px_24px_-14px_rgba(18,63,51,0.9)] hover:bg-accent-strong active:translate-y-px;
+    @apply bg-accent text-white hover:bg-accent-strong active:translate-y-px;
   }
 
   .btn-secondary {
-    @apply border-line bg-white text-ink hover:border-line-strong hover:bg-paper/70 active:translate-y-px;
+    @apply border-line bg-surface text-ink hover:border-line-strong hover:bg-paper active:translate-y-px;
   }
 
   .btn-ghost {
@@ -162,7 +150,7 @@
   }
 
   .btn-small {
-    @apply rounded-lg px-2.5 py-1.5 text-xs;
+    @apply rounded px-2.5 py-1.5 text-xs;
   }
 
   .link {
@@ -170,11 +158,11 @@
   }
 
   .badge {
-    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.08em];
+    @apply inline-flex items-center gap-1.5 rounded border border-line px-2 py-0.5 text-[11px] font-medium;
   }
 
   .badge-neutral {
-    @apply border-line bg-paper-deep/50 text-ink-soft;
+    @apply bg-paper-deep/60 text-ink-soft;
   }
 
   .badge-accent {
@@ -194,19 +182,19 @@
   }
 
   .eyebrow {
-    @apply text-[11px] font-bold uppercase tracking-[0.18em] text-ink-soft;
+    @apply text-xs font-semibold text-ink-soft;
   }
 
   .segmented {
-    @apply inline-flex rounded-xl border border-line bg-paper-deep/45 p-1;
+    @apply inline-flex rounded-md border border-line bg-paper-deep/60 p-0.5;
   }
 
   .segmented-item {
-    @apply rounded-lg px-3 py-1.5 text-xs font-semibold text-ink-soft transition hover:text-ink;
+    @apply rounded px-3 py-1.5 text-xs font-medium text-ink-soft transition hover:text-ink;
   }
 
   .segmented-item-active {
-    @apply bg-surface text-ink shadow-[0_2px_8px_-4px_rgba(33,48,43,0.35)];
+    @apply bg-surface text-ink shadow-soft;
   }
 
   .expense-table {
@@ -214,11 +202,11 @@
   }
 
   .expense-table th {
-    @apply border-b border-line px-3 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.08em] text-ink-soft;
+    @apply border-b border-line px-3 py-2.5 text-[11px] font-medium text-ink-soft;
   }
 
   .expense-table td {
-    @apply border-b border-line/70 px-3 py-3 align-middle;
+    @apply border-b border-line/70 px-3 py-2.5 align-middle;
   }
 
   .expense-table tr:last-child td {
@@ -226,12 +214,12 @@
   }
 
   .number {
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
   }
 
   .glass-surface {
-    background: rgba(255, 253, 248, 0.82);
-    backdrop-filter: blur(14px);
+    background: var(--color-surface);
   }
 }
 

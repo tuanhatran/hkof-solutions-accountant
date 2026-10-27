@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import { ScanText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface AiBadgeProps {
@@ -19,7 +19,7 @@ export function AiBadge({ sourceExtract, label }: AiBadgeProps) {
           : undefined
       }
     >
-      <Sparkles size={11} aria-hidden="true" />
+      <ScanText size={11} aria-hidden="true" />
       {label ?? t("common.ai.detected")}
     </span>
   );

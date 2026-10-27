@@ -226,10 +226,13 @@ export const en = {
     ariaLabel: "Main navigation",
     mobileAriaLabel: "Mobile navigation",
     sections: {
+      documents: "Documents",
       tracking: "Tracking",
       settings: "Settings",
     },
     links: {
+      rentReceipt: "Rent receipt",
+      expenseStatement: "Expense statement",
       history: "History",
       company: "Company",
       lmnp: "LMNP",
@@ -239,6 +242,7 @@ export const en = {
   shell: {
     skipLink: "Skip to content",
     tagline: "Rent receipts & home-office expenses",
+    activeCompany: "Active company",
     localDataTitle: "Local data",
     localDataText:
       "No data leaves your machine as long as the LLM URL stays local.",

@@ -75,10 +75,21 @@ describe("AppShell", () => {
     const navigation = screen.getByRole("navigation", {
       name: "Navigation principale",
     });
-    expect(within(navigation).queryByText("Générer")).toBeNull();
-    expect(navigation.querySelector('a[href^="/generer/"]')).toBeNull();
+    expect(within(navigation).getByText("Documents")).toBeVisible();
     expect(within(navigation).getByText("Suivi")).toBeVisible();
     expect(within(navigation).getByText("Réglages")).toBeVisible();
+    expect(
+      within(navigation).getByRole("link", { name: /Quittance/ }),
+    ).toHaveAttribute("href", "/generer/quittance");
+    expect(
+      within(navigation).getByRole("link", { name: /Quittance/ }),
+    ).toHaveAttribute("data-cy", "tab-quittance");
+    expect(
+      within(navigation).getByRole("link", { name: /Note de frais/ }),
+    ).toHaveAttribute("href", "/generer/note-frais");
+    expect(
+      within(navigation).getByRole("link", { name: /Note de frais/ }),
+    ).toHaveAttribute("data-cy", "tab-note-frais");
     expect(
       within(navigation).getByRole("link", { name: /Société/ }),
     ).toHaveAttribute("href", "/configuration/entreprise");
@@ -111,11 +122,11 @@ describe("AppShell", () => {
       screen.getByText("HomeOfficeExpenses · usage personnel"),
     ).toBeVisible();
     expect(
-      screen.getByText(/Aucune donnée ne quitte votre machine/),
-    ).toBeVisible();
+      screen.getByTitle(/Aucune donnée ne quitte votre machine/),
+    ).toHaveTextContent("Données locales");
   });
 
-  it("renders the skip link, the brand and the dark LLM badges", () => {
+  it("renders the skip link, the brand and the light LLM badges", () => {
     renderShell();
 
     expect(
@@ -128,7 +139,7 @@ describe("AppShell", () => {
     const badges = screen.getAllByTestId("llm-badge");
     expect(badges).toHaveLength(2);
     badges.forEach((badge) =>
-      expect(badge).toHaveAttribute("data-dark", "true"),
+      expect(badge).toHaveAttribute("data-dark", "false"),
     );
   });
 
@@ -140,6 +151,8 @@ describe("AppShell", () => {
     });
     const links = within(mobileNavigation).getAllByRole("link");
     expect(links.map((link) => link.textContent)).toEqual([
+      "Quittance",
+      "Note de frais",
       "Historique",
       "Société",
       "LMNP",
@@ -193,17 +206,20 @@ describe("AppShell", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("resolves the active company to the first one without a selector", async () => {
+  it("resolves the first company and shows it in the context bar", async () => {
     renderShell();
 
     await waitFor(() =>
       expect(useCompanyStore.getState().activeCompanyId).toBe(1),
     );
-    expect(screen.queryByLabelText("Société active")).toBeNull();
+    const selector = screen.getByRole("combobox", { name: "Société active" });
+    expect(selector).toHaveAttribute("data-cy", "select-societe-active");
+    expect(selector).toHaveValue("1");
     expect(
-      document.querySelector('[data-cy="select-societe-active"]'),
-    ).toBeNull();
-    expect(screen.queryByText("Société active")).toBeNull();
+      within(selector)
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["HKOF", "Autre société"]);
   });
 
   it("keeps a stored company that still exists", async () => {
@@ -214,8 +230,8 @@ describe("AppShell", () => {
       expect(useCompanyStore.getState().activeCompanyId).toBe(2),
     );
     expect(
-      document.querySelector('[data-cy="select-societe-active"]'),
-    ).toBeNull();
+      screen.getByRole("combobox", { name: "Société active" }),
+    ).toHaveValue("2");
   });
 
   it("falls back on the first company when the stored id is gone", async () => {
@@ -225,15 +241,26 @@ describe("AppShell", () => {
     await waitFor(() =>
       expect(useCompanyStore.getState().activeCompanyId).toBe(1),
     );
+    expect(
+      screen.getByRole("combobox", { name: "Société active" }),
+    ).toHaveValue("1");
   });
 
-  it("renders the language selector in a top bar above the main content", () => {
+  it("renders the company context on the left and the actions on the right", () => {
     renderShell();
 
-    const selector = screen.getByRole("combobox", { name: "Langue" });
-    expect(selector).toHaveAttribute("data-cy", "select-langue");
-    const topbar = selector.closest(".app-shell-topbar");
+    const topbar = document.querySelector(".app-shell-topbar");
     expect(topbar).not.toBeNull();
+    const [context, actions] = Array.from(topbar?.children ?? []);
+    expect(
+      context.querySelector('[data-cy="select-societe-active"]'),
+    ).not.toBeNull();
+    expect(
+      within(actions as HTMLElement).getByTestId("llm-badge"),
+    ).toBeVisible();
+    expect(
+      within(actions as HTMLElement).getByRole("combobox", { name: "Langue" }),
+    ).toBeVisible();
     expect(topbar?.nextElementSibling).toBe(screen.getByRole("main"));
   });
 
@@ -253,14 +280,26 @@ describe("AppShell", () => {
       screen.getByText("Rent receipts & home-office expenses"),
     ).toBeVisible();
     expect(screen.getByText("Local data")).toBeVisible();
-    expect(screen.getByText(/No data leaves your machine/)).toBeVisible();
+    expect(screen.getByTitle(/No data leaves your machine/)).toHaveTextContent(
+      "Local data",
+    );
     expect(screen.getByText("HomeOfficeExpenses · personal use")).toBeVisible();
+    expect(
+      screen.getByRole("combobox", { name: "Active company" }),
+    ).toHaveValue("1");
 
     const navigation = screen.getByRole("navigation", {
       name: "Main navigation",
     });
+    expect(within(navigation).getByText("Documents")).toBeVisible();
     expect(within(navigation).getByText("Tracking")).toBeVisible();
     expect(within(navigation).getByText("Settings")).toBeVisible();
+    expect(
+      within(navigation).getByRole("link", { name: /Rent receipt/ }),
+    ).toHaveAttribute("href", "/generer/quittance");
+    expect(
+      within(navigation).getByRole("link", { name: /Expense statement/ }),
+    ).toHaveAttribute("href", "/generer/note-frais");
     expect(
       within(navigation).getByRole("link", { name: /History/ }),
     ).toHaveAttribute("data-cy", "tab-historique");
@@ -279,7 +318,14 @@ describe("AppShell", () => {
       within(mobileNavigation)
         .getAllByRole("link")
         .map((link) => link.textContent),
-    ).toEqual(["History", "Company", "LMNP", "AI Admin"]);
+    ).toEqual([
+      "Rent receipt",
+      "Expense statement",
+      "History",
+      "Company",
+      "LMNP",
+      "AI Admin",
+    ]);
 
     expect(screen.getByText("Draft not generated")).toBeVisible();
     expect(screen.getByRole("button", { name: "Leave page" })).toBeVisible();

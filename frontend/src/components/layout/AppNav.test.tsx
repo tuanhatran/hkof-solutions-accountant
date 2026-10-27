@@ -16,8 +16,7 @@ describe("SideNavigation", () => {
     const navigation = screen.getByRole("navigation", {
       name: "Navigation principale",
     });
-    expect(within(navigation).queryByText("Générer")).toBeNull();
-    expect(navigation.querySelector('a[href^="/generer/"]')).toBeNull();
+    expect(within(navigation).getByText("Documents")).toBeVisible();
     expect(within(navigation).getByText("Suivi")).toBeVisible();
     expect(within(navigation).getByText("Réglages")).toBeVisible();
     expect(
@@ -43,9 +42,35 @@ describe("SideNavigation", () => {
     expect(adminLink.className).toContain("app-nav-link-idle");
     expect(adminLink.querySelector(".app-nav-icon-active")).toBeNull();
 
+    const receiptLink = within(navigation).getByRole("link", {
+      name: /Quittance/,
+    });
+    expect(receiptLink).toHaveAttribute("href", "/generer/quittance");
+    expect(receiptLink).toHaveAttribute("data-cy", "tab-quittance");
+    const statementLink = within(navigation).getByRole("link", {
+      name: /Note de frais/,
+    });
+    expect(statementLink).toHaveAttribute("href", "/generer/note-frais");
+    expect(statementLink).toHaveAttribute("data-cy", "tab-note-frais");
+
     expect(
       within(navigation).queryByRole("link", { name: /Templates/ }),
     ).toBeNull();
+  });
+
+  it("marks the generation route as active", () => {
+    renderAt(<SideNavigation />, "/generer/quittance");
+
+    const navigation = screen.getByRole("navigation", {
+      name: "Navigation principale",
+    });
+    const receiptLink = within(navigation).getByRole("link", {
+      name: /Quittance/,
+    });
+    expect(receiptLink.className).toContain("app-nav-link-active");
+    expect(
+      within(navigation).getByRole("link", { name: /Note de frais/ }).className,
+    ).toContain("app-nav-link-idle");
   });
 
   it("translates the sections and links into English without changing routes", async () => {
@@ -55,8 +80,15 @@ describe("SideNavigation", () => {
     const navigation = screen.getByRole("navigation", {
       name: "Main navigation",
     });
+    expect(within(navigation).getByText("Documents")).toBeVisible();
     expect(within(navigation).getByText("Tracking")).toBeVisible();
     expect(within(navigation).getByText("Settings")).toBeVisible();
+    expect(
+      within(navigation).getByRole("link", { name: /Rent receipt/ }),
+    ).toHaveAttribute("href", "/generer/quittance");
+    expect(
+      within(navigation).getByRole("link", { name: /Expense statement/ }),
+    ).toHaveAttribute("href", "/generer/note-frais");
     expect(
       within(navigation).getByRole("link", { name: /History/ }),
     ).toHaveAttribute("href", "/historique");
@@ -84,6 +116,8 @@ describe("navigation selectors", () => {
     );
 
     for (const dataCy of [
+      "tab-quittance",
+      "tab-note-frais",
       "tab-historique",
       "tab-configuration",
       "tab-lmnp",
@@ -105,6 +139,8 @@ describe("MobileNavigation", () => {
     });
     const links = within(mobileNavigation).getAllByRole("link");
     expect(links.map((link) => link.textContent)).toEqual([
+      "Quittance",
+      "Note de frais",
       "Historique",
       "Société",
       "LMNP",
@@ -131,6 +167,13 @@ describe("MobileNavigation", () => {
       within(mobileNavigation)
         .getAllByRole("link")
         .map((link) => link.textContent),
-    ).toEqual(["History", "Company", "LMNP", "AI Admin"]);
+    ).toEqual([
+      "Rent receipt",
+      "Expense statement",
+      "History",
+      "Company",
+      "LMNP",
+      "AI Admin",
+    ]);
   });
 });

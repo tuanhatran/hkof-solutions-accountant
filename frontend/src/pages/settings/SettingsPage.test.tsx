@@ -515,8 +515,10 @@ describe("SettingsPage tabs", () => {
       }),
     );
     await waitFor(() => expect(toastMessages()).toContain("Société créée."));
-    // Creating a company selects it for configuration but never activates it.
-    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
+    // Creating a company selects and activates it.
+    await waitFor(() =>
+      expect(useCompanyStore.getState().activeCompanyId).toBe(1),
+    );
     await waitFor(() =>
       expect(queryByCy("dialogue-formulaire-societe")).toBeNull(),
     );
@@ -561,6 +563,7 @@ describe("SettingsPage tabs", () => {
       expect(toastMessages()).toContain("Société supprimée."),
     );
     expect(queryByCy("dialogue-formulaire-societe")).toBeNull();
+    expect(useCompanyStore.getState().activeCompanyId).toBeNull();
   });
 
   it("shows the no-lease sentence for a company without a lease", async () => {
@@ -597,7 +600,7 @@ describe("SettingsPage tabs", () => {
     expect(screen.getByText("Bail actif")).toBeVisible();
   });
 
-  it("never offers to make another company active", async () => {
+  it("activates the company selected in the selector", async () => {
     companiesState = readyQuery([COMPANY, OTHER]);
     renderPage();
     const user = userEvent.setup();
@@ -609,7 +612,23 @@ describe("SettingsPage tabs", () => {
 
     expect(screen.queryByRole("button", { name: "Rendre active" })).toBeNull();
     expect(queryByCy("btn-rendre-active")).toBeNull();
-    expect(useCompanyStore.getState().activeCompanyId).toBe(1);
+    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
+  });
+
+  it("syncs the selected company when the active company changes elsewhere", async () => {
+    companiesState = readyQuery([COMPANY, OTHER]);
+    renderPage();
+
+    expect(screen.getByLabelText("Société à configurer")).toHaveValue("1");
+
+    act(() => {
+      useCompanyStore.getState().setActiveCompany(2);
+    });
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Société à configurer")).toHaveValue("2"),
+    );
+    expect(queryByCy("info-societe")).toHaveTextContent("Autre SARL");
   });
 
   it("shows the loading then error states of the companies", async () => {

@@ -241,10 +241,13 @@ export const fr = {
     ariaLabel: "Navigation principale",
     mobileAriaLabel: "Navigation principale mobile",
     sections: {
+      documents: "Documents",
       tracking: "Suivi",
       settings: "Réglages",
     },
     links: {
+      rentReceipt: "Quittance",
+      expenseStatement: "Note de frais",
       history: "Historique",
       company: "Société",
       lmnp: "LMNP",
@@ -254,6 +257,7 @@ export const fr = {
   shell: {
     skipLink: "Aller au contenu",
     tagline: "Quittances & frais d’occupation",
+    activeCompany: "Société active",
     localDataTitle: "Données locales",
     localDataText:
       "Aucune donnée ne quitte votre machine tant que l’URL du LLM reste locale.",
