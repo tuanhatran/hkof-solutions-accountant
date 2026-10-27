@@ -10,7 +10,7 @@
   }
 
   .settings-page-sections {
-    @apply space-y-6;
+    @apply space-y-3;
   }
 
   .settings-page-form {
