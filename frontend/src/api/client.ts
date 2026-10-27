@@ -1,44 +1,101 @@
+import i18n from "@/i18n";
+
 export interface ProblemDetail {
   type?: string;
   title?: string;
   status?: number;
   detail?: string;
   instance?: string;
+  code?: string;
+  params?: Record<string, string>;
 }
 
 export class ApiError extends Error {
   readonly status: number | null;
   readonly problem: ProblemDetail | null;
+  readonly code: string | null;
+  readonly params: Record<string, string> | null;
 
   constructor(
     message: string,
     status: number | null = null,
     problem: ProblemDetail | null = null,
+    code: string | null = problem?.code ?? null,
+    params: Record<string, string> | null = problem?.params ?? null,
   ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.problem = problem;
+    this.code = code;
+    this.params = params && Object.keys(params).length > 0 ? params : null;
   }
 }
 
-async function messageFromResponse(response: Response): Promise<string> {
-  try {
-    const text = await response.text();
-    if (!text) {
-      return `Erreur ${response.status} : la requête a échoué.`;
-    }
-    const type = response.headers.get("content-type") ?? "";
-    if (type.includes("json")) {
-      const requestBody = JSON.parse(text) as ProblemDetail;
-      return (
-        requestBody.detail || requestBody.title || `Erreur ${response.status}.`
-      );
-    }
-    return text;
-  } catch {
-    return `Erreur ${response.status} : la requête a échoué.`;
+interface ParsedFailure {
+  message: string;
+  problem: ProblemDetail | null;
+  code: string | null;
+  params: Record<string, string> | null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function sanitizeParams(value: unknown): Record<string, string> | null {
+  if (!isRecord(value)) {
+    return null;
   }
+  const entries = Object.entries(value).filter(
+    (entry): entry is [string, string] => typeof entry[1] === "string",
+  );
+  return entries.length > 0 ? Object.fromEntries(entries) : null;
+}
+
+/** Reads the error response once and derives the message, problem, code and params. */
+async function parseFailure(response: Response): Promise<ParsedFailure> {
+  const fallback = `Erreur ${response.status} : la requête a échoué.`;
+  const httpFailure: ParsedFailure = {
+    message: fallback,
+    problem: null,
+    code: "HTTP_ERROR",
+    params: { status: String(response.status) },
+  };
+  let text: string;
+  try {
+    text = await response.text();
+  } catch {
+    return httpFailure;
+  }
+  if (!text) {
+    return httpFailure;
+  }
+  const type = response.headers.get("content-type") ?? "";
+  if (!type.includes("json")) {
+    return { message: text, problem: null, code: null, params: null };
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text) as unknown;
+  } catch {
+    return httpFailure;
+  }
+  if (!isRecord(parsed)) {
+    return {
+      message: `Erreur ${response.status}.`,
+      problem: null,
+      code: null,
+      params: null,
+    };
+  }
+  const problem = parsed as ProblemDetail;
+  return {
+    message: problem.detail || problem.title || `Erreur ${response.status}.`,
+    problem,
+    code: typeof problem.code === "string" ? problem.code : null,
+    params: sanitizeParams(problem.params),
+  };
 }
 
 export async function request<T>(
@@ -55,18 +112,19 @@ export async function request<T>(
     throw new ApiError(
       "Le serveur est injoignable. Vérifiez que l'application HomeOfficeExpenses est démarrée.",
       null,
+      null,
+      "NETWORK_ERROR",
     );
   }
   if (!response.ok) {
-    const message = await messageFromResponse(response);
-    let problem: ProblemDetail | null;
-    try {
-      const text = await response.clone().text();
-      problem = text ? (JSON.parse(text) as ProblemDetail) : null;
-    } catch {
-      problem = null;
-    }
-    throw new ApiError(message, response.status, problem);
+    const failure = await parseFailure(response);
+    throw new ApiError(
+      failure.message,
+      response.status,
+      failure.problem,
+      failure.code,
+      failure.params,
+    );
   }
   if (response.status === 204 || response.status === 205) {
     return undefined as T;
@@ -113,10 +171,19 @@ export async function blobRequest(
     throw new ApiError(
       "Le serveur est injoignable. Vérifiez que l'application HomeOfficeExpenses est démarrée.",
       null,
+      null,
+      "NETWORK_ERROR",
     );
   }
   if (!response.ok) {
-    throw new ApiError(await messageFromResponse(response), response.status);
+    const failure = await parseFailure(response);
+    throw new ApiError(
+      failure.message,
+      response.status,
+      failure.problem,
+      failure.code,
+      failure.params,
+    );
   }
   return {
     blob: await response.blob(),
@@ -137,12 +204,18 @@ export function downloadBlob(blob: Blob, fileName: string): void {
 
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
+    if (error.code) {
+      const key = `api.errors.${error.code}`;
+      if (i18n.exists(key)) {
+        return i18n.t(key, error.params ?? {});
+      }
+    }
     return error.message;
   }
   if (error instanceof Error) {
     return error.message;
   }
-  return "Une erreur inattendue est survenue.";
+  return i18n.t("api.errors.UNEXPECTED_ERROR");
 }
 
 export function isCancellation(error: unknown): boolean {

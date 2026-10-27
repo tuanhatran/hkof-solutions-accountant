@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import i18n from "@/i18n";
 import {
   ApiError,
   blobRequest,
@@ -111,6 +112,32 @@ describe("request", () => {
     });
   });
 
+  it("exposes the error code and params of a problem detail", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(
+        {
+          code: "FILE_TOO_LARGE",
+          detail: "Le fichier est trop volumineux.",
+          params: { maxJustificatif: "10", maxTemplate: "5" },
+          status: 413,
+        },
+        413,
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const failure = (await request("/api/test").catch(
+      (error: unknown) => error,
+    )) as ApiError;
+
+    expect(failure.code).toBe("FILE_TOO_LARGE");
+    expect(failure.params).toEqual({
+      maxJustificatif: "10",
+      maxTemplate: "5",
+    });
+    expect(failure.message).toBe("Le fichier est trop volumineux.");
+  });
+
   it("falls back to the title then the status when the problem has no detail", async () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse({ title: "Requête invalide" }, 400),
@@ -126,9 +153,15 @@ describe("request", () => {
     fetchMock.mockResolvedValue(fakeResponse({ status: 503, ok: false }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(request("/api/test")).rejects.toThrow(
-      "Erreur 503 : la requête a échoué.",
-    );
+    const failure = (await request("/api/test").catch(
+      (error: unknown) => error,
+    )) as ApiError;
+
+    expect(failure).toBeInstanceOf(ApiError);
+    expect(failure.problem).toBeNull();
+    expect(failure.code).toBe("HTTP_ERROR");
+    expect(failure.params).toEqual({ status: "503" });
+    expect(failure.message).toBe("Erreur 503 : la requête a échoué.");
   });
 
   it("returns the raw text of a non-JSON error body", async () => {
@@ -178,6 +211,7 @@ describe("request", () => {
 
     expect(failure).toBeInstanceOf(ApiError);
     expect(failure.status).toBeNull();
+    expect(failure.code).toBe("NETWORK_ERROR");
     expect(failure.message).toBe(
       "Le serveur est injoignable. Vérifiez que l'application HomeOfficeExpenses est démarrée.",
     );
@@ -235,12 +269,12 @@ describe("blobRequest", () => {
     });
   });
 
-  it("throws a French ApiError for an error response", async () => {
+  it("throws a French ApiError for an error response and keeps its code", async () => {
     fetchMock.mockResolvedValue(
       fakeResponse({
         status: 404,
         ok: false,
-        json: { detail: "Document introuvable." },
+        json: { code: "RESOURCE_NOT_FOUND", detail: "Document introuvable." },
         contentType: "application/json",
       }),
     );
@@ -248,6 +282,7 @@ describe("blobRequest", () => {
 
     await expect(blobRequest("/api/pdf")).rejects.toMatchObject({
       status: 404,
+      code: "RESOURCE_NOT_FOUND",
       message: "Document introuvable.",
     });
   });
@@ -308,5 +343,78 @@ describe("errorMessage and isCancellation", () => {
     expect(isCancellation(new DOMException("stop", "AbortError2"))).toBe(false);
     expect(isCancellation(new Error("AbortError"))).toBe(false);
     expect(isCancellation(null)).toBe(false);
+  });
+});
+
+describe("errorMessage translations", () => {
+  const fileTooLarge = new ApiError(
+    "Le fichier dépasse la taille maximale autorisée.",
+    413,
+    {
+      code: "FILE_TOO_LARGE",
+      params: { maxJustificatif: "10", maxTemplate: "5" },
+    },
+  );
+
+  it("renders a known code in French with its params", () => {
+    expect(errorMessage(fileTooLarge)).toBe(
+      "Le fichier dépasse la taille maximale autorisée (10 Mo pour un justificatif, 5 Mo pour un template).",
+    );
+  });
+
+  it("renders the same code in the current English language", async () => {
+    await i18n.changeLanguage("en");
+
+    expect(errorMessage(fileTooLarge)).toBe(
+      "The file exceeds the maximum allowed size (10 MB for a receipt, 5 MB for a template).",
+    );
+  });
+
+  it("falls back to the server detail when the code is unknown or untranslated", () => {
+    expect(
+      errorMessage(
+        new ApiError("Le mois est obligatoire.", 400, {
+          code: "BUSINESS_ERROR",
+        }),
+      ),
+    ).toBe("Le mois est obligatoire.");
+    expect(
+      errorMessage(
+        new ApiError("Quittance introuvable.", 404, {
+          code: "RESOURCE_NOT_FOUND",
+        }),
+      ),
+    ).toBe("Quittance introuvable.");
+    expect(
+      errorMessage(
+        new ApiError("Détail serveur.", 400, { code: "SOMETHING_NEW" }),
+      ),
+    ).toBe("Détail serveur.");
+  });
+
+  it("localizes network, HTTP and unexpected failures in both languages", async () => {
+    const network = new ApiError(
+      "Le serveur est injoignable.",
+      null,
+      null,
+      "NETWORK_ERROR",
+    );
+    const http = new ApiError("Erreur 503", 503, null, "HTTP_ERROR", {
+      status: "503",
+    });
+
+    expect(errorMessage(network)).toBe(
+      "Le serveur est injoignable. Vérifiez que l'application HomeOfficeExpenses est démarrée.",
+    );
+    expect(errorMessage(http)).toBe("Erreur 503 : la requête a échoué.");
+    expect(errorMessage("texte")).toBe("Une erreur inattendue est survenue.");
+
+    await i18n.changeLanguage("en");
+
+    expect(errorMessage(network)).toBe(
+      "The server is unreachable. Check that the HomeOfficeExpenses application is running.",
+    );
+    expect(errorMessage(http)).toBe("Error 503: the request failed.");
+    expect(errorMessage("texte")).toBe("An unexpected error occurred.");
   });
 });

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.DisplayName;
@@ -33,10 +34,11 @@ class GlobalExceptionHandlerTest {
 
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
-    private void assertProblem(ResponseEntity<ProblemDetail> response, HttpStatus status, String title) {
+    private void assertProblem(ResponseEntity<ProblemDetail> response, HttpStatus status, String title, String code) {
         assertThat(response.getStatusCode()).isEqualTo(status);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getTitle()).isEqualTo(title);
+        assertThat(response.getBody().getProperties()).containsEntry("code", code);
     }
 
     private MethodParameter parameter() throws NoSuchMethodException {
@@ -49,15 +51,27 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    @DisplayName("Not found and business exceptions map to RFC 9457 problems")
+    @DisplayName("Not found and business exceptions map to RFC 9457 problems with default codes")
     void notFoundAndBusiness() {
         assertProblem(handler.notFound(new NotFoundException("Quittance introuvable.")),
-                HttpStatus.NOT_FOUND, "Ressource introuvable");
+                HttpStatus.NOT_FOUND, "Ressource introuvable", "RESOURCE_NOT_FOUND");
         assertThat(handler.notFound(new NotFoundException("Quittance introuvable.")).getBody().getDetail())
                 .isEqualTo("Quittance introuvable.");
 
         assertProblem(handler.businessRule(new BusinessException("Requête refusée")),
-                HttpStatus.BAD_REQUEST, "Requête invalide");
+                HttpStatus.BAD_REQUEST, "Requête invalide", "BUSINESS_ERROR");
+    }
+
+    @Test
+    @DisplayName("Exceptions keep a custom code and its params")
+    void customCodes() {
+        ResponseEntity<ProblemDetail> business = handler.businessRule(new BusinessException(
+                "RENT_ALREADY_ISSUED", "Quittance déjà générée.", Map.of("month", "2026-01")));
+        assertProblem(business, HttpStatus.BAD_REQUEST, "Requête invalide", "RENT_ALREADY_ISSUED");
+        assertThat(business.getBody().getProperties()).containsEntry("params", Map.of("month", "2026-01"));
+
+        assertProblem(handler.notFound(new NotFoundException("LEASE_NOT_FOUND", "Bail absent.")),
+                HttpStatus.NOT_FOUND, "Ressource introuvable", "LEASE_NOT_FOUND");
     }
 
     @Test
@@ -69,7 +83,7 @@ class GlobalExceptionHandlerTest {
 
         ResponseEntity<ProblemDetail> response = handler.validation(ex);
 
-        assertProblem(response, HttpStatus.BAD_REQUEST, "Requête invalide");
+        assertProblem(response, HttpStatus.BAD_REQUEST, "Requête invalide", "VALIDATION_FAILED");
         assertThat(response.getBody().getProperties()).containsKey("champs");
     }
 
@@ -77,14 +91,14 @@ class GlobalExceptionHandlerTest {
     @DisplayName("Constraint, handler validation and parameter errors map to 400")
     void parameterErrors() throws Exception {
         assertProblem(handler.constraints(new ConstraintViolationException("invalide", Set.of())),
-                HttpStatus.BAD_REQUEST, "Requête invalide");
+                HttpStatus.BAD_REQUEST, "Requête invalide", "REQUEST_INVALID");
         assertProblem(handler.validationSettings(mock(HandlerMethodValidationException.class)),
-                HttpStatus.BAD_REQUEST, "Requête invalide");
+                HttpStatus.BAD_REQUEST, "Requête invalide", "INVALID_PARAMETER");
         assertProblem(handler.invalidParameter(new MissingServletRequestParameterException("month", "String")),
-                HttpStatus.BAD_REQUEST, "Requête invalide");
+                HttpStatus.BAD_REQUEST, "Requête invalide", "MISSING_OR_INVALID_PARAMETER");
         assertProblem(handler.invalidParameter(new MethodArgumentTypeMismatchException(
                         "abc", Long.class, "id", parameter(), null)),
-                HttpStatus.BAD_REQUEST, "Requête invalide");
+                HttpStatus.BAD_REQUEST, "Requête invalide", "MISSING_OR_INVALID_PARAMETER");
     }
 
     @Test
@@ -92,26 +106,28 @@ class GlobalExceptionHandlerTest {
     void unreadableBody() {
         ResponseEntity<ProblemDetail> response = handler.unreadableBody(
                 new HttpMessageNotReadableException("mal formé", new MockHttpInputMessage(new byte[0])));
-        assertProblem(response, HttpStatus.BAD_REQUEST, "Requête invalide");
+        assertProblem(response, HttpStatus.BAD_REQUEST, "Requête invalide", "INVALID_BODY");
     }
 
     @Test
-    @DisplayName("Upload errors carry their French messages")
+    @DisplayName("Upload errors carry their code, size params and French messages")
     void uploadErrors() {
         ResponseEntity<ProblemDetail> tooLarge = handler.fileTooLarge(new MaxUploadSizeExceededException(10));
-        assertProblem(tooLarge, HttpStatus.PAYLOAD_TOO_LARGE, "Fichier trop volumineux");
+        assertProblem(tooLarge, HttpStatus.PAYLOAD_TOO_LARGE, "Fichier trop volumineux", "FILE_TOO_LARGE");
         assertThat(tooLarge.getBody().getDetail()).contains("10 Mo");
+        assertThat(tooLarge.getBody().getProperties()).containsEntry("params",
+                Map.of("maxJustificatif", "10", "maxTemplate", "5"));
 
         assertProblem(handler.invalidMultipart(new MultipartException("boom")),
-                HttpStatus.BAD_REQUEST, "Fichier invalide");
+                HttpStatus.BAD_REQUEST, "Fichier invalide", "INVALID_FILE");
     }
 
     @Test
     @DisplayName("An unknown route maps to 404 and an unexpected error to 500")
     void unknownRouteAndUnexpected() {
         assertProblem(handler.unknownRoute(new NoResourceFoundException(HttpMethod.GET, "/absent", "absent")),
-                HttpStatus.NOT_FOUND, "Ressource introuvable");
+                HttpStatus.NOT_FOUND, "Ressource introuvable", "RESOURCE_NOT_FOUND");
         assertProblem(handler.unexpected(new IllegalStateException("boom")),
-                HttpStatus.INTERNAL_SERVER_ERROR, "Erreur interne");
+                HttpStatus.INTERNAL_SERVER_ERROR, "Erreur interne", "INTERNAL_ERROR");
     }
 }

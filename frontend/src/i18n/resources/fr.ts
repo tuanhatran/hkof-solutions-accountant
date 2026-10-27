@@ -20,6 +20,26 @@ export const fr = {
       hint: "Montant détecté par IA — confirmez-le pour ajouter le frais.",
     },
   },
+  api: {
+    errors: {
+      VALIDATION_FAILED: "Certains champs sont invalides.",
+      REQUEST_INVALID: "Requête invalide.",
+      INVALID_PARAMETER: "Un paramètre de la requête est invalide.",
+      MISSING_OR_INVALID_PARAMETER:
+        "Un paramètre de la requête est manquant ou invalide.",
+      INVALID_BODY: "Le corps de la requête est absent ou mal formé.",
+      FILE_TOO_LARGE:
+        "Le fichier dépasse la taille maximale autorisée ({{maxJustificatif}} Mo pour un justificatif, {{maxTemplate}} Mo pour un template).",
+      INVALID_FILE:
+        "Le fichier n'a pas pu être reçu. Vérifiez son format et sa taille.",
+      INTERNAL_ERROR:
+        "Une erreur inattendue est survenue. Consultez les journaux du serveur.",
+      NETWORK_ERROR:
+        "Le serveur est injoignable. Vérifiez que l'application HomeOfficeExpenses est démarrée.",
+      HTTP_ERROR: "Erreur {{status}} : la requête a échoué.",
+      UNEXPECTED_ERROR: "Une erreur inattendue est survenue.",
+    },
+  },
   navigation: {
     ariaLabel: "Navigation principale",
     mobileAriaLabel: "Navigation principale mobile",
