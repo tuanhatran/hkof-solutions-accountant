@@ -1,15 +1,12 @@
 import "./CompanySection.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Building2, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys, useCompanies } from "@/api/queries";
 import type { CompanyDto } from "@/api/types";
-import {
-  EmptyState,
-  SectionHeader,
-} from "@/components/settings/SettingsSection";
+import { EmptyState } from "@/components/settings/SettingsSection";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorState, LoadingState } from "@/components/ui/States";
@@ -101,115 +98,104 @@ export function CompanySection() {
 
   return (
     <div className="settings-page-sections">
-      <section className="card company-section">
-        <SectionHeader
-          icon={Building2}
-          title="Sociétés"
-          description="Chaque société possède son identité, son bail, ses salariés, ses postes de frais et ses notes de frais."
-          action={
-            <div className="company-section-actions">
-              {selected ? (
-                <Button
-                  variant="ghost"
-                  small
-                  icon={<Trash2 size={13} />}
-                  className="text-danger hover:bg-danger-soft"
-                  onClick={() => setToDelete(selected)}
-                  data-cy="btn-supprimer-societe"
-                >
-                  Supprimer
-                </Button>
-              ) : null}
-              <Button
-                variant="primary"
-                small
-                icon={<Plus size={14} />}
-                onClick={() => setIdentityTarget("new")}
-                disabled={identityTarget !== null}
-                data-cy="btn-nouvelle-societe"
-              >
-                Nouvelle société
-              </Button>
-            </div>
-          }
+      <div className="company-section-toolbar">
+        {!companies.isError && !companies.isPending && list.length > 0 ? (
+          <select
+            id="societe-a-configurer"
+            aria-label="Société à configurer"
+            className="field company-section-select"
+            value={selectedId ?? ""}
+            onChange={(event) => {
+              closeModals();
+              setSelectedId(
+                event.target.value === "" ? null : Number(event.target.value),
+              );
+            }}
+            data-cy="select-societe"
+          >
+            {list.map((company) => (
+              <option key={company.id} value={company.id}>
+                {company.name}
+              </option>
+            ))}
+          </select>
+        ) : null}
+        <Button
+          variant="primary"
+          small
+          icon={<Plus size={14} />}
+          onClick={() => setIdentityTarget("new")}
+          disabled={identityTarget !== null}
+          data-cy="btn-nouvelle-societe"
+        >
+          Nouvelle société
+        </Button>
+        {selected ? (
+          <Button
+            variant="ghost"
+            small
+            icon={<Trash2 size={13} />}
+            className="text-danger hover:bg-danger-soft"
+            onClick={() => setToDelete(selected)}
+            data-cy="btn-supprimer-societe"
+          >
+            Supprimer
+          </Button>
+        ) : null}
+      </div>
+      <div className="company-section-tabs">
+        <ViewTabs
+          ariaLabel="Sections de l’entreprise"
+          tabs={TABS}
+          active={tab}
+          onChange={setTab}
         />
-        <div className="card-body company-section-body">
-          {companies.isError ? (
+      </div>
+      <section className="card company-section">
+        {companies.isError ? (
+          <div className="card-body">
             <ErrorState
               message={errorMessage(companies.error)}
               onRetry={() => void companies.refetch()}
             />
-          ) : companies.isPending ? (
+          </div>
+        ) : companies.isPending ? (
+          <div className="card-body">
             <LoadingState message="Chargement des sociétés…" />
-          ) : (
-            <>
-              {list.length > 0 ? (
-                <div className="company-section-selector">
-                  <label
-                    htmlFor="societe-a-configurer"
-                    className="company-section-selector-label"
-                  >
-                    Société à configurer
-                  </label>
-                  <select
-                    id="societe-a-configurer"
-                    className="field company-section-select"
-                    value={selectedId ?? ""}
-                    onChange={(event) => {
-                      closeModals();
-                      setSelectedId(
-                        event.target.value === ""
-                          ? null
-                          : Number(event.target.value),
-                      );
-                    }}
-                    data-cy="select-societe"
-                  >
-                    {list.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <EmptyState
-                  text="Aucune société configurée. Créez la première société."
-                  dataCy="aucune-societe"
-                />
-              )}
-              <ViewTabs
-                ariaLabel="Sections de l’entreprise"
-                tabs={TABS}
-                active={tab}
-                onChange={setTab}
-              />
-            </>
-          )}
+          </div>
+        ) : list.length === 0 && tab !== "templates" ? (
+          <div className="card-body">
+            <EmptyState
+              text="Aucune société configurée. Créez la première société."
+              dataCy="aucune-societe"
+            />
+          </div>
+        ) : null}
+        <div role="tabpanel" className="company-section-tabpanel">
+          {selected && tab === "identification" ? (
+            <CompanyIdentityView
+              company={selected}
+              onEdit={() => setIdentityTarget(selected)}
+            />
+          ) : null}
+          {selected && tab === "bail-frais" ? (
+            <CompanyLeaseTab
+              key={String(selected.id)}
+              company={selected}
+              companies={list}
+            />
+          ) : null}
+          {selected && tab === "salaries" ? (
+            <EmployeeSection companyId={selected.id as number} />
+          ) : null}
+          {tab === "templates" ? (
+            <TemplatesTab
+              configuration={EXPENSE_STATEMENT_CONFIGURATION}
+              embedded
+            />
+          ) : null}
         </div>
       </section>
-
-      <div role="tabpanel" className="company-section-tabpanel">
-        {selected && tab === "identification" ? (
-          <CompanyIdentityView
-            company={selected}
-            onEdit={() => setIdentityTarget(selected)}
-          />
-        ) : null}
-        {selected && tab === "bail-frais" ? (
-          <CompanyLeaseTab
-            key={String(selected.id)}
-            company={selected}
-            companies={list}
-          />
-        ) : null}
-        {selected && tab === "salaries" ? (
-          <EmployeeSection companyId={selected.id as number} />
-        ) : null}
-        {tab === "templates" ? (
-          <TemplatesTab configuration={EXPENSE_STATEMENT_CONFIGURATION} />
-        ) : null}
-      </div>
 
       {identityTarget !== null ? (
         <CompanyIdentityModal
