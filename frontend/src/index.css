@@ -213,13 +213,15 @@
     @apply border-b-0;
   }
 
+  .glass-surface {
+    background: var(--color-surface);
+  }
+}
+
+@layer utilities {
   .number {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-  }
-
-  .glass-surface {
-    background: var(--color-surface);
   }
 }
 
