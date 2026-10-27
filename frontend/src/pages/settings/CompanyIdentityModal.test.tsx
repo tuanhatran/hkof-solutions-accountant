@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
 import type { CompanyDto } from "@/api/types";
+import i18n from "@/i18n";
 import { useToasts } from "@/state/toasts";
 import { CompanyIdentityModal } from "./CompanyIdentityModal";
 
@@ -183,5 +184,48 @@ describe("CompanyIdentityModal", () => {
 
     expect(await screen.findByText("SIREN déjà utilisé.")).toBeVisible();
     expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  it("renders the create modal, validation and toast in English", async () => {
+    await i18n.changeLanguage("en");
+    vi.mocked(api.companies.create).mockResolvedValue(COMPANY);
+    renderModal();
+    const user = userEvent.setup();
+
+    expect(screen.getByRole("heading", { name: "New company" })).toBeVisible();
+    expect(screen.getByText("Company identity")).toBeVisible();
+    expect(screen.getByLabelText("Company name")).toHaveValue("");
+    expect(screen.getByLabelText("SIREN")).toBeVisible();
+    expect(screen.getByText("9 digits, spaces allowed.")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(
+      await screen.findByText("The company name is required."),
+    ).toBeVisible();
+
+    await user.type(screen.getByLabelText("Company name"), "HKOF");
+    await user.type(screen.getByLabelText("SIREN"), "12");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(
+      await screen.findByText("The SIREN must have 9 digits."),
+    ).toBeVisible();
+    expect(api.companies.create).not.toHaveBeenCalled();
+
+    await user.clear(screen.getByLabelText("SIREN"));
+    await user.type(screen.getByLabelText("SIREN"), "123 456 789");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() =>
+      expect(api.companies.create).toHaveBeenCalledWith({
+        name: "HKOF",
+        legalForm: "",
+        siren: "123 456 789",
+        address: "",
+        managerName: "",
+        leaseId: null,
+        issuePlace: "",
+      }),
+    );
+    await waitFor(() => expect(toastMessages()).toContain("Company created."));
   });
 });

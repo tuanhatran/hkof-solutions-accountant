@@ -433,6 +433,193 @@ export const en = {
     },
   },
   settings: {
+    page: {
+      eyebrow: "Settings",
+      title: "Company",
+      description:
+        "Manage your companies, their signing employees and their expense items. Calculations stay in the backend.",
+    },
+    company: {
+      selectAria: "Company to configure",
+      newCompany: "New company",
+      deleteButton: "Delete",
+      tabsAria: "Company sections",
+      tabs: {
+        identification: "General info",
+        leaseExpenses: "Leases & Expenses",
+        employees: "Employees",
+        templates: "Templates",
+      },
+      loading: "Loading companies…",
+      empty: "No company configured. Create the first company.",
+      deleted: "Company deleted.",
+      deleteDialog: {
+        title: "Delete this company?",
+        message:
+          "“{{name}}” and its employees will be deleted. Its leases will be detached, not deleted. A company used by expense statements or rent receipts cannot be deleted.",
+        confirm: "Delete the company",
+        fallbackName: "This company",
+      },
+      identity: {
+        sectionTitle: "Company identity",
+        sectionDescription:
+          "Name, legal form and registered office used in the document headers.",
+        viewDescription:
+          "Values used in the headers of rent receipts and expense statements.",
+        edit: "Edit",
+        fields: {
+          name: "Company name",
+          legalForm: "Legal form",
+          siren: "SIREN",
+          managerName: "Manager",
+          companyAddress: "Company address",
+          address: "Address",
+          issuePlace: "Place of issue",
+        },
+        sirenHelp: "9 digits, spaces allowed.",
+        modal: {
+          create: "New company",
+          edit: "Edit the company",
+        },
+        toasts: {
+          created: "Company created.",
+          saved: "Company saved. Future documents will use these values.",
+        },
+      },
+      validation: {
+        name: "The company name is required.",
+        siren: "The SIREN must have 9 digits.",
+      },
+      leaseTab: {
+        title: "Company leases",
+        description:
+          "A company can be the tenant of several leases. Click a lease to activate it and expand its expenses: items and expense statements follow that lease.",
+        add: "Add a lease",
+        loading: "Loading leases…",
+        empty:
+          "No lease for this company. Add the first lease with “Add a lease”.",
+        addressFallback: "Lease without address",
+        meta: "Landlord {{landlord}} · Rent {{rent}} · Charges {{charges}}",
+        activeBadge: "Active lease",
+        statement: "Expense statement",
+        edit: "Edit",
+      },
+      leaseView: {
+        surfaces:
+          "Business area {{businessArea}} m² · Total area {{totalArea}} m²",
+        proRata: "Professional share {{percentage}}",
+        empty: "No lease selected: the company has no professional share.",
+      },
+      statementModal: {
+        title: "Expense statement",
+        closeAria: "Close window",
+        tabsAria: "Expense statement panels",
+        input: "Input",
+        preview: "Preview",
+        close: "Close",
+      },
+    },
+    lease: {
+      section: {
+        title: "Leases and addresses",
+        description:
+          "One address can hold several leases. Select an address to display its leases and set the rent and charges.",
+        add: "Add a lease",
+        addressLabel: "Lease addresses",
+        addressHelp: "Only the leases of the selected address are displayed.",
+        loadingAddresses: "Loading addresses…",
+        noAddress: "No address configured",
+        loading: "Loading leases…",
+        empty:
+          "No lease for this address. Add a lease to generate rent receipts.",
+        company: "Company: {{company}}",
+        noCompany: "No company",
+        amounts: "Rent {{rent}} · charges {{charges}} · total",
+        editAria: "Edit lease {{id}}",
+        edit: "Edit",
+        removeAria: "Delete lease {{id}}",
+        remove: "Remove",
+        receiptAria: "Rent receipt for lease {{id}}",
+        receipt: "Rent receipt",
+        signaturePending: "Checking signatures…",
+        signatureMissing:
+          "No signature recorded for this landlord. Add one in the “People” tab to generate a rent receipt.",
+        deleted: "Lease deleted.",
+        deleteDialog: {
+          title: "Delete this lease?",
+          message:
+            "The lease of “{{tenant}}” will no longer be offered during generation. Existing rent receipts stay unchanged.",
+          confirm: "Delete the lease",
+          fallbackTenant: "this tenant",
+        },
+      },
+      form: {
+        createTitle: "Add a lease",
+        editTitle: "Edit the lease",
+        companyLeaseLabel: "Company lease",
+        companyLeaseHint:
+          "The tenant is a company: enter the property areas to compute the professional share.",
+        landlord: "Landlord",
+        landlordPlaceholder: "Select a landlord",
+        companyTenant: "Tenant (company)",
+        companyPlaceholder: "Select a company",
+        tenant: "Tenant",
+        tenantPlaceholder: "Select a tenant",
+        address: "Property address",
+        addressPlaceholder: "12 rue de la République, 75000 Paris",
+        rentExclCharges: "Rent excluding charges (€)",
+        rentExclChargesPlaceholder: "900.00",
+        charges: "Charges provision (€)",
+        chargesPlaceholder: "50.00",
+        totalArea: "Total area (m²)",
+        totalAreaPlaceholder: "70.00",
+        businessArea: "Business area (m²)",
+        businessAreaPlaceholder: "25.00",
+        total: "Rent receipt total",
+        totalHint:
+          "Indicative: rent + provision. The rent receipt total is computed by the backend.",
+        toasts: {
+          created: "Lease added.",
+          updated: "Lease updated.",
+        },
+      },
+      receiptModal: {
+        title: "Rent receipt",
+        closeAria: "Close window",
+        landlord: "Landlord",
+        tenant: "Tenant",
+        company: "Company",
+        property: "Property",
+        noCompany: "No company",
+        month: "Month",
+        monthHelp: "The period is derived from the chosen month.",
+        period: "Period:",
+        rentExclCharges: "Rent excluding charges",
+        rentExclChargesHelp: "Editable for a one-off adjustment.",
+        charges: "Charges provision",
+        resultTitle: "Rent receipt generated",
+        resultMeta: "{{month}} · version {{version}} · {{total}}",
+        download: "Download the PDF",
+        close: "Close",
+        generate: "Generate the rent receipt",
+      },
+      validation: {
+        landlord: "Select a landlord.",
+        propertyAddress: "The property address is required.",
+        rentExclCharges: "Invalid rent excluding charges.",
+        charges: "Invalid charges provision.",
+        totalAreaInvalid: "Invalid total area.",
+        businessAreaInvalid: "Invalid business area.",
+        companyTenant: "Select the tenant company.",
+        tenant: "Select a tenant.",
+        partiesIdentical:
+          "The landlord and the tenant must be two different people.",
+        totalAreaRequired: "The total area is required for a company lease.",
+        businessAreaRequired:
+          "The business area is required for a company lease.",
+        businessAreaTooLarge: "The business area cannot exceed the total area.",
+      },
+    },
     history: {
       receipts: {
         title: "Generated rent receipts",

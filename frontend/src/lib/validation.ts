@@ -11,6 +11,14 @@ function expenseMessage(key: string): string {
   return i18n.t(`expenseStatement.validation.${key}`);
 }
 
+function companyMessage(key: string): string {
+  return i18n.t(`settings.company.validation.${key}`);
+}
+
+function leaseMessage(key: string): string {
+  return i18n.t(`settings.lease.validation.${key}`);
+}
+
 function isValidAmount(value: string, strictlyPositive: boolean): boolean {
   const normalized = parseAmount(value);
   if (normalized === null) {
@@ -105,24 +113,27 @@ export const rentReceiptSchema = z
 
 export type RentReceiptFormValues = z.infer<typeof rentReceiptSchema>;
 
-const optionalSurface = (message: string) =>
+const optionalSurface = (key: string) =>
   z
     .string()
-    .refine(
-      (value) => value.trim() === "" || isValidAmount(value, false),
-      message,
-    );
+    .refine((value) => value.trim() === "" || isValidAmount(value, false), {
+      error: () => leaseMessage(key),
+    });
 
 export const companySchema = z.object({
-  name: z.string().trim().min(1, "Le nom de la société est obligatoire."),
+  name: z
+    .string()
+    .trim()
+    .min(1, {
+      error: () => companyMessage("name"),
+    }),
   legalForm: z.string(),
   siren: z
     .string()
     .trim()
-    .refine(
-      (value) => value === "" || /^\d{3}\s?\d{3}\s?\d{3}$/.test(value),
-      "Le SIREN doit comporter 9 chiffres.",
-    ),
+    .refine((value) => value === "" || /^\d{3}\s?\d{3}\s?\d{3}$/.test(value), {
+      error: () => companyMessage("siren"),
+    }),
   address: z.string(),
   managerName: z.string(),
   leaseId: z.string(),
@@ -159,35 +170,33 @@ export type PersonFormValues = z.infer<typeof personSchema>;
 export const leaseSchema = z
   .object({
     companyLease: z.boolean(),
-    landlordId: z.string().min(1, "Sélectionnez un bailleur."),
+    landlordId: z.string().min(1, {
+      error: () => leaseMessage("landlord"),
+    }),
     tenantId: z.string(),
     companyId: z.string(),
     propertyAddress: z
       .string()
       .trim()
-      .min(1, "L'adresse du bien est obligatoire."),
-    rentExclCharges: z
-      .string()
-      .refine(
-        (value) => isValidAmount(value, false),
-        "Loyer hors charges invalide.",
-      ),
-    charges: z
-      .string()
-      .refine(
-        (value) => isValidAmount(value, false),
-        "Provision pour charges invalide.",
-      ),
-    totalArea: optionalSurface("Surface totale invalide."),
-    businessArea: optionalSurface("Surface professionnelle invalide."),
+      .min(1, {
+        error: () => leaseMessage("propertyAddress"),
+      }),
+    rentExclCharges: z.string().refine((value) => isValidAmount(value, false), {
+      error: () => leaseMessage("rentExclCharges"),
+    }),
+    charges: z.string().refine((value) => isValidAmount(value, false), {
+      error: () => leaseMessage("charges"),
+    }),
+    totalArea: optionalSurface("totalAreaInvalid"),
+    businessArea: optionalSurface("businessAreaInvalid"),
   })
   .refine((values) => !values.companyLease || values.companyId !== "", {
     path: ["companyId"],
-    message: "Sélectionnez la société locataire.",
+    error: () => leaseMessage("companyTenant"),
   })
   .refine((values) => values.companyLease || values.tenantId !== "", {
     path: ["tenantId"],
-    message: "Sélectionnez un locataire.",
+    error: () => leaseMessage("tenant"),
   })
   .refine(
     (values) =>
@@ -196,20 +205,18 @@ export const leaseSchema = z
       values.tenantId !== values.landlordId,
     {
       path: ["tenantId"],
-      message:
-        "Le bailleur et le locataire doivent être deux personnes distinctes.",
+      error: () => leaseMessage("partiesIdentical"),
     },
   )
   .refine((values) => !values.companyLease || values.totalArea.trim() !== "", {
     path: ["totalArea"],
-    message: "La surface totale est obligatoire pour un bail société.",
+    error: () => leaseMessage("totalAreaRequired"),
   })
   .refine(
     (values) => !values.companyLease || values.businessArea.trim() !== "",
     {
       path: ["businessArea"],
-      message:
-        "La surface professionnelle est obligatoire pour un bail société.",
+      error: () => leaseMessage("businessAreaRequired"),
     },
   )
   .refine(
@@ -226,8 +233,7 @@ export const leaseSchema = z
     },
     {
       path: ["businessArea"],
-      message:
-        "La surface professionnelle ne peut pas dépasser la surface totale.",
+      error: () => leaseMessage("businessAreaTooLarge"),
     },
   );
 

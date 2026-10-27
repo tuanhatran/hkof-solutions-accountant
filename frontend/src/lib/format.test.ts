@@ -156,6 +156,20 @@ describe("date formatting", () => {
     expect(formatPeriod(undefined, "2026-10-31")).toBe("—");
   });
 
+  it("formats periods in English from the current language", async () => {
+    await i18n.changeLanguage("en");
+
+    expect(formatPeriod("2026-10-01", "2026-10-31")).toBe(
+      "from 01/10/2026 to 31/10/2026",
+    );
+    expect(formatPeriod("2026-10-01", null)).toBe("—");
+
+    await i18n.changeLanguage("fr");
+    expect(formatPeriod("2026-10-01", "2026-10-31")).toBe(
+      "du 01/10/2026 au 31/10/2026",
+    );
+  });
+
   it("formats byte sizes in French units", () => {
     expect(formatBytes(512)).toBe("512 o");
     expect(normalizeSpaces(formatBytes(2048))).toBe("2 Ko");

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,6 +11,7 @@ import type {
   TemplateDto,
   TemplateType,
 } from "@/api/types";
+import i18n from "@/i18n";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { useCompanyStore } from "@/state/company";
 import { useToasts } from "@/state/toasts";
@@ -210,6 +211,65 @@ describe("SettingsPage tabs", () => {
     expect(queryByCy("info-societe")).not.toBeNull();
     expect(queryByCy("onglet-entreprise-identification")).not.toBeNull();
     expect(queryByCy("input-raison-sociale")).toBeNull();
+  });
+
+  it("renders the settings page, toolbar, tabs and identity in English", async () => {
+    await i18n.changeLanguage("en");
+    renderPage();
+
+    expect(
+      screen.getByRole("heading", { name: "Company", level: 1 }),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Company to configure")).toHaveValue("1");
+    expect(screen.getByRole("tab", { name: "General info" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(
+      screen.getByRole("tab", { name: "Leases & Expenses" }),
+    ).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Employees" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Templates" })).toBeVisible();
+    expect(screen.getByText("Company name")).toBeVisible();
+    expect(screen.getByText("Manager")).toBeVisible();
+    expect(screen.getByRole("button", { name: "New company" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeVisible();
+    expect(queryByCy("info-societe")).toHaveTextContent("HKOF");
+  });
+
+  it("relabels the tabs without a reload when the language switches", async () => {
+    renderPage();
+    expect(screen.getByRole("tab", { name: "Info générale" })).toBeVisible();
+
+    await act(async () => {
+      await i18n.changeLanguage("en");
+    });
+
+    expect(screen.getByRole("tab", { name: "General info" })).toBeVisible();
+    expect(screen.queryByRole("tab", { name: "Info générale" })).toBeNull();
+    expect(screen.getByText("Company name")).toBeVisible();
+  });
+
+  it("asks to delete a company in English and toasts in English", async () => {
+    await i18n.changeLanguage("en");
+    vi.mocked(api.companies.delete).mockResolvedValue(undefined);
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Delete this company?",
+    });
+    expect(dialog).toHaveTextContent(
+      "“HKOF” and its employees will be deleted.",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Delete the company" }),
+    );
+
+    await waitFor(() => expect(api.companies.delete).toHaveBeenCalledWith(1));
+    await waitFor(() => expect(toastMessages()).toContain("Company deleted."));
   });
 
   it("orders the company toolbar, the four tabs and the company card like LMNP", () => {

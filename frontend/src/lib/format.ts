@@ -187,7 +187,9 @@ export function formatPeriod(
   if (!start || !end) {
     return "—";
   }
-  return `du ${formatDate(start)} au ${formatDate(end)}`;
+  return i18n.resolvedLanguage === "en"
+    ? `from ${formatDate(start)} to ${formatDate(end)}`
+    : `du ${formatDate(start)} au ${formatDate(end)}`;
 }
 
 export function formatBytes(bytes: number): string {

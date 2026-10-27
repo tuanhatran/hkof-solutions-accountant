@@ -452,6 +452,197 @@ export const fr = {
     },
   },
   settings: {
+    page: {
+      eyebrow: "Réglages",
+      title: "Société",
+      description:
+        "Gérez vos sociétés, leurs salariés signataires et leurs postes de frais. Les calculs restent effectués par le backend.",
+    },
+    company: {
+      selectAria: "Société à configurer",
+      newCompany: "Nouvelle société",
+      deleteButton: "Supprimer",
+      tabsAria: "Sections de l’entreprise",
+      tabs: {
+        identification: "Info générale",
+        leaseExpenses: "Baux & Frais",
+        employees: "Salariés",
+        templates: "Templates",
+      },
+      loading: "Chargement des sociétés…",
+      empty: "Aucune société configurée. Créez la première société.",
+      deleted: "Société supprimée.",
+      deleteDialog: {
+        title: "Supprimer cette société ?",
+        message:
+          "« {{name}} » et ses salariés seront supprimés. Ses baux seront détachés, sans être supprimés. Une société utilisée par des notes de frais ou des quittances ne peut pas être supprimée.",
+        confirm: "Supprimer la société",
+        fallbackName: "Cette société",
+      },
+      identity: {
+        sectionTitle: "Identité de la société",
+        sectionDescription:
+          "Nom, forme juridique et siège utilisés en en-tête des documents.",
+        viewDescription:
+          "Valeurs utilisées en en-tête des quittances et notes de frais.",
+        edit: "Modifier",
+        fields: {
+          name: "Raison sociale",
+          legalForm: "Forme juridique",
+          siren: "SIREN",
+          managerName: "Gérant",
+          companyAddress: "Adresse de la société",
+          address: "Adresse",
+          issuePlace: "Lieu d’émission",
+        },
+        sirenHelp: "9 chiffres, espaces autorisés.",
+        modal: {
+          create: "Nouvelle société",
+          edit: "Modifier la société",
+        },
+        toasts: {
+          created: "Société créée.",
+          saved:
+            "Société enregistrée. Les prochains documents utiliseront ces valeurs.",
+        },
+      },
+      validation: {
+        name: "Le nom de la société est obligatoire.",
+        siren: "Le SIREN doit comporter 9 chiffres.",
+      },
+      leaseTab: {
+        title: "Baux de la société",
+        description:
+          "Une société peut être locataire de plusieurs baux. Cliquez sur un bail pour l’activer et déplier ses frais : postes et notes de frais suivent ce bail.",
+        add: "Ajouter un bail",
+        loading: "Chargement des baux…",
+        empty:
+          "Aucun bail pour cette société. Ajoutez le premier bail avec « Ajouter un bail ».",
+        addressFallback: "Bail sans adresse",
+        meta: "Bailleur {{landlord}} · Loyer {{rent}} · Charges {{charges}}",
+        activeBadge: "Bail actif",
+        statement: "Note de frais",
+        edit: "Modifier",
+      },
+      leaseView: {
+        surfaces:
+          "Surface professionnelle {{businessArea}} m² · Surface totale {{totalArea}} m²",
+        proRata: "Quote-part professionnelle {{percentage}}",
+        empty:
+          "Aucun bail sélectionné : la société n’a pas de quote-part professionnelle.",
+      },
+      statementModal: {
+        title: "Note de frais",
+        closeAria: "Fermer la fenêtre",
+        tabsAria: "Volets de la note de frais",
+        input: "Saisie",
+        preview: "Aperçu",
+        close: "Fermer",
+      },
+    },
+    lease: {
+      section: {
+        title: "Baux et adresses",
+        description:
+          "Une adresse peut porter plusieurs baux. Sélectionnez une adresse pour afficher ses baux et fixer le loyer et les charges.",
+        add: "Ajouter un bail",
+        addressLabel: "Adresse des baux",
+        addressHelp: "Seuls les baux de l’adresse sélectionnée sont affichés.",
+        loadingAddresses: "Chargement des adresses…",
+        noAddress: "Aucune adresse configurée",
+        loading: "Chargement des baux…",
+        empty:
+          "Aucun bail pour cette adresse. Ajoutez un bail pour générer des quittances.",
+        company: "Société : {{company}}",
+        noCompany: "Aucune société",
+        amounts: "Loyer {{rent}} · charges {{charges}} · total",
+        editAria: "Modifier le bail {{id}}",
+        edit: "Modifier",
+        removeAria: "Supprimer le bail {{id}}",
+        remove: "Retirer",
+        receiptAria: "Quittance du bail {{id}}",
+        receipt: "Quittance",
+        signaturePending: "Vérification des signatures…",
+        signatureMissing:
+          "Aucune signature enregistrée pour ce bailleur. Ajoutez-en une dans l’onglet « Personnes » pour générer une quittance.",
+        deleted: "Bail supprimé.",
+        deleteDialog: {
+          title: "Supprimer ce bail ?",
+          message:
+            "Le bail de « {{tenant}} » ne sera plus proposé lors de la génération. Les quittances existantes restent inchangées.",
+          confirm: "Supprimer le bail",
+          fallbackTenant: "ce locataire",
+        },
+      },
+      form: {
+        createTitle: "Ajouter un bail",
+        editTitle: "Modifier le bail",
+        companyLeaseLabel: "Bail société",
+        companyLeaseHint:
+          "Le locataire est une société : renseignez les surfaces du logement pour calculer la quote-part professionnelle.",
+        landlord: "Bailleur",
+        landlordPlaceholder: "Sélectionnez un bailleur",
+        companyTenant: "Locataire (société)",
+        companyPlaceholder: "Sélectionnez une société",
+        tenant: "Locataire",
+        tenantPlaceholder: "Sélectionnez un locataire",
+        address: "Adresse du bien",
+        addressPlaceholder: "12 rue de la République, 75000 Paris",
+        rentExclCharges: "Loyer hors charges (€)",
+        rentExclChargesPlaceholder: "900,00",
+        charges: "Provision pour charges (€)",
+        chargesPlaceholder: "50,00",
+        totalArea: "Surface totale (m²)",
+        totalAreaPlaceholder: "70,00",
+        businessArea: "Surface professionnelle (m²)",
+        businessAreaPlaceholder: "25,00",
+        total: "Total quittance",
+        totalHint:
+          "Indicatif : loyer + provision. Le total de la quittance est calculé par le backend.",
+        toasts: {
+          created: "Bail ajouté.",
+          updated: "Bail mis à jour.",
+        },
+      },
+      receiptModal: {
+        title: "Quittance de loyer",
+        closeAria: "Fermer la fenêtre",
+        landlord: "Bailleur",
+        tenant: "Locataire",
+        company: "Société",
+        property: "Bien",
+        noCompany: "Aucune société",
+        month: "Mois",
+        monthHelp: "La période se déduit du mois choisi.",
+        period: "Période :",
+        rentExclCharges: "Loyer hors charges",
+        rentExclChargesHelp: "Modifiable pour une régularisation ponctuelle.",
+        charges: "Provision pour charges",
+        resultTitle: "Quittance générée",
+        resultMeta: "{{month}} · version {{version}} · {{total}}",
+        download: "Télécharger le PDF",
+        close: "Fermer",
+        generate: "Générer la quittance",
+      },
+      validation: {
+        landlord: "Sélectionnez un bailleur.",
+        propertyAddress: "L'adresse du bien est obligatoire.",
+        rentExclCharges: "Loyer hors charges invalide.",
+        charges: "Provision pour charges invalide.",
+        totalAreaInvalid: "Surface totale invalide.",
+        businessAreaInvalid: "Surface professionnelle invalide.",
+        companyTenant: "Sélectionnez la société locataire.",
+        tenant: "Sélectionnez un locataire.",
+        partiesIdentical:
+          "Le bailleur et le locataire doivent être deux personnes distinctes.",
+        totalAreaRequired:
+          "La surface totale est obligatoire pour un bail société.",
+        businessAreaRequired:
+          "La surface professionnelle est obligatoire pour un bail société.",
+        businessAreaTooLarge:
+          "La surface professionnelle ne peut pas dépasser la surface totale.",
+      },
+    },
     history: {
       receipts: {
         title: "Quittances générées",

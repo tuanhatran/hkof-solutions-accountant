@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { downloadBlob, errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import {
@@ -30,6 +31,7 @@ import { decimalFormatter } from "./settingsMoney";
  * remains the only source of the generated total.
  */
 export function useLeaseReceiptModal(leaseRow: LeaseDto) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const templates = useTemplates("RENT_RECEIPT");
   const signatures = useSignatures(leaseRow.landlordId ?? null);
@@ -111,7 +113,10 @@ export function useLeaseReceiptModal(leaseRow: LeaseDto) {
         queryKey: queryKeys.rentReceiptsAll,
       });
       toast.success(
-        `Quittance de ${formatMonth(rentReceipt.month ?? values.month)} générée en version ${rentReceipt.version ?? 1}.`,
+        t("rentReceipt.toasts.generated", {
+          month: formatMonth(rentReceipt.month ?? values.month),
+          version: rentReceipt.version ?? 1,
+        }),
       );
     },
     onError: (error) => toast.error(errorMessage(error)),

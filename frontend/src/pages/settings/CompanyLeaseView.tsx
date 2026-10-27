@@ -1,4 +1,5 @@
 import "./CompanyLeaseView.css";
+import { useTranslation } from "react-i18next";
 import type { LeaseDto } from "@/api/types";
 import { decimalFormatter } from "@/components/settings/settingsMoney";
 import { formatPercentage } from "@/lib/format";
@@ -15,23 +16,26 @@ export function CompanyLeaseView({
   lease: LeaseDto | null;
   proRataBase: string | null;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="company-lease-view">
       {lease ? (
         <div className="company-lease-view-details" data-cy="bail-societe-lie">
           <p className="company-lease-view-details-meta">
-            Surface professionnelle{" "}
-            {decimalFormatter(lease.businessArea) || "—"} m² · Surface totale{" "}
-            {decimalFormatter(lease.totalArea) || "—"} m²
+            {t("settings.company.leaseView.surfaces", {
+              businessArea: decimalFormatter(lease.businessArea) || "—",
+              totalArea: decimalFormatter(lease.totalArea) || "—",
+            })}
           </p>
           <p className="company-lease-view-details-meta">
-            Quote-part professionnelle {formatPercentage(proRataBase)}
+            {t("settings.company.leaseView.proRata", {
+              percentage: formatPercentage(proRataBase),
+            })}
           </p>
         </div>
       ) : (
         <p className="company-lease-view-empty" data-cy="aucun-bail-societe">
-          Aucun bail sélectionné : la société n’a pas de quote-part
-          professionnelle.
+          {t("settings.company.leaseView.empty")}
         </p>
       )}
     </div>

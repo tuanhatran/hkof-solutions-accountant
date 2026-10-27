@@ -2,6 +2,7 @@ import "./CompanyLeaseTab.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileText, KeyRound, PencilLine, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys, useLeases, usePersons, useStatements } from "@/api/queries";
@@ -41,6 +42,7 @@ export function CompanyLeaseTab({
   company: CompanyDto;
   companies: CompanyDto[];
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const leases = useLeases();
   const persons = usePersons();
@@ -117,8 +119,8 @@ export function CompanyLeaseTab({
       <section className="company-lease-tab-leases">
         <SectionHeader
           icon={KeyRound}
-          title="Baux de la société"
-          description="Une société peut être locataire de plusieurs baux. Cliquez sur un bail pour l’activer et déplier ses frais : postes et notes de frais suivent ce bail."
+          title={t("settings.company.leaseTab.title")}
+          description={t("settings.company.leaseTab.description")}
           action={
             <Button
               variant="primary"
@@ -128,7 +130,7 @@ export function CompanyLeaseTab({
               disabled={addingLease}
               data-cy="btn-ajouter-bail-societe"
             >
-              Ajouter un bail
+              {t("settings.company.leaseTab.add")}
             </Button>
           }
         />
@@ -139,10 +141,10 @@ export function CompanyLeaseTab({
               onRetry={() => void leases.refetch()}
             />
           ) : leases.isPending ? (
-            <LoadingState message="Chargement des baux…" />
+            <LoadingState message={t("settings.company.leaseTab.loading")} />
           ) : companyLeases.length === 0 ? (
             <EmptyState
-              text="Aucun bail pour cette société. Ajoutez le premier bail avec « Ajouter un bail »."
+              text={t("settings.company.leaseTab.empty")}
               dataCy="liste-baux-societe-vide"
             />
           ) : (
@@ -168,16 +170,21 @@ export function CompanyLeaseTab({
                       >
                         <span className="company-lease-tab-item-main">
                           <span className="company-lease-tab-item-address">
-                            {lease.propertyAddress ?? "Bail sans adresse"}
+                            {lease.propertyAddress ??
+                              t("settings.company.leaseTab.addressFallback")}
                           </span>
                           <span className="company-lease-tab-item-meta">
-                            Bailleur {lease.landlordName ?? "—"} · Loyer{" "}
-                            {formatEUR(lease.rentExclCharges ?? "0.00")} ·
-                            Charges {formatEUR(lease.charges ?? "0.00")}
+                            {t("settings.company.leaseTab.meta", {
+                              landlord: lease.landlordName ?? "—",
+                              rent: formatEUR(lease.rentExclCharges ?? "0.00"),
+                              charges: formatEUR(lease.charges ?? "0.00"),
+                            })}
                           </span>
                         </span>
                         {selected ? (
-                          <span className="badge badge-accent">Bail actif</span>
+                          <span className="badge badge-accent">
+                            {t("settings.company.leaseTab.activeBadge")}
+                          </span>
                         ) : null}
                       </button>
                       <Button
@@ -187,7 +194,7 @@ export function CompanyLeaseTab({
                         onClick={() => setStatementLease(lease)}
                         data-cy={`btn-note-frais-bail-societe-${lease.id}`}
                       >
-                        Note de frais
+                        {t("settings.company.leaseTab.statement")}
                       </Button>
                       <Button
                         variant="ghost"
@@ -196,7 +203,7 @@ export function CompanyLeaseTab({
                         onClick={() => setEditingLease(lease)}
                         data-cy={`btn-modifier-bail-societe-${lease.id}`}
                       >
-                        Modifier
+                        {t("settings.company.leaseTab.edit")}
                       </Button>
                     </div>
                     <CompanyLeaseStatementHistory

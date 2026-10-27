@@ -2,6 +2,7 @@ import "./CompanyLeaseStatementModal.css";
 import { X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import type { LeaseDto } from "@/api/types";
 import { LeaseReceiptModal } from "@/components/settings/LeaseReceiptModal";
@@ -29,6 +30,7 @@ export function CompanyLeaseStatementModal({
   companyId: number;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const {
     controller: c,
     receiptModalOpen,
@@ -71,7 +73,7 @@ export function CompanyLeaseStatementModal({
               id="company-lease-statement-title"
               className="company-lease-statement-title"
             >
-              Note de frais
+              {t("settings.company.statementModal.title")}
             </h2>
             <p className="company-lease-statement-subtitle">
               {lease.propertyAddress}
@@ -81,7 +83,7 @@ export function CompanyLeaseStatementModal({
             type="button"
             onClick={onClose}
             className="company-lease-statement-close"
-            aria-label="Fermer la fenêtre"
+            aria-label={t("settings.company.statementModal.closeAria")}
           >
             <X size={18} />
           </button>
@@ -102,16 +104,19 @@ export function CompanyLeaseStatementModal({
 
         <div className="company-lease-statement-tabs">
           <ViewTabs
-            ariaLabel="Volets de la note de frais"
+            ariaLabel={t("settings.company.statementModal.tabsAria")}
             active={c.mobilePanel}
             onChange={(value) =>
               c.setMobilePanel(value === "preview" ? "preview" : "input")
             }
             tabs={[
-              { value: "input", label: "Saisie" },
+              {
+                value: "input",
+                label: t("settings.company.statementModal.input"),
+              },
               {
                 value: "preview",
-                label: "Aperçu",
+                label: t("settings.company.statementModal.preview"),
                 updated: Boolean(c.preview.updatedAt),
                 className: "flex items-center justify-center gap-2",
               },
@@ -126,25 +131,23 @@ export function CompanyLeaseStatementModal({
 
         <div className="company-lease-statement-actions">
           <Button variant="secondary" small onClick={onClose}>
-            Fermer
+            {t("settings.company.statementModal.close")}
           </Button>
         </div>
 
         <ConfirmDialog
           open={c.lineToRemove !== null}
-          title="Supprimer ce frais ?"
+          title={t("expenseStatement.page.removeDialog.title")}
           message={
-            c.lineToRemove ? (
-              <>
-                La ligne «{" "}
-                {c.expenseItemByCode.get(c.lineToRemove.itemCode)?.label ??
-                  c.lineToRemove.itemCode}{" "}
-                » sera retirée du brouillon. Cette action ne modifie pas les
-                versions déjà générées.
-              </>
-            ) : null
+            c.lineToRemove
+              ? t("expenseStatement.page.removeDialog.message", {
+                  item:
+                    c.expenseItemByCode.get(c.lineToRemove.itemCode)?.label ??
+                    c.lineToRemove.itemCode,
+                })
+              : null
           }
-          confirmLabel="Supprimer"
+          confirmLabel={t("expenseStatement.page.removeDialog.confirm")}
           variant="danger"
           onConfirm={c.removeLine}
           onCancel={() => c.setLineToRemove(null)}
@@ -153,15 +156,13 @@ export function CompanyLeaseStatementModal({
 
         <ConfirmDialog
           open={c.regenerationDialog}
-          title="Générer une nouvelle version ?"
-          message={
-            <>
-              Une note active existe déjà pour {formatMonth(c.month)} (version{" "}
-              {c.activeVersion}). La version {(c.activeVersion ?? 0) + 1} sera
-              créée et l’ancienne restera consultable dans l’historique.
-            </>
-          }
-          confirmLabel="Créer la nouvelle version"
+          title={t("expenseStatement.page.regenerateDialog.title")}
+          message={t("expenseStatement.page.regenerateDialog.message", {
+            month: formatMonth(c.month),
+            version: c.activeVersion,
+            next: (c.activeVersion ?? 0) + 1,
+          })}
+          confirmLabel={t("expenseStatement.page.regenerateDialog.confirm")}
           onConfirm={() => {
             c.setRegenerationDialog(false);
             void c.generateStatement();

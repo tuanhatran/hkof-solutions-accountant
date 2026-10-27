@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { CompanyDto } from "@/api/types";
+import i18n from "@/i18n";
 import { CompanyIdentityView } from "./CompanyIdentityView";
 
 const COMPANY: CompanyDto = {
@@ -59,5 +60,33 @@ describe("CompanyIdentityView", () => {
     expect(rowValue("SIREN")).toBe("—");
     expect(rowValue("Gérant")).toBe("—");
     expect(document.querySelector('[data-cy="info-societe"] input')).toBeNull();
+  });
+
+  it("renders every identity field in English and relabels without a reload", async () => {
+    render(<CompanyIdentityView company={COMPANY} onEdit={vi.fn()} />);
+    expect(rowValue("Raison sociale")).toBe("HKOF");
+
+    await act(async () => {
+      await i18n.changeLanguage("en");
+    });
+
+    expect(rowValue("Company name")).toBe("HKOF");
+    expect(rowValue("Legal form")).toBe("EURL");
+    expect(rowValue("SIREN")).toBe("123 456 789");
+    expect(rowValue("Address")).toBe("1 rue de la Paix, 75002 Paris");
+    expect(rowValue("Manager")).toBe("Camille Martin");
+    expect(rowValue("Place of issue")).toBe("Paris");
+    expect(
+      screen.getByRole("heading", { name: "Company identity" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Values used in the headers of rent receipts and expense statements.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Edit" })).toHaveAttribute(
+      "data-cy",
+      "btn-modifier-societe",
+    );
   });
 });

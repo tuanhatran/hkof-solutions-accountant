@@ -55,7 +55,7 @@ describe("expenseSchema", () => {
     ]);
   });
 
-  it("translates only the expense messages at parse time", async () => {
+  it("translates the expense messages at parse time", async () => {
     await i18n.changeLanguage("en");
 
     const english = expenseSchema.safeParse({
@@ -73,9 +73,9 @@ describe("expenseSchema", () => {
       "Pro rata must be between 0 and 100 (2 decimals max).",
     ]);
     expect(
-      companySchema.safeParse({ ...VALID_COMPANY, name: " " }).error?.issues[0]
-        ?.message,
-    ).toBe("Le nom de la société est obligatoire.");
+      employeeSchema.safeParse({ firstName: " ", lastName: "", title: "CEO" })
+        .error?.issues[0]?.message,
+    ).toBe("Le prénom du salarié est obligatoire.");
 
     await i18n.changeLanguage("fr");
     expect(
@@ -163,7 +163,7 @@ describe("rentReceiptSchema", () => {
     expect(
       companySchema.safeParse({ ...VALID_COMPANY, name: " " }).error?.issues[0]
         ?.message,
-    ).toBe("Le nom de la société est obligatoire.");
+    ).toBe("The company name is required.");
   });
 });
 
@@ -202,6 +202,30 @@ describe("companySchema", () => {
     expect(
       companySchema.safeParse({ ...VALID_COMPANY, siren: "12345" }).success,
     ).toBe(false);
+  });
+
+  it("translates the company messages at parse time", async () => {
+    await i18n.changeLanguage("en");
+
+    const english = companySchema.safeParse({
+      ...VALID_COMPANY,
+      name: " ",
+      siren: "12345",
+    });
+    expect(english.success).toBe(false);
+    if (english.success) {
+      return;
+    }
+    expect(english.error.issues.map((issue) => issue.message)).toEqual([
+      "The company name is required.",
+      "The SIREN must have 9 digits.",
+    ]);
+
+    await i18n.changeLanguage("fr");
+    expect(
+      companySchema.safeParse({ ...VALID_COMPANY, name: " " }).error?.issues[0]
+        ?.message,
+    ).toBe("Le nom de la société est obligatoire.");
   });
 });
 
@@ -364,6 +388,101 @@ describe("directory schemas", () => {
       leaseSchema.safeParse({ ...valid, totalArea: "70", businessArea: "25" })
         .success,
     ).toBe(true);
+  });
+});
+
+describe("leaseSchema language", () => {
+  const COMPANY_LEASE = {
+    companyLease: true,
+    landlordId: "1",
+    tenantId: "",
+    companyId: "3",
+    propertyAddress: "12 rue de la République, 75000 Paris",
+    rentExclCharges: "1300,00",
+    charges: "0,00",
+    totalArea: "70",
+    businessArea: "25",
+  };
+
+  it("translates every lease message at parse time", async () => {
+    await i18n.changeLanguage("en");
+
+    const missing = leaseSchema.safeParse({
+      ...COMPANY_LEASE,
+      landlordId: "",
+      companyId: "",
+      propertyAddress: "",
+      rentExclCharges: "",
+      charges: "",
+      totalArea: "",
+      businessArea: "",
+    });
+    expect(missing.success).toBe(false);
+    if (missing.success) {
+      return;
+    }
+    expect(missing.error.issues.map((issue) => issue.message)).toEqual([
+      "Select a landlord.",
+      "The property address is required.",
+      "Invalid rent excluding charges.",
+      "Invalid charges provision.",
+      "Select the tenant company.",
+      "The total area is required for a company lease.",
+      "The business area is required for a company lease.",
+    ]);
+
+    const noTenant = leaseSchema.safeParse({
+      ...COMPANY_LEASE,
+      companyLease: false,
+      tenantId: "",
+    });
+    expect(noTenant.error?.issues[0]?.message).toBe("Select a tenant.");
+
+    const identical = leaseSchema.safeParse({
+      ...COMPANY_LEASE,
+      companyLease: false,
+      tenantId: "1",
+    });
+    expect(identical.error?.issues[0]?.message).toBe(
+      "The landlord and the tenant must be two different people.",
+    );
+
+    const invalidTotalArea = leaseSchema.safeParse({
+      ...COMPANY_LEASE,
+      totalArea: "abc",
+    });
+    expect(
+      invalidTotalArea.error?.issues.find(
+        (issue) => issue.path[0] === "totalArea",
+      )?.message,
+    ).toBe("Invalid total area.");
+
+    const invalidBusinessArea = leaseSchema.safeParse({
+      ...COMPANY_LEASE,
+      totalArea: "70",
+      businessArea: "abc",
+    });
+    expect(
+      invalidBusinessArea.error?.issues.find(
+        (issue) => issue.path[0] === "businessArea",
+      )?.message,
+    ).toBe("Invalid business area.");
+
+    const tooLarge = leaseSchema.safeParse({
+      ...COMPANY_LEASE,
+      totalArea: "70",
+      businessArea: "80",
+    });
+    expect(
+      tooLarge.error?.issues.find((issue) => issue.path[0] === "businessArea")
+        ?.message,
+    ).toBe("The business area cannot exceed the total area.");
+
+    await i18n.changeLanguage("fr");
+    expect(
+      leaseSchema.safeParse({ ...COMPANY_LEASE, landlordId: "" }).error
+        ?.issues[0]?.message,
+    ).toBe("Sélectionnez un bailleur.");
   });
 });
 

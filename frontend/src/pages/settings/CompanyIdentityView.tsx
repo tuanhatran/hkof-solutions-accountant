@@ -1,5 +1,6 @@
 import "./CompanyIdentityView.css";
 import { Building2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { CompanyDto } from "@/api/types";
 import { SectionHeader } from "@/components/settings/SettingsSection";
 import { Button } from "@/components/ui/Button";
@@ -16,21 +17,37 @@ export function CompanyIdentityView({
   company: CompanyDto;
   onEdit: () => void;
 }) {
+  const { t } = useTranslation();
   const rows: { label: string; value: string | null | undefined }[] = [
-    { label: "Raison sociale", value: company.name },
-    { label: "Forme juridique", value: company.legalForm },
-    { label: "SIREN", value: company.siren },
-    { label: "Adresse", value: company.address },
-    { label: "Gérant", value: company.managerName },
-    { label: "Lieu d’émission", value: company.issuePlace },
+    { label: t("settings.company.identity.fields.name"), value: company.name },
+    {
+      label: t("settings.company.identity.fields.legalForm"),
+      value: company.legalForm,
+    },
+    {
+      label: t("settings.company.identity.fields.siren"),
+      value: company.siren,
+    },
+    {
+      label: t("settings.company.identity.fields.address"),
+      value: company.address,
+    },
+    {
+      label: t("settings.company.identity.fields.managerName"),
+      value: company.managerName,
+    },
+    {
+      label: t("settings.company.identity.fields.issuePlace"),
+      value: company.issuePlace,
+    },
   ];
 
   return (
     <section className="company-identity-view">
       <SectionHeader
         icon={Building2}
-        title="Identité de la société"
-        description="Valeurs utilisées en en-tête des quittances et notes de frais."
+        title={t("settings.company.identity.sectionTitle")}
+        description={t("settings.company.identity.viewDescription")}
         action={
           <Button
             variant="secondary"
@@ -38,7 +55,7 @@ export function CompanyIdentityView({
             onClick={onEdit}
             data-cy="btn-modifier-societe"
           >
-            Modifier
+            {t("settings.company.identity.edit")}
           </Button>
         }
       />

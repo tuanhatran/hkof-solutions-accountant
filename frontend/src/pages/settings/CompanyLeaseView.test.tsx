@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { LeaseDto } from "@/api/types";
+import i18n from "@/i18n";
 import { CompanyLeaseView } from "./CompanyLeaseView";
 
 const LEASE: LeaseDto = {
@@ -58,5 +59,20 @@ describe("CompanyLeaseView", () => {
       "Surface professionnelle — m² · Surface totale — m²",
     );
     expect(document.body.textContent).not.toContain("NaN");
+  });
+
+  it("renders the lease summary and the empty sentence in English", async () => {
+    await i18n.changeLanguage("en");
+    const view = render(<CompanyLeaseView lease={LEASE} proRataBase="35.71" />);
+
+    const details = document.querySelector('[data-cy="bail-societe-lie"]');
+    expect(details).toHaveTextContent(
+      "Business area 25,00 m² · Total area 70,00 m²",
+    );
+    expect(details).toHaveTextContent("Professional share 35,71 %");
+    view.unmount();
+
+    render(<CompanyLeaseView lease={null} proRataBase={null} />);
+    expect(screen.getByText(/^No lease selected/)).toBeVisible();
   });
 });

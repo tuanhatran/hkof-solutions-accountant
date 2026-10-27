@@ -1,6 +1,7 @@
 import "./SettingsCompanySection.css";
 import { Building2 } from "lucide-react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
 import type { CompanyFormValues } from "@/lib/validation";
@@ -14,16 +15,17 @@ export function SettingsCompanySection({
   register: UseFormRegister<CompanyFormValues>;
   errors: FieldErrors<CompanyFormValues>;
 }) {
+  const { t } = useTranslation();
   return (
     <SettingsCardSection
       icon={Building2}
-      title="Identité de la société"
-      description="Nom, forme juridique et siège utilisés en en-tête des documents."
+      title={t("settings.company.identity.sectionTitle")}
+      description={t("settings.company.identity.sectionDescription")}
       bodyClassName="card-body settings-company-section-body"
     >
       <FieldGroup
         id="param-raison-sociale"
-        label="Raison sociale"
+        label={t("settings.company.identity.fields.name")}
         error={errors.name?.message}
         className="sm:col-span-1"
       >
@@ -36,7 +38,7 @@ export function SettingsCompanySection({
       </FieldGroup>
       <FieldGroup
         id="param-forme-juridique"
-        label="Forme juridique"
+        label={t("settings.company.identity.fields.legalForm")}
         error={errors.legalForm?.message}
       >
         <input
@@ -47,9 +49,9 @@ export function SettingsCompanySection({
       </FieldGroup>
       <FieldGroup
         id="param-siren"
-        label="SIREN"
+        label={t("settings.company.identity.fields.siren")}
         error={errors.siren?.message}
-        help="9 chiffres, espaces autorisés."
+        help={t("settings.company.identity.sirenHelp")}
       >
         <input
           id="param-siren"
@@ -65,7 +67,7 @@ export function SettingsCompanySection({
       </FieldGroup>
       <FieldGroup
         id="param-managerName"
-        label="Gérant"
+        label={t("settings.company.identity.fields.managerName")}
         error={errors.managerName?.message}
       >
         <input
@@ -77,7 +79,7 @@ export function SettingsCompanySection({
       </FieldGroup>
       <FieldGroup
         id="param-societe-adresse"
-        label="Adresse de la société"
+        label={t("settings.company.identity.fields.companyAddress")}
         error={errors.address?.message}
         className="sm:col-span-2"
       >
@@ -94,7 +96,7 @@ export function SettingsCompanySection({
       </FieldGroup>
       <FieldGroup
         id="param-lieu"
-        label="Lieu d’émission"
+        label={t("settings.company.identity.fields.issuePlace")}
         error={errors.issuePlace?.message}
       >
         <input

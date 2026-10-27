@@ -6,6 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
 import type { CompanyDto, LeaseDto, StatementDto } from "@/api/types";
+import i18n from "@/i18n";
 import { useToasts } from "@/state/toasts";
 import { CompanyLeaseTab } from "./CompanyLeaseTab";
 
@@ -686,6 +687,49 @@ describe("CompanyLeaseTab", () => {
     await waitFor(() =>
       expect(queryByCy("dialogue-note-frais-bail")).toBeNull(),
     );
+  });
+
+  it("renders the company lease tab in English", async () => {
+    await i18n.changeLanguage("en");
+    renderTab();
+
+    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    expect(
+      screen.getByRole("heading", { name: "Company leases" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "A company can be the tenant of several leases. Click a lease to activate it and expand its expenses: items and expense statements follow that lease.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add a lease" })).toBeVisible();
+    expect(
+      withinLease("bail-societe-5").getByText("Active lease"),
+    ).toBeVisible();
+    expect(
+      withinLease("bail-societe-5").getByText(
+        "Landlord M. Bailleur · Rent 900,00 € · Charges 50,00 €",
+      ),
+    ).toBeVisible();
+    expect(queryByCy("btn-note-frais-bail-societe-5")).toHaveTextContent(
+      "Expense statement",
+    );
+    expect(queryByCy("btn-modifier-bail-societe-5")).toHaveTextContent("Edit");
+  });
+
+  it("shows the English empty lease state", async () => {
+    await i18n.changeLanguage("en");
+    vi.mocked(api.leases.list).mockResolvedValue([]);
+    renderTab();
+
+    await waitFor(() =>
+      expect(queryByCy("liste-baux-societe-vide")).not.toBeNull(),
+    );
+    expect(
+      screen.getByText(
+        "No lease for this company. Add the first lease with “Add a lease”.",
+      ),
+    ).toBeVisible();
   });
 });
 

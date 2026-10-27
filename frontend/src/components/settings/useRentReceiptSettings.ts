@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import {
@@ -14,6 +15,7 @@ import { toast } from "@/state/toasts";
 
 /** Lease directory state and logical-deletion mutation of the LMNP settings. */
 export function useRentReceiptSettings() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const persons = usePersons();
   const companies = useCompanies();
@@ -40,7 +42,7 @@ export function useRentReceiptSettings() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.leases });
       setLeaseToDelete(null);
-      toast.success("Bail supprimé.");
+      toast.success(t("settings.lease.section.deleted"));
     },
     onError: (error) => {
       setLeaseToDelete(null);
