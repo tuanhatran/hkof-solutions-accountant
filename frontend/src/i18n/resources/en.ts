@@ -32,6 +32,9 @@ export const en = {
         "The file exceeds the maximum allowed size ({{maxJustificatif}} MB for a receipt, {{maxTemplate}} MB for a template).",
       INVALID_FILE:
         "The file could not be received. Check its format and size.",
+      METHOD_NOT_ALLOWED: "This action is not allowed for this address.",
+      UNSUPPORTED_MEDIA_TYPE: "The request format is not supported.",
+      NOT_ACCEPTABLE: "The requested response format is not available.",
       INTERNAL_ERROR: "An unexpected error occurred. Check the server logs.",
       NETWORK_ERROR:
         "The server is unreachable. Check that the HomeOfficeExpenses application is running.",

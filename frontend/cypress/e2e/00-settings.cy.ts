@@ -130,6 +130,13 @@ describe("Settings", () => {
   it("adds, edits then removes an expense type", () => {
     cy.visit("/configuration/entreprise");
 
+    // Wait for the companies query and the effect that selects the first
+    // company: it resets the active tab to "identification" when selectedId
+    // resolves, so clicking the tab before that would be undone.
+    cy.get('[data-cy="info-societe"]', { timeout: 20_000 }).should(
+      "be.visible",
+    );
+
     cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
     // The tab arrives collapsed: expand the active lease to reach its postes.
     cy.contains('button[data-cy^="bail-societe-"]', "Bail actif", {

@@ -370,6 +370,22 @@ describe("errorMessage translations", () => {
     );
   });
 
+  it("renders a protocol error code in French and English", async () => {
+    const methodNotAllowed = new ApiError("Détail serveur en anglais.", 405, {
+      code: "METHOD_NOT_ALLOWED",
+    });
+
+    expect(errorMessage(methodNotAllowed)).toBe(
+      "Cette action n'est pas autorisée pour cette adresse.",
+    );
+
+    await i18n.changeLanguage("en");
+
+    expect(errorMessage(methodNotAllowed)).toBe(
+      "This action is not allowed for this address.",
+    );
+  });
+
   it("falls back to the server detail when the code is unknown or untranslated", () => {
     expect(
       errorMessage(

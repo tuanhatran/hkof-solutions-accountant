@@ -3,14 +3,18 @@ package fr.hkof.homeofficeexpenses.web;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
@@ -24,9 +28,8 @@ import fr.hkof.homeofficeexpenses.service.NotFoundException;
 import jakarta.validation.ConstraintViolationException;
 
 @RestControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class GlobalExceptionHandler {
-
-    private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ProblemDetail> notFound(NotFoundException ex) {
@@ -60,10 +63,30 @@ public class GlobalExceptionHandler {
                 "Un paramètre de la requête est invalide.", "INVALID_PARAMETER");
     }
 
-    @ExceptionHandler({MissingServletRequestParameterException.class, MethodArgumentTypeMismatchException.class})
+    @ExceptionHandler({ServletRequestBindingException.class, MethodArgumentTypeMismatchException.class})
     public ResponseEntity<ProblemDetail> invalidParameter(Exception ex) {
         return response(HttpStatus.BAD_REQUEST, "Requête invalide",
                 "Un paramètre de la requête est manquant ou invalide.", "MISSING_OR_INVALID_PARAMETER");
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ProblemDetail> methodNotAllowed(HttpRequestMethodNotSupportedException ex) {
+        return response(HttpStatus.METHOD_NOT_ALLOWED, "Méthode non autorisée",
+                "Cette action n'est pas autorisée pour cette adresse.", "METHOD_NOT_ALLOWED");
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ProblemDetail> unsupportedMediaType(HttpMediaTypeNotSupportedException ex) {
+        return response(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Format non pris en charge",
+                "Le format de la requête n'est pas pris en charge.", "UNSUPPORTED_MEDIA_TYPE");
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+    public ResponseEntity<ProblemDetail> notAcceptable(HttpMediaTypeNotAcceptableException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem(HttpStatus.NOT_ACCEPTABLE, "Format non disponible",
+                        "Le format de réponse demandé n'est pas disponible.", "NOT_ACCEPTABLE"));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -89,13 +112,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ProblemDetail> unknownRoute(NoResourceFoundException ex) {
         return response(HttpStatus.NOT_FOUND, "Ressource introuvable", "Cette adresse n'existe pas.",
                 NotFoundException.DEFAULT_CODE);
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ProblemDetail> unexpected(Exception ex) {
-        LOG.error("Unexpected error", ex);
-        return response(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur interne",
-                "Une erreur inattendue est survenue. Consultez les journaux du serveur.", "INTERNAL_ERROR");
     }
 
     private ResponseEntity<ProblemDetail> response(HttpStatus status, String title, String detail, String code) {

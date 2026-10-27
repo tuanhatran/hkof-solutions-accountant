@@ -32,6 +32,11 @@ export const fr = {
         "Le fichier dépasse la taille maximale autorisée ({{maxJustificatif}} Mo pour un justificatif, {{maxTemplate}} Mo pour un template).",
       INVALID_FILE:
         "Le fichier n'a pas pu être reçu. Vérifiez son format et sa taille.",
+      METHOD_NOT_ALLOWED:
+        "Cette action n'est pas autorisée pour cette adresse.",
+      UNSUPPORTED_MEDIA_TYPE:
+        "Le format de la requête n'est pas pris en charge.",
+      NOT_ACCEPTABLE: "Le format de réponse demandé n'est pas disponible.",
       INTERNAL_ERROR:
         "Une erreur inattendue est survenue. Consultez les journaux du serveur.",
       NETWORK_ERROR:

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -12,13 +13,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -96,9 +102,25 @@ class GlobalExceptionHandlerTest {
                 HttpStatus.BAD_REQUEST, "Requête invalide", "INVALID_PARAMETER");
         assertProblem(handler.invalidParameter(new MissingServletRequestParameterException("month", "String")),
                 HttpStatus.BAD_REQUEST, "Requête invalide", "MISSING_OR_INVALID_PARAMETER");
+        assertProblem(handler.invalidParameter(new MissingRequestHeaderException("X-Test", parameter())),
+                HttpStatus.BAD_REQUEST, "Requête invalide", "MISSING_OR_INVALID_PARAMETER");
         assertProblem(handler.invalidParameter(new MethodArgumentTypeMismatchException(
                         "abc", Long.class, "id", parameter(), null)),
                 HttpStatus.BAD_REQUEST, "Requête invalide", "MISSING_OR_INVALID_PARAMETER");
+    }
+
+    @Test
+    @DisplayName("Protocol errors keep their 4xx status with a stable code")
+    void protocolErrors() {
+        assertProblem(handler.methodNotAllowed(new HttpRequestMethodNotSupportedException("PUT")),
+                HttpStatus.METHOD_NOT_ALLOWED, "Méthode non autorisée", "METHOD_NOT_ALLOWED");
+        assertProblem(handler.unsupportedMediaType(new HttpMediaTypeNotSupportedException("text/plain")),
+                HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Format non pris en charge", "UNSUPPORTED_MEDIA_TYPE");
+
+        ResponseEntity<ProblemDetail> notAcceptable = handler.notAcceptable(
+                new HttpMediaTypeNotAcceptableException(List.of(MediaType.APPLICATION_XML)));
+        assertProblem(notAcceptable, HttpStatus.NOT_ACCEPTABLE, "Format non disponible", "NOT_ACCEPTABLE");
+        assertThat(notAcceptable.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
     }
 
     @Test
@@ -123,11 +145,9 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    @DisplayName("An unknown route maps to 404 and an unexpected error to 500")
-    void unknownRouteAndUnexpected() {
+    @DisplayName("An unknown route maps to 404")
+    void unknownRoute() {
         assertProblem(handler.unknownRoute(new NoResourceFoundException(HttpMethod.GET, "/absent", "absent")),
                 HttpStatus.NOT_FOUND, "Ressource introuvable", "RESOURCE_NOT_FOUND");
-        assertProblem(handler.unexpected(new IllegalStateException("boom")),
-                HttpStatus.INTERNAL_SERVER_ERROR, "Erreur interne", "INTERNAL_ERROR");
     }
 }
