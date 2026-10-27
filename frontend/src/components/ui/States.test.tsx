@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import i18n from "@/i18n";
 import { EmptyState, ErrorState, LoadingState, Spinner } from "./States";
 
 describe("States", () => {
@@ -32,6 +33,16 @@ describe("States", () => {
       .setup()
       .click(screen.getByRole("button", { name: "Réessayer" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders the shared defaults in English", async () => {
+    await i18n.changeLanguage("en");
+    const { rerender } = render(<LoadingState />);
+    expect(screen.getByRole("status")).toHaveTextContent("Loading…");
+
+    rerender(<ErrorState message="Network error" onRetry={vi.fn()} />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Unable to load data");
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
   });
 
   it("renders optional description, action and icon in the empty state", async () => {

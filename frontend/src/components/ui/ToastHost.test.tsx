@@ -1,6 +1,7 @@
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
+import i18n from "@/i18n";
 import { toast, useToasts } from "@/state/toasts";
 import { ToastHost } from "./ToastHost";
 
@@ -40,6 +41,18 @@ describe("ToastHost", () => {
     );
     expect(screen.queryByText("Quittance générée")).toBeNull();
     expect(useToasts.getState().toasts).toHaveLength(2);
+  });
+
+  it("translates the close label into English", async () => {
+    await i18n.changeLanguage("en");
+    render(<ToastHost />);
+    act(() => {
+      toast.info("Draft kept");
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Close notification" }),
+    ).toBeVisible();
   });
 
   it("renders nothing without toasts", () => {

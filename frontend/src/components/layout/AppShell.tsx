@@ -1,9 +1,11 @@
 import "./AppShell.css";
 import { ShieldCheck } from "lucide-react";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
 import { useCompanies } from "@/api/queries";
 import { MobileNavigation, SideNavigation } from "@/components/layout/AppNav";
+import { LanguageSelector } from "@/components/layout/LanguageSelector";
 import { LlmBadge } from "@/components/llm/LlmBadge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ToastHost } from "@/components/ui/ToastHost";
@@ -12,6 +14,8 @@ import { cn } from "@/lib/cn";
 import { resolveActiveCompanyId, useCompanyStore } from "@/state/company";
 
 function Brand({ compact = false }: { compact?: boolean }) {
+  const { t } = useTranslation();
+
   return (
     <div className="app-shell-brand">
       <span
@@ -37,9 +41,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
           HomeOfficeExpenses
         </p>
         {!compact ? (
-          <p className="app-shell-brand-tagline">
-            Quittances &amp; frais d’occupation
-          </p>
+          <p className="app-shell-brand-tagline">{t("shell.tagline")}</p>
         ) : null}
       </div>
     </div>
@@ -47,6 +49,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
 }
 
 export function AppShell() {
+  const { t } = useTranslation();
   const blocker = useDraftBlock();
   const companies = useCompanies();
   const activeCompanyId = useCompanyStore((state) => state.activeCompanyId);
@@ -67,7 +70,7 @@ export function AppShell() {
   return (
     <div className="app-shell">
       <a href="#contenu" className="app-shell-skip-link">
-        Aller au contenu
+        {t("shell.skipLink")}
       </a>
 
       <aside className="app-shell-sidebar hidden lg:flex">
@@ -82,17 +85,14 @@ export function AppShell() {
               className="app-shell-info-icon"
               aria-hidden="true"
             />
-            Données locales
+            {t("shell.localDataTitle")}
           </div>
-          <p className="app-shell-info-text">
-            Aucune donnée ne quitte votre machine tant que l’URL du LLM reste
-            locale.
-          </p>
+          <p className="app-shell-info-text">{t("shell.localDataText")}</p>
           <div className="mt-3">
             <LlmBadge dark />
           </div>
         </div>
-        <p className="app-shell-footer">HomeOfficeExpenses · usage personnel</p>
+        <p className="app-shell-footer">{t("shell.footer")}</p>
       </aside>
 
       <div className="min-w-0">
@@ -104,6 +104,10 @@ export function AppShell() {
           <MobileNavigation />
         </header>
 
+        <div className="app-shell-topbar">
+          <LanguageSelector />
+        </div>
+
         <main id="contenu" className="app-shell-main">
           <Outlet />
         </main>
@@ -112,10 +116,10 @@ export function AppShell() {
       <ToastHost />
       <ConfirmDialog
         open={blocker.state === "blocked"}
-        title="Brouillon non généré"
-        message="Des informations saisies ne sont pas encore enregistrées. Voulez-vous vraiment quitter cette page ? Le brouillon est conservé pendant la session, mais le document ne sera pas généré."
-        confirmLabel="Quitter la page"
-        cancelLabel="Rester"
+        title={t("shell.draftDialog.title")}
+        message={t("shell.draftDialog.message")}
+        confirmLabel={t("shell.draftDialog.confirm")}
+        cancelLabel={t("shell.draftDialog.cancel")}
         variant="danger"
         onConfirm={() => {
           if (blocker.state === "blocked") {

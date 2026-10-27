@@ -2,6 +2,7 @@ import "./ConfirmDialog.css";
 import { AlertTriangle, X } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 
@@ -21,13 +22,14 @@ export function ConfirmDialog({
   open,
   title,
   message,
-  confirmLabel = "Confirmer",
-  cancelLabel = "Annuler",
+  confirmLabel,
+  cancelLabel,
   variant = "primary",
   onConfirm,
   onCancel,
   dataCy = "dialogue-confirmation",
 }: ConfirmDialogProps) {
+  const { t } = useTranslation();
   const cancelButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -88,21 +90,21 @@ export function ConfirmDialog({
             type="button"
             onClick={onCancel}
             className="confirm-dialog-close"
-            aria-label="Fermer"
+            aria-label={t("common.close")}
           >
             <X size={18} />
           </button>
         </div>
         <div className="confirm-dialog-actions">
           <Button ref={cancelButton} variant="secondary" onClick={onCancel}>
-            {cancelLabel}
+            {cancelLabel ?? t("common.cancel")}
           </Button>
           <Button
             variant={variant === "danger" ? "danger" : "primary"}
             onClick={onConfirm}
             data-cy="dialogue-confirmer"
           >
-            {confirmLabel}
+            {confirmLabel ?? t("common.confirm")}
           </Button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import "./ToastHost.css";
 import { AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useToasts, type ToastType } from "@/state/toasts";
 import { cn } from "@/lib/cn";
 
@@ -16,6 +17,7 @@ const CLASS_NAMES: Record<ToastType, string> = {
 };
 
 export function ToastHost() {
+  const { t } = useTranslation();
   const toasts = useToasts((state) => state.toasts);
   const remove = useToasts((state) => state.remove);
 
@@ -43,7 +45,7 @@ export function ToastHost() {
               type="button"
               onClick={() => remove(element.id)}
               className="toast-host-close"
-              aria-label="Fermer la notification"
+              aria-label={t("common.closeNotification")}
             >
               <X size={15} />
             </button>

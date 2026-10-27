@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import i18n from "@/i18n";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 function renderDialog(
@@ -35,6 +36,15 @@ describe("ConfirmDialog", () => {
       .setup()
       .click(screen.getByRole("button", { name: "Confirmer" }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("translates the default labels into English", async () => {
+    await i18n.changeLanguage("en");
+    renderDialog();
+
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Confirm" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Close" })).toBeVisible();
   });
 
   it("renders custom labels, message and danger variant", () => {

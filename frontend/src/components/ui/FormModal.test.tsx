@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import i18n from "@/i18n";
 import { FormModal } from "./FormModal";
 
 function renderModal(overrides: Partial<Parameters<typeof FormModal>[0]> = {}) {
@@ -40,6 +41,15 @@ describe("FormModal", () => {
       "formulaire-bail",
     );
     expect(dialog).toHaveFocus();
+  });
+
+  it("translates the footer and close label into English", async () => {
+    await i18n.changeLanguage("en");
+    renderModal();
+
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Save" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Close" })).toBeVisible();
   });
 
   it("submits the form with Valider and Enter, without closing", async () => {

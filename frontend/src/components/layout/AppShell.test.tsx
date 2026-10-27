@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CompanyDto } from "@/api/types";
+import i18n from "@/i18n";
 import { useCompanyStore } from "@/state/company";
 import { AppShell } from "./AppShell";
 
@@ -224,6 +225,65 @@ describe("AppShell", () => {
     await waitFor(() =>
       expect(useCompanyStore.getState().activeCompanyId).toBe(1),
     );
+  });
+
+  it("renders the language selector in a top bar above the main content", () => {
+    renderShell();
+
+    const selector = screen.getByRole("combobox", { name: "Langue" });
+    expect(selector).toHaveAttribute("data-cy", "select-langue");
+    const topbar = selector.closest(".app-shell-topbar");
+    expect(topbar).not.toBeNull();
+    expect(topbar?.nextElementSibling).toBe(screen.getByRole("main"));
+  });
+
+  it("translates the shell, navigation and draft dialog into English", async () => {
+    blockerState = {
+      state: "blocked",
+      proceed: vi.fn(),
+      reset: vi.fn(),
+    };
+    await i18n.changeLanguage("en");
+    renderShell();
+
+    expect(
+      screen.getByRole("link", { name: "Skip to content" }),
+    ).toHaveAttribute("href", "#contenu");
+    expect(
+      screen.getByText("Rent receipts & home-office expenses"),
+    ).toBeVisible();
+    expect(screen.getByText("Local data")).toBeVisible();
+    expect(screen.getByText(/No data leaves your machine/)).toBeVisible();
+    expect(screen.getByText("HomeOfficeExpenses · personal use")).toBeVisible();
+
+    const navigation = screen.getByRole("navigation", {
+      name: "Main navigation",
+    });
+    expect(within(navigation).getByText("Tracking")).toBeVisible();
+    expect(within(navigation).getByText("Settings")).toBeVisible();
+    expect(
+      within(navigation).getByRole("link", { name: /History/ }),
+    ).toHaveAttribute("data-cy", "tab-historique");
+    expect(
+      within(navigation).getByRole("link", { name: /Company/ }),
+    ).toHaveAttribute("href", "/configuration/entreprise");
+    expect(
+      within(navigation).getByRole("link", { name: /AI Admin/ }),
+    ).toHaveAttribute("href", "/admin");
+    expect(within(navigation).queryByText("Historique")).toBeNull();
+
+    const mobileNavigation = screen.getByRole("navigation", {
+      name: "Mobile navigation",
+    });
+    expect(
+      within(mobileNavigation)
+        .getAllByRole("link")
+        .map((link) => link.textContent),
+    ).toEqual(["History", "Company", "LMNP", "AI Admin"]);
+
+    expect(screen.getByText("Draft not generated")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Leave page" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Stay" })).toBeVisible();
   });
 
   it("clears the active company when none is configured", async () => {
