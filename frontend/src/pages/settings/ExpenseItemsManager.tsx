@@ -65,7 +65,7 @@ export function ExpenseItemsManager({
   }
 
   return (
-    <section className="card expense-items-manager">
+    <section className="expense-items-manager">
       <div className="card-header">
         <div className="expense-items-manager-heading">
           <span className="expense-items-manager-icon">

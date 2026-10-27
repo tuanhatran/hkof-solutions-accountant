@@ -212,6 +212,78 @@ describe("SettingsPage tabs", () => {
     expect(queryByCy("input-raison-sociale")).toBeNull();
   });
 
+  it("orders the company toolbar, the four tabs and the company card like LMNP", () => {
+    renderPage();
+
+    const selector = screen.getByLabelText("Société à configurer");
+    const toolbar = selector.closest(".company-section-toolbar");
+    expect(toolbar).not.toBeNull();
+    const controls = Array.from(toolbar?.children ?? []);
+    expect(controls[0]).toBe(selector);
+    expect(controls[1]).toHaveTextContent("Nouvelle société");
+    expect(controls[2]).toHaveTextContent("Supprimer");
+
+    const tabs = screen.getByRole("tablist", {
+      name: "Sections de l’entreprise",
+    });
+    const card = document.querySelector("section.card.company-section");
+    expect(card).not.toBeNull();
+    expect(
+      toolbar!.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      tabs.compareDocumentPosition(card!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    const panel = document.querySelector(
+      '[role="tabpanel"].company-section-tabpanel',
+    );
+    expect(panel).not.toBeNull();
+    expect(panel?.closest("section.card.company-section")).not.toBeNull();
+
+    const identity = queryByCy("info-societe");
+    expect(identity?.closest("section")?.classList.contains("card")).toBe(
+      false,
+    );
+  });
+
+  it("removes the inner card chrome from the Baux & Frais and Salariés tabs", async () => {
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
+    expect(
+      document
+        .querySelector("section.company-lease-tab-leases")
+        ?.classList.contains("card"),
+    ).toBe(false);
+
+    await user.click(queryByCy("bail-societe-5") as Element);
+    expect(
+      document
+        .querySelector("section.expense-items-manager")
+        ?.classList.contains("card"),
+    ).toBe(false);
+
+    await user.click(queryByCy("onglet-entreprise-salaries") as Element);
+    expect(
+      document
+        .querySelector("section.employee-section")
+        ?.classList.contains("card"),
+    ).toBe(false);
+  });
+
+  it("renders the embedded templates tab without a nested card", async () => {
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(queryByCy("onglet-entreprise-templates") as Element);
+
+    const templates = document.querySelector("section.templates-card");
+    expect(templates).not.toBeNull();
+    expect(templates?.classList.contains("card")).toBe(false);
+  });
+
   it("shows only the expense statement template card on the Templates tab", async () => {
     renderPage();
     const user = userEvent.setup();

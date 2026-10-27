@@ -15,15 +15,17 @@ import { useTemplatesCard } from "./useTemplatesCard";
 /** One template-type card: active model, versions and import form. */
 export function TemplatesCard({
   configuration,
+  embedded = false,
 }: {
   configuration: ConfigurationType;
+  embedded?: boolean;
 }) {
   const c = useTemplatesCard(configuration);
   const { title, description, icon: IconComponent, type } = configuration;
   const preview = c.preview;
 
   return (
-    <section className="card templates-card">
+    <section className={embedded ? "templates-card" : "card templates-card"}>
       <div className="card-header">
         <div className="templates-card-heading">
           <span className="templates-card-icon">

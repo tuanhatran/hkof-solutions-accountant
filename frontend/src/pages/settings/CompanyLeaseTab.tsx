@@ -114,7 +114,7 @@ export function CompanyLeaseTab({
 
   return (
     <div className="company-lease-tab">
-      <section className="card company-lease-tab-leases">
+      <section className="company-lease-tab-leases">
         <SectionHeader
           icon={KeyRound}
           title="Baux de la société"
@@ -232,7 +232,7 @@ export function CompanyLeaseTab({
 
       {!leases.isPending && selectedLease === null ? (
         <>
-          <section className="card company-lease-tab-none">
+          <section className="company-lease-tab-none">
             <div className="card-body">
               <CompanyLeaseView lease={null} proRataBase={null} />
             </div>

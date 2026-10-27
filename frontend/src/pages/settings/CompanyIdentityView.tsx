@@ -26,7 +26,7 @@ export function CompanyIdentityView({
   ];
 
   return (
-    <section className="card company-identity-view">
+    <section className="company-identity-view">
       <SectionHeader
         icon={Building2}
         title="Identité de la société"

@@ -2,7 +2,7 @@
 
 @layer components {
   .lmnp-page-tabs {
-    @apply mb-6 w-full max-w-md;
+    @apply mb-3 w-full max-w-md;
   }
 
   .lmnp-page-tab {

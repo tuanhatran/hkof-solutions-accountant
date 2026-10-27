@@ -48,7 +48,7 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
   });
 
   return (
-    <section className="card employee-section">
+    <section className="employee-section">
       <SectionHeader
         icon={Users}
         title="Salariés"

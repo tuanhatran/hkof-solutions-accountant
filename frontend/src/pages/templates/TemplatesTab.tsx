@@ -9,12 +9,14 @@ import type { ConfigurationType } from "./templateTypes";
  */
 export function TemplatesTab({
   configuration,
+  embedded = false,
 }: {
   configuration: ConfigurationType;
+  embedded?: boolean;
 }) {
   return (
     <div className="templates-tab">
-      <TemplatesCard configuration={configuration} />
+      <TemplatesCard configuration={configuration} embedded={embedded} />
       <div className="templates-tab-warning">
         <ShieldCheck
           size={16}
