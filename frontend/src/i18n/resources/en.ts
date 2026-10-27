@@ -378,6 +378,78 @@ export const en = {
     pageLabel: "Page {{current}} / {{total}}",
     download: "Download the preview",
   },
+  history: {
+    page: {
+      eyebrow: "Tracking",
+      title: "History",
+      description:
+        "All versions of your rent receipts and expense statements, across every company, grouped by month. Archived versions stay downloadable and viewable.",
+      monthCount_one: "{{count}} month tracked",
+      monthCount_other: "{{count}} months tracked",
+      loading: "Loading the history…",
+      noCompanyTitle: "No company configured",
+      noCompanyDescription:
+        "Create a company in the settings to view its history.",
+      reloaded: "{{month}} lines reloaded into the draft.",
+    },
+    empty: {
+      title: "No document yet",
+      description:
+        "Generate a rent receipt or an expense statement: it will appear here, with all its versions.",
+      createRentReceipt: "Generate a rent receipt",
+      createStatement: "Generate an expense statement",
+    },
+    reloadDialog: {
+      title: "Reopen this statement?",
+      message:
+        "The lines of version {{version}} for {{month}} will replace this month's draft in the Expense statement tab. Drafts of other months are kept.",
+      confirm: "Load the lines",
+    },
+    month: {
+      eyebrow: "Month",
+      rentReceiptCount_one: "Rent receipt ({{count}})",
+      rentReceiptCount_other: "Rent receipt ({{count}})",
+      rentReceiptMissing: "Rent receipt not generated",
+      statementCount_one: "Statement ({{count}})",
+      statementCount_other: "Statement ({{count}})",
+      statementMissing: "Statement not generated",
+      rentReceiptColumn: "Rent receipt",
+      statementColumn: "Home-office expense statement",
+      emptyRentReceipts: "No rent receipt generated for this month.",
+      emptyStatements: "No expense statement generated for this month.",
+    },
+    address: {
+      unknown: "Unknown address",
+      unknownLandlord: "Unknown landlord",
+      unknownTenant: "Unknown tenant",
+    },
+    actions: {
+      open: "Open",
+      load: "Load",
+      pdf: "PDF",
+      complete: "Complete",
+      downloadPdf: "Download the PDF",
+      downloadComplete: "Complete statement (ZIP)",
+    },
+  },
+  settings: {
+    history: {
+      receipts: {
+        title: "Generated rent receipts",
+        loading: "Loading the rent receipts…",
+        empty: "No rent receipt generated for this lease.",
+        count_one: "{{count}} rent receipt",
+        count_other: "{{count}} rent receipts",
+      },
+      statements: {
+        title: "Generated expense statements",
+        loading: "Loading the expense statements…",
+        empty: "No expense statement generated for this lease.",
+        count_one: "{{count}} statement",
+        count_other: "{{count}} statements",
+      },
+    },
+  },
   expenseStatement: {
     page: {
       eyebrow: "Generate · Expense statement",

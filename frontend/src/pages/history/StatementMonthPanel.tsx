@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { api } from "@/api/endpoints";
 import type { StatementDto } from "@/api/types";
 import { formatDateTime, formatEUR } from "@/lib/format";
@@ -15,6 +16,7 @@ export function StatementMonthPanel({
   suffix: string;
   onReload: (statement: StatementDto) => void;
 }) {
+  const { t } = useTranslation();
   const statement = current(address.statements);
   if (!statement) {
     return null;
@@ -42,11 +44,11 @@ export function StatementMonthPanel({
                 <>
                   <PdfActionLink
                     href={api.expenseStatements.pdfUrl(version.id, false)}
-                    label="PDF"
+                    label={t("history.actions.pdf")}
                   />
                   <PdfActionLink
                     href={api.expenseStatements.pdfUrl(version.id, true)}
-                    label="Complète"
+                    label={t("history.actions.complete")}
                   />
                 </>
               ) : null}
@@ -55,7 +57,7 @@ export function StatementMonthPanel({
                 className="statement-month-panel-history-load"
                 onClick={() => onReload(version)}
               >
-                Charger
+                {t("history.actions.load")}
               </button>
             </span>
           </li>

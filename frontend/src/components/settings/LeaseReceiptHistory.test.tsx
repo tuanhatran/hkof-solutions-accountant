@@ -2,6 +2,7 @@ import { configure, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { LeaseDto, RentReceiptDto } from "@/api/types";
+import i18n from "@/i18n";
 import { formatDateTime, formatEUR, formatMonth } from "@/lib/format";
 import { LeaseReceiptHistory } from "./LeaseReceiptHistory";
 
@@ -77,7 +78,7 @@ function renderHistory({
   error?: Error | null;
   onRetry?: () => void;
 } = {}) {
-  render(
+  const result = render(
     <LeaseReceiptHistory
       lease={lease}
       receipts={receipts}
@@ -87,7 +88,7 @@ function renderHistory({
       onRetry={onRetry}
     />,
   );
-  return { onRetry };
+  return { ...result, onRetry };
 }
 
 describe("LeaseReceiptHistory", () => {
@@ -300,6 +301,42 @@ describe("LeaseReceiptHistory", () => {
 
     expect(
       screen.getByText("Aucune quittance générée pour ce bail."),
+    ).toBeInTheDocument();
+  });
+
+  it("renders the section, month count and download label in English", async () => {
+    await i18n.changeLanguage("en");
+    renderHistory({
+      receipts: [
+        receipt({ id: 101, month: "2026-09" }),
+        receipt({ id: 103, month: "2026-09", version: 2 }),
+      ],
+    });
+
+    expect(screen.getByText("Generated rent receipts")).toBeInTheDocument();
+    const month = screen.getByTestId("quittances-bail-mois-10-2026-09");
+    expect(month).toHaveTextContent("September 2026");
+    expect(month).toHaveTextContent("2 rent receipts");
+    expect(
+      screen.getByTestId("telecharger-quittance-bail-101"),
+    ).toHaveTextContent("Download the PDF");
+  });
+
+  it("renders the singular count, loading and empty states in English", async () => {
+    await i18n.changeLanguage("en");
+    const single = renderHistory({ receipts: [receipt({ id: 101 })] });
+    expect(
+      screen.getByTestId("quittances-bail-mois-10-2026-09"),
+    ).toHaveTextContent("1 rent receipt");
+    single.unmount();
+
+    const loading = renderHistory({ isPending: true });
+    expect(screen.getByText("Loading the rent receipts…")).toBeInTheDocument();
+    loading.unmount();
+
+    renderHistory({ receipts: [] });
+    expect(
+      screen.getByText("No rent receipt generated for this lease."),
     ).toBeInTheDocument();
   });
 });

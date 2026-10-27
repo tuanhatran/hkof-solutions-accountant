@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import type { LeaseDto, RentReceiptDto, StatementDto } from "@/api/types";
+import i18n from "@/i18n";
 import {
   current,
   groupHistoryByMonthAndAddress,
@@ -58,6 +59,16 @@ describe("historyHelpers", () => {
     expect(
       pairLabel({ ...RENT_B, landlordName: undefined, tenantName: undefined }),
     ).toBe("Bailleur inconnu → Locataire inconnu");
+  });
+
+  it("resolves the pair fallbacks in the current language at call time", async () => {
+    await i18n.changeLanguage("en");
+
+    expect(
+      pairLabel({ ...RENT_B, landlordName: undefined, tenantName: undefined }),
+    ).toBe("Unknown landlord → Unknown tenant");
+    // Known names are data, never translated.
+    expect(pairLabel(RENT_A)).toBe("Bailleur → Locataire");
   });
 });
 
@@ -181,11 +192,16 @@ describe("resolveLeaseForDocument", () => {
 });
 
 describe("groupHistoryByMonthAndAddress", () => {
-  const months = groupHistoryByMonthAndAddress(
-    [RECEIPT_UNMATCHED, RECEIPT_FEBRUARY, RECEIPT_ALPHA],
-    [STATEMENT_COMPANY, STATEMENT_ALPHA],
-    [LEASE_ALPHA_OTHER_ADDRESS, LEASE_COMPANY, LEASE_ALPHA],
-  );
+  // Grouped per test: the unknown-address label follows the active language.
+  let months: ReturnType<typeof groupHistoryByMonthAndAddress>;
+
+  beforeEach(() => {
+    months = groupHistoryByMonthAndAddress(
+      [RECEIPT_UNMATCHED, RECEIPT_FEBRUARY, RECEIPT_ALPHA],
+      [STATEMENT_COMPANY, STATEMENT_ALPHA],
+      [LEASE_ALPHA_OTHER_ADDRESS, LEASE_COMPANY, LEASE_ALPHA],
+    );
+  });
 
   it("keeps months newest first", () => {
     expect(months.map((group) => group.month)).toEqual(["2026-02", "2026-01"]);
@@ -207,6 +223,17 @@ describe("groupHistoryByMonthAndAddress", () => {
     expect(company.statements.map((statement) => statement.id)).toEqual([202]);
     expect(unknown.rentReceipts.map((receipt) => receipt.id)).toEqual([102]);
     expect(unknown.statements).toEqual([]);
+  });
+
+  it("relabels the unknown address row when the language changes", async () => {
+    await i18n.changeLanguage("en");
+    const [january] = groupHistoryByMonthAndAddress(
+      [RECEIPT_UNMATCHED],
+      [],
+      [LEASE_ALPHA],
+    );
+
+    expect(january.addresses[0].addressLabel).toBe("Unknown address");
   });
 
   it("keeps unmatched documents visible and ignores documents without a month", () => {

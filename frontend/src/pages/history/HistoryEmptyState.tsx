@@ -1,5 +1,6 @@
 import "./HistoryEmptyState.css";
 import { Archive } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/States";
 
@@ -11,18 +12,20 @@ export function HistoryEmptyState({
   onCreateRentReceipt: () => void;
   onCreateStatement: () => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <EmptyState
-      title="Aucun document pour le moment"
-      description="Générez une quittance ou une note de frais : elle apparaîtra ici, avec toutes ses versions."
+      title={t("history.empty.title")}
+      description={t("history.empty.description")}
       icon={<Archive size={22} aria-hidden="true" />}
       action={
         <div className="history-empty-state-actions">
           <Button variant="primary" onClick={onCreateRentReceipt}>
-            Générer une quittance
+            {t("history.empty.createRentReceipt")}
           </Button>
           <Button variant="secondary" onClick={onCreateStatement}>
-            Générer une note de frais
+            {t("history.empty.createStatement")}
           </Button>
         </div>
       }

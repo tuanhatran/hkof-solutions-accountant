@@ -1,4 +1,5 @@
 import "./RentReceiptMonthPanel.css";
+import { useTranslation } from "react-i18next";
 import { api } from "@/api/endpoints";
 import type { RentReceiptDto } from "@/api/types";
 import { formatDateTime, formatEUR } from "@/lib/format";
@@ -54,6 +55,8 @@ function groupReceiptsByCouple(receipts: RentReceiptDto[]): ReceiptCouple[] {
 }
 
 function RentReceiptHistoryItem({ version }: { version: RentReceiptDto }) {
+  const { t } = useTranslation();
+
   return (
     <li
       className="rent-receipt-month-panel-history-item"
@@ -73,7 +76,10 @@ function RentReceiptHistoryItem({ version }: { version: RentReceiptDto }) {
         </span>
       </span>
       {version.id ? (
-        <PdfActionLink href={api.rentReceipts.pdfUrl(version.id)} label="PDF" />
+        <PdfActionLink
+          href={api.rentReceipts.pdfUrl(version.id)}
+          label={t("history.actions.pdf")}
+        />
       ) : null}
     </li>
   );

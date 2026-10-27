@@ -1,4 +1,5 @@
 import "./CompanyLeaseStatementHistory.css";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import type { LeaseDto, StatementDto } from "@/api/types";
@@ -61,18 +62,20 @@ export function CompanyLeaseStatementHistory({
   error: Error | null;
   onRetry: () => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div
       className="company-lease-statement-history"
       data-cy={`notes-frais-bail-${lease.id}`}
     >
       <p className="company-lease-statement-history-title">
-        Notes de frais générées
+        {t("settings.history.statements.title")}
       </p>
       {isError ? (
         <ErrorState message={errorMessage(error)} onRetry={onRetry} />
       ) : isPending ? (
-        <LoadingState message="Chargement des notes de frais…" />
+        <LoadingState message={t("settings.history.statements.loading")} />
       ) : (
         <MonthList lease={lease} statements={statements ?? []} />
       )}
@@ -87,6 +90,7 @@ function MonthList({
   lease: LeaseDto;
   statements: StatementDto[];
 }) {
+  const { t } = useTranslation();
   const groups = groupByMonth(
     statements.filter((statement) => statement.leaseId === lease.id),
   );
@@ -96,7 +100,7 @@ function MonthList({
         className="company-lease-statement-history-empty"
         data-cy={`notes-frais-bail-vide-${lease.id}`}
       >
-        Aucune note de frais générée pour ce bail.
+        {t("settings.history.statements.empty")}
       </p>
     );
   }
@@ -111,8 +115,9 @@ function MonthList({
           <summary className="company-lease-statement-history-summary">
             <span>{formatMonth(group.month)}</span>
             <span className="badge badge-neutral company-lease-statement-history-count">
-              {group.versions.length}{" "}
-              {group.versions.length > 1 ? "notes" : "note"}
+              {t("settings.history.statements.count", {
+                count: group.versions.length,
+              })}
             </span>
           </summary>
           <ul className="company-lease-statement-history-list">
@@ -137,12 +142,12 @@ function MonthList({
                   <span className="company-lease-statement-history-actions">
                     <PdfActionLink
                       href={api.expenseStatements.pdfUrl(version.id, false)}
-                      label="Télécharger le PDF"
+                      label={t("history.actions.downloadPdf")}
                       dataCy={`telecharger-note-frais-bail-${version.id}`}
                     />
                     <PdfActionLink
                       href={api.expenseStatements.zipUrl(version.id)}
-                      label="Note complète (ZIP)"
+                      label={t("history.actions.downloadComplete")}
                       dataCy={`telecharger-note-frais-complete-bail-${version.id}`}
                     />
                   </span>

@@ -397,6 +397,78 @@ export const fr = {
     pageLabel: "Page {{current}} / {{total}}",
     download: "Télécharger l’aperçu",
   },
+  history: {
+    page: {
+      eyebrow: "Suivi",
+      title: "Historique",
+      description:
+        "Toutes les versions de vos quittances et notes de frais, toutes sociétés confondues, classées par mois. Les versions archivées restent téléchargeables et consultables.",
+      monthCount_one: "{{count}} mois suivi",
+      monthCount_other: "{{count}} mois suivis",
+      loading: "Chargement de l’historique…",
+      noCompanyTitle: "Aucune société configurée",
+      noCompanyDescription:
+        "Créez une société dans la configuration pour consulter son historique.",
+      reloaded: "Lignes de {{month}} rechargées dans le brouillon.",
+    },
+    empty: {
+      title: "Aucun document pour le moment",
+      description:
+        "Générez une quittance ou une note de frais : elle apparaîtra ici, avec toutes ses versions.",
+      createRentReceipt: "Générer une quittance",
+      createStatement: "Générer une note de frais",
+    },
+    reloadDialog: {
+      title: "Rouvrir cette note ?",
+      message:
+        "Les lignes de la version {{version}} de {{month}} remplaceront le brouillon de ce mois dans l’onglet Note de frais. Les brouillons des autres mois sont conservés.",
+      confirm: "Charger les lignes",
+    },
+    month: {
+      eyebrow: "Mois",
+      rentReceiptCount_one: "Quittance ({{count}})",
+      rentReceiptCount_other: "Quittance ({{count}})",
+      rentReceiptMissing: "Quittance non générée",
+      statementCount_one: "Note ({{count}})",
+      statementCount_other: "Note ({{count}})",
+      statementMissing: "Note non générée",
+      rentReceiptColumn: "Quittance de loyer",
+      statementColumn: "Note de frais d’occupation",
+      emptyRentReceipts: "Aucune quittance générée pour ce mois.",
+      emptyStatements: "Aucune note de frais générée pour ce mois.",
+    },
+    address: {
+      unknown: "Adresse inconnue",
+      unknownLandlord: "Bailleur inconnu",
+      unknownTenant: "Locataire inconnu",
+    },
+    actions: {
+      open: "Ouvrir",
+      load: "Charger",
+      pdf: "PDF",
+      complete: "Complète",
+      downloadPdf: "Télécharger le PDF",
+      downloadComplete: "Note complète (ZIP)",
+    },
+  },
+  settings: {
+    history: {
+      receipts: {
+        title: "Quittances générées",
+        loading: "Chargement des quittances…",
+        empty: "Aucune quittance générée pour ce bail.",
+        count_one: "{{count}} quittance",
+        count_other: "{{count}} quittances",
+      },
+      statements: {
+        title: "Notes de frais générées",
+        loading: "Chargement des notes de frais…",
+        empty: "Aucune note de frais générée pour ce bail.",
+        count_one: "{{count}} note",
+        count_other: "{{count}} notes",
+      },
+    },
+  },
   expenseStatement: {
     page: {
       eyebrow: "Générer · Note de frais",
