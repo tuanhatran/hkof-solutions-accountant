@@ -12,6 +12,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
 import type { LeaseDto, RentReceiptDto, SignatureDto } from "@/api/types";
+import i18n from "@/i18n";
 import { useStatementDraft } from "@/state/statementDraft";
 import { useToasts } from "@/state/toasts";
 import { CompanyLeaseStatementModal } from "./CompanyLeaseStatementModal";
@@ -604,5 +605,68 @@ describe("CompanyLeaseStatementModal", () => {
       ).toBeNull(),
     );
     expect(dialog()).not.toBeNull();
+  });
+
+  it("renders the statement modal chrome and the regenerate dialog in English", async () => {
+    await i18n.changeLanguage("en");
+    receiptList = [rentReceipt({ id: 51, version: 2, total: "950.00" })];
+    activeStatement = { id: 11, version: 1, month: MONTH };
+    renderModal();
+    const user = userEvent.setup();
+
+    await waitFor(() => expect(dialog()).not.toBeNull());
+    expect(
+      within(dialog()).getByRole("heading", { name: "Expense statement" }),
+    ).toBeVisible();
+    expect(within(dialog()).getByRole("tab", { name: "Input" })).toBeVisible();
+    expect(
+      within(dialog()).getByRole("tab", { name: "Preview" }),
+    ).toBeVisible();
+    expect(
+      within(dialog()).getByRole("button", { name: "Close window" }),
+    ).toBeVisible();
+    expect(
+      within(dialog()).getByRole("button", { name: "Close" }),
+    ).toBeVisible();
+
+    const generate = await screen.findByRole("button", {
+      name: "Generate the expense statement",
+    });
+    await waitFor(() => expect(generate).toBeEnabled());
+    await user.click(generate);
+
+    const regenerate = await screen.findByRole("dialog", {
+      name: "Generate a new version?",
+    });
+    expect(regenerate).toHaveTextContent(/version 1/);
+    expect(
+      within(regenerate).getByRole("button", {
+        name: "Create the new version",
+      }),
+    ).toBeVisible();
+  });
+
+  it("asks to remove an expense in English", async () => {
+    await i18n.changeLanguage("en");
+    receiptList = [rentReceipt({ id: 51, version: 2, total: "950.00" })];
+    renderModal();
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole("button", { name: "Remove Loyer" }),
+    );
+
+    const removeDialog = screen.getByRole("dialog", {
+      name: "Remove this expense?",
+    });
+    expect(removeDialog).toHaveTextContent(
+      "The line “Loyer” will be removed from the draft.",
+    );
+    await user.click(
+      within(removeDialog).getByRole("button", { name: "Remove" }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Remove Loyer" })).toBeNull(),
+    );
   });
 });

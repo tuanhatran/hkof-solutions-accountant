@@ -2,6 +2,7 @@ import "./FormModal.css";
 import { X } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 
@@ -33,6 +34,7 @@ export function FormModal({
   formClassName,
   wide = false,
 }: FormModalProps) {
+  const { t } = useTranslation();
   const titleId = `${formDataCy}-titre`;
   const panel = useRef<HTMLDivElement>(null);
 
@@ -83,7 +85,7 @@ export function FormModal({
             type="button"
             onClick={onClose}
             className="form-modal-close"
-            aria-label="Fermer"
+            aria-label={t("common.close")}
           >
             <X size={18} />
           </button>
@@ -111,7 +113,7 @@ export function FormModal({
               onClick={onClose}
               disabled={pending}
             >
-              Annuler
+              {t("common.cancel")}
             </Button>
             <Button
               variant="primary"
@@ -120,7 +122,7 @@ export function FormModal({
               loading={pending}
               data-cy={submitDataCy}
             >
-              Valider
+              {t("common.validate")}
             </Button>
           </div>
         </form>

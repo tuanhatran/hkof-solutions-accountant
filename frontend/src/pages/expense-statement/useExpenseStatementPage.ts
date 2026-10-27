@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { downloadBlob, errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
@@ -42,6 +43,7 @@ export type ExpenseStatementController = ReturnType<
 export function useExpenseStatementPage(
   options: ExpenseStatementPageOptions = {},
 ) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [result, setResult] = useState<StatementDto | null>(null);
@@ -119,7 +121,10 @@ export function useExpenseStatementPage(
         queryKey: queryKeys.statementsAll,
       });
       toast.success(
-        `Note de ${formatMonth(month)} générée en version ${statement.version ?? 1}.`,
+        t("expenseStatement.toasts.generated", {
+          month: formatMonth(month),
+          version: statement.version ?? 1,
+        }),
       );
     } catch (error) {
       toast.error(errorMessage(error));
@@ -181,7 +186,9 @@ export function useExpenseStatementPage(
 
   const displayedTotal = calculation?.total;
   const activeVersion = context.activeStatement.data?.version;
-  const currentTemplate = context.activeModel?.name ?? "modèle intégré";
+  const currentTemplate =
+    context.activeModel?.name ??
+    t("expenseStatement.preview.builtInTemplateName");
 
   return {
     month: context.month,

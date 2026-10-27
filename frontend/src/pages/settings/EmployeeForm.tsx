@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
@@ -28,6 +29,7 @@ export function EmployeeForm({
   employee: EmployeeDto | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [savedId, setSavedId] = useState<number | null>(employee?.id ?? null);
   const {
@@ -69,7 +71,11 @@ export function EmployeeForm({
       if (saved.id !== undefined) {
         setSavedId(saved.id);
       }
-      toast.success(creating ? "Salarié ajouté." : "Salarié mis à jour.");
+      toast.success(
+        creating
+          ? t("settings.employees.form.created")
+          : t("settings.employees.form.updated"),
+      );
     },
     onError: (error) => toast.error(errorMessage(error)),
   });
@@ -78,7 +84,11 @@ export function EmployeeForm({
     <FormModal
       open
       wide
-      title={savedId === null ? "Ajouter un salarié" : "Modifier le salarié"}
+      title={
+        savedId === null
+          ? t("settings.employees.form.createTitle")
+          : t("settings.employees.form.editTitle")
+      }
       onClose={onClose}
       onSubmit={handleSubmit((values) => save.mutate(values))}
       formDataCy="formulaire-salarie"
@@ -90,7 +100,7 @@ export function EmployeeForm({
       <div className="employee-form-grid">
         <FieldGroup
           id="salarie-prenom"
-          label="Prénom"
+          label={t("settings.employees.form.firstName")}
           error={errors.firstName?.message}
         >
           <input
@@ -102,7 +112,7 @@ export function EmployeeForm({
         </FieldGroup>
         <FieldGroup
           id="salarie-nom"
-          label="Nom"
+          label={t("settings.employees.form.lastName")}
           error={errors.lastName?.message}
         >
           <input
@@ -114,9 +124,9 @@ export function EmployeeForm({
         </FieldGroup>
         <FieldGroup
           id="salarie-email"
-          label="Adresse électronique"
+          label={t("settings.employees.form.email")}
           error={errors.email?.message}
-          help="Facultative ; unique dans la société."
+          help={t("settings.employees.form.emailHelp")}
         >
           <input
             id="salarie-email"
@@ -129,9 +139,9 @@ export function EmployeeForm({
         </FieldGroup>
         <FieldGroup
           id="salarie-titre"
-          label="Intitulé"
+          label={t("settings.employees.form.title")}
           error={errors.title?.message}
-          help="Descriptif : il ne donne encore aucun droit."
+          help={t("settings.employees.form.titleHelp")}
         >
           <select
             id="salarie-titre"
@@ -141,16 +151,16 @@ export function EmployeeForm({
           >
             {EMPLOYEE_TITLES.map((title) => (
               <option key={title.value} value={title.value}>
-                {title.label}
+                {t(title.labelKey)}
               </option>
             ))}
           </select>
         </FieldGroup>
         <FieldGroup
           id="salarie-adresse"
-          label="Adresse personnelle"
+          label={t("settings.employees.form.address")}
           error={errors.address?.message}
-          help="Facultative."
+          help={t("settings.employees.form.addressHelp")}
           className="sm:col-span-2"
         >
           <input
@@ -165,8 +175,7 @@ export function EmployeeForm({
 
       {savedId === null ? (
         <p className="employee-form-hint">
-          Enregistrez le salarié pour ajouter ses signatures sans fermer cette
-          fenêtre.
+          {t("settings.employees.form.hint")}
         </p>
       ) : (
         <PersonSignatureSection personId={savedId} />

@@ -107,19 +107,29 @@ class EmployeeServiceTest {
 
         assertThatThrownBy(() -> service.create(1L, request(null, " ", "Martin", null, "CEO")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le prénom du salarié est obligatoire.");
+                .hasMessage("Le prénom du salarié est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("EMPLOYEE_FIRST_NAME_REQUIRED"));
         assertThatThrownBy(() -> service.create(1L, request(null, "Camille", null, null, "CEO")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le nom du salarié est obligatoire.");
+                .hasMessage("Le nom du salarié est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("EMPLOYEE_LAST_NAME_REQUIRED"));
         assertThatThrownBy(() -> service.create(1L, request(null, "Camille", "Martin", "pas-un-email", "CEO")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("L'adresse électronique du salarié est invalide.");
+                .hasMessage("L'adresse électronique du salarié est invalide.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("EMPLOYEE_EMAIL_INVALID"));
         assertThatThrownBy(() -> service.create(1L, request(null, "Camille", "Martin", null, " ")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("L'intitulé du salarié est obligatoire.");
+                .hasMessage("L'intitulé du salarié est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("EMPLOYEE_TITLE_REQUIRED"));
         assertThatThrownBy(() -> service.create(1L, request(null, "Camille", "Martin", null, "PATRON")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Intitulé de salarié invalide");
+                .hasMessageContaining("Intitulé de salarié invalide")
+                .satisfies(ex -> {
+                    assertThat(((BusinessException) ex).getCode()).isEqualTo("EMPLOYEE_TITLE_INVALID");
+                    assertThat(((BusinessException) ex).getParams()).containsEntry("title", "PATRON");
+                });
         verify(repository, never()).save(any());
     }
 
@@ -132,7 +142,9 @@ class EmployeeServiceTest {
         assertThatThrownBy(() -> service.create(1L,
                 request(null, "Camille", "Martin", "camille@example.fr", "CEO")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Un salarié avec cette adresse électronique existe déjà dans la société.");
+                .hasMessage("Un salarié avec cette adresse électronique existe déjà dans la société.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("EMPLOYEE_EMAIL_DUPLICATE"));
 
         when(repository.findByIdAndDeletedFalse(7L)).thenReturn(Optional.of(employee()));
         when(repository.existsByCompanyIdAndEmailIgnoreCaseAndDeletedFalseAndIdNot(1L, "camille@example.fr", 7L))
@@ -169,7 +181,9 @@ class EmployeeServiceTest {
         when(signatures.existsByPersonIdAndDeletedFalse(7L)).thenReturn(true);
         assertThatThrownBy(() -> service.delete(7L))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Ce salarié porte des signatures et ne peut pas être supprimé.");
+                .hasMessage("Ce salarié porte des signatures et ne peut pas être supprimé.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("EMPLOYEE_HAS_SIGNATURES"));
         verify(repository, never()).save(any());
 
         when(signatures.existsByPersonIdAndDeletedFalse(7L)).thenReturn(false);
@@ -185,7 +199,8 @@ class EmployeeServiceTest {
         when(repository.findByIdAndDeletedFalse(9L)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.entity(9L))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Salarié introuvable.");
+                .hasMessage("Salarié introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("EMPLOYEE_NOT_FOUND"));
         assertThatThrownBy(() -> service.update(9L, request(null, "Camille", "Martin", null, "CEO")))
                 .isInstanceOf(NotFoundException.class);
         assertThatThrownBy(() -> service.delete(9L)).isInstanceOf(NotFoundException.class);

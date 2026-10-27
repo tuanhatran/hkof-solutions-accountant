@@ -1,5 +1,6 @@
 import "./RentReceiptForm.css";
 import { LoaderCircle, ReceiptText, RotateCcw, Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import type { RentReceiptController } from "./useRentReceiptPage";
 import { RentReceiptAmountFields } from "./RentReceiptAmountFields";
@@ -8,19 +9,20 @@ import { RentReceiptSignatureField } from "./RentReceiptSignatureField";
 
 /** Main "Paramètres de la quittance" form card. */
 export function RentReceiptForm({ c }: { c: RentReceiptController }) {
+  const { t } = useTranslation();
   return (
     <form onSubmit={c.handleSubmit(c.submit)} noValidate>
       <div className="card">
         <div className="card-header">
           <div>
-            <p className="eyebrow">Étape 1</p>
+            <p className="eyebrow">{t("rentReceipt.form.step")}</p>
             <h2 className="rent-receipt-form-title">
-              Paramètres de la quittance
+              {t("rentReceipt.form.title")}
             </h2>
           </div>
           <span className="badge badge-neutral">
             <Sparkles size={11} aria-hidden="true" />
-            Calcul backend
+            {t("rentReceipt.form.backendBadge")}
           </span>
         </div>
 
@@ -47,7 +49,7 @@ export function RentReceiptForm({ c }: { c: RentReceiptController }) {
               }
               data-cy="btn-generer-quittance"
             >
-              Générer la quittance
+              {t("rentReceipt.form.generate")}
             </Button>
             <Button
               variant="ghost"
@@ -56,23 +58,25 @@ export function RentReceiptForm({ c }: { c: RentReceiptController }) {
               onClick={c.resumeLease}
               disabled={!c.selectedLease || c.generationInProgress}
             >
-              Reprendre le bail
+              {t("rentReceipt.form.resumeLease")}
             </Button>
           </div>
           {c.activePairReceipt ? (
             <p className="rent-receipt-form-note">
-              Dernière version : v{c.activeVersion} → v
-              {(c.activeVersion ?? 0) + 1} à la génération.
+              {t("rentReceipt.form.latestVersion", {
+                version: c.activeVersion,
+                next: (c.activeVersion ?? 0) + 1,
+              })}
             </p>
           ) : (
             <p className="rent-receipt-form-note">
               {c.generationInProgress ? (
                 <span className="rent-receipt-form-progress">
-                  <LoaderCircle size={12} className="animate-spin" /> Génération
-                  en cours…
+                  <LoaderCircle size={12} className="animate-spin" />{" "}
+                  {t("rentReceipt.form.generating")}
                 </span>
               ) : (
-                "Le PDF définitif est enregistré dans l’historique."
+                t("rentReceipt.form.definitivePdf")
               )}
             </p>
           )}

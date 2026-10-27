@@ -1,54 +1,60 @@
 import "./AppNav.css";
 import { Bot, Building2, History, Home, ReceiptText } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/cn";
 
 export interface NavigationLink {
   to: string;
-  label: string;
+  labelKey: string;
   icon: typeof ReceiptText;
   dataCy: string;
 }
 
 export interface NavigationGroup {
-  title: string;
+  titleKey: string;
   links: NavigationLink[];
 }
 
 export interface NavigationSection {
-  title: string;
+  titleKey: string;
   links: NavigationLink[];
   groups?: NavigationGroup[];
 }
 
 export const SECTIONS: NavigationSection[] = [
   {
-    title: "Suivi",
+    titleKey: "navigation.sections.tracking",
     links: [
       {
         to: "/historique",
-        label: "Historique",
+        labelKey: "navigation.links.history",
         icon: History,
         dataCy: "tab-historique",
       },
     ],
   },
   {
-    title: "Réglages",
+    titleKey: "navigation.sections.settings",
     links: [
       {
         to: "/configuration/entreprise",
-        label: "Société",
+        labelKey: "navigation.links.company",
         icon: Building2,
         dataCy: "tab-configuration",
       },
       {
         to: "/configuration/lmnp",
-        label: "LMNP",
+        labelKey: "navigation.links.lmnp",
         icon: Home,
         dataCy: "tab-lmnp",
       },
-      { to: "/admin", label: "Admin IA", icon: Bot, dataCy: "tab-admin" },
+      {
+        to: "/admin",
+        labelKey: "navigation.links.aiAdmin",
+        icon: Bot,
+        dataCy: "tab-admin",
+      },
     ],
   },
 ];
@@ -59,6 +65,8 @@ const MOBILE_LINKS = SECTIONS.flatMap((section) => [
 ]);
 
 function SideNavigationLink({ link }: { link: NavigationLink }) {
+  const { t } = useTranslation();
+
   return (
     <NavLink
       to={link.to}
@@ -80,7 +88,7 @@ function SideNavigationLink({ link }: { link: NavigationLink }) {
             )}
             aria-hidden="true"
           />
-          <span className="flex-1">{link.label}</span>
+          <span className="flex-1">{t(link.labelKey)}</span>
           {isActive ? (
             <span className="app-nav-dot" aria-hidden="true" />
           ) : null}
@@ -91,19 +99,21 @@ function SideNavigationLink({ link }: { link: NavigationLink }) {
 }
 
 export function SideNavigation() {
+  const { t } = useTranslation();
+
   return (
-    <nav className="app-nav" aria-label="Navigation principale">
+    <nav className="app-nav" aria-label={t("navigation.ariaLabel")}>
       {SECTIONS.map((section) => (
-        <div key={section.title}>
-          <p className="app-nav-section">{section.title}</p>
+        <div key={section.titleKey}>
+          <p className="app-nav-section">{t(section.titleKey)}</p>
           <div className="app-nav-links">
             {section.links.map((link) => (
               <SideNavigationLink key={link.to} link={link} />
             ))}
           </div>
           {section.groups?.map((group) => (
-            <div key={group.title} data-cy={`groupe-${group.title}`}>
-              <p className="app-nav-group">{group.title}</p>
+            <div key={group.titleKey} data-cy={`groupe-${group.titleKey}`}>
+              <p className="app-nav-group">{t(group.titleKey)}</p>
               <div className="app-nav-links">
                 {group.links.map((link) => (
                   <SideNavigationLink key={link.to} link={link} />
@@ -118,8 +128,13 @@ export function SideNavigation() {
 }
 
 export function MobileNavigation() {
+  const { t } = useTranslation();
+
   return (
-    <nav className="app-nav-mobile" aria-label="Navigation principale mobile">
+    <nav
+      className="app-nav-mobile"
+      aria-label={t("navigation.mobileAriaLabel")}
+    >
       {MOBILE_LINKS.map((link) => (
         <NavLink
           key={link.to}
@@ -134,7 +149,7 @@ export function MobileNavigation() {
           }
         >
           <link.icon size={13} aria-hidden="true" />
-          {link.label}
+          {t(link.labelKey)}
         </NavLink>
       ))}
     </nav>

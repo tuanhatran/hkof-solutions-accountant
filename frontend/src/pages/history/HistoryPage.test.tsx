@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,6 +8,7 @@ import type {
   RentReceiptDto,
   StatementDto,
 } from "@/api/types";
+import i18n from "@/i18n";
 import { useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft } from "@/state/statementDraft";
@@ -896,5 +897,153 @@ describe("HistoryPage", () => {
         .getAllByRole("heading", { level: 2 })
         .map((heading) => heading.textContent),
     ).toEqual(["Février 2026", "Janvier 2026"]);
+  });
+
+  it("renders the page header, month cards and panels in English", async () => {
+    await i18n.changeLanguage("en");
+    renderPage();
+
+    expect(await screen.findByText("2 months tracked")).toBeInTheDocument();
+    expect(screen.getByText("Tracking")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "History" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/All versions of your rent receipts/),
+    ).toBeInTheDocument();
+
+    const jan = screen
+      .getByRole("heading", { name: "January 2026" })
+      .closest("section");
+    if (!jan) {
+      throw new Error("January section not found");
+    }
+    expect(within(jan).getByText("Month")).toBeInTheDocument();
+    expect(within(jan).getByText("Rent receipt (2)")).toBeInTheDocument();
+    expect(within(jan).getByText("Statement (2)")).toBeInTheDocument();
+    expect(
+      within(jan).getByRole("heading", { name: "Rent receipt" }),
+    ).toBeInTheDocument();
+    expect(
+      within(jan).getByRole("heading", {
+        name: "Home-office expense statement",
+      }),
+    ).toBeInTheDocument();
+    expect(within(jan).getAllByText("Unknown address")).toHaveLength(2);
+    expect(within(jan).getAllByRole("button", { name: "Load" })).toHaveLength(
+      2,
+    );
+    expect(within(jan).getAllByRole("link", { name: "PDF" })).toHaveLength(4);
+    expect(within(jan).getAllByRole("link", { name: "Complete" })).toHaveLength(
+      2,
+    );
+
+    const feb = screen
+      .getByRole("heading", { name: "February 2026" })
+      .closest("section");
+    if (!feb) {
+      throw new Error("February section not found");
+    }
+    expect(within(feb).getByText("Rent receipt (1)")).toBeInTheDocument();
+    expect(within(feb).getByText("Statement (1)")).toBeInTheDocument();
+  });
+
+  it("renders the loading and empty states in English", async () => {
+    receiptsState = {
+      data: undefined,
+      isPending: true,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    };
+    statementsState = {
+      data: undefined,
+      isPending: true,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    };
+    await i18n.changeLanguage("en");
+    const { unmount } = render(
+      <MemoryRouter>
+        <HistoryPage />
+        <LocationProbe />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("Loading the history…")).toBeInTheDocument();
+    unmount();
+
+    receiptsState = readyQuery([]);
+    statementsState = readyQuery([]);
+    renderPage();
+
+    expect(await screen.findByText("No document yet")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Generate a rent receipt or an expense statement/),
+    ).toBeInTheDocument();
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("button", { name: "Generate a rent receipt" }),
+    );
+    expect(currentPath()).toBe("/generer/quittance");
+
+    await user.click(
+      screen.getByRole("button", { name: "Generate an expense statement" }),
+    );
+    expect(currentPath()).toBe("/generer/note-frais");
+  });
+
+  it("reloads a statement with the English dialog and toast", async () => {
+    await i18n.changeLanguage("en");
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("2 months tracked");
+
+    const januaryNote = columnOf("2026-01", "note");
+    await user.click(
+      within(januaryNote).getAllByRole("button", { name: "Load" })[1],
+    );
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Reopen this statement?",
+    });
+    expect(dialog).toHaveTextContent(
+      /The lines of version 1 for January 2026 will replace this month's draft/,
+    );
+    await user.click(
+      within(dialog).getByRole("button", { name: "Load the lines" }),
+    );
+    await waitFor(() => expect(currentPath()).toBe("/generer/note-frais"));
+    expect(
+      useToasts.getState().toasts.map((element) => element.message),
+    ).toContain("January 2026 lines reloaded into the draft.");
+  });
+
+  it("relabels the month cards and address rows without a reload", async () => {
+    renderPage();
+    await screen.findByText("Quittance (2)");
+    expect(screen.getAllByText("Adresse inconnue").length).toBeGreaterThan(0);
+
+    await act(async () => {
+      await i18n.changeLanguage("en");
+    });
+
+    const jan = screen
+      .getByRole("heading", { name: "January 2026" })
+      .closest("section");
+    if (!jan) {
+      throw new Error("January section not found");
+    }
+    expect(within(jan).getByText("Rent receipt (2)")).toBeInTheDocument();
+    expect(within(jan).getByText("Statement (2)")).toBeInTheDocument();
+    expect(within(jan).getAllByText("Unknown address")).toHaveLength(2);
+    expect(within(jan).queryAllByText("Adresse inconnue")).toHaveLength(0);
+
+    await act(async () => {
+      await i18n.changeLanguage("fr");
+    });
+
+    expect(screen.getByText("Quittance (2)")).toBeInTheDocument();
+    expect(screen.getAllByText("Adresse inconnue").length).toBeGreaterThan(0);
   });
 });

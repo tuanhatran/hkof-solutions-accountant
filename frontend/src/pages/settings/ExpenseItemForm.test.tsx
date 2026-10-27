@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
 import type { ExpenseItemDto } from "@/api/types";
+import i18n from "@/i18n";
 import { useToasts } from "@/state/toasts";
 import { ExpenseItemForm } from "./ExpenseItemForm";
 
@@ -284,6 +285,66 @@ describe("ExpenseItemForm", () => {
         9,
         expect.objectContaining({ leaseId: 3 }),
       ),
+    );
+  });
+
+  it("renders the creation form, help and validation in English", async () => {
+    await i18n.changeLanguage("en");
+    renderForm();
+    const user = userEvent.setup();
+
+    expect(
+      screen.getByRole("heading", { name: "Add an expense item" }),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Code")).toBeVisible();
+    expect(screen.getByLabelText("Displayed label")).toBeVisible();
+    expect(screen.getByLabelText("Supplier")).toBeVisible();
+    expect(screen.getByLabelText("Default pro rata (%)")).toBeVisible();
+    expect(screen.getByLabelText("Periodicity")).toBeVisible();
+    expect(screen.getByRole("option", { name: "Monthly" })).toBeVisible();
+    expect(screen.getByLabelText("Display order")).toBeVisible();
+    expect(screen.getByLabelText(/Active expense item/)).toBeVisible();
+    expect(screen.getByLabelText(/Multiple lines allowed/)).toBeVisible();
+    expect(
+      screen.getByText("Optional: generated from the label when empty."),
+    ).toBeVisible();
+
+    await user.type(screen.getByLabelText("Code"), "bad code");
+    await user.clear(screen.getByLabelText("Default pro rata (%)"));
+    await user.type(screen.getByLabelText("Default pro rata (%)"), "120");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(
+      await screen.findByText(
+        "Invalid code: letters, digits, hyphens and underscores only.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("The label is required.")).toBeVisible();
+    expect(
+      screen.getByText("Pro rata must be between 0 and 100."),
+    ).toBeVisible();
+    expect(api.expenseItems.create).not.toHaveBeenCalled();
+  });
+
+  it("renders the edit form and toasts the update in English", async () => {
+    await i18n.changeLanguage("en");
+    vi.mocked(api.expenseItems.update).mockResolvedValue({
+      id: 9,
+      label: "Gaz",
+    });
+    renderForm({ item: ITEM });
+
+    expect(
+      screen.getByRole("heading", { name: "Edit the expense type" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText("The code is immutable after creation."),
+    ).toBeVisible();
+
+    await userEvent.setup().click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() =>
+      expect(toastMessages()).toContain("Expense item “Gaz” updated."),
     );
   });
 

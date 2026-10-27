@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { LlmStatusDto } from "@/api/types";
+import i18n from "@/i18n";
 import { LlmBadge } from "./LlmBadge";
 
 let statusState: {
@@ -141,5 +142,22 @@ describe("LlmBadge", () => {
       </MemoryRouter>,
     );
     expect(document.querySelector(".llm-badge-dot-pulse")).not.toBeNull();
+  });
+
+  it("renders the status and the configuration link in English", async () => {
+    await i18n.changeLanguage("en");
+
+    renderBadge();
+
+    expect(screen.getByText("AI ready")).toBeVisible();
+    expect(
+      screen.getByRole("link", {
+        name: "AI ready. Open the AI configuration.",
+      }),
+    ).toHaveAttribute("href", "/admin");
+
+    statusState = { data: undefined, isPending: true, isError: false };
+    renderBadge({ withLink: false });
+    expect(screen.getByText("AI…")).toBeVisible();
   });
 });

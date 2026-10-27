@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { useForm, type UseFormReturn } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
 import type { CompanyDto, CompanyRequest } from "@/api/types";
@@ -31,6 +32,7 @@ interface CompanyFormApi {
  * saved company means for the selection.
  */
 export function useCompanyForm(company: CompanyDto | null): CompanyFormApi {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companySchema),
@@ -77,8 +79,8 @@ export function useCompanyForm(company: CompanyDto | null): CompanyFormApi {
       form.reset(valuesFromCompany(payload));
       toast.success(
         company
-          ? "Société enregistrée. Les prochains documents utiliseront ces valeurs."
-          : "Société créée.",
+          ? t("settings.company.identity.toasts.saved")
+          : t("settings.company.identity.toasts.created"),
       );
     },
   });

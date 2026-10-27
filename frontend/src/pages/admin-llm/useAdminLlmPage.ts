@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys, useLlmConfig, useLlmModels } from "@/api/queries";
@@ -21,6 +22,7 @@ import {
  * test. The page component only composes the presentation.
  */
 export function useAdminLlmPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const config = useLlmConfig();
   const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
@@ -86,7 +88,7 @@ export function useAdminLlmPage() {
       setTestResult(null);
       setTestError(null);
       void queryClient.invalidateQueries({ queryKey: queryKeys.llmStatus });
-      toast.success("Configuration IA enregistrée.");
+      toast.success(t("adminLlm.toasts.saved"));
     },
   });
 
@@ -96,7 +98,7 @@ export function useAdminLlmPage() {
     }
     const url = normalizeUrl(values.url);
     if (!isValidUrl(url)) {
-      setModelsError("URL invalide : commencez par http:// ou https://.");
+      setModelsError(t("adminLlm.toasts.invalidUrl"));
       return;
     }
     setModelsError(null);
@@ -137,14 +139,14 @@ export function useAdminLlmPage() {
     try {
       const reply = await api.llm.defaultPrompt();
       if (!reply.prompt) {
-        toast.error("Le prompt par défaut est indisponible.");
+        toast.error(t("adminLlm.toasts.defaultPromptUnavailable"));
         return;
       }
       setValue("extractionPrompt", reply.prompt, {
         shouldDirty: true,
         shouldValidate: true,
       });
-      toast.info("Prompt par défaut chargé. Enregistrez pour l’appliquer.");
+      toast.info(t("adminLlm.toasts.defaultPromptLoaded"));
     } catch (error) {
       toast.error(errorMessage(error));
     } finally {
@@ -167,9 +169,9 @@ export function useAdminLlmPage() {
       const result = await api.llm.test();
       setTestResult(result);
       if (result.success) {
-        toast.success("Test de connexion réussi.");
+        toast.success(t("adminLlm.toasts.testSucceeded"));
       } else {
-        toast.error(result.message ?? "Le test de connexion a échoué.");
+        toast.error(result.message ?? t("adminLlm.toasts.testFailed"));
       }
       void queryClient.invalidateQueries({ queryKey: queryKeys.llmStatus });
     } catch (error) {

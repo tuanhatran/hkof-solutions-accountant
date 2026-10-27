@@ -64,10 +64,12 @@ class ExpenseStatementLineCalculatorTest {
     void itemCodeRequired() {
         assertThatThrownBy(() -> calculator.calculateLines(COMPANY_ID, List.of(request(null, "10", "50"))))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le type de frais est obligatoire.");
+                .hasMessage("Le type de frais est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("EXPENSE_ITEM_REQUIRED"));
         assertThatThrownBy(() -> calculator.calculateLines(COMPANY_ID, List.of(request(" ", "10", "50"))))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le type de frais est obligatoire.");
+                .hasMessage("Le type de frais est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("EXPENSE_ITEM_REQUIRED"));
     }
 
     @Test
@@ -77,7 +79,11 @@ class ExpenseStatementLineCalculatorTest {
         assertThatThrownBy(() -> calculator.calculateLines(COMPANY_ID, List.of(
                 request("gaz", "10", "50"), request("gaz", "20", "50"))))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le type « Gaz » ne peut être ajouté qu'une fois.");
+                .hasMessage("Le type « Gaz » ne peut être ajouté qu'une fois.")
+                .satisfies(ex -> {
+                    assertThat(((BusinessException) ex).getCode()).isEqualTo("EXPENSE_ITEM_SINGLE_USE");
+                    assertThat(((BusinessException) ex).getParams()).containsEntry("label", "Gaz");
+                });
 
         when(expenseItemService.entity(COMPANY_ID, "peage")).thenReturn(item("peage", "Péage", 30, true));
         assertThat(calculator.calculateLines(COMPANY_ID, List.of(
@@ -90,9 +96,12 @@ class ExpenseStatementLineCalculatorTest {
         when(expenseItemService.entity(COMPANY_ID, "gaz")).thenReturn(item("gaz", "Gaz", 20, false));
 
         assertThatThrownBy(() -> calculator.calculateLines(COMPANY_ID, List.of(request("gaz", "-1", "50"))))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("AMOUNT_MUST_BE_STRICTLY_POSITIVE"));
         assertThatThrownBy(() -> calculator.calculateLines(COMPANY_ID, List.of(request("gaz", "10", "101"))))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PRO_RATA_OUT_OF_RANGE"));
     }
 
     @Test
@@ -133,7 +142,11 @@ class ExpenseStatementLineCalculatorTest {
         assertThatThrownBy(() -> calculator.calculateLines(COMPANY_ID, List.of(
                 new ExpenseLineRequest("gaz", "10", "50", null, "magique", null, null))))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Source de montant invalide : magique");
+                .hasMessage("Source de montant invalide : magique")
+                .satisfies(ex -> {
+                    assertThat(((BusinessException) ex).getCode()).isEqualTo("STATEMENT_AMOUNT_SOURCE_INVALID");
+                    assertThat(((BusinessException) ex).getParams()).containsEntry("source", "magique");
+                });
     }
 
     @Test
@@ -153,7 +166,11 @@ class ExpenseStatementLineCalculatorTest {
         assertThatThrownBy(() -> calculator.calculateLines(COMPANY_ID, List.of(
                 new ExpenseLineRequest("gaz", "10", "50", null, null, "12.00", "certaine"))))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Niveau de confiance IA invalide : certaine");
+                .hasMessage("Niveau de confiance IA invalide : certaine")
+                .satisfies(ex -> {
+                    assertThat(((BusinessException) ex).getCode()).isEqualTo("STATEMENT_AI_CONFIDENCE_INVALID");
+                    assertThat(((BusinessException) ex).getParams()).containsEntry("confidence", "certaine");
+                });
     }
 
     @Test

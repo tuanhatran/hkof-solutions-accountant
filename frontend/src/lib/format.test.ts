@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import i18n from "@/i18n";
 import {
   formatBytes,
   formatDate,
@@ -63,6 +64,14 @@ describe("French formatting", () => {
   it("formats months in French", () => {
     expect(formatMonth("2026-10")).toBe("Octobre 2026");
     expect(formatMonth("2026-01")).toBe("Janvier 2026");
+    expect(formatMonth("invalide")).toBe("—");
+  });
+
+  it("formats months in English from the current language", async () => {
+    await i18n.changeLanguage("en");
+
+    expect(formatMonth("2026-10")).toBe("October 2026");
+    expect(formatMonth("2026-01")).toBe("January 2026");
     expect(formatMonth("invalide")).toBe("—");
   });
 });
@@ -147,10 +156,32 @@ describe("date formatting", () => {
     expect(formatPeriod(undefined, "2026-10-31")).toBe("—");
   });
 
+  it("formats periods in English from the current language", async () => {
+    await i18n.changeLanguage("en");
+
+    expect(formatPeriod("2026-10-01", "2026-10-31")).toBe(
+      "from 01/10/2026 to 31/10/2026",
+    );
+    expect(formatPeriod("2026-10-01", null)).toBe("—");
+
+    await i18n.changeLanguage("fr");
+    expect(formatPeriod("2026-10-01", "2026-10-31")).toBe(
+      "du 01/10/2026 au 31/10/2026",
+    );
+  });
+
   it("formats byte sizes in French units", () => {
     expect(formatBytes(512)).toBe("512 o");
     expect(normalizeSpaces(formatBytes(2048))).toBe("2 Ko");
     expect(normalizeSpaces(formatBytes(2 * 1024 * 1024))).toBe("2 Mo");
+  });
+
+  it("formats byte sizes in English units from the current language", async () => {
+    await i18n.changeLanguage("en");
+
+    expect(formatBytes(512)).toBe("512 B");
+    expect(formatBytes(1536)).toBe("1.5 KB");
+    expect(formatBytes(2 * 1024 * 1024)).toBe("2 MB");
   });
 });
 

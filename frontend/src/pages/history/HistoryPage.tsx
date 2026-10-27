@@ -1,6 +1,7 @@
 import "./HistoryPage.css";
 import { History } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { errorMessage } from "@/api/client";
 import {
@@ -26,6 +27,7 @@ import {
 } from "./historyHelpers";
 
 export function HistoryPage() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const companies = useCompanies();
   const companyIds = useMemo(
@@ -49,8 +51,14 @@ export function HistoryPage() {
         rentReceiptsQuery.data ?? [],
         statementsQuery.data ?? [],
         leasesQuery.data ?? [],
+        i18n.resolvedLanguage,
       ),
-    [rentReceiptsQuery.data, statementsQuery.data, leasesQuery.data],
+    [
+      rentReceiptsQuery.data,
+      statementsQuery.data,
+      leasesQuery.data,
+      i18n.resolvedLanguage,
+    ],
   );
 
   const loading =
@@ -100,7 +108,9 @@ export function HistoryPage() {
       .loadFromStatement(statementToReload, rentReceipt?.id ?? null);
     setStatementToReload(null);
     toast.info(
-      `Lignes de ${formatMonth(statementToReload.month)} rechargées dans le brouillon.`,
+      t("history.page.reloaded", {
+        month: formatMonth(statementToReload.month),
+      }),
     );
     navigate("/generer/note-frais");
   }
@@ -108,13 +118,13 @@ export function HistoryPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Suivi"
-        title="Historique"
-        description="Toutes les versions de vos quittances et notes de frais, toutes sociétés confondues, classées par mois. Les versions archivées restent téléchargeables et consultables."
+        eyebrow={t("history.page.eyebrow")}
+        title={t("history.page.title")}
+        description={t("history.page.description")}
         actions={
           <span className="badge badge-neutral">
             <History size={12} aria-hidden="true" />
-            {groups.length} mois suivi{groups.length > 1 ? "s" : ""}
+            {t("history.page.monthCount", { count: groups.length })}
           </span>
         }
       />
@@ -126,11 +136,11 @@ export function HistoryPage() {
       ) : null}
 
       {loading && groups.length === 0 ? (
-        <LoadingState message="Chargement de l’historique…" />
+        <LoadingState message={t("history.page.loading")} />
       ) : companyIds.length === 0 ? (
         <EmptyState
-          title="Aucune société configurée"
-          description="Créez une société dans la configuration pour consulter son historique."
+          title={t("history.page.noCompanyTitle")}
+          description={t("history.page.noCompanyDescription")}
         />
       ) : groups.length === 0 && !errorText ? (
         <HistoryEmptyState

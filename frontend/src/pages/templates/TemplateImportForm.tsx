@@ -1,5 +1,6 @@
 import "./TemplateImportForm.css";
 import { Check, Eye, UploadCloud } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   FileDropzone,
   SelectedFile,
@@ -12,6 +13,7 @@ import { ValidationReport } from "./ValidationReport";
 
 /** Import form for a new template version, with validation report. */
 export function TemplateImportForm({ c }: { c: TemplatesCardController }) {
+  const { t } = useTranslation();
   const { type, dataCy } = c.configuration;
   const lastImport = c.lastImport;
   return (
@@ -22,25 +24,23 @@ export function TemplateImportForm({ c }: { c: TemplatesCardController }) {
           className="template-import-form-title-icon"
           aria-hidden="true"
         />
-        Importer une nouvelle version
+        {t("templates.import.title")}
       </h3>
       <p className="template-import-form-intro">
-        Fichier HTML UTF-8, 5 Mo maximum. Le nouveau modèle est validé puis
-        importé sans être activé : vous pouvez d’abord l’aperçu avec des données
-        d’exemple.
+        {t("templates.import.intro")}
       </p>
 
       <div className="template-import-form-body">
         <div>
           <label className="field-label" htmlFor={`nom-template-${type}`}>
-            Nom de la version
+            {t("templates.import.nameLabel")}
           </label>
           <input
             id={`nom-template-${type}`}
             className="field"
             value={c.name}
             maxLength={120}
-            placeholder="Ex. Quittance — version 2027"
+            placeholder={t("templates.import.namePlaceholder")}
             onChange={(event) => c.setName(event.target.value)}
             data-cy="input-template-nom"
           />
@@ -62,8 +62,8 @@ export function TemplateImportForm({ c }: { c: TemplatesCardController }) {
             accept={TEMPLATE_FORMATS}
             maxSize={MAX_TEMPLATE_SIZE}
             formatsDescription="HTML, HTM"
-            text="Déposez votre template HTML"
-            ariaLabel="Choisir un fichier template HTML"
+            text={t("templates.import.dropzoneText")}
+            ariaLabel={t("templates.import.dropzoneAria")}
           />
         )}
 
@@ -89,10 +89,10 @@ export function TemplateImportForm({ c }: { c: TemplatesCardController }) {
             }}
             data-cy="btn-televerser-template"
           >
-            Valider et importer
+            {t("templates.import.submit")}
           </Button>
           <span className="template-import-form-actions-note">
-            Une version importée doit être activée explicitement.
+            {t("templates.import.note")}
           </span>
         </div>
 
@@ -107,7 +107,9 @@ export function TemplateImportForm({ c }: { c: TemplatesCardController }) {
               loading={c.previewInProgress === lastImport.id}
               onClick={() => void c.openPreview(lastImport)}
             >
-              Aperçu de la version v{lastImport.version}
+              {t("templates.versions.followupPreview", {
+                version: lastImport.version,
+              })}
             </Button>
             <Button
               variant="secondary"
@@ -119,7 +121,9 @@ export function TemplateImportForm({ c }: { c: TemplatesCardController }) {
               }
               onClick={() => c.activate.mutate(lastImport)}
             >
-              Activer la version v{lastImport.version}
+              {t("templates.versions.followupActivate", {
+                version: lastImport.version,
+              })}
             </Button>
           </div>
         ) : null}

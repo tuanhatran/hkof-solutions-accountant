@@ -73,7 +73,8 @@ class ReceiptServiceTest {
 
         assertThatThrownBy(() -> service.entity(1L))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Justificatif introuvable.");
+                .hasMessage("Justificatif introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("RECEIPT_NOT_FOUND"));
         assertThatThrownBy(() -> service.entity(2L))
                 .isInstanceOf(NotFoundException.class);
         assertThatThrownBy(() -> service.get(1L)).isInstanceOf(NotFoundException.class);
@@ -96,7 +97,8 @@ class ReceiptServiceTest {
 
         assertThatThrownBy(() -> service.delete(1L))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Ce justificatif est utilisé par une note de frais et ne peut pas être supprimé.");
+                .hasMessage("Ce justificatif est utilisé par une note de frais et ne peut pas être supprimé.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("RECEIPT_IN_USE"));
         verify(repository, never()).save(any(Receipt.class));
     }
 

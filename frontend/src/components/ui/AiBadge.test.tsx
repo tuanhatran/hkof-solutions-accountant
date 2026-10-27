@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import i18n from "@/i18n";
 import { AiBadge } from "./AiBadge";
 
 describe("AiBadge", () => {
@@ -16,6 +17,17 @@ describe("AiBadge", () => {
     expect(badge).toHaveAttribute(
       "title",
       "Extrait du document : « TOTAL TTC 42,00 »",
+    );
+  });
+
+  it("translates the default label and source title into English", async () => {
+    await i18n.changeLanguage("en");
+    render(<AiBadge sourceExtract="TOTAL TTC 42,00" />);
+
+    const badge = screen.getByText("Detected by AI");
+    expect(badge).toHaveAttribute(
+      "title",
+      "Document excerpt: “TOTAL TTC 42,00”",
     );
   });
 });

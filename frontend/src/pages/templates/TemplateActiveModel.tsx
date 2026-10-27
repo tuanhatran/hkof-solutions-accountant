@@ -1,33 +1,43 @@
 import "./TemplateActiveModel.css";
 import { Download, Eye, RotateCcw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import { formatDateTime } from "@/lib/format";
 import type { TemplatesCardController } from "./useTemplatesCard";
 
 /** Active model summary with preview/download/restore actions. */
 export function TemplateActiveModel({ c }: { c: TemplatesCardController }) {
+  const { t } = useTranslation();
   const active = c.active;
   return (
     <div className="template-active-model">
       <div className="template-active-model-header">
         <div className="template-active-model-main">
-          <p className="template-active-model-eyebrow">Modèle actif</p>
+          <p className="template-active-model-eyebrow">
+            {t("templates.active.eyebrow")}
+          </p>
           {active ? (
             <>
               <p className="template-active-model-name-row">
                 {active.name}
                 <span className="badge badge-accent">v{active.version}</span>
                 {active.builtIn ? (
-                  <span className="badge badge-neutral">intégré</span>
+                  <span className="badge badge-neutral">
+                    {t("templates.badges.builtIn")}
+                  </span>
                 ) : null}
               </p>
               <p className="template-active-model-meta">
-                {active.format ?? "HTML"} · importé le{" "}
-                {formatDateTime(active.createdAt)}
+                {active.format ?? "HTML"} ·{" "}
+                {t("templates.active.importedOn", {
+                  date: formatDateTime(active.createdAt),
+                })}
               </p>
             </>
           ) : (
-            <p className="template-active-model-empty">Aucun modèle actif.</p>
+            <p className="template-active-model-empty">
+              {t("templates.active.empty")}
+            </p>
           )}
         </div>
         {active ? (
@@ -40,7 +50,7 @@ export function TemplateActiveModel({ c }: { c: TemplatesCardController }) {
               onClick={() => void c.openPreview(active)}
               data-cy="btn-apercu-template-actif"
             >
-              Aperçu
+              {t("templates.actions.preview")}
             </Button>
             <Button
               variant="secondary"
@@ -51,7 +61,7 @@ export function TemplateActiveModel({ c }: { c: TemplatesCardController }) {
               }
               onClick={() => c.download.mutate(active)}
             >
-              Télécharger
+              {t("templates.actions.download")}
             </Button>
           </div>
         ) : (
@@ -61,7 +71,7 @@ export function TemplateActiveModel({ c }: { c: TemplatesCardController }) {
             icon={<RotateCcw size={14} />}
             onClick={() => c.setResetDialogOpen(true)}
           >
-            Restaurer le modèle intégré
+            {t("templates.actions.restoreBuiltIn")}
           </Button>
         )}
       </div>

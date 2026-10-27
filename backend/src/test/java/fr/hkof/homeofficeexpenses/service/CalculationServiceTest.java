@@ -25,7 +25,8 @@ class CalculationServiceTest {
     void monthlyAmountRequiresAmount() {
         assertThatThrownBy(() -> CalculationService.monthlyAmount(null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le montant TTC est obligatoire.");
+                .hasMessage("Le montant TTC est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("AMOUNT_REQUIRED"));
     }
 
     @Test
@@ -33,7 +34,8 @@ class CalculationServiceTest {
     void monthlyAmountRejectsNegative() {
         assertThatThrownBy(() -> CalculationService.monthlyAmount(new BigDecimal("-1.00")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le montant TTC ne peut pas être négatif.");
+                .hasMessage("Le montant TTC ne peut pas être négatif.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("AMOUNT_NEGATIVE"));
     }
 
     @Test
@@ -68,10 +70,13 @@ class CalculationServiceTest {
     void invalidInputs() {
         assertThatThrownBy(() -> CalculationService.claimedAmount(new BigDecimal("10"), new BigDecimal("101")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("prorata");
+                .hasMessageContaining("prorata")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PRO_RATA_OUT_OF_RANGE"));
         assertThatThrownBy(() -> CalculationService.proRataBase(new BigDecimal("80"), new BigDecimal("70")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("surface");
+                .hasMessageContaining("surface")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("PRO_RATA_BUSINESS_AREA_OUT_OF_RANGE"));
     }
 
     @Test
@@ -92,7 +97,8 @@ class CalculationServiceTest {
     void grossFromNetRejectsNegativeNet() {
         assertThatThrownBy(() -> CalculationService.grossFromNet(new BigDecimal("-1.00"), new BigDecimal("20")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("négatif");
+                .hasMessageContaining("négatif")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("VAT_NET_AMOUNT_NEGATIVE"));
     }
 
     @Test
@@ -100,10 +106,14 @@ class CalculationServiceTest {
     void grossFromNetRejectsInvalidRate() {
         assertThatThrownBy(() -> CalculationService.grossFromNet(new BigDecimal("80"), new BigDecimal("101")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("taux");
+                .hasMessageContaining("taux")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("VAT_RATE_OUT_OF_RANGE"));
         assertThatThrownBy(() -> CalculationService.grossFromNet(null, new BigDecimal("20")))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("VAT_NET_AMOUNT_REQUIRED"));
         assertThatThrownBy(() -> CalculationService.grossFromNet(new BigDecimal("80"), null))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("VAT_RATE_REQUIRED"));
     }
 }

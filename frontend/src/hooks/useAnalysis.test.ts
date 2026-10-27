@@ -2,6 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
 import type { AnalysisDto } from "@/api/types";
+import i18n from "@/i18n";
 import { isAnalysisRunning, useAnalysis } from "./useAnalysis";
 
 vi.mock("@/api/endpoints", () => ({
@@ -262,5 +263,45 @@ describe("useAnalysis", () => {
       result.current.reset();
     });
     expect(result.current.state).toEqual({ status: "idle" });
+  });
+
+  it("reports failures and cancellations in English", async () => {
+    await i18n.changeLanguage("en");
+    vi.mocked(api.analyses.start).mockResolvedValue({ analysisId: 2 });
+    vi.mocked(api.analyses.get).mockResolvedValue({
+      id: 2,
+      status: "FAILED",
+    });
+
+    const { result } = renderHook(() => useAnalysis());
+    await act(async () => {
+      await result.current.start(8);
+    });
+    expect(result.current.state).toEqual({
+      status: "failed",
+      message: "The analysis failed. Enter the amount manually.",
+    });
+
+    vi.mocked(api.analyses.start).mockResolvedValue({});
+    await act(async () => {
+      await result.current.start(8);
+    });
+    expect(result.current.state).toEqual({
+      status: "failed",
+      message: "Analysis unavailable, enter the amount.",
+    });
+
+    vi.mocked(api.analyses.start).mockResolvedValue({ analysisId: 3 });
+    vi.mocked(api.analyses.get).mockResolvedValue({
+      id: 3,
+      status: "CANCELLED",
+    });
+    await act(async () => {
+      await result.current.start(8);
+    });
+    expect(result.current.state).toEqual({
+      status: "cancelled",
+      message: "Analysis cancelled.",
+    });
   });
 });

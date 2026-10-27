@@ -1,4 +1,5 @@
 import "./ExpenseEntryCard.css";
+import { useTranslation } from "react-i18next";
 import { Pencil, Plus } from "lucide-react";
 import { AnalysisPanel } from "@/components/llm/AnalysisPanel";
 import { Button } from "@/components/ui/Button";
@@ -14,21 +15,26 @@ export function ExpenseEntryCard({
 }: {
   controller: ExpenseStatementController;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="card">
       <div className="card-header">
         <div>
           <p className="eyebrow">
-            {c.lineBeingEdited ? "Modification" : "Ajouter un frais"}
+            {c.lineBeingEdited
+              ? t("expenseStatement.entry.eyebrowEdit")
+              : t("expenseStatement.entry.eyebrowAdd")}
           </p>
           <h2 className="expense-entry-card-title">
-            {c.lineBeingEdited ? "Modifier le frais" : "Nouveau frais"}
+            {c.lineBeingEdited
+              ? t("expenseStatement.entry.titleEdit")
+              : t("expenseStatement.entry.titleAdd")}
           </h2>
         </div>
         <div className="expense-entry-card-month">
           <div className="expense-entry-card-month-grid">
             <label htmlFor="note-mois" className="sr-only">
-              Mois concerné
+              {t("expenseStatement.entry.monthLabel")}
             </label>
             <input
               id="note-mois"
@@ -85,17 +91,17 @@ export function ExpenseEntryCard({
               data-cy="btn-ajouter-frais"
             >
               {c.lineBeingEdited
-                ? "Enregistrer la modification"
-                : "Ajouter ce frais"}
+                ? t("expenseStatement.entry.submitEdit")
+                : t("expenseStatement.entry.submitAdd")}
             </Button>
             {c.lineBeingEdited ? (
               <Button variant="ghost" small onClick={c.cancelEdit}>
-                Annuler la modification
+                {t("expenseStatement.entry.cancelEdit")}
               </Button>
             ) : null}
           </div>
           <p className="expense-entry-card-hint">
-            Le formulaire se réinitialise après chaque ajout.
+            {t("expenseStatement.entry.hint")}
           </p>
         </div>
       </form>

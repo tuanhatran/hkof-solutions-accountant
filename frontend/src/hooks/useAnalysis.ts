@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "@/api/endpoints";
 import { isCancellation } from "@/api/client";
 import type { AnalysisDto } from "@/api/types";
@@ -23,6 +24,7 @@ export function isAnalysisRunning(state: AnalysisState): boolean {
 }
 
 export function useAnalysis() {
+  const { t } = useTranslation();
   const [state, setState] = useState<AnalysisState>({ status: "idle" });
   const controllerRef = useRef<AbortController | null>(null);
   const analysisIdRef = useRef<number | null>(null);
@@ -36,94 +38,108 @@ export function useAnalysis() {
     };
   }, []);
 
-  const start = useCallback(async (receiptId: number) => {
-    controllerRef.current?.abort();
-    const controller = new AbortController();
-    controllerRef.current = controller;
-    analysisIdRef.current = null;
-    setState({ status: "starting" });
+  const start = useCallback(
+    async (receiptId: number) => {
+      controllerRef.current?.abort();
+      const controller = new AbortController();
+      controllerRef.current = controller;
+      analysisIdRef.current = null;
+      setState({ status: "starting" });
 
-    try {
-      const launch = await api.analyses.start(receiptId);
-      if (controller.signal.aborted || !mountRef.current) {
-        return;
-      }
-      const analysisId = launch.analysisId;
-      if (!analysisId) {
-        throw new Error("L'analyse n'a pas pu démarrer.");
-      }
-      analysisIdRef.current = analysisId;
-      setState({ status: "running", analysisId });
-
-      const startedAt = Date.now();
-      while (
-        !controller.signal.aborted &&
-        Date.now() - startedAt < MAX_DURATION_MS
-      ) {
-        const analysis = await api.analyses.get(analysisId, controller.signal);
+      try {
+        const launch = await api.analyses.start(receiptId);
         if (controller.signal.aborted || !mountRef.current) {
           return;
         }
-        if (analysis.status === "DONE") {
-          setState({ status: "done", analysis });
-          return;
+        const analysisId = launch.analysisId;
+        if (!analysisId) {
+          throw new Error(t("expenseStatement.analysis.startFailed"));
         }
-        if (analysis.status === "FAILED") {
+        analysisIdRef.current = analysisId;
+        setState({ status: "running", analysisId });
+
+        const startedAt = Date.now();
+        while (
+          !controller.signal.aborted &&
+          Date.now() - startedAt < MAX_DURATION_MS
+        ) {
+          const analysis = await api.analyses.get(
+            analysisId,
+            controller.signal,
+          );
+          if (controller.signal.aborted || !mountRef.current) {
+            return;
+          }
+          if (analysis.status === "DONE") {
+            setState({ status: "done", analysis });
+            return;
+          }
+          if (analysis.status === "FAILED") {
+            setState({
+              status: "failed",
+              message:
+                analysis.errorMessage ||
+                t("expenseStatement.analysis.failedFallback"),
+            });
+            return;
+          }
+          if (analysis.status === "CANCELLED") {
+            setState({
+              status: "cancelled",
+              message: t("expenseStatement.analysis.cancelled"),
+            });
+            return;
+          }
+          await wait(INTERVAL_MS);
+        }
+        if (!controller.signal.aborted && mountRef.current) {
           setState({
             status: "failed",
-            message:
-              analysis.errorMessage ||
-              "L'analyse a échoué. Saisissez le montant manuellement.",
+            message: t("expenseStatement.analysis.timeout"),
           });
+        }
+      } catch (error) {
+        if (
+          isCancellation(error) ||
+          controller.signal.aborted ||
+          !mountRef.current
+        ) {
           return;
         }
-        if (analysis.status === "CANCELLED") {
-          setState({ status: "cancelled", message: "Analyse annulée." });
-          return;
-        }
-        await wait(INTERVAL_MS);
-      }
-      if (!controller.signal.aborted && mountRef.current) {
         setState({
           status: "failed",
-          message:
-            "L'analyse prend trop de temps. Saisissez le montant manuellement.",
+          message: t("expenseStatement.analysis.unavailable"),
         });
       }
-    } catch (error) {
-      if (
-        isCancellation(error) ||
-        controller.signal.aborted ||
-        !mountRef.current
-      ) {
-        return;
-      }
-      setState({
-        status: "failed",
-        message: "Analyse indisponible, saisissez le montant.",
-      });
-    }
-  }, []);
+    },
+    [t],
+  );
 
-  const cancel = useCallback(async (silent = false) => {
-    const analysisId = analysisIdRef.current;
-    controllerRef.current?.abort();
-    analysisIdRef.current = null;
-    if (analysisId !== null) {
-      try {
-        await api.analyses.cancel(analysisId);
-      } catch {
-        // The analysis may already be finished: cancellation has no effect.
+  const cancel = useCallback(
+    async (silent = false) => {
+      const analysisId = analysisIdRef.current;
+      controllerRef.current?.abort();
+      analysisIdRef.current = null;
+      if (analysisId !== null) {
+        try {
+          await api.analyses.cancel(analysisId);
+        } catch {
+          // The analysis may already be finished: cancellation has no effect.
+        }
       }
-    }
-    if (mountRef.current) {
-      setState(
-        silent
-          ? { status: "idle" }
-          : { status: "cancelled", message: "Analyse annulée." },
-      );
-    }
-  }, []);
+      if (mountRef.current) {
+        setState(
+          silent
+            ? { status: "idle" }
+            : {
+                status: "cancelled",
+                message: t("expenseStatement.analysis.cancelled"),
+              },
+        );
+      }
+    },
+    [t],
+  );
 
   const reset = useCallback(() => {
     controllerRef.current?.abort();

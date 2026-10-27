@@ -1,5 +1,6 @@
 import "./HistoryActions.css";
 import { Download, ExternalLink } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 /** PDF download link of a history entry. */
 export function PdfActionLink({
@@ -21,6 +22,8 @@ export function PdfActionLink({
 
 /** Opens a document PDF in a new tab. */
 export function OpenPdfLink({ href }: { href: string }) {
+  const { t } = useTranslation();
+
   return (
     <a
       href={href}
@@ -29,7 +32,7 @@ export function OpenPdfLink({ href }: { href: string }) {
       className="history-actions-open-link"
     >
       <ExternalLink size={12} aria-hidden="true" />
-      Ouvrir
+      {t("history.actions.open")}
     </a>
   );
 }

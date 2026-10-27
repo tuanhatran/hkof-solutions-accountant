@@ -105,7 +105,11 @@ class TemplateServiceTest {
                 .thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.active(TemplateType.RENT_RECEIPT))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("Aucun template actif");
+                .hasMessageContaining("Aucun template actif")
+                .satisfies(ex -> {
+                    assertThat(((NotFoundException) ex).getCode()).isEqualTo("TEMPLATE_ACTIVE_NOT_FOUND");
+                    assertThat(((NotFoundException) ex).getParams()).containsEntry("type", "RENT_RECEIPT");
+                });
     }
 
     @Test
@@ -116,8 +120,10 @@ class TemplateServiceTest {
                 false, false, true)));
 
         assertThatThrownBy(() -> service.byId(1L)).isInstanceOf(NotFoundException.class)
-                .hasMessage("Template introuvable.");
-        assertThatThrownBy(() -> service.byId(2L)).isInstanceOf(NotFoundException.class);
+                .hasMessage("Template introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("TEMPLATE_NOT_FOUND"));
+        assertThatThrownBy(() -> service.byId(2L)).isInstanceOf(NotFoundException.class)
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("TEMPLATE_NOT_FOUND"));
     }
 
     @Test
@@ -138,7 +144,11 @@ class TemplateServiceTest {
 
         assertThatThrownBy(() -> service.render(template, Map.of()))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Cassé");
+                .hasMessageContaining("Cassé")
+                .satisfies(ex -> {
+                    assertThat(((BusinessException) ex).getCode()).isEqualTo("TEMPLATE_RENDER_FAILED");
+                    assertThat(((BusinessException) ex).getParams()).containsEntry("name", "Cassé");
+                });
     }
 
     @Test
@@ -146,13 +156,17 @@ class TemplateServiceTest {
     void uploadRequirements() throws IOException {
         assertThatThrownBy(() -> service.upload(TemplateType.RENT_RECEIPT, " ", htmlFile("<html></html>")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le nom du template est obligatoire.");
+                .hasMessage("Le nom du template est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("TEMPLATE_NAME_REQUIRED"));
 
         MultipartFile broken = mock(MultipartFile.class);
         when(broken.getBytes()).thenThrow(new IOException("boom"));
         assertThatThrownBy(() -> service.upload(TemplateType.RENT_RECEIPT, "Modèle", broken))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Impossible de lire le fichier template.");
+                .hasMessage("Impossible de lire le fichier template.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("TEMPLATE_FILE_UNREADABLE"));
     }
 
     @Test
@@ -173,7 +187,11 @@ class TemplateServiceTest {
         assertThatThrownBy(() -> service.upload(TemplateType.RENT_RECEIPT,
                 "Modèle", htmlFile("<html><body><script>alert(1)</script>{{bailleur.nom}}</body></html>")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("script");
+                .hasMessageContaining("script")
+                .satisfies(ex -> {
+                    assertThat(((BusinessException) ex).getCode()).isEqualTo("TEMPLATE_INVALID");
+                    assertThat(((BusinessException) ex).getParams()).isEmpty();
+                });
     }
 
     @Test
@@ -241,10 +259,14 @@ class TemplateServiceTest {
 
         assertThatThrownBy(() -> service.delete(1L))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le modèle intégré ne peut pas être supprimé.");
+                .hasMessage("Le modèle intégré ne peut pas être supprimé.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("TEMPLATE_BUILT_IN_NOT_DELETABLE"));
         assertThatThrownBy(() -> service.delete(2L))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("template actif");
+                .hasMessageContaining("template actif")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("TEMPLATE_ACTIVE_NOT_DELETABLE"));
     }
 
     @Test
@@ -266,7 +288,9 @@ class TemplateServiceTest {
                 .thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.reset(TemplateType.RENT_RECEIPT))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Modèle intégré introuvable.");
+                .hasMessage("Modèle intégré introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode())
+                        .isEqualTo("TEMPLATE_BUILT_IN_NOT_FOUND"));
 
         TemplateDocument builtIn = template(1L, TemplateType.RENT_RECEIPT, "Intégré", 1, false, true, false);
         when(repository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(TemplateType.RENT_RECEIPT))

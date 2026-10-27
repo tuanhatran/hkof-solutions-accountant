@@ -1,4 +1,5 @@
 import "./ExpenseResultCard.css";
+import { useTranslation } from "react-i18next";
 import { Download, ExternalLink, FileCheck2 } from "lucide-react";
 import { api } from "@/api/endpoints";
 import { Button } from "@/components/ui/Button";
@@ -11,6 +12,7 @@ export function ExpenseResultCard({
 }: {
   controller: ExpenseStatementController;
 }) {
+  const { t } = useTranslation();
   if (!c.result) {
     return null;
   }
@@ -22,15 +24,22 @@ export function ExpenseResultCard({
           <FileCheck2 size={19} aria-hidden="true" />
         </span>
         <div className="expense-result-card-body">
-          <p className="expense-result-card-title">Note de frais générée</p>
+          <p className="expense-result-card-title">
+            {t("expenseStatement.result.title")}
+          </p>
           <p className="expense-result-card-meta">
-            {formatMonth(result.month)} · version {result.version ?? 1} ·{" "}
-            {formatEUR(result.total)}
+            {t("expenseStatement.result.meta", {
+              month: formatMonth(result.month),
+              version: result.version ?? 1,
+              total: formatEUR(result.total),
+            })}
           </p>
           <p className="expense-result-card-note">
-            Enregistrée avec le template «{" "}
-            {result.templateName ?? c.currentTemplate} » v
-            {result.templateVersion ?? 1} le {formatDateTime(result.createdAt)}.
+            {t("expenseStatement.result.recorded", {
+              name: result.templateName ?? c.currentTemplate,
+              version: result.templateVersion ?? 1,
+              date: formatDateTime(result.createdAt),
+            })}
           </p>
         </div>
       </div>
@@ -42,7 +51,7 @@ export function ExpenseResultCard({
           onClick={() => void c.downloadStatement(result, false)}
           data-cy="btn-telecharger-note"
         >
-          Télécharger la note seule
+          {t("expenseStatement.result.download")}
         </Button>
         <Button
           variant="secondary"
@@ -51,7 +60,7 @@ export function ExpenseResultCard({
           onClick={() => void c.downloadStatement(result, true)}
           data-cy="btn-telecharger-note-complete"
         >
-          Télécharger la note complète (ZIP)
+          {t("expenseStatement.result.downloadComplete")}
         </Button>
         {result.id ? (
           <a
@@ -61,7 +70,7 @@ export function ExpenseResultCard({
             className="btn btn-secondary btn-small"
           >
             <ExternalLink size={14} aria-hidden="true" />
-            Ouvrir
+            {t("expenseStatement.result.open")}
           </a>
         ) : null}
       </div>

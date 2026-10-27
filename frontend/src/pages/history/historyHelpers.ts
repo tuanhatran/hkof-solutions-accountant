@@ -1,4 +1,5 @@
 import type { LeaseDto, StatementDto, RentReceiptDto } from "@/api/types";
+import i18n from "@/i18n";
 import { matchesLease } from "@/lib/leaseReceipts";
 
 /** Documents of one lease address inside a month, never mixed. */
@@ -16,7 +17,11 @@ export interface MonthGroup {
 }
 
 export const UNKNOWN_ADDRESS_KEY = "inconnue";
-export const UNKNOWN_ADDRESS_LABEL = "Adresse inconnue";
+
+/** Localized unknown-address label, resolved at call time so a language switch applies. */
+export function unknownAddressLabel(language?: string): string {
+  return i18n.t("history.address.unknown", { lng: language });
+}
 
 /** Preferred document of a list: the active version, else the first one. */
 export function current<T extends { status?: string }>(
@@ -48,9 +53,10 @@ export function latestReceipt(
 
 /** Landlord → tenant label of a rent receipt. */
 export function pairLabel(document: RentReceiptDto): string {
-  return `${document.landlordName ?? "Bailleur inconnu"} → ${
-    document.tenantName ?? "Locataire inconnu"
-  }`;
+  const landlord =
+    document.landlordName ?? i18n.t("history.address.unknownLandlord");
+  const tenant = document.tenantName ?? i18n.t("history.address.unknownTenant");
+  return `${landlord} → ${tenant}`;
 }
 
 /**
@@ -83,6 +89,7 @@ export function resolveLeaseForDocument(
 function addressOf(
   document: RentReceiptDto | StatementDto,
   leases: LeaseDto[],
+  language?: string,
 ): { addressKey: string; addressLabel: string } {
   const lease = resolveLeaseForDocument(document, leases);
   const addressId = lease?.addressId;
@@ -90,12 +97,14 @@ function addressOf(
   if (addressId === undefined || addressId === null) {
     return {
       addressKey: UNKNOWN_ADDRESS_KEY,
-      addressLabel: UNKNOWN_ADDRESS_LABEL,
+      addressLabel: unknownAddressLabel(language),
     };
   }
   return {
     addressKey: `address-${addressId}`,
-    addressLabel: propertyAddress ? propertyAddress : UNKNOWN_ADDRESS_LABEL,
+    addressLabel: propertyAddress
+      ? propertyAddress
+      : unknownAddressLabel(language),
   };
 }
 
@@ -124,6 +133,7 @@ export function groupHistoryByMonthAndAddress(
   rentReceipts: RentReceiptDto[],
   statements: StatementDto[],
   leases: LeaseDto[],
+  language?: string,
 ): MonthGroup[] {
   const byMonth = new Map<string, Map<string, AddressGroup>>();
 
@@ -134,7 +144,7 @@ export function groupHistoryByMonthAndAddress(
     if (!document.month) {
       return null;
     }
-    const { addressKey, addressLabel } = addressOf(document, leases);
+    const { addressKey, addressLabel } = addressOf(document, leases, language);
     const rows = byMonth.get(document.month) ?? new Map<string, AddressGroup>();
     const row = rows.get(addressKey) ?? {
       addressKey,

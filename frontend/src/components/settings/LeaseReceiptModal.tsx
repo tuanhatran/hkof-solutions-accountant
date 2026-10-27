@@ -2,6 +2,7 @@ import "./LeaseReceiptModal.css";
 import { Download, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import type { LeaseDto } from "@/api/types";
 import { PdfViewer } from "@/components/pdf/PdfViewer";
 import { Button } from "@/components/ui/Button";
@@ -18,6 +19,7 @@ export function LeaseReceiptModal({
   lease: LeaseDto;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const c = useLeaseReceiptModal(leaseRow);
   const panel = useRef<HTMLDivElement>(null);
   const result = c.result;
@@ -57,7 +59,7 @@ export function LeaseReceiptModal({
               id="lease-receipt-modal-title"
               className="lease-receipt-modal-title"
             >
-              Quittance de loyer
+              {t("settings.lease.receiptModal.title")}
             </h2>
             <p className="lease-receipt-modal-subtitle">
               {leaseRow.propertyAddress}
@@ -67,7 +69,7 @@ export function LeaseReceiptModal({
             type="button"
             onClick={onClose}
             className="lease-receipt-modal-close"
-            aria-label="Fermer la fenêtre"
+            aria-label={t("settings.lease.receiptModal.closeAria")}
           >
             <X size={18} />
           </button>
@@ -75,28 +77,36 @@ export function LeaseReceiptModal({
 
         <dl className="lease-receipt-modal-identity">
           <div>
-            <dt className="lease-receipt-modal-identity-label">Bailleur</dt>
+            <dt className="lease-receipt-modal-identity-label">
+              {t("settings.lease.receiptModal.landlord")}
+            </dt>
             <dd className="lease-receipt-modal-identity-value">
               {leaseRow.landlordName ?? "—"}
             </dd>
           </div>
           <div>
-            <dt className="lease-receipt-modal-identity-label">Locataire</dt>
+            <dt className="lease-receipt-modal-identity-label">
+              {t("settings.lease.receiptModal.tenant")}
+            </dt>
             <dd className="lease-receipt-modal-identity-value">
               {leaseRow.tenantName ?? "—"}
             </dd>
           </div>
           <div>
-            <dt className="lease-receipt-modal-identity-label">Société</dt>
+            <dt className="lease-receipt-modal-identity-label">
+              {t("settings.lease.receiptModal.company")}
+            </dt>
             <dd
               className="lease-receipt-modal-identity-value"
               data-cy="societe-quittance-bail"
             >
-              {c.companyName ?? "Aucune société"}
+              {c.companyName ?? t("settings.lease.receiptModal.noCompany")}
             </dd>
           </div>
           <div>
-            <dt className="lease-receipt-modal-identity-label">Bien</dt>
+            <dt className="lease-receipt-modal-identity-label">
+              {t("settings.lease.receiptModal.property")}
+            </dt>
             <dd className="lease-receipt-modal-identity-value">
               {leaseRow.propertyAddress}
             </dd>
@@ -114,8 +124,8 @@ export function LeaseReceiptModal({
           <div className="lease-receipt-modal-grid">
             <FieldGroup
               id="quittance-bail-mois"
-              label="Mois"
-              help="La période se déduit du mois choisi."
+              label={t("settings.lease.receiptModal.month")}
+              help={t("settings.lease.receiptModal.monthHelp")}
             >
               <input
                 id="quittance-bail-mois"
@@ -128,7 +138,7 @@ export function LeaseReceiptModal({
             </FieldGroup>
             <div className="lease-receipt-modal-period">
               <span className="lease-receipt-modal-identity-label">
-                Période :{" "}
+                {t("settings.lease.receiptModal.period")}{" "}
               </span>
               <span data-cy="periode-quittance-bail">
                 {formatPeriod(c.values.periodStart, c.values.periodEnd)}
@@ -139,9 +149,9 @@ export function LeaseReceiptModal({
           <div className="lease-receipt-modal-grid">
             <FieldGroup
               id="quittance-bail-loyer"
-              label="Loyer hors charges"
+              label={t("settings.lease.receiptModal.rentExclCharges")}
               error={c.errors.rentExclCharges?.message}
-              help="Modifiable pour une régularisation ponctuelle."
+              help={t("settings.lease.receiptModal.rentExclChargesHelp")}
             >
               <div className="lease-receipt-modal-amount">
                 <input
@@ -159,7 +169,7 @@ export function LeaseReceiptModal({
             </FieldGroup>
             <FieldGroup
               id="quittance-bail-charges"
-              label="Provision pour charges"
+              label={t("settings.lease.receiptModal.charges")}
               error={c.errors.charges?.message}
             >
               <div className="lease-receipt-modal-amount">
@@ -189,14 +199,17 @@ export function LeaseReceiptModal({
           {result ? (
             <div className="lease-receipt-modal-result">
               <p className="lease-receipt-modal-result-title">
-                Quittance générée
+                {t("settings.lease.receiptModal.resultTitle")}
               </p>
               <p
                 className="lease-receipt-modal-result-meta"
                 data-cy="resultat-quittance-bail"
               >
-                {formatMonth(result.month)} · version {result.version ?? 1} ·{" "}
-                {formatEUR(result.total)}
+                {t("settings.lease.receiptModal.resultMeta", {
+                  month: formatMonth(result.month),
+                  version: result.version ?? 1,
+                  total: formatEUR(result.total),
+                })}
               </p>
               <Button
                 variant="primary"
@@ -205,14 +218,14 @@ export function LeaseReceiptModal({
                 onClick={() => void c.download(result)}
                 data-cy="btn-telecharger-quittance-bail"
               >
-                Télécharger le PDF
+                {t("settings.lease.receiptModal.download")}
               </Button>
             </div>
           ) : null}
 
           <div className="lease-receipt-modal-actions">
             <Button variant="secondary" small onClick={onClose}>
-              Fermer
+              {t("settings.lease.receiptModal.close")}
             </Button>
             <Button
               variant="primary"
@@ -222,7 +235,7 @@ export function LeaseReceiptModal({
               disabled={c.generationDisabled}
               data-cy="btn-generer-quittance-bail"
             >
-              Générer la quittance
+              {t("settings.lease.receiptModal.generate")}
             </Button>
           </div>
         </form>

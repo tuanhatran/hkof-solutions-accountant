@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { errorMessage, downloadBlob } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys, useTemplates } from "@/api/queries";
@@ -12,6 +13,7 @@ import { downloadFileName, type ConfigurationType } from "./templateTypes";
  * deletion, reset and preview.
  */
 export function useTemplatesCard(configuration: ConfigurationType) {
+  const { t } = useTranslation();
   const { type } = configuration;
   const queryClient = useQueryClient();
   const templates = useTemplates(type);
@@ -64,7 +66,7 @@ export function useTemplatesCard(configuration: ConfigurationType) {
       setFile(null);
       setUploadError(null);
       toast.success(
-        `Version v${template.version} importée. Vérifiez l’aperçu puis activez-la.`,
+        t("templates.toasts.imported", { version: template.version }),
       );
     },
     onError: (error) => {
@@ -81,7 +83,10 @@ export function useTemplatesCard(configuration: ConfigurationType) {
       invalidate();
       setPreview(null);
       toast.success(
-        `Le modèle « ${template.name} » v${template.version} est désormais actif.`,
+        t("templates.toasts.activated", {
+          name: template.name,
+          version: template.version,
+        }),
       );
     },
     onError: (error) => toast.error(errorMessage(error)),
@@ -93,9 +98,7 @@ export function useTemplatesCard(configuration: ConfigurationType) {
     onSuccess: () => {
       invalidate();
       setToDelete(null);
-      toast.success(
-        "Version supprimée. Le fichier reste archivé côté stockage.",
-      );
+      toast.success(t("templates.toasts.deleted"));
     },
     onError: (error) => {
       setToDelete(null);
@@ -108,9 +111,7 @@ export function useTemplatesCard(configuration: ConfigurationType) {
     onSuccess: (template) => {
       invalidate();
       setResetDialogOpen(false);
-      toast.success(
-        `Modèle intégré restauré et activé (v${template.version}).`,
-      );
+      toast.success(t("templates.toasts.reset", { version: template.version }));
     },
     onError: (error) => {
       setResetDialogOpen(false);

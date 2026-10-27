@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
 import { useExpenseItems } from "@/api/queries";
 import type { ExpenseItemDto } from "@/api/types";
+import i18n from "@/i18n";
 import { useToasts } from "@/state/toasts";
 import { ExpenseItemsManager } from "./ExpenseItemsManager";
 
@@ -252,6 +253,65 @@ describe("ExpenseItemsManager", () => {
       expect(
         useToasts.getState().toasts.map((element) => element.message),
       ).toContain("Poste désactivé et retiré de la liste des frais."),
+    );
+  });
+
+  it("renders the expense item table in English", async () => {
+    await i18n.changeLanguage("en");
+    renderManager();
+
+    expect(screen.getByRole("heading", { name: "Expenses" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Add an expense item" }),
+    ).toBeVisible();
+    expect(
+      screen.getAllByRole("columnheader").map((header) => header.textContent),
+    ).toEqual([
+      "Label",
+      "Supplier",
+      "Pro rata",
+      "Periodicity",
+      "Order",
+      "Options",
+      "Actions",
+    ]);
+    expect(screen.getByText("Monthly")).toBeVisible();
+    expect(screen.getByText("Annual")).toBeVisible();
+    expect(screen.getByText("inactive")).toBeVisible();
+    expect(screen.getByText("multiple lines")).toBeVisible();
+    expect(screen.getAllByText("single line")).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(3);
+    expect(screen.getAllByRole("button", { name: "Remove" })).toHaveLength(3);
+  });
+
+  it("shows the empty state and the removal confirmation in English", async () => {
+    await i18n.changeLanguage("en");
+    itemsState = readyState([]);
+    const empty = renderManager();
+    expect(screen.getByText(/No expense item configured/)).toBeVisible();
+    empty.unmount();
+
+    vi.mocked(api.expenseItems.delete).mockResolvedValue(undefined);
+    itemsState = readyState(ITEMS);
+    renderManager();
+    const user = userEvent.setup();
+
+    await user.click(screen.getAllByRole("button", { name: "Remove" })[1]);
+    const dialog = screen.getByRole("dialog", {
+      name: "Remove this expense type?",
+    });
+    expect(dialog).toHaveTextContent("“Eau” will no longer be offered");
+    await user.click(
+      within(dialog).getByRole("button", { name: "Remove the expense item" }),
+    );
+
+    await waitFor(() =>
+      expect(api.expenseItems.delete).toHaveBeenCalledWith(2),
+    );
+    await waitFor(() =>
+      expect(
+        useToasts.getState().toasts.map((element) => element.message),
+      ).toContain("Expense item disabled and removed from the expense list."),
     );
   });
 

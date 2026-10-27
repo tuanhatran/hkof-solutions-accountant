@@ -1,5 +1,6 @@
 import "./TemplatesCard.css";
 import { Download, Info, RotateCcw, ShieldCheck } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -20,6 +21,7 @@ export function TemplatesCard({
   configuration: ConfigurationType;
   embedded?: boolean;
 }) {
+  const { t } = useTranslation();
   const c = useTemplatesCard(configuration);
   const { title, description, icon: IconComponent, type } = configuration;
   const preview = c.preview;
@@ -49,7 +51,7 @@ export function TemplatesCard({
             onRetry={() => void c.templates.refetch()}
           />
         ) : c.templates.isPending ? (
-          <LoadingState message="Chargement des modèles…" />
+          <LoadingState message={t("templates.card.loading")} />
         ) : (
           <>
             <TemplateActiveModel c={c} />
@@ -62,7 +64,7 @@ export function TemplatesCard({
                 loading={c.downloadDefault.isPending}
                 onClick={() => c.downloadDefault.mutate()}
               >
-                Télécharger le modèle par défaut intégré
+                {t("templates.card.downloadDefault")}
               </Button>
               <Button
                 variant="secondary"
@@ -72,12 +74,12 @@ export function TemplatesCard({
                 disabled={Boolean(c.active?.builtIn)}
                 title={
                   c.active?.builtIn
-                    ? "Le modèle intégré est déjà actif."
+                    ? t("templates.card.resetDefaultBlocked")
                     : undefined
                 }
                 data-cy="btn-modele-defaut"
               >
-                Revenir au modèle par défaut
+                {t("templates.card.resetDefault")}
               </Button>
             </div>
 
@@ -90,11 +92,7 @@ export function TemplatesCard({
                 className="templates-card-note-icon"
                 aria-hidden="true"
               />
-              <p>
-                Un seul modèle actif par type. Les documents déjà générés
-                conservent la référence de leur version. La suppression est
-                logique : aucune version n’est réellement effacée.
-              </p>
+              <p>{t("templates.card.note")}</p>
             </div>
           </>
         )}
@@ -104,13 +102,16 @@ export function TemplatesCard({
 
       <ConfirmDialog
         open={c.toDelete !== null}
-        title="Supprimer cette version ?"
+        title={t("templates.card.deleteDialog.title")}
         message={
           c.toDelete
-            ? `La version v${c.toDelete.version} de « ${c.toDelete.name} » ne sera plus proposée. Les documents qui l’utilisent restent inchangés.`
+            ? t("templates.card.deleteDialog.message", {
+                version: c.toDelete.version,
+                name: c.toDelete.name,
+              })
             : ""
         }
-        confirmLabel="Supprimer"
+        confirmLabel={t("templates.actions.delete")}
         variant="danger"
         onConfirm={() => {
           if (c.toDelete) {
@@ -123,13 +124,16 @@ export function TemplatesCard({
 
       <ConfirmDialog
         open={c.resetDialogOpen}
-        title="Revenir au modèle par défaut ?"
+        title={t("templates.card.resetDialog.title")}
         message={
           c.builtInModel
-            ? `Le modèle intégré « ${c.builtInModel.name} » (v${c.builtInModel.version}) redeviendra actif. Vos versions importées restent disponibles.`
-            : "Le modèle intégré redeviendra actif. Vos versions importées restent disponibles."
+            ? t("templates.card.resetDialog.message", {
+                name: c.builtInModel.name,
+                version: c.builtInModel.version,
+              })
+            : t("templates.card.resetDialog.messageFallback")
         }
-        confirmLabel="Restaurer le modèle"
+        confirmLabel={t("templates.card.resetDialog.confirm")}
         onConfirm={() => c.resetMutation.mutate()}
         onCancel={() => c.setResetDialogOpen(false)}
         dataCy="dialogue-modele-defaut"

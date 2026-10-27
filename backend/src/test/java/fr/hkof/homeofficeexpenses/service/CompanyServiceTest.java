@@ -163,7 +163,8 @@ class CompanyServiceTest {
         when(repository.existsBySirenAndDeletedFalse("123 456 789")).thenReturn(true);
         assertThatThrownBy(() -> service.create(request("Autre", "123 456 789", null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Une société avec ce SIREN existe déjà.");
+                .hasMessage("Une société avec ce SIREN existe déjà.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("COMPANY_SIREN_DUPLICATE"));
     }
 
     @Test
@@ -171,7 +172,8 @@ class CompanyServiceTest {
     void rejectsBlankName() {
         assertThatThrownBy(() -> service.create(request("  ", null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le nom de la société est obligatoire.");
+                .hasMessage("Le nom de la société est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("COMPANY_NAME_REQUIRED"));
         verify(repository, never()).save(any());
     }
 
@@ -189,7 +191,8 @@ class CompanyServiceTest {
                 .isEqualTo("HKOF 2");
         assertThatThrownBy(() -> service.update(COMPANY_ID, request("HKOF 2", "999 999 999", null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Une société avec ce SIREN existe déjà.");
+                .hasMessage("Une société avec ce SIREN existe déjà.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("COMPANY_SIREN_DUPLICATE"));
     }
 
     @Test
@@ -255,7 +258,9 @@ class CompanyServiceTest {
         assertThatThrownBy(() -> service.update(COMPANY_ID, request("HKOF", null, null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Ce bail est un bail société : la société en est le locataire "
-                        + "et ne peut pas être dissociée.");
+                        + "et ne peut pas être dissociée.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LEASE_COMPANY_LEASE_LOCKED"));
         assertThat(previous.getCompanyId()).isEqualTo(COMPANY_ID);
         verify(leases, never()).save(previous);
     }
@@ -353,7 +358,8 @@ class CompanyServiceTest {
 
         assertThatThrownBy(() -> service.update(COMPANY_ID, request("HKOF", null, 6L)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Ce bail est déjà lié à une autre société.");
+                .hasMessage("Ce bail est déjà lié à une autre société.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_ALREADY_LINKED"));
         assertThat(foreign.getCompanyId()).isEqualTo(2L);
         verify(leases, never()).save(any(Lease.class));
     }
@@ -368,7 +374,8 @@ class CompanyServiceTest {
 
         assertThatThrownBy(() -> service.update(COMPANY_ID, request("HKOF", null, 9L)))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Bail introuvable.");
+                .hasMessage("Bail introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("LEASE_NOT_FOUND"));
     }
 
     @Test
@@ -379,7 +386,8 @@ class CompanyServiceTest {
 
         when(expenseItems.existsByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(true);
         assertThatThrownBy(() -> service.delete(COMPANY_ID)).isInstanceOf(BusinessException.class)
-                .hasMessage("Cette société est utilisée par des données et ne peut pas être supprimée.");
+                .hasMessage("Cette société est utilisée par des données et ne peut pas être supprimée.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("COMPANY_IN_USE"));
         when(expenseItems.existsByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(false);
 
         when(statements.existsByCompanyId(COMPANY_ID)).thenReturn(true);
@@ -435,11 +443,13 @@ class CompanyServiceTest {
     void missingCompany() {
         assertThatThrownBy(() -> service.entity(null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Sélectionnez une société.");
+                .hasMessage("Sélectionnez une société.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("COMPANY_REQUIRED"));
         when(repository.findByIdAndDeletedFalse(9L)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.entity(9L))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Société introuvable.");
+                .hasMessage("Société introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("COMPANY_NOT_FOUND"));
         assertThatThrownBy(() -> service.get(9L)).isInstanceOf(NotFoundException.class);
     }
 }

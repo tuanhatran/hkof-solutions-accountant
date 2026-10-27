@@ -1,5 +1,6 @@
 import "./TemplateVersionsList.css";
 import { Check, Download, Eye, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/format";
@@ -7,12 +8,15 @@ import type { TemplatesCardController } from "./useTemplatesCard";
 
 /** Version history with preview, download, activation and logical deletion. */
 export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
+  const { t } = useTranslation();
   return (
     <div>
       <div className="template-versions-list-header">
-        <h3 className="template-versions-list-title">Versions</h3>
+        <h3 className="template-versions-list-title">
+          {t("templates.versions.title")}
+        </h3>
         <span className="template-versions-list-count">
-          {c.versions.length} version{c.versions.length > 1 ? "s" : ""}
+          {t("templates.versions.count", { count: c.versions.length })}
         </span>
       </div>
       <ul className="template-versions-list">
@@ -35,11 +39,13 @@ export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
                     v{template.version}
                   </span>
                   {template.builtIn ? (
-                    <span className="badge badge-neutral">intégré</span>
+                    <span className="badge badge-neutral">
+                      {t("templates.badges.builtIn")}
+                    </span>
                   ) : null}
                   {isTemplateActive ? (
                     <span className="template-versions-list-active">
-                      active
+                      {t("templates.badges.active")}
                     </span>
                   ) : null}
                 </p>
@@ -56,7 +62,7 @@ export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
                   loading={c.previewInProgress === template.id}
                   onClick={() => void c.openPreview(template)}
                 >
-                  Aperçu
+                  {t("templates.actions.preview")}
                 </Button>
                 <Button
                   variant="ghost"
@@ -68,7 +74,7 @@ export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
                   }
                   onClick={() => c.download.mutate(template)}
                 >
-                  Télécharger
+                  {t("templates.actions.download")}
                 </Button>
                 {!isTemplateActive ? (
                   <Button
@@ -82,7 +88,7 @@ export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
                     onClick={() => c.activate.mutate(template)}
                     data-cy="btn-activer-template"
                   >
-                    Activer
+                    {t("templates.actions.activate")}
                   </Button>
                 ) : null}
                 <Button
@@ -96,13 +102,13 @@ export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
                   title={
                     deletionBlocked
                       ? template.builtIn
-                        ? "Le modèle intégré ne peut pas être supprimé."
-                        : "Le modèle actif ne peut pas être supprimé."
+                        ? t("templates.versions.deleteBuiltInTitle")
+                        : t("templates.versions.deleteActiveTitle")
                       : undefined
                   }
                   onClick={() => c.setToDelete(template)}
                 >
-                  Supprimer
+                  {t("templates.actions.delete")}
                 </Button>
               </div>
             </li>
@@ -111,7 +117,7 @@ export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
       </ul>
       {c.previousVersions.length === 0 ? (
         <p className="template-versions-list-empty">
-          Aucune version précédente archivée.
+          {t("templates.versions.empty")}
         </p>
       ) : null}
     </div>

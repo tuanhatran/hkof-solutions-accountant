@@ -1,4 +1,5 @@
 import "./ExpenseLinesTable.css";
+import { useTranslation } from "react-i18next";
 import { FileText, Pencil, Trash2 } from "lucide-react";
 import { api } from "@/api/endpoints";
 import { AiBadge } from "@/components/ui/AiBadge";
@@ -11,24 +12,25 @@ export function ExpenseLinesTable({
 }: {
   controller: ExpenseStatementController;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="expense-lines-table-scroll">
       <table className="expense-table expense-lines-table">
         <thead>
           <tr>
-            <th scope="col">Type</th>
-            <th scope="col">Fournisseur</th>
+            <th scope="col">{t("expenseStatement.lines.table.type")}</th>
+            <th scope="col">{t("expenseStatement.lines.table.supplier")}</th>
             <th scope="col" className="expense-lines-table-col-right">
-              Montant TTC
+              {t("expenseStatement.lines.table.amountInclVat")}
             </th>
             <th scope="col" className="expense-lines-table-col-right">
-              Prorata
+              {t("expenseStatement.lines.table.proRata")}
             </th>
             <th scope="col" className="expense-lines-table-col-narrow">
-              Montant retenu
+              {t("expenseStatement.lines.table.retained")}
             </th>
             <th scope="col" className="expense-lines-table-col-right">
-              Actions
+              {t("expenseStatement.lines.table.actions")}
             </th>
           </tr>
         </thead>
@@ -76,7 +78,9 @@ export function ExpenseLinesTable({
                     </span>
                   ) : (
                     <span className="expense-lines-table-pending">
-                      {c.calculationInProgress ? "Calcul…" : "—"}
+                      {c.calculationInProgress
+                        ? t("expenseStatement.lines.table.calculating")
+                        : "—"}
                     </span>
                   )}
                 </td>
@@ -88,7 +92,12 @@ export function ExpenseLinesTable({
                         target="_blank"
                         rel="noreferrer"
                         className="expense-lines-table-action"
-                        aria-label={`Voir le justificatif de ${expenseItem?.label ?? line.itemCode}`}
+                        aria-label={t(
+                          "expenseStatement.lines.table.viewReceipt",
+                          {
+                            item: expenseItem?.label ?? line.itemCode,
+                          },
+                        )}
                         data-cy={`btn-voir-justificatif-${line.itemCode}`}
                       >
                         <FileText size={15} />
@@ -98,7 +107,9 @@ export function ExpenseLinesTable({
                       type="button"
                       className="expense-lines-table-action"
                       onClick={() => c.editLine(line)}
-                      aria-label={`Modifier ${expenseItem?.label ?? line.itemCode}`}
+                      aria-label={t("expenseStatement.lines.table.edit", {
+                        item: expenseItem?.label ?? line.itemCode,
+                      })}
                       data-cy={`btn-modifier-${line.itemCode}`}
                     >
                       <Pencil size={15} />
@@ -107,7 +118,9 @@ export function ExpenseLinesTable({
                       type="button"
                       className="expense-lines-table-action expense-lines-table-action-danger"
                       onClick={() => c.setLineToRemove(line)}
-                      aria-label={`Supprimer ${expenseItem?.label ?? line.itemCode}`}
+                      aria-label={t("expenseStatement.lines.table.remove", {
+                        item: expenseItem?.label ?? line.itemCode,
+                      })}
                       data-cy={`btn-supprimer-${line.itemCode}`}
                     >
                       <Trash2 size={15} />

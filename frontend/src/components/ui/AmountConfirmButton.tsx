@@ -1,5 +1,6 @@
 import "./AmountConfirmButton.css";
 import { Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/cn";
 
 interface AmountConfirmButtonProps {
@@ -11,13 +12,17 @@ export function AmountConfirmButton({
   confirmed,
   onConfirm,
 }: AmountConfirmButtonProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="amount-confirm-button-root">
       <button
         type="button"
         data-cy="btn-confirmer-montant"
         aria-label={
-          confirmed ? "Montant confirmé" : "Confirmer le montant détecté par IA"
+          confirmed
+            ? t("common.amount.confirmedAria")
+            : t("common.amount.confirmAria")
         }
         aria-pressed={confirmed}
         className={cn(
@@ -39,9 +44,7 @@ export function AmountConfirmButton({
             : "amount-confirm-button-text-idle",
         )}
       >
-        {confirmed
-          ? "Montant confirmé."
-          : "Montant détecté par IA — confirmez-le pour ajouter le frais."}
+        {confirmed ? t("common.amount.confirmedText") : t("common.amount.hint")}
       </p>
     </div>
   );

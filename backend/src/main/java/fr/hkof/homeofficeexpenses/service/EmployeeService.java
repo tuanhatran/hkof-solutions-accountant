@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
@@ -74,7 +75,7 @@ public class EmployeeService {
     public void delete(Long id) {
         Employee employee = entity(id);
         if (signatures.existsByPersonIdAndDeletedFalse(id)) {
-            throw new BusinessException(
+            throw new BusinessException("EMPLOYEE_HAS_SIGNATURES",
                     "Ce salarié porte des signatures et ne peut pas être supprimé.");
         }
         employee.setDeleted(true);
@@ -85,7 +86,7 @@ public class EmployeeService {
     @Transactional(readOnly = true)
     public Employee entity(Long id) {
         return repository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new NotFoundException("Salarié introuvable."));
+                .orElseThrow(() -> new NotFoundException("EMPLOYEE_NOT_FOUND", "Salarié introuvable."));
     }
 
     public EmployeeDto toDto(Employee employee) {
@@ -103,19 +104,23 @@ public class EmployeeService {
     }
 
     private void apply(Employee employee, EmployeeRequest request, Long companyId, Long currentId) {
-        employee.setFirstName(requiredText(request.firstName(), "Le prénom du salarié est obligatoire."));
-        employee.setLastName(requiredText(request.lastName(), "Le nom du salarié est obligatoire."));
+        employee.setFirstName(requiredText(request.firstName(), "EMPLOYEE_FIRST_NAME_REQUIRED",
+                "Le prénom du salarié est obligatoire."));
+        employee.setLastName(requiredText(request.lastName(), "EMPLOYEE_LAST_NAME_REQUIRED",
+                "Le nom du salarié est obligatoire."));
         String email = optionalText(request.email());
         if (email != null) {
             if (!EMAIL.matcher(email).matches()) {
-                throw new BusinessException("L'adresse électronique du salarié est invalide.");
+                throw new BusinessException("EMPLOYEE_EMAIL_INVALID",
+                        "L'adresse électronique du salarié est invalide.");
             }
             boolean duplicate = currentId == null
                     ? repository.existsByCompanyIdAndEmailIgnoreCaseAndDeletedFalse(companyId, email)
                     : repository.existsByCompanyIdAndEmailIgnoreCaseAndDeletedFalseAndIdNot(companyId, email,
                             currentId);
             if (duplicate) {
-                throw new BusinessException("Un salarié avec cette adresse électronique existe déjà dans la société.");
+                throw new BusinessException("EMPLOYEE_EMAIL_DUPLICATE",
+                        "Un salarié avec cette adresse électronique existe déjà dans la société.");
             }
         }
         employee.setEmail(email);
@@ -125,19 +130,20 @@ public class EmployeeService {
 
     private EmployeeTitle title(String value) {
         if (value == null || value.isBlank()) {
-            throw new BusinessException("L'intitulé du salarié est obligatoire.");
+            throw new BusinessException("EMPLOYEE_TITLE_REQUIRED", "L'intitulé du salarié est obligatoire.");
         }
         try {
             return EmployeeTitle.valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
-            throw new BusinessException("Intitulé de salarié invalide : " + value);
+            throw new BusinessException("EMPLOYEE_TITLE_INVALID", "Intitulé de salarié invalide : " + value,
+                    Map.of("title", value));
         }
     }
 
-    private String requiredText(String value, String message) {
+    private String requiredText(String value, String code, String message) {
         String cleaned = value == null ? "" : value.trim();
         if (cleaned.isEmpty()) {
-            throw new BusinessException(message);
+            throw new BusinessException(code, message);
         }
         return cleaned;
     }

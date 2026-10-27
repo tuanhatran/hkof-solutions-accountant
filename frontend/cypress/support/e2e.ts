@@ -47,6 +47,18 @@ Cypress.Commands.add("waitForPreview", () => {
   );
 });
 
+const LANGUAGE_STORAGE_KEY = "homeofficeexpenses.lang";
+
+Cypress.Commands.overwrite("visit", (originalVisit, url, options = {}) =>
+  originalVisit(url, {
+    ...options,
+    onBeforeLoad(window) {
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, "fr");
+      options.onBeforeLoad?.(window);
+    },
+  }),
+);
+
 beforeEach(() => {
   cy.clearAllSessionStorage();
   cy.clearAllLocalStorage();

@@ -2,6 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import i18n from "@/i18n";
 import { formatDateTime } from "@/lib/format";
 import { PdfViewer } from "./PdfViewer";
 
@@ -271,5 +272,35 @@ describe("PdfViewer", () => {
     vi.stubGlobal("ResizeObserver", undefined);
     render(<PdfViewer url="blob:preview" />);
     expect(screen.getByTestId("page")).toHaveAttribute("data-width", "560");
+  });
+
+  it("renders its chrome in English", async () => {
+    await i18n.changeLanguage("en");
+    const onDownload = vi.fn();
+    const { rerender } = render(
+      <PdfViewer url={null} loading onDownload={onDownload} />,
+    );
+
+    expect(screen.getByText("Document preview")).toBeVisible();
+    expect(
+      screen.getByText("Watermark “PREVIEW” — nothing is saved."),
+    ).toBeVisible();
+    expect(screen.getByText("Preparing the preview…")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Previous page" }),
+    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Next page" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Zoom out" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Zoom in" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Download the preview" }),
+    ).toBeDisabled();
+
+    rerender(<PdfViewer url={null} />);
+    expect(
+      screen.getByText(
+        "The preview will appear here once the information is complete.",
+      ),
+    ).toBeVisible();
   });
 });

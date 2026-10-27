@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import type { CompanyDto } from "@/api/types";
 import { FormModal } from "@/components/ui/FormModal";
@@ -19,13 +20,18 @@ export function CompanyIdentityModal({
   onClose: () => void;
   onSaved: (company: CompanyDto) => void;
 }) {
+  const { t } = useTranslation();
   const { form, save, saveCompany } = useCompanyForm(company);
 
   return (
     <FormModal
       open={open}
       wide
-      title={company === null ? "Nouvelle société" : "Modifier la société"}
+      title={
+        company === null
+          ? t("settings.company.identity.modal.create")
+          : t("settings.company.identity.modal.edit")
+      }
       onClose={onClose}
       onSubmit={form.handleSubmit((values) => {
         saveCompany(values, onSaved);

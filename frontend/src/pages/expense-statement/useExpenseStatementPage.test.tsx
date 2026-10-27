@@ -12,7 +12,9 @@ import type {
   SignatureDto,
   TemplateDto,
 } from "@/api/types";
+import i18n from "@/i18n";
 import type { DraftLine } from "@/lib/lines";
+import { expenseSchema } from "@/lib/validation";
 import { useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import {
@@ -1065,6 +1067,43 @@ describe("useExpenseStatementPage save", () => {
     const { result } = renderController();
     act(() => result.current.removeLine());
     expect(result.current.lineToRemove).toBeNull();
+  });
+
+  it("uses English toasts and re-evaluates the expense schema per parse", async () => {
+    await i18n.changeLanguage("en");
+    vi.mocked(api.receipts.upload).mockResolvedValue({
+      id: 9,
+      fileName: "receipt.pdf",
+    });
+    const { result } = renderController();
+    await act(async () => {
+      await result.current.upload(new File(["a"], "a.pdf"));
+    });
+    act(() => result.current.changeType("gaz"));
+    act(() =>
+      result.current.saveExpense({
+        itemCode: "gaz",
+        amountInclVat: "80,50",
+        proRataPct: "100",
+      }),
+    );
+    expect(toastMessages()).toContain("Expense added.");
+
+    expect(
+      expenseSchema.safeParse({
+        itemCode: "",
+        amountInclVat: "80,00",
+        proRataPct: "100",
+      }).error?.issues[0]?.message,
+    ).toBe("Select an expense type.");
+
+    act(() =>
+      result.current.setLineToRemove(
+        useStatementDraft.getState().linesByMonth[MONTH][0],
+      ),
+    );
+    act(() => result.current.removeLine());
+    expect(toastMessages()).toContain("Expense removed.");
   });
 });
 

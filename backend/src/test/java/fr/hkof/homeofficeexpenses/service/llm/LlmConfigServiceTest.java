@@ -98,9 +98,11 @@ class LlmConfigServiceTest {
 
         assertThatThrownBy(() -> service.get())
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Configuration LLM introuvable.");
+                .hasMessage("Configuration LLM introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("LLM_CONFIG_NOT_FOUND"));
         assertThatThrownBy(() -> service.entity())
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(NotFoundException.class)
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("LLM_CONFIG_NOT_FOUND"));
     }
 
     @Test
@@ -194,11 +196,14 @@ class LlmConfigServiceTest {
         assertThatThrownBy(() -> service.update(request(null, "mistral", null, null, null, null, null, null, null,
                 null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Fournisseur LLM inconnu.");
+                .hasMessage("Fournisseur LLM inconnu.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LLM_PROVIDER_UNKNOWN"));
         assertThatThrownBy(() -> service.update(request(null, "openai", null, null, null, null, null, null, null,
                 null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Seul Ollama est pris en charge pour le moment.");
+                .hasMessage("Seul Ollama est pris en charge pour le moment.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_PROVIDER_UNSUPPORTED"));
     }
 
     @Test
@@ -207,15 +212,18 @@ class LlmConfigServiceTest {
         assertThatThrownBy(() -> service.update(request(null, null, "", null, null, null, null, null, null, null,
                 null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("L'URL du service LLM est obligatoire.");
+                .hasMessage("L'URL du service LLM est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LLM_URL_REQUIRED"));
         assertThatThrownBy(() -> service.update(request(null, null, "   ", null, null, null, null, null, null, null,
                 null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("L'URL du service LLM est obligatoire.");
+                .hasMessage("L'URL du service LLM est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LLM_URL_REQUIRED"));
         assertThatThrownBy(() -> service.update(request(null, null, "pas une url", null, null, null, null, null,
                 null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("L'URL du service LLM est invalide.");
+                .hasMessage("L'URL du service LLM est invalide.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LLM_URL_INVALID"));
     }
 
     @Test
@@ -224,19 +232,27 @@ class LlmConfigServiceTest {
         assertThatThrownBy(() -> service.update(request(null, null, "ftp://localhost:11434", null, null, null, null,
                 null, null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("L'URL du service LLM doit commencer par http:// ou https://.");
+                .hasMessage("L'URL du service LLM doit commencer par http:// ou https://.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_URL_SCHEME_INVALID"));
         assertThatThrownBy(() -> service.update(request(null, null, "mailto:admin@exemple.fr", null, null, null,
                 null, null, null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("L'URL du service LLM doit commencer par http:// ou https://.");
+                .hasMessage("L'URL du service LLM doit commencer par http:// ou https://.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_URL_SCHEME_INVALID"));
         assertThatThrownBy(() -> service.update(request(null, null, "http:/localhost:11434", null, null, null, null,
                 null, null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("L'URL du service LLM doit commencer par http:// ou https://.");
+                .hasMessage("L'URL du service LLM doit commencer par http:// ou https://.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_URL_SCHEME_INVALID"));
         assertThatThrownBy(() -> service.update(request(null, null, "//localhost:11434", null, null, null, null,
                 null, null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("L'URL du service LLM doit commencer par http:// ou https://.");
+                .hasMessage("L'URL du service LLM doit commencer par http:// ou https://.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_URL_SCHEME_INVALID"));
     }
 
     @Test
@@ -245,11 +261,15 @@ class LlmConfigServiceTest {
         assertThatThrownBy(() -> service.update(request(null, null, null, null, 4, null, null, null, null, null,
                 null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le délai d'attente doit être compris entre 5 et 600 secondes.");
+                .hasMessage("Le délai d'attente doit être compris entre 5 et 600 secondes.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_TIMEOUT_OUT_OF_RANGE"));
         assertThatThrownBy(() -> service.update(request(null, null, null, null, 601, null, null, null, null, null,
                 null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le délai d'attente doit être compris entre 5 et 600 secondes.");
+                .hasMessage("Le délai d'attente doit être compris entre 5 et 600 secondes.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_TIMEOUT_OUT_OF_RANGE"));
     }
 
     @Test
@@ -258,15 +278,21 @@ class LlmConfigServiceTest {
         assertThatThrownBy(() -> service.update(request(null, null, null, null, null, "chaud", null, null, null,
                 null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La température doit être un nombre entre 0 et 2.");
+                .hasMessage("La température doit être un nombre entre 0 et 2.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_TEMPERATURE_INVALID"));
         assertThatThrownBy(() -> service.update(request(null, null, null, null, null, "-0,1", null, null, null,
                 null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La température doit être comprise entre 0 et 2.");
+                .hasMessage("La température doit être comprise entre 0 et 2.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_TEMPERATURE_OUT_OF_RANGE"));
         assertThatThrownBy(() -> service.update(request(null, null, null, null, null, "2,1", null, null, null,
                 null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La température doit être comprise entre 0 et 2.");
+                .hasMessage("La température doit être comprise entre 0 et 2.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_TEMPERATURE_OUT_OF_RANGE"));
     }
 
     @Test
@@ -275,11 +301,15 @@ class LlmConfigServiceTest {
         assertThatThrownBy(() -> service.update(request(null, null, null, null, null, null, 1_023, null, null, null,
                 null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La taille de contexte doit être comprise entre 1 024 et 131 072.");
+                .hasMessage("La taille de contexte doit être comprise entre 1 024 et 131 072.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_CONTEXT_OUT_OF_RANGE"));
         assertThatThrownBy(() -> service.update(request(null, null, null, null, null, null, 131_073, null, null,
                 null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La taille de contexte doit être comprise entre 1 024 et 131 072.");
+                .hasMessage("La taille de contexte doit être comprise entre 1 024 et 131 072.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_CONTEXT_OUT_OF_RANGE"));
     }
 
     @Test
@@ -288,11 +318,15 @@ class LlmConfigServiceTest {
         assertThatThrownBy(() -> service.update(request(null, null, null, null, null, null, null, 0, null, null,
                 null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le nombre de pages maximum doit être compris entre 1 et 20.");
+                .hasMessage("Le nombre de pages maximum doit être compris entre 1 et 20.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_MAX_PAGES_OUT_OF_RANGE"));
         assertThatThrownBy(() -> service.update(request(null, null, null, null, null, null, null, 21, null, null,
                 null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le nombre de pages maximum doit être compris entre 1 et 20.");
+                .hasMessage("Le nombre de pages maximum doit être compris entre 1 et 20.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_MAX_PAGES_OUT_OF_RANGE"));
     }
 
     @Test
@@ -301,7 +335,8 @@ class LlmConfigServiceTest {
         assertThatThrownBy(() -> service.update(request(null, null, null, null, null, null, null, null, null, "   ",
                 null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le prompt d'extraction ne peut pas être vide.");
+                .hasMessage("Le prompt d'extraction ne peut pas être vide.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LLM_PROMPT_REQUIRED"));
     }
 
     @Test

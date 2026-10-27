@@ -1,4 +1,5 @@
 import "./LeaseReceiptHistory.css";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import type { LeaseDto, RentReceiptDto } from "@/api/types";
@@ -53,17 +54,21 @@ export function LeaseReceiptHistory({
   error: Error | null;
   onRetry: () => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div
       className="lease-receipt-history"
       data-cy={`quittances-bail-${lease.id}`}
     >
       <hr className="my-2 border-t border-[var(--color-accent)]/20" />
-      <p className="lease-receipt-history-title">Quittances générées</p>
+      <p className="lease-receipt-history-title">
+        {t("settings.history.receipts.title")}
+      </p>
       {isError ? (
         <ErrorState message={errorMessage(error)} onRetry={onRetry} />
       ) : isPending ? (
-        <LoadingState message="Chargement des quittances…" />
+        <LoadingState message={t("settings.history.receipts.loading")} />
       ) : (
         <MonthList lease={lease} receipts={receipts ?? []} />
       )}
@@ -78,6 +83,7 @@ function MonthList({
   lease: LeaseDto;
   receipts: RentReceiptDto[];
 }) {
+  const { t } = useTranslation();
   const groups = groupByMonth(
     receipts.filter((item) => matchesLease(item, lease)),
   );
@@ -87,7 +93,7 @@ function MonthList({
         className="lease-receipt-history-empty"
         data-cy={`quittances-bail-vide-${lease.id}`}
       >
-        Aucune quittance générée pour ce bail.
+        {t("settings.history.receipts.empty")}
       </p>
     );
   }
@@ -102,8 +108,9 @@ function MonthList({
           <summary className="lease-receipt-history-summary">
             <span>{formatMonth(group.month)}</span>
             <span className="badge badge-neutral lease-receipt-history-count">
-              {group.versions.length}{" "}
-              {group.versions.length > 1 ? "quittances" : "quittance"}
+              {t("settings.history.receipts.count", {
+                count: group.versions.length,
+              })}
             </span>
           </summary>
           <ul className="lease-receipt-history-list">
@@ -124,7 +131,7 @@ function MonthList({
                 {version.id ? (
                   <PdfActionLink
                     href={api.rentReceipts.pdfUrl(version.id)}
-                    label="Télécharger le PDF"
+                    label={t("history.actions.downloadPdf")}
                     dataCy={`telecharger-quittance-bail-${version.id}`}
                   />
                 ) : null}

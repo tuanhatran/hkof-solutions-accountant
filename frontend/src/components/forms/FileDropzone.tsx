@@ -7,6 +7,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useDropzone, type Accept, type FileRejection } from "react-dropzone";
 import { cn } from "@/lib/cn";
 import { formatBytes } from "@/lib/format";
@@ -44,15 +45,20 @@ function rejectionMessage(
   rejection: FileRejection,
   maxSize: number,
   formatsDescription: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
 ): string {
   const code = rejection.errors[0]?.code;
   if (code === "file-too-large") {
-    return `Fichier trop volumineux (${Math.round(maxSize / (1024 * 1024))} Mo maximum).`;
+    return t("expenseStatement.dropzone.tooLarge", {
+      max: Math.round(maxSize / (1024 * 1024)),
+    });
   }
   if (code === "too-many-files") {
-    return "Un seul fichier à la fois.";
+    return t("expenseStatement.dropzone.tooMany");
   }
-  return `Format non accepté. Formats : ${formatsDescription}.`;
+  return t("expenseStatement.dropzone.unsupported", {
+    formats: formatsDescription,
+  });
 }
 
 export function FileDropzone({
@@ -60,13 +66,19 @@ export function FileDropzone({
   disabled = false,
   dataCy,
   externalError,
-  text = "Glissez votre justificatif ici",
+  text,
   accept = RECEIPT_FORMATS,
   maxSize = MAX_SIZE,
-  formatsDescription = "PDF, DOCX, XLSX, XLS, CSV, TXT, JPG, PNG",
-  ariaLabel = "Choisir un fichier justificatif",
+  formatsDescription,
+  ariaLabel,
 }: FileDropzoneProps) {
+  const { t } = useTranslation();
   const [errorText, setErrorText] = useState<string | null>(null);
+  const resolvedText = text ?? t("expenseStatement.dropzone.text");
+  const resolvedFormats =
+    formatsDescription ?? t("expenseStatement.dropzone.formats");
+  const resolvedAriaLabel =
+    ariaLabel ?? t("expenseStatement.dropzone.ariaLabel");
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept,
@@ -83,8 +95,8 @@ export function FileDropzone({
       const first = rejections[0];
       setErrorText(
         first
-          ? rejectionMessage(first, maxSize, formatsDescription)
-          : "Fichier refusé.",
+          ? rejectionMessage(first, maxSize, resolvedFormats, t)
+          : t("expenseStatement.dropzone.rejected"),
       );
     },
   });
@@ -109,17 +121,20 @@ export function FileDropzone({
           {...getInputProps()}
           data-cy={dataCy}
           className="sr-only"
-          aria-label={ariaLabel}
+          aria-label={resolvedAriaLabel}
         />
         <span className="file-dropzone-icon">
           <UploadCloud size={20} aria-hidden="true" />
         </span>
-        <p className="file-dropzone-title">{text}</p>
+        <p className="file-dropzone-title">{resolvedText}</p>
         <p className="file-dropzone-hint">
-          ou cliquez pour parcourir vos fichiers
+          {t("expenseStatement.dropzone.hint")}
         </p>
         <p className="file-dropzone-meta">
-          {formatsDescription} — {Math.round(maxSize / (1024 * 1024))} Mo max.
+          {t("expenseStatement.dropzone.meta", {
+            formats: resolvedFormats,
+            max: Math.round(maxSize / (1024 * 1024)),
+          })}
         </p>
       </div>
       {message ? (
@@ -146,6 +161,7 @@ export function SelectedFile({
   inProgress,
   onRemove,
 }: SelectedFileProps) {
+  const { t } = useTranslation();
   const IconComponent = mimeType?.startsWith("image/")
     ? ImageIcon
     : mimeType?.includes("sheet") || mimeType?.includes("csv")
@@ -162,7 +178,7 @@ export function SelectedFile({
           {name}
         </p>
         <p className="file-dropzone-selected-meta">
-          {size ? formatBytes(size) : "Justificatif joint"}
+          {size ? formatBytes(size) : t("expenseStatement.dropzone.attached")}
         </p>
       </div>
       {onRemove ? (
@@ -171,7 +187,7 @@ export function SelectedFile({
           onClick={onRemove}
           disabled={inProgress}
           className="file-dropzone-remove"
-          aria-label={`Retirer ${name}`}
+          aria-label={t("expenseStatement.dropzone.remove", { name })}
           data-cy="btn-retirer-fichier"
         >
           <X size={16} />

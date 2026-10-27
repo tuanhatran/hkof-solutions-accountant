@@ -1,11 +1,14 @@
 import "./LlmApiKeyField.css";
 import { KeyRound } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
 import type { AdminLlmController } from "./useAdminLlmPage";
 
 /** Optional API key block; the stored key is never returned by the server. */
 export function LlmApiKeyField({ c }: { c: AdminLlmController }) {
+  const { t } = useTranslation();
+
   return (
     <div className="llm-api-key-field">
       <div className="llm-api-key-field-header">
@@ -16,10 +19,11 @@ export function LlmApiKeyField({ c }: { c: AdminLlmController }) {
             aria-hidden="true"
           />
           <div>
-            <p className="llm-api-key-field-title">Clé API (facultative)</p>
+            <p className="llm-api-key-field-title">
+              {t("adminLlm.apiKey.title")}
+            </p>
             <p className="llm-api-key-field-hint">
-              Jamais renvoyée par le serveur ni réaffichée. Laissez vide pour
-              conserver la clé enregistrée.
+              {t("adminLlm.apiKey.hint")}
             </p>
           </div>
         </div>
@@ -29,13 +33,15 @@ export function LlmApiKeyField({ c }: { c: AdminLlmController }) {
             c.config.data?.apiKeyConfigured ? "badge-accent" : "badge-neutral",
           )}
         >
-          {c.config.data?.apiKeyConfigured ? "Clé configurée" : "Aucune clé"}
+          {c.config.data?.apiKeyConfigured
+            ? t("adminLlm.apiKey.configured")
+            : t("adminLlm.apiKey.none")}
         </span>
       </div>
       <div className="llm-api-key-field-grid">
         <FieldGroup
           id="llm-cle-api"
-          label="Nouvelle clé API"
+          label={t("adminLlm.apiKey.newKey")}
           error={c.errors.apiKey?.message}
         >
           <input
@@ -45,8 +51,8 @@ export function LlmApiKeyField({ c }: { c: AdminLlmController }) {
             className="field"
             placeholder={
               c.config.data?.apiKeyConfigured
-                ? "Clé enregistrée — laisser vide"
-                : "Aucune clé enregistrée"
+                ? t("adminLlm.apiKey.placeholderConfigured")
+                : t("adminLlm.apiKey.placeholderNone")
             }
             disabled={c.removeKey}
             {...c.register("apiKey")}
@@ -63,11 +69,10 @@ export function LlmApiKeyField({ c }: { c: AdminLlmController }) {
             />
             <span>
               <span className="llm-api-key-field-delete-title">
-                Supprimer la clé enregistrée
+                {t("adminLlm.apiKey.deleteTitle")}
               </span>
               <span className="llm-api-key-field-delete-text">
-                Envoie explicitement une clé vide. Sans cette case, une clé vide
-                n’est jamais transmise.
+                {t("adminLlm.apiKey.deleteText")}
               </span>
             </span>
           </label>

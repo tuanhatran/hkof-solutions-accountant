@@ -46,7 +46,7 @@ public class ReceiptService {
     public Receipt entity(Long id) {
         return repository.findById(id)
                 .filter(receipt -> !receipt.isDeleted())
-                .orElseThrow(() -> new NotFoundException("Justificatif introuvable."));
+                .orElseThrow(() -> new NotFoundException("RECEIPT_NOT_FOUND", "Justificatif introuvable."));
     }
 
     @Transactional(readOnly = true)
@@ -62,7 +62,8 @@ public class ReceiptService {
     public void delete(Long id) {
         Receipt receipt = entity(id);
         if (lineRepository.existsByReceiptId(id)) {
-            throw new BusinessException("Ce justificatif est utilisé par une note de frais et ne peut pas être supprimé.");
+            throw new BusinessException("RECEIPT_IN_USE",
+                    "Ce justificatif est utilisé par une note de frais et ne peut pas être supprimé.");
         }
         receipt.setDeleted(true);
         repository.save(receipt);

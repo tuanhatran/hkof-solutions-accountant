@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import i18n from "@/i18n";
 import type { AnalysisState } from "@/hooks/useAnalysis";
 import { AnalysisPanel } from "./AnalysisPanel";
 
@@ -141,6 +142,51 @@ describe("AnalysisPanel", () => {
     );
     expect(
       screen.getByText("Analyse annulée. La saisie manuelle reste disponible."),
+    ).toBeVisible();
+  });
+
+  it("renders its progress, result and hints in English", async () => {
+    await i18n.changeLanguage("en");
+    const { rerender } = render(
+      <AnalysisPanel
+        state={{ status: "running", analysisId: 3 }}
+        hasFile
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByText(
+        "AI analysis in progress — the local model may take a few seconds.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Cancel the analysis" }),
+    ).toBeVisible();
+
+    rerender(<AnalysisPanel state={DONE} hasFile onCancel={vi.fn()} />);
+
+    expect(screen.getByText(/Analysis complete in 2.4 s/)).toBeVisible();
+    expect(screen.getByText("Detected by AI")).toBeVisible();
+    expect(screen.getByText("Detected supplier: EDF")).toBeVisible();
+    expect(screen.getByText("High confidence")).toBeVisible();
+    expect(screen.getByText("“TOTAL TTC 42,00”")).toBeVisible();
+    expect(
+      screen.getByText(
+        "AI suggestions stay editable. Check them before adding the expense.",
+      ),
+    ).toBeVisible();
+
+    rerender(
+      <AnalysisPanel
+        state={{ status: "failed", message: "Model failed." }}
+        hasFile
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByText(
+        /Model failed\. The analysis is optional: you can enter the amount and pro rata manually\./,
+      ),
     ).toBeVisible();
   });
 });

@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { api } from "@/api/endpoints";
 import type {
   AddressDto,
   CompanyDto,
@@ -11,7 +12,9 @@ import type {
   SignatureDto,
   TemplateDto,
 } from "@/api/types";
+import i18n from "@/i18n";
 import { formatMonth } from "@/lib/format";
+import { useToasts } from "@/state/toasts";
 import { LeaseSection } from "./LeaseSection";
 import { useRentReceiptSettings } from "./useRentReceiptSettings";
 
@@ -203,6 +206,52 @@ describe("LeaseSection rent receipt", () => {
     expect(button.parentElement).toHaveAttribute(
       "title",
       "Vérification des signatures…",
+    );
+  });
+
+  it("renders the lease section and its rows in English", async () => {
+    await i18n.changeLanguage("en");
+    renderSection();
+
+    expect(
+      screen.getByRole("heading", { name: "Leases and addresses" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add a lease" })).toBeVisible();
+    expect(screen.getByLabelText("Lease addresses")).toBeVisible();
+    expect(screen.getByText("Company: No company")).toBeVisible();
+    expect(screen.getByText(/Rent .* · charges .* · total/)).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Rent receipt for lease 10" }),
+    ).toHaveTextContent("Rent receipt");
+    expect(
+      screen.getByRole("button", { name: "Edit lease 10" }),
+    ).toHaveTextContent("Edit");
+    expect(
+      screen.getByRole("button", { name: "Delete lease 10" }),
+    ).toHaveTextContent("Remove");
+  });
+
+  it("asks to delete a lease in English and toasts in English", async () => {
+    await i18n.changeLanguage("en");
+    vi.mocked(api.leases.delete).mockResolvedValue(undefined);
+    renderSection();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Delete lease 10" }));
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Delete this lease?",
+    });
+    expect(dialog).toHaveTextContent(
+      "The lease of “Mme Locataire” will no longer be offered during generation.",
+    );
+    await user.click(screen.getByRole("button", { name: "Delete the lease" }));
+
+    await waitFor(() => expect(api.leases.delete).toHaveBeenCalledWith(10));
+    await waitFor(() =>
+      expect(useToasts.getState().toasts).toContainEqual(
+        expect.objectContaining({ message: "Lease deleted." }),
+      ),
     );
   });
 });

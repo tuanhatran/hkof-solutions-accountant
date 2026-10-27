@@ -1,9 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
 import type { LlmConfigDto, LlmModelDto, LlmStatusDto } from "@/api/types";
+import i18n from "@/i18n";
 import { useToasts } from "@/state/toasts";
 import { AdminLlmPage } from "./AdminLlmPage";
 
@@ -541,5 +542,299 @@ describe("AdminLlmPage", () => {
         /Quand l’IA est désactivée, aucun justificatif n’est envoyé/,
       ),
     ).toBeInTheDocument();
+  });
+});
+
+describe("AdminLlmPage in English", () => {
+  it("translates the header, connection and advanced labels and relabels on switch", async () => {
+    await i18n.changeLanguage("en");
+    renderPage();
+
+    expect(screen.getByRole("heading", { name: "AI Admin" })).toBeVisible();
+    expect(screen.getByText("Settings")).toBeVisible();
+    expect(screen.getByText(/Ollama stays local by default/)).toBeVisible();
+    expect(screen.getAllByText("Ollama connection")).toHaveLength(2);
+    expect(
+      screen.getByText(
+        "Local provider, URL, model and optional authentication.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("Provider")).toBeVisible();
+    expect(screen.getByLabelText("Ollama server URL")).toBeVisible();
+    expect(screen.getByLabelText("Model")).toBeVisible();
+    expect(screen.getByText("Image support")).toBeVisible();
+    expect(screen.getByText("Advanced settings")).toBeVisible();
+    expect(screen.getByLabelText("Delay (seconds)")).toBeInTheDocument();
+    expect(screen.getByLabelText("Temperature")).toBeInTheDocument();
+    expect(screen.getByLabelText("Context (num_ctx)")).toBeInTheDocument();
+    expect(screen.getByLabelText("Max analyzed pages")).toBeInTheDocument();
+    expect(screen.getByLabelText("Extraction prompt")).toBeInTheDocument();
+    expect(screen.getByText("Configuration up to date.")).toBeVisible();
+    expect(
+      screen.getAllByRole("button", { name: "Test the connection" }),
+    ).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Save" })).toHaveLength(2);
+
+    await act(async () => {
+      await i18n.changeLanguage("fr");
+    });
+
+    expect(screen.getByRole("heading", { name: "Admin IA" })).toBeVisible();
+    expect(screen.getByText("Paramètres avancés")).toBeVisible();
+    expect(screen.getByText("Configuration à jour.")).toBeVisible();
+  });
+
+  it("translates the status card and relabels it on language switch", async () => {
+    statusState = readyQuery({
+      status: "PRET",
+      reachable: true,
+      active: true,
+    });
+    renderPage();
+
+    expect(
+      await screen.findByText(
+        "Le serveur Ollama et le modèle configuré sont disponibles.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("Connecté")).toBeVisible();
+    expect(screen.getByText("Serveur joignable · IA activée")).toBeVisible();
+
+    await act(async () => {
+      await i18n.changeLanguage("en");
+    });
+
+    expect(screen.getByText("Connected")).toBeVisible();
+    expect(
+      screen.getByText(
+        "The Ollama server and the configured model are available.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("Server reachable · AI enabled")).toBeVisible();
+
+    await act(async () => {
+      await i18n.changeLanguage("fr");
+    });
+    expect(screen.getByText("Connecté")).toBeVisible();
+    expect(screen.getByText("Serveur joignable · IA activée")).toBeVisible();
+  });
+
+  it.each([
+    [
+      "PRET_DISTANT",
+      "Connected — remote server",
+      "Ollama responds, but the URL is not local: documents leave this machine.",
+    ],
+    [
+      "MODELE_ABSENT",
+      "Model missing",
+      "Ollama responds but the selected model is not installed.",
+    ],
+    [
+      "INJOIGNABLE",
+      "Unreachable",
+      "The Ollama server does not respond. Manual entry remains available.",
+    ],
+    [
+      "DESACTIVE",
+      "Disabled",
+      "AI analysis is disabled. The whole application remains usable manually.",
+    ],
+  ])(
+    "renders the %s status and its description in English",
+    async (status, label, description) => {
+      statusState = readyQuery({
+        status,
+        reachable: status !== "INJOIGNABLE",
+        active: status !== "DESACTIVE",
+      });
+      await i18n.changeLanguage("en");
+
+      renderPage();
+
+      expect(await screen.findByText(label)).toBeVisible();
+      expect(screen.getByText(description)).toBeVisible();
+    },
+  );
+
+  it("translates the API key block without exposing the key", async () => {
+    configState = readyQuery({ ...CONFIG, apiKeyConfigured: true });
+    await i18n.changeLanguage("en");
+
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(await screen.findByText("Key configured")).toBeVisible();
+    expect(screen.getByText("API key (optional)")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Never returned by the server nor displayed again. Leave empty to keep the stored key.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByLabelText("New API key")).toHaveAttribute(
+      "placeholder",
+      "Stored key — leave empty",
+    );
+    expect(screen.getByText("Delete the stored key")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Explicitly sends an empty key. Without this box, an empty key is never sent.",
+      ),
+    ).toBeVisible();
+
+    await user.type(screen.getByLabelText("New API key"), "secret-123");
+    expect(document.body.textContent).not.toContain("secret-123");
+    expect(toastMessages().join(" ")).not.toContain("secret-123");
+  });
+
+  it("shows English toasts and feedback for the connection test", async () => {
+    vi.mocked(api.llm.test).mockResolvedValue({
+      success: true,
+      durationMs: 1500,
+      message: "Modèle disponible.",
+      detectedAmount: "80.00",
+    });
+    await i18n.changeLanguage("en");
+
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("AI analysis enabled");
+
+    await user.click(
+      screen.getAllByRole("button", { name: "Test the connection" })[0],
+    );
+
+    expect(
+      await screen.findByText("Connection successful in 1.5 s"),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/Amount detected on the test document:/),
+    ).toBeVisible();
+    expect(screen.getByText("Modèle disponible.")).toBeVisible();
+    await waitFor(() =>
+      expect(toastMessages()).toContain("Connection test succeeded."),
+    );
+
+    vi.mocked(api.llm.test).mockResolvedValue({
+      success: false,
+      message: "Modèle introuvable.",
+    });
+    await user.click(
+      screen.getAllByRole("button", { name: "Test the connection" })[0],
+    );
+    expect(await screen.findByText("Test failed")).toBeVisible();
+    expect(screen.getByText("Modèle introuvable.")).toBeVisible();
+    await waitFor(() =>
+      expect(toastMessages()).toContain("Modèle introuvable."),
+    );
+  });
+
+  it("renders the remote warning and the save toast in English", async () => {
+    await i18n.changeLanguage("en");
+
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("AI analysis enabled");
+
+    const urlInput = screen.getByLabelText("Ollama server URL");
+    await user.clear(urlInput);
+    await user.type(urlInput, "https://llm.example.com/");
+    expect(
+      screen.getByText("Receipts will be sent to a remote server."),
+    ).toBeVisible();
+    expect(screen.getByText(/The configured URL is neither/)).toBeVisible();
+
+    vi.mocked(api.llm.update).mockResolvedValue({
+      ...CONFIG,
+      url: "https://llm.example.com",
+    });
+    await user.click(screen.getAllByRole("button", { name: "Save" })[0]);
+    await waitFor(() =>
+      expect(toastMessages()).toContain("AI configuration saved."),
+    );
+  });
+
+  it("translates the URL schema and the model refresh error in English", async () => {
+    await i18n.changeLanguage("en");
+
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("AI analysis enabled");
+
+    const urlInput = screen.getByLabelText("Ollama server URL");
+    await user.clear(urlInput);
+    await user.type(urlInput, "ftp://ollama");
+
+    expect(
+      await screen.findByText("Invalid URL: http:// or https:// expected."),
+    ).toBeVisible();
+    await user.click(
+      screen.getByRole("button", { name: "Refresh the model list" }),
+    );
+    expect(
+      await screen.findByText("Invalid URL: start with http:// or https://."),
+    ).toBeVisible();
+  });
+
+  it("shows the English validation messages of the advanced settings", async () => {
+    await i18n.changeLanguage("en");
+
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("AI analysis enabled");
+
+    const timeout = screen.getByLabelText("Delay (seconds)");
+    await user.clear(timeout);
+    await user.type(timeout, "2");
+    const temperature = screen.getByLabelText("Temperature");
+    await user.clear(temperature);
+    await user.type(temperature, "3");
+    const numCtx = screen.getByLabelText("Context (num_ctx)");
+    await user.clear(numCtx);
+    await user.type(numCtx, "1");
+    const maxPages = screen.getByLabelText("Max analyzed pages");
+    await user.clear(maxPages);
+    await user.type(maxPages, "0");
+    const prompt = screen.getByLabelText("Extraction prompt");
+    await user.clear(prompt);
+    await user.type(prompt, "court");
+
+    await user.click(screen.getAllByRole("button", { name: "Save" })[0]);
+
+    expect(
+      await screen.findByText("The delay must be at least 5 seconds."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Temperature expected between 0 and 2."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("The context must be at least 1,024."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("At least one page.")).toBeInTheDocument();
+    expect(
+      screen.getByText("The extraction prompt is too short."),
+    ).toBeInTheDocument();
+    expect(api.llm.update).not.toHaveBeenCalled();
+  });
+
+  it("renders the model list error and manual entry in English", async () => {
+    modelsState = {
+      ...failedQuery<LlmModelDto[]>(new Error("Ollama unreachable")),
+      data: MODELS,
+    };
+    await i18n.changeLanguage("en");
+
+    renderPage();
+
+    expect(await screen.findByText("Model list unavailable.")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Enter the model name manually, then test the connection.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("Ollama unreachable")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Choose from the list" }),
+    ).toBeVisible();
   });
 });

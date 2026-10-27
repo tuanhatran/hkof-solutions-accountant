@@ -79,6 +79,10 @@
     @apply flex items-center justify-between gap-3;
   }
 
+  .app-shell-topbar {
+    @apply flex justify-end px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6;
+  }
+
   .app-shell-main {
     @apply mx-auto w-full max-w-[1580px] px-4 pb-20 pt-6 sm:px-6 lg:px-8 lg:py-9;
   }

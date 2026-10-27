@@ -2,6 +2,7 @@ import "./CompanySection.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys, useCompanies } from "@/api/queries";
@@ -20,31 +21,31 @@ import { CompanyIdentityView } from "./CompanyIdentityView";
 import { CompanyLeaseTab } from "./CompanyLeaseTab";
 import { EmployeeSection } from "./EmployeeSection";
 
-const TABS: ViewTab[] = [
-  {
-    value: "identification",
-    label: "Info générale",
-    dataCy: "onglet-entreprise-identification",
-  },
-  {
-    value: "bail-frais",
-    label: "Baux & Frais",
-    dataCy: "onglet-entreprise-bail-frais",
-  },
-  {
-    value: "salaries",
-    label: "Salariés",
-    dataCy: "onglet-entreprise-salaries",
-  },
-  {
-    value: "templates",
-    label: "Templates",
-    dataCy: "onglet-entreprise-templates",
-  },
-];
-
 /** Company directory: selector plus four tabs with modal-based editing. */
 export function CompanySection() {
+  const { t } = useTranslation();
+  const tabs: ViewTab[] = [
+    {
+      value: "identification",
+      label: t("settings.company.tabs.identification"),
+      dataCy: "onglet-entreprise-identification",
+    },
+    {
+      value: "bail-frais",
+      label: t("settings.company.tabs.leaseExpenses"),
+      dataCy: "onglet-entreprise-bail-frais",
+    },
+    {
+      value: "salaries",
+      label: t("settings.company.tabs.employees"),
+      dataCy: "onglet-entreprise-salaries",
+    },
+    {
+      value: "templates",
+      label: t("settings.company.tabs.templates"),
+      dataCy: "onglet-entreprise-templates",
+    },
+  ];
   const queryClient = useQueryClient();
   const companies = useCompanies();
   const [selectedId, setSelectedId] = useState<number | null>(
@@ -88,7 +89,7 @@ export function CompanySection() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.leases });
       closeModals();
       setToDelete(null);
-      toast.success("Société supprimée.");
+      toast.success(t("settings.company.deleted"));
     },
     onError: (error) => {
       setToDelete(null);
@@ -102,7 +103,7 @@ export function CompanySection() {
         {!companies.isError && !companies.isPending && list.length > 0 ? (
           <select
             id="societe-a-configurer"
-            aria-label="Société à configurer"
+            aria-label={t("settings.company.selectAria")}
             className="field company-section-select"
             value={selectedId ?? ""}
             onChange={(event) => {
@@ -128,7 +129,7 @@ export function CompanySection() {
           disabled={identityTarget !== null}
           data-cy="btn-nouvelle-societe"
         >
-          Nouvelle société
+          {t("settings.company.newCompany")}
         </Button>
         {selected ? (
           <Button
@@ -139,14 +140,14 @@ export function CompanySection() {
             onClick={() => setToDelete(selected)}
             data-cy="btn-supprimer-societe"
           >
-            Supprimer
+            {t("settings.company.deleteButton")}
           </Button>
         ) : null}
       </div>
       <div className="company-section-tabs">
         <ViewTabs
-          ariaLabel="Sections de l’entreprise"
-          tabs={TABS}
+          ariaLabel={t("settings.company.tabsAria")}
+          tabs={tabs}
           active={tab}
           onChange={setTab}
         />
@@ -161,12 +162,12 @@ export function CompanySection() {
           </div>
         ) : companies.isPending ? (
           <div className="card-body">
-            <LoadingState message="Chargement des sociétés…" />
+            <LoadingState message={t("settings.company.loading")} />
           </div>
         ) : list.length === 0 && tab !== "templates" ? (
           <div className="card-body">
             <EmptyState
-              text="Aucune société configurée. Créez la première société."
+              text={t("settings.company.empty")}
               dataCy="aucune-societe"
             />
           </div>
@@ -219,13 +220,17 @@ export function CompanySection() {
 
       <ConfirmDialog
         open={toDelete !== null}
-        title="Supprimer cette société ?"
+        title={t("settings.company.deleteDialog.title")}
         message={
           toDelete
-            ? `« ${toDelete.name ?? "Cette société"} » et ses salariés seront supprimés. Ses baux seront détachés, sans être supprimés. Une société utilisée par des notes de frais ou des quittances ne peut pas être supprimée.`
+            ? t("settings.company.deleteDialog.message", {
+                name:
+                  toDelete.name ??
+                  t("settings.company.deleteDialog.fallbackName"),
+              })
             : ""
         }
-        confirmLabel="Supprimer la société"
+        confirmLabel={t("settings.company.deleteDialog.confirm")}
         variant="danger"
         onConfirm={() => {
           if (toDelete) {

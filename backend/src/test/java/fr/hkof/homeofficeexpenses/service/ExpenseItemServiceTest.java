@@ -81,7 +81,11 @@ class ExpenseItemServiceTest {
         when(repository.findByCompanyIdAndCodeAndDeletedFalse(COMPANY_ID, "inconnu")).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.entity(COMPANY_ID, "inconnu"))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Type de frais inconnu : inconnu");
+                .hasMessage("Type de frais inconnu : inconnu")
+                .satisfies(ex -> {
+                    assertThat(((BusinessException) ex).getCode()).isEqualTo("EXPENSE_ITEM_UNKNOWN_CODE");
+                    assertThat(((BusinessException) ex).getParams()).containsEntry("code", "inconnu");
+                });
     }
 
     @Test
@@ -97,10 +101,14 @@ class ExpenseItemServiceTest {
     void createRequiresLabel() {
         assertThatThrownBy(() -> service.create(request(null, " ", null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le libellé du poste est obligatoire.");
+                .hasMessage("Le libellé du poste est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("EXPENSE_ITEM_LABEL_REQUIRED"));
         assertThatThrownBy(() -> service.create(request(null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le libellé du poste est obligatoire.");
+                .hasMessage("Le libellé du poste est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("EXPENSE_ITEM_LABEL_REQUIRED"));
     }
 
     @Test
@@ -124,7 +132,11 @@ class ExpenseItemServiceTest {
         when(repository.existsByCompanyIdAndCode(COMPANY_ID, "electricite")).thenReturn(true);
         assertThatThrownBy(() -> service.create(request("Électricité", "Électricité", "MONTHLY")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Un poste avec le code « electricite » existe déjà.");
+                .hasMessage("Un poste avec le code « electricite » existe déjà.")
+                .satisfies(ex -> {
+                    assertThat(((BusinessException) ex).getCode()).isEqualTo("EXPENSE_ITEM_CODE_DUPLICATE");
+                    assertThat(((BusinessException) ex).getParams()).containsEntry("code", "electricite");
+                });
     }
 
     @Test
@@ -132,7 +144,9 @@ class ExpenseItemServiceTest {
     void createRejectsBlankNormalizedCode() {
         assertThatThrownBy(() -> service.create(request("!!!", "Libellé", null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le code du poste est invalide.");
+                .hasMessage("Le code du poste est invalide.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("EXPENSE_ITEM_CODE_INVALID"));
     }
 
     @Test
@@ -140,7 +154,11 @@ class ExpenseItemServiceTest {
     void createRejectsInvalidPeriodicity() {
         assertThatThrownBy(() -> service.create(request("gaz", "Gaz", "HEBDOMADAIRE")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Périodicité invalide : HEBDOMADAIRE");
+                .hasMessage("Périodicité invalide : HEBDOMADAIRE")
+                .satisfies(ex -> {
+                    assertThat(((BusinessException) ex).getCode()).isEqualTo("EXPENSE_ITEM_PERIODICITY_INVALID");
+                    assertThat(((BusinessException) ex).getParams()).containsEntry("periodicity", "HEBDOMADAIRE");
+                });
     }
 
     @Test
@@ -166,7 +184,9 @@ class ExpenseItemServiceTest {
         when(repository.findById(1L)).thenReturn(Optional.of(item(1L, "gaz", "Gaz", false)));
         assertThatThrownBy(() -> service.update(1L, request(null, " ", null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le libellé du poste est obligatoire.");
+                .hasMessage("Le libellé du poste est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("EXPENSE_ITEM_LABEL_REQUIRED"));
     }
 
     @Test
@@ -177,7 +197,9 @@ class ExpenseItemServiceTest {
 
         assertThatThrownBy(() -> service.update(9L, request("gaz", "Gaz", null)))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Poste introuvable.");
+                .hasMessage("Poste introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode())
+                        .isEqualTo("EXPENSE_ITEM_NOT_FOUND"));
         assertThatThrownBy(() -> service.update(8L, request("gaz", "Gaz", null)))
                 .isInstanceOf(NotFoundException.class);
         assertThatThrownBy(() -> service.delete(9L))

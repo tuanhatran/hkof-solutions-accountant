@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
 import type { CompanyDto } from "@/api/types";
+import i18n from "@/i18n";
 import type { CompanyFormValues } from "@/lib/validation";
 import { useToasts } from "@/state/toasts";
 import { useCompanyForm } from "./useCompanyForm";
@@ -155,5 +156,23 @@ describe("useCompanyForm", () => {
 
     await waitFor(() => expect(result.current.save.isError).toBe(true));
     expect(result.current.save.error?.message).toBe("SIREN déjà utilisé.");
+  });
+
+  it("toasts the create and update messages in English", async () => {
+    await i18n.changeLanguage("en");
+    vi.mocked(api.companies.create).mockResolvedValue(COMPANY);
+    vi.mocked(api.companies.update).mockResolvedValue(COMPANY);
+    const created = setup(null);
+    const updated = setup(COMPANY);
+
+    created.result.current.saveCompany({ ...VALUES, name: "HKOF" });
+    await waitFor(() => expect(toastMessages()).toContain("Company created."));
+
+    updated.result.current.saveCompany({ ...VALUES, name: "HKOF" });
+    await waitFor(() =>
+      expect(toastMessages()).toContain(
+        "Company saved. Future documents will use these values.",
+      ),
+    );
   });
 });

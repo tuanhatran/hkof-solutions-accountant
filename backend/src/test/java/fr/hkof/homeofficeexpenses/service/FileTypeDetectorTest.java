@@ -78,10 +78,12 @@ class FileTypeDetectorTest {
     void emptyReceipt() {
         assertThatThrownBy(() -> detector.detectReceipt("vide.pdf", new byte[0]))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le fichier est vide.");
+                .hasMessage("Le fichier est vide.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("RECEIPT_EMPTY"));
         assertThatThrownBy(() -> detector.detectReceipt("vide.pdf", null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le fichier est vide.");
+                .hasMessage("Le fichier est vide.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("RECEIPT_EMPTY"));
     }
 
     @Test
@@ -91,7 +93,8 @@ class FileTypeDetectorTest {
 
         assertThatThrownBy(() -> detector.detectReceipt("gros.pdf", tooLarge))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("maximum 10 Mo");
+                .hasMessageContaining("maximum 10 Mo")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("RECEIPT_TOO_LARGE"));
     }
 
     @Test
@@ -99,10 +102,14 @@ class FileTypeDetectorTest {
     void unsupportedExtension() {
         assertThatThrownBy(() -> detector.detectReceipt("script.exe", new byte[] {1, 2, 3}))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Format non accepté");
+                .hasMessageContaining("Format non accepté")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("RECEIPT_UNSUPPORTED_FORMAT"));
         assertThatThrownBy(() -> detector.detectReceipt("sansextension", PDF))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Format non accepté");
+                .hasMessageContaining("Format non accepté")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("RECEIPT_UNSUPPORTED_FORMAT"));
     }
 
     @Test
@@ -110,7 +117,11 @@ class FileTypeDetectorTest {
     void contentMismatch() throws IOException {
         assertThatThrownBy(() -> detector.detectReceipt("faux.pdf", "text".getBytes(StandardCharsets.UTF_8)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("ne correspond pas à son extension");
+                .hasMessageContaining("ne correspond pas à son extension")
+                .satisfies(ex -> {
+                    assertThat(((BusinessException) ex).getCode()).isEqualTo("RECEIPT_CONTENT_MISMATCH");
+                    assertThat(((BusinessException) ex).getParams()).containsEntry("extension", "pdf");
+                });
         assertThatThrownBy(() -> detector.detectReceipt("faux.jpg", PNG))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("ne correspond pas");
@@ -173,7 +184,8 @@ class FileTypeDetectorTest {
     void rejectsNullSignature() {
         assertThatThrownBy(() -> detector.detectSignature("signature.png", null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le fichier est vide.");
+                .hasMessage("Le fichier est vide.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("SIGNATURE_EMPTY"));
     }
 
     @Test
@@ -181,11 +193,13 @@ class FileTypeDetectorTest {
     void rejectsInvalidSignatureSize() {
         assertThatThrownBy(() -> detector.detectSignature("vide.png", new byte[0]))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le fichier est vide.");
+                .hasMessage("Le fichier est vide.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("SIGNATURE_EMPTY"));
         byte[] tooLarge = new byte[(int) FileTypeDetector.MAX_SIGNATURE_SIZE + 1];
         assertThatThrownBy(() -> detector.detectSignature("gros.png", tooLarge))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("maximum 2 Mo");
+                .hasMessageContaining("maximum 2 Mo")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("SIGNATURE_TOO_LARGE"));
     }
 
     @Test
@@ -193,10 +207,14 @@ class FileTypeDetectorTest {
     void rejectsNonImageSignature() {
         assertThatThrownBy(() -> detector.detectSignature("signature.pdf", PDF))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La signature doit être une image PNG ou JPEG.");
+                .hasMessage("La signature doit être une image PNG ou JPEG.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("SIGNATURE_UNSUPPORTED_FORMAT"));
         assertThatThrownBy(() -> detector.detectSignature("signature.png", JPEG))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La signature doit être une image PNG ou JPEG.");
+                .hasMessage("La signature doit être une image PNG ou JPEG.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("SIGNATURE_UNSUPPORTED_FORMAT"));
     }
 
     @Test
@@ -211,20 +229,26 @@ class FileTypeDetectorTest {
     void rejectsInvalidTemplate() {
         assertThatThrownBy(() -> detector.validateTemplateHtml("modele.html", null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le fichier template est vide.");
+                .hasMessage("Le fichier template est vide.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("TEMPLATE_EMPTY"));
         assertThatThrownBy(() -> detector.validateTemplateHtml("modele.html", new byte[0]))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le fichier template est vide.");
+                .hasMessage("Le fichier template est vide.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("TEMPLATE_EMPTY"));
         byte[] tooLarge = new byte[(int) FileTypeDetector.MAX_TEMPLATE_SIZE + 1];
         assertThatThrownBy(() -> detector.validateTemplateHtml("modele.html", tooLarge))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("maximum 5 Mo");
+                .hasMessageContaining("maximum 5 Mo")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("TEMPLATE_TOO_LARGE"));
         assertThatThrownBy(() -> detector.validateTemplateHtml("modele.docx", PDF))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("fichier HTML");
+                .hasMessageContaining("fichier HTML")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("TEMPLATE_EXTENSION_INVALID"));
         assertThatThrownBy(() -> detector.validateTemplateHtml("modele.html", new byte[] {'<', 0, '>'}))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("texte UTF-8");
+                .hasMessageContaining("texte UTF-8")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("TEMPLATE_NOT_TEXT"));
     }
 
     @Test

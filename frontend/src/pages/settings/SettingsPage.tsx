@@ -1,15 +1,17 @@
 import "./SettingsPage.css";
+import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { CompanySection } from "./CompanySection";
 
 /** Enterprise settings: companies, employees and expense items. */
 export function SettingsPage() {
+  const { t } = useTranslation();
   return (
     <>
       <PageHeader
-        eyebrow="Réglages"
-        title="Société"
-        description="Gérez vos sociétés, leurs salariés signataires et leurs postes de frais. Les calculs restent effectués par le backend."
+        eyebrow={t("settings.page.eyebrow")}
+        title={t("settings.page.title")}
+        description={t("settings.page.description")}
       />
       <CompanySection />
     </>

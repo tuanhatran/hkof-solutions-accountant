@@ -1,4 +1,5 @@
 import "./ExpenseTypeAndProRata.css";
+import { useTranslation } from "react-i18next";
 import { AiBadge } from "@/components/ui/AiBadge";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
@@ -10,17 +11,24 @@ export function ExpenseTypeAndProRata({
 }: {
   controller: ExpenseStatementController;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="expense-type-and-pro-rata-grid">
       <FieldGroup
         id="frais-type"
-        label="Type de frais"
+        label={t("expenseStatement.fields.type")}
         error={c.errors.itemCode?.message}
-        badge={c.ai.type ? <AiBadge label="Type suggéré par IA" /> : undefined}
+        badge={
+          c.ai.type ? (
+            <AiBadge label={t("expenseStatement.fields.typeSuggestedAi")} />
+          ) : undefined
+        }
         help={
           c.ai.supplier
-            ? `Fournisseur détecté : ${c.ai.supplier}`
-            : "Les libellés proviennent de votre configuration."
+            ? t("expenseStatement.fields.supplierDetected", {
+                supplier: c.ai.supplier,
+              })
+            : t("expenseStatement.fields.typeHelp")
         }
       >
         <select
@@ -33,7 +41,9 @@ export function ExpenseTypeAndProRata({
           aria-invalid={Boolean(c.errors.itemCode)}
           disabled={c.expenseItemsQuery.isPending}
         >
-          <option value="">Sélectionner…</option>
+          <option value="">
+            {t("expenseStatement.fields.selectPlaceholder")}
+          </option>
           {c.expenseItems.map((expenseItem) => (
             <option
               key={expenseItem.code}
@@ -42,7 +52,9 @@ export function ExpenseTypeAndProRata({
             >
               {expenseItem.label ?? expenseItem.code}
               {expenseItem.supplier ? ` (${expenseItem.supplier})` : ""}
-              {c.optionDisabled(expenseItem) ? " — déjà ajouté" : ""}
+              {c.optionDisabled(expenseItem)
+                ? t("expenseStatement.fields.alreadyAdded")
+                : ""}
             </option>
           ))}
         </select>
@@ -50,9 +62,9 @@ export function ExpenseTypeAndProRata({
 
       <FieldGroup
         id="frais-prorata"
-        label="Prorata (%)"
+        label={t("expenseStatement.fields.proRata")}
         error={c.errors.proRataPct?.message}
-        help="Champ libre : 35,71 ou 35,71 %."
+        help={t("expenseStatement.fields.proRataHelp")}
       >
         <div className="expense-type-and-pro-rata-prorata">
           <input

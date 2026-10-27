@@ -1,5 +1,6 @@
 import "./AdminLlmPage.css";
 import { Activity, Save } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 import { LoadingState, ErrorState } from "@/components/ui/States";
@@ -13,13 +14,17 @@ import { useAdminLlmPage } from "./useAdminLlmPage";
 
 /** LLM administration page (local Ollama configuration and connection test). */
 export function AdminLlmPage() {
+  const { t } = useTranslation();
   const c = useAdminLlmPage();
 
   if (c.config.isPending) {
     return (
       <>
-        <PageHeader eyebrow="Réglages" title="Admin IA" />
-        <LoadingState message="Chargement de la configuration IA…" />
+        <PageHeader
+          eyebrow={t("adminLlm.page.eyebrow")}
+          title={t("adminLlm.page.title")}
+        />
+        <LoadingState message={t("adminLlm.page.loading")} />
       </>
     );
   }
@@ -27,7 +32,10 @@ export function AdminLlmPage() {
   if (c.config.isError) {
     return (
       <>
-        <PageHeader eyebrow="Réglages" title="Admin IA" />
+        <PageHeader
+          eyebrow={t("adminLlm.page.eyebrow")}
+          title={t("adminLlm.page.title")}
+        />
         <ErrorState
           message={errorMessage(c.config.error)}
           onRetry={() => void c.config.refetch()}
@@ -39,9 +47,9 @@ export function AdminLlmPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Réglages"
-        title="Admin IA"
-        description="Ollama reste local par défaut. Le modèle ne fait que proposer une extraction : tous les montants sont vérifiés et calculés par le backend."
+        eyebrow={t("adminLlm.page.eyebrow")}
+        title={t("adminLlm.page.title")}
+        description={t("adminLlm.page.description")}
         actions={
           <>
             <Button
@@ -51,7 +59,7 @@ export function AdminLlmPage() {
               onClick={() => void c.runTest()}
               data-cy="btn-test-llm"
             >
-              Tester la connexion
+              {t("adminLlm.page.testConnection")}
             </Button>
             <Button
               variant="primary"
@@ -61,7 +69,7 @@ export function AdminLlmPage() {
               loading={c.save.isPending}
               data-cy="btn-enregistrer-llm"
             >
-              Enregistrer
+              {t("adminLlm.page.save")}
             </Button>
           </>
         }

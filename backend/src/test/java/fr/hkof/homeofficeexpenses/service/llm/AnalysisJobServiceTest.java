@@ -340,7 +340,9 @@ class AnalysisJobServiceTest {
 
         assertThatThrownBy(() -> service.cancel(42L))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Cette analyse est déjà terminée.");
+                .hasMessage("Cette analyse est déjà terminée.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("ANALYSIS_ALREADY_FINISHED"));
     }
 
     @Test
@@ -350,10 +352,12 @@ class AnalysisJobServiceTest {
 
         assertThatThrownBy(() -> service.get(42L))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Analyse introuvable.");
+                .hasMessage("Analyse introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("ANALYSIS_NOT_FOUND"));
         assertThatThrownBy(() -> service.cancel(42L))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Analyse introuvable.");
+                .hasMessage("Analyse introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("ANALYSIS_NOT_FOUND"));
     }
 
     @Test

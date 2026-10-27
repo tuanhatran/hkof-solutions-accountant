@@ -1,5 +1,6 @@
 import "./HistoryMonthSection.css";
 import { FileCheck2, FileText } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { StatementDto } from "@/api/types";
 import { formatMonth } from "@/lib/format";
 import { HistoryAddressRow } from "./HistoryAddressRow";
@@ -18,6 +19,7 @@ export function HistoryMonthSection({
   group: MonthGroup;
   onReloadStatement: (statement: StatementDto) => void;
 }) {
+  const { t } = useTranslation();
   const rentReceipt = latestReceipt(
     group.addresses.flatMap((address) => address.rentReceipts),
   );
@@ -52,7 +54,7 @@ export function HistoryMonthSection({
     >
       <div className="history-month-section-header">
         <div>
-          <p className="eyebrow">Mois</p>
+          <p className="eyebrow">{t("history.month.eyebrow")}</p>
           <h2 className="history-month-section-title">
             {formatMonth(group.month)}
           </h2>
@@ -63,22 +65,18 @@ export function HistoryMonthSection({
               rentReceipt ? "badge badge-accent" : "badge badge-neutral"
             }
           >
-            Quittance{" "}
-            {rentReceiptCount > 1
-              ? `(${rentReceiptCount})`
-              : rentReceipt
-                ? `(${rentReceiptCount})`
-                : "non générée"}
+            {rentReceiptCount > 0
+              ? t("history.month.rentReceiptCount", {
+                  count: rentReceiptCount,
+                })
+              : t("history.month.rentReceiptMissing")}
           </span>
           <span
             className={statement ? "badge badge-accent" : "badge badge-neutral"}
           >
-            Note{" "}
-            {noteCount > 1
-              ? `(${noteCount})`
-              : noteCount === 1
-                ? `(${noteCount})`
-                : "non générée"}
+            {noteCount > 0
+              ? t("history.month.statementCount", { count: noteCount })
+              : t("history.month.statementMissing")}
           </span>
         </div>
       </div>
@@ -92,11 +90,11 @@ export function HistoryMonthSection({
             <span className="history-month-section-column-icon history-month-section-column-icon-quittance">
               <FileText size={15} aria-hidden="true" />
             </span>
-            Quittance de loyer
+            {t("history.month.rentReceiptColumn")}
           </h3>
           {receiptAddresses.length === 0 ? (
             <p className="history-month-section-empty">
-              Aucune quittance générée pour ce mois.
+              {t("history.month.emptyRentReceipts")}
             </p>
           ) : (
             receiptAddresses.map((address) => (
@@ -120,11 +118,11 @@ export function HistoryMonthSection({
             <span className="history-month-section-column-icon history-month-section-column-icon-note">
               <FileCheck2 size={15} aria-hidden="true" />
             </span>
-            Note de frais d’occupation
+            {t("history.month.statementColumn")}
           </h3>
           {statementAddresses.length === 0 ? (
             <p className="history-month-section-empty">
-              Aucune note de frais générée pour ce mois.
+              {t("history.month.emptyStatements")}
             </p>
           ) : (
             statementAddresses.map((address) => (

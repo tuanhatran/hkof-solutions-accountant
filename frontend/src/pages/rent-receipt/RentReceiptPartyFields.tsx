@@ -1,4 +1,5 @@
 import "./RentReceiptPartyFields.css";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
@@ -6,14 +7,15 @@ import type { RentReceiptController } from "./useRentReceiptPage";
 
 /** Month, template, landlord/tenant pair and selected lease details. */
 export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="rent-receipt-party-fields-grid">
         <FieldGroup
           id="quittance-mois"
-          label="Mois concerné"
+          label={t("rentReceipt.fields.month")}
           error={c.errors.month?.message}
-          help="La période est recalculée automatiquement."
+          help={t("rentReceipt.fields.monthHelp")}
         >
           <input
             id="quittance-mois"
@@ -29,9 +31,13 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
 
         <FieldGroup
           id="quittance-template"
-          label="Template"
-          help="Le modèle actif est utilisé par défaut."
-          badge={<span className="badge badge-neutral">Versionné</span>}
+          label={t("rentReceipt.fields.template")}
+          help={t("rentReceipt.fields.templateHelp")}
+          badge={
+            <span className="badge badge-neutral">
+              {t("rentReceipt.fields.versionedBadge")}
+            </span>
+          }
         >
           <select
             id="quittance-template"
@@ -46,12 +52,14 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
             disabled={c.templates.isPending || c.models.length === 0}
           >
             {c.models.length === 0 ? (
-              <option value="">Modèle intégré</option>
+              <option value="">
+                {t("rentReceipt.fields.builtInTemplate")}
+              </option>
             ) : null}
             {c.models.map((model) => (
               <option key={model.id} value={model.id}>
                 {model.name} — v{model.version}
-                {model.active ? " (actif)" : ""}
+                {model.active ? t("rentReceipt.fields.activeSuffix") : ""}
               </option>
             ))}
           </select>
@@ -61,9 +69,9 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
       <div className="rent-receipt-party-fields-grid">
         <FieldGroup
           id="quittance-bailleur"
-          label="Bailleur"
+          label={t("rentReceipt.fields.landlord")}
           error={c.errors.landlordId?.message}
-          help="Personne physique bailleur du bail actif."
+          help={t("rentReceipt.fields.landlordHelp")}
         >
           <select
             id="quittance-bailleur"
@@ -76,7 +84,9 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
                 c.selectPair(event.target.value, c.values.tenantKey),
             })}
           >
-            <option value="">Sélectionnez un bailleur</option>
+            <option value="">
+              {t("rentReceipt.fields.landlordPlaceholder")}
+            </option>
             {c.personRows.map((person) => (
               <option key={person.id} value={person.id}>
                 {person.name}
@@ -87,9 +97,9 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
 
         <FieldGroup
           id="quittance-locataire"
-          label="Locataire"
+          label={t("rentReceipt.fields.tenant")}
           error={c.errors.tenantKey?.message}
-          help="Personne physique, ou société pour un bail société."
+          help={t("rentReceipt.fields.tenantHelp")}
         >
           <select
             id="quittance-locataire"
@@ -102,9 +112,11 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
                 c.selectPair(c.values.landlordId, event.target.value),
             })}
           >
-            <option value="">Sélectionnez un locataire</option>
+            <option value="">
+              {t("rentReceipt.fields.tenantPlaceholder")}
+            </option>
             {c.personTenantOptions.length > 0 ? (
-              <optgroup label="Personnes">
+              <optgroup label={t("rentReceipt.fields.personsGroup")}>
                 {c.personTenantOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -113,7 +125,7 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
               </optgroup>
             ) : null}
             {c.companyTenantOptions.length > 0 ? (
-              <optgroup label="Sociétés">
+              <optgroup label={t("rentReceipt.fields.companiesGroup")}>
                 {c.companyTenantOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -134,19 +146,20 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
           role="alert"
           data-cy="alerte-bail-manquant"
         >
-          Aucun bail actif pour ce bailleur et ce locataire. Créez le bail dans
-          la page{" "}
+          {t("rentReceipt.fields.missingLeaseBefore")}{" "}
           <Link to="/configuration/lmnp" className="link">
-            LMNP
+            {t("rentReceipt.fields.lmnpLink")}
           </Link>
-          .
+          {t("rentReceipt.fields.missingLeaseAfter")}
         </p>
       ) : null}
 
       {c.selectedLease ? (
         <div className="rent-receipt-party-fields-lease" data-cy="detail-bail">
           <p className="eyebrow text-accent">
-            {c.selectedLease.companyLease ? "Bail société" : "Bail"} sélectionné
+            {c.selectedLease.companyLease
+              ? t("rentReceipt.fields.companyLeaseSelected")
+              : t("rentReceipt.fields.leaseSelected")}
           </p>
           <p className="rent-receipt-party-fields-lease-pair">
             {c.selectedLease.landlordName} → {c.selectedLease.tenantName}

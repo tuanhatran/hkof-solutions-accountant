@@ -921,6 +921,12 @@ export interface components {
             status?: number;
             detail?: string;
             instance?: string;
+            /** @description Code d'erreur stable, lisible par machine et traduit par l'interface (par exemple VALIDATION_FAILED). */
+            code: string;
+            /** @description Valeurs d'interpolation associées au code d'erreur. */
+            params?: {
+                [key: string]: string;
+            };
         };
         ExpenseItemRequest: {
             /**

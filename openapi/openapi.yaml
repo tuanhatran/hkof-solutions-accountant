@@ -1797,6 +1797,8 @@ components:
           description: Détail lisible du calcul de la base de prorata du bail.
     ProblemDetail:
       type: object
+      required:
+        - code
       properties:
         type:
           type: string
@@ -1808,6 +1810,17 @@ components:
           type: string
         instance:
           type: string
+        code:
+          type: string
+          description: >-
+            Code d'erreur stable, lisible par machine et traduit par l'interface
+            (par exemple VALIDATION_FAILED).
+        params:
+          type: object
+          additionalProperties:
+            type: string
+          description: >-
+            Valeurs d'interpolation associées au code d'erreur.
     ExpenseItemRequest:
       type: object
       required:

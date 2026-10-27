@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { downloadBlob } from "@/api/client";
@@ -10,6 +10,7 @@ import type {
   TemplateVariableDto,
   ValidationReportDto,
 } from "@/api/types";
+import i18n from "@/i18n";
 import { useToasts } from "@/state/toasts";
 import { TemplatesTab } from "./TemplatesTab";
 import {
@@ -719,5 +720,312 @@ describe("TemplatesTab", () => {
     expect(
       within(rent).getByText(/le modèle sera accepté, mais les champs/),
     ).toBeInTheDocument();
+  });
+
+  it("renders the card header in English and relabels the configuration on switch", async () => {
+    await i18n.changeLanguage("en");
+    renderTab();
+
+    expect(screen.getByRole("heading", { name: "Rent receipt" })).toBeVisible();
+    expect(
+      screen.getByText("Template used for monthly rent receipts."),
+    ).toBeVisible();
+    expect(screen.getByText(/Templates cannot execute any code/)).toBeVisible();
+
+    await act(async () => {
+      await i18n.changeLanguage("fr");
+    });
+
+    expect(
+      screen.getByRole("heading", { name: "Quittance de loyer" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Modèle utilisé pour les quittances mensuelles."),
+    ).toBeVisible();
+  });
+
+  it("renders the expense statement configuration in English", async () => {
+    await i18n.changeLanguage("en");
+    renderTab(EXPENSE_STATEMENT_CONFIGURATION);
+
+    const expense = card();
+    expect(
+      within(expense).getByRole("heading", {
+        name: "Home-office expense statement",
+      }),
+    ).toBeVisible();
+    expect(
+      within(expense).getByText(
+        "Template used for expense statements and their full version.",
+      ),
+    ).toBeVisible();
+    expect(within(expense).getByText("1 version")).toBeInTheDocument();
+    expect(
+      within(expense).getByText("No previous archived version."),
+    ).toBeInTheDocument();
+  });
+
+  it("renders the active model and version list in English", async () => {
+    await i18n.changeLanguage("en");
+    renderTab();
+
+    const rent = card();
+    expect(within(rent).getByText("Active template")).toBeVisible();
+    expect(within(rent).getByText(/imported on/)).toBeVisible();
+    expect(within(rent).getAllByText("Built-in").length).toBeGreaterThan(0);
+    expect(within(rent).getByText("Active")).toBeVisible();
+    expect(within(rent).getByText("3 versions")).toBeVisible();
+    expect(
+      within(rent).getAllByRole("button", { name: "Preview" }).length,
+    ).toBeGreaterThan(0);
+    expect(
+      within(rent).getAllByRole("button", { name: "Download" }).length,
+    ).toBeGreaterThan(0);
+    expect(
+      within(rent).getAllByRole("button", { name: "Delete" }).length,
+    ).toBeGreaterThan(0);
+    expect(within(rent).getAllByText("Quittance 2026")).not.toHaveLength(0);
+  });
+
+  it("shows the template loading state in English", async () => {
+    templatesPending = true;
+    await i18n.changeLanguage("en");
+    renderTab();
+
+    expect(screen.getByText("Loading templates…")).toBeInTheDocument();
+  });
+
+  it("imports a template and displays the validation report in English", async () => {
+    const imported: TemplateDto = {
+      id: 20,
+      type: "RENT_RECEIPT",
+      name: "modele",
+      version: 4,
+      active: false,
+      builtIn: false,
+      report: REPORT,
+    };
+    vi.mocked(api.templates.upload).mockResolvedValue(imported);
+    vi.mocked(api.templates.activate).mockResolvedValue({
+      ...imported,
+      active: true,
+    });
+
+    await i18n.changeLanguage("en");
+    const user = userEvent.setup();
+    renderTab();
+    const rent = card();
+
+    expect(within(rent).getByText("Import a new version")).toBeVisible();
+    expect(
+      within(rent).getByText(/The new template is validated then imported/),
+    ).toBeVisible();
+    expect(
+      within(rent).getByPlaceholderText("e.g. Rent receipt — 2027 version"),
+    ).toBeInTheDocument();
+
+    await user.upload(
+      within(rent).getByLabelText("Choose an HTML template file"),
+      new File(["<html></html>"], "modele.html", { type: "text/html" }),
+    );
+    await user.click(
+      within(rent).getByRole("button", { name: "Validate and import" }),
+    );
+
+    expect(
+      await within(rent).findByText("Validation report"),
+    ).toBeInTheDocument();
+    expect(within(rent).getByText("Valid structure")).toBeInTheDocument();
+    expect(within(rent).getByText("Recognized variables (2)")).toBeVisible();
+    expect(within(rent).getByText("Unknown variables (1)")).toBeVisible();
+    expect(
+      within(rent).getByText("Missing required variables (1)"),
+    ).toBeVisible();
+    expect(within(rent).getByText("Errors")).toBeVisible();
+    // Server-supplied strings stay verbatim in both languages.
+    expect(within(rent).getByText("Balise script interdite.")).toBeVisible();
+    expect(within(rent).getByText("inconnu")).toBeVisible();
+    expect(toastMessages()).toContain(
+      "Version v4 imported. Check the preview then activate it.",
+    );
+    expect(
+      within(rent).getByRole("button", { name: "Preview version v4" }),
+    ).toBeVisible();
+
+    await user.click(
+      within(rent).getByRole("button", { name: "Activate version v4" }),
+    );
+    await waitFor(() =>
+      expect(api.templates.activate).toHaveBeenCalledWith(20),
+    );
+    expect(toastMessages()).toContain(
+      "The template “modele” v4 is now active.",
+    );
+  });
+
+  it("deletes a version in English with a translated dialog and toast", async () => {
+    vi.mocked(api.templates.delete).mockResolvedValue(undefined);
+    await i18n.changeLanguage("en");
+    const user = userEvent.setup();
+    renderTab();
+
+    const row = screen.getByText("Quittance archivée").closest("li");
+    if (!row) {
+      throw new Error("Version row not found");
+    }
+    await user.click(within(row).getByRole("button", { name: "Delete" }));
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Delete this version?",
+    });
+    expect(dialog).toHaveTextContent(
+      "Version v2 of “Quittance archivée” will no longer be offered.",
+    );
+    await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => expect(api.templates.delete).toHaveBeenCalledWith(2));
+    expect(toastMessages()).toContain(
+      "Version deleted. The file stays archived in storage.",
+    );
+  });
+
+  it("previews a version in English and activates it from the modal", async () => {
+    vi.mocked(api.templates.activate).mockResolvedValue({
+      ...RENT_OLD,
+      active: true,
+    });
+    await i18n.changeLanguage("en");
+    const user = userEvent.setup();
+    renderTab();
+
+    const row = screen.getByText("Quittance archivée").closest("li");
+    if (!row) {
+      throw new Error("Version row not found");
+    }
+    await user.click(within(row).getByRole("button", { name: "Preview" }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: /Preview — Quittance archivée · v2/,
+    });
+    expect(
+      within(dialog).getByText(
+        "Sample data · “PREVIEW” watermark · nothing is persisted.",
+      ),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole("button", { name: "Close the preview" }),
+    ).toBeVisible();
+
+    await user.click(
+      within(dialog).getByRole("button", { name: "Activate this template" }),
+    );
+    await waitFor(() => expect(api.templates.activate).toHaveBeenCalledWith(2));
+    expect(toastMessages()).toContain(
+      "The template “Quittance archivée” v2 is now active.",
+    );
+  });
+
+  it("renders the variable reference in English and toasts in English", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+    await i18n.changeLanguage("en");
+    renderTab(EXPENSE_STATEMENT_CONFIGURATION);
+    const expense = card();
+
+    expect(within(expense).getByText("Variable reference")).toBeVisible();
+    expect(within(expense).getByText("Show")).toBeInTheDocument();
+    expect(within(expense).getByText("Hide")).toBeInTheDocument();
+    expect(
+      within(expense).getByRole("columnheader", { name: "Variable" }),
+    ).toBeInTheDocument();
+    expect(
+      within(expense).getByRole("columnheader", { name: "Description" }),
+    ).toBeInTheDocument();
+    expect(
+      within(expense).getByRole("columnheader", { name: "Example" }),
+    ).toBeInTheDocument();
+    expect(
+      within(expense).getByRole("columnheader", { name: "Copy" }),
+    ).toBeInTheDocument();
+    expect(within(expense).getByText("required")).toBeInTheDocument();
+    // Server-supplied descriptions and examples stay verbatim.
+    expect(within(expense).getByText("Montant total")).toBeInTheDocument();
+    expect(within(expense).getByText("1 234,56 €")).toBeInTheDocument();
+
+    const loopNote = expense.querySelector(".reference-variables-loop-note");
+    expect(loopNote?.textContent).toContain(
+      "Inside the {{#lignes}} loop, the inner variables are written",
+    );
+
+    await user.click(
+      within(expense).getByRole("button", {
+        name: "Copy the montant variable",
+      }),
+    );
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith("{{montant}}"));
+    expect(toastMessages()).toContain("{{montant}} copied to the clipboard.");
+
+    writeText.mockRejectedValueOnce(new Error("refusé"));
+    await user.click(
+      within(expense).getByRole("button", {
+        name: "Copy the bailleur variable",
+      }),
+    );
+    await waitFor(() =>
+      expect(toastMessages()).toContain(
+        "Unable to copy to the clipboard. Select the variable manually.",
+      ),
+    );
+  });
+
+  it("restores the built-in template in English", async () => {
+    vi.mocked(api.templates.resetDefault).mockResolvedValue({
+      ...RENT_BUILT_IN,
+      version: 6,
+      active: true,
+    });
+    await i18n.changeLanguage("en");
+    const user = userEvent.setup();
+    renderTab();
+
+    await user.click(
+      within(card()).getByRole("button", {
+        name: "Revert to the default template",
+      }),
+    );
+    const dialog = screen.getByRole("dialog", {
+      name: "Revert to the default template?",
+    });
+    expect(dialog).toHaveTextContent(
+      "The built-in template “Quittance intégrée” (v1) will become active again.",
+    );
+    await user.click(
+      within(dialog).getByRole("button", { name: "Restore the template" }),
+    );
+
+    await waitFor(() =>
+      expect(api.templates.resetDefault).toHaveBeenCalledWith("RENT_RECEIPT"),
+    );
+    expect(toastMessages()).toContain(
+      "Built-in template restored and activated (v6).",
+    );
+  });
+
+  it("offers the built-in restore when no model is active in English", async () => {
+    templatesByType = { ...templatesByType, RENT_RECEIPT: [RENT_OLD] };
+    await i18n.changeLanguage("en");
+    renderTab();
+
+    const rent = card();
+    expect(within(rent).getByText("No active template.")).toBeVisible();
+    expect(
+      within(rent).getByRole("button", {
+        name: "Restore the built-in template",
+      }),
+    ).toBeVisible();
   });
 });

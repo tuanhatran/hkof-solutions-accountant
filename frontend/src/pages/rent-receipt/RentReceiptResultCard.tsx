@@ -1,5 +1,6 @@
 import "./RentReceiptResultCard.css";
 import { Download, ExternalLink, FileCheck2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { api } from "@/api/endpoints";
 import { Button } from "@/components/ui/Button";
 import { formatEUR, formatMonth } from "@/lib/format";
@@ -7,6 +8,7 @@ import type { RentReceiptController } from "./useRentReceiptPage";
 
 /** Success card shown after a rent receipt has been generated. */
 export function RentReceiptResultCard({ c }: { c: RentReceiptController }) {
+  const { t } = useTranslation();
   const result = c.result;
   if (!result) {
     return null;
@@ -18,15 +20,22 @@ export function RentReceiptResultCard({ c }: { c: RentReceiptController }) {
           <FileCheck2 size={19} aria-hidden="true" />
         </span>
         <div className="rent-receipt-result-card-body">
-          <p className="rent-receipt-result-card-title">Quittance générée</p>
+          <p className="rent-receipt-result-card-title">
+            {t("rentReceipt.result.title")}
+          </p>
           <p className="rent-receipt-result-card-meta">
-            {formatMonth(result.month)} · version {result.version ?? 1} ·{" "}
-            {formatEUR(result.total)}
+            {t("rentReceipt.result.meta", {
+              month: formatMonth(result.month),
+              version: result.version ?? 1,
+              total: formatEUR(result.total),
+            })}
           </p>
           <p className="rent-receipt-result-card-note">
-            Enregistrée dans l’historique avec le template «{" "}
-            {result.templateName ?? "modèle intégré"} » v
-            {result.templateVersion ?? 1}.
+            {t("rentReceipt.result.recorded", {
+              name:
+                result.templateName ?? t("rentReceipt.result.builtInTemplate"),
+              version: result.templateVersion ?? 1,
+            })}
           </p>
         </div>
       </div>
@@ -38,7 +47,7 @@ export function RentReceiptResultCard({ c }: { c: RentReceiptController }) {
           onClick={() => void c.downloadRentReceipt(result)}
           data-cy="btn-telecharger-quittance"
         >
-          Télécharger le PDF
+          {t("rentReceipt.result.download")}
         </Button>
         {result.id ? (
           <a
@@ -48,11 +57,11 @@ export function RentReceiptResultCard({ c }: { c: RentReceiptController }) {
             className="btn btn-secondary btn-small"
           >
             <ExternalLink size={14} aria-hidden="true" />
-            Ouvrir
+            {t("rentReceipt.result.open")}
           </a>
         ) : null}
         <Button variant="ghost" small onClick={c.goToStatement}>
-          Aller à la note de frais de ce mois
+          {t("rentReceipt.result.goToStatement")}
         </Button>
       </div>
     </div>

@@ -132,11 +132,13 @@ class SignatureServiceTest {
     void requiresPerson() {
         assertThatThrownBy(() -> service.create(null, "Bailleur", file("signature.png", PNG)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La personne de la signature est obligatoire.");
+                .hasMessage("La personne de la signature est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PERSON_REQUIRED"));
         when(persons.findByIdAndDeletedFalse(99L)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.create(99L, "Bailleur", file("signature.png", PNG)))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Personne introuvable.");
+                .hasMessage("Personne introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("PERSON_NOT_FOUND"));
         verify(repository, never()).save(any(Signature.class));
     }
 
@@ -165,13 +167,17 @@ class SignatureServiceTest {
 
         assertThatThrownBy(() -> service.create(PERSON_ID, "  ", file("signature.png", PNG)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le nom de la signature est obligatoire.");
+                .hasMessage("Le nom de la signature est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("SIGNATURE_NAME_REQUIRED"));
         assertThatThrownBy(() -> service.create(PERSON_ID, "Bailleur", file("signature.png", new byte[0])))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le fichier de signature est obligatoire.");
+                .hasMessage("Le fichier de signature est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("SIGNATURE_FILE_REQUIRED"));
         assertThatThrownBy(() -> service.create(PERSON_ID, "a".repeat(256), file("signature.png", PNG)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le nom de la signature est trop long (255 caractères maximum).");
+                .hasMessage("Le nom de la signature est trop long (255 caractères maximum).")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("SIGNATURE_NAME_TOO_LONG"));
 
         stubSavedSignature();
         assertThat(service.create(PERSON_ID, "a".repeat(255), file("signature.png", PNG)).name()).hasSize(255);
@@ -205,7 +211,8 @@ class SignatureServiceTest {
         when(repository.findById(99L)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.dataUri(99L))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Signature introuvable.");
+                .hasMessage("Signature introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("SIGNATURE_NOT_FOUND"));
 
         when(repository.findById(6L)).thenReturn(Optional.of(signature(6L, PERSON_ID, "Bailleur", true)));
         assertThatThrownBy(() -> service.image(6L))
@@ -224,7 +231,8 @@ class SignatureServiceTest {
         assertThat(service.resolveForPerson(10L, PERSON_ID)).contains(linked);
         assertThatThrownBy(() -> service.resolveForPerson(11L, PERSON_ID))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La signature sélectionnée n'appartient pas à cette personne.");
+                .hasMessage("La signature sélectionnée n'appartient pas à cette personne.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("SIGNATURE_NOT_OWNED"));
 
         when(repository.findFirstByPersonIdAndDeletedFalseOrderByNameAscIdAsc(PERSON_ID))
                 .thenReturn(Optional.of(linked));
@@ -247,7 +255,8 @@ class SignatureServiceTest {
         assertThat(service.resolveForCompanyCeo(COMPANY_ID, 30L)).contains(ceoSignature);
         assertThatThrownBy(() -> service.resolveForCompanyCeo(COMPANY_ID, 31L))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La signature sélectionnée n'appartient pas au gérant de cette société.");
+                .hasMessage("La signature sélectionnée n'appartient pas au gérant de cette société.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("SIGNATURE_NOT_CEO"));
 
         when(repository.findFirstByPersonIdAndDeletedFalseOrderByNameAscIdAsc(EMPLOYEE_ID))
                 .thenReturn(Optional.of(ceoSignature));
@@ -263,7 +272,9 @@ class SignatureServiceTest {
 
         assertThatThrownBy(() -> service.resolveForCompanyCeo(null, null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La société de la signature est obligatoire.");
+                .hasMessage("La société de la signature est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("SIGNATURE_COMPANY_REQUIRED"));
     }
 
     @Test
@@ -278,11 +289,13 @@ class SignatureServiceTest {
 
         assertThatThrownBy(() -> service.list(null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La personne de la signature est obligatoire.");
+                .hasMessage("La personne de la signature est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PERSON_REQUIRED"));
 
         when(persons.findByIdAndDeletedFalse(EMPLOYEE_ID)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.list(EMPLOYEE_ID))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(NotFoundException.class)
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("PERSON_NOT_FOUND"));
     }
 
     @Test

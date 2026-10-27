@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -38,12 +39,14 @@ public class ExtractionPipeline {
         String content = text == null ? "" : text.trim();
         List<String> images = imagesBase64 == null ? List.of() : imagesBase64;
         if (content.length() < 20 && images.isEmpty()) {
-            throw new BusinessException("Document illisible : aucun texte exploitable. Saisissez le montant manuellement.");
+            throw new BusinessException("DOCUMENT_NO_TEXT",
+                    "Document illisible : aucun texte exploitable. Saisissez le montant manuellement.");
         }
         if (content.length() < 20 && !images.isEmpty()
                 && !ollamaClient.supportsVision(config, config.getModel())) {
-            throw new BusinessException("Document sans texte exploitable et le modèle configuré ne gère pas les images. "
-                    + "Choisissez un modèle de vision ou saisissez le montant manuellement.");
+            throw new BusinessException("DOCUMENT_NO_TEXT_NO_VISION",
+                    "Document sans texte exploitable et le modèle configuré ne gère pas les images. "
+                            + "Choisissez un modèle de vision ou saisissez le montant manuellement.");
         }
 
         String userMessage = """
@@ -83,10 +86,12 @@ public class ExtractionPipeline {
         try {
             root = objectMapper.readTree(json);
         } catch (RuntimeException ex) {
-            throw new BusinessException("La réponse du modèle n'est pas un JSON valide. La saisie manuelle reste disponible.");
+            throw new BusinessException("LLM_RESPONSE_INVALID_JSON",
+                    "La réponse du modèle n'est pas un JSON valide. La saisie manuelle reste disponible.");
         }
         if (root == null || !root.isObject()) {
-            throw new BusinessException("La réponse du modèle n'est pas un objet JSON conforme. La saisie manuelle reste disponible.");
+            throw new BusinessException("LLM_RESPONSE_NOT_OBJECT",
+                    "La réponse du modèle n'est pas un objet JSON conforme. La saisie manuelle reste disponible.");
         }
         checkFields(root);
 
@@ -158,19 +163,22 @@ public class ExtractionPipeline {
                 "montant_ttc", "montant_ht", "devise", "extrait_source", "confiance");
         for (String field : root.propertyNames()) {
             if (!allowed.contains(field)) {
-                throw new BusinessException("La réponse du modèle contient un champ non autorisé (« " + field
-                        + " »). La saisie manuelle reste disponible.");
+                throw new BusinessException("LLM_RESPONSE_FIELD_NOT_ALLOWED",
+                        "La réponse du modèle contient un champ non autorisé (« " + field
+                                + " »). La saisie manuelle reste disponible.", Map.of("field", field));
             }
         }
         for (String field : required) {
             JsonNode value = root.get(field);
             if (value == null) {
-                throw new BusinessException("La réponse du modèle ne respecte pas le schéma attendu (champ « "
-                        + field + " » absent).");
+                throw new BusinessException("LLM_RESPONSE_FIELD_MISSING",
+                        "La réponse du modèle ne respecte pas le schéma attendu (champ « "
+                                + field + " » absent).", Map.of("field", field));
             }
             if (!value.isNull() && !value.isString() && !value.isNumber()) {
-                throw new BusinessException("La réponse du modèle ne respecte pas le schéma attendu (champ « "
-                        + field + " »).");
+                throw new BusinessException("LLM_RESPONSE_FIELD_INVALID",
+                        "La réponse du modèle ne respecte pas le schéma attendu (champ « "
+                                + field + " »).", Map.of("field", field));
             }
         }
     }
@@ -187,7 +195,8 @@ public class ExtractionPipeline {
         int start = text.indexOf('{');
         int end = text.lastIndexOf('}');
         if (start < 0 || end <= start) {
-            throw new BusinessException("La réponse du modèle ne contient pas d'objet JSON. La saisie manuelle reste disponible.");
+            throw new BusinessException("LLM_RESPONSE_NO_JSON",
+                    "La réponse du modèle ne contient pas d'objet JSON. La saisie manuelle reste disponible.");
         }
         return text.substring(start, end + 1);
     }
@@ -245,10 +254,7 @@ public class ExtractionPipeline {
             return "EUR";
         }
         String code = currency.trim().toUpperCase(Locale.ROOT);
-        if (code.isEmpty() || EUR_SPELLINGS.contains(code)) {
-            return "EUR";
-        }
-        return code;
+        return code.isEmpty() || EUR_SPELLINGS.contains(code) ? "EUR" : code;
     }
 
     private String normalizeType(String type) {
@@ -256,9 +262,7 @@ public class ExtractionPipeline {
             return null;
         }
         String withoutAccents = Normalizer.normalize(type, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "")
-                .toLowerCase(Locale.ROOT)
-                .trim();
+                .replaceAll("\\p{M}", "").toLowerCase(Locale.ROOT).trim();
         return ACCEPTED_TYPES.contains(withoutAccents) ? withoutAccents : null;
     }
 
@@ -276,12 +280,9 @@ public class ExtractionPipeline {
         // Digit-bounded match: the document may write the amount with fewer or
         // more decimal digits than the candidate ("74,6" vs "74.60", "78" vs
         // "78.00"), but never inside a longer number ("174.6", "74.65").
-        String pattern;
-        if (plain.indexOf('.') < 0) {
-            pattern = "(?<![\\d.])" + Pattern.quote(plain) + "(?:\\.0+)?(?![.\\d])";
-        } else {
-            pattern = "(?<![\\d.])" + Pattern.quote(plain) + "0?(?![\\d])";
-        }
+        String pattern = plain.indexOf('.') < 0
+                ? "(?<![\\d.])" + Pattern.quote(plain) + "(?:\\.0+)?(?![.\\d])"
+                : "(?<![\\d.])" + Pattern.quote(plain) + "0?(?![\\d])";
         return Pattern.compile(pattern).matcher(normalizedDocument).find();
     }
 
@@ -289,11 +290,7 @@ public class ExtractionPipeline {
         if (text == null) {
             return "";
         }
-        return text
-                .replace('\u00A0', ' ')
-                .replace('\u202F', ' ')
-                .replace("€", "")
-                .replace(" ", "")
-                .replace(",", ".");
+        return text.replace('\u00A0', ' ').replace('\u202F', ' ').replace("€", "")
+                .replace(" ", "").replace(",", ".");
     }
 }

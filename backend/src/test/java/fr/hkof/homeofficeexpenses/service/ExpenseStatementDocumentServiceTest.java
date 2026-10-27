@@ -212,7 +212,9 @@ class ExpenseStatementDocumentServiceTest {
         assertThatThrownBy(() -> service.preview(YearMonth.of(2026, 10), List.of(), company(),
                 previewRequest(9L, false), null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le template sélectionné n'est pas un template de note de frais.");
+                .hasMessage("Le template sélectionné n'est pas un template de note de frais.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("STATEMENT_TEMPLATE_INVALID"));
     }
 
     @Test
@@ -225,7 +227,9 @@ class ExpenseStatementDocumentServiceTest {
         assertThatThrownBy(() -> service.preview(YearMonth.of(2026, 10), List.of(), company(),
                 previewRequest(null, false), null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Aucune signature configurée pour le gérant. Ajoutez une signature au salarié gérant dans la page LMNP.");
+                .hasMessage("Aucune signature configurée pour le gérant. Ajoutez une signature au salarié gérant dans la page LMNP.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("STATEMENT_SIGNATURE_MISSING"));
     }
 
     @Test
@@ -259,9 +263,13 @@ class ExpenseStatementDocumentServiceTest {
         ExpenseStatement statement = new ExpenseStatement();
         assertThatThrownBy(() -> service.pdf(statement, false))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Le PDF demandé est introuvable.");
+                .hasMessage("Le PDF demandé est introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode())
+                        .isEqualTo("STATEMENT_PDF_NOT_FOUND"));
         assertThatThrownBy(() -> service.pdf(statement, true))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(NotFoundException.class)
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode())
+                        .isEqualTo("STATEMENT_PDF_NOT_FOUND"));
     }
 
     @Test
@@ -282,7 +290,9 @@ class ExpenseStatementDocumentServiceTest {
     void zipMissingPdf() {
         assertThatThrownBy(() -> service.zip(new ExpenseStatement()))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Le PDF demandé est introuvable.");
+                .hasMessage("Le PDF demandé est introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode())
+                        .isEqualTo("STATEMENT_PDF_NOT_FOUND"));
     }
 
     @Test
@@ -362,7 +372,9 @@ class ExpenseStatementDocumentServiceTest {
         when(signatureService.resolveForCompanyCeo(COMPANY_ID, null)).thenReturn(java.util.Optional.empty());
         assertThatThrownBy(() -> service.signatureDataUri(null, COMPANY_ID))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Aucune signature configurée");
+                .hasMessageContaining("Aucune signature configurée")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("STATEMENT_SIGNATURE_MISSING"));
     }
 
     private static final class OptionalSignature {

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { confidenceValid } from "@/components/llm/analysisConfidence";
 import { isEuroCurrency, parseAmount } from "@/lib/format";
 import { typeAlreadyAdded } from "@/lib/lines";
@@ -16,6 +17,7 @@ export function useExpenseStatementAnalysis(
   context: ExpenseStatementContext,
   form: ExpenseStatementForm,
 ) {
+  const { t } = useTranslation();
   const {
     analysisPhase,
     receipt,
@@ -112,9 +114,7 @@ export function useExpenseStatementAnalysis(
       confidence: confidenceValid(extraction.confidence),
     });
     if (appliedAmount || appliedType) {
-      toast.info(
-        "Des champs ont été pré-remplis par l’IA. Vérifiez-les avant d’ajouter le frais.",
-      );
+      toast.info(t("expenseStatement.toasts.fieldsPrefilled"));
     }
     // Extraction is applied once per analysis; the amount always overwrites.
     // eslint-disable-next-line react-hooks/exhaustive-deps

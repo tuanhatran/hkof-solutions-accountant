@@ -139,14 +139,16 @@ class LeaseServiceTest {
         when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.resolveExpenseLease(7L, 6L))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Bail introuvable.");
+                .hasMessage("Bail introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("LEASE_NOT_FOUND"));
 
         Lease foreign = companyLease();
         foreign.setId(6L);
         when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.of(foreign));
         assertThatThrownBy(() -> service.resolveExpenseLease(9L, 6L))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Ce bail n'appartient pas à la société.");
+                .hasMessage("Ce bail n'appartient pas à la société.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_NOT_IN_COMPANY"));
     }
 
     @Test
@@ -217,11 +219,14 @@ class LeaseServiceTest {
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(true, 1L, 7L, null, "12 rue", "900", null, null, "25")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Les surfaces sont obligatoires pour un bail société.");
+                .hasMessage("Les surfaces sont obligatoires pour un bail société.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_SURFACES_REQUIRED"));
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(true, 1L, 7L, null, "12 rue", "900", null, "70", "80")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La surface professionnelle doit être comprise entre 0 et la surface totale.");
+                .hasMessage("La surface professionnelle doit être comprise entre 0 et la surface totale.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("PRO_RATA_BUSINESS_AREA_OUT_OF_RANGE"));
     }
 
     @Test
@@ -231,7 +236,8 @@ class LeaseServiceTest {
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Un salarié ne peut pas être partie à un bail.");
+                .hasMessage("Un salarié ne peut pas être partie à un bail.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_EMPLOYEE_PARTY"));
 
         when(employees.existsByIdAndDeletedFalse(1L)).thenReturn(false);
         when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
@@ -239,7 +245,8 @@ class LeaseServiceTest {
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Un salarié ne peut pas être partie à un bail.");
+                .hasMessage("Un salarié ne peut pas être partie à un bail.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_EMPLOYEE_PARTY"));
     }
 
     @Test
@@ -249,7 +256,8 @@ class LeaseServiceTest {
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 1L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le bailleur et le locataire doivent être deux personnes distinctes.");
+                .hasMessage("Le bailleur et le locataire doivent être deux personnes distinctes.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_PARTIES_IDENTICAL"));
     }
 
     @Test
@@ -259,36 +267,45 @@ class LeaseServiceTest {
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, null, null, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Sélectionnez un bailleur.");
+                .hasMessage("Sélectionnez un bailleur.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_LANDLORD_REQUIRED"));
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, null, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Sélectionnez un locataire.");
+                .hasMessage("Sélectionnez un locataire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_TENANT_REQUIRED"));
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(true, 1L, null, null, "12 rue", "900", null, "70", "25")))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LEASE_TENANT_COMPANY_REQUIRED"));
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(true, 1L, 7L, 2L, "12 rue", "900", null, "70", "25")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Un bail société ne comporte pas de locataire personne physique.");
+                .hasMessage("Un bail société ne comporte pas de locataire personne physique.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LEASE_COMPANY_TENANT_INVALID"));
 
         when(persons.findNaturalPersonById(1L)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Bailleur introuvable.");
+                .hasMessage("Bailleur introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("PERSON_NOT_FOUND"));
         when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
         when(persons.findNaturalPersonById(2L)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Locataire introuvable.");
+                .hasMessage("Locataire introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("PERSON_NOT_FOUND"));
 
         when(persons.findNaturalPersonById(2L)).thenReturn(Optional.of(person(2L, "Locataire")));
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, " ", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("L'adresse du bien est obligatoire.");
+                .hasMessage("L'adresse du bien est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("ADDRESS_REQUIRED"));
     }
 
     @Test
@@ -300,19 +317,22 @@ class LeaseServiceTest {
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Un bail actif existe déjà pour ce bailleur et ce locataire.");
+                .hasMessage("Un bail actif existe déjà pour ce bailleur et ce locataire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_ALREADY_EXISTS"));
 
         when(leases.findByIdAndDeletedFalse(3L)).thenReturn(Optional.of(normalLease()));
         when(leases.existsByLandlordIdAndTenantIdAndDeletedFalseAndIdNot(1L, 2L, 3L)).thenReturn(true);
         assertThatThrownBy(() -> service.updateLease(3L,
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_ALREADY_EXISTS"));
 
         when(companies.entity(7L)).thenReturn(company(7L, "Société"));
         when(leases.existsByLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalse(1L, 7L)).thenReturn(true);
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(true, 1L, 7L, null, "12 rue", "900", null, "70", "25")))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_ALREADY_EXISTS"));
     }
 
     @Test
@@ -341,7 +361,9 @@ class LeaseServiceTest {
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, 7L, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Cette société est déjà liée à un bail actif.");
+                .hasMessage("Cette société est déjà liée à un bail actif.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LEASE_COMPANY_ALREADY_LINKED"));
 
         when(leases.existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalseAndIdNot(7L, 5L)).thenReturn(true);
         Lease existing = companyLease();
@@ -353,7 +375,9 @@ class LeaseServiceTest {
         assertThatThrownBy(() -> service.updateLease(5L,
                 new LeaseRequest(false, 1L, 7L, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Cette société est déjà liée à un bail actif.");
+                .hasMessage("Cette société est déjà liée à un bail actif.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LEASE_COMPANY_ALREADY_LINKED"));
     }
 
     @Test
@@ -388,7 +412,8 @@ class LeaseServiceTest {
 
         assertThatThrownBy(() -> service.updateLease(9L,
                 new LeaseRequest(false, 1L, null, 2L, "x", "1", null, null, null)))
-                .isInstanceOf(NotFoundException.class).hasMessage("Bail introuvable.");
+                .isInstanceOf(NotFoundException.class).hasMessage("Bail introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("LEASE_NOT_FOUND"));
         assertThatThrownBy(() -> service.deleteLease(9L))
                 .isInstanceOf(NotFoundException.class);
     }
@@ -398,12 +423,16 @@ class LeaseServiceTest {
     void resolveLease() {
         assertThatThrownBy(() -> service.resolveLease(null, 2L, null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Sélectionnez un bailleur et un locataire.");
+                .hasMessage("Sélectionnez un bailleur et un locataire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_PARTIES_REQUIRED"));
         assertThatThrownBy(() -> service.resolveLease(1L, null, null))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_PARTIES_REQUIRED"));
         assertThatThrownBy(() -> service.resolveLease(1L, 2L, 7L))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Sélectionnez un seul locataire.");
+                .hasMessage("Sélectionnez un seul locataire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LEASE_SINGLE_TENANT_REQUIRED"));
 
         when(leases.findFirstByLandlordIdAndTenantIdAndDeletedFalse(1L, 2L))
                 .thenReturn(Optional.of(normalLease()));
@@ -416,7 +445,9 @@ class LeaseServiceTest {
         when(leases.findFirstByLandlordIdAndTenantIdAndDeletedFalse(4L, 5L)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.resolveLease(4L, 5L, null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Aucun bail actif");
+                .hasMessageContaining("Aucun bail actif")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LEASE_ACTIVE_NOT_FOUND"));
     }
 
     @Test

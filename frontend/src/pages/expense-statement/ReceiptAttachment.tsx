@@ -1,4 +1,5 @@
 import "./ReceiptAttachment.css";
+import { useTranslation } from "react-i18next";
 import { FileDropzone, SelectedFile } from "@/components/forms/FileDropzone";
 import { Spinner } from "@/components/ui/States";
 import type { ExpenseStatementController } from "./useExpenseStatementPage";
@@ -9,19 +10,22 @@ export function ReceiptAttachment({
 }: {
   controller: ExpenseStatementController;
 }) {
+  const { t } = useTranslation();
   return (
     <div>
       <div className="receipt-attachment-header">
         <span className="field-label">
-          Fichier justificatif{" "}
+          {t("expenseStatement.receipt.label")}{" "}
           <span className="receipt-attachment-required">*</span>
         </span>
-        <span className="receipt-attachment-limit">10 Mo max.</span>
+        <span className="receipt-attachment-limit">
+          {t("expenseStatement.receipt.limit")}
+        </span>
       </div>
       {c.uploading ? (
         <div className="receipt-attachment-uploading">
           <Spinner size={18} />
-          Envoi et préparation de l’analyse…
+          {t("expenseStatement.receipt.uploading")}
         </div>
       ) : c.receipt ? (
         <SelectedFile

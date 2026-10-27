@@ -2,6 +2,7 @@ import { configure, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { LeaseDto, StatementDto } from "@/api/types";
+import i18n from "@/i18n";
 import { formatDateTime, formatEUR, formatMonth } from "@/lib/format";
 import { CompanyLeaseStatementHistory } from "./CompanyLeaseStatementHistory";
 
@@ -62,7 +63,7 @@ function renderHistory({
   error?: Error | null;
   onRetry?: () => void;
 } = {}) {
-  render(
+  const result = render(
     <CompanyLeaseStatementHistory
       lease={lease}
       statements={statements}
@@ -72,7 +73,7 @@ function renderHistory({
       onRetry={onRetry}
     />,
   );
-  return { onRetry };
+  return { ...result, onRetry };
 }
 
 describe("CompanyLeaseStatementHistory", () => {
@@ -233,5 +234,53 @@ describe("CompanyLeaseStatementHistory", () => {
     expect(items[0]).toHaveTextContent("v1");
     expect(items[0]).toHaveTextContent("—");
     expect(month.querySelector("a")).toBeNull();
+  });
+
+  it("renders the section, month count and download labels in English", async () => {
+    await i18n.changeLanguage("en");
+    renderHistory({
+      statements: [
+        statement({ id: 101, month: "2026-09" }),
+        statement({
+          id: 103,
+          month: "2026-09",
+          version: 2,
+          status: "ARCHIVED",
+        }),
+      ],
+    });
+
+    expect(
+      screen.getByText("Generated expense statements"),
+    ).toBeInTheDocument();
+    const month = screen.getByTestId("notes-frais-bail-mois-5-2026-09");
+    expect(month).toHaveTextContent("September 2026");
+    expect(month).toHaveTextContent("2 statements");
+    expect(
+      screen.getByTestId("telecharger-note-frais-bail-101"),
+    ).toHaveTextContent("Download the PDF");
+    expect(
+      screen.getByTestId("telecharger-note-frais-complete-bail-101"),
+    ).toHaveTextContent("Complete statement (ZIP)");
+  });
+
+  it("renders the singular count, loading and empty states in English", async () => {
+    await i18n.changeLanguage("en");
+    const single = renderHistory({ statements: [statement({ id: 101 })] });
+    expect(
+      screen.getByTestId("notes-frais-bail-mois-5-2026-09"),
+    ).toHaveTextContent("1 statement");
+    single.unmount();
+
+    const loading = renderHistory({ isPending: true });
+    expect(
+      screen.getByText("Loading the expense statements…"),
+    ).toBeInTheDocument();
+    loading.unmount();
+
+    renderHistory({ statements: [] });
+    expect(
+      screen.getByText("No expense statement generated for this lease."),
+    ).toBeInTheDocument();
   });
 });

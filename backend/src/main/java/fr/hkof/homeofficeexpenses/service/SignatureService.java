@@ -57,21 +57,21 @@ public class SignatureService {
     public SignatureDto create(Long personId, String name, MultipartFile file) {
         Person person = requirePerson(personId);
         if (name == null || name.isBlank()) {
-            throw new BusinessException("Le nom de la signature est obligatoire.");
+            throw new BusinessException("SIGNATURE_NAME_REQUIRED", "Le nom de la signature est obligatoire.");
         }
         String trimmedName = name.trim();
         if (trimmedName.length() > MAX_NAME_LENGTH) {
-            throw new BusinessException(
+            throw new BusinessException("SIGNATURE_NAME_TOO_LONG",
                     "Le nom de la signature est trop long (255 caractères maximum).");
         }
         if (file == null || file.isEmpty()) {
-            throw new BusinessException("Le fichier de signature est obligatoire.");
+            throw new BusinessException("SIGNATURE_FILE_REQUIRED", "Le fichier de signature est obligatoire.");
         }
         byte[] content;
         try {
             content = file.getBytes();
         } catch (IOException ex) {
-            throw new BusinessException("Impossible de lire le fichier de signature.");
+            throw new BusinessException("SIGNATURE_FILE_UNREADABLE", "Impossible de lire le fichier de signature.");
         }
         FileTypeDetector.DetectedFile detected = detector.detectSignature(file.getOriginalFilename(), content);
         Signature signature = new Signature();
@@ -122,7 +122,8 @@ public class SignatureService {
         if (requestedId != null) {
             Signature requested = entity(requestedId);
             if (!personId.equals(requested.getPersonId())) {
-                throw new BusinessException("La signature sélectionnée n'appartient pas à cette personne.");
+                throw new BusinessException("SIGNATURE_NOT_OWNED",
+                        "La signature sélectionnée n'appartient pas à cette personne.");
             }
             return Optional.of(requested);
         }
@@ -136,7 +137,7 @@ public class SignatureService {
     @Transactional(readOnly = true)
     public Optional<Signature> resolveForCompanyCeo(Long companyId, Long requestedId) {
         if (companyId == null) {
-            throw new BusinessException("La société de la signature est obligatoire.");
+            throw new BusinessException("SIGNATURE_COMPANY_REQUIRED", "La société de la signature est obligatoire.");
         }
         Optional<Employee> ceo = employees
                 .findFirstByCompanyIdAndTitleAndDeletedFalseOrderByIdAsc(companyId, EmployeeTitle.CEO);
@@ -147,7 +148,7 @@ public class SignatureService {
         if (requestedId != null) {
             Signature requested = entity(requestedId);
             if (!ceoId.equals(requested.getPersonId())) {
-                throw new BusinessException(
+                throw new BusinessException("SIGNATURE_NOT_CEO",
                         "La signature sélectionnée n'appartient pas au gérant de cette société.");
             }
             return Optional.of(requested);
@@ -159,7 +160,7 @@ public class SignatureService {
     public Signature entity(Long id) {
         return repository.findById(id)
                 .filter(signature -> !signature.isDeleted())
-                .orElseThrow(() -> new NotFoundException("Signature introuvable."));
+                .orElseThrow(() -> new NotFoundException("SIGNATURE_NOT_FOUND", "Signature introuvable."));
     }
 
     public SignatureDto toDto(Signature signature) {
@@ -176,10 +177,10 @@ public class SignatureService {
 
     private Person requirePerson(Long personId) {
         if (personId == null) {
-            throw new BusinessException("La personne de la signature est obligatoire.");
+            throw new BusinessException("PERSON_REQUIRED", "La personne de la signature est obligatoire.");
         }
         return persons.findByIdAndDeletedFalse(personId)
-                .orElseThrow(() -> new NotFoundException("Personne introuvable."));
+                .orElseThrow(() -> new NotFoundException("PERSON_NOT_FOUND", "Personne introuvable."));
     }
 
     private String personName(Person person) {

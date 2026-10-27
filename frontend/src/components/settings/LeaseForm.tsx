@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
@@ -20,6 +21,7 @@ import { leaseSchema, type LeaseFormValues } from "@/lib/validation";
 import { toast } from "@/state/toasts";
 import { cents } from "./settingsMoney";
 import { buildLeaseDefaults } from "./leaseFormDefaults";
+import { LeaseAreaFields } from "./LeaseAreaFields";
 
 /** Create/update form for a lease, with an indicative total. */
 export function LeaseForm({
@@ -37,6 +39,7 @@ export function LeaseForm({
   onSaved?: (lease: LeaseDto) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [requestError, setRequestError] = useState<string | null>(null);
   const {
@@ -81,7 +84,11 @@ export function LeaseForm({
     onSuccess: (saved) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.leases });
       void queryClient.invalidateQueries({ queryKey: queryKeys.companiesAll });
-      toast.success(item ? "Bail mis à jour." : "Bail ajouté.");
+      toast.success(
+        item
+          ? t("settings.lease.form.toasts.updated")
+          : t("settings.lease.form.toasts.created"),
+      );
       onSaved?.(saved);
       onClose();
     },
@@ -92,7 +99,11 @@ export function LeaseForm({
     <FormModal
       open
       wide
-      title={item ? "Modifier le bail" : "Ajouter un bail"}
+      title={
+        item
+          ? t("settings.lease.form.editTitle")
+          : t("settings.lease.form.createTitle")
+      }
       onClose={onClose}
       onSubmit={handleSubmit((values) => {
         setRequestError(null);
@@ -121,16 +132,17 @@ export function LeaseForm({
             data-cy="input-bail-societe-type"
           />
           <span>
-            <span className="lease-form-company-lease-title">Bail société</span>
+            <span className="lease-form-company-lease-title">
+              {t("settings.lease.form.companyLeaseLabel")}
+            </span>
             <span className="lease-form-company-lease-hint">
-              Le locataire est une société : renseignez les surfaces du logement
-              pour calculer la quote-part professionnelle.
+              {t("settings.lease.form.companyLeaseHint")}
             </span>
           </span>
         </label>
         <FieldGroup
           id="bail-bailleur"
-          label="Bailleur"
+          label={t("settings.lease.form.landlord")}
           error={errors.landlordId?.message}
         >
           <select
@@ -139,7 +151,9 @@ export function LeaseForm({
             {...register("landlordId")}
             data-cy="select-bail-bailleur"
           >
-            <option value="">Sélectionnez un bailleur</option>
+            <option value="">
+              {t("settings.lease.form.landlordPlaceholder")}
+            </option>
             {persons.map((person) => (
               <option key={person.id} value={person.id}>
                 {person.name}
@@ -151,7 +165,7 @@ export function LeaseForm({
         {isCompanyLease ? (
           <FieldGroup
             id="bail-locataire-societe"
-            label="Locataire (société)"
+            label={t("settings.lease.form.companyTenant")}
             error={errors.companyId?.message}
           >
             <select
@@ -160,7 +174,9 @@ export function LeaseForm({
               {...register("companyId")}
               data-cy="select-bail-locataire-societe"
             >
-              <option value="">Sélectionnez une société</option>
+              <option value="">
+                {t("settings.lease.form.companyPlaceholder")}
+              </option>
               {companies.map((company) => (
                 <option key={company.id} value={company.id}>
                   {company.name}
@@ -171,7 +187,7 @@ export function LeaseForm({
         ) : (
           <FieldGroup
             id="bail-locataire"
-            label="Locataire"
+            label={t("settings.lease.form.tenant")}
             error={errors.tenantId?.message}
           >
             <select
@@ -180,7 +196,9 @@ export function LeaseForm({
               {...register("tenantId")}
               data-cy="select-bail-locataire"
             >
-              <option value="">Sélectionnez un locataire</option>
+              <option value="">
+                {t("settings.lease.form.tenantPlaceholder")}
+              </option>
               {persons.map((person) => (
                 <option key={person.id} value={person.id}>
                   {person.name}
@@ -192,80 +210,53 @@ export function LeaseForm({
 
         <FieldGroup
           id="bail-adresse"
-          label="Adresse du bien"
+          label={t("settings.lease.form.address")}
           error={errors.propertyAddress?.message}
           className="sm:col-span-2"
         >
           <input
             id="bail-adresse"
             className={cn("field", errors.propertyAddress && "field-error")}
-            placeholder="12 rue de la République, 75000 Paris"
+            placeholder={t("settings.lease.form.addressPlaceholder")}
             {...register("propertyAddress")}
             data-cy="input-bail-adresse"
           />
         </FieldGroup>
         <FieldGroup
           id="bail-loyer"
-          label="Loyer hors charges (€)"
+          label={t("settings.lease.form.rentExclCharges")}
           error={errors.rentExclCharges?.message}
         >
           <input
             id="bail-loyer"
             inputMode="decimal"
             className={cn("field", errors.rentExclCharges && "field-error")}
-            placeholder="900,00"
+            placeholder={t("settings.lease.form.rentExclChargesPlaceholder")}
             {...register("rentExclCharges")}
             data-cy="input-bail-loyer"
           />
         </FieldGroup>
         <FieldGroup
           id="bail-charges"
-          label="Provision pour charges (€)"
+          label={t("settings.lease.form.charges")}
           error={errors.charges?.message}
         >
           <input
             id="bail-charges"
             inputMode="decimal"
             className={cn("field", errors.charges && "field-error")}
-            placeholder="50,00"
+            placeholder={t("settings.lease.form.chargesPlaceholder")}
             {...register("charges")}
             data-cy="input-bail-charges"
           />
         </FieldGroup>
         {isCompanyLease ? (
-          <>
-            <FieldGroup
-              id="bail-surface-totale"
-              label="Surface totale (m²)"
-              error={errors.totalArea?.message}
-            >
-              <input
-                id="bail-surface-totale"
-                inputMode="decimal"
-                className={cn("field", errors.totalArea && "field-error")}
-                placeholder="70,00"
-                {...register("totalArea")}
-                data-cy="input-surface-totale"
-              />
-            </FieldGroup>
-            <FieldGroup
-              id="bail-surface-pro"
-              label="Surface professionnelle (m²)"
-              error={errors.businessArea?.message}
-            >
-              <input
-                id="bail-surface-pro"
-                inputMode="decimal"
-                className={cn("field", errors.businessArea && "field-error")}
-                placeholder="25,00"
-                {...register("businessArea")}
-                data-cy="input-surface-pro"
-              />
-            </FieldGroup>
-          </>
+          <LeaseAreaFields register={register} errors={errors} />
         ) : null}
         <div className="lease-form-total">
-          <p className="lease-form-total-label">Total quittance</p>
+          <p className="lease-form-total-label">
+            {t("settings.lease.form.total")}
+          </p>
           <p
             className="lease-form-total-value"
             data-cy="total-quittance-config"
@@ -273,8 +264,7 @@ export function LeaseForm({
             {total}
           </p>
           <p className="lease-form-total-hint">
-            Indicatif : loyer + provision. Le total de la quittance est calculé
-            par le backend.
+            {t("settings.lease.form.totalHint")}
           </p>
         </div>
       </div>

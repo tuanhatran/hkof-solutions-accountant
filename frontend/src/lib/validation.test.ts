@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import i18n from "@/i18n";
 import {
   expenseSchema,
   llmSchema,
@@ -53,6 +54,34 @@ describe("expenseSchema", () => {
       "proRataPct",
     ]);
   });
+
+  it("translates the expense messages at parse time", async () => {
+    await i18n.changeLanguage("en");
+
+    const english = expenseSchema.safeParse({
+      itemCode: "",
+      amountInclVat: "0",
+      proRataPct: "101",
+    });
+    expect(english.success).toBe(false);
+    if (english.success) {
+      return;
+    }
+    expect(english.error.issues.map((issue) => issue.message)).toEqual([
+      "Select an expense type.",
+      "Enter an amount greater than 0 (e.g. 80.50).",
+      "Pro rata must be between 0 and 100 (2 decimals max).",
+    ]);
+    expect(
+      llmSchema.shape.url.safeParse("ftp://serveur").error?.issues[0]?.message,
+    ).toBe("Invalid URL: http:// or https:// expected.");
+
+    await i18n.changeLanguage("fr");
+    expect(
+      expenseSchema.safeParse({ ...VALID_EXPENSE, itemCode: "" }).error
+        ?.issues[0]?.message,
+    ).toBe("Sélectionnez un type de frais.");
+  });
 });
 
 describe("rentReceiptSchema", () => {
@@ -93,6 +122,48 @@ describe("rentReceiptSchema", () => {
       rentReceiptSchema.safeParse({ ...VALID, month: "2026-13" }).success,
     ).toBe(false);
   });
+
+  it("keeps the French messages for an invalid receipt", () => {
+    const result = rentReceiptSchema.safeParse({
+      ...VALID,
+      month: "",
+      landlordId: "",
+      tenantKey: "",
+    });
+
+    expect(result.success).toBe(false);
+    if (result.success) {
+      return;
+    }
+    expect(result.error.issues.map((issue) => issue.message)).toEqual([
+      "Choisissez un mois valide.",
+      "Sélectionnez un bailleur.",
+      "Sélectionnez un locataire.",
+    ]);
+  });
+
+  it("translates only the rent receipt messages at parse time", async () => {
+    await i18n.changeLanguage("en");
+
+    const result = rentReceiptSchema.safeParse({
+      ...VALID,
+      month: "",
+      periodEnd: "2026-09-30",
+    });
+
+    expect(result.success).toBe(false);
+    if (result.success) {
+      return;
+    }
+    expect(result.error.issues.map((issue) => issue.message)).toEqual([
+      "Choose a valid month.",
+      "The period end must be after the start.",
+    ]);
+    expect(
+      companySchema.safeParse({ ...VALID_COMPANY, name: " " }).error?.issues[0]
+        ?.message,
+    ).toBe("The company name is required.");
+  });
 });
 
 describe("companySchema", () => {
@@ -131,6 +202,30 @@ describe("companySchema", () => {
       companySchema.safeParse({ ...VALID_COMPANY, siren: "12345" }).success,
     ).toBe(false);
   });
+
+  it("translates the company messages at parse time", async () => {
+    await i18n.changeLanguage("en");
+
+    const english = companySchema.safeParse({
+      ...VALID_COMPANY,
+      name: " ",
+      siren: "12345",
+    });
+    expect(english.success).toBe(false);
+    if (english.success) {
+      return;
+    }
+    expect(english.error.issues.map((issue) => issue.message)).toEqual([
+      "The company name is required.",
+      "The SIREN must have 9 digits.",
+    ]);
+
+    await i18n.changeLanguage("fr");
+    expect(
+      companySchema.safeParse({ ...VALID_COMPANY, name: " " }).error?.issues[0]
+        ?.message,
+    ).toBe("Le nom de la société est obligatoire.");
+  });
 });
 
 describe("employeeSchema", () => {
@@ -166,6 +261,34 @@ describe("employeeSchema", () => {
       employeeSchema.safeParse({ ...VALID, title: "DIRECTOR" }).success,
     ).toBe(false);
   });
+
+  it("translates the employee messages at parse time", async () => {
+    await i18n.changeLanguage("en");
+
+    const english = employeeSchema.safeParse({
+      firstName: " ",
+      lastName: "",
+      address: "",
+      email: "camille",
+      title: "DIRECTOR",
+    });
+    expect(english.success).toBe(false);
+    if (english.success) {
+      return;
+    }
+    expect(english.error.issues.map((issue) => issue.message)).toEqual([
+      "The employee's first name is required.",
+      "The employee's last name is required.",
+      "The employee's email address is invalid.",
+      "The employee's title is required.",
+    ]);
+
+    await i18n.changeLanguage("fr");
+    expect(
+      employeeSchema.safeParse({ ...VALID, firstName: " " }).error?.issues[0]
+        ?.message,
+    ).toBe("Le prénom du salarié est obligatoire.");
+  });
 });
 
 describe("expenseItemSchema", () => {
@@ -192,6 +315,40 @@ describe("expenseItemSchema", () => {
       expenseItemSchema.safeParse({ ...VALID, code: "gaz/ville" }).success,
     ).toBe(false);
   });
+
+  it("translates the expense item messages at parse time", async () => {
+    await i18n.changeLanguage("en");
+
+    const english = expenseItemSchema.safeParse({
+      ...VALID,
+      code: "gaz ville",
+      label: " ",
+      proRataPct: "120",
+    });
+    expect(english.success).toBe(false);
+    if (english.success) {
+      return;
+    }
+    expect(english.error.issues.map((issue) => issue.message)).toEqual([
+      "Invalid code: letters, digits, hyphens and underscores only.",
+      "The label is required.",
+      "Pro rata must be between 0 and 100.",
+    ]);
+    expect(
+      expenseItemSchema.safeParse({ ...VALID, sortOrder: 1.5 }).error?.issues[0]
+        ?.message,
+    ).toBe("Invalid order.");
+    expect(
+      expenseItemSchema.safeParse({ ...VALID, sortOrder: -1 }).error?.issues[0]
+        ?.message,
+    ).toBe("The order must be positive.");
+
+    await i18n.changeLanguage("fr");
+    expect(
+      expenseItemSchema.safeParse({ ...VALID, label: " " }).error?.issues[0]
+        ?.message,
+    ).toBe("Le libellé est obligatoire.");
+  });
 });
 
 describe("directory schemas", () => {
@@ -211,6 +368,20 @@ describe("directory schemas", () => {
     expect(
       personSchema.safeParse({ name: "Mme Locataire", address: "" }).success,
     ).toBe(true);
+  });
+
+  it("translates the person message at parse time", async () => {
+    await i18n.changeLanguage("en");
+    expect(
+      personSchema.safeParse({ name: " ", address: "" }).error?.issues[0]
+        ?.message,
+    ).toBe("The person's name is required.");
+
+    await i18n.changeLanguage("fr");
+    expect(
+      personSchema.safeParse({ name: " ", address: "" }).error?.issues[0]
+        ?.message,
+    ).toBe("Le nom de la personne est obligatoire.");
   });
 
   it("parses a tenant key into exactly one party", () => {
@@ -295,6 +466,101 @@ describe("directory schemas", () => {
   });
 });
 
+describe("leaseSchema language", () => {
+  const COMPANY_LEASE = {
+    companyLease: true,
+    landlordId: "1",
+    tenantId: "",
+    companyId: "3",
+    propertyAddress: "12 rue de la République, 75000 Paris",
+    rentExclCharges: "1300,00",
+    charges: "0,00",
+    totalArea: "70",
+    businessArea: "25",
+  };
+
+  it("translates every lease message at parse time", async () => {
+    await i18n.changeLanguage("en");
+
+    const missing = leaseSchema.safeParse({
+      ...COMPANY_LEASE,
+      landlordId: "",
+      companyId: "",
+      propertyAddress: "",
+      rentExclCharges: "",
+      charges: "",
+      totalArea: "",
+      businessArea: "",
+    });
+    expect(missing.success).toBe(false);
+    if (missing.success) {
+      return;
+    }
+    expect(missing.error.issues.map((issue) => issue.message)).toEqual([
+      "Select a landlord.",
+      "The property address is required.",
+      "Invalid rent excluding charges.",
+      "Invalid charges provision.",
+      "Select the tenant company.",
+      "The total area is required for a company lease.",
+      "The business area is required for a company lease.",
+    ]);
+
+    const noTenant = leaseSchema.safeParse({
+      ...COMPANY_LEASE,
+      companyLease: false,
+      tenantId: "",
+    });
+    expect(noTenant.error?.issues[0]?.message).toBe("Select a tenant.");
+
+    const identical = leaseSchema.safeParse({
+      ...COMPANY_LEASE,
+      companyLease: false,
+      tenantId: "1",
+    });
+    expect(identical.error?.issues[0]?.message).toBe(
+      "The landlord and the tenant must be two different people.",
+    );
+
+    const invalidTotalArea = leaseSchema.safeParse({
+      ...COMPANY_LEASE,
+      totalArea: "abc",
+    });
+    expect(
+      invalidTotalArea.error?.issues.find(
+        (issue) => issue.path[0] === "totalArea",
+      )?.message,
+    ).toBe("Invalid total area.");
+
+    const invalidBusinessArea = leaseSchema.safeParse({
+      ...COMPANY_LEASE,
+      totalArea: "70",
+      businessArea: "abc",
+    });
+    expect(
+      invalidBusinessArea.error?.issues.find(
+        (issue) => issue.path[0] === "businessArea",
+      )?.message,
+    ).toBe("Invalid business area.");
+
+    const tooLarge = leaseSchema.safeParse({
+      ...COMPANY_LEASE,
+      totalArea: "70",
+      businessArea: "80",
+    });
+    expect(
+      tooLarge.error?.issues.find((issue) => issue.path[0] === "businessArea")
+        ?.message,
+    ).toBe("The business area cannot exceed the total area.");
+
+    await i18n.changeLanguage("fr");
+    expect(
+      leaseSchema.safeParse({ ...COMPANY_LEASE, landlordId: "" }).error
+        ?.issues[0]?.message,
+    ).toBe("Sélectionnez un bailleur.");
+  });
+});
+
 describe("llmSchema", () => {
   const VALID = {
     active: true,
@@ -325,5 +591,61 @@ describe("llmSchema", () => {
     expect(llmSchema.safeParse({ ...VALID, timeoutSeconds: 2 }).success).toBe(
       false,
     );
+  });
+
+  it("translates every llm message at parse time", async () => {
+    await i18n.changeLanguage("en");
+
+    const english = llmSchema.safeParse({
+      ...VALID,
+      url: "ftp://serveur",
+      model: " ",
+      timeoutSeconds: 2,
+      temperature: "3",
+      numCtx: 1,
+      maxPages: 0,
+      extractionPrompt: "court",
+    });
+    expect(english.success).toBe(false);
+    if (english.success) {
+      return;
+    }
+    expect(english.error.issues.map((issue) => issue.message)).toEqual([
+      "Invalid URL: http:// or https:// expected.",
+      "The model name is required.",
+      "The delay must be at least 5 seconds.",
+      "Temperature expected between 0 and 2.",
+      "The context must be at least 1,024.",
+      "At least one page.",
+      "The extraction prompt is too short.",
+    ]);
+    expect(
+      llmSchema.shape.timeoutSeconds.safeParse(2.5).error?.issues[0]?.message,
+    ).toBe("Invalid delay.");
+    expect(
+      llmSchema.shape.timeoutSeconds.safeParse(601).error?.issues[0]?.message,
+    ).toBe("The delay cannot exceed 600 seconds.");
+    expect(
+      llmSchema.shape.numCtx.safeParse(1024.5).error?.issues[0]?.message,
+    ).toBe("Invalid context.");
+    expect(
+      llmSchema.shape.numCtx.safeParse(131_073).error?.issues[0]?.message,
+    ).toBe("The context cannot exceed 131,072.");
+    expect(
+      llmSchema.shape.maxPages.safeParse(1.5).error?.issues[0]?.message,
+    ).toBe("Invalid page count.");
+    expect(
+      llmSchema.shape.maxPages.safeParse(21).error?.issues[0]?.message,
+    ).toBe("20 pages maximum.");
+
+    await i18n.changeLanguage("fr");
+    expect(
+      llmSchema.safeParse({ ...VALID, url: "ftp://serveur" }).error?.issues[0]
+        ?.message,
+    ).toBe("URL invalide : http:// ou https:// attendu.");
+    expect(
+      llmSchema.safeParse({ ...VALID, extractionPrompt: "court" }).error
+        ?.issues[0]?.message,
+    ).toBe("Le prompt d'extraction est trop court.");
   });
 });

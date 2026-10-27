@@ -10,6 +10,7 @@ import type {
   SignatureDto,
   TemplateDto,
 } from "@/api/types";
+import i18n from "@/i18n";
 import { currentMonth, periodOfMonth } from "@/lib/dates";
 import { formatEUR, formatMonth, formatPeriod } from "@/lib/format";
 import { useCompanyStore } from "@/state/company";
@@ -485,5 +486,69 @@ describe("LeaseReceiptModal", () => {
     expect(await screen.findByText(/version 1/)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Télécharger le PDF" }));
     expect(api.rentReceipts.pdf).not.toHaveBeenCalled();
+  });
+
+  it("renders the receipt modal in English with an English period", async () => {
+    await i18n.changeLanguage("en");
+    renderModal();
+    const month = currentMonth();
+    const period = periodOfMonth(month);
+
+    expect(screen.getByRole("dialog", { name: "Rent receipt" })).toBeVisible();
+    expect(screen.getByLabelText("Month")).toHaveValue(month);
+    expect(
+      screen.getByText(formatPeriod(period.start, period.end)),
+    ).toBeVisible();
+    expect(screen.getByText("Landlord")).toBeVisible();
+    expect(screen.getByText("Tenant")).toBeVisible();
+    expect(screen.getByText("Company")).toBeVisible();
+    expect(screen.getByText("Property")).toBeVisible();
+    expect(screen.getByLabelText("Rent excluding charges")).toHaveValue(
+      "1300,00",
+    );
+    expect(screen.getByLabelText("Charges provision")).toHaveValue("50,00");
+    expect(
+      screen.getByText("The period is derived from the chosen month."),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Generate the rent receipt" }),
+    ).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Close" })).toBeVisible();
+  });
+
+  it("rejects an invalid amount in English", async () => {
+    await i18n.changeLanguage("en");
+    renderModal();
+
+    fireEvent.change(screen.getByLabelText("Rent excluding charges"), {
+      target: { value: "" },
+    });
+
+    expect(
+      await screen.findByText("Invalid rent excluding charges."),
+    ).toBeVisible();
+  });
+
+  it("generates in English and toasts the result in English", async () => {
+    await i18n.changeLanguage("en");
+    const month = currentMonth();
+    vi.mocked(api.rentReceipts.create).mockResolvedValue({
+      id: 42,
+      month,
+      version: 2,
+      total: "1450.00",
+    });
+    renderModal();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Generate the rent receipt" }),
+    );
+
+    expect(await screen.findByText("Rent receipt generated")).toBeVisible();
+    await waitFor(() =>
+      expect(useToasts.getState().toasts.map((item) => item.message)).toContain(
+        `Quittance for ${formatMonth(month)} generated as version 2.`,
+      ),
+    );
   });
 });

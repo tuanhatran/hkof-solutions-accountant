@@ -1,6 +1,7 @@
 import "./LeaseSection.css";
 import { FileText, Home, PencilLine, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { useAllRentReceipts, useSignatures } from "@/api/queries";
 import type { LeaseDto } from "@/api/types";
@@ -17,6 +18,7 @@ import type { RentReceiptSettingsController } from "./useRentReceiptSettings";
 
 /** Leases section: address filter, list, create/update modal and delete triggers. */
 export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
+  const { t } = useTranslation();
   const [receiptLease, setReceiptLease] = useState<LeaseDto | null>(null);
   // One shared query for every row's receipt history; the lease receipt modal
   // refreshes it through the existing `rentReceiptsAll` invalidation.
@@ -26,8 +28,8 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
     <section className="card lease-section">
       <SectionHeader
         icon={Home}
-        title="Baux et adresses"
-        description="Une adresse peut porter plusieurs baux. Sélectionnez une adresse pour afficher ses baux et fixer le loyer et les charges."
+        title={t("settings.lease.section.title")}
+        description={t("settings.lease.section.description")}
         action={
           <Button
             variant="primary"
@@ -37,7 +39,7 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
             disabled={c.leaseForm === "new"}
             data-cy="btn-ajouter-bail"
           >
-            Ajouter un bail
+            {t("settings.lease.section.add")}
           </Button>
         }
       />
@@ -45,8 +47,8 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
         <div className="lease-section-address">
           <FieldGroup
             id="baux-adresse"
-            label="Adresse des baux"
-            help="Seuls les baux de l’adresse sélectionnée sont affichés."
+            label={t("settings.lease.section.addressLabel")}
+            help={t("settings.lease.section.addressHelp")}
           >
             <select
               id="baux-adresse"
@@ -63,8 +65,8 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
               {c.addressList.length === 0 ? (
                 <option value="">
                   {c.addresses.isPending
-                    ? "Chargement des adresses…"
-                    : "Aucune adresse configurée"}
+                    ? t("settings.lease.section.loadingAddresses")
+                    : t("settings.lease.section.noAddress")}
                 </option>
               ) : null}
               {c.addressList.map((address) => (
@@ -93,10 +95,10 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
             onRetry={() => void c.leases.refetch()}
           />
         ) : c.leases.isPending ? (
-          <LoadingState message="Chargement des baux…" />
+          <LoadingState message={t("settings.lease.section.loading")} />
         ) : c.leaseList.length === 0 ? (
           <EmptyState
-            text="Aucun bail pour cette adresse. Ajoutez un bail pour générer des quittances."
+            text={t("settings.lease.section.empty")}
             dataCy="aucun-bail"
           />
         ) : (
@@ -118,11 +120,17 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
                     className="lease-section-item-company"
                     data-cy={`societe-bail-${lease.id}`}
                   >
-                    Société : {lease.companyName ?? "Aucune société"}
+                    {t("settings.lease.section.company", {
+                      company:
+                        lease.companyName ??
+                        t("settings.lease.section.noCompany"),
+                    })}
                   </p>
                   <p className="lease-section-item-amounts">
-                    Loyer {formatEUR(lease.rentExclCharges ?? "0.00")} · charges{" "}
-                    {formatEUR(lease.charges ?? "0.00")} · total{" "}
+                    {t("settings.lease.section.amounts", {
+                      rent: formatEUR(lease.rentExclCharges ?? "0.00"),
+                      charges: formatEUR(lease.charges ?? "0.00"),
+                    })}{" "}
                     <span
                       className="lease-section-item-total"
                       data-cy={`total-bail-${lease.id}`}
@@ -143,10 +151,12 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
                   small
                   icon={<PencilLine size={13} />}
                   onClick={() => c.setLeaseForm(lease)}
-                  aria-label={`Modifier le bail ${lease.id}`}
+                  aria-label={t("settings.lease.section.editAria", {
+                    id: lease.id,
+                  })}
                   data-cy={`btn-modifier-bail-${lease.id}`}
                 >
-                  Modifier
+                  {t("settings.lease.section.edit")}
                 </Button>
                 <Button
                   variant="ghost"
@@ -154,10 +164,12 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
                   icon={<Trash2 size={13} />}
                   className="text-danger hover:bg-danger-soft"
                   onClick={() => c.setLeaseToDelete(lease)}
-                  aria-label={`Supprimer le bail ${lease.id}`}
+                  aria-label={t("settings.lease.section.removeAria", {
+                    id: lease.id,
+                  })}
                   data-cy={`btn-supprimer-bail-${lease.id}`}
                 >
-                  Retirer
+                  {t("settings.lease.section.remove")}
                 </Button>
                 <LeaseReceiptHistory
                   lease={lease}
@@ -175,13 +187,17 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
 
       <ConfirmDialog
         open={c.leaseToDelete !== null}
-        title="Supprimer ce bail ?"
+        title={t("settings.lease.section.deleteDialog.title")}
         message={
           c.leaseToDelete
-            ? `Le bail de « ${c.leaseToDelete.tenantName ?? "ce locataire"} » ne sera plus proposé lors de la génération. Les quittances existantes restent inchangées.`
+            ? t("settings.lease.section.deleteDialog.message", {
+                tenant:
+                  c.leaseToDelete.tenantName ??
+                  t("settings.lease.section.deleteDialog.fallbackTenant"),
+              })
             : ""
         }
-        confirmLabel="Supprimer le bail"
+        confirmLabel={t("settings.lease.section.deleteDialog.confirm")}
         variant="danger"
         onConfirm={() => {
           if (c.leaseToDelete) {
@@ -215,6 +231,7 @@ function LeaseReceiptButton({
   lease: LeaseDto;
   onOpen: () => void;
 }) {
+  const { t } = useTranslation();
   const signatures = useSignatures(leaseRow.landlordId ?? null);
   const hasSignature = (signatures.data ?? []).length > 0;
   const button = (
@@ -224,10 +241,10 @@ function LeaseReceiptButton({
       icon={<FileText size={13} />}
       onClick={onOpen}
       disabled={!hasSignature}
-      aria-label={`Quittance du bail ${leaseRow.id}`}
+      aria-label={t("settings.lease.section.receiptAria", { id: leaseRow.id })}
       data-cy={`btn-quittance-bail-${leaseRow.id}`}
     >
-      Quittance
+      {t("settings.lease.section.receipt")}
     </Button>
   );
   if (hasSignature) {
@@ -238,8 +255,8 @@ function LeaseReceiptButton({
       className="lease-section-signature-warning"
       title={
         signatures.isPending
-          ? "Vérification des signatures…"
-          : "Aucune signature enregistrée pour ce bailleur. Ajoutez-en une dans l’onglet « Personnes » pour générer une quittance."
+          ? t("settings.lease.section.signaturePending")
+          : t("settings.lease.section.signatureMissing")
       }
     >
       {button}

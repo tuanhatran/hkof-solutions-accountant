@@ -2,6 +2,7 @@ import "./PersonnesSection.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PencilLine, Plus, Trash2, UserRound } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys, usePersons } from "@/api/queries";
@@ -15,6 +16,7 @@ import { EmptyState, SectionHeader } from "./SettingsSection";
 
 /** Natural persons directory: list, add/edit modal and logical deletion. */
 export function PersonnesSection() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const persons = usePersons();
   const [form, setForm] = useState<PersonDto | null | "new">(null);
@@ -27,7 +29,7 @@ export function PersonnesSection() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.persons });
       void queryClient.invalidateQueries({ queryKey: queryKeys.leases });
       setToDelete(null);
-      toast.success("Personne supprimée.");
+      toast.success(t("settings.people.deleted"));
     },
     onError: (error) => {
       setToDelete(null);
@@ -39,8 +41,8 @@ export function PersonnesSection() {
     <section className="card personnes-section">
       <SectionHeader
         icon={UserRound}
-        title="Personnes"
-        description="Personnes physiques utilisées comme bailleur ou locataire d’un bail. Chaque personne peut porter ses signatures."
+        title={t("settings.people.title")}
+        description={t("settings.people.description")}
         action={
           <Button
             variant="primary"
@@ -50,7 +52,7 @@ export function PersonnesSection() {
             disabled={form === "new"}
             data-cy="btn-ajouter-personne"
           >
-            Ajouter une personne
+            {t("settings.people.add")}
           </Button>
         }
       />
@@ -69,10 +71,10 @@ export function PersonnesSection() {
             onRetry={() => void persons.refetch()}
           />
         ) : persons.isPending ? (
-          <LoadingState message="Chargement des personnes…" />
+          <LoadingState message={t("settings.people.loading")} />
         ) : list.length === 0 ? (
           <EmptyState
-            text="Aucune personne configurée. Ajoutez le bailleur ou le locataire du logement."
+            text={t("settings.people.empty")}
             dataCy="aucune-personne"
           />
         ) : (
@@ -85,17 +87,18 @@ export function PersonnesSection() {
               >
                 <div className="personnes-section-item-body">
                   <p className="personnes-section-item-name">
-                    {person.name ?? "Personne"}
+                    {person.name ?? t("settings.people.nameFallback")}
                   </p>
                   <p className="personnes-section-item-address">
-                    {person.address || "Adresse non renseignée"}
+                    {person.address || t("settings.people.addressFallback")}
                   </p>
                   <p
                     className="personnes-section-item-meta"
                     data-cy={`signatures-personne-${person.id}`}
                   >
-                    {person.signatureCount ?? 0} signature
-                    {(person.signatureCount ?? 0) > 1 ? "s" : ""}
+                    {t("settings.people.signatureCount", {
+                      count: person.signatureCount ?? 0,
+                    })}
                   </p>
                 </div>
                 <Button
@@ -103,10 +106,12 @@ export function PersonnesSection() {
                   small
                   icon={<PencilLine size={13} />}
                   onClick={() => setForm(person)}
-                  aria-label={`Modifier ${person.name ?? "la personne"}`}
+                  aria-label={t("settings.people.editAria", {
+                    name: person.name ?? t("settings.people.editFallback"),
+                  })}
                   data-cy={`btn-modifier-personne-${person.id}`}
                 >
-                  Modifier
+                  {t("settings.people.edit")}
                 </Button>
                 <Button
                   variant="ghost"
@@ -114,10 +119,12 @@ export function PersonnesSection() {
                   icon={<Trash2 size={13} />}
                   className="text-danger hover:bg-danger-soft"
                   onClick={() => setToDelete(person)}
-                  aria-label={`Supprimer ${person.name ?? "la personne"}`}
+                  aria-label={t("settings.people.removeAria", {
+                    name: person.name ?? t("settings.people.editFallback"),
+                  })}
                   data-cy={`btn-supprimer-personne-${person.id}`}
                 >
-                  Retirer
+                  {t("settings.people.remove")}
                 </Button>
               </li>
             ))}
@@ -127,13 +134,17 @@ export function PersonnesSection() {
 
       <ConfirmDialog
         open={toDelete !== null}
-        title="Supprimer cette personne ?"
+        title={t("settings.people.deleteDialog.title")}
         message={
           toDelete
-            ? `« ${toDelete.name ?? "Cette personne"} » ne sera plus proposée. Une personne utilisée par un bail actif ou porteuse de signatures ne peut pas être supprimée : retirez d’abord ses signatures.`
+            ? t("settings.people.deleteDialog.message", {
+                name:
+                  toDelete.name ??
+                  t("settings.people.deleteDialog.fallbackName"),
+              })
             : ""
         }
-        confirmLabel="Supprimer la personne"
+        confirmLabel={t("settings.people.deleteDialog.confirm")}
         variant="danger"
         onConfirm={() => {
           if (toDelete) {

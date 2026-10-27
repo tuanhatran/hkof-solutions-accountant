@@ -55,7 +55,9 @@ class StorageServiceEdgeCasesTest {
 
         assertThatThrownBy(() -> storage.storeReceipt(null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le fichier justificatif est obligatoire.");
+                .hasMessage("Le fichier justificatif est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("RECEIPT_FILE_REQUIRED"));
         assertThatThrownBy(() -> storage.storeReceipt(new MockMultipartFile(
                 "file", "vide.txt", "text/plain", new byte[0])))
                 .isInstanceOf(BusinessException.class);
@@ -127,7 +129,8 @@ class StorageServiceEdgeCasesTest {
         StorageService storage = storage(tempDir.resolve("data"));
         assertThatThrownBy(() -> storage.storePdf("../../evade.pdf", new byte[]{1}))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Accès fichier refusé.");
+                .hasMessage("Accès fichier refusé.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("FILE_ACCESS_DENIED"));
     }
 
     @Test
@@ -137,17 +140,22 @@ class StorageServiceEdgeCasesTest {
 
         assertThatThrownBy(() -> storage.read(null))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Fichier introuvable.");
+                .hasMessage("Fichier introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("FILE_NOT_FOUND"));
         assertThatThrownBy(() -> storage.read(" "))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(NotFoundException.class)
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("FILE_NOT_FOUND"));
         assertThatThrownBy(() -> storage.read("/etc/hosts"))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Accès fichier refusé.");
+                .hasMessage("Accès fichier refusé.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("FILE_ACCESS_DENIED"));
         assertThatThrownBy(() -> storage.read(storage.root().resolve("absent.pdf").toString()))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Fichier introuvable.");
+                .hasMessage("Fichier introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("FILE_NOT_FOUND"));
         assertThatThrownBy(() -> storage.read("classpath:absent/absent.html"))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(NotFoundException.class)
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("FILE_NOT_FOUND"));
     }
 
     @Test

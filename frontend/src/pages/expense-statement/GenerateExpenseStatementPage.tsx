@@ -1,4 +1,5 @@
 import "./GenerateExpenseStatementPage.css";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorState } from "@/components/ui/States";
@@ -14,6 +15,7 @@ import { useExpenseStatementPage } from "./useExpenseStatementPage";
  * `useExpenseStatementPage`; this component only composes the panes.
  */
 export function GenerateExpenseStatementPage() {
+  const { t } = useTranslation();
   const c = useExpenseStatementPage();
 
   return (
@@ -39,16 +41,16 @@ export function GenerateExpenseStatementPage() {
 
       <div className="generate-expense-statement-page-tabs">
         <ViewTabs
-          ariaLabel="Volets de génération"
+          ariaLabel={t("expenseStatement.page.tabsAriaLabel")}
           active={c.mobilePanel}
           onChange={(value) =>
             c.setMobilePanel(value === "preview" ? "preview" : "input")
           }
           tabs={[
-            { value: "input", label: "Saisie" },
+            { value: "input", label: t("expenseStatement.page.inputTab") },
             {
               value: "preview",
-              label: "Aperçu",
+              label: t("expenseStatement.page.previewTab"),
               updated: Boolean(c.preview.updatedAt),
               className: "flex items-center justify-center gap-2",
             },
@@ -63,19 +65,17 @@ export function GenerateExpenseStatementPage() {
 
       <ConfirmDialog
         open={c.lineToRemove !== null}
-        title="Supprimer ce frais ?"
+        title={t("expenseStatement.page.removeDialog.title")}
         message={
-          c.lineToRemove ? (
-            <>
-              La ligne «{" "}
-              {c.expenseItemByCode.get(c.lineToRemove.itemCode)?.label ??
-                c.lineToRemove.itemCode}{" "}
-              » sera retirée du brouillon. Cette action ne modifie pas les
-              versions déjà générées.
-            </>
-          ) : null
+          c.lineToRemove
+            ? t("expenseStatement.page.removeDialog.message", {
+                item:
+                  c.expenseItemByCode.get(c.lineToRemove.itemCode)?.label ??
+                  c.lineToRemove.itemCode,
+              })
+            : null
         }
-        confirmLabel="Supprimer"
+        confirmLabel={t("expenseStatement.page.removeDialog.confirm")}
         variant="danger"
         onConfirm={c.removeLine}
         onCancel={() => c.setLineToRemove(null)}
@@ -84,15 +84,13 @@ export function GenerateExpenseStatementPage() {
 
       <ConfirmDialog
         open={c.regenerationDialog}
-        title="Générer une nouvelle version ?"
-        message={
-          <>
-            Une note active existe déjà pour {formatMonth(c.month)} (version{" "}
-            {c.activeVersion}). La version {(c.activeVersion ?? 0) + 1} sera
-            créée et l’ancienne restera consultable dans l’historique.
-          </>
-        }
-        confirmLabel="Créer la nouvelle version"
+        title={t("expenseStatement.page.regenerateDialog.title")}
+        message={t("expenseStatement.page.regenerateDialog.message", {
+          month: formatMonth(c.month),
+          version: c.activeVersion,
+          next: (c.activeVersion ?? 0) + 1,
+        })}
+        confirmLabel={t("expenseStatement.page.regenerateDialog.confirm")}
         onConfirm={() => {
           c.setRegenerationDialog(false);
           void c.generateStatement();

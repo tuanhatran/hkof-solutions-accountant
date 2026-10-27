@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { StatementDto } from "@/api/types";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { formatMonth } from "@/lib/format";
@@ -12,21 +13,21 @@ export function HistoryReloadDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <ConfirmDialog
       open={statement !== null}
-      title="Rouvrir cette note ?"
+      title={t("history.reloadDialog.title")}
       message={
-        statement ? (
-          <>
-            Les lignes de la version {statement.version ?? 1} de{" "}
-            {formatMonth(statement.month)} remplaceront le brouillon de ce mois
-            dans l’onglet Note de frais. Les brouillons des autres mois sont
-            conservés.
-          </>
-        ) : null
+        statement
+          ? t("history.reloadDialog.message", {
+              version: statement.version ?? 1,
+              month: formatMonth(statement.month),
+            })
+          : null
       }
-      confirmLabel="Charger les lignes"
+      confirmLabel={t("history.reloadDialog.confirm")}
       onConfirm={onConfirm}
       onCancel={onCancel}
       dataCy="dialogue-rouvrir-note"

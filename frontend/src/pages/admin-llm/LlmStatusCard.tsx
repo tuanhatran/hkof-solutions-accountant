@@ -1,5 +1,6 @@
 import "./LlmStatusCard.css";
 import { Activity, CheckCircle2, CloudOff, RefreshCw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useLlmStatus } from "@/api/queries";
 import type { LlmStatus } from "@/api/types";
 import { Button } from "@/components/ui/Button";
@@ -8,6 +9,7 @@ import { STATUSES } from "./adminLlmHelpers";
 
 /** Live Ollama status card, refreshed independently from the form. */
 export function LlmStatusCard() {
+  const { t } = useTranslation();
   const status = useLlmStatus();
   const key = (status.data?.status as LlmStatus | undefined) ?? null;
   const info = key ? STATUSES[key] : null;
@@ -35,9 +37,11 @@ export function LlmStatusCard() {
             )}
           </span>
           <div>
-            <p className="eyebrow">État de l’analyse IA</p>
+            <p className="eyebrow">{t("adminLlm.status.eyebrow")}</p>
             <div className="llm-status-card-title-row">
-              <h2 className="llm-status-card-title">Connexion Ollama</h2>
+              <h2 className="llm-status-card-title">
+                {t("adminLlm.status.title")}
+              </h2>
               <span
                 className={cn("badge", info?.className ?? "badge-neutral")}
                 data-cy="badge-llm-statut-admin"
@@ -50,30 +54,30 @@ export function LlmStatusCard() {
                   aria-hidden="true"
                 />
                 {status.isPending
-                  ? "Vérification…"
+                  ? t("adminLlm.status.verifying")
                   : status.isError
-                    ? "Indisponible"
-                    : (info?.text ?? "Inconnu")}
+                    ? t("adminLlm.status.unavailable")
+                    : (info?.text ?? t("adminLlm.status.unknown"))}
               </span>
             </div>
             <p className="llm-status-card-description">
               {status.data?.message ??
                 info?.description ??
-                "Interrogation du serveur Ollama…"}
+                t("adminLlm.status.querying")}
             </p>
           </div>
         </div>
         <div className="llm-status-card-actions">
           <span className="llm-status-card-reachability">
             {status.data?.reachable
-              ? "Serveur joignable"
+              ? t("adminLlm.status.reachable")
               : status.data
-                ? "Serveur non joignable"
-                : "—"}
+                ? t("adminLlm.status.unreachable")
+                : t("adminLlm.status.none")}
             {status.data?.active
-              ? " · IA activée"
+              ? t("adminLlm.status.activeSuffix")
               : status.data
-                ? " · IA désactivée"
+                ? t("adminLlm.status.inactiveSuffix")
                 : ""}
           </span>
           <Button
@@ -83,7 +87,7 @@ export function LlmStatusCard() {
             loading={status.isFetching}
             onClick={() => void status.refetch()}
           >
-            Actualiser
+            {t("adminLlm.status.refresh")}
           </Button>
         </div>
       </div>

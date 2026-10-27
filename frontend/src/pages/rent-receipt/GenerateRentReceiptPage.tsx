@@ -1,5 +1,6 @@
 import "./GenerateRentReceiptPage.css";
 import { Building2, CalendarDays, ReceiptText } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 import { ErrorState } from "@/components/ui/States";
@@ -15,6 +16,7 @@ import { useRentReceiptPage } from "./useRentReceiptPage";
 
 /** Rent receipt generation page. */
 export function GenerateRentReceiptPage() {
+  const { t } = useTranslation();
   const c = useRentReceiptPage();
   const hasDirectoryError =
     c.persons.isError || c.companies.isError || c.leases.isError;
@@ -22,9 +24,9 @@ export function GenerateRentReceiptPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Générer · Quittance"
-        title="Quittance de loyer"
-        description="Choisissez le mois et le bail : la période et les montants sont pré-remplis depuis le bail actif. Ajustez si besoin, puis générez le document définitif."
+        eyebrow={t("rentReceipt.page.eyebrow")}
+        title={t("rentReceipt.page.title")}
+        description={t("rentReceipt.page.description")}
         actions={
           <>
             <Button
@@ -32,7 +34,7 @@ export function GenerateRentReceiptPage() {
               icon={<ReceiptText size={15} />}
               onClick={() => c.navigate("/generer/note-frais")}
             >
-              Note de frais du mois
+              {t("rentReceipt.page.statementButton")}
             </Button>
             {c.companyName ? (
               <span
@@ -68,16 +70,16 @@ export function GenerateRentReceiptPage() {
 
       <div className="generate-rent-receipt-page-tabs">
         <ViewTabs
-          ariaLabel="Volets de génération"
+          ariaLabel={t("rentReceipt.page.tabsAriaLabel")}
           active={c.mobilePanel}
           onChange={(value) =>
             c.setMobilePanel(value === "apercu" ? "apercu" : "saisie")
           }
           tabs={[
-            { value: "saisie", label: "Saisie" },
+            { value: "saisie", label: t("rentReceipt.page.inputTab") },
             {
               value: "apercu",
-              label: "Aperçu",
+              label: t("rentReceipt.page.previewTab"),
               updated: Boolean(c.preview.updatedAt),
               className: "flex items-center justify-center gap-2",
             },

@@ -1,6 +1,7 @@
 import "./States.css";
 import { AlertCircle, Inbox, LoaderCircle, RefreshCcw } from "lucide-react";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 
@@ -20,15 +21,13 @@ export function Spinner({
   );
 }
 
-export function LoadingState({
-  message = "Chargement…",
-}: {
-  message?: string;
-}) {
+export function LoadingState({ message }: { message?: string }) {
+  const { t } = useTranslation();
+
   return (
     <div className="card states-loading" role="status">
       <Spinner />
-      {message}
+      {message ?? t("common.loading")}
     </div>
   );
 }
@@ -40,6 +39,8 @@ export function ErrorState({
   message: string;
   onRetry?: () => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div
       className="card states-error border-danger/25 bg-danger-soft/40"
@@ -47,7 +48,7 @@ export function ErrorState({
     >
       <div className="states-error-title">
         <AlertCircle size={18} aria-hidden="true" />
-        Impossible de charger les données
+        {t("common.loadErrorTitle")}
       </div>
       <p className="states-error-message">{message}</p>
       {onRetry ? (
@@ -57,7 +58,7 @@ export function ErrorState({
           icon={<RefreshCcw size={14} />}
           onClick={onRetry}
         >
-          Réessayer
+          {t("common.retry")}
         </Button>
       ) : null}
     </div>
