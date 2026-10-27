@@ -1,4 +1,5 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
+import { useTranslation } from "react-i18next";
 import type { StatementDto } from "@/api/types";
 import { parseAmount, parsePercentage } from "@/lib/format";
 import { newKey, typeAlreadyAdded, type DraftLine } from "@/lib/lines";
@@ -18,6 +19,7 @@ export function useExpenseStatementEditing(
   form: ExpenseStatementForm,
   setResult: Dispatch<SetStateAction<StatementDto | null>>,
 ) {
+  const { t } = useTranslation();
   const {
     draft,
     month,
@@ -85,7 +87,7 @@ export function useExpenseStatementEditing(
     const file: AttachedFile | null = line.receiptId
       ? {
           id: line.receiptId,
-          name: line.receiptName ?? "Justificatif",
+          name: line.receiptName ?? t("expenseStatement.receipt.fallbackName"),
           size: null,
           mimeType: null,
         }
@@ -131,16 +133,14 @@ export function useExpenseStatementEditing(
 
   function saveExpense(submittedValues: ExpenseFormValues) {
     if (form.amountConfirmationPending) {
-      toast.info(
-        "Confirmez le montant détecté par IA avant d’ajouter le frais.",
-      );
+      toast.info(t("expenseStatement.toasts.confirmAmount"));
       return;
     }
     const expenseItem = expenseItemByCode.get(submittedValues.itemCode);
     if (!expenseItem?.code) {
       form.setError("itemCode", {
         type: "manual",
-        message: "Sélectionnez un type de frais.",
+        message: t("expenseStatement.validation.itemCode"),
       });
       return;
     }
@@ -153,22 +153,17 @@ export function useExpenseStatementEditing(
     ) {
       form.setError("itemCode", {
         type: "manual",
-        message:
-          "Ce type est déjà présent. Modifiez la ligne existante ou autorisez plusieurs lignes.",
+        message: t("expenseStatement.validation.alreadyAdded"),
       });
       return;
     }
     const rentLine = expenseItem.code === "loyer";
     if (rentLine && !form.availableRent) {
-      form.setFileError(
-        "Ajoutez d’abord la quittance du mois pour utiliser ce type.",
-      );
+      form.setFileError(t("expenseStatement.validation.rentReceiptRequired"));
       return;
     }
     if (!rentLine && !form.receipt) {
-      form.setFileError(
-        "Le justificatif est obligatoire pour ce type de frais.",
-      );
+      form.setFileError(t("expenseStatement.validation.receiptRequired"));
       return;
     }
 
@@ -193,10 +188,10 @@ export function useExpenseStatementEditing(
 
     if (form.lineBeingEdited) {
       draft.updateLine(form.lineBeingEdited, line);
-      toast.success("Frais modifié.");
+      toast.success(t("expenseStatement.toasts.updated"));
     } else {
       draft.addLine(line);
-      toast.success("Frais ajouté.");
+      toast.success(t("expenseStatement.toasts.added"));
     }
 
     if (
@@ -225,7 +220,7 @@ export function useExpenseStatementEditing(
     }
     setLineToRemove(null);
     setResult(null);
-    toast.info("Frais supprimé.");
+    toast.info(t("expenseStatement.toasts.removed"));
   }
 
   return {

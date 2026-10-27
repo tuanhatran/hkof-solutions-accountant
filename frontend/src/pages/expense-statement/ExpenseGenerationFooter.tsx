@@ -1,4 +1,5 @@
 import "./ExpenseGenerationFooter.css";
+import { useTranslation } from "react-i18next";
 import { FileCheck2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { errorMessage } from "@/api/client";
@@ -14,11 +15,12 @@ export function ExpenseGenerationFooter({
 }: {
   controller: ExpenseStatementController;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="expense-generation-footer">
       <div className="expense-generation-footer-totals">
         <div>
-          <p className="eyebrow">Total retenu</p>
+          <p className="eyebrow">{t("expenseStatement.footer.total")}</p>
           <p className="expense-generation-footer-total">
             <span className="number" data-cy="total-retenu">
               {formatEUR(c.displayedTotal)}
@@ -27,13 +29,15 @@ export function ExpenseGenerationFooter({
           </p>
           {c.calculation?.totalInWords ? (
             <p className="expense-generation-footer-words">
-              Soit {c.calculation.totalInWords}.
+              {t("expenseStatement.footer.inWords", {
+                words: c.calculation.totalInWords,
+              })}
             </p>
           ) : null}
         </div>
         <div className="expense-generation-footer-basis">
           <p>
-            Base de prorata :{" "}
+            {t("expenseStatement.footer.proRataBase")}{" "}
             <span className="expense-generation-footer-basis-value">
               {c.calculation?.proRataBaseDetail ??
                 c.activeCompany?.proRataBaseDetail ??
@@ -42,19 +46,21 @@ export function ExpenseGenerationFooter({
           </p>
           {c.calculation?.proRataBase ? (
             <p>
-              Quote-part de référence :{" "}
+              {t("expenseStatement.footer.referenceShare")}{" "}
               <span className="number">
                 {formatEUR(c.calculation.proRataBase)}
               </span>
             </p>
           ) : null}
-          <p>Calcul backend · recalcul automatique (300 ms).</p>
+          <p>{t("expenseStatement.footer.backendCalculation")}</p>
         </div>
       </div>
 
       {c.calculationError ? (
         <p className="error-text" role="alert">
-          Calcul indisponible : {c.calculationError}
+          {t("expenseStatement.footer.calculationError", {
+            message: c.calculationError,
+          })}
         </p>
       ) : null}
       {c.requests.error && !c.calculationError ? (
@@ -66,9 +72,13 @@ export function ExpenseGenerationFooter({
       <div className="expense-generation-footer-signature">
         <FieldGroup
           id="note-signature"
-          label="Signature"
-          help="Signatures du PDG de la société active, apposées au bas de la note."
-          badge={<span className="badge badge-neutral">PNG / JPEG</span>}
+          label={t("expenseStatement.footer.signature")}
+          help={t("expenseStatement.footer.signatureHelp")}
+          badge={
+            <span className="badge badge-neutral">
+              {t("expenseStatement.footer.signatureBadge")}
+            </span>
+          }
         >
           <select
             id="note-signature"
@@ -83,7 +93,9 @@ export function ExpenseGenerationFooter({
             disabled={c.signatures.isPending || c.signatureList.length === 0}
           >
             {c.signatureList.length === 0 ? (
-              <option value="">Aucune signature</option>
+              <option value="">
+                {t("expenseStatement.footer.noSignature")}
+              </option>
             ) : null}
             {c.signatureList.map((candidate) => (
               <option key={candidate.id} value={candidate.id}>
@@ -99,8 +111,9 @@ export function ExpenseGenerationFooter({
             aria-live="polite"
             data-cy="alerte-signatures-erreur"
           >
-            Les signatures n’ont pas pu être chargées :{" "}
-            {errorMessage(c.signatures.error)}
+            {t("expenseStatement.footer.signaturesError", {
+              message: errorMessage(c.signatures.error),
+            })}
           </p>
         ) : !c.ceo && !c.employees.isPending ? (
           <p
@@ -108,12 +121,11 @@ export function ExpenseGenerationFooter({
             role="alert"
             data-cy="alerte-pdg-manquant"
           >
-            Aucun PDG dans cette société. Ajoutez un salarié avec l’intitulé PDG
-            dans la page{" "}
+            {t("expenseStatement.footer.missingCeoBefore")}{" "}
             <Link to="/configuration/entreprise" className="link">
-              Entreprise
+              {t("expenseStatement.footer.companyLink")}
             </Link>
-            .
+            {t("expenseStatement.footer.missingCeoAfter")}
           </p>
         ) : !c.signatureAvailable && !c.signatures.isPending ? (
           <p
@@ -121,12 +133,11 @@ export function ExpenseGenerationFooter({
             role="alert"
             data-cy="alerte-signature-manquante"
           >
-            Aucune signature pour le PDG. Ajoutez-en une dans sa fiche salarié,
-            page{" "}
+            {t("expenseStatement.footer.missingSignatureBefore")}{" "}
             <Link to="/configuration/entreprise" className="link">
-              Entreprise
+              {t("expenseStatement.footer.companyLink")}
             </Link>
-            .
+            {t("expenseStatement.footer.missingSignatureAfter")}
           </p>
         ) : null}
       </div>
@@ -144,18 +155,21 @@ export function ExpenseGenerationFooter({
           onClick={c.requestGeneration}
           data-cy="btn-generer-note"
         >
-          Générer la note de frais
+          {t("expenseStatement.footer.generate")}
         </Button>
         <p className="expense-generation-footer-hint">
           {c.orderedLines.length === 0
-            ? "Ajoutez au moins un frais pour générer la note."
+            ? t("expenseStatement.footer.hintNoLine")
             : !c.signatureAvailable
-              ? "Configurez une signature pour générer la note."
+              ? t("expenseStatement.footer.hintNoSignature")
               : !c.calculationUpToDate
-                ? "En attente du calcul backend à jour…"
+                ? t("expenseStatement.footer.hintStaleCalculation")
                 : c.activeStatement.data
-                  ? `Une version ${c.activeVersion} existe : la version ${(c.activeVersion ?? 0) + 1} sera créée.`
-                  : "Le PDF définitif sera enregistré dans l’historique."}
+                  ? t("expenseStatement.footer.hintNextVersion", {
+                      version: c.activeVersion,
+                      next: (c.activeVersion ?? 0) + 1,
+                    })
+                  : t("expenseStatement.footer.hintSaved")}
         </p>
       </div>
     </div>

@@ -13,6 +13,10 @@ const DECIMAL_NUMBER = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 2,
 });
 
+const DECIMAL_NUMBER_EN = new Intl.NumberFormat("en-GB", {
+  maximumFractionDigits: 2,
+});
+
 const DATE_FORMATTER = new Intl.DateTimeFormat("fr-FR", {
   day: "2-digit",
   month: "2-digit",
@@ -187,13 +191,15 @@ export function formatPeriod(
 }
 
 export function formatBytes(bytes: number): string {
+  const english = i18n.resolvedLanguage === "en";
+  const number = english ? DECIMAL_NUMBER_EN : DECIMAL_NUMBER;
   if (bytes < 1024) {
-    return `${bytes} o`;
+    return english ? `${bytes} B` : `${bytes} o`;
   }
   if (bytes < 1024 * 1024) {
-    return `${DECIMAL_NUMBER.format(bytes / 1024)} Ko`;
+    return `${number.format(bytes / 1024)} ${english ? "KB" : "Ko"}`;
   }
-  return `${DECIMAL_NUMBER.format(bytes / (1024 * 1024))} Mo`;
+  return `${number.format(bytes / (1024 * 1024))} ${english ? "MB" : "Mo"}`;
 }
 
 /**

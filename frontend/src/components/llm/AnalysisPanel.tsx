@@ -1,5 +1,6 @@
 import "./AnalysisPanel.css";
 import { AlertTriangle, CheckCircle2, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { ExtractionDto } from "@/api/types";
 import { AiBadge } from "@/components/ui/AiBadge";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +18,7 @@ export function AnalysisPanel({
   hasFile: boolean;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   const inProgress = isAnalysisRunning(phase);
   const result: ExtractionDto | null =
     phase.status === "done" ? (phase.analysis.result ?? null) : null;
@@ -45,8 +47,8 @@ export function AnalysisPanel({
           <span className="analysis-panel-progress-text">
             <Spinner size={14} />
             {phase.status === "starting"
-              ? "Préparation de l’analyse…"
-              : "Analyse IA en cours — le modèle local peut prendre quelques secondes."}
+              ? t("expenseStatement.analysis.starting")
+              : t("expenseStatement.analysis.running")}
           </span>
           <Button
             variant="ghost"
@@ -55,7 +57,7 @@ export function AnalysisPanel({
             data-cy="btn-annuler-analyse"
           >
             <X size={13} aria-hidden="true" />
-            Annuler l’analyse
+            {t("expenseStatement.analysis.cancel")}
           </Button>
         </div>
       ) : phase.status === "done" ? (
@@ -66,14 +68,19 @@ export function AnalysisPanel({
               className="analysis-panel-result-icon"
               aria-hidden="true"
             />
-            Analyse terminée{duration ? ` en ${duration}` : ""} — les champs ont
-            été pré-remplis et le montant détecté remplace la valeur saisie.
+            {duration
+              ? t("expenseStatement.analysis.doneWithDuration", { duration })
+              : t("expenseStatement.analysis.done")}
           </p>
           {result ? (
             <div className="analysis-panel-meta">
               <AiBadge sourceExtract={result.sourceExcerpt} />
               {result.supplier ? (
-                <span>Fournisseur détecté : {result.supplier}</span>
+                <span>
+                  {t("expenseStatement.fields.supplierDetected", {
+                    supplier: result.supplier,
+                  })}
+                </span>
               ) : null}
               {confidenceLabel(confidenceValid(result.confidence)) ? (
                 <span
@@ -88,16 +95,18 @@ export function AnalysisPanel({
             </div>
           ) : (
             <p className="analysis-panel-note">
-              Aucune information exploitable n’a été extraite. Complétez le
-              frais manuellement.
+              {t("expenseStatement.analysis.noResult")}
             </p>
           )}
           {result?.sourceExcerpt ? (
-            <p className="analysis-panel-excerpt">« {result.sourceExcerpt} »</p>
+            <p className="analysis-panel-excerpt">
+              {t("expenseStatement.analysis.excerpt", {
+                excerpt: result.sourceExcerpt,
+              })}
+            </p>
           ) : null}
           <p className="analysis-panel-hint">
-            Les propositions de l’IA restent modifiables. Vérifiez-les avant
-            d’ajouter le frais.
+            {t("expenseStatement.analysis.hint")}
           </p>
         </div>
       ) : phase.status === "failed" ? (
@@ -108,17 +117,18 @@ export function AnalysisPanel({
             aria-hidden="true"
           />
           <span>
-            {phase.message} L’analyse est facultative : vous pouvez saisir le
-            montant et le prorata manuellement.
+            {phase.message} {t("expenseStatement.analysis.failureSuffix")}
           </span>
         </p>
       ) : phase.status === "cancelled" ? (
-        <p>{phase.message} La saisie manuelle reste disponible.</p>
+        <p>
+          {phase.message} {t("expenseStatement.analysis.cancelledSuffix")}
+        </p>
       ) : (
         <p>
           {hasFile
-            ? "Analyse non lancée. Vous pouvez saisir le frais manuellement."
-            : "Déposez un justificatif : l’analyse IA démarrera automatiquement. Elle reste facultative."}
+            ? t("expenseStatement.analysis.idleWithFile")
+            : t("expenseStatement.analysis.idleWithoutFile")}
         </p>
       )}
     </div>

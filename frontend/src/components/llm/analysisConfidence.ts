@@ -1,4 +1,5 @@
 import type { AiConfidence } from "@/api/types";
+import i18n from "@/i18n";
 
 export function confidenceValid(
   value: string | null | undefined,
@@ -11,14 +12,12 @@ export function confidenceValid(
 export function confidenceLabel(
   confidence: AiConfidence | null,
 ): string | null {
-  if (confidence === "haute") {
-    return "Confiance élevée";
-  }
-  if (confidence === "moyenne") {
-    return "Confiance moyenne";
-  }
-  if (confidence === "basse") {
-    return "Confiance faible — vérifiez les valeurs";
+  if (
+    confidence === "haute" ||
+    confidence === "moyenne" ||
+    confidence === "basse"
+  ) {
+    return i18n.t(`expenseStatement.confidence.${confidence}`);
   }
   return null;
 }

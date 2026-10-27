@@ -1,4 +1,5 @@
 import "./ExpenseStatementHeader.css";
+import { useTranslation } from "react-i18next";
 import {
   CalendarDays,
   ExternalLink,
@@ -17,13 +18,14 @@ export function ExpenseStatementHeader({
 }: {
   controller: ExpenseStatementController;
 }) {
+  const { t } = useTranslation();
   const active = c.activeStatement.data;
   return (
     <>
       <PageHeader
-        eyebrow="Générer · Note de frais"
-        title="Note de frais d’occupation"
-        description="Ajoutez les factures du mois, vérifiez les propositions de l’IA et laissez le backend calculer la quote-part. Le loyer est repris de la quittance active."
+        eyebrow={t("expenseStatement.page.eyebrow")}
+        title={t("expenseStatement.page.title")}
+        description={t("expenseStatement.page.description")}
         actions={
           <>
             <Button
@@ -31,7 +33,7 @@ export function ExpenseStatementHeader({
               icon={<ReceiptText size={15} />}
               onClick={c.goToRentReceipt}
             >
-              Quittance du mois
+              {t("expenseStatement.page.rentReceiptButton")}
             </Button>
             <span className="hidden expense-statement-header-month sm:inline-flex">
               <CalendarDays size={14} aria-hidden="true" />
@@ -49,12 +51,16 @@ export function ExpenseStatementHeader({
             </span>
             <div>
               <p className="expense-statement-header-banner-title">
-                {formatMonth(c.month)} — note version {c.activeVersion} déjà
-                active
+                {t("expenseStatement.header.bannerTitle", {
+                  month: formatMonth(c.month),
+                  version: c.activeVersion,
+                })}
               </p>
               <p className="expense-statement-header-banner-text">
-                Total {formatEUR(active.total)}. Générer à nouveau créera la
-                version {(c.activeVersion ?? 0) + 1}.
+                {t("expenseStatement.header.bannerText", {
+                  total: formatEUR(active.total),
+                  next: (c.activeVersion ?? 0) + 1,
+                })}
               </p>
             </div>
           </div>
@@ -68,7 +74,7 @@ export function ExpenseStatementHeader({
                   className="btn btn-secondary btn-small"
                 >
                   <ExternalLink size={13} aria-hidden="true" />
-                  Ouvrir
+                  {t("expenseStatement.header.open")}
                 </a>
                 <a
                   href={api.expenseStatements.pdfUrl(active.id, true)}
@@ -77,7 +83,7 @@ export function ExpenseStatementHeader({
                   className="btn btn-secondary btn-small"
                 >
                   <ExternalLink size={13} aria-hidden="true" />
-                  Version complète
+                  {t("expenseStatement.header.completeVersion")}
                 </a>
               </>
             ) : null}

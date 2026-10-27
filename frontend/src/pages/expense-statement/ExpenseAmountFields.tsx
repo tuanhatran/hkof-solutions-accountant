@@ -1,4 +1,5 @@
 import "./ExpenseAmountFields.css";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle } from "lucide-react";
 import { AiBadge } from "@/components/ui/AiBadge";
 import { AmountConfirmButton } from "@/components/ui/AmountConfirmButton";
@@ -12,12 +13,13 @@ export function ExpenseAmountFields({
 }: {
   controller: ExpenseStatementController;
 }) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="expense-amount-fields-grid">
         <FieldGroup
           id="frais-montant"
-          label="Montant TTC"
+          label={t("expenseStatement.fields.amountInclVat")}
           error={c.errors.amountInclVat?.message}
           badge={
             c.ai.amount ? (
@@ -47,13 +49,14 @@ export function ExpenseAmountFields({
         </FieldGroup>
 
         <div className="expense-amount-fields-estimate">
-          <p className="eyebrow text-accent">Montant retenu estimé</p>
+          <p className="eyebrow text-accent">
+            {t("expenseStatement.fields.retainedEstimate")}
+          </p>
           <p className="expense-amount-fields-estimate-value number">
             {c.displayedRetainedAmount}
           </p>
           <p className="expense-amount-fields-estimate-note">
-            Estimation d’affichage : le backend recalcule chaque ligne avec
-            arrondi au centime.
+            {t("expenseStatement.fields.retainedNote")}
           </p>
         </div>
       </div>
@@ -72,7 +75,7 @@ export function ExpenseAmountFields({
             className="expense-amount-fields-warning-icon"
             aria-hidden="true"
           />
-          Confiance faible : vérifiez le montant avant d’ajouter le frais.
+          {t("expenseStatement.fields.lowConfidence")}
         </p>
       ) : null}
     </>

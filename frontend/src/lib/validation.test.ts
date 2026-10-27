@@ -54,6 +54,35 @@ describe("expenseSchema", () => {
       "proRataPct",
     ]);
   });
+
+  it("translates only the expense messages at parse time", async () => {
+    await i18n.changeLanguage("en");
+
+    const english = expenseSchema.safeParse({
+      itemCode: "",
+      amountInclVat: "0",
+      proRataPct: "101",
+    });
+    expect(english.success).toBe(false);
+    if (english.success) {
+      return;
+    }
+    expect(english.error.issues.map((issue) => issue.message)).toEqual([
+      "Select an expense type.",
+      "Enter an amount greater than 0 (e.g. 80.50).",
+      "Pro rata must be between 0 and 100 (2 decimals max).",
+    ]);
+    expect(
+      companySchema.safeParse({ ...VALID_COMPANY, name: " " }).error?.issues[0]
+        ?.message,
+    ).toBe("Le nom de la société est obligatoire.");
+
+    await i18n.changeLanguage("fr");
+    expect(
+      expenseSchema.safeParse({ ...VALID_EXPENSE, itemCode: "" }).error
+        ?.issues[0]?.message,
+    ).toBe("Sélectionnez un type de frais.");
+  });
 });
 
 describe("rentReceiptSchema", () => {

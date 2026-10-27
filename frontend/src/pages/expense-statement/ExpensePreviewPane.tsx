@@ -1,4 +1,5 @@
 import "./ExpensePreviewPane.css";
+import { useTranslation } from "react-i18next";
 import { PdfViewer } from "@/components/pdf/PdfViewer";
 import { cn } from "@/lib/cn";
 import type { ExpenseStatementController } from "./useExpenseStatementPage";
@@ -9,6 +10,7 @@ export function ExpensePreviewPane({
 }: {
   controller: ExpenseStatementController;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       data-cy="volet-apercu"
@@ -22,11 +24,11 @@ export function ExpensePreviewPane({
         loading={c.preview.loading}
         error={
           c.requests.error
-            ? "Corrigez les lignes en rouge pour actualiser l’aperçu."
+            ? t("expenseStatement.preview.invalidLines")
             : c.orderedLines.length === 0
-              ? "Ajoutez un frais pour voir l’aperçu de la note."
+              ? t("expenseStatement.preview.noLine")
               : !c.signatureAvailable
-                ? "Configurez une signature pour afficher l’aperçu."
+                ? t("expenseStatement.preview.noSignature")
                 : c.preview.error
         }
         updatedAt={c.preview.updatedAt}
@@ -34,7 +36,7 @@ export function ExpensePreviewPane({
         actions={
           <>
             <select
-              aria-label="Template de la note de frais"
+              aria-label={t("expenseStatement.preview.templateAria")}
               className="expense-preview-pane-select"
               value={c.selectedTemplate ?? ""}
               onChange={(event) =>
@@ -46,7 +48,9 @@ export function ExpensePreviewPane({
               data-cy="select-template"
             >
               {c.models.length === 0 ? (
-                <option value="">Modèle intégré</option>
+                <option value="">
+                  {t("expenseStatement.preview.builtInTemplate")}
+                </option>
               ) : null}
               {c.models.map((model) => (
                 <option key={model.id} value={model.id}>
@@ -62,14 +66,13 @@ export function ExpensePreviewPane({
                 onChange={(event) => c.draft.setComplete(event.target.checked)}
                 data-cy="toggle-apercu-complet"
               />
-              Avec annexes
+              {t("expenseStatement.preview.withAttachments")}
             </label>
           </>
         }
       />
       <p className="expense-preview-pane-note">
-        L’aperçu est rendu par le backend à partir des mêmes lignes que le total
-        affiché. Il porte un filigrane et n’est jamais enregistré.
+        {t("expenseStatement.preview.note")}
       </p>
     </div>
   );

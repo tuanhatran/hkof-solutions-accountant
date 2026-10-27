@@ -397,4 +397,226 @@ export const fr = {
     pageLabel: "Page {{current}} / {{total}}",
     download: "Télécharger l’aperçu",
   },
+  expenseStatement: {
+    page: {
+      eyebrow: "Générer · Note de frais",
+      title: "Note de frais d’occupation",
+      description:
+        "Ajoutez les factures du mois, vérifiez les propositions de l’IA et laissez le backend calculer la quote-part. Le loyer est repris de la quittance active.",
+      rentReceiptButton: "Quittance du mois",
+      tabsAriaLabel: "Volets de génération",
+      inputTab: "Saisie",
+      previewTab: "Aperçu",
+      removeDialog: {
+        title: "Supprimer ce frais ?",
+        message:
+          "La ligne « {{item}} » sera retirée du brouillon. Cette action ne modifie pas les versions déjà générées.",
+        confirm: "Supprimer",
+      },
+      regenerateDialog: {
+        title: "Générer une nouvelle version ?",
+        message:
+          "Une note active existe déjà pour {{month}} (version {{version}}). La version {{next}} sera créée et l’ancienne restera consultable dans l’historique.",
+        confirm: "Créer la nouvelle version",
+      },
+    },
+    header: {
+      bannerTitle: "{{month}} — note version {{version}} déjà active",
+      bannerText:
+        "Total {{total}}. Générer à nouveau créera la version {{next}}.",
+      open: "Ouvrir",
+      completeVersion: "Version complète",
+    },
+    entry: {
+      eyebrowEdit: "Modification",
+      eyebrowAdd: "Ajouter un frais",
+      titleEdit: "Modifier le frais",
+      titleAdd: "Nouveau frais",
+      monthLabel: "Mois concerné",
+      submitEdit: "Enregistrer la modification",
+      submitAdd: "Ajouter ce frais",
+      cancelEdit: "Annuler la modification",
+      hint: "Le formulaire se réinitialise après chaque ajout.",
+    },
+    fields: {
+      type: "Type de frais",
+      typeSuggestedAi: "Type suggéré par IA",
+      supplierDetected: "Fournisseur détecté : {{supplier}}",
+      typeHelp: "Les libellés proviennent de votre configuration.",
+      selectPlaceholder: "Sélectionner…",
+      alreadyAdded: " — déjà ajouté",
+      proRata: "Prorata (%)",
+      proRataHelp: "Champ libre : 35,71 ou 35,71 %.",
+      amountInclVat: "Montant TTC",
+      retainedEstimate: "Montant retenu estimé",
+      retainedNote:
+        "Estimation d’affichage : le backend recalcule chaque ligne avec arrondi au centime.",
+      lowConfidence:
+        "Confiance faible : vérifiez le montant avant d’ajouter le frais.",
+    },
+    lines: {
+      eyebrow: "Liste",
+      title: "Frais ajoutés",
+      missing: "Il manque : {{types}}",
+      count_one: "{{count}} ligne",
+      count_other: "{{count}} lignes",
+      emptyTitle: "Aucun frais pour {{month}}",
+      emptyText:
+        "Sélectionnez un type de frais ci-dessus, déposez un justificatif et ajoutez la ligne.",
+      table: {
+        type: "Type",
+        supplier: "Fournisseur",
+        amountInclVat: "Montant TTC",
+        proRata: "Prorata",
+        retained: "Montant retenu",
+        actions: "Actions",
+        calculating: "Calcul…",
+        viewReceipt: "Voir le justificatif de {{item}}",
+        edit: "Modifier {{item}}",
+        remove: "Supprimer {{item}}",
+      },
+    },
+    footer: {
+      total: "Total retenu",
+      inWords: "Soit {{words}}.",
+      proRataBase: "Base de prorata :",
+      referenceShare: "Quote-part de référence :",
+      backendCalculation: "Calcul backend · recalcul automatique (300 ms).",
+      calculationError: "Calcul indisponible : {{message}}",
+      signature: "Signature",
+      signatureHelp:
+        "Signatures du PDG de la société active, apposées au bas de la note.",
+      signatureBadge: "PNG / JPEG",
+      noSignature: "Aucune signature",
+      signaturesError:
+        "Les signatures n’ont pas pu être chargées : {{message}}",
+      missingCeoBefore:
+        "Aucun PDG dans cette société. Ajoutez un salarié avec l’intitulé PDG dans la page",
+      missingCeoAfter: ".",
+      missingSignatureBefore:
+        "Aucune signature pour le PDG. Ajoutez-en une dans sa fiche salarié, page",
+      missingSignatureAfter: ".",
+      companyLink: "Entreprise",
+      generate: "Générer la note de frais",
+      hintNoLine: "Ajoutez au moins un frais pour générer la note.",
+      hintNoSignature: "Configurez une signature pour générer la note.",
+      hintStaleCalculation: "En attente du calcul backend à jour…",
+      hintNextVersion:
+        "Une version {{version}} existe : la version {{next}} sera créée.",
+      hintSaved: "Le PDF définitif sera enregistré dans l’historique.",
+    },
+    preview: {
+      invalidLines: "Corrigez les lignes en rouge pour actualiser l’aperçu.",
+      noLine: "Ajoutez un frais pour voir l’aperçu de la note.",
+      noSignature: "Configurez une signature pour afficher l’aperçu.",
+      templateAria: "Template de la note de frais",
+      builtInTemplate: "Modèle intégré",
+      builtInTemplateName: "modèle intégré",
+      withAttachments: "Avec annexes",
+      note: "L’aperçu est rendu par le backend à partir des mêmes lignes que le total affiché. Il porte un filigrane et n’est jamais enregistré.",
+    },
+    result: {
+      title: "Note de frais générée",
+      meta: "{{month}} · version {{version}} · {{total}}",
+      recorded:
+        "Enregistrée avec le template « {{name}} » v{{version}} le {{date}}.",
+      download: "Télécharger la note seule",
+      downloadComplete: "Télécharger la note complète (ZIP)",
+      open: "Ouvrir",
+    },
+    receipt: {
+      label: "Fichier justificatif",
+      limit: "10 Mo max.",
+      uploading: "Envoi et préparation de l’analyse…",
+      fallbackName: "Justificatif",
+    },
+    notice: {
+      pending: "Recherche de la quittance du mois…",
+      title: "Quittance de {{month}} (v{{version}}) :",
+      hint: "Montant pré-rempli et verrouillé. La quittance sera annexée automatiquement.",
+      openPdf: "Voir le PDF",
+      missingTitle: "Aucune quittance pour ce mois",
+      missingText:
+        "Générez la quittance : le montant du loyer sera repris et verrouillé.",
+      generate: "Générer la quittance",
+    },
+    analysis: {
+      starting: "Préparation de l’analyse…",
+      running:
+        "Analyse IA en cours — le modèle local peut prendre quelques secondes.",
+      cancel: "Annuler l’analyse",
+      done: "Analyse terminée — les champs ont été pré-remplis et le montant détecté remplace la valeur saisie.",
+      doneWithDuration:
+        "Analyse terminée en {{duration}} — les champs ont été pré-remplis et le montant détecté remplace la valeur saisie.",
+      noResult:
+        "Aucune information exploitable n’a été extraite. Complétez le frais manuellement.",
+      excerpt: "« {{excerpt}} »",
+      hint: "Les propositions de l’IA restent modifiables. Vérifiez-les avant d’ajouter le frais.",
+      failureSuffix:
+        "L’analyse est facultative : vous pouvez saisir le montant et le prorata manuellement.",
+      cancelledSuffix: "La saisie manuelle reste disponible.",
+      idleWithFile:
+        "Analyse non lancée. Vous pouvez saisir le frais manuellement.",
+      idleWithoutFile:
+        "Déposez un justificatif : l’analyse IA démarrera automatiquement. Elle reste facultative.",
+      startFailed: "L'analyse n'a pas pu démarrer.",
+      failedFallback: "L'analyse a échoué. Saisissez le montant manuellement.",
+      cancelled: "Analyse annulée.",
+      timeout:
+        "L'analyse prend trop de temps. Saisissez le montant manuellement.",
+      unavailable: "Analyse indisponible, saisissez le montant.",
+    },
+    llm: {
+      ready: "IA prête",
+      remote: "IA distante",
+      missingModel: "Modèle absent",
+      unreachable: "IA injoignable",
+      disabled: "IA désactivée",
+      loading: "IA…",
+      unavailable: "IA indisponible",
+      unknown: "IA inconnue",
+      messageFallback: "État de l’analyse IA indisponible.",
+      configurationLink: "{{text}}. Ouvrir la configuration de l'IA.",
+    },
+    confidence: {
+      haute: "Confiance élevée",
+      moyenne: "Confiance moyenne",
+      basse: "Confiance faible — vérifiez les valeurs",
+    },
+    dropzone: {
+      text: "Glissez votre justificatif ici",
+      hint: "ou cliquez pour parcourir vos fichiers",
+      formats: "PDF, DOCX, XLSX, XLS, CSV, TXT, JPG, PNG",
+      meta: "{{formats}} — {{max}} Mo max.",
+      ariaLabel: "Choisir un fichier justificatif",
+      tooLarge: "Fichier trop volumineux ({{max}} Mo maximum).",
+      tooMany: "Un seul fichier à la fois.",
+      unsupported: "Format non accepté. Formats : {{formats}}.",
+      rejected: "Fichier refusé.",
+      attached: "Justificatif joint",
+      remove: "Retirer {{name}}",
+    },
+    toasts: {
+      generated: "Note de {{month}} générée en version {{version}}.",
+      fieldsPrefilled:
+        "Des champs ont été pré-remplis par l’IA. Vérifiez-les avant d’ajouter le frais.",
+      confirmAmount:
+        "Confirmez le montant détecté par IA avant d’ajouter le frais.",
+      added: "Frais ajouté.",
+      updated: "Frais modifié.",
+      removed: "Frais supprimé.",
+      receiptNotSaved: "Le justificatif n’a pas pu être enregistré.",
+      invalidLines: "Les lignes contiennent une valeur invalide.",
+    },
+    validation: {
+      itemCode: "Sélectionnez un type de frais.",
+      amount: "Saisissez un montant supérieur à 0 (ex. 80,50).",
+      proRata: "Prorata attendu entre 0 et 100 (2 décimales max).",
+      alreadyAdded:
+        "Ce type est déjà présent. Modifiez la ligne existante ou autorisez plusieurs lignes.",
+      rentReceiptRequired:
+        "Ajoutez d’abord la quittance du mois pour utiliser ce type.",
+      receiptRequired: "Le justificatif est obligatoire pour ce type de frais.",
+    },
+  },
 };

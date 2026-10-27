@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import i18n from "@/i18n";
 import { FileDropzone, SelectedFile } from "./FileDropzone";
 
 function pdfFile(name = "facture.pdf", size = 1024): File {
@@ -77,6 +78,33 @@ describe("FileDropzone", () => {
         .closest("[aria-disabled]"),
     ).toHaveAttribute("aria-disabled", "true");
   });
+
+  it("renders its labels, rejection message and units in English", async () => {
+    await i18n.changeLanguage("en");
+    const onFile = vi.fn();
+    render(
+      <FileDropzone
+        dataCy="depot"
+        onFile={onFile}
+        maxSize={1024}
+        formatsDescription="PDF"
+      />,
+    );
+
+    expect(screen.getByLabelText("Choose a receipt file")).toBeInTheDocument();
+    expect(screen.getByText("Drop your receipt here")).toBeVisible();
+    expect(screen.getByText("or click to browse your files")).toBeVisible();
+    expect(screen.getByText("PDF — 0 MB max.")).toBeVisible();
+
+    await userEvent
+      .setup()
+      .upload(
+        screen.getByLabelText("Choose a receipt file"),
+        pdfFile("enorme.pdf", 2048),
+      );
+    expect(onFile).not.toHaveBeenCalled();
+    expect(screen.getByText("File too large (0 MB maximum).")).toBeVisible();
+  });
 });
 
 describe("SelectedFile", () => {
@@ -123,5 +151,23 @@ describe("SelectedFile", () => {
     expect(
       screen.queryByRole("button", { name: /Retirer/ }),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows the English size unit and removal label", async () => {
+    await i18n.changeLanguage("en");
+
+    render(
+      <SelectedFile
+        name="facture.pdf"
+        size={2048}
+        mimeType="application/pdf"
+        onRemove={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("2 KB")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Remove facture.pdf" }),
+    ).toBeVisible();
   });
 });

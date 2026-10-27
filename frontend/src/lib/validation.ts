@@ -7,6 +7,10 @@ function rentReceiptMessage(key: string): string {
   return i18n.t(`rentReceipt.validation.${key}`);
 }
 
+function expenseMessage(key: string): string {
+  return i18n.t(`expenseStatement.validation.${key}`);
+}
+
 function isValidAmount(value: string, strictlyPositive: boolean): boolean {
   const normalized = parseAmount(value);
   if (normalized === null) {
@@ -22,19 +26,15 @@ const optionalDate = z
   });
 
 export const expenseSchema = z.object({
-  itemCode: z.string().min(1, "Sélectionnez un type de frais."),
-  amountInclVat: z
-    .string()
-    .refine(
-      (value) => isValidAmount(value, true),
-      "Saisissez un montant supérieur à 0 (ex. 80,50).",
-    ),
-  proRataPct: z
-    .string()
-    .refine(
-      (value) => parsePercentage(value) !== null,
-      "Prorata attendu entre 0 et 100 (2 décimales max).",
-    ),
+  itemCode: z.string().min(1, {
+    error: () => expenseMessage("itemCode"),
+  }),
+  amountInclVat: z.string().refine((value) => isValidAmount(value, true), {
+    error: () => expenseMessage("amount"),
+  }),
+  proRataPct: z.string().refine((value) => parsePercentage(value) !== null, {
+    error: () => expenseMessage("proRata"),
+  }),
 });
 
 export type ExpenseFormValues = z.infer<typeof expenseSchema>;

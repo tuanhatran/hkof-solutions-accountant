@@ -7,8 +7,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { downloadBlob } from "@/api/client";
 import { api } from "@/api/endpoints";
 import type { SignatureDto } from "@/api/types";
+import i18n from "@/i18n";
 import { useCompanyStore } from "@/state/company";
 import { useStatementDraft } from "@/state/statementDraft";
+import { useToasts } from "@/state/toasts";
 import { GenerateExpenseStatementPage } from "@/pages/expense-statement/GenerateExpenseStatementPage";
 
 let signatureList: SignatureDto[] = [];
@@ -642,5 +644,48 @@ describe("GenerateExpenseStatementPage signatures", () => {
       "aria-selected",
       "true",
     );
+  });
+
+  it("renders the page, lines, dialogs, result and toasts in English", async () => {
+    await i18n.changeLanguage("en");
+    renderPage();
+    const user = userEvent.setup();
+
+    expect(screen.getByText("Home-office expense statement")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "This month's rent receipt" }),
+    ).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Input" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Preview" })).toBeVisible();
+    expect(screen.getByText("Added expenses")).toBeVisible();
+    expect(screen.getByText("1 line")).toBeVisible();
+    expect(screen.getByText("Retained total")).toBeVisible();
+
+    const generate = screen.getByRole("button", {
+      name: "Generate the expense statement",
+    });
+    await waitFor(() => expect(generate).toBeEnabled());
+    await user.click(generate);
+
+    expect(
+      await screen.findByText("Expense statement generated"),
+    ).toBeVisible();
+    expect(
+      useToasts.getState().toasts.map((element) => element.message),
+    ).toContain("Expense statement for January 2026 generated as version 1.");
+
+    await user.click(screen.getByRole("button", { name: "Remove Gaz" }));
+    const dialog = screen.getByRole("dialog", {
+      name: "Remove this expense?",
+    });
+    expect(
+      within(dialog).getByText(/The line “Gaz” will be removed/),
+    ).toBeVisible();
+    await user.click(within(dialog).getByRole("button", { name: "Remove" }));
+
+    expect(
+      useToasts.getState().toasts.map((element) => element.message),
+    ).toContain("Expense removed.");
+    expect(screen.getByText("No expense for January 2026")).toBeVisible();
   });
 });

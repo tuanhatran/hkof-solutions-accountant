@@ -7,6 +7,7 @@ import {
   type SetStateAction,
 } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import type { StatementDto } from "@/api/types";
@@ -37,6 +38,7 @@ export function useExpenseStatementForm({
   rentReceipt,
   setResult,
 }: UseExpenseStatementFormOptions) {
+  const { t } = useTranslation();
   const {
     register,
     handleSubmit,
@@ -126,7 +128,7 @@ export function useExpenseStatementForm({
     try {
       const dto = await api.receipts.upload(file);
       if (!dto.id) {
-        throw new Error("Le justificatif n’a pas pu être enregistré.");
+        throw new Error(t("expenseStatement.toasts.receiptNotSaved"));
       }
       if (sequence !== uploadSequence.current) {
         void api.receipts.delete(dto.id).catch(() => undefined);

@@ -161,6 +161,14 @@ describe("date formatting", () => {
     expect(normalizeSpaces(formatBytes(2048))).toBe("2 Ko");
     expect(normalizeSpaces(formatBytes(2 * 1024 * 1024))).toBe("2 Mo");
   });
+
+  it("formats byte sizes in English units from the current language", async () => {
+    await i18n.changeLanguage("en");
+
+    expect(formatBytes(512)).toBe("512 B");
+    expect(formatBytes(1536)).toBe("1.5 KB");
+    expect(formatBytes(2 * 1024 * 1024)).toBe("2 MB");
+  });
 });
 
 describe("initials", () => {

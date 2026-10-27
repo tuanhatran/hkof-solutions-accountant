@@ -1,4 +1,5 @@
 import "./ExpenseLinesCard.css";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle, FileText } from "lucide-react";
 import { formatMonth } from "@/lib/format";
 import type { ExpenseStatementController } from "./useExpenseStatementPage";
@@ -11,25 +12,34 @@ export function ExpenseLinesCard({
 }: {
   controller: ExpenseStatementController;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="card">
       <div className="card-header">
         <div>
-          <p className="eyebrow">Liste</p>
-          <h2 className="expense-lines-card-title">Frais ajoutés</h2>
+          <p className="eyebrow">{t("expenseStatement.lines.eyebrow")}</p>
+          <h2 className="expense-lines-card-title">
+            {t("expenseStatement.lines.title")}
+          </h2>
         </div>
         <div className="expense-lines-card-badges">
           {c.omittedTypes.length > 0 ? (
             <span
               className="badge badge-warning"
-              title={`Il manque : ${c.omittedTypes.join(", ")}`}
+              title={t("expenseStatement.lines.missing", {
+                types: c.omittedTypes.join(", "),
+              })}
             >
               <AlertTriangle size={11} aria-hidden="true" />
-              Il manque : {c.omittedTypes.join(", ")}
+              {t("expenseStatement.lines.missing", {
+                types: c.omittedTypes.join(", "),
+              })}
             </span>
           ) : null}
           <span className="badge badge-neutral">
-            {c.orderedLines.length} ligne{c.orderedLines.length > 1 ? "s" : ""}
+            {t("expenseStatement.lines.count", {
+              count: c.orderedLines.length,
+            })}
           </span>
         </div>
       </div>
@@ -41,11 +51,12 @@ export function ExpenseLinesCard({
               <FileText size={20} aria-hidden="true" />
             </span>
             <p className="expense-lines-card-empty-title">
-              Aucun frais pour {formatMonth(c.month)}
+              {t("expenseStatement.lines.emptyTitle", {
+                month: formatMonth(c.month),
+              })}
             </p>
             <p className="expense-lines-card-empty-text">
-              Sélectionnez un type de frais ci-dessus, déposez un justificatif
-              et ajoutez la ligne.
+              {t("expenseStatement.lines.emptyText")}
             </p>
           </div>
         ) : (

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { errorMessage, isCancellation } from "@/api/client";
 import { api } from "@/api/endpoints";
 import type {
@@ -36,6 +37,7 @@ export function useExpenseStatementCalculation({
   selectedSignatureId,
   signatureAvailable,
 }: UseExpenseStatementCalculationOptions) {
+  const { t } = useTranslation();
   const requests = useMemo<{
     values: LineRequest[] | null;
     error: string | null;
@@ -48,10 +50,10 @@ export function useExpenseStatementCalculation({
         error:
           error instanceof Error
             ? error.message
-            : "Les lignes contiennent une valeur invalide.",
+            : t("expenseStatement.toasts.invalidLines"),
       };
     }
-  }, [orderedLines]);
+  }, [orderedLines, t]);
 
   const calculationSignature = useMemo(
     () =>

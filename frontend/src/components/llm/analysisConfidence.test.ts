@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import i18n from "@/i18n";
 import { confidenceLabel, confidenceValid } from "./analysisConfidence";
 
 describe("confidenceValid", () => {
@@ -26,6 +27,15 @@ describe("confidenceLabel", () => {
   });
 
   it("returns null without a confidence", () => {
+    expect(confidenceLabel(null)).toBeNull();
+  });
+
+  it("returns the English label from the current language", async () => {
+    await i18n.changeLanguage("en");
+
+    expect(confidenceLabel("haute")).toBe("High confidence");
+    expect(confidenceLabel("moyenne")).toBe("Medium confidence");
+    expect(confidenceLabel("basse")).toBe("Low confidence — check the values");
     expect(confidenceLabel(null)).toBeNull();
   });
 });

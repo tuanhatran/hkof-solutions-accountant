@@ -378,4 +378,223 @@ export const en = {
     pageLabel: "Page {{current}} / {{total}}",
     download: "Download the preview",
   },
+  expenseStatement: {
+    page: {
+      eyebrow: "Generate · Expense statement",
+      title: "Home-office expense statement",
+      description:
+        "Add the month's invoices, review the AI suggestions and let the backend compute the share. The rent is taken from the active rent receipt.",
+      rentReceiptButton: "This month's rent receipt",
+      tabsAriaLabel: "Generation panels",
+      inputTab: "Input",
+      previewTab: "Preview",
+      removeDialog: {
+        title: "Remove this expense?",
+        message:
+          "The line “{{item}}” will be removed from the draft. This action does not change already generated versions.",
+        confirm: "Remove",
+      },
+      regenerateDialog: {
+        title: "Generate a new version?",
+        message:
+          "An active statement already exists for {{month}} (version {{version}}). Version {{next}} will be created and the previous one stays available in the history.",
+        confirm: "Create the new version",
+      },
+    },
+    header: {
+      bannerTitle: "{{month}} — statement version {{version}} already active",
+      bannerText:
+        "Total {{total}}. Generating again will create version {{next}}.",
+      open: "Open",
+      completeVersion: "Full version",
+    },
+    entry: {
+      eyebrowEdit: "Editing",
+      eyebrowAdd: "Add an expense",
+      titleEdit: "Edit the expense",
+      titleAdd: "New expense",
+      monthLabel: "Month",
+      submitEdit: "Save changes",
+      submitAdd: "Add this expense",
+      cancelEdit: "Cancel editing",
+      hint: "The form resets after every addition.",
+    },
+    fields: {
+      type: "Expense type",
+      typeSuggestedAi: "AI-suggested type",
+      supplierDetected: "Detected supplier: {{supplier}}",
+      typeHelp: "Labels come from your settings.",
+      selectPlaceholder: "Select…",
+      alreadyAdded: " — already added",
+      proRata: "Pro rata (%)",
+      proRataHelp: "Free field: 35.71 or 35.71%.",
+      amountInclVat: "Amount incl. VAT",
+      retainedEstimate: "Estimated retained amount",
+      retainedNote:
+        "Display estimate: the backend recomputes every line, rounded to the cent.",
+      lowConfidence:
+        "Low confidence: check the amount before adding the expense.",
+    },
+    lines: {
+      eyebrow: "List",
+      title: "Added expenses",
+      missing: "Missing: {{types}}",
+      count_one: "{{count}} line",
+      count_other: "{{count}} lines",
+      emptyTitle: "No expense for {{month}}",
+      emptyText:
+        "Select an expense type above, drop a receipt and add the line.",
+      table: {
+        type: "Type",
+        supplier: "Supplier",
+        amountInclVat: "Amount incl. VAT",
+        proRata: "Pro rata",
+        retained: "Retained amount",
+        actions: "Actions",
+        calculating: "Calculating…",
+        viewReceipt: "View the receipt for {{item}}",
+        edit: "Edit {{item}}",
+        remove: "Remove {{item}}",
+      },
+    },
+    footer: {
+      total: "Retained total",
+      inWords: "That is {{words}}.",
+      proRataBase: "Pro rata base:",
+      referenceShare: "Reference share:",
+      backendCalculation: "Backend calculation · automatic refresh (300 ms).",
+      calculationError: "Calculation unavailable: {{message}}",
+      signature: "Signature",
+      signatureHelp:
+        "Signatures of the active company's CEO, applied at the bottom of the statement.",
+      signatureBadge: "PNG / JPEG",
+      noSignature: "No signature",
+      signaturesError: "The signatures could not be loaded: {{message}}",
+      missingCeoBefore:
+        "No CEO in this company. Add an employee with the CEO title on the",
+      missingCeoAfter: " page.",
+      missingSignatureBefore:
+        "No signature for the CEO. Add one on their employee profile, on the",
+      missingSignatureAfter: " page.",
+      companyLink: "Company",
+      generate: "Generate the expense statement",
+      hintNoLine: "Add at least one expense to generate the statement.",
+      hintNoSignature: "Configure a signature to generate the statement.",
+      hintStaleCalculation: "Waiting for the backend calculation…",
+      hintNextVersion:
+        "Version {{version}} exists: version {{next}} will be created.",
+      hintSaved: "The final PDF will be saved in the history.",
+    },
+    preview: {
+      invalidLines: "Fix the lines in red to refresh the preview.",
+      noLine: "Add an expense to see the statement preview.",
+      noSignature: "Configure a signature to display the preview.",
+      templateAria: "Expense statement template",
+      builtInTemplate: "Built-in template",
+      builtInTemplateName: "built-in template",
+      withAttachments: "With attachments",
+      note: "The preview is rendered by the backend from the same lines as the displayed total. It carries a watermark and is never saved.",
+    },
+    result: {
+      title: "Expense statement generated",
+      meta: "{{month}} · version {{version}} · {{total}}",
+      recorded: "Saved with the template “{{name}}” v{{version}} on {{date}}.",
+      download: "Download the statement only",
+      downloadComplete: "Download the complete statement (ZIP)",
+      open: "Open",
+    },
+    receipt: {
+      label: "Receipt file",
+      limit: "10 MB max.",
+      uploading: "Uploading and preparing the analysis…",
+      fallbackName: "Receipt",
+    },
+    notice: {
+      pending: "Looking for this month's rent receipt…",
+      title: "Rent receipt for {{month}} (v{{version}}):",
+      hint: "Amount prefilled and locked. The rent receipt will be attached automatically.",
+      openPdf: "View the PDF",
+      missingTitle: "No rent receipt for this month",
+      missingText:
+        "Generate the rent receipt: the rent amount will be taken and locked.",
+      generate: "Generate the rent receipt",
+    },
+    analysis: {
+      starting: "Preparing the analysis…",
+      running:
+        "AI analysis in progress — the local model may take a few seconds.",
+      cancel: "Cancel the analysis",
+      done: "Analysis complete — the fields were prefilled and the detected amount replaces the entered value.",
+      doneWithDuration:
+        "Analysis complete in {{duration}} — the fields were prefilled and the detected amount replaces the entered value.",
+      noResult:
+        "No usable information was extracted. Complete the expense manually.",
+      excerpt: "“{{excerpt}}”",
+      hint: "AI suggestions stay editable. Check them before adding the expense.",
+      failureSuffix:
+        "The analysis is optional: you can enter the amount and pro rata manually.",
+      cancelledSuffix: "Manual entry is still available.",
+      idleWithFile: "Analysis not started. You can enter the expense manually.",
+      idleWithoutFile:
+        "Drop a receipt: the AI analysis starts automatically. It remains optional.",
+      startFailed: "The analysis could not start.",
+      failedFallback: "The analysis failed. Enter the amount manually.",
+      cancelled: "Analysis cancelled.",
+      timeout: "The analysis is taking too long. Enter the amount manually.",
+      unavailable: "Analysis unavailable, enter the amount.",
+    },
+    llm: {
+      ready: "AI ready",
+      remote: "Remote AI",
+      missingModel: "Model missing",
+      unreachable: "AI unreachable",
+      disabled: "AI disabled",
+      loading: "AI…",
+      unavailable: "AI unavailable",
+      unknown: "Unknown AI",
+      messageFallback: "AI analysis status unavailable.",
+      configurationLink: "{{text}}. Open the AI configuration.",
+    },
+    confidence: {
+      haute: "High confidence",
+      moyenne: "Medium confidence",
+      basse: "Low confidence — check the values",
+    },
+    dropzone: {
+      text: "Drop your receipt here",
+      hint: "or click to browse your files",
+      formats: "PDF, DOCX, XLSX, XLS, CSV, TXT, JPG, PNG",
+      meta: "{{formats}} — {{max}} MB max.",
+      ariaLabel: "Choose a receipt file",
+      tooLarge: "File too large ({{max}} MB maximum).",
+      tooMany: "Only one file at a time.",
+      unsupported: "Unsupported format. Formats: {{formats}}.",
+      rejected: "File rejected.",
+      attached: "Receipt attached",
+      remove: "Remove {{name}}",
+    },
+    toasts: {
+      generated:
+        "Expense statement for {{month}} generated as version {{version}}.",
+      fieldsPrefilled:
+        "Some fields were prefilled by AI. Check them before adding the expense.",
+      confirmAmount:
+        "Confirm the AI-detected amount before adding the expense.",
+      added: "Expense added.",
+      updated: "Expense updated.",
+      removed: "Expense removed.",
+      receiptNotSaved: "The receipt could not be saved.",
+      invalidLines: "The lines contain an invalid value.",
+    },
+    validation: {
+      itemCode: "Select an expense type.",
+      amount: "Enter an amount greater than 0 (e.g. 80.50).",
+      proRata: "Pro rata must be between 0 and 100 (2 decimals max).",
+      alreadyAdded:
+        "This type is already present. Edit the existing line or allow multiple lines.",
+      rentReceiptRequired:
+        "Add this month's rent receipt first to use this type.",
+      receiptRequired: "The receipt is required for this expense type.",
+    },
+  },
 };

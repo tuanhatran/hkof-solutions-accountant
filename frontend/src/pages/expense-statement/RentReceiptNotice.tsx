@@ -1,4 +1,5 @@
 import "./RentReceiptNotice.css";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle, ExternalLink } from "lucide-react";
 import { api } from "@/api/endpoints";
 import { Button } from "@/components/ui/Button";
@@ -12,25 +13,27 @@ export function RentReceiptNotice({
 }: {
   controller: ExpenseStatementController;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="rent-receipt-notice">
       {c.rentReceipt.isPending ? (
         <p className="rent-receipt-notice-pending">
-          <Spinner size={16} /> Recherche de la quittance du mois…
+          <Spinner size={16} /> {t("expenseStatement.notice.pending")}
         </p>
       ) : c.rentReceipt.data ? (
         <div className="rent-receipt-notice-row">
           <div>
             <p className="rent-receipt-notice-title">
-              Quittance de {formatMonth(c.month)} (v
-              {c.rentReceipt.data.version ?? 1}) :{" "}
+              {t("expenseStatement.notice.title", {
+                month: formatMonth(c.month),
+                version: c.rentReceipt.data.version ?? 1,
+              })}{" "}
               <span className="number">
                 {formatEUR(c.rentReceipt.data.total)}
               </span>
             </p>
             <p className="rent-receipt-notice-hint">
-              Montant pré-rempli et verrouillé. La quittance sera annexée
-              automatiquement.
+              {t("expenseStatement.notice.hint")}
             </p>
           </div>
           {c.rentReceipt.data.id ? (
@@ -41,7 +44,7 @@ export function RentReceiptNotice({
               className="btn btn-secondary btn-small"
             >
               <ExternalLink size={13} aria-hidden="true" />
-              Voir le PDF
+              {t("expenseStatement.notice.openPdf")}
             </a>
           ) : null}
         </div>
@@ -59,16 +62,15 @@ export function RentReceiptNotice({
             />
             <div>
               <p className="rent-receipt-notice-title">
-                Aucune quittance pour ce mois
+                {t("expenseStatement.notice.missingTitle")}
               </p>
               <p className="rent-receipt-notice-alert-text">
-                Générez la quittance : le montant du loyer sera repris et
-                verrouillé.
+                {t("expenseStatement.notice.missingText")}
               </p>
             </div>
           </div>
           <Button variant="secondary" small onClick={c.goToRentReceipt}>
-            Générer la quittance
+            {t("expenseStatement.notice.generate")}
           </Button>
         </div>
       )}
