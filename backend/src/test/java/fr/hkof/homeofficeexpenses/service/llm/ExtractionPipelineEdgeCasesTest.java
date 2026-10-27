@@ -52,10 +52,12 @@ class ExtractionPipelineEdgeCasesTest {
     void unreadableDocument() {
         assertThatThrownBy(() -> pipeline.extract(config, null, null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Document illisible");
+                .hasMessageContaining("Document illisible")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("DOCUMENT_NO_TEXT"));
         assertThatThrownBy(() -> pipeline.extract(config, "   court   ", List.of()))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Document illisible");
+                .hasMessageContaining("Document illisible")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("DOCUMENT_NO_TEXT"));
     }
 
     @Test
@@ -65,7 +67,9 @@ class ExtractionPipelineEdgeCasesTest {
 
         assertThatThrownBy(() -> pipeline.extract(config, "court", List.of("aW1n")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("ne gère pas les images");
+                .hasMessageContaining("ne gère pas les images")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("DOCUMENT_NO_TEXT_NO_VISION"));
     }
 
     @Test
@@ -131,13 +135,19 @@ class ExtractionPipelineEdgeCasesTest {
     void replyWithoutJsonObject() {
         assertThatThrownBy(() -> pipeline.interpret(null, DOCUMENT, 0))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("ne contient pas d'objet JSON");
+                .hasMessageContaining("ne contient pas d'objet JSON")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_RESPONSE_NO_JSON"));
         assertThatThrownBy(() -> pipeline.interpret("Je ne peux pas répondre.", DOCUMENT, 0))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("ne contient pas d'objet JSON");
+                .hasMessageContaining("ne contient pas d'objet JSON")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_RESPONSE_NO_JSON"));
         assertThatThrownBy(() -> pipeline.interpret("```json\n```", DOCUMENT, 0))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("ne contient pas d'objet JSON");
+                .hasMessageContaining("ne contient pas d'objet JSON")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_RESPONSE_NO_JSON"));
     }
 
     @Test
@@ -145,10 +155,14 @@ class ExtractionPipelineEdgeCasesTest {
     void invalidJsonObject() {
         assertThatThrownBy(() -> pipeline.interpret("{not json}", DOCUMENT, 0))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("n'est pas un JSON valide");
+                .hasMessageContaining("n'est pas un JSON valide")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_RESPONSE_INVALID_JSON"));
         assertThatThrownBy(() -> pipeline.interpret("} {", DOCUMENT, 0))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("ne contient pas d'objet JSON");
+                .hasMessageContaining("ne contient pas d'objet JSON")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_RESPONSE_NO_JSON"));
     }
 
     @Test
@@ -173,7 +187,11 @@ class ExtractionPipelineEdgeCasesTest {
                  "extrait_source":"Total TTC","confiance":"haute"}
                 """, DOCUMENT, 0))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("schéma");
+                .hasMessageContaining("schéma")
+                .satisfies(ex -> {
+                    assertThat(((BusinessException) ex).getCode()).isEqualTo("LLM_RESPONSE_FIELD_INVALID");
+                    assertThat(((BusinessException) ex).getParams()).containsEntry("field", "fournisseur");
+                });
     }
 
     @Test

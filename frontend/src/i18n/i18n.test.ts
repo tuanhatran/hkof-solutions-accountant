@@ -84,6 +84,20 @@ describe("i18n", () => {
     );
   });
 
+  it("uses specific SCREAMING_SNAKE codes in api.errors", () => {
+    const codes = flattenKeys(fr.api.errors);
+
+    expect(codes.length).toBeGreaterThan(0);
+    codes.forEach((code) => expect(code).toMatch(/^[A-Z][A-Z0-9_]*$/));
+  });
+
+  it("does not translate the generic fallback codes", () => {
+    for (const errors of [fr.api.errors, en.api.errors]) {
+      expect(errors).not.toHaveProperty("BUSINESS_ERROR");
+      expect(errors).not.toHaveProperty("RESOURCE_NOT_FOUND");
+    }
+  });
+
   it("exposes the French and English translations under the default namespace", async () => {
     stubBrowserLanguages(["fr"]);
     const instance = createI18n();

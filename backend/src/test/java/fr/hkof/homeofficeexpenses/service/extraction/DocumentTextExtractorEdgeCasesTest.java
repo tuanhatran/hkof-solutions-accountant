@@ -90,10 +90,16 @@ class DocumentTextExtractorEdgeCasesTest {
         Path path = file("archive.zip", new byte[]{1, 2});
         assertThatThrownBy(() -> extractor.extract(path, "application/zip", 1))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Format de document non pris en charge pour l'analyse.");
+                .hasMessage("Format de document non pris en charge pour l'analyse.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("DOCUMENT_UNSUPPORTED_FORMAT"));
         assertThatThrownBy(() -> extractor.extract(path, "application/pdf", 1))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Impossible de lire le document");
+                .hasMessageContaining("Impossible de lire le document")
+                .satisfies(ex -> {
+                    assertThat(((BusinessException) ex).getCode()).isEqualTo("DOCUMENT_UNREADABLE");
+                    assertThat(((BusinessException) ex).getParams()).isEmpty();
+                });
     }
 
     @Test
@@ -101,7 +107,9 @@ class DocumentTextExtractorEdgeCasesTest {
     void missingFile() {
         assertThatThrownBy(() -> extractor.extract(tempDir.resolve("absent.txt"), "text/plain", 1))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Impossible de lire le document");
+                .hasMessageContaining("Impossible de lire le document")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("DOCUMENT_UNREADABLE"));
     }
 
     @Test

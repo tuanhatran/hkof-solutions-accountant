@@ -60,14 +60,15 @@ public class TemplateService {
     public TemplateDocument active(TemplateType type) {
         return repository.findFirstByTypeAndActiveTrueAndDeletedFalse(type)
                 .or(() -> repository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(type))
-                .orElseThrow(() -> new NotFoundException("Aucun template actif pour " + type));
+                .orElseThrow(() -> new NotFoundException("TEMPLATE_ACTIVE_NOT_FOUND",
+                        "Aucun template actif pour " + type, Map.of("type", type.name())));
     }
 
     @Transactional(readOnly = true)
     public TemplateDocument byId(Long id) {
         return repository.findById(id)
                 .filter(template -> !template.isDeleted())
-                .orElseThrow(() -> new NotFoundException("Template introuvable."));
+                .orElseThrow(() -> new NotFoundException("TEMPLATE_NOT_FOUND", "Template introuvable."));
     }
 
     public String render(TemplateDocument template, Map<String, Object> data) {
@@ -79,7 +80,9 @@ public class TemplateService {
                     .compile(content);
             return mustache.execute(data);
         } catch (RuntimeException ex) {
-            throw new BusinessException("Le template « " + template.getName() + " » n'a pas pu être rendu : " + ex.getMessage());
+            throw new BusinessException("TEMPLATE_RENDER_FAILED",
+                    "Le template « " + template.getName() + " » n'a pas pu être rendu : " + ex.getMessage(),
+                    Map.of("name", template.getName()));
         }
     }
 
@@ -90,19 +93,19 @@ public class TemplateService {
     @Transactional
     public TemplateDto upload(TemplateType type, String name, MultipartFile file) {
         if (name == null || name.isBlank()) {
-            throw new BusinessException("Le nom du template est obligatoire.");
+            throw new BusinessException("TEMPLATE_NAME_REQUIRED", "Le nom du template est obligatoire.");
         }
         byte[] content;
         try {
             content = file.getBytes();
         } catch (IOException ex) {
-            throw new BusinessException("Impossible de lire le fichier template.");
+            throw new BusinessException("TEMPLATE_FILE_UNREADABLE", "Impossible de lire le fichier template.");
         }
         detector.validateTemplateHtml(file.getOriginalFilename(), content);
         String html = new String(content, StandardCharsets.UTF_8);
         ValidationReportDto report = validate(type, html);
         if (!report.structureValid()) {
-            throw new BusinessException(String.join(" ; ", report.errors()));
+            throw new BusinessException("TEMPLATE_INVALID", String.join(" ; ", report.errors()));
         }
         int version = repository.findTopByTypeOrderByVersionDesc(type).map(template -> template.getVersion() + 1).orElse(1);
         String path = storage.storeTemplate(content, type.name(), version);
@@ -142,10 +145,11 @@ public class TemplateService {
     public void delete(Long id) {
         TemplateDocument template = byId(id);
         if (template.isBuiltIn()) {
-            throw new BusinessException("Le modèle intégré ne peut pas être supprimé.");
+            throw new BusinessException("TEMPLATE_BUILT_IN_NOT_DELETABLE", "Le modèle intégré ne peut pas être supprimé.");
         }
         if (template.isActive()) {
-            throw new BusinessException("Le template actif ne peut pas être supprimé. Activez d'abord un autre modèle.");
+            throw new BusinessException("TEMPLATE_ACTIVE_NOT_DELETABLE",
+                    "Le template actif ne peut pas être supprimé. Activez d'abord un autre modèle.");
         }
         template.setDeleted(true);
         repository.save(template);
@@ -154,7 +158,7 @@ public class TemplateService {
     @Transactional
     public TemplateDto reset(TemplateType type) {
         TemplateDocument builtIn = repository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(type)
-                .orElseThrow(() -> new NotFoundException("Modèle intégré introuvable."));
+                .orElseThrow(() -> new NotFoundException("TEMPLATE_BUILT_IN_NOT_FOUND", "Modèle intégré introuvable."));
         return activate(builtIn.getId());
     }
 

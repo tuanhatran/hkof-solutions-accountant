@@ -90,7 +90,7 @@ public class ExpenseStatementDocumentService {
     public byte[] pdf(ExpenseStatement statement, boolean complete) {
         String path = complete ? statement.getFullPdfPath() : statement.getPdfPath();
         if (path == null) {
-            throw new NotFoundException("Le PDF demandé est introuvable.");
+            throw new NotFoundException("STATEMENT_PDF_NOT_FOUND", "Le PDF demandé est introuvable.");
         }
         return storage.read(path);
     }
@@ -102,7 +102,7 @@ public class ExpenseStatementDocumentService {
      */
     public byte[] zip(ExpenseStatement statement) {
         if (statement.getPdfPath() == null) {
-            throw new NotFoundException("Le PDF demandé est introuvable.");
+            throw new NotFoundException("STATEMENT_PDF_NOT_FOUND", "Le PDF demandé est introuvable.");
         }
         String month = statement.getMonth();
         try (ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -137,7 +137,7 @@ public class ExpenseStatementDocumentService {
 
     public String signatureDataUri(Long requestedId, Long companyId) {
         Signature signature = signatureService.resolveForCompanyCeo(companyId, requestedId)
-                .orElseThrow(() -> new BusinessException(
+                .orElseThrow(() -> new BusinessException("STATEMENT_SIGNATURE_MISSING",
                         "Aucune signature configurée pour le gérant. Ajoutez une signature au salarié gérant dans la page LMNP."));
         return signatureService.dataUri(signature.getId());
     }
@@ -147,7 +147,8 @@ public class ExpenseStatementDocumentService {
                 ? templateService.active(TemplateType.EXPENSE_STATEMENT)
                 : templateService.byId(templateId);
         if (template.getType() != TemplateType.EXPENSE_STATEMENT) {
-            throw new BusinessException("Le template sélectionné n'est pas un template de note de frais.");
+            throw new BusinessException("STATEMENT_TEMPLATE_INVALID",
+                    "Le template sélectionné n'est pas un template de note de frais.");
         }
         return template;
     }

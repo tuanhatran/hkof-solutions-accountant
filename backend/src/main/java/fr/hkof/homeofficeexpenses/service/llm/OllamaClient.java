@@ -74,7 +74,8 @@ public class OllamaClient {
 
     public String chat(LlmConfig config, String systemPrompt, String userContent, List<String> imagesBase64) {
         if (config.getModel() == null || config.getModel().isBlank()) {
-            throw new BusinessException("Aucun modèle LLM n'est configuré. Renseignez-le dans Admin ou saisissez le montant manuellement.");
+            throw new BusinessException("LLM_MODEL_REQUIRED",
+                    "Aucun modèle LLM n'est configuré. Renseignez-le dans Admin ou saisissez le montant manuellement.");
         }
         Map<String, Object> userMessage = new LinkedHashMap<>();
         userMessage.put("role", "user");
@@ -97,14 +98,14 @@ public class OllamaClient {
         JsonNode root = call(config, JsonNode.class, "POST", "/api/chat", payload);
         String content = root.path("message").path("content").asString("");
         if (content.isBlank()) {
-            throw new BusinessException("Le modèle LLM n'a renvoyé aucun contenu exploitable.");
+            throw new BusinessException("LLM_EMPTY_RESPONSE", "Le modèle LLM n'a renvoyé aucun contenu exploitable.");
         }
         return content;
     }
 
     private <T> T call(LlmConfig config, Class<T> type, String method, String path, Object body) {
         if (config.getUrl() == null || config.getUrl().isBlank()) {
-            throw new BusinessException("L'URL du service LLM n'est pas configurée.");
+            throw new BusinessException("LLM_URL_NOT_CONFIGURED", "L'URL du service LLM n'est pas configurée.");
         }
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(Duration.ofSeconds(5));
@@ -130,10 +131,11 @@ public class OllamaClient {
             if (detail != null && detail.length() > 300) {
                 detail = detail.substring(0, 300);
             }
-            throw new BusinessException("Le service LLM a répondu " + ex.getStatusCode().value()
-                    + (detail == null || detail.isBlank() ? "." : " : " + detail));
+            throw new BusinessException("LLM_HTTP_ERROR", "Le service LLM a répondu " + ex.getStatusCode().value()
+                    + (detail == null || detail.isBlank() ? "." : " : " + detail),
+                    Map.of("status", String.valueOf(ex.getStatusCode().value())));
         } catch (RestClientException ex) {
-            throw new BusinessException("Le service LLM est injoignable (" + config.getUrl()
+            throw new BusinessException("LLM_UNREACHABLE", "Le service LLM est injoignable (" + config.getUrl()
                     + "). Vérifiez qu'Ollama est démarré, ou saisissez le montant manuellement.");
         }
     }

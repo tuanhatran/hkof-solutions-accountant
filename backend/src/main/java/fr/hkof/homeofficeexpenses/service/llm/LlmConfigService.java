@@ -47,7 +47,7 @@ public class LlmConfigService {
     @Transactional(readOnly = true)
     public LlmConfig entity() {
         return repository.findById(1L)
-                .orElseThrow(() -> new NotFoundException("Configuration LLM introuvable."));
+                .orElseThrow(() -> new NotFoundException("LLM_CONFIG_NOT_FOUND", "Configuration LLM introuvable."));
     }
 
     @Transactional(readOnly = true)
@@ -66,10 +66,10 @@ public class LlmConfigService {
             try {
                 supplier = LlmProvider.valueOf(request.supplier().trim().toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException ex) {
-                throw new BusinessException("Fournisseur LLM inconnu.");
+                throw new BusinessException("LLM_PROVIDER_UNKNOWN", "Fournisseur LLM inconnu.");
             }
             if (supplier != LlmProvider.OLLAMA) {
-                throw new BusinessException("Seul Ollama est pris en charge pour le moment.");
+                throw new BusinessException("LLM_PROVIDER_UNSUPPORTED", "Seul Ollama est pris en charge pour le moment.");
             }
             config.setSupplier(supplier);
         }
@@ -81,7 +81,8 @@ public class LlmConfigService {
         }
         if (request.timeoutSeconds() != null) {
             if (request.timeoutSeconds() < 5 || request.timeoutSeconds() > 600) {
-                throw new BusinessException("Le délai d'attente doit être compris entre 5 et 600 secondes.");
+                throw new BusinessException("LLM_TIMEOUT_OUT_OF_RANGE",
+                        "Le délai d'attente doit être compris entre 5 et 600 secondes.");
             }
             config.setTimeoutSeconds(request.timeoutSeconds());
         }
@@ -90,22 +91,24 @@ public class LlmConfigService {
             try {
                 temperature = new BigDecimal(request.temperature().trim().replace(',', '.'));
             } catch (NumberFormatException ex) {
-                throw new BusinessException("La température doit être un nombre entre 0 et 2.");
+                throw new BusinessException("LLM_TEMPERATURE_INVALID", "La température doit être un nombre entre 0 et 2.");
             }
             if (temperature.compareTo(BigDecimal.ZERO) < 0 || temperature.compareTo(new BigDecimal("2")) > 0) {
-                throw new BusinessException("La température doit être comprise entre 0 et 2.");
+                throw new BusinessException("LLM_TEMPERATURE_OUT_OF_RANGE", "La température doit être comprise entre 0 et 2.");
             }
             config.setTemperature(temperature);
         }
         if (request.numCtx() != null) {
             if (request.numCtx() < 1024 || request.numCtx() > 131_072) {
-                throw new BusinessException("La taille de contexte doit être comprise entre 1 024 et 131 072.");
+                throw new BusinessException("LLM_CONTEXT_OUT_OF_RANGE",
+                        "La taille de contexte doit être comprise entre 1 024 et 131 072.");
             }
             config.setNumCtx(request.numCtx());
         }
         if (request.maxPages() != null) {
             if (request.maxPages() < 1 || request.maxPages() > 20) {
-                throw new BusinessException("Le nombre de pages maximum doit être compris entre 1 et 20.");
+                throw new BusinessException("LLM_MAX_PAGES_OUT_OF_RANGE",
+                        "Le nombre de pages maximum doit être compris entre 1 et 20.");
             }
             config.setMaxPages(request.maxPages());
         }
@@ -114,7 +117,7 @@ public class LlmConfigService {
         }
         if (request.extractionPrompt() != null) {
             if (request.extractionPrompt().isBlank()) {
-                throw new BusinessException("Le prompt d'extraction ne peut pas être vide.");
+                throw new BusinessException("LLM_PROMPT_REQUIRED", "Le prompt d'extraction ne peut pas être vide.");
             }
             config.setExtractionPrompt(request.extractionPrompt().trim());
         }
@@ -224,17 +227,18 @@ public class LlmConfigService {
     private String normalizeUrl(String url) {
         String normalizedUrl = url == null ? "" : url.trim().replaceAll("/+$", "");
         if (normalizedUrl.isBlank()) {
-            throw new BusinessException("L'URL du service LLM est obligatoire.");
+            throw new BusinessException("LLM_URL_REQUIRED", "L'URL du service LLM est obligatoire.");
         }
         URI uri;
         try {
             uri = URI.create(normalizedUrl);
         } catch (IllegalArgumentException ex) {
-            throw new BusinessException("L'URL du service LLM est invalide.");
+            throw new BusinessException("LLM_URL_INVALID", "L'URL du service LLM est invalide.");
         }
         if (uri.getScheme() == null || uri.getHost() == null
                 || !(uri.getScheme().equals("http") || uri.getScheme().equals("https"))) {
-            throw new BusinessException("L'URL du service LLM doit commencer par http:// ou https://.");
+            throw new BusinessException("LLM_URL_SCHEME_INVALID",
+                    "L'URL du service LLM doit commencer par http:// ou https://.");
         }
         return normalizedUrl;
     }

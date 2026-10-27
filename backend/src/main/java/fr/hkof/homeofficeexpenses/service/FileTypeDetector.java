@@ -30,15 +30,16 @@ public class FileTypeDetector {
 
     public DetectedFile detectReceipt(String fileName, byte[] content) {
         if (content == null || content.length == 0) {
-            throw new BusinessException("Le fichier est vide.");
+            throw new BusinessException("RECEIPT_EMPTY", "Le fichier est vide.");
         }
         if (content.length > MAX_RECEIPT_SIZE) {
-            throw new BusinessException("Fichier trop volumineux (maximum 10 Mo).");
+            throw new BusinessException("RECEIPT_TOO_LARGE", "Fichier trop volumineux (maximum 10 Mo).");
         }
         String extension = extension(fileName);
         String mime = MIME_BY_EXTENSION.get(extension);
         if (mime == null) {
-            throw new BusinessException("Format non accepté. Formats autorisés : PDF, DOCX, XLSX/XLS, CSV, TXT, JPG, PNG.");
+            throw new BusinessException("RECEIPT_UNSUPPORTED_FORMAT",
+                    "Format non accepté. Formats autorisés : PDF, DOCX, XLSX/XLS, CSV, TXT, JPG, PNG.");
         }
         boolean valid = switch (extension) {
             case "pdf" -> startsWithBytes(content, "%PDF-".getBytes(StandardCharsets.US_ASCII));
@@ -51,7 +52,9 @@ public class FileTypeDetector {
             default -> false;
         };
         if (!valid) {
-            throw new BusinessException("Le contenu du fichier ne correspond pas à son extension (« ." + extension + " »).");
+            throw new BusinessException("RECEIPT_CONTENT_MISMATCH",
+                    "Le contenu du fichier ne correspond pas à son extension (« ." + extension + " »).",
+                    Map.of("extension", extension));
         }
         return new DetectedFile(fileName, extension, mime);
     }
@@ -62,10 +65,10 @@ public class FileTypeDetector {
      */
     public DetectedFile detectSignature(String fileName, byte[] content) {
         if (content == null || content.length == 0) {
-            throw new BusinessException("Le fichier est vide.");
+            throw new BusinessException("SIGNATURE_EMPTY", "Le fichier est vide.");
         }
         if (content.length > MAX_SIGNATURE_SIZE) {
-            throw new BusinessException("Image trop volumineuse (maximum 2 Mo).");
+            throw new BusinessException("SIGNATURE_TOO_LARGE", "Image trop volumineuse (maximum 2 Mo).");
         }
         String extension = extension(fileName);
         String mime = switch (extension) {
@@ -74,7 +77,7 @@ public class FileTypeDetector {
             default -> null;
         };
         if (mime == null) {
-            throw new BusinessException("La signature doit être une image PNG ou JPEG.");
+            throw new BusinessException("SIGNATURE_UNSUPPORTED_FORMAT", "La signature doit être une image PNG ou JPEG.");
         }
         boolean valid = switch (extension) {
             case "jpg", "jpeg" -> startsWithBytes(content, new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF});
@@ -82,24 +85,24 @@ public class FileTypeDetector {
             default -> false;
         };
         if (!valid) {
-            throw new BusinessException("La signature doit être une image PNG ou JPEG.");
+            throw new BusinessException("SIGNATURE_UNSUPPORTED_FORMAT", "La signature doit être une image PNG ou JPEG.");
         }
         return new DetectedFile(fileName, extension, mime);
     }
 
     public void validateTemplateHtml(String fileName, byte[] content) {
         if (content == null || content.length == 0) {
-            throw new BusinessException("Le fichier template est vide.");
+            throw new BusinessException("TEMPLATE_EMPTY", "Le fichier template est vide.");
         }
         if (content.length > MAX_TEMPLATE_SIZE) {
-            throw new BusinessException("Template trop volumineux (maximum 5 Mo).");
+            throw new BusinessException("TEMPLATE_TOO_LARGE", "Template trop volumineux (maximum 5 Mo).");
         }
         String extension = extension(fileName);
         if (!extension.equals("html") && !extension.equals("htm")) {
-            throw new BusinessException("Le template doit être un fichier HTML (.html).");
+            throw new BusinessException("TEMPLATE_EXTENSION_INVALID", "Le template doit être un fichier HTML (.html).");
         }
         if (!isText(content)) {
-            throw new BusinessException("Le template HTML doit être un fichier texte UTF-8.");
+            throw new BusinessException("TEMPLATE_NOT_TEXT", "Le template HTML doit être un fichier texte UTF-8.");
         }
     }
 

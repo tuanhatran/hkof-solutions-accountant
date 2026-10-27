@@ -47,7 +47,7 @@ public class StorageService {
 
     public StoredFile storeReceipt(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new BusinessException("Le fichier justificatif est obligatoire.");
+            throw new BusinessException("RECEIPT_FILE_REQUIRED", "Le fichier justificatif est obligatoire.");
         }
         try {
             byte[] content = file.getBytes();
@@ -88,7 +88,7 @@ public class StorageService {
 
     public byte[] read(String path) {
         if (path == null || path.isBlank()) {
-            throw new NotFoundException("Fichier introuvable.");
+            throw new NotFoundException("FILE_NOT_FOUND", "Fichier introuvable.");
         }
         try {
             if (path.startsWith("classpath:")) {
@@ -100,11 +100,11 @@ public class StorageService {
             Path file = Path.of(path).toAbsolutePath().normalize();
             checkInternal(file);
             if (!Files.exists(file)) {
-                throw new NotFoundException("Fichier introuvable.");
+                throw new NotFoundException("FILE_NOT_FOUND", "Fichier introuvable.");
             }
             return Files.readAllBytes(file);
         } catch (IOException ex) {
-            throw new NotFoundException("Fichier introuvable.");
+            throw new NotFoundException("FILE_NOT_FOUND", "Fichier introuvable.");
         }
     }
 
@@ -127,7 +127,7 @@ public class StorageService {
 
     private void checkInternal(Path file) {
         if (!file.startsWith(root)) {
-            throw new BusinessException("Accès fichier refusé.");
+            throw new BusinessException("FILE_ACCESS_DENIED", "Accès fichier refusé.");
         }
     }
 

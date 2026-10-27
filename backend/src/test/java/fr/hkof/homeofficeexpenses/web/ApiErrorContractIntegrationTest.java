@@ -122,6 +122,26 @@ class ApiErrorContractIntegrationTest {
     }
 
     @Test
+    @DisplayName("A real template endpoint surfaces a template code")
+    void templateCodeOverHttp() throws Exception {
+        mockMvc.perform(get("/api/templates/999999/file"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_NOT_FOUND"))
+                .andExpect(jsonPath("$.detail").value("Template introuvable."));
+    }
+
+    @Test
+    @DisplayName("A real LLM endpoint surfaces an LLM code")
+    void llmCodeOverHttp() throws Exception {
+        mockMvc.perform(put("/api/admin/llm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"supplier\":\"mistral\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("LLM_PROVIDER_UNKNOWN"))
+                .andExpect(jsonPath("$.detail").value("Fournisseur LLM inconnu."));
+    }
+
+    @Test
     @DisplayName("ProblemDetail params are serialized as JSON strings")
     void paramsSerializeAsJsonStrings() throws Exception {
         mockMvc.perform(get("/api/error-contract/params-probe"))

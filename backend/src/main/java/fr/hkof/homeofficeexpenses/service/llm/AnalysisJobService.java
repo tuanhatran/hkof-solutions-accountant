@@ -73,7 +73,7 @@ public class AnalysisJobService {
             return new Launch(repository.save(analysis).getId(), true);
         });
         if (launch == null) {
-            throw new NotFoundException("Justificatif introuvable.");
+            throw new NotFoundException("RECEIPT_NOT_FOUND", "Justificatif introuvable.");
         }
         if (launch.created()) {
             try {
@@ -177,16 +177,16 @@ public class AnalysisJobService {
     @Transactional(readOnly = true)
     public AnalysisDto get(Long id) {
         AnalysisDocument analysis = repository.findWithReceiptById(id)
-                .orElseThrow(() -> new NotFoundException("Analyse introuvable."));
+                .orElseThrow(() -> new NotFoundException("ANALYSIS_NOT_FOUND", "Analyse introuvable."));
         return toDto(analysis);
     }
 
     @Transactional
     public AnalysisDto cancel(Long id) {
         AnalysisDocument analysis = repository.findWithReceiptById(id)
-                .orElseThrow(() -> new NotFoundException("Analyse introuvable."));
+                .orElseThrow(() -> new NotFoundException("ANALYSIS_NOT_FOUND", "Analyse introuvable."));
         if (analysis.getStatus().isFinished()) {
-            throw new BusinessException("Cette analyse est déjà terminée.");
+            throw new BusinessException("ANALYSIS_ALREADY_FINISHED", "Cette analyse est déjà terminée.");
         }
         analysis.setStatus(AnalysisStatus.CANCELLED);
         analysis.setErrorMessage("Analyse annulée par l'utilisateur.");

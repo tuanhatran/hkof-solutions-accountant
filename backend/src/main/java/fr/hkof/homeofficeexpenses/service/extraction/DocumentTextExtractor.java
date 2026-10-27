@@ -51,9 +51,10 @@ public class DocumentTextExtractor {
             if (mime.startsWith("image/")) {
                 return new Extraction("", List.of(Base64.getEncoder().encodeToString(content)), true, 1);
             }
-            throw new BusinessException("Format de document non pris en charge pour l'analyse.");
+            throw new BusinessException("DOCUMENT_UNSUPPORTED_FORMAT",
+                    "Format de document non pris en charge pour l'analyse.");
         } catch (IOException ex) {
-            throw new BusinessException("Impossible de lire le document : " + ex.getMessage());
+            throw new BusinessException("DOCUMENT_UNREADABLE", "Impossible de lire le document : " + ex.getMessage());
         }
     }
 

@@ -142,6 +142,84 @@ export const en = {
       SIGNATURE_NOT_CEO:
         "The selected signature does not belong to this company's manager.",
       SIGNATURE_NOT_FOUND: "Signature not found.",
+      FILE_NOT_FOUND: "File not found.",
+      FILE_ACCESS_DENIED: "File access denied.",
+      RECEIPT_FILE_REQUIRED: "The receipt file is required.",
+      RECEIPT_EMPTY: "The receipt file is empty.",
+      RECEIPT_TOO_LARGE: "The receipt file is too large (10 MB maximum).",
+      RECEIPT_UNSUPPORTED_FORMAT:
+        "Unsupported receipt format. Allowed formats: PDF, DOCX, XLSX/XLS, CSV, TXT, JPG, PNG.",
+      RECEIPT_CONTENT_MISMATCH:
+        "The file content does not match its extension (“.{{extension}}”).",
+      SIGNATURE_EMPTY: "The signature image is empty.",
+      SIGNATURE_TOO_LARGE: "The signature image is too large (2 MB maximum).",
+      SIGNATURE_UNSUPPORTED_FORMAT:
+        "The signature must be a PNG or JPEG image.",
+      TEMPLATE_EMPTY: "The template file is empty.",
+      TEMPLATE_TOO_LARGE: "The template file is too large (5 MB maximum).",
+      TEMPLATE_EXTENSION_INVALID: "The template must be an HTML file (.html).",
+      TEMPLATE_NOT_TEXT: "The HTML template must be a UTF-8 text file.",
+      TEMPLATE_ACTIVE_NOT_FOUND:
+        "No active template is configured for {{type}}.",
+      TEMPLATE_NOT_FOUND: "Template not found.",
+      TEMPLATE_RENDER_FAILED: "The template “{{name}}” could not be rendered.",
+      TEMPLATE_NAME_REQUIRED: "The template name is required.",
+      TEMPLATE_FILE_UNREADABLE: "The template file could not be read.",
+      TEMPLATE_BUILT_IN_NOT_DELETABLE:
+        "The built-in template cannot be deleted.",
+      TEMPLATE_ACTIVE_NOT_DELETABLE:
+        "The active template cannot be deleted. Activate another template first.",
+      TEMPLATE_BUILT_IN_NOT_FOUND: "Built-in template not found.",
+      DOCUMENT_UNSUPPORTED_FORMAT:
+        "This document format is not supported for analysis.",
+      DOCUMENT_UNREADABLE: "The document could not be read.",
+      DOCUMENT_NO_TEXT:
+        "Unreadable document: no usable text was found. Enter the amount manually.",
+      DOCUMENT_NO_TEXT_NO_VISION:
+        "The document has no usable text and the configured model does not support images. Choose a vision model or enter the amount manually.",
+      ANALYSIS_NOT_FOUND: "Analysis not found.",
+      ANALYSIS_ALREADY_FINISHED: "This analysis is already finished.",
+      LLM_CONFIG_NOT_FOUND: "LLM configuration not found.",
+      LLM_PROVIDER_UNKNOWN: "Unknown LLM provider.",
+      LLM_PROVIDER_UNSUPPORTED: "Only Ollama is supported for now.",
+      LLM_TIMEOUT_OUT_OF_RANGE:
+        "The timeout must be between 5 and 600 seconds.",
+      LLM_TEMPERATURE_INVALID:
+        "The temperature must be a number between 0 and 2.",
+      LLM_TEMPERATURE_OUT_OF_RANGE: "The temperature must be between 0 and 2.",
+      LLM_CONTEXT_OUT_OF_RANGE:
+        "The context size must be between 1,024 and 131,072.",
+      LLM_MAX_PAGES_OUT_OF_RANGE:
+        "The maximum number of pages must be between 1 and 20.",
+      LLM_PROMPT_REQUIRED: "The extraction prompt cannot be empty.",
+      LLM_URL_REQUIRED: "The LLM service URL is required.",
+      LLM_URL_INVALID: "The LLM service URL is invalid.",
+      LLM_URL_SCHEME_INVALID:
+        "The LLM service URL must start with http:// or https://.",
+      LLM_MODEL_REQUIRED:
+        "No LLM model is configured. Set one in Admin or enter the amount manually.",
+      LLM_EMPTY_RESPONSE: "The LLM model returned no usable content.",
+      LLM_URL_NOT_CONFIGURED: "The LLM service URL is not configured.",
+      LLM_HTTP_ERROR: "The LLM service responded with status {{status}}.",
+      LLM_UNREACHABLE:
+        "The LLM service is unreachable. Check that Ollama is running, or enter the amount manually.",
+      LLM_RESPONSE_INVALID_JSON:
+        "The model response is not valid JSON. You can still enter the amount manually.",
+      LLM_RESPONSE_NOT_OBJECT:
+        "The model response is not a compliant JSON object. You can still enter the amount manually.",
+      LLM_RESPONSE_FIELD_NOT_ALLOWED:
+        "The model response contains a disallowed field (“{{field}}”). You can still enter the amount manually.",
+      LLM_RESPONSE_FIELD_MISSING:
+        "The model response does not match the expected schema (missing field “{{field}}”).",
+      LLM_RESPONSE_FIELD_INVALID:
+        "The model response does not match the expected schema (field “{{field}}”).",
+      LLM_RESPONSE_NO_JSON:
+        "The model response does not contain a JSON object. You can still enter the amount manually.",
+      STATEMENT_PDF_NOT_FOUND: "The requested PDF could not be found.",
+      STATEMENT_SIGNATURE_MISSING:
+        "No signature is configured for the manager. Add a signature to the manager employee on the LMNP page.",
+      STATEMENT_TEMPLATE_INVALID:
+        "The selected template is not an expense statement template.",
     },
   },
   navigation: {

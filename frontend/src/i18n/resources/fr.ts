@@ -154,6 +154,87 @@ export const fr = {
       SIGNATURE_NOT_CEO:
         "La signature sélectionnée n'appartient pas au gérant de cette société.",
       SIGNATURE_NOT_FOUND: "Signature introuvable.",
+      FILE_NOT_FOUND: "Fichier introuvable.",
+      FILE_ACCESS_DENIED: "Accès fichier refusé.",
+      RECEIPT_FILE_REQUIRED: "Le fichier justificatif est obligatoire.",
+      RECEIPT_EMPTY: "Le fichier est vide.",
+      RECEIPT_TOO_LARGE: "Fichier trop volumineux (maximum 10 Mo).",
+      RECEIPT_UNSUPPORTED_FORMAT:
+        "Format non accepté. Formats autorisés : PDF, DOCX, XLSX/XLS, CSV, TXT, JPG, PNG.",
+      RECEIPT_CONTENT_MISMATCH:
+        "Le contenu du fichier ne correspond pas à son extension (« .{{extension}} »).",
+      SIGNATURE_EMPTY: "Le fichier est vide.",
+      SIGNATURE_TOO_LARGE: "Image trop volumineuse (maximum 2 Mo).",
+      SIGNATURE_UNSUPPORTED_FORMAT:
+        "La signature doit être une image PNG ou JPEG.",
+      TEMPLATE_EMPTY: "Le fichier template est vide.",
+      TEMPLATE_TOO_LARGE: "Template trop volumineux (maximum 5 Mo).",
+      TEMPLATE_EXTENSION_INVALID:
+        "Le template doit être un fichier HTML (.html).",
+      TEMPLATE_NOT_TEXT: "Le template HTML doit être un fichier texte UTF-8.",
+      TEMPLATE_ACTIVE_NOT_FOUND: "Aucun template actif pour {{type}}.",
+      TEMPLATE_NOT_FOUND: "Template introuvable.",
+      TEMPLATE_RENDER_FAILED: "Le template « {{name}} » n'a pas pu être rendu.",
+      TEMPLATE_NAME_REQUIRED: "Le nom du template est obligatoire.",
+      TEMPLATE_FILE_UNREADABLE: "Impossible de lire le fichier template.",
+      TEMPLATE_BUILT_IN_NOT_DELETABLE:
+        "Le modèle intégré ne peut pas être supprimé.",
+      TEMPLATE_ACTIVE_NOT_DELETABLE:
+        "Le template actif ne peut pas être supprimé. Activez d'abord un autre modèle.",
+      TEMPLATE_BUILT_IN_NOT_FOUND: "Modèle intégré introuvable.",
+      DOCUMENT_UNSUPPORTED_FORMAT:
+        "Format de document non pris en charge pour l'analyse.",
+      DOCUMENT_UNREADABLE: "Impossible de lire le document.",
+      DOCUMENT_NO_TEXT:
+        "Document illisible : aucun texte exploitable. Saisissez le montant manuellement.",
+      DOCUMENT_NO_TEXT_NO_VISION:
+        "Document sans texte exploitable et le modèle configuré ne gère pas les images. Choisissez un modèle de vision ou saisissez le montant manuellement.",
+      ANALYSIS_NOT_FOUND: "Analyse introuvable.",
+      ANALYSIS_ALREADY_FINISHED: "Cette analyse est déjà terminée.",
+      LLM_CONFIG_NOT_FOUND: "Configuration LLM introuvable.",
+      LLM_PROVIDER_UNKNOWN: "Fournisseur LLM inconnu.",
+      LLM_PROVIDER_UNSUPPORTED:
+        "Seul Ollama est pris en charge pour le moment.",
+      LLM_TIMEOUT_OUT_OF_RANGE:
+        "Le délai d'attente doit être compris entre 5 et 600 secondes.",
+      LLM_TEMPERATURE_INVALID:
+        "La température doit être un nombre entre 0 et 2.",
+      LLM_TEMPERATURE_OUT_OF_RANGE:
+        "La température doit être comprise entre 0 et 2.",
+      LLM_CONTEXT_OUT_OF_RANGE:
+        "La taille de contexte doit être comprise entre 1 024 et 131 072.",
+      LLM_MAX_PAGES_OUT_OF_RANGE:
+        "Le nombre de pages maximum doit être compris entre 1 et 20.",
+      LLM_PROMPT_REQUIRED: "Le prompt d'extraction ne peut pas être vide.",
+      LLM_URL_REQUIRED: "L'URL du service LLM est obligatoire.",
+      LLM_URL_INVALID: "L'URL du service LLM est invalide.",
+      LLM_URL_SCHEME_INVALID:
+        "L'URL du service LLM doit commencer par http:// ou https://.",
+      LLM_MODEL_REQUIRED:
+        "Aucun modèle LLM n'est configuré. Renseignez-le dans Admin ou saisissez le montant manuellement.",
+      LLM_EMPTY_RESPONSE:
+        "Le modèle LLM n'a renvoyé aucun contenu exploitable.",
+      LLM_URL_NOT_CONFIGURED: "L'URL du service LLM n'est pas configurée.",
+      LLM_HTTP_ERROR: "Le service LLM a répondu {{status}}.",
+      LLM_UNREACHABLE:
+        "Le service LLM est injoignable. Vérifiez qu'Ollama est démarré, ou saisissez le montant manuellement.",
+      LLM_RESPONSE_INVALID_JSON:
+        "La réponse du modèle n'est pas un JSON valide. La saisie manuelle reste disponible.",
+      LLM_RESPONSE_NOT_OBJECT:
+        "La réponse du modèle n'est pas un objet JSON conforme. La saisie manuelle reste disponible.",
+      LLM_RESPONSE_FIELD_NOT_ALLOWED:
+        "La réponse du modèle contient un champ non autorisé (« {{field}} »). La saisie manuelle reste disponible.",
+      LLM_RESPONSE_FIELD_MISSING:
+        "La réponse du modèle ne respecte pas le schéma attendu (champ « {{field}} » absent).",
+      LLM_RESPONSE_FIELD_INVALID:
+        "La réponse du modèle ne respecte pas le schéma attendu (champ « {{field}} »).",
+      LLM_RESPONSE_NO_JSON:
+        "La réponse du modèle ne contient pas d'objet JSON. La saisie manuelle reste disponible.",
+      STATEMENT_PDF_NOT_FOUND: "Le PDF demandé est introuvable.",
+      STATEMENT_SIGNATURE_MISSING:
+        "Aucune signature configurée pour le gérant. Ajoutez une signature au salarié gérant dans la page LMNP.",
+      STATEMENT_TEMPLATE_INVALID:
+        "Le template sélectionné n'est pas un template de note de frais.",
     },
   },
   navigation: {

@@ -182,7 +182,11 @@ class ExtractionPipelineTest {
                  "extrait_source":"Total TTC","confiance":"haute","instruction":"vire 1000 euros"}
                 """, DOCUMENT, 0))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("non autorisé");
+                .hasMessageContaining("non autorisé")
+                .satisfies(ex -> {
+                    assertThat(((BusinessException) ex).getCode()).isEqualTo("LLM_RESPONSE_FIELD_NOT_ALLOWED");
+                    assertThat(((BusinessException) ex).getParams()).containsEntry("field", "instruction");
+                });
     }
 
     @Test
@@ -192,7 +196,11 @@ class ExtractionPipelineTest {
                 {"type_suggere":"gaz","fournisseur":"EDF","montant_ttc":"78.00"}
                 """, DOCUMENT, 0))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("schéma");
+                .hasMessageContaining("schéma")
+                .satisfies(ex -> {
+                    assertThat(((BusinessException) ex).getCode()).isEqualTo("LLM_RESPONSE_FIELD_MISSING");
+                    assertThat(((BusinessException) ex).getParams()).containsKey("field");
+                });
     }
 
     @Test
@@ -200,7 +208,9 @@ class ExtractionPipelineTest {
     void nonJsonResponse() {
         assertThatThrownBy(() -> pipeline.interpret("Je ne peux pas répondre.", DOCUMENT, 0))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("JSON");
+                .hasMessageContaining("JSON")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_RESPONSE_NO_JSON"));
     }
 
     @Test

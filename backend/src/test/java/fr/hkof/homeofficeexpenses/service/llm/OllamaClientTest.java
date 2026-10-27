@@ -116,7 +116,11 @@ class OllamaClientTest {
 
         assertThatThrownBy(() -> client.chat(config, "system", "document", List.of()))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("service LLM a répondu 500");
+                .hasMessageContaining("service LLM a répondu 500")
+                .satisfies(ex -> {
+                    assertThat(((BusinessException) ex).getCode()).isEqualTo("LLM_HTTP_ERROR");
+                    assertThat(((BusinessException) ex).getParams()).containsEntry("status", "500");
+                });
     }
 
     @Test
@@ -127,7 +131,8 @@ class OllamaClientTest {
         assertThatThrownBy(() -> client.models(config))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("injoignable")
-                .hasMessageContaining("saisissez le montant manuellement");
+                .hasMessageContaining("saisissez le montant manuellement")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LLM_UNREACHABLE"));
     }
 
     @Test
@@ -188,7 +193,8 @@ class OllamaClientTest {
 
         assertThatThrownBy(() -> client.chat(config, "system", "document", List.of()))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Aucun modèle LLM");
+                .hasMessageContaining("Aucun modèle LLM")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LLM_MODEL_REQUIRED"));
     }
 
     @Test
@@ -198,7 +204,8 @@ class OllamaClientTest {
 
         assertThatThrownBy(() -> client.chat(config, "system", "document", List.of()))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("aucun contenu exploitable");
+                .hasMessageContaining("aucun contenu exploitable")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LLM_EMPTY_RESPONSE"));
     }
 
     @Test
@@ -235,7 +242,9 @@ class OllamaClientTest {
 
         assertThatThrownBy(() -> client.models(config))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("L'URL du service LLM n'est pas configurée.");
+                .hasMessage("L'URL du service LLM n'est pas configurée.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LLM_URL_NOT_CONFIGURED"));
     }
 
     @Test
@@ -269,6 +278,7 @@ class OllamaClientTest {
 
         assertThatThrownBy(() -> client.models(config))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("injoignable");
+                .hasMessageContaining("injoignable")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LLM_UNREACHABLE"));
     }
 }
