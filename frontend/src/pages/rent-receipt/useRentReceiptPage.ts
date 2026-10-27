@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { downloadBlob, errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
@@ -42,6 +43,7 @@ export interface TenantOption {
  * generation.
  */
 export function useRentReceiptPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const draft = useRentReceiptDraft();
@@ -150,13 +152,13 @@ export function useRentReceiptPage() {
     .filter((person) => person.id !== undefined)
     .map((person) => ({
       value: `person:${person.id}`,
-      label: person.name ?? "Personne",
+      label: person.name ?? t("rentReceipt.tenantOptions.personFallback"),
     }));
   const companyTenantOptions: TenantOption[] = companyRows
     .filter((company) => company.id !== undefined)
     .map((company) => ({
       value: `company:${company.id}`,
-      label: company.name ?? "Société",
+      label: company.name ?? t("rentReceipt.tenantOptions.companyFallback"),
     }));
   // Without a full pair the hook falls back to the month-scoped query, whose
   // receipt belongs to no identifiable pair: never surface it on this page.
@@ -246,7 +248,10 @@ export function useRentReceiptPage() {
         queryKey: queryKeys.rentReceiptsAll,
       });
       toast.success(
-        `Quittance de ${formatMonth(submittedValues.month)} générée en version ${rentReceipt.version ?? 1}.`,
+        t("rentReceipt.toasts.generated", {
+          month: formatMonth(submittedValues.month),
+          version: rentReceipt.version ?? 1,
+        }),
       );
     } catch (error) {
       toast.error(errorMessage(error));
@@ -311,7 +316,7 @@ export function useRentReceiptPage() {
     setValue("charges", selectedLease.charges ?? "", {
       shouldValidate: true,
     });
-    toast.info("Montants repris depuis le bail.");
+    toast.info(t("rentReceipt.toasts.amountsResumed"));
   }
 
   function changeMonth(value: string) {

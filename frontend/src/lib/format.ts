@@ -1,3 +1,5 @@
+import i18n from "@/i18n";
+
 const WHITESPACE = /[\s\u00a0\u202f]/g;
 
 const EURO_NUMBER = new Intl.NumberFormat("fr-FR", {
@@ -25,7 +27,12 @@ const DATE_TIME_FORMATTER = new Intl.DateTimeFormat("fr-FR", {
   minute: "2-digit",
 });
 
-const MONTH_NAMES = new Intl.DateTimeFormat("fr-FR", {
+const MONTH_NAMES_FR = new Intl.DateTimeFormat("fr-FR", {
+  month: "long",
+  year: "numeric",
+});
+
+const MONTH_NAMES_EN = new Intl.DateTimeFormat("en-GB", {
   month: "long",
   year: "numeric",
 });
@@ -163,7 +170,9 @@ export function formatMonth(month: string | null | undefined): string {
   }
   const [year, monthNumber] = month.split("-").map(Number);
   const date = new Date(year, monthNumber - 1, 1);
-  const labelText = MONTH_NAMES.format(date);
+  const formatter =
+    i18n.resolvedLanguage === "en" ? MONTH_NAMES_EN : MONTH_NAMES_FR;
+  const labelText = formatter.format(date);
   return labelText.charAt(0).toUpperCase() + labelText.slice(1);
 }
 

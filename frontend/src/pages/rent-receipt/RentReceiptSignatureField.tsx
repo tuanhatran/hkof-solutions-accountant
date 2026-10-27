@@ -1,4 +1,5 @@
 import "./RentReceiptSignatureField.css";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { errorMessage } from "@/api/client";
 import { FieldGroup } from "@/components/ui/FieldGroup";
@@ -6,14 +7,19 @@ import type { RentReceiptController } from "./useRentReceiptPage";
 
 /** Signature picker of the selected landlord plus its alerts. */
 export function RentReceiptSignatureField({ c }: { c: RentReceiptController }) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="rent-receipt-signature-field-grid">
         <FieldGroup
           id="quittance-signature"
-          label="Signature"
-          help="Signatures du bailleur sélectionné, apposées au bas du PDF."
-          badge={<span className="badge badge-neutral">PNG / JPEG</span>}
+          label={t("rentReceipt.fields.signature")}
+          help={t("rentReceipt.fields.signatureHelp")}
+          badge={
+            <span className="badge badge-neutral">
+              {t("rentReceipt.fields.signatureBadge")}
+            </span>
+          }
         >
           <select
             id="quittance-signature"
@@ -30,7 +36,7 @@ export function RentReceiptSignatureField({ c }: { c: RentReceiptController }) {
             }
           >
             {c.availableSignatures.length === 0 ? (
-              <option value="">Aucune signature</option>
+              <option value="">{t("rentReceipt.fields.noSignature")}</option>
             ) : null}
             {c.availableSignatures.map((candidate) => (
               <option key={candidate.id} value={candidate.id}>
@@ -48,8 +54,9 @@ export function RentReceiptSignatureField({ c }: { c: RentReceiptController }) {
           aria-live="polite"
           data-cy="alerte-signatures-erreur"
         >
-          Les signatures n’ont pas pu être chargées :{" "}
-          {errorMessage(c.signatures.error)}
+          {t("rentReceipt.fields.signaturesError", {
+            message: errorMessage(c.signatures.error),
+          })}
         </p>
       ) : c.landlordWithoutSignature ? (
         <p
@@ -57,11 +64,11 @@ export function RentReceiptSignatureField({ c }: { c: RentReceiptController }) {
           role="alert"
           data-cy="alerte-signature-bailleur"
         >
-          Aucune signature pour ce bailleur. Ajoutez-en une dans sa fiche, page{" "}
+          {t("rentReceipt.fields.missingLandlordSignatureBefore")}{" "}
           <Link to="/configuration/lmnp" className="link">
-            LMNP · Personnes
+            {t("rentReceipt.fields.lmnpPersonsLink")}
           </Link>
-          .
+          {t("rentReceipt.fields.missingLandlordSignatureAfter")}
         </p>
       ) : null}
     </>

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import i18n from "@/i18n";
 import {
   expenseSchema,
   llmSchema,
@@ -92,6 +93,48 @@ describe("rentReceiptSchema", () => {
     expect(
       rentReceiptSchema.safeParse({ ...VALID, month: "2026-13" }).success,
     ).toBe(false);
+  });
+
+  it("keeps the French messages for an invalid receipt", () => {
+    const result = rentReceiptSchema.safeParse({
+      ...VALID,
+      month: "",
+      landlordId: "",
+      tenantKey: "",
+    });
+
+    expect(result.success).toBe(false);
+    if (result.success) {
+      return;
+    }
+    expect(result.error.issues.map((issue) => issue.message)).toEqual([
+      "Choisissez un mois valide.",
+      "Sélectionnez un bailleur.",
+      "Sélectionnez un locataire.",
+    ]);
+  });
+
+  it("translates only the rent receipt messages at parse time", async () => {
+    await i18n.changeLanguage("en");
+
+    const result = rentReceiptSchema.safeParse({
+      ...VALID,
+      month: "",
+      periodEnd: "2026-09-30",
+    });
+
+    expect(result.success).toBe(false);
+    if (result.success) {
+      return;
+    }
+    expect(result.error.issues.map((issue) => issue.message)).toEqual([
+      "Choose a valid month.",
+      "The period end must be after the start.",
+    ]);
+    expect(
+      companySchema.safeParse({ ...VALID_COMPANY, name: " " }).error?.issues[0]
+        ?.message,
+    ).toBe("Le nom de la société est obligatoire.");
   });
 });
 

@@ -8,6 +8,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -40,6 +41,7 @@ export function PdfViewer({
   dataCy = "apercu-pdf",
   className,
 }: PdfViewerProps) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const pdfZoneRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(560);
@@ -90,10 +92,8 @@ export function PdfViewer({
             <FileText size={16} aria-hidden="true" />
           </span>
           <div>
-            <h2 className="pdf-viewer-title">Aperçu du document</h2>
-            <p className="pdf-viewer-subtitle">
-              Filigrane « APERÇU » — rien n’est enregistré.
-            </p>
+            <h2 className="pdf-viewer-title">{t("pdfViewer.title")}</h2>
+            <p className="pdf-viewer-subtitle">{t("pdfViewer.watermark")}</p>
           </div>
         </div>
         <div className="pdf-viewer-actions">
@@ -105,7 +105,9 @@ export function PdfViewer({
               aria-live="polite"
             >
               {updatedAt
-                ? `Mis à jour à ${formatDateTime(updatedAt.toISOString())}`
+                ? t("pdfViewer.updatedAt", {
+                    date: formatDateTime(updatedAt.toISOString()),
+                  })
                 : "—"}
             </span>
           ) : null}
@@ -128,12 +130,10 @@ export function PdfViewer({
                   setPageCount(numPages);
                   setPdfError(null);
                 }}
-                onLoadError={() =>
-                  setPdfError("Impossible d'afficher l'aperçu PDF.")
-                }
+                onLoadError={() => setPdfError(t("pdfViewer.loadError"))}
                 loading={
                   <div className="pdf-viewer-document-loading">
-                    <Spinner /> Chargement du PDF…
+                    <Spinner /> {t("pdfViewer.loadingDocument")}
                   </div>
                 }
               >
@@ -161,7 +161,7 @@ export function PdfViewer({
                 <>
                   <Spinner size={26} />
                   <p className="pdf-viewer-loading-text">
-                    Préparation de l’aperçu…
+                    {t("pdfViewer.preparing")}
                   </p>
                 </>
               ) : (
@@ -170,8 +170,7 @@ export function PdfViewer({
                     <FileText size={22} aria-hidden="true" />
                   </span>
                   <p className="pdf-viewer-placeholder-text">
-                    L’aperçu apparaîtra ici dès que les informations seront
-                    complètes.
+                    {t("pdfViewer.empty")}
                   </p>
                 </>
               )}
@@ -182,9 +181,11 @@ export function PdfViewer({
         {loading && url ? (
           <div className="glass-surface pdf-viewer-overlay">
             <Spinner size={26} />
-            <p className="pdf-viewer-overlay-title">Mise à jour de l’aperçu…</p>
+            <p className="pdf-viewer-overlay-title">
+              {t("pdfViewer.updating")}
+            </p>
             <p className="pdf-viewer-overlay-hint">
-              L’ancienne version reste affichée.
+              {t("pdfViewer.previousVersion")}
             </p>
           </div>
         ) : null}
@@ -197,19 +198,22 @@ export function PdfViewer({
             className="pdf-viewer-tool"
             onClick={() => goToPage(page - 1)}
             disabled={!url || page <= 1}
-            aria-label="Page précédente"
+            aria-label={t("pdfViewer.previousPage")}
           >
             <ChevronLeft size={16} />
           </button>
           <span className="pdf-viewer-page-label" aria-live="polite">
-            Page {pageCount ? page : 0} / {pageCount || "—"}
+            {t("pdfViewer.pageLabel", {
+              current: pageCount ? page : 0,
+              total: pageCount || "—",
+            })}
           </span>
           <button
             type="button"
             className="pdf-viewer-tool"
             onClick={() => goToPage(page + 1)}
             disabled={!url || page >= pageCount}
-            aria-label="Page suivante"
+            aria-label={t("pdfViewer.nextPage")}
           >
             <ChevronRight size={16} />
           </button>
@@ -219,7 +223,7 @@ export function PdfViewer({
             className="pdf-viewer-tool"
             onClick={() => changeZoom(-0.15)}
             disabled={!url || zoom <= 0.7}
-            aria-label="Réduire le zoom"
+            aria-label={t("pdfViewer.zoomOut")}
           >
             <Minus size={15} />
           </button>
@@ -231,7 +235,7 @@ export function PdfViewer({
             className="pdf-viewer-tool"
             onClick={() => changeZoom(0.15)}
             disabled={!url || zoom >= 1.75}
-            aria-label="Agrandir le zoom"
+            aria-label={t("pdfViewer.zoomIn")}
           >
             <Plus size={15} />
           </button>
@@ -245,7 +249,7 @@ export function PdfViewer({
             disabled={!url}
             data-cy="btn-telecharger-apercu"
           >
-            Télécharger l’aperçu
+            {t("pdfViewer.download")}
           </Button>
         ) : null}
       </div>

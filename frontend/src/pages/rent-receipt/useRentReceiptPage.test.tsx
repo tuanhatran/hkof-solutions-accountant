@@ -10,6 +10,7 @@ import type {
   PersonDto,
   SignatureDto,
 } from "@/api/types";
+import i18n from "@/i18n";
 import { formatEUR } from "@/lib/format";
 import { useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
@@ -480,6 +481,30 @@ describe("useRentReceiptPage preview and generation", () => {
     });
     expect(api.rentReceipts.create).not.toHaveBeenCalled();
     expect(result.current.generationInProgress).toBe(false);
+  });
+
+  it("uses English validation messages and generation toast", async () => {
+    await i18n.changeLanguage("en");
+    resetDraft({ initialized: true });
+    const { result } = renderController();
+
+    expect(result.current.validation.success).toBe(false);
+    if (!result.current.validation.success) {
+      expect(
+        result.current.validation.error.issues.map((issue) => issue.message),
+      ).toContain("Select a landlord.");
+    }
+
+    act(() => result.current.selectPair("1", "person:2"));
+    await act(async () => {
+      result.current.submit(result.current.values as never);
+    });
+
+    await waitFor(() =>
+      expect(toastMessages()).toContain(
+        "Quittance for January 2026 generated as version 1.",
+      ),
+    );
   });
 
   it("generates a receipt from a complete form", async () => {

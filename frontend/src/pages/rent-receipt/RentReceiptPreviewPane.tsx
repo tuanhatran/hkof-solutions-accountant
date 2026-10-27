@@ -1,10 +1,12 @@
 import "./RentReceiptPreviewPane.css";
+import { useTranslation } from "react-i18next";
 import { PdfViewer } from "@/components/pdf/PdfViewer";
 import { cn } from "@/lib/cn";
 import type { RentReceiptController } from "./useRentReceiptPage";
 
 /** Preview pane with the template selector. */
 export function RentReceiptPreviewPane({ c }: { c: RentReceiptController }) {
+  const { t } = useTranslation();
   return (
     <div
       data-cy="volet-apercu"
@@ -18,18 +20,18 @@ export function RentReceiptPreviewPane({ c }: { c: RentReceiptController }) {
         loading={c.preview.loading}
         error={
           !c.validation.success
-            ? "Complétez les champs de la quittance pour actualiser l’aperçu."
+            ? t("rentReceipt.preview.incomplete")
             : !c.selectedLease
-              ? "Sélectionnez un bailleur et un locataire liés par un bail actif."
+              ? t("rentReceipt.preview.missingLease")
               : !c.signatureAvailable
-                ? "Configurez une signature pour afficher l’aperçu."
+                ? t("rentReceipt.preview.missingSignature")
                 : c.preview.error
         }
         updatedAt={c.preview.updatedAt}
         onDownload={c.preview.download}
         actions={
           <select
-            aria-label="Template de la quittance"
+            aria-label={t("rentReceipt.preview.templateAria")}
             className="rent-receipt-preview-pane-select"
             value={c.selectedModel ?? ""}
             onChange={(event) =>
@@ -41,7 +43,9 @@ export function RentReceiptPreviewPane({ c }: { c: RentReceiptController }) {
             data-cy="select-template-apercu"
           >
             {c.models.length === 0 ? (
-              <option value="">Modèle intégré</option>
+              <option value="">
+                {t("rentReceipt.preview.builtInTemplate")}
+              </option>
             ) : null}
             {c.models.map((model) => (
               <option key={model.id} value={model.id}>
@@ -52,8 +56,7 @@ export function RentReceiptPreviewPane({ c }: { c: RentReceiptController }) {
         }
       />
       <p className="rent-receipt-preview-pane-note">
-        L’aperçu est rendu par le backend à partir du template actif. Il porte
-        un filigrane et n’est jamais enregistré.
+        {t("rentReceipt.preview.note")}
       </p>
     </div>
   );

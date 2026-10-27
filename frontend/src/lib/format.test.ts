@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import i18n from "@/i18n";
 import {
   formatBytes,
   formatDate,
@@ -63,6 +64,14 @@ describe("French formatting", () => {
   it("formats months in French", () => {
     expect(formatMonth("2026-10")).toBe("Octobre 2026");
     expect(formatMonth("2026-01")).toBe("Janvier 2026");
+    expect(formatMonth("invalide")).toBe("—");
+  });
+
+  it("formats months in English from the current language", async () => {
+    await i18n.changeLanguage("en");
+
+    expect(formatMonth("2026-10")).toBe("October 2026");
+    expect(formatMonth("2026-01")).toBe("January 2026");
     expect(formatMonth("invalide")).toBe("—");
   });
 });

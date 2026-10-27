@@ -12,6 +12,7 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
+import i18n from "@/i18n";
 import type {
   LeaseDto,
   PersonDto,
@@ -20,6 +21,7 @@ import type {
   TemplateDto,
 } from "@/api/types";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
+import { useToasts } from "@/state/toasts";
 import { GenerateRentReceiptPage } from "@/pages/rent-receipt/GenerateRentReceiptPage";
 
 type PersonRow = PersonDto;
@@ -242,6 +244,7 @@ describe("GenerateRentReceiptPage", () => {
       initialized: true,
       dirty: false,
     });
+    useToasts.setState({ toasts: [] });
   });
 
   it("invalidates the active rent receipt query after generating", async () => {
@@ -883,6 +886,47 @@ describe("GenerateRentReceiptPage", () => {
       expect(screen.getByLabelText("Loyer hors charges")).toHaveValue(""),
     );
     expect(screen.getByLabelText("Provision pour charges")).toHaveValue("");
+  });
+
+  it("renders its labels, help text, toasts and resolver errors in English", async () => {
+    await i18n.changeLanguage("en");
+    vi.mocked(api.rentReceipts.create).mockResolvedValue({
+      id: 1,
+      month: MONTH,
+      version: 1,
+      total: "1300.00",
+    });
+
+    renderPage();
+    const user = userEvent.setup();
+
+    expect(screen.getByText("Generate · Rent receipt")).toBeInTheDocument();
+    expect(screen.getByText("Rent receipt")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Monthly expense statement" }),
+    ).toBeInTheDocument();
+    expect(await screen.findByLabelText("Landlord")).toHaveValue("1");
+    expect(
+      screen.getByText("Editable for a one-off adjustment."),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Generate the rent receipt" }),
+    );
+
+    expect(
+      await screen.findByText("Rent receipt generated"),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        useToasts.getState().toasts.map((element) => element.message),
+      ).toContain("Quittance for January 2026 generated as version 1."),
+    );
+
+    await user.clear(screen.getByLabelText("Month"));
+    expect(
+      await screen.findByText("Choose a valid month."),
+    ).toBeInTheDocument();
   });
 
   it("switches the mobile input and preview panels", async () => {

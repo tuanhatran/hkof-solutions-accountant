@@ -1,16 +1,18 @@
 import "./RentReceiptAmountFields.css";
+import { useTranslation } from "react-i18next";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
 import type { RentReceiptController } from "./useRentReceiptPage";
 
 /** Period, amounts, dates and the estimated-total block. */
 export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="rent-receipt-amount-fields-grid">
         <FieldGroup
           id="quittance-debut"
-          label="Début de période"
+          label={t("rentReceipt.fields.periodStart")}
           error={c.errors.periodStart?.message}
         >
           <input
@@ -26,7 +28,7 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
         </FieldGroup>
         <FieldGroup
           id="quittance-fin"
-          label="Fin de période"
+          label={t("rentReceipt.fields.periodEnd")}
           error={c.errors.periodEnd?.message}
         >
           <input
@@ -45,9 +47,9 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
       <div className="rent-receipt-amount-fields-grid">
         <FieldGroup
           id="quittance-loyer"
-          label="Loyer hors charges"
+          label={t("rentReceipt.fields.rentExclCharges")}
           error={c.errors.rentExclCharges?.message}
-          help="Modifiable pour une régularisation ponctuelle."
+          help={t("rentReceipt.fields.rentExclChargesHelp")}
         >
           <div className="rent-receipt-amount-fields-amount">
             <input
@@ -68,7 +70,7 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
         </FieldGroup>
         <FieldGroup
           id="quittance-charges"
-          label="Provision pour charges"
+          label={t("rentReceipt.fields.charges")}
           error={c.errors.charges?.message}
         >
           <div className="rent-receipt-amount-fields-amount">
@@ -89,21 +91,22 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
 
       <div className="rent-receipt-amount-fields-total">
         <div>
-          <p className="eyebrow text-accent">Total estimé</p>
+          <p className="eyebrow text-accent">
+            {t("rentReceipt.fields.estimatedTotal")}
+          </p>
           <p className="rent-receipt-amount-fields-total-value number">
             {c.estimatedTotal}
           </p>
         </div>
         <p className="rent-receipt-amount-fields-total-note">
-          Affichage estimé. Le backend calcule le total du PDF avec arrondi au
-          centime.
+          {t("rentReceipt.fields.estimatedTotalNote")}
         </p>
       </div>
 
       <div className="rent-receipt-amount-fields-grid">
         <FieldGroup
           id="quittance-paiement"
-          label="Date de paiement"
+          label={t("rentReceipt.fields.paymentDate")}
           error={c.errors.paymentDate?.message}
         >
           <input
@@ -118,7 +121,7 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
         </FieldGroup>
         <FieldGroup
           id="quittance-emission"
-          label="Date d’émission"
+          label={t("rentReceipt.fields.issueDate")}
           error={c.errors.issueDate?.message}
         >
           <input
@@ -134,14 +137,13 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
       </div>
 
       <p className="hint">
-        Les coordonnées du bailleur, du locataire et du logement proviennent du
-        bail sélectionné. Gérez les baux dans la{" "}
+        {t("rentReceipt.fields.leaseSourceHint")}{" "}
         <button
           type="button"
           className="link"
           onClick={() => c.navigate("/configuration")}
         >
-          configuration
+          {t("rentReceipt.fields.configurationLink")}
         </button>
         .
       </p>

@@ -1,10 +1,12 @@
 import "./ActiveRentReceiptBanner.css";
 import { ExternalLink, FileCheck2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { api } from "@/api/endpoints";
 import type { RentReceiptController } from "./useRentReceiptPage";
 
 /** Banner of the receipt already active for the selected pair and month. */
 export function ActiveRentReceiptBanner({ c }: { c: RentReceiptController }) {
+  const { t } = useTranslation();
   const activePairReceipt = c.activePairReceipt;
   if (!activePairReceipt || !c.selectedLease || c.result) {
     return null;
@@ -17,12 +19,14 @@ export function ActiveRentReceiptBanner({ c }: { c: RentReceiptController }) {
         </span>
         <div>
           <p className="active-rent-receipt-banner-title">
-            Quittance déjà active pour ce bailleur et ce locataire
+            {t("rentReceipt.banner.title")}
           </p>
           <p className="active-rent-receipt-banner-text">
-            Total {c.displayedTotal}, version {c.activeVersion}. Générer à
-            nouveau crée une nouvelle quittance active (version{" "}
-            {(c.activeVersion ?? 0) + 1}).
+            {t("rentReceipt.banner.text", {
+              total: c.displayedTotal,
+              version: c.activeVersion,
+              next: (c.activeVersion ?? 0) + 1,
+            })}
           </p>
         </div>
       </div>
@@ -34,7 +38,7 @@ export function ActiveRentReceiptBanner({ c }: { c: RentReceiptController }) {
           className="btn btn-secondary btn-small"
         >
           <ExternalLink size={13} aria-hidden="true" />
-          Ouvrir le PDF
+          {t("rentReceipt.banner.openPdf")}
         </a>
       ) : null}
     </div>

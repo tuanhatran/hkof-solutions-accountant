@@ -1,6 +1,11 @@
 import { z } from "zod";
+import i18n from "@/i18n";
 import { isValidDate, isValidMonth } from "./dates";
 import { parseAmount, parsePercentage } from "./format";
+
+function rentReceiptMessage(key: string): string {
+  return i18n.t(`rentReceipt.validation.${key}`);
+}
 
 function isValidAmount(value: string, strictlyPositive: boolean): boolean {
   const normalized = parseAmount(value);
@@ -12,10 +17,9 @@ function isValidAmount(value: string, strictlyPositive: boolean): boolean {
 
 const optionalDate = z
   .string()
-  .refine(
-    (value) => value === "" || isValidDate(value),
-    "Date invalide (JJ/MM/AAAA).",
-  );
+  .refine((value) => value === "" || isValidDate(value), {
+    error: () => rentReceiptMessage("date"),
+  });
 
 export const expenseSchema = z.object({
   itemCode: z.string().min(1, "Sélectionnez un type de frais."),
@@ -70,31 +74,33 @@ export function tenantKeyFromLease(lease: {
 
 export const rentReceiptSchema = z
   .object({
-    month: z.string().refine(isValidMonth, "Choisissez un mois valide."),
-    landlordId: z.string().min(1, "Sélectionnez un bailleur."),
-    tenantKey: z
-      .string()
-      .regex(TENANT_KEY_PATTERN, "Sélectionnez un locataire."),
-    periodStart: z.string().refine(isValidDate, "Date de début invalide."),
-    periodEnd: z.string().refine(isValidDate, "Date de fin invalide."),
-    rentExclCharges: z
-      .string()
-      .refine(
-        (value) => isValidAmount(value, false),
-        "Loyer hors charges invalide.",
-      ),
-    charges: z
-      .string()
-      .refine(
-        (value) => isValidAmount(value, false),
-        "Provision pour charges invalide.",
-      ),
+    month: z.string().refine(isValidMonth, {
+      error: () => rentReceiptMessage("month"),
+    }),
+    landlordId: z.string().min(1, {
+      error: () => rentReceiptMessage("landlord"),
+    }),
+    tenantKey: z.string().regex(TENANT_KEY_PATTERN, {
+      error: () => rentReceiptMessage("tenant"),
+    }),
+    periodStart: z.string().refine(isValidDate, {
+      error: () => rentReceiptMessage("periodStart"),
+    }),
+    periodEnd: z.string().refine(isValidDate, {
+      error: () => rentReceiptMessage("periodEnd"),
+    }),
+    rentExclCharges: z.string().refine((value) => isValidAmount(value, false), {
+      error: () => rentReceiptMessage("rentExclCharges"),
+    }),
+    charges: z.string().refine((value) => isValidAmount(value, false), {
+      error: () => rentReceiptMessage("charges"),
+    }),
     paymentDate: optionalDate,
     issueDate: optionalDate,
   })
   .refine((values) => values.periodEnd >= values.periodStart, {
     path: ["periodEnd"],
-    message: "La fin de période doit être postérieure au début.",
+    error: () => rentReceiptMessage("periodOrder"),
   });
 
 export type RentReceiptFormValues = z.infer<typeof rentReceiptSchema>;
