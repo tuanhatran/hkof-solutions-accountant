@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
 import type { SignatureDto } from "@/api/types";
+import i18n from "@/i18n";
 import { useToasts } from "@/state/toasts";
 import { PersonSignatureSection } from "./PersonSignatureSection";
 import { MAX_SIGNATURE_SIZE, signatureImageError } from "./signatureUpload";
@@ -270,6 +271,148 @@ describe("PersonSignatureSection", () => {
     await waitFor(() =>
       expect(toastMessages()).toContain("Signature supprimée."),
     );
+  });
+
+  it("renders the signature list, form and hints in English", async () => {
+    await i18n.changeLanguage("en");
+    renderSection();
+
+    expect(screen.getByText("Signatures")).toBeVisible();
+    expect(screen.getByText("Signature bailleur")).toBeVisible();
+    expect(screen.getByText("Added on 23/10/2026")).toBeVisible();
+    expect(screen.getByLabelText("Signature name")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Add the signature" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Delete Signature bailleur" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText("A person can keep several signatures."),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "PNG or JPEG images, 2 MB maximum. Logical deletion only.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("requires a name and an image in English", async () => {
+    await i18n.changeLanguage("en");
+    renderSection();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Add the signature" }));
+    expect(
+      await screen.findByText("The signature name is required."),
+    ).toBeVisible();
+
+    await user.type(screen.getByLabelText("Signature name"), "Bailleur");
+    await user.click(screen.getByRole("button", { name: "Add the signature" }));
+    expect(
+      await screen.findByText("Select a PNG or JPEG image."),
+    ).toBeVisible();
+    expect(api.signatures.create).not.toHaveBeenCalled();
+  });
+
+  it("documents the accepted signature formats in English", async () => {
+    await i18n.changeLanguage("en");
+
+    expect(signatureImageError(imageFile("notes.txt", "text/plain"))).toBe(
+      "Unsupported format. Formats: PNG, JPEG.",
+    );
+    expect(
+      signatureImageError(
+        new File([new Uint8Array(MAX_SIGNATURE_SIZE + 1)], "grand.png", {
+          type: "image/png",
+        }),
+      ),
+    ).toBe("File too large (2 MB maximum).");
+    expect(signatureImageError(imageFile("ok.jpeg", "image/jpeg"))).toBeNull();
+  });
+
+  it("uploads a signature and shows the preview in English", async () => {
+    await i18n.changeLanguage("en");
+    vi.mocked(api.signatures.create).mockResolvedValue({
+      id: 9,
+      personId: 1,
+      personName: "M. Bailleur",
+      name: "Bailleur",
+    });
+    renderSection();
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Signature name"), " Bailleur ");
+    const file = imageFile();
+    await user.upload(screen.getByLabelText("Choose a signature image"), file);
+    expect(await screen.findByText("signature.png")).toBeVisible();
+    expect(screen.getByAltText("Preview of signature.png")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Remove the signature image" }),
+    ).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Add the signature" }));
+
+    await waitFor(() =>
+      expect(api.signatures.create).toHaveBeenCalledWith(1, "Bailleur", file),
+    );
+    await waitFor(() =>
+      expect(toastMessages()).toContain("Signature “Bailleur” added."),
+    );
+  });
+
+  it("confirms the deletion in English and toasts in English", async () => {
+    await i18n.changeLanguage("en");
+    vi.mocked(api.signatures.remove).mockResolvedValue(undefined);
+    renderSection();
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole("button", { name: "Delete Signature bailleur" }),
+    );
+    const dialog = screen.getByRole("dialog", {
+      name: "Delete this signature?",
+    });
+    expect(dialog).toHaveTextContent(
+      "“Signature bailleur” will no longer be offered in documents.",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Delete the signature" }),
+    );
+
+    await waitFor(() => expect(api.signatures.remove).toHaveBeenCalledWith(7));
+    await waitFor(() =>
+      expect(toastMessages()).toContain("Signature deleted."),
+    );
+  });
+
+  it("shows the English loading and empty states", async () => {
+    await i18n.changeLanguage("en");
+    signaturesState = {
+      data: undefined,
+      isPending: true,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    };
+    const loading = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <PersonSignatureSection personId={1} />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByText("Loading signatures…")).toBeVisible();
+    loading.unmount();
+
+    signaturesState = readyQuery([]);
+    renderSection();
+    expect(
+      screen.getByText(
+        "No signature recorded. Add an image to sign this person's documents.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText("A person can keep several signatures."),
+    ).toBeVisible();
   });
 
   it("reports a removal failure as a French toast", async () => {

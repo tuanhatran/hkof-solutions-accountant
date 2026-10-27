@@ -2,6 +2,7 @@ import "./EmployeeSection.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PencilLine, Plus, Trash2, Users } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys, useEmployees } from "@/api/queries";
@@ -19,6 +20,7 @@ import { employeeTitleLabel } from "./settingsValues";
 
 /** Employees of the active company, with their descriptive title. */
 export function EmployeeSection({ companyId }: { companyId: number | null }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const employees = useEmployees(companyId);
   const [employeeForm, setEmployeeForm] = useState<EmployeeDto | null | "new">(
@@ -39,7 +41,7 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.employeesAll });
       void queryClient.invalidateQueries({ queryKey: queryKeys.signaturesAll });
       setToDelete(null);
-      toast.success("Salarié supprimé.");
+      toast.success(t("settings.employees.deleted"));
     },
     onError: (error) => {
       setToDelete(null);
@@ -51,8 +53,8 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
     <section className="employee-section">
       <SectionHeader
         icon={Users}
-        title="Salariés"
-        description="Les salariés appartiennent à la société sélectionnée. Leur intitulé est descriptif et ne donne encore aucun droit."
+        title={t("settings.employees.title")}
+        description={t("settings.employees.description")}
         action={
           <Button
             variant="primary"
@@ -62,14 +64,14 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
             disabled={companyId === null || employeeForm === "new"}
             data-cy="btn-ajouter-salarie"
           >
-            Ajouter un salarié
+            {t("settings.employees.add")}
           </Button>
         }
       />
       <div className="card-body employee-section-body">
         {companyId === null ? (
           <EmptyState
-            text="Sélectionnez une société pour gérer ses salariés."
+            text={t("settings.employees.selectCompany")}
             dataCy="aucun-salarie-societe"
           />
         ) : employeeForm !== null ? (
@@ -87,10 +89,10 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
             onRetry={() => void employees.refetch()}
           />
         ) : employees.isPending ? (
-          <LoadingState message="Chargement des salariés…" />
+          <LoadingState message={t("settings.employees.loading")} />
         ) : list.length === 0 ? (
           <EmptyState
-            text="Aucun salarié dans cette société. Ajoutez le gérant et les salariés signataires."
+            text={t("settings.employees.empty")}
             dataCy="aucun-salarie"
           />
         ) : (
@@ -107,7 +109,7 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
                   </p>
                   <p className="employee-section-item-meta">
                     <span className="badge badge-neutral">
-                      {employeeTitleLabel(employee.title)}
+                      {employeeTitleLabel(employee.title, t)}
                     </span>
                     {employee.email ? (
                       <span className="employee-section-item-email">
@@ -116,14 +118,16 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
                     ) : null}
                   </p>
                   <p className="employee-section-item-address">
-                    {employee.address || "Adresse non renseignée"}
+                    {employee.address ||
+                      t("settings.employees.addressFallback")}
                   </p>
                   <p
                     className="employee-section-item-signatures"
                     data-cy={`signatures-salarie-${employee.id}`}
                   >
-                    {employee.signatureCount ?? 0} signature
-                    {(employee.signatureCount ?? 0) > 1 ? "s" : ""}
+                    {t("settings.employees.signatureCount", {
+                      count: employee.signatureCount ?? 0,
+                    })}
                   </p>
                 </div>
                 <Button
@@ -131,10 +135,12 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
                   small
                   icon={<PencilLine size={13} />}
                   onClick={() => setEmployeeForm(employee)}
-                  aria-label={`Modifier le salarié ${employee.firstName ?? ""} ${employee.lastName ?? ""}`}
+                  aria-label={t("settings.employees.editAria", {
+                    name: `${employee.firstName ?? ""} ${employee.lastName ?? ""}`,
+                  })}
                   data-cy={`btn-modifier-salarie-${employee.id}`}
                 >
-                  Modifier
+                  {t("settings.employees.edit")}
                 </Button>
                 <Button
                   variant="ghost"
@@ -142,10 +148,12 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
                   icon={<Trash2 size={13} />}
                   className="text-danger hover:bg-danger-soft"
                   onClick={() => setToDelete(employee)}
-                  aria-label={`Supprimer le salarié ${employee.firstName ?? ""} ${employee.lastName ?? ""}`}
+                  aria-label={t("settings.employees.removeAria", {
+                    name: `${employee.firstName ?? ""} ${employee.lastName ?? ""}`,
+                  })}
                   data-cy={`btn-supprimer-salarie-${employee.id}`}
                 >
-                  Retirer
+                  {t("settings.employees.remove")}
                 </Button>
               </li>
             ))}
@@ -155,13 +163,15 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
 
       <ConfirmDialog
         open={toDelete !== null}
-        title="Supprimer ce salarié ?"
+        title={t("settings.employees.deleteDialog.title")}
         message={
           toDelete
-            ? `« ${toDelete.firstName ?? ""} ${toDelete.lastName ?? ""} » ne sera plus proposé. Un salarié porteur de signatures ne peut pas être supprimé.`
+            ? t("settings.employees.deleteDialog.message", {
+                name: `${toDelete.firstName ?? ""} ${toDelete.lastName ?? ""}`,
+              })
             : ""
         }
-        confirmLabel="Supprimer le salarié"
+        confirmLabel={t("settings.employees.deleteDialog.confirm")}
         variant="danger"
         onConfirm={() => {
           if (toDelete) {

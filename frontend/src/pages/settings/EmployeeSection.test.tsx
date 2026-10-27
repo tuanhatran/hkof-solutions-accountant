@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
 import type { EmployeeDto } from "@/api/types";
+import i18n from "@/i18n";
 import { useToasts } from "@/state/toasts";
 import { EmployeeSection } from "./EmployeeSection";
 
@@ -256,6 +257,91 @@ describe("EmployeeSection", () => {
 
     await waitFor(() => expect(api.employees.delete).toHaveBeenCalledWith(3));
     await waitFor(() => expect(toastMessages()).toContain("Salarié supprimé."));
+  });
+
+  it("renders the employee list, titles and actions in English", async () => {
+    await i18n.changeLanguage("en");
+    employeesState = readyQuery([
+      CEO,
+      {
+        ...CEO,
+        id: 4,
+        firstName: "Alex",
+        lastName: "Durand",
+        signatureCount: 2,
+      },
+    ]);
+    renderSection();
+
+    expect(screen.getByRole("heading", { name: "Employees" })).toBeVisible();
+    expect(screen.getAllByText("CEO")).toHaveLength(2);
+    expect(screen.getAllByText("No address provided")).toHaveLength(2);
+    expect(screen.getByText("0 signatures")).toBeVisible();
+    expect(screen.getByText("2 signatures")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Add an employee" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Edit employee Camille Martin" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Delete employee Camille Martin" }),
+    ).toBeVisible();
+  });
+
+  it("renders the employee form and its validation in English", async () => {
+    await i18n.changeLanguage("en");
+    renderSection();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Add an employee" }));
+
+    expect(
+      screen.getByRole("heading", { name: "Add an employee" }),
+    ).toBeVisible();
+    expect(screen.getByLabelText("First name")).toBeVisible();
+    expect(screen.getByLabelText("Last name")).toBeVisible();
+    expect(screen.getByLabelText("Email address")).toBeVisible();
+    expect(screen.getByLabelText("Title")).toBeVisible();
+    expect(screen.getByRole("option", { name: "Accountant" })).toBeVisible();
+    expect(screen.getByLabelText("Personal address")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Save the employee to add signatures without closing this window.",
+      ),
+    ).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(
+      await screen.findByText("The employee's first name is required."),
+    ).toBeVisible();
+    expect(
+      screen.getByText("The employee's last name is required."),
+    ).toBeVisible();
+  });
+
+  it("confirms an employee deletion in English and toasts in English", async () => {
+    await i18n.changeLanguage("en");
+    vi.mocked(api.employees.delete).mockResolvedValue(undefined);
+    renderSection();
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole("button", { name: "Delete employee Camille Martin" }),
+    );
+    const dialog = screen.getByRole("dialog", {
+      name: "Delete this employee?",
+    });
+    expect(dialog).toHaveTextContent(
+      "“Camille Martin” will no longer be offered.",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Delete the employee" }),
+    );
+
+    await waitFor(() => expect(api.employees.delete).toHaveBeenCalledWith(3));
+    await waitFor(() => expect(toastMessages()).toContain("Employee deleted."));
   });
 
   it("reports a delete failure as a toast", async () => {

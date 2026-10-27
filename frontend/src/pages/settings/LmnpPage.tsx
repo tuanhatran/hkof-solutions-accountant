@@ -1,5 +1,6 @@
 import "./LmnpPage.css";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { LeaseSection } from "@/components/settings/LeaseSection";
 import { PersonnesSection } from "@/components/settings/PersonnesSection";
@@ -8,13 +9,7 @@ import { cn } from "@/lib/cn";
 import { RENT_RECEIPT_CONFIGURATION } from "@/pages/templates/templateTypes";
 import { TemplatesTab } from "@/pages/templates/TemplatesTab";
 
-const TABS = [
-  { value: "baux", label: "Baux et adresses", dataCy: "onglet-baux" },
-  { value: "personnes", label: "Personnes", dataCy: "onglet-personnes" },
-  { value: "templates", label: "Templates", dataCy: "onglet-lmnp-templates" },
-] as const;
-
-type Tab = (typeof TABS)[number]["value"];
+type Tab = "baux" | "personnes" | "templates";
 
 function LeasesTab() {
   const c = useRentReceiptSettings();
@@ -23,22 +18,40 @@ function LeasesTab() {
 
 /** LMNP settings: leases and addresses, natural persons, rent receipt templates. */
 export function LmnpPage() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("baux");
+  const tabs = [
+    {
+      value: "baux",
+      label: t("settings.lmnp.tabs.leases"),
+      dataCy: "onglet-baux",
+    },
+    {
+      value: "personnes",
+      label: t("settings.lmnp.tabs.persons"),
+      dataCy: "onglet-personnes",
+    },
+    {
+      value: "templates",
+      label: t("settings.lmnp.tabs.templates"),
+      dataCy: "onglet-lmnp-templates",
+    },
+  ] as const;
 
   return (
     <>
       <PageHeader
-        eyebrow="Réglages"
-        title="LMNP"
-        description="Baux et adresses du logement, et personnes physiques bailleurs ou locataires avec leurs signatures."
+        eyebrow={t("settings.lmnp.eyebrow")}
+        title={t("settings.lmnp.title")}
+        description={t("settings.lmnp.description")}
       />
 
       <div
         className="segmented lmnp-page-tabs"
         role="tablist"
-        aria-label="Sections LMNP"
+        aria-label={t("settings.lmnp.tabsAria")}
       >
-        {TABS.map((candidate) => (
+        {tabs.map((candidate) => (
           <button
             key={candidate.value}
             type="button"

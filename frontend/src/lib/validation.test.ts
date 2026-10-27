@@ -73,9 +73,8 @@ describe("expenseSchema", () => {
       "Pro rata must be between 0 and 100 (2 decimals max).",
     ]);
     expect(
-      employeeSchema.safeParse({ firstName: " ", lastName: "", title: "CEO" })
-        .error?.issues[0]?.message,
-    ).toBe("Le prénom du salarié est obligatoire.");
+      llmSchema.shape.url.safeParse("ftp://serveur").error?.issues[0]?.message,
+    ).toBe("URL invalide : http:// ou https:// attendu.");
 
     await i18n.changeLanguage("fr");
     expect(
@@ -262,6 +261,34 @@ describe("employeeSchema", () => {
       employeeSchema.safeParse({ ...VALID, title: "DIRECTOR" }).success,
     ).toBe(false);
   });
+
+  it("translates the employee messages at parse time", async () => {
+    await i18n.changeLanguage("en");
+
+    const english = employeeSchema.safeParse({
+      firstName: " ",
+      lastName: "",
+      address: "",
+      email: "camille",
+      title: "DIRECTOR",
+    });
+    expect(english.success).toBe(false);
+    if (english.success) {
+      return;
+    }
+    expect(english.error.issues.map((issue) => issue.message)).toEqual([
+      "The employee's first name is required.",
+      "The employee's last name is required.",
+      "The employee's email address is invalid.",
+      "The employee's title is required.",
+    ]);
+
+    await i18n.changeLanguage("fr");
+    expect(
+      employeeSchema.safeParse({ ...VALID, firstName: " " }).error?.issues[0]
+        ?.message,
+    ).toBe("Le prénom du salarié est obligatoire.");
+  });
 });
 
 describe("expenseItemSchema", () => {
@@ -288,6 +315,40 @@ describe("expenseItemSchema", () => {
       expenseItemSchema.safeParse({ ...VALID, code: "gaz/ville" }).success,
     ).toBe(false);
   });
+
+  it("translates the expense item messages at parse time", async () => {
+    await i18n.changeLanguage("en");
+
+    const english = expenseItemSchema.safeParse({
+      ...VALID,
+      code: "gaz ville",
+      label: " ",
+      proRataPct: "120",
+    });
+    expect(english.success).toBe(false);
+    if (english.success) {
+      return;
+    }
+    expect(english.error.issues.map((issue) => issue.message)).toEqual([
+      "Invalid code: letters, digits, hyphens and underscores only.",
+      "The label is required.",
+      "Pro rata must be between 0 and 100.",
+    ]);
+    expect(
+      expenseItemSchema.safeParse({ ...VALID, sortOrder: 1.5 }).error?.issues[0]
+        ?.message,
+    ).toBe("Invalid order.");
+    expect(
+      expenseItemSchema.safeParse({ ...VALID, sortOrder: -1 }).error?.issues[0]
+        ?.message,
+    ).toBe("The order must be positive.");
+
+    await i18n.changeLanguage("fr");
+    expect(
+      expenseItemSchema.safeParse({ ...VALID, label: " " }).error?.issues[0]
+        ?.message,
+    ).toBe("Le libellé est obligatoire.");
+  });
 });
 
 describe("directory schemas", () => {
@@ -307,6 +368,20 @@ describe("directory schemas", () => {
     expect(
       personSchema.safeParse({ name: "Mme Locataire", address: "" }).success,
     ).toBe(true);
+  });
+
+  it("translates the person message at parse time", async () => {
+    await i18n.changeLanguage("en");
+    expect(
+      personSchema.safeParse({ name: " ", address: "" }).error?.issues[0]
+        ?.message,
+    ).toBe("The person's name is required.");
+
+    await i18n.changeLanguage("fr");
+    expect(
+      personSchema.safeParse({ name: " ", address: "" }).error?.issues[0]
+        ?.message,
+    ).toBe("Le nom de la personne est obligatoire.");
   });
 
   it("parses a tenant key into exactly one party", () => {

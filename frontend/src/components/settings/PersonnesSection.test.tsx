@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
 import type { PersonDto } from "@/api/types";
+import i18n from "@/i18n";
 import { useToasts } from "@/state/toasts";
 import { PersonnesSection } from "./PersonnesSection";
 
@@ -241,6 +242,62 @@ describe("PersonnesSection", () => {
     await waitFor(() =>
       expect(toastMessages()).toContain("Personne supprimée."),
     );
+  });
+
+  it("renders the persons list and actions in English", async () => {
+    await i18n.changeLanguage("en");
+    personsState = readyQuery([
+      LANDLORD,
+      TENANT,
+      { ...TENANT, id: 3, name: "M. Voisin", signatureCount: 2 },
+    ]);
+    renderSection();
+
+    expect(screen.getByRole("heading", { name: "People" })).toBeVisible();
+    expect(screen.getByText("M. Bailleur")).toBeVisible();
+    expect(screen.getByText("1 signature")).toBeVisible();
+    expect(screen.getByText("0 signatures")).toBeVisible();
+    expect(screen.getByText("2 signatures")).toBeVisible();
+    expect(screen.getAllByText("No address provided")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Add a person" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Edit M. Bailleur" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Delete M. Bailleur" }),
+    ).toBeVisible();
+  });
+
+  it("shows the empty state and the deletion dialog in English", async () => {
+    await i18n.changeLanguage("en");
+    personsState = readyQuery([]);
+    const empty = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <PersonnesSection />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByText(/No person configured/)).toBeVisible();
+    empty.unmount();
+
+    vi.mocked(api.persons.remove).mockResolvedValue(undefined);
+    personsState = readyQuery([LANDLORD]);
+    renderSection();
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole("button", { name: "Delete M. Bailleur" }),
+    );
+    const dialog = screen.getByRole("dialog", {
+      name: "Delete this person?",
+    });
+    expect(dialog).toHaveTextContent(
+      "“M. Bailleur” will no longer be offered.",
+    );
+    expect(dialog).toHaveTextContent("A person used by an active lease");
+    await user.click(screen.getByRole("button", { name: "Delete the person" }));
+
+    await waitFor(() => expect(api.persons.remove).toHaveBeenCalledWith(1));
+    await waitFor(() => expect(toastMessages()).toContain("Person deleted."));
   });
 
   it("reports a delete failure in French", async () => {

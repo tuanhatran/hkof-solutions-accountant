@@ -2,6 +2,7 @@ import "./ExpenseItemsManager.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PencilLine, Plus, ReceiptText, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys, useExpenseItems } from "@/api/queries";
@@ -13,7 +14,7 @@ import { cn } from "@/lib/cn";
 import { formatPercentage } from "@/lib/format";
 import { toast } from "@/state/toasts";
 import { ExpenseItemForm } from "./ExpenseItemForm";
-import { PERIODICITIES } from "./settingsValues";
+import { periodicityLabel } from "./settingsValues";
 
 /** List of expense items with create/edit/delete actions. */
 export function ExpenseItemsManager({
@@ -25,6 +26,7 @@ export function ExpenseItemsManager({
   leaseId: number | null;
   defaultProRata: string;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const expenseItems = useExpenseItems(companyId, true, leaseId);
   const [formOpen, setFormOpen] = useState(false);
@@ -39,7 +41,7 @@ export function ExpenseItemsManager({
         queryKey: queryKeys.expenseItemsAll,
       });
       setToDelete(null);
-      toast.success("Poste désactivé et retiré de la liste des frais.");
+      toast.success(t("settings.expenses.deleted"));
     },
     onError: (error) => {
       setToDelete(null);
@@ -72,10 +74,11 @@ export function ExpenseItemsManager({
             <ReceiptText size={17} aria-hidden="true" />
           </span>
           <div>
-            <h2 className="expense-items-manager-title">Frais</h2>
+            <h2 className="expense-items-manager-title">
+              {t("settings.expenses.title")}
+            </h2>
             <p className="expense-items-manager-description">
-              Libellés, fournisseurs, prorata par défaut et périodicité
-              alimentent la note de frais. Suppression logique uniquement.
+              {t("settings.expenses.description")}
             </p>
           </div>
         </div>
@@ -87,7 +90,7 @@ export function ExpenseItemsManager({
           disabled={formOpen && editedItem === null}
           data-cy="btn-ajouter-poste"
         >
-          Ajouter un frais
+          {t("settings.expenses.add")}
         </Button>
       </div>
 
@@ -112,24 +115,29 @@ export function ExpenseItemsManager({
             onRetry={() => void expenseItems.refetch()}
           />
         ) : expenseItems.isPending ? (
-          <LoadingState message="Chargement des postes…" />
+          <LoadingState message={t("settings.expenses.loading")} />
         ) : list.length === 0 ? (
           <p className="expense-items-manager-empty">
-            Aucun poste configuré. Ajoutez au moins « Loyer » et vos frais
-            courants.
+            {t("settings.expenses.empty")}
           </p>
         ) : (
           <div className="expense-items-manager-table-wrapper">
             <table className="expense-table">
               <thead>
                 <tr>
-                  <th>Libellé</th>
-                  <th>Fournisseur</th>
-                  <th className="text-right">Prorata</th>
-                  <th>Périodicité</th>
-                  <th className="text-center">Ordre</th>
-                  <th>Options</th>
-                  <th className="text-right">Actions</th>
+                  <th>{t("settings.expenses.table.label")}</th>
+                  <th>{t("settings.expenses.table.supplier")}</th>
+                  <th className="text-right">
+                    {t("settings.expenses.table.proRata")}
+                  </th>
+                  <th>{t("settings.expenses.table.periodicity")}</th>
+                  <th className="text-center">
+                    {t("settings.expenses.table.order")}
+                  </th>
+                  <th>{t("settings.expenses.table.options")}</th>
+                  <th className="text-right">
+                    {t("settings.expenses.table.actions")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -147,7 +155,9 @@ export function ExpenseItemsManager({
                           {expenseItem.code}
                         </code>
                         {!expenseItem.active ? (
-                          <span className="badge badge-neutral">inactif</span>
+                          <span className="badge badge-neutral">
+                            {t("settings.expenses.inactive")}
+                          </span>
                         ) : null}
                       </div>
                     </td>
@@ -158,20 +168,19 @@ export function ExpenseItemsManager({
                       {formatPercentage(expenseItem.proRataPct)}
                     </td>
                     <td className="expense-items-manager-periodicity-cell">
-                      {PERIODICITIES.find(
-                        (periodicity) =>
-                          periodicity.value === expenseItem.periodicity,
-                      )?.label ?? expenseItem.periodicity}
+                      {periodicityLabel(expenseItem.periodicity, t)}
                     </td>
                     <td className="number expense-items-manager-order-cell">
                       {expenseItem.sortOrder}
                     </td>
                     <td>
                       {expenseItem.multipleLinesAllowed ? (
-                        <span className="badge badge-accent">multi-lignes</span>
+                        <span className="badge badge-accent">
+                          {t("settings.expenses.multipleLines")}
+                        </span>
                       ) : (
                         <span className="expense-items-manager-single-line">
-                          une ligne
+                          {t("settings.expenses.singleLine")}
                         </span>
                       )}
                     </td>
@@ -184,7 +193,7 @@ export function ExpenseItemsManager({
                           onClick={() => openEdit(expenseItem)}
                           data-cy={`btn-modifier-poste-${expenseItem.code}`}
                         >
-                          Modifier
+                          {t("settings.expenses.edit")}
                         </Button>
                         <Button
                           variant="ghost"
@@ -194,7 +203,7 @@ export function ExpenseItemsManager({
                           onClick={() => setToDelete(expenseItem)}
                           data-cy={`btn-supprimer-poste-${expenseItem.code}`}
                         >
-                          Retirer
+                          {t("settings.expenses.remove")}
                         </Button>
                       </div>
                     </td>
@@ -208,13 +217,15 @@ export function ExpenseItemsManager({
 
       <ConfirmDialog
         open={toDelete !== null}
-        title="Retirer ce type de frais ?"
+        title={t("settings.expenses.deleteDialog.title")}
         message={
           toDelete
-            ? `« ${toDelete.label} » ne sera plus proposé dans la note de frais. Les documents existants conservent leurs lignes et leurs montants.`
+            ? t("settings.expenses.deleteDialog.message", {
+                label: toDelete.label,
+              })
             : ""
         }
-        confirmLabel="Retirer le poste"
+        confirmLabel={t("settings.expenses.deleteDialog.confirm")}
         variant="danger"
         onConfirm={() => {
           if (toDelete) {

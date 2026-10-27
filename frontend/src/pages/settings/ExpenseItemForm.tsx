@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PencilLine } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
@@ -40,6 +41,7 @@ export function ExpenseItemForm({
   defaultOrder: number;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [errorText, setErrorText] = useState<string | null>(null);
   const {
@@ -89,8 +91,8 @@ export function ExpenseItemForm({
       });
       toast.success(
         expenseItem
-          ? `Poste « ${result.label} » mis à jour.`
-          : `Poste « ${result.label} » ajouté à la liste des frais.`,
+          ? t("settings.expenses.form.updated", { label: result.label })
+          : t("settings.expenses.form.created", { label: result.label }),
       );
       onClose();
     },
@@ -102,7 +104,9 @@ export function ExpenseItemForm({
       open
       wide
       title={
-        expenseItem ? "Modifier le type de frais" : "Ajouter un frais de frais"
+        expenseItem
+          ? t("settings.expenses.form.editTitle")
+          : t("settings.expenses.form.createTitle")
       }
       onClose={onClose}
       onSubmit={handleSubmit((values) => {
@@ -125,12 +129,12 @@ export function ExpenseItemForm({
       <div className="expense-item-form-grid">
         <FieldGroup
           id="poste-code"
-          label="Code"
+          label={t("settings.expenses.form.code")}
           error={errors.code?.message}
           help={
             expenseItem
-              ? "Le code est immuable après création."
-              : "Facultatif : généré depuis le libellé si vide."
+              ? t("settings.expenses.form.codeHelpEdit")
+              : t("settings.expenses.form.codeHelpCreate")
           }
         >
           <input
@@ -147,7 +151,7 @@ export function ExpenseItemForm({
         </FieldGroup>
         <FieldGroup
           id="poste-libelle"
-          label="Libellé affiché"
+          label={t("settings.expenses.form.label")}
           error={errors.label?.message}
         >
           <input
@@ -160,7 +164,7 @@ export function ExpenseItemForm({
         </FieldGroup>
         <FieldGroup
           id="poste-fournisseur"
-          label="Fournisseur"
+          label={t("settings.expenses.form.supplier")}
           error={errors.supplier?.message}
         >
           <input
@@ -173,9 +177,9 @@ export function ExpenseItemForm({
         </FieldGroup>
         <FieldGroup
           id="poste-prorata"
-          label="Prorata par défaut (%)"
+          label={t("settings.expenses.form.proRata")}
           error={errors.proRataPct?.message}
-          help="Pré-remplit le champ lors de l’ajout d’un frais ; modifiable au cas par cas."
+          help={t("settings.expenses.form.proRataHelp")}
         >
           <input
             id="poste-prorata"
@@ -188,7 +192,7 @@ export function ExpenseItemForm({
         </FieldGroup>
         <FieldGroup
           id="poste-periodicite"
-          label="Périodicité"
+          label={t("settings.expenses.form.periodicity")}
           error={errors.periodicity?.message}
         >
           <select
@@ -198,14 +202,14 @@ export function ExpenseItemForm({
           >
             {PERIODICITIES.map((periodicity) => (
               <option key={periodicity.value} value={periodicity.value}>
-                {periodicity.label}
+                {t(periodicity.labelKey)}
               </option>
             ))}
           </select>
         </FieldGroup>
         <FieldGroup
           id="poste-ordre"
-          label="Ordre d’affichage"
+          label={t("settings.expenses.form.order")}
           error={errors.sortOrder?.message}
         >
           <input
@@ -222,15 +226,15 @@ export function ExpenseItemForm({
       <div className="expense-item-form-switches">
         <ExpenseItemSwitchField
           id="poste-actif"
-          label="Poste actif"
-          description="Apparaît dans la liste déroulante de la note de frais."
+          label={t("settings.expenses.form.active")}
+          description={t("settings.expenses.form.activeDescription")}
           register={register}
           field="active"
         />
         <ExpenseItemSwitchField
           id="poste-plusieurs-lignes"
-          label="Plusieurs lignes autorisées"
-          description="Autorise plusieurs frais de ce type pour un même mois (ex. téléphone)."
+          label={t("settings.expenses.form.multipleLines")}
+          description={t("settings.expenses.form.multipleLinesDescription")}
           register={register}
           field="multipleLinesAllowed"
         />

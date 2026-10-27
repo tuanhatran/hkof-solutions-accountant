@@ -19,6 +19,18 @@ function leaseMessage(key: string): string {
   return i18n.t(`settings.lease.validation.${key}`);
 }
 
+function employeeMessage(key: string): string {
+  return i18n.t(`settings.employees.validation.${key}`);
+}
+
+function expenseItemMessage(key: string): string {
+  return i18n.t(`settings.expenses.validation.${key}`);
+}
+
+function personMessage(key: string): string {
+  return i18n.t(`settings.people.validation.${key}`);
+}
+
 function isValidAmount(value: string, strictlyPositive: boolean): boolean {
   const normalized = parseAmount(value);
   if (normalized === null) {
@@ -143,25 +155,40 @@ export const companySchema = z.object({
 export type CompanyFormValues = z.infer<typeof companySchema>;
 
 export const employeeSchema = z.object({
-  firstName: z.string().trim().min(1, "Le prénom du salarié est obligatoire."),
-  lastName: z.string().trim().min(1, "Le nom du salarié est obligatoire."),
+  firstName: z
+    .string()
+    .trim()
+    .min(1, {
+      error: () => employeeMessage("firstName"),
+    }),
+  lastName: z
+    .string()
+    .trim()
+    .min(1, {
+      error: () => employeeMessage("lastName"),
+    }),
   address: z.string(),
   email: z
     .string()
     .trim()
     .refine(
       (value) => value === "" || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value),
-      "L'adresse électronique du salarié est invalide.",
+      { error: () => employeeMessage("email") },
     ),
   title: z.enum(["CEO", "CFO", "ACCOUNTANT", "EMPLOYEE"], {
-    error: "L'intitulé du salarié est obligatoire.",
+    error: () => employeeMessage("title"),
   }),
 });
 
 export type EmployeeFormValues = z.infer<typeof employeeSchema>;
 
 export const personSchema = z.object({
-  name: z.string().trim().min(1, "Le nom de la personne est obligatoire."),
+  name: z
+    .string()
+    .trim()
+    .min(1, {
+      error: () => personMessage("name"),
+    }),
   address: z.string(),
 });
 
@@ -243,23 +270,24 @@ export const expenseItemSchema = z.object({
   code: z
     .string()
     .trim()
-    .refine(
-      (value) => value === "" || /^[a-zA-Z0-9_-]+$/.test(value),
-      "Code invalide : lettres, chiffres, tirets et underscores uniquement.",
-    ),
-  label: z.string().trim().min(1, "Le libellé est obligatoire."),
-  supplier: z.string(),
-  proRataPct: z
+    .refine((value) => value === "" || /^[a-zA-Z0-9_-]+$/.test(value), {
+      error: () => expenseItemMessage("code"),
+    }),
+  label: z
     .string()
-    .refine(
-      (value) => parsePercentage(value) !== null,
-      "Prorata attendu entre 0 et 100.",
-    ),
+    .trim()
+    .min(1, {
+      error: () => expenseItemMessage("label"),
+    }),
+  supplier: z.string(),
+  proRataPct: z.string().refine((value) => parsePercentage(value) !== null, {
+    error: () => expenseItemMessage("proRata"),
+  }),
   periodicity: z.enum(["MONTHLY", "BIMONTHLY", "ANNUAL"]),
   sortOrder: z
     .number()
-    .int("Ordre invalide.")
-    .min(0, "L'ordre doit être positif."),
+    .int({ error: () => expenseItemMessage("sortOrderInteger") })
+    .min(0, { error: () => expenseItemMessage("sortOrderMin") }),
   active: z.boolean(),
   multipleLinesAllowed: z.boolean(),
 });

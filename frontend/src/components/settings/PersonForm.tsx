@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
@@ -25,6 +26,7 @@ export function PersonForm({
   item: PersonDto | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [savedId, setSavedId] = useState<number | null>(item?.id ?? null);
   const [requestError, setRequestError] = useState<string | null>(null);
@@ -60,8 +62,8 @@ export function PersonForm({
       }
       toast.success(
         creating
-          ? `Personne « ${saved.name ?? ""} » ajoutée.`
-          : `Personne « ${saved.name ?? ""} » mise à jour.`,
+          ? t("settings.people.form.created", { name: saved.name ?? "" })
+          : t("settings.people.form.updated", { name: saved.name ?? "" }),
       );
     },
     onError: (error) => setRequestError(errorMessage(error)),
@@ -73,8 +75,8 @@ export function PersonForm({
       wide
       title={
         savedId === null
-          ? "Ajouter une personne"
-          : "Modifier une personne physique"
+          ? t("settings.people.form.createTitle")
+          : t("settings.people.form.editTitle")
       }
       onClose={onClose}
       onSubmit={handleSubmit((values) => {
@@ -90,7 +92,7 @@ export function PersonForm({
       <div className="person-form-grid">
         <FieldGroup
           id="personne-nom"
-          label="Nom de la personne"
+          label={t("settings.people.form.name")}
           error={errors.name?.message}
         >
           <input
@@ -103,9 +105,9 @@ export function PersonForm({
         </FieldGroup>
         <FieldGroup
           id="personne-adresse"
-          label="Adresse"
+          label={t("settings.people.form.address")}
           error={errors.address?.message}
-          help="Facultative ; reprise dans les documents."
+          help={t("settings.people.form.addressHelp")}
         >
           <input
             id="personne-adresse"
@@ -118,14 +120,11 @@ export function PersonForm({
       </div>
 
       {savedId === null ? (
-        <p className="person-form-hint">
-          Enregistrez la personne pour ajouter ses signatures sans fermer cette
-          fenêtre.
-        </p>
+        <p className="person-form-hint">{t("settings.people.form.hint")}</p>
       ) : (
         <>
           <p className="person-form-hint" data-cy="personne-enregistree">
-            Personne enregistrée. Ajoutez ou retirez ses signatures ci-dessous.
+            {t("settings.people.form.saved")}
           </p>
           <PersonSignatureSection personId={savedId} />
         </>

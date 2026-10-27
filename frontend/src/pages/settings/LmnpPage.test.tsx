@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -12,6 +12,7 @@ import type {
   TemplateDto,
   TemplateType,
 } from "@/api/types";
+import i18n from "@/i18n";
 import { useToasts } from "@/state/toasts";
 import { LmnpPage } from "./LmnpPage";
 
@@ -172,6 +173,35 @@ describe("LmnpPage", () => {
     expect(screen.getByLabelText("Adresse des baux")).toHaveValue("4");
     expect(screen.getByText("M. Bailleur → Mme Locataire")).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Personnes" })).toBeNull();
+  });
+
+  it("renders the LMNP page and tabs in English and relabels on switch", async () => {
+    await i18n.changeLanguage("en");
+    renderPage();
+
+    expect(
+      screen.getByRole("heading", { name: "LMNP", level: 1 }),
+    ).toBeVisible();
+    const tabs = screen.getByRole("tablist", { name: "LMNP sections" });
+    expect(
+      within(tabs).getByRole("tab", { name: "Leases and addresses" }),
+    ).toHaveAttribute("aria-selected", "true");
+    expect(within(tabs).getByRole("tab", { name: "People" })).toBeVisible();
+    expect(within(tabs).getByRole("tab", { name: "Templates" })).toBeVisible();
+    expect(
+      screen.getByText(/natural persons acting as landlords or tenants/),
+    ).toBeVisible();
+
+    await act(async () => {
+      await i18n.changeLanguage("fr");
+    });
+
+    expect(screen.getByRole("tab", { name: "Baux et adresses" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Personnes" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Templates" })).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Baux et adresses" }),
+    ).toBeVisible();
   });
 
   it("switches to Personnes and back to Baux et adresses", async () => {

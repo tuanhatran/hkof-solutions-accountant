@@ -1,5 +1,6 @@
 import "./SignatureImageField.css";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { FileDropzone } from "@/components/forms/FileDropzone";
 import { formatBytes } from "@/lib/format";
 import { MAX_SIGNATURE_SIZE, SIGNATURE_FORMATS } from "./signatureUpload";
@@ -22,6 +23,7 @@ export function SignatureImageField({
   onFile,
   onRemove,
 }: SignatureImageFieldProps) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="signature-image-field-dropzone">
@@ -30,11 +32,11 @@ export function SignatureImageField({
           disabled={pending}
           dataCy="input-signature-image"
           externalError={fileErrorText}
-          text="Déposez l’image de la signature"
+          text={t("settings.signatures.dropzone.text")}
           accept={SIGNATURE_FORMATS}
           maxSize={MAX_SIGNATURE_SIZE}
-          formatsDescription="PNG, JPEG"
-          ariaLabel="Choisir une image de signature"
+          formatsDescription={t("settings.signatures.dropzone.formats")}
+          ariaLabel={t("settings.signatures.dropzone.ariaLabel")}
         />
       </div>
 
@@ -43,7 +45,7 @@ export function SignatureImageField({
           {previewUrl ? (
             <img
               src={previewUrl}
-              alt={`Aperçu de ${file.name}`}
+              alt={t("settings.signatures.previewAlt", { name: file.name })}
               className="signature-image-field-preview-image"
               data-cy="apercu-signature"
             />
@@ -61,7 +63,7 @@ export function SignatureImageField({
             onClick={onRemove}
             disabled={pending}
             className="signature-image-field-remove"
-            aria-label="Retirer l’image de la signature"
+            aria-label={t("settings.signatures.removeImageAria")}
             data-cy="btn-retirer-signature-image"
           >
             <X size={16} />

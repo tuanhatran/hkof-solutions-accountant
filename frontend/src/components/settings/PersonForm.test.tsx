@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
 import type { PersonDto } from "@/api/types";
+import i18n from "@/i18n";
 import { useToasts } from "@/state/toasts";
 import { PersonForm } from "./PersonForm";
 
@@ -186,6 +187,51 @@ describe("PersonForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Ce nom est déjà utilisé.",
     );
+  });
+
+  it("renders the create form and its validation in English", async () => {
+    await i18n.changeLanguage("en");
+    renderForm();
+    const user = userEvent.setup();
+
+    expect(screen.getByRole("heading", { name: "Add a person" })).toBeVisible();
+    expect(screen.getByLabelText("Person name")).toBeVisible();
+    expect(screen.getByLabelText("Address")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Save the person to add their signatures without closing this window.",
+      ),
+    ).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(
+      await screen.findByText("The person's name is required."),
+    ).toBeVisible();
+    expect(api.persons.create).not.toHaveBeenCalled();
+  });
+
+  it("creates a person and shows the English signature section", async () => {
+    await i18n.changeLanguage("en");
+    vi.mocked(api.persons.create).mockResolvedValue({
+      id: 5,
+      name: "M. Nouveau",
+      address: null,
+      signatureCount: 0,
+    });
+    renderForm();
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Person name"), " M. Nouveau ");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(
+      await screen.findByText(
+        "Person saved. Add or remove their signatures below.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("Signatures")).toBeVisible();
+    expect(toastMessages()).toContain("Person “M. Nouveau” added.");
   });
 
   it("closes explicitly through the modal close button", async () => {
