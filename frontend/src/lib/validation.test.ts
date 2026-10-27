@@ -74,7 +74,7 @@ describe("expenseSchema", () => {
     ]);
     expect(
       llmSchema.shape.url.safeParse("ftp://serveur").error?.issues[0]?.message,
-    ).toBe("URL invalide : http:// ou https:// attendu.");
+    ).toBe("Invalid URL: http:// or https:// expected.");
 
     await i18n.changeLanguage("fr");
     expect(
@@ -591,5 +591,61 @@ describe("llmSchema", () => {
     expect(llmSchema.safeParse({ ...VALID, timeoutSeconds: 2 }).success).toBe(
       false,
     );
+  });
+
+  it("translates every llm message at parse time", async () => {
+    await i18n.changeLanguage("en");
+
+    const english = llmSchema.safeParse({
+      ...VALID,
+      url: "ftp://serveur",
+      model: " ",
+      timeoutSeconds: 2,
+      temperature: "3",
+      numCtx: 1,
+      maxPages: 0,
+      extractionPrompt: "court",
+    });
+    expect(english.success).toBe(false);
+    if (english.success) {
+      return;
+    }
+    expect(english.error.issues.map((issue) => issue.message)).toEqual([
+      "Invalid URL: http:// or https:// expected.",
+      "The model name is required.",
+      "The delay must be at least 5 seconds.",
+      "Temperature expected between 0 and 2.",
+      "The context must be at least 1,024.",
+      "At least one page.",
+      "The extraction prompt is too short.",
+    ]);
+    expect(
+      llmSchema.shape.timeoutSeconds.safeParse(2.5).error?.issues[0]?.message,
+    ).toBe("Invalid delay.");
+    expect(
+      llmSchema.shape.timeoutSeconds.safeParse(601).error?.issues[0]?.message,
+    ).toBe("The delay cannot exceed 600 seconds.");
+    expect(
+      llmSchema.shape.numCtx.safeParse(1024.5).error?.issues[0]?.message,
+    ).toBe("Invalid context.");
+    expect(
+      llmSchema.shape.numCtx.safeParse(131_073).error?.issues[0]?.message,
+    ).toBe("The context cannot exceed 131,072.");
+    expect(
+      llmSchema.shape.maxPages.safeParse(1.5).error?.issues[0]?.message,
+    ).toBe("Invalid page count.");
+    expect(
+      llmSchema.shape.maxPages.safeParse(21).error?.issues[0]?.message,
+    ).toBe("20 pages maximum.");
+
+    await i18n.changeLanguage("fr");
+    expect(
+      llmSchema.safeParse({ ...VALID, url: "ftp://serveur" }).error?.issues[0]
+        ?.message,
+    ).toBe("URL invalide : http:// ou https:// attendu.");
+    expect(
+      llmSchema.safeParse({ ...VALID, extractionPrompt: "court" }).error
+        ?.issues[0]?.message,
+    ).toBe("Le prompt d'extraction est trop court.");
   });
 });

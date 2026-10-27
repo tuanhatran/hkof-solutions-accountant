@@ -31,6 +31,10 @@ function personMessage(key: string): string {
   return i18n.t(`settings.people.validation.${key}`);
 }
 
+function adminLlmMessage(key: string): string {
+  return i18n.t(`adminLlm.validation.${key}`);
+}
+
 function isValidAmount(value: string, strictlyPositive: boolean): boolean {
   const normalized = parseAmount(value);
   if (normalized === null) {
@@ -299,39 +303,54 @@ export const llmSchema = z.object({
   url: z
     .string()
     .trim()
-    .refine((value) => {
-      try {
-        const url = new URL(value);
-        return url.protocol === "http:" || url.protocol === "https:";
-      } catch {
-        return false;
-      }
-    }, "URL invalide : http:// ou https:// attendu."),
-  model: z.string().trim().min(1, "Le nom du modèle est obligatoire."),
+    .refine(
+      (value) => {
+        try {
+          const url = new URL(value);
+          return url.protocol === "http:" || url.protocol === "https:";
+        } catch {
+          return false;
+        }
+      },
+      { error: () => adminLlmMessage("url") },
+    ),
+  model: z
+    .string()
+    .trim()
+    .min(1, {
+      error: () => adminLlmMessage("model"),
+    }),
   timeoutSeconds: z
     .number()
-    .int("Délai invalide.")
-    .min(5, "Le délai doit être au moins de 5 secondes.")
-    .max(600, "Le délai ne peut pas dépasser 600 secondes."),
-  temperature: z.string().refine((value) => {
-    const numberValue = Number(value.replace(",", "."));
-    return Number.isFinite(numberValue) && numberValue >= 0 && numberValue <= 2;
-  }, "Température attendue entre 0 et 2."),
+    .int({ error: () => adminLlmMessage("timeoutInteger") })
+    .min(5, { error: () => adminLlmMessage("timeoutMin") })
+    .max(600, { error: () => adminLlmMessage("timeoutMax") }),
+  temperature: z.string().refine(
+    (value) => {
+      const numberValue = Number(value.replace(",", "."));
+      return (
+        Number.isFinite(numberValue) && numberValue >= 0 && numberValue <= 2
+      );
+    },
+    { error: () => adminLlmMessage("temperature") },
+  ),
   numCtx: z
     .number()
-    .int("Contexte invalide.")
-    .min(1024, "Le contexte doit être au moins de 1 024.")
-    .max(131_072, "Le contexte ne peut pas dépasser 131 072."),
+    .int({ error: () => adminLlmMessage("numCtxInteger") })
+    .min(1024, { error: () => adminLlmMessage("numCtxMin") })
+    .max(131_072, { error: () => adminLlmMessage("numCtxMax") }),
   maxPages: z
     .number()
-    .int("Nombre de pages invalide.")
-    .min(1, "Au moins une page.")
-    .max(20, "20 pages maximum."),
+    .int({ error: () => adminLlmMessage("maxPagesInteger") })
+    .min(1, { error: () => adminLlmMessage("maxPagesMin") })
+    .max(20, { error: () => adminLlmMessage("maxPagesMax") }),
   ocrActive: z.boolean(),
   extractionPrompt: z
     .string()
     .trim()
-    .min(20, "Le prompt d'extraction est trop court."),
+    .min(20, {
+      error: () => adminLlmMessage("promptTooShort"),
+    }),
   apiKey: z.string(),
   deleteApiKey: z.boolean(),
 });

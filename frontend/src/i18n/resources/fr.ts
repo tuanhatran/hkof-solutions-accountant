@@ -986,6 +986,166 @@ export const fr = {
       removeImageAria: "Retirer l’image de la signature",
     },
   },
+  adminLlm: {
+    page: {
+      eyebrow: "Réglages",
+      title: "Admin IA",
+      loading: "Chargement de la configuration IA…",
+      description:
+        "Ollama reste local par défaut. Le modèle ne fait que proposer une extraction : tous les montants sont vérifiés et calculés par le backend.",
+      testConnection: "Tester la connexion",
+      save: "Enregistrer",
+    },
+    connection: {
+      title: "Connexion Ollama",
+      subtitle:
+        "Fournisseur local, URL, modèle et authentification éventuelle.",
+      enabled: "Analyse IA activée",
+      disabled: "Analyse IA désactivée",
+      toggleAria: "Activer l’analyse par IA",
+      notice:
+        "Quand l’IA est désactivée, aucun justificatif n’est envoyé. Toute la saisie manuelle reste disponible.",
+      provider: "Fournisseur",
+      providerOllama: "Ollama (local)",
+      providerOpenAi: "Compatible OpenAI — phase 2",
+      urlLabel: "URL du serveur Ollama",
+      urlHelp:
+        "Par défaut : http://host.docker.internal:11434. L’URL est enregistrée automatiquement lorsque la liste des modèles est actualisée.",
+      refreshAria: "Actualiser la liste des modèles",
+      refresh: "Actualiser",
+      modelLabel: "Modèle",
+      unknownFamily: "Famille inconnue",
+      visionSuffix: " · accepte les images",
+      visionTag: " · vision",
+      configuredTag: " (configuré)",
+      modelHelp:
+        "La liste est chargée depuis /api/tags. Vous pouvez saisir un nom manuellement si Ollama est injoignable.",
+      loadingModels: "Chargement des modèles…",
+      selectModel: "Sélectionnez un modèle",
+      manualEntry: "Saisie manuelle…",
+      chooseFromList: "Choisir dans la liste",
+      visionTitle: "Support des images",
+      visionAccepted:
+        "Ce modèle accepte les images : les photos et scans peuvent être analysés.",
+      visionRejected:
+        "Ce modèle n’est pas signalé comme multimodal. Les PDF texte restent analysables ; les images nécessitent un modèle vision ou l’OCR.",
+      configuredWarning:
+        "Ce modèle configuré n’apparaît pas dans la liste du serveur. Vérifiez qu’il est installé.",
+      modelsErrorTitle: "Liste des modèles indisponible.",
+      modelsErrorHint:
+        "Saisissez le nom du modèle manuellement, puis testez la connexion.",
+      footerNote:
+        "« Tester la connexion » enregistre d’abord les réglages affichés, puis interroge le serveur.",
+      testConnection: "Tester la connexion",
+      save: "Enregistrer",
+    },
+    advanced: {
+      title: "Paramètres avancés",
+      subtitle:
+        "Délai, température, contexte, pages analysées, OCR et prompt d’extraction.",
+      show: "Afficher",
+      hide: "Masquer",
+      timeoutLabel: "Délai (secondes)",
+      temperatureLabel: "Température",
+      temperatureHelp: "0 = réponses déterministes, recommandé.",
+      numCtxLabel: "Contexte (num_ctx)",
+      maxPagesLabel: "Pages max analysées",
+      ocrTitle: "OCR Tesseract en secours",
+      ocrText:
+        "À activer si Tesseract est installé sur le serveur : extrait le texte des justificatifs image ou scannés avant l’analyse.",
+      promptLabel: "Prompt d’extraction",
+      resetPrompt: "Réinitialiser le prompt par défaut",
+      promptHint:
+        "Le prompt système interdit au modèle d’obéir aux instructions contenues dans un document et impose un JSON validé par le serveur. Le modèle ne calcule jamais de montant.",
+      defaultsNote:
+        "Les valeurs par défaut conviennent à un usage local : 120 s, température 0, contexte 8 192 et 5 pages. Un délai trop court interrompt l’analyse sans bloquer la saisie manuelle.",
+    },
+    apiKey: {
+      title: "Clé API (facultative)",
+      hint: "Jamais renvoyée par le serveur ni réaffichée. Laissez vide pour conserver la clé enregistrée.",
+      configured: "Clé configurée",
+      none: "Aucune clé",
+      newKey: "Nouvelle clé API",
+      placeholderConfigured: "Clé enregistrée — laisser vide",
+      placeholderNone: "Aucune clé enregistrée",
+      deleteTitle: "Supprimer la clé enregistrée",
+      deleteText:
+        "Envoie explicitement une clé vide. Sans cette case, une clé vide n’est jamais transmise.",
+    },
+    remote: {
+      title: "Les justificatifs seront envoyés à un serveur distant.",
+      textBefore: "L’URL configurée n’est ni ",
+      localhost: "localhost",
+      textMiddle: ", ni ",
+      dockerHost: "host.docker.internal",
+      textAfter:
+        ", ni une IP privée. N’utilisez cette option que si vous acceptez ce transfert.",
+    },
+    saveBar: {
+      dirty: "Modifications non enregistrées.",
+      clean: "Configuration à jour.",
+      save: "Enregistrer la configuration IA",
+    },
+    status: {
+      eyebrow: "État de l’analyse IA",
+      title: "Connexion Ollama",
+      verifying: "Vérification…",
+      unavailable: "Indisponible",
+      unknown: "Inconnu",
+      querying: "Interrogation du serveur Ollama…",
+      reachable: "Serveur joignable",
+      unreachable: "Serveur non joignable",
+      none: "—",
+      activeSuffix: " · IA activée",
+      inactiveSuffix: " · IA désactivée",
+      refresh: "Actualiser",
+      ready: "Connecté",
+      readyDescription:
+        "Le serveur Ollama et le modèle configuré sont disponibles.",
+      remote: "Connecté — serveur distant",
+      remoteDescription:
+        "Ollama répond, mais l’URL n’est pas locale : les documents quittent cette machine.",
+      missingModel: "Modèle absent",
+      missingModelDescription:
+        "Ollama répond mais le modèle sélectionné n’est pas installé.",
+      unreachableStatus: "Injoignable",
+      unreachableDescription:
+        "Le serveur Ollama ne répond pas. La saisie manuelle reste disponible.",
+      disabled: "Désactivé",
+      disabledDescription:
+        "L’analyse IA est désactivée. Toute l’application reste utilisable manuellement.",
+    },
+    test: {
+      successTitle: "Connexion réussie",
+      failureTitle: "Test échoué",
+      duration: " en {{duration}} s",
+      detectedAmount: "Montant détecté sur le document de test :",
+    },
+    toasts: {
+      saved: "Configuration IA enregistrée.",
+      invalidUrl: "URL invalide : commencez par http:// ou https://.",
+      defaultPromptUnavailable: "Le prompt par défaut est indisponible.",
+      defaultPromptLoaded:
+        "Prompt par défaut chargé. Enregistrez pour l’appliquer.",
+      testSucceeded: "Test de connexion réussi.",
+      testFailed: "Le test de connexion a échoué.",
+    },
+    validation: {
+      url: "URL invalide : http:// ou https:// attendu.",
+      model: "Le nom du modèle est obligatoire.",
+      timeoutInteger: "Délai invalide.",
+      timeoutMin: "Le délai doit être au moins de 5 secondes.",
+      timeoutMax: "Le délai ne peut pas dépasser 600 secondes.",
+      temperature: "Température attendue entre 0 et 2.",
+      numCtxInteger: "Contexte invalide.",
+      numCtxMin: "Le contexte doit être au moins de 1 024.",
+      numCtxMax: "Le contexte ne peut pas dépasser 131 072.",
+      maxPagesInteger: "Nombre de pages invalide.",
+      maxPagesMin: "Au moins une page.",
+      maxPagesMax: "20 pages maximum.",
+      promptTooShort: "Le prompt d'extraction est trop court.",
+    },
+  },
   expenseStatement: {
     page: {
       eyebrow: "Générer · Note de frais",

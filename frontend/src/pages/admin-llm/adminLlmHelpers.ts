@@ -1,42 +1,68 @@
 import type { LlmConfigDto, LlmConfigRequest, LlmStatus } from "@/api/types";
+import i18n from "@/i18n";
 import type { LlmFormValues } from "@/lib/validation";
 
-export const STATUSES: Record<
-  LlmStatus,
-  { text: string; className: string; dot: string; description: string }
-> = {
+interface LlmStatusInfo {
+  readonly text: string;
+  readonly description: string;
+  className: string;
+  dot: string;
+}
+
+/**
+ * Status copy resolves through `i18n` getters so a language switch relabels the
+ * card without reloading; the badge classes stay constant.
+ */
+export const STATUSES: Record<LlmStatus, LlmStatusInfo> = {
   PRET: {
-    text: "Connecté",
+    get text() {
+      return i18n.t("adminLlm.status.ready");
+    },
+    get description() {
+      return i18n.t("adminLlm.status.readyDescription");
+    },
     className: "badge-accent",
     dot: "bg-accent",
-    description: "Le serveur Ollama et le modèle configuré sont disponibles.",
   },
   PRET_DISTANT: {
-    text: "Connecté — serveur distant",
+    get text() {
+      return i18n.t("adminLlm.status.remote");
+    },
+    get description() {
+      return i18n.t("adminLlm.status.remoteDescription");
+    },
     className: "badge-warning",
     dot: "bg-warning",
-    description:
-      "Ollama répond, mais l’URL n’est pas locale : les documents quittent cette machine.",
   },
   MODELE_ABSENT: {
-    text: "Modèle absent",
+    get text() {
+      return i18n.t("adminLlm.status.missingModel");
+    },
+    get description() {
+      return i18n.t("adminLlm.status.missingModelDescription");
+    },
     className: "badge-warning",
     dot: "bg-warning",
-    description: "Ollama répond mais le modèle sélectionné n’est pas installé.",
   },
   INJOIGNABLE: {
-    text: "Injoignable",
+    get text() {
+      return i18n.t("adminLlm.status.unreachableStatus");
+    },
+    get description() {
+      return i18n.t("adminLlm.status.unreachableDescription");
+    },
     className: "badge-danger",
     dot: "bg-danger",
-    description:
-      "Le serveur Ollama ne répond pas. La saisie manuelle reste disponible.",
   },
   DESACTIVE: {
-    text: "Désactivé",
+    get text() {
+      return i18n.t("adminLlm.status.disabled");
+    },
+    get description() {
+      return i18n.t("adminLlm.status.disabledDescription");
+    },
     className: "badge-neutral",
     dot: "bg-ink-soft/60",
-    description:
-      "L’analyse IA est désactivée. Toute l’application reste utilisable manuellement.",
   },
 };
 

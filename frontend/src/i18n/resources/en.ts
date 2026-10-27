@@ -960,6 +960,164 @@ export const en = {
       removeImageAria: "Remove the signature image",
     },
   },
+  adminLlm: {
+    page: {
+      eyebrow: "Settings",
+      title: "AI Admin",
+      loading: "Loading the AI configuration…",
+      description:
+        "Ollama stays local by default. The model only proposes an extraction: every amount is verified and calculated by the backend.",
+      testConnection: "Test the connection",
+      save: "Save",
+    },
+    connection: {
+      title: "Ollama connection",
+      subtitle: "Local provider, URL, model and optional authentication.",
+      enabled: "AI analysis enabled",
+      disabled: "AI analysis disabled",
+      toggleAria: "Enable AI analysis",
+      notice:
+        "When AI is disabled, no receipt is sent. All manual entry remains available.",
+      provider: "Provider",
+      providerOllama: "Ollama (local)",
+      providerOpenAi: "OpenAI-compatible — phase 2",
+      urlLabel: "Ollama server URL",
+      urlHelp:
+        "Default: http://host.docker.internal:11434. The URL is saved automatically when the model list is refreshed.",
+      refreshAria: "Refresh the model list",
+      refresh: "Refresh",
+      modelLabel: "Model",
+      unknownFamily: "Unknown family",
+      visionSuffix: " · accepts images",
+      visionTag: " · vision",
+      configuredTag: " (configured)",
+      modelHelp:
+        "The list is loaded from /api/tags. You can enter a name manually if Ollama is unreachable.",
+      loadingModels: "Loading models…",
+      selectModel: "Select a model",
+      manualEntry: "Manual entry…",
+      chooseFromList: "Choose from the list",
+      visionTitle: "Image support",
+      visionAccepted:
+        "This model accepts images: photos and scans can be analyzed.",
+      visionRejected:
+        "This model is not reported as multimodal. Text PDFs remain analyzable; images require a vision model or OCR.",
+      configuredWarning:
+        "This configured model does not appear in the server list. Check that it is installed.",
+      modelsErrorTitle: "Model list unavailable.",
+      modelsErrorHint:
+        "Enter the model name manually, then test the connection.",
+      footerNote:
+        "“Test the connection” first saves the displayed settings, then queries the server.",
+      testConnection: "Test the connection",
+      save: "Save",
+    },
+    advanced: {
+      title: "Advanced settings",
+      subtitle:
+        "Delay, temperature, context, analyzed pages, OCR and extraction prompt.",
+      show: "Show",
+      hide: "Hide",
+      timeoutLabel: "Delay (seconds)",
+      temperatureLabel: "Temperature",
+      temperatureHelp: "0 = deterministic answers, recommended.",
+      numCtxLabel: "Context (num_ctx)",
+      maxPagesLabel: "Max analyzed pages",
+      ocrTitle: "Tesseract OCR as fallback",
+      ocrText:
+        "Enable if Tesseract is installed on the server: extracts the text of image or scanned receipts before the analysis.",
+      promptLabel: "Extraction prompt",
+      resetPrompt: "Reset to the default prompt",
+      promptHint:
+        "The system prompt forbids the model to obey instructions contained in a document and enforces JSON validated by the server. The model never calculates any amount.",
+      defaultsNote:
+        "The default values suit local use: 120 s, temperature 0, context 8,192 and 5 pages. Too short a delay interrupts the analysis without blocking manual entry.",
+    },
+    apiKey: {
+      title: "API key (optional)",
+      hint: "Never returned by the server nor displayed again. Leave empty to keep the stored key.",
+      configured: "Key configured",
+      none: "No key",
+      newKey: "New API key",
+      placeholderConfigured: "Stored key — leave empty",
+      placeholderNone: "No stored key",
+      deleteTitle: "Delete the stored key",
+      deleteText:
+        "Explicitly sends an empty key. Without this box, an empty key is never sent.",
+    },
+    remote: {
+      title: "Receipts will be sent to a remote server.",
+      textBefore: "The configured URL is neither ",
+      localhost: "localhost",
+      textMiddle: ", nor ",
+      dockerHost: "host.docker.internal",
+      textAfter:
+        ", nor a private IP. Only use this option if you accept this transfer.",
+    },
+    saveBar: {
+      dirty: "Unsaved changes.",
+      clean: "Configuration up to date.",
+      save: "Save the AI configuration",
+    },
+    status: {
+      eyebrow: "AI analysis state",
+      title: "Ollama connection",
+      verifying: "Checking…",
+      unavailable: "Unavailable",
+      unknown: "Unknown",
+      querying: "Querying the Ollama server…",
+      reachable: "Server reachable",
+      unreachable: "Server unreachable",
+      none: "—",
+      activeSuffix: " · AI enabled",
+      inactiveSuffix: " · AI disabled",
+      refresh: "Refresh",
+      ready: "Connected",
+      readyDescription:
+        "The Ollama server and the configured model are available.",
+      remote: "Connected — remote server",
+      remoteDescription:
+        "Ollama responds, but the URL is not local: documents leave this machine.",
+      missingModel: "Model missing",
+      missingModelDescription:
+        "Ollama responds but the selected model is not installed.",
+      unreachableStatus: "Unreachable",
+      unreachableDescription:
+        "The Ollama server does not respond. Manual entry remains available.",
+      disabled: "Disabled",
+      disabledDescription:
+        "AI analysis is disabled. The whole application remains usable manually.",
+    },
+    test: {
+      successTitle: "Connection successful",
+      failureTitle: "Test failed",
+      duration: " in {{duration}} s",
+      detectedAmount: "Amount detected on the test document:",
+    },
+    toasts: {
+      saved: "AI configuration saved.",
+      invalidUrl: "Invalid URL: start with http:// or https://.",
+      defaultPromptUnavailable: "The default prompt is unavailable.",
+      defaultPromptLoaded: "Default prompt loaded. Save to apply it.",
+      testSucceeded: "Connection test succeeded.",
+      testFailed: "The connection test failed.",
+    },
+    validation: {
+      url: "Invalid URL: http:// or https:// expected.",
+      model: "The model name is required.",
+      timeoutInteger: "Invalid delay.",
+      timeoutMin: "The delay must be at least 5 seconds.",
+      timeoutMax: "The delay cannot exceed 600 seconds.",
+      temperature: "Temperature expected between 0 and 2.",
+      numCtxInteger: "Invalid context.",
+      numCtxMin: "The context must be at least 1,024.",
+      numCtxMax: "The context cannot exceed 131,072.",
+      maxPagesInteger: "Invalid page count.",
+      maxPagesMin: "At least one page.",
+      maxPagesMax: "20 pages maximum.",
+      promptTooShort: "The extraction prompt is too short.",
+    },
+  },
   expenseStatement: {
     page: {
       eyebrow: "Generate · Expense statement",

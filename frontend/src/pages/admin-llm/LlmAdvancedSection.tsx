@@ -1,5 +1,6 @@
 import "./LlmAdvancedSection.css";
 import { RotateCcw, Server, Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
@@ -7,6 +8,8 @@ import type { AdminLlmController } from "./useAdminLlmPage";
 
 /** Collapsible advanced extraction settings (sampling, OCR, prompt). */
 export function LlmAdvancedSection({ c }: { c: AdminLlmController }) {
+  const { t } = useTranslation();
+
   return (
     <details className="card group llm-advanced-section">
       <summary className="card-header llm-advanced-section-summary">
@@ -15,22 +18,27 @@ export function LlmAdvancedSection({ c }: { c: AdminLlmController }) {
             <Sparkles size={16} aria-hidden="true" />
           </span>
           <div>
-            <h2 className="llm-advanced-section-title">Paramètres avancés</h2>
+            <h2 className="llm-advanced-section-title">
+              {t("adminLlm.advanced.title")}
+            </h2>
             <p className="llm-advanced-section-subtitle">
-              Délai, température, contexte, pages analysées, OCR et prompt
-              d’extraction.
+              {t("adminLlm.advanced.subtitle")}
             </p>
           </div>
         </div>
-        <span className="llm-advanced-section-more">Afficher</span>
-        <span className="llm-advanced-section-less">Masquer</span>
+        <span className="llm-advanced-section-more">
+          {t("adminLlm.advanced.show")}
+        </span>
+        <span className="llm-advanced-section-less">
+          {t("adminLlm.advanced.hide")}
+        </span>
       </summary>
 
       <div className="card-body llm-advanced-section-body">
         <div className="llm-advanced-section-grid">
           <FieldGroup
             id="llm-timeout"
-            label="Délai (secondes)"
+            label={t("adminLlm.advanced.timeoutLabel")}
             error={c.errors.timeoutSeconds?.message}
           >
             <input
@@ -45,9 +53,9 @@ export function LlmAdvancedSection({ c }: { c: AdminLlmController }) {
           </FieldGroup>
           <FieldGroup
             id="llm-temperature"
-            label="Température"
+            label={t("adminLlm.advanced.temperatureLabel")}
             error={c.errors.temperature?.message}
-            help="0 = réponses déterministes, recommandé."
+            help={t("adminLlm.advanced.temperatureHelp")}
           >
             <input
               id="llm-temperature"
@@ -58,7 +66,7 @@ export function LlmAdvancedSection({ c }: { c: AdminLlmController }) {
           </FieldGroup>
           <FieldGroup
             id="llm-numctx"
-            label="Contexte (num_ctx)"
+            label={t("adminLlm.advanced.numCtxLabel")}
             error={c.errors.numCtx?.message}
           >
             <input
@@ -73,7 +81,7 @@ export function LlmAdvancedSection({ c }: { c: AdminLlmController }) {
           </FieldGroup>
           <FieldGroup
             id="llm-pages"
-            label="Pages max analysées"
+            label={t("adminLlm.advanced.maxPagesLabel")}
             error={c.errors.maxPages?.message}
           >
             <input
@@ -96,11 +104,10 @@ export function LlmAdvancedSection({ c }: { c: AdminLlmController }) {
           />
           <span>
             <span className="llm-advanced-section-ocr-title">
-              OCR Tesseract en secours
+              {t("adminLlm.advanced.ocrTitle")}
             </span>
             <span className="llm-advanced-section-ocr-text">
-              À activer si Tesseract est installé sur le serveur : extrait le
-              texte des justificatifs image ou scannés avant l’analyse.
+              {t("adminLlm.advanced.ocrText")}
             </span>
           </span>
         </label>
@@ -108,7 +115,7 @@ export function LlmAdvancedSection({ c }: { c: AdminLlmController }) {
         <div>
           <div className="llm-advanced-section-prompt-header">
             <label htmlFor="llm-prompt" className="field-label">
-              Prompt d’extraction
+              {t("adminLlm.advanced.promptLabel")}
             </label>
             <Button
               variant="secondary"
@@ -118,7 +125,7 @@ export function LlmAdvancedSection({ c }: { c: AdminLlmController }) {
               onClick={() => void c.resetPrompt()}
               data-cy="btn-reinitialiser-prompt"
             >
-              Réinitialiser le prompt par défaut
+              {t("adminLlm.advanced.resetPrompt")}
             </Button>
           </div>
           <textarea
@@ -137,11 +144,7 @@ export function LlmAdvancedSection({ c }: { c: AdminLlmController }) {
               {c.errors.extractionPrompt.message}
             </p>
           ) : (
-            <p className="hint">
-              Le prompt système interdit au modèle d’obéir aux instructions
-              contenues dans un document et impose un JSON validé par le
-              serveur. Le modèle ne calcule jamais de montant.
-            </p>
+            <p className="hint">{t("adminLlm.advanced.promptHint")}</p>
           )}
         </div>
 
@@ -151,11 +154,7 @@ export function LlmAdvancedSection({ c }: { c: AdminLlmController }) {
             className="llm-advanced-section-note-icon"
             aria-hidden="true"
           />
-          <p>
-            Les valeurs par défaut conviennent à un usage local : 120 s,
-            température 0, contexte 8 192 et 5 pages. Un délai trop court
-            interrompt l’analyse sans bloquer la saisie manuelle.
-          </p>
+          <p>{t("adminLlm.advanced.defaultsNote")}</p>
         </div>
       </div>
     </details>

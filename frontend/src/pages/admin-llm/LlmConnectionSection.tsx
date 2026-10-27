@@ -7,6 +7,7 @@ import {
   RefreshCw,
   Save,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
 import { FieldGroup } from "@/components/ui/FieldGroup";
@@ -18,6 +19,8 @@ import { LlmToggle } from "./LlmToggle";
 
 /** Main Ollama connection card of the LLM admin page. */
 export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
+  const { t } = useTranslation();
+
   return (
     <section className="card llm-connection-section">
       <div className="card-header">
@@ -26,15 +29,19 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
             <Bot size={19} aria-hidden="true" />
           </span>
           <div>
-            <h2 className="llm-connection-section-title">Connexion Ollama</h2>
+            <h2 className="llm-connection-section-title">
+              {t("adminLlm.connection.title")}
+            </h2>
             <p className="llm-connection-section-subtitle">
-              Fournisseur local, URL, modèle et authentification éventuelle.
+              {t("adminLlm.connection.subtitle")}
             </p>
           </div>
         </div>
         <div className="llm-connection-section-status">
           <span className="llm-connection-section-status-text">
-            {c.active ? "Analyse IA activée" : "Analyse IA désactivée"}
+            {c.active
+              ? t("adminLlm.connection.enabled")
+              : t("adminLlm.connection.disabled")}
           </span>
           <LlmToggle
             enabled={c.active}
@@ -53,31 +60,35 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
               className="llm-connection-section-notice-icon"
               aria-hidden="true"
             />
-            Quand l’IA est désactivée, aucun justificatif n’est envoyé. Toute la
-            saisie manuelle reste disponible.
+            {t("adminLlm.connection.notice")}
           </div>
         ) : null}
 
         <div className="llm-connection-section-grid">
-          <FieldGroup id="llm-fournisseur" label="Fournisseur">
+          <FieldGroup
+            id="llm-fournisseur"
+            label={t("adminLlm.connection.provider")}
+          >
             <select
               id="llm-fournisseur"
               className="field"
               value="OLLAMA"
               disabled
             >
-              <option value="OLLAMA">Ollama (local)</option>
+              <option value="OLLAMA">
+                {t("adminLlm.connection.providerOllama")}
+              </option>
               <option value="OPENAI" disabled>
-                Compatible OpenAI — phase 2
+                {t("adminLlm.connection.providerOpenAi")}
               </option>
             </select>
           </FieldGroup>
 
           <FieldGroup
             id="llm-url"
-            label="URL du serveur Ollama"
+            label={t("adminLlm.connection.urlLabel")}
             error={c.errors.url?.message}
-            help="Par défaut : http://host.docker.internal:11434. L’URL est enregistrée automatiquement lorsque la liste des modèles est actualisée."
+            help={t("adminLlm.connection.urlHelp")}
           >
             <div className="llm-connection-section-url-row">
               <input
@@ -101,10 +112,10 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
                 }
                 disabled={c.listLoading}
                 onClick={() => void c.refreshModels(true)}
-                aria-label="Actualiser la liste des modèles"
+                aria-label={t("adminLlm.connection.refreshAria")}
                 data-cy="btn-refresh-models"
               >
-                Actualiser
+                {t("adminLlm.connection.refresh")}
               </Button>
             </div>
           </FieldGroup>
@@ -113,12 +124,12 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
         <div className="llm-connection-section-grid">
           <FieldGroup
             id="llm-modele"
-            label="Modèle"
+            label={t("adminLlm.connection.modelLabel")}
             error={c.errors.model?.message}
             help={
               c.selectedModel
-                ? `${c.selectedModel.family || "Famille inconnue"}${c.selectedModel.parameters ? ` · ${c.selectedModel.parameters}` : ""}${c.selectedModel.vision ? " · accepte les images" : ""}`
-                : "La liste est chargée depuis /api/tags. Vous pouvez saisir un nom manuellement si Ollama est injoignable."
+                ? `${c.selectedModel.family || t("adminLlm.connection.unknownFamily")}${c.selectedModel.parameters ? ` · ${c.selectedModel.parameters}` : ""}${c.selectedModel.vision ? t("adminLlm.connection.visionSuffix") : ""}`
+                : t("adminLlm.connection.modelHelp")
             }
           >
             {!c.manualMode ? (
@@ -142,18 +153,22 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
               >
                 <option value="" disabled>
                   {c.listLoading && c.modelOptions.length === 0
-                    ? "Chargement des modèles…"
-                    : "Sélectionnez un modèle"}
+                    ? t("adminLlm.connection.loadingModels")
+                    : t("adminLlm.connection.selectModel")}
                 </option>
                 {c.modelOptions.map((model) => (
                   <option key={model.name} value={model.name}>
                     {model.name}
-                    {model.vision ? " · vision" : ""}
+                    {model.vision ? t("adminLlm.connection.visionTag") : ""}
                     {model.parameters ? ` · ${model.parameters}` : ""}
-                    {model.configure ? " (configuré)" : ""}
+                    {model.configure
+                      ? t("adminLlm.connection.configuredTag")
+                      : ""}
                   </option>
                 ))}
-                <option value="__manuel__">Saisie manuelle…</option>
+                <option value="__manuel__">
+                  {t("adminLlm.connection.manualEntry")}
+                </option>
               </select>
             ) : null}
 
@@ -174,7 +189,7 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
                     className="llm-connection-section-manual-link"
                     onClick={() => c.setManualMode(false)}
                   >
-                    Choisir dans la liste
+                    {t("adminLlm.connection.chooseFromList")}
                   </button>
                 ) : null}
               </div>
@@ -189,18 +204,17 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
                   className="llm-connection-section-vision-icon"
                   aria-hidden="true"
                 />
-                Support des images
+                {t("adminLlm.connection.visionTitle")}
               </p>
               <p className="llm-connection-section-vision-text">
                 {c.selectedModel?.vision
-                  ? "Ce modèle accepte les images : les photos et scans peuvent être analysés."
-                  : "Ce modèle n’est pas signalé comme multimodal. Les PDF texte restent analysables ; les images nécessitent un modèle vision ou l’OCR."}
+                  ? t("adminLlm.connection.visionAccepted")
+                  : t("adminLlm.connection.visionRejected")}
               </p>
             </div>
             {c.selectedModel && c.selectedModel.configure ? (
               <p className="llm-connection-section-vision-warning">
-                Ce modèle configuré n’apparaît pas dans la liste du serveur.
-                Vérifiez qu’il est installé.
+                {t("adminLlm.connection.configuredWarning")}
               </p>
             ) : null}
           </div>
@@ -209,13 +223,13 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
         {c.modelsError || c.models.isError ? (
           <div className="llm-connection-section-error" role="alert">
             <p className="llm-connection-section-error-title">
-              Liste des modèles indisponible.
+              {t("adminLlm.connection.modelsErrorTitle")}
             </p>
             <p className="llm-connection-section-error-message">
               {c.modelsError ?? errorMessage(c.models.error)}
             </p>
             <p className="llm-connection-section-error-hint">
-              Saisissez le nom du modèle manuellement, puis testez la connexion.
+              {t("adminLlm.connection.modelsErrorHint")}
             </p>
           </div>
         ) : null}
@@ -224,8 +238,7 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
 
         <div className="llm-connection-section-footer">
           <p className="llm-connection-section-footer-note">
-            « Tester la connexion » enregistre d’abord les réglages affichés,
-            puis interroge le serveur.
+            {t("adminLlm.connection.footerNote")}
           </p>
           <div className="llm-connection-section-actions">
             <Button
@@ -236,7 +249,7 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
               onClick={() => void c.runTest()}
               data-cy="btn-test-llm-bas"
             >
-              Tester la connexion
+              {t("adminLlm.connection.testConnection")}
             </Button>
             <Button
               variant="primary"
@@ -245,7 +258,7 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
               icon={<Save size={14} />}
               loading={c.save.isPending}
             >
-              Enregistrer
+              {t("adminLlm.connection.save")}
             </Button>
           </div>
         </div>
