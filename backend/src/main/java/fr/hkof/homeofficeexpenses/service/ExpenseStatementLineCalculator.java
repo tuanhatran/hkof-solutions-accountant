@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
@@ -41,11 +42,13 @@ public class ExpenseStatementLineCalculator {
         Set<String> codes = new HashSet<>();
         for (ExpenseLineRequest request : requests) {
             if (request.itemCode() == null || request.itemCode().isBlank()) {
-                throw new BusinessException("Le type de frais est obligatoire.");
+                throw new BusinessException("EXPENSE_ITEM_REQUIRED", "Le type de frais est obligatoire.");
             }
             ExpenseItem expenseItem = expenseItemService.entity(companyId, request.itemCode());
             if (!expenseItem.isMultipleLinesAllowed() && !codes.add(expenseItem.getCode())) {
-                throw new BusinessException("Le type « " + expenseItem.getLabel() + " » ne peut être ajouté qu'une fois.");
+                throw new BusinessException("EXPENSE_ITEM_SINGLE_USE",
+                        "Le type « " + expenseItem.getLabel() + " » ne peut être ajouté qu'une fois.",
+                        Map.of("label", expenseItem.getLabel()));
             }
             BigDecimal amountInclVat = Amounts.decimal(request.amountInclVat(), "montant TTC", true);
             BigDecimal proRataPct = Amounts.percentage(request.proRataPct());
@@ -90,7 +93,8 @@ public class ExpenseStatementLineCalculator {
         try {
             return AmountSource.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
-            throw new BusinessException("Source de montant invalide : " + value);
+            throw new BusinessException("STATEMENT_AMOUNT_SOURCE_INVALID", "Source de montant invalide : " + value,
+                    Map.of("source", value));
         }
     }
 
@@ -100,7 +104,8 @@ public class ExpenseStatementLineCalculator {
         }
         String normalizedConfidence = value.trim().toLowerCase(Locale.ROOT);
         if (!CONFIDENCE_LEVELS.contains(normalizedConfidence)) {
-            throw new BusinessException("Niveau de confiance IA invalide : " + value);
+            throw new BusinessException("STATEMENT_AI_CONFIDENCE_INVALID",
+                    "Niveau de confiance IA invalide : " + value, Map.of("confidence", value));
         }
         return normalizedConfidence;
     }

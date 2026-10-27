@@ -1,5 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createI18n, LANGUAGE_STORAGE_KEY } from "./index";
+import { en } from "./resources/en";
+import { fr } from "./resources/fr";
+
+function flattenKeys(value: unknown, prefix = ""): string[] {
+  if (typeof value !== "object" || value === null) {
+    return [prefix];
+  }
+  return Object.entries(value as Record<string, unknown>).flatMap(
+    ([key, child]) =>
+      flattenKeys(child, prefix === "" ? key : `${prefix}.${key}`),
+  );
+}
 
 function stubBrowserLanguages(languages: string[]) {
   vi.spyOn(window.navigator, "languages", "get").mockReturnValue(languages);
@@ -64,6 +76,12 @@ describe("i18n", () => {
 
     expect(localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe("fr");
     expect(document.documentElement.lang).toBe("fr");
+  });
+
+  it("keeps the FR and EN api.errors keys in parity", () => {
+    expect(flattenKeys(en.api.errors).sort()).toEqual(
+      flattenKeys(fr.api.errors).sort(),
+    );
   });
 
   it("exposes the French and English translations under the default namespace", async () => {

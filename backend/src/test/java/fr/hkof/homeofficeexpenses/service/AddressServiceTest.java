@@ -85,9 +85,11 @@ class AddressServiceTest {
     void rejectsBlankLabel() {
         assertThatThrownBy(() -> service.findOrCreate("  "))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("L'adresse du bien est obligatoire.");
+                .hasMessage("L'adresse du bien est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("ADDRESS_REQUIRED"));
         assertThatThrownBy(() -> service.findOrCreate(null))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("ADDRESS_REQUIRED"));
         verify(addresses, never()).save(any());
     }
 }

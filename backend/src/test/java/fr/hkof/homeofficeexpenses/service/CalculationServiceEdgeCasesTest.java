@@ -15,10 +15,14 @@ class CalculationServiceEdgeCasesTest {
     void claimedAmountRequiresBoth() {
         assertThatThrownBy(() -> CalculationService.claimedAmount(null, new BigDecimal("50")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le montant du mois et le prorata sont obligatoires.");
+                .hasMessage("Le montant du mois et le prorata sont obligatoires.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("AMOUNT_PRO_RATA_REQUIRED"));
         assertThatThrownBy(() -> CalculationService.claimedAmount(new BigDecimal("10"), null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le montant du mois et le prorata sont obligatoires.");
+                .hasMessage("Le montant du mois et le prorata sont obligatoires.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("AMOUNT_PRO_RATA_REQUIRED"));
     }
 
     @Test
@@ -26,7 +30,8 @@ class CalculationServiceEdgeCasesTest {
     void claimedAmountRejectsNegativeProRata() {
         assertThatThrownBy(() -> CalculationService.claimedAmount(new BigDecimal("10"), new BigDecimal("-1")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("prorata");
+                .hasMessageContaining("prorata")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PRO_RATA_OUT_OF_RANGE"));
     }
 
     @Test
@@ -52,7 +57,9 @@ class CalculationServiceEdgeCasesTest {
     void proRataBaseRejectsNegativeBusinessArea() {
         assertThatThrownBy(() -> CalculationService.proRataBase(new BigDecimal("-1"), new BigDecimal("70")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("surface");
+                .hasMessageContaining("surface")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("PRO_RATA_BUSINESS_AREA_OUT_OF_RANGE"));
     }
 
     @Test
@@ -67,6 +74,7 @@ class CalculationServiceEdgeCasesTest {
     void grossFromNetRejectsNegativeRate() {
         assertThatThrownBy(() -> CalculationService.grossFromNet(new BigDecimal("80"), new BigDecimal("-1")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("taux");
+                .hasMessageContaining("taux")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("VAT_RATE_OUT_OF_RANGE"));
     }
 }

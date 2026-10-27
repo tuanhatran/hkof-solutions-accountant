@@ -38,7 +38,7 @@ public class AddressService {
     public Address findOrCreate(String label) {
         String cleaned = label == null ? "" : label.trim();
         if (cleaned.isEmpty()) {
-            throw new BusinessException("L'adresse du bien est obligatoire.");
+            throw new BusinessException("ADDRESS_REQUIRED", "L'adresse du bien est obligatoire.");
         }
         return addresses.findFirstByDeletedFalseAndLabelIgnoreCase(cleaned)
                 .orElseGet(() -> create(cleaned));

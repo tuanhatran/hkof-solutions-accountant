@@ -88,14 +88,16 @@ class PersonServiceTest {
         when(signatures.existsByPersonIdAndDeletedFalse(1L)).thenReturn(true);
         assertThatThrownBy(() -> service.delete(1L))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Cette personne porte des signatures et ne peut pas être supprimée.");
+                .hasMessage("Cette personne porte des signatures et ne peut pas être supprimée.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PERSON_HAS_SIGNATURES"));
         verify(persons, never()).save(any());
 
         when(signatures.existsByPersonIdAndDeletedFalse(1L)).thenReturn(false);
         when(leases.existsByTenantIdAndDeletedFalse(1L)).thenReturn(true);
         assertThatThrownBy(() -> service.delete(1L))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Cette personne est utilisée par un bail actif et ne peut pas être supprimée.");
+                .hasMessage("Cette personne est utilisée par un bail actif et ne peut pas être supprimée.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PERSON_IN_USE"));
     }
 
     @Test
@@ -103,17 +105,20 @@ class PersonServiceTest {
     void validation() {
         assertThatThrownBy(() -> service.create(new PersonRequest(null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le nom de la personne est obligatoire.");
+                .hasMessage("Le nom de la personne est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PERSON_NAME_REQUIRED"));
         assertThatThrownBy(() -> service.create(new PersonRequest(" ", null)))
                 .isInstanceOf(BusinessException.class);
 
         when(persons.findNaturalPersonById(9L)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.update(9L, new PersonRequest("x", null)))
-                .isInstanceOf(NotFoundException.class).hasMessage("Personne introuvable.");
+                .isInstanceOf(NotFoundException.class).hasMessage("Personne introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("PERSON_NOT_FOUND"));
         assertThatThrownBy(() -> service.delete(9L))
                 .isInstanceOf(NotFoundException.class);
         assertThatThrownBy(() -> service.entity(null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Sélectionnez une personne.");
+                .hasMessage("Sélectionnez une personne.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PERSON_REQUIRED"));
     }
 }

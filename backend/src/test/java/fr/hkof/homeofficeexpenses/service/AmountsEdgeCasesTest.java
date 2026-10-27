@@ -17,10 +17,12 @@ class AmountsEdgeCasesTest {
     void decimalRequiresValue() {
         assertThatThrownBy(() -> Amounts.decimal(null, "montant TTC", true))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le champ « montant TTC » est obligatoire.");
+                .hasMessage("Le champ « montant TTC » est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("AMOUNT_REQUIRED"));
         assertThatThrownBy(() -> Amounts.decimal("  ", "loyer", false))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("obligatoire");
+                .hasMessageContaining("obligatoire")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("AMOUNT_REQUIRED"));
     }
 
     @Test
@@ -28,7 +30,8 @@ class AmountsEdgeCasesTest {
     void decimalRejectsLetters() {
         assertThatThrownBy(() -> Amounts.decimal("douze euros", "montant", true))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("« douze euros » n'est pas un nombre valide pour « montant ».");
+                .hasMessage("« douze euros » n'est pas un nombre valide pour « montant ».")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("AMOUNT_INVALID"));
     }
 
     @Test
@@ -36,7 +39,9 @@ class AmountsEdgeCasesTest {
     void decimalRejectsNegativeWhenNotStrict() {
         assertThatThrownBy(() -> Amounts.decimal("-1", "charges", false))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le champ « charges » doit être positif ou nul.");
+                .hasMessage("Le champ « charges » doit être positif ou nul.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("AMOUNT_MUST_BE_POSITIVE_OR_ZERO"));
     }
 
     @Test
@@ -52,13 +57,16 @@ class AmountsEdgeCasesTest {
     void percentageErrors() {
         assertThatThrownBy(() -> Amounts.percentage(null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le prorata est obligatoire.");
+                .hasMessage("Le prorata est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PRO_RATA_REQUIRED"));
         assertThatThrownBy(() -> Amounts.percentage(" "))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le prorata est obligatoire.");
+                .hasMessage("Le prorata est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PRO_RATA_REQUIRED"));
         assertThatThrownBy(() -> Amounts.percentage("beaucoup"))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("« beaucoup » n'est pas un pourcentage valide.");
+                .hasMessage("« beaucoup » n'est pas un pourcentage valide.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PRO_RATA_INVALID"));
     }
 
     @Test
@@ -66,10 +74,12 @@ class AmountsEdgeCasesTest {
     void percentageRange() {
         assertThatThrownBy(() -> Amounts.percentage("-1"))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le prorata doit être compris entre 0 et 100 %.");
+                .hasMessage("Le prorata doit être compris entre 0 et 100 %.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PRO_RATA_OUT_OF_RANGE"));
         assertThatThrownBy(() -> Amounts.percentage("101"))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le prorata doit être compris entre 0 et 100 %.");
+                .hasMessage("Le prorata doit être compris entre 0 et 100 %.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PRO_RATA_OUT_OF_RANGE"));
     }
 
     @Test
@@ -80,7 +90,8 @@ class AmountsEdgeCasesTest {
         assertThat(Amounts.optionalDate("2026-10-01", "date")).isEqualTo(LocalDate.of(2026, 10, 1));
         assertThatThrownBy(() -> Amounts.optionalDate("01/10/2026", "date"))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La date « date » doit être au format AAAA-MM-JJ.");
+                .hasMessage("La date « date » doit être au format AAAA-MM-JJ.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("DATE_INVALID"));
     }
 
     @Test
@@ -88,13 +99,16 @@ class AmountsEdgeCasesTest {
     void monthErrors() {
         assertThatThrownBy(() -> Amounts.month(null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le mois est obligatoire (format AAAA-MM).");
+                .hasMessage("Le mois est obligatoire (format AAAA-MM).")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("MONTH_REQUIRED"));
         assertThatThrownBy(() -> Amounts.month(" "))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le mois est obligatoire (format AAAA-MM).");
+                .hasMessage("Le mois est obligatoire (format AAAA-MM).")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("MONTH_REQUIRED"));
         assertThatThrownBy(() -> Amounts.month("10/2026"))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le mois doit être au format AAAA-MM.");
+                .hasMessage("Le mois doit être au format AAAA-MM.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("MONTH_INVALID"));
         assertThat(Amounts.month(" 2026-10 ")).isEqualTo(YearMonth.of(2026, 10));
     }
 

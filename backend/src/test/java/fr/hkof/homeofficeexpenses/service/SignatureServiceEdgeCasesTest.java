@@ -67,7 +67,9 @@ class SignatureServiceEdgeCasesTest {
 
         assertThatThrownBy(() -> service.create(PERSON_ID, "Bailleur", file))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Impossible de lire le fichier de signature.");
+                .hasMessage("Impossible de lire le fichier de signature.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("SIGNATURE_FILE_UNREADABLE"));
     }
 
     @Test
@@ -85,7 +87,8 @@ class SignatureServiceEdgeCasesTest {
     void resolveRequiresPerson() {
         assertThatThrownBy(() -> service.resolveForPerson(null, null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La personne de la signature est obligatoire.");
+                .hasMessage("La personne de la signature est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PERSON_REQUIRED"));
     }
 
     @Test

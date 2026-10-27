@@ -136,7 +136,7 @@ public class RentReceiptService {
     @Transactional(readOnly = true)
     public RentReceipt entity(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Quittance introuvable."));
+                .orElseThrow(() -> new NotFoundException("RENT_RECEIPT_NOT_FOUND", "Quittance introuvable."));
     }
 
     /**
@@ -172,7 +172,7 @@ public class RentReceiptService {
     public byte[] pdf(Long id) {
         RentReceipt rentReceipt = entity(id);
         if (rentReceipt.getPdfPath() == null) {
-            throw new NotFoundException("Le PDF de cette quittance est introuvable.");
+            throw new NotFoundException("RENT_RECEIPT_PDF_NOT_FOUND", "Le PDF de cette quittance est introuvable.");
         }
         return storage.read(rentReceipt.getPdfPath());
     }
@@ -214,7 +214,8 @@ public class RentReceiptService {
                 ? templateService.byId(templateId)
                 : templateService.active(TemplateType.RENT_RECEIPT);
         if (template.getType() != TemplateType.RENT_RECEIPT) {
-            throw new BusinessException("Le template sélectionné n'est pas un template de quittance.");
+            throw new BusinessException("RENT_RECEIPT_TEMPLATE_INVALID",
+                    "Le template sélectionné n'est pas un template de quittance.");
         }
         return template;
     }
@@ -243,7 +244,8 @@ public class RentReceiptService {
 
     private void checkPeriod(LocalDate periodStart, LocalDate periodEnd) {
         if (periodEnd.isBefore(periodStart)) {
-            throw new BusinessException("La fin de période ne peut pas précéder le début.");
+            throw new BusinessException("RENT_RECEIPT_PERIOD_INVALID",
+                    "La fin de période ne peut pas précéder le début.");
         }
     }
 
@@ -254,7 +256,7 @@ public class RentReceiptService {
 
     private String signatureDataUri(Long requestedId, Long landlordId) {
         Signature signature = signatureService.resolveForPerson(requestedId, landlordId)
-                .orElseThrow(() -> new BusinessException(
+                .orElseThrow(() -> new BusinessException("SIGNATURE_MISSING",
                         "Aucune signature configurée. Ajoutez une signature au bailleur dans la page LMNP."));
         return signatureService.dataUri(signature.getId());
     }

@@ -43,6 +43,117 @@ export const fr = {
         "Le serveur est injoignable. Vérifiez que l'application HomeOfficeExpenses est démarrée.",
       HTTP_ERROR: "Erreur {{status}} : la requête a échoué.",
       UNEXPECTED_ERROR: "Une erreur inattendue est survenue.",
+      ADDRESS_REQUIRED: "L'adresse du bien est obligatoire.",
+      AMOUNT_REQUIRED: "Le montant est obligatoire.",
+      AMOUNT_INVALID: "Le montant est invalide.",
+      AMOUNT_MUST_BE_STRICTLY_POSITIVE:
+        "Le montant doit être strictement positif.",
+      AMOUNT_MUST_BE_POSITIVE_OR_ZERO: "Le montant doit être positif ou nul.",
+      AMOUNT_NEGATIVE: "Le montant TTC ne peut pas être négatif.",
+      AMOUNT_PRO_RATA_REQUIRED:
+        "Le montant du mois et le prorata sont obligatoires.",
+      PRO_RATA_REQUIRED: "Le prorata est obligatoire.",
+      PRO_RATA_INVALID: "Le prorata n'est pas un pourcentage valide.",
+      PRO_RATA_TOO_MANY_DECIMALS:
+        "Le prorata accepte au maximum deux décimales.",
+      PRO_RATA_OUT_OF_RANGE: "Le prorata doit être compris entre 0 et 100 %.",
+      PRO_RATA_BUSINESS_AREA_OUT_OF_RANGE:
+        "La surface professionnelle doit être comprise entre 0 et la surface totale.",
+      DATE_INVALID: "La date est invalide.",
+      MONTH_REQUIRED: "Le mois est obligatoire (format AAAA-MM).",
+      MONTH_INVALID: "Le mois doit être au format AAAA-MM.",
+      VAT_NET_AMOUNT_REQUIRED: "Le montant HT est obligatoire.",
+      VAT_NET_AMOUNT_NEGATIVE: "Le montant HT ne peut pas être négatif.",
+      VAT_RATE_REQUIRED: "Le taux de TVA est obligatoire.",
+      VAT_RATE_OUT_OF_RANGE:
+        "Le taux de TVA doit être compris entre 0 et 100 %.",
+      COMPANY_REQUIRED: "Sélectionnez une société.",
+      COMPANY_NOT_FOUND: "Société introuvable.",
+      COMPANY_NAME_REQUIRED: "Le nom de la société est obligatoire.",
+      COMPANY_SIREN_DUPLICATE: "Une société avec ce SIREN existe déjà.",
+      COMPANY_IN_USE:
+        "Cette société est utilisée par des données et ne peut pas être supprimée.",
+      COMPANY_ACTIVE_LEASE_TENANT:
+        "Cette société est locataire d'un bail actif et ne peut pas être supprimée.",
+      LEASE_NOT_FOUND: "Bail introuvable.",
+      LEASE_ALREADY_LINKED: "Ce bail est déjà lié à une autre société.",
+      LEASE_COMPANY_LEASE_LOCKED:
+        "Ce bail est lié à une société et ne peut pas être modifié.",
+      LEASE_PARTIES_REQUIRED: "Sélectionnez un bailleur et un locataire.",
+      LEASE_SINGLE_TENANT_REQUIRED: "Sélectionnez un seul locataire.",
+      LEASE_ACTIVE_NOT_FOUND: "Aucun bail actif n'est configuré.",
+      LEASE_NOT_IN_COMPANY: "Ce bail n'appartient pas à la société.",
+      LEASE_LANDLORD_REQUIRED: "Sélectionnez un bailleur.",
+      LEASE_COMPANY_TENANT_INVALID:
+        "La société locataire ne peut pas être la société du bail.",
+      LEASE_TENANT_COMPANY_REQUIRED: "Sélectionnez la société locataire.",
+      LEASE_ALREADY_EXISTS:
+        "Un bail actif existe déjà pour ce bailleur et ce locataire.",
+      LEASE_TENANT_REQUIRED: "Sélectionnez un locataire.",
+      LEASE_PARTIES_IDENTICAL:
+        "Le bailleur et le locataire ne peuvent pas être identiques.",
+      LEASE_COMPANY_ALREADY_LINKED:
+        "Cette société est déjà liée à un bail actif.",
+      LEASE_SURFACES_REQUIRED:
+        "Les surfaces sont obligatoires pour un bail société.",
+      LEASE_EMPLOYEE_PARTY: "Un salarié ne peut pas être partie à un bail.",
+      PERSON_REQUIRED: "Sélectionnez une personne.",
+      PERSON_NOT_FOUND: "Personne introuvable.",
+      PERSON_HAS_SIGNATURES:
+        "Cette personne porte des signatures et ne peut pas être supprimée.",
+      PERSON_IN_USE:
+        "Cette personne est utilisée par des données et ne peut pas être supprimée.",
+      PERSON_NAME_REQUIRED: "Le nom de la personne est obligatoire.",
+      EMPLOYEE_HAS_SIGNATURES:
+        "Ce salarié porte des signatures et ne peut pas être supprimé.",
+      EMPLOYEE_NOT_FOUND: "Salarié introuvable.",
+      EMPLOYEE_FIRST_NAME_REQUIRED: "Le prénom du salarié est obligatoire.",
+      EMPLOYEE_LAST_NAME_REQUIRED: "Le nom du salarié est obligatoire.",
+      EMPLOYEE_EMAIL_INVALID: "L'adresse électronique du salarié est invalide.",
+      EMPLOYEE_EMAIL_DUPLICATE:
+        "Un salarié avec cette adresse électronique existe déjà dans la société.",
+      EMPLOYEE_TITLE_REQUIRED: "L'intitulé du salarié est obligatoire.",
+      EMPLOYEE_TITLE_INVALID: "Intitulé de salarié invalide : {{title}}",
+      EXPENSE_ITEM_UNKNOWN_CODE: "Type de frais inconnu : {{code}}",
+      EXPENSE_ITEM_NOT_FOUND: "Poste introuvable.",
+      EXPENSE_ITEM_LABEL_REQUIRED: "Le libellé du poste est obligatoire.",
+      EXPENSE_ITEM_CODE_DUPLICATE:
+        "Un poste avec le code « {{code}} » existe déjà.",
+      EXPENSE_ITEM_PERIODICITY_INVALID:
+        "Périodicité invalide : {{periodicity}}",
+      EXPENSE_ITEM_CODE_INVALID: "Le code du poste est invalide.",
+      EXPENSE_ITEM_REQUIRED: "Le type de frais est obligatoire.",
+      EXPENSE_ITEM_SINGLE_USE:
+        "Le poste « {{label}} » est à usage unique et ne peut pas être ajouté.",
+      STATEMENT_AMOUNT_SOURCE_INVALID:
+        "Source de montant invalide : {{source}}",
+      STATEMENT_AI_CONFIDENCE_INVALID:
+        "Niveau de confiance IA invalide : {{confidence}}",
+      STATEMENT_LINES_REQUIRED:
+        "Ajoutez au moins une ligne à la note de frais.",
+      STATEMENT_NOT_FOUND: "Note de frais introuvable.",
+      RECEIPT_NOT_FOUND: "Justificatif introuvable.",
+      RECEIPT_IN_USE:
+        "Ce justificatif est utilisé par une note de frais et ne peut pas être supprimé.",
+      RENT_RECEIPT_NOT_FOUND: "Quittance introuvable.",
+      RENT_RECEIPT_PDF_NOT_FOUND: "Le PDF de cette quittance est introuvable.",
+      RENT_RECEIPT_TEMPLATE_INVALID:
+        "Le template sélectionné n'est pas un template de quittance.",
+      RENT_RECEIPT_PERIOD_INVALID:
+        "La fin de période ne peut pas précéder le début.",
+      SIGNATURE_MISSING:
+        "Aucune signature configurée. Ajoutez une signature au bailleur dans la page LMNP.",
+      SIGNATURE_NAME_REQUIRED: "Le nom de la signature est obligatoire.",
+      SIGNATURE_NAME_TOO_LONG:
+        "Le nom de la signature est trop long (255 caractères maximum).",
+      SIGNATURE_FILE_REQUIRED: "Le fichier de signature est obligatoire.",
+      SIGNATURE_FILE_UNREADABLE: "Impossible de lire le fichier de signature.",
+      SIGNATURE_NOT_OWNED:
+        "La signature sélectionnée n'appartient pas à cette personne.",
+      SIGNATURE_COMPANY_REQUIRED: "La société de la signature est obligatoire.",
+      SIGNATURE_NOT_CEO:
+        "La signature sélectionnée n'appartient pas au gérant de cette société.",
+      SIGNATURE_NOT_FOUND: "Signature introuvable.",
     },
   },
   navigation: {

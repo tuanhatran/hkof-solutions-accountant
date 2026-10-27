@@ -182,7 +182,9 @@ class ExpenseStatementServiceTest {
         assertThatThrownBy(() -> service.generate(
                 new StatementGenerationRequest(COMPANY_ID, null, "2026-10", null, List.of(), null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Ajoutez au moins un frais avant de générer la note.");
+                .hasMessage("Ajoutez au moins un frais avant de générer la note.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("STATEMENT_LINES_REQUIRED"));
     }
 
     @Test
@@ -284,7 +286,8 @@ class ExpenseStatementServiceTest {
         when(repository.findWithLinesById(9L)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.get(9L))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Note de frais introuvable.");
+                .hasMessage("Note de frais introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("STATEMENT_NOT_FOUND"));
         assertThatThrownBy(() -> service.entity(9L)).isInstanceOf(NotFoundException.class);
     }
 

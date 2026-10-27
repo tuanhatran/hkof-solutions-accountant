@@ -108,9 +108,9 @@ public class CompanyService {
             return;
         }
         Lease target = leases.findByIdAndDeletedFalse(leaseId)
-                .orElseThrow(() -> new NotFoundException("Bail introuvable."));
+                .orElseThrow(() -> new NotFoundException("LEASE_NOT_FOUND", "Bail introuvable."));
         if (target.getCompanyId() != null && !target.getCompanyId().equals(company.getId())) {
-            throw new BusinessException("Ce bail est déjà lié à une autre société.");
+            throw new BusinessException("LEASE_ALREADY_LINKED", "Ce bail est déjà lié à une autre société.");
         }
         if (target.getCompanyId() == null) {
             current.ifPresent(this::releaseLease);
@@ -126,7 +126,7 @@ public class CompanyService {
      */
     private void releaseLease(Lease lease) {
         if (lease.isCompanyLease()) {
-            throw new BusinessException(
+            throw new BusinessException("LEASE_COMPANY_LEASE_LOCKED",
                     "Ce bail est un bail société : la société en est le locataire et ne peut pas être dissociée.");
         }
         unlink(lease);
@@ -138,11 +138,11 @@ public class CompanyService {
         if (expenseItems.existsByCompanyIdAndDeletedFalse(id)
                 || statements.existsByCompanyId(id)
                 || rentReceipts.existsByCompanyId(id)) {
-            throw new BusinessException(
+            throw new BusinessException("COMPANY_IN_USE",
                     "Cette société est utilisée par des données et ne peut pas être supprimée.");
         }
         if (leases.existsByCompanyIdAndCompanyLeaseTrueAndDeletedFalse(id)) {
-            throw new BusinessException(
+            throw new BusinessException("COMPANY_ACTIVE_LEASE_TENANT",
                     "Cette société est locataire d'un bail actif et ne peut pas être supprimée.");
         }
         Instant now = Instant.now(clock);
@@ -182,10 +182,10 @@ public class CompanyService {
     @Transactional(readOnly = true)
     public Company entity(Long id) {
         if (id == null) {
-            throw new BusinessException("Sélectionnez une société.");
+            throw new BusinessException("COMPANY_REQUIRED", "Sélectionnez une société.");
         }
         return repository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new NotFoundException("Société introuvable."));
+                .orElseThrow(() -> new NotFoundException("COMPANY_NOT_FOUND", "Société introuvable."));
     }
 
     /** Pro-rata base computed from the linked lease surfaces, zero without lease or surfaces. */
@@ -247,7 +247,8 @@ public class CompanyService {
     }
 
     private void apply(Company company, CompanyRequest request, Long currentId) {
-        company.setName(requiredText(request.name(), "Le nom de la société est obligatoire."));
+        company.setName(requiredText(request.name(), "COMPANY_NAME_REQUIRED",
+                "Le nom de la société est obligatoire."));
         company.setLegalForm(optionalText(request.legalForm()));
         String siren = optionalText(request.siren());
         if (siren != null) {
@@ -255,7 +256,7 @@ public class CompanyService {
                     ? repository.existsBySirenAndDeletedFalse(siren)
                     : repository.existsBySirenAndDeletedFalseAndIdNot(siren, currentId);
             if (duplicate) {
-                throw new BusinessException("Une société avec ce SIREN existe déjà.");
+                throw new BusinessException("COMPANY_SIREN_DUPLICATE", "Une société avec ce SIREN existe déjà.");
             }
         }
         company.setSiren(siren);
@@ -264,10 +265,10 @@ public class CompanyService {
         company.setIssuePlace(optionalText(request.issuePlace()));
     }
 
-    private String requiredText(String value, String message) {
+    private String requiredText(String value, String code, String message) {
         String cleaned = value == null ? "" : value.trim();
         if (cleaned.isEmpty()) {
-            throw new BusinessException(message);
+            throw new BusinessException(code, message);
         }
         return cleaned;
     }

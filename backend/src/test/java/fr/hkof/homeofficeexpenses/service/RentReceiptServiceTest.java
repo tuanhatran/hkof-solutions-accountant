@@ -244,12 +244,16 @@ class RentReceiptServiceTest {
 
         assertThatThrownBy(() -> service.generate(request("2026-10", "2026-10-31", "2026-10-01", null, null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La fin de période ne peut pas précéder le début.");
+                .hasMessage("La fin de période ne peut pas précéder le début.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("RENT_RECEIPT_PERIOD_INVALID"));
 
         when(templateService.byId(9L)).thenReturn(template(9L, TemplateType.EXPENSE_STATEMENT, "Note", 1));
         assertThatThrownBy(() -> service.generate(request("2026-10", null, null, null, null, 9L, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le template sélectionné n'est pas un template de quittance.");
+                .hasMessage("Le template sélectionné n'est pas un template de quittance.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("RENT_RECEIPT_TEMPLATE_INVALID"));
         verify(repository, never()).save(any());
     }
 
@@ -264,7 +268,8 @@ class RentReceiptServiceTest {
 
         assertThatThrownBy(() -> service.generate(request("2026-10", null, null, null, null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Aucune signature configurée. Ajoutez une signature au bailleur dans la page LMNP.");
+                .hasMessage("Aucune signature configurée. Ajoutez une signature au bailleur dans la page LMNP.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("SIGNATURE_MISSING"));
     }
 
     @Test
@@ -291,12 +296,16 @@ class RentReceiptServiceTest {
 
         assertThatThrownBy(() -> service.preview(request("2026-10", "2026-10-31", "2026-10-01", null, null, null, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("La fin de période ne peut pas précéder le début.");
+                .hasMessage("La fin de période ne peut pas précéder le début.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("RENT_RECEIPT_PERIOD_INVALID"));
 
         when(templateService.byId(9L)).thenReturn(template(9L, TemplateType.EXPENSE_STATEMENT, "Note", 1));
         assertThatThrownBy(() -> service.preview(request("2026-10", null, null, null, null, 9L, null)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Le template sélectionné n'est pas un template de quittance.");
+                .hasMessage("Le template sélectionné n'est pas un template de quittance.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("RENT_RECEIPT_TEMPLATE_INVALID"));
     }
 
     @Test
@@ -326,7 +335,9 @@ class RentReceiptServiceTest {
         when(repository.findById(9L)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.get(9L))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Quittance introuvable.");
+                .hasMessage("Quittance introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode())
+                        .isEqualTo("RENT_RECEIPT_NOT_FOUND"));
         assertThatThrownBy(() -> service.entity(9L)).isInstanceOf(NotFoundException.class);
     }
 
@@ -376,7 +387,9 @@ class RentReceiptServiceTest {
         receipt.setPdfPath(null);
         assertThatThrownBy(() -> service.pdf(10L))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Le PDF de cette quittance est introuvable.");
+                .hasMessage("Le PDF de cette quittance est introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode())
+                        .isEqualTo("RENT_RECEIPT_PDF_NOT_FOUND"));
     }
 
     @Test

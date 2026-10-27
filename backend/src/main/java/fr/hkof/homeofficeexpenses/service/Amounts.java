@@ -21,7 +21,7 @@ public final class Amounts {
 
     public static BigDecimal decimal(String value, String field, boolean strictlyPositive) {
         if (value == null || value.isBlank()) {
-            throw new BusinessException("Le champ « " + field + " » est obligatoire.");
+            throw new BusinessException("AMOUNT_REQUIRED", "Le champ « " + field + " » est obligatoire.");
         }
         String normalized = value.trim()
                 .replace('\u00A0', ' ')
@@ -33,11 +33,14 @@ public final class Amounts {
         try {
             result = new BigDecimal(normalized);
         } catch (NumberFormatException ex) {
-            throw new BusinessException("« " + value + " » n'est pas un nombre valide pour « " + field + " ».");
+            throw new BusinessException("AMOUNT_INVALID",
+                    "« " + value + " » n'est pas un nombre valide pour « " + field + " ».");
         }
         if (strictlyPositive ? result.signum() <= 0 : result.signum() < 0) {
-            throw new BusinessException("Le champ « " + field + " » doit être "
-                    + (strictlyPositive ? "strictement positif." : "positif ou nul."));
+            throw new BusinessException(
+                    strictlyPositive ? "AMOUNT_MUST_BE_STRICTLY_POSITIVE" : "AMOUNT_MUST_BE_POSITIVE_OR_ZERO",
+                    "Le champ « " + field + " » doit être "
+                            + (strictlyPositive ? "strictement positif." : "positif ou nul."));
         }
         return result.setScale(SCALE, ROUND);
     }
@@ -51,7 +54,7 @@ public final class Amounts {
 
     public static BigDecimal percentage(String value) {
         if (value == null || value.isBlank()) {
-            throw new BusinessException("Le prorata est obligatoire.");
+            throw new BusinessException("PRO_RATA_REQUIRED", "Le prorata est obligatoire.");
         }
         String normalized = value.trim()
                 .replace('\u00A0', ' ')
@@ -63,13 +66,13 @@ public final class Amounts {
         try {
             result = new BigDecimal(normalized);
         } catch (NumberFormatException ex) {
-            throw new BusinessException("« " + value + " » n'est pas un pourcentage valide.");
+            throw new BusinessException("PRO_RATA_INVALID", "« " + value + " » n'est pas un pourcentage valide.");
         }
         if (result.scale() > SCALE) {
-            throw new BusinessException("Le prorata accepte au maximum deux décimales.");
+            throw new BusinessException("PRO_RATA_TOO_MANY_DECIMALS", "Le prorata accepte au maximum deux décimales.");
         }
         if (result.compareTo(BigDecimal.ZERO) < 0 || result.compareTo(BigDecimal.valueOf(100)) > 0) {
-            throw new BusinessException("Le prorata doit être compris entre 0 et 100 %.");
+            throw new BusinessException("PRO_RATA_OUT_OF_RANGE", "Le prorata doit être compris entre 0 et 100 %.");
         }
         return result.setScale(SCALE, ROUND);
     }
@@ -81,18 +84,19 @@ public final class Amounts {
         try {
             return LocalDate.parse(value);
         } catch (DateTimeParseException ex) {
-            throw new BusinessException("La date « " + field + " » doit être au format AAAA-MM-JJ.");
+            throw new BusinessException("DATE_INVALID",
+                    "La date « " + field + " » doit être au format AAAA-MM-JJ.");
         }
     }
 
     public static YearMonth month(String value) {
         if (value == null || value.isBlank()) {
-            throw new BusinessException("Le mois est obligatoire (format AAAA-MM).");
+            throw new BusinessException("MONTH_REQUIRED", "Le mois est obligatoire (format AAAA-MM).");
         }
         try {
             return YearMonth.parse(value.trim());
         } catch (DateTimeParseException ex) {
-            throw new BusinessException("Le mois doit être au format AAAA-MM.");
+            throw new BusinessException("MONTH_INVALID", "Le mois doit être au format AAAA-MM.");
         }
     }
 

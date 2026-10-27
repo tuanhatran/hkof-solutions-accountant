@@ -24,7 +24,9 @@ class AmountsTest {
     void positiveDecimal() {
         assertThatThrownBy(() -> Amounts.decimal("0", "montant", true))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("strictement positif");
+                .hasMessageContaining("strictement positif")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("AMOUNT_MUST_BE_STRICTLY_POSITIVE"));
         assertThat(Amounts.decimal("0", "montant", false)).isEqualByComparingTo("0.00");
     }
 
@@ -43,7 +45,9 @@ class AmountsTest {
     void proRataPrecision() {
         assertThatThrownBy(() -> Amounts.percentage("35.712"))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("deux décimales");
+                .hasMessageContaining("deux décimales")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("PRO_RATA_TOO_MANY_DECIMALS"));
     }
 
     @Test

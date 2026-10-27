@@ -61,11 +61,11 @@ public class PersonService {
     public void delete(Long id) {
         Person person = entity(id);
         if (signatures.existsByPersonIdAndDeletedFalse(id)) {
-            throw new BusinessException(
+            throw new BusinessException("PERSON_HAS_SIGNATURES",
                     "Cette personne porte des signatures et ne peut pas être supprimée.");
         }
         if (leases.existsByLandlordIdAndDeletedFalse(id) || leases.existsByTenantIdAndDeletedFalse(id)) {
-            throw new BusinessException(
+            throw new BusinessException("PERSON_IN_USE",
                     "Cette personne est utilisée par un bail actif et ne peut pas être supprimée.");
         }
         person.setDeleted(true);
@@ -76,10 +76,10 @@ public class PersonService {
     @Transactional(readOnly = true)
     public Person entity(Long id) {
         if (id == null) {
-            throw new BusinessException("Sélectionnez une personne.");
+            throw new BusinessException("PERSON_REQUIRED", "Sélectionnez une personne.");
         }
         return persons.findNaturalPersonById(id)
-                .orElseThrow(() -> new NotFoundException("Personne introuvable."));
+                .orElseThrow(() -> new NotFoundException("PERSON_NOT_FOUND", "Personne introuvable."));
     }
 
     public PersonDto toDto(Person person) {
@@ -88,14 +88,15 @@ public class PersonService {
     }
 
     private void apply(Person person, PersonRequest request) {
-        person.setName(requiredText(request.name(), "Le nom de la personne est obligatoire."));
+        person.setName(requiredText(request.name(), "PERSON_NAME_REQUIRED",
+                "Le nom de la personne est obligatoire."));
         person.setAddress(optionalText(request.address()));
     }
 
-    private String requiredText(String value, String message) {
+    private String requiredText(String value, String code, String message) {
         String cleaned = value == null ? "" : value.trim();
         if (cleaned.isEmpty()) {
-            throw new BusinessException(message);
+            throw new BusinessException(code, message);
         }
         return cleaned;
     }

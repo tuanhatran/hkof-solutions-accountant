@@ -14,20 +14,21 @@ public final class CalculationService {
 
     public static BigDecimal monthlyAmount(BigDecimal amountInclVat) {
         if (amountInclVat == null) {
-            throw new BusinessException("Le montant TTC est obligatoire.");
+            throw new BusinessException("AMOUNT_REQUIRED", "Le montant TTC est obligatoire.");
         }
         if (amountInclVat.signum() < 0) {
-            throw new BusinessException("Le montant TTC ne peut pas être négatif.");
+            throw new BusinessException("AMOUNT_NEGATIVE", "Le montant TTC ne peut pas être négatif.");
         }
         return amountInclVat.setScale(2, RoundingMode.HALF_UP);
     }
 
     public static BigDecimal claimedAmount(BigDecimal monthlyAmount, BigDecimal proRataPct) {
         if (monthlyAmount == null || proRataPct == null) {
-            throw new BusinessException("Le montant du mois et le prorata sont obligatoires.");
+            throw new BusinessException("AMOUNT_PRO_RATA_REQUIRED",
+                    "Le montant du mois et le prorata sont obligatoires.");
         }
         if (proRataPct.signum() < 0 || proRataPct.compareTo(BigDecimal.valueOf(100)) > 0) {
-            throw new BusinessException("Le prorata doit être compris entre 0 et 100 %.");
+            throw new BusinessException("PRO_RATA_OUT_OF_RANGE", "Le prorata doit être compris entre 0 et 100 %.");
         }
         return monthlyAmount.multiply(proRataPct)
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
@@ -47,7 +48,8 @@ public final class CalculationService {
             return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
         if (businessArea.signum() < 0 || businessArea.compareTo(totalArea) > 0) {
-            throw new BusinessException("La surface professionnelle doit être comprise entre 0 et la surface totale.");
+            throw new BusinessException("PRO_RATA_BUSINESS_AREA_OUT_OF_RANGE",
+                    "La surface professionnelle doit être comprise entre 0 et la surface totale.");
         }
         return businessArea.multiply(BigDecimal.valueOf(100))
                 .divide(totalArea, 2, RoundingMode.HALF_UP);
@@ -63,16 +65,17 @@ public final class CalculationService {
      */
     public static BigDecimal grossFromNet(BigDecimal net, BigDecimal vatRatePct) {
         if (net == null) {
-            throw new BusinessException("Le montant HT est obligatoire.");
+            throw new BusinessException("VAT_NET_AMOUNT_REQUIRED", "Le montant HT est obligatoire.");
         }
         if (net.signum() < 0) {
-            throw new BusinessException("Le montant HT ne peut pas être négatif.");
+            throw new BusinessException("VAT_NET_AMOUNT_NEGATIVE", "Le montant HT ne peut pas être négatif.");
         }
         if (vatRatePct == null) {
-            throw new BusinessException("Le taux de TVA est obligatoire.");
+            throw new BusinessException("VAT_RATE_REQUIRED", "Le taux de TVA est obligatoire.");
         }
         if (vatRatePct.signum() < 0 || vatRatePct.compareTo(BigDecimal.valueOf(100)) > 0) {
-            throw new BusinessException("Le taux de TVA doit être compris entre 0 et 100 %.");
+            throw new BusinessException("VAT_RATE_OUT_OF_RANGE",
+                    "Le taux de TVA doit être compris entre 0 et 100 %.");
         }
         return net.multiply(BigDecimal.valueOf(100).add(vatRatePct))
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);

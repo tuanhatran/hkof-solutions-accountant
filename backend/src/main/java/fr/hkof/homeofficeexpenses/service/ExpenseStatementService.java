@@ -122,7 +122,8 @@ public class ExpenseStatementService {
         var lease = leases.resolveExpenseLease(company.getId(), request.leaseId());
         List<CalculatedLine> lines = lineCalculator.calculateLines(company.getId(), request.lines());
         if (lines.isEmpty()) {
-            throw new BusinessException("Ajoutez au moins un frais avant de générer la note.");
+            throw new BusinessException("STATEMENT_LINES_REQUIRED",
+                    "Ajoutez au moins un frais avant de générer la note.");
         }
         String signature = documents.signatureDataUri(request.signatureId(), company.getId());
         TemplateDocument template = documents.templateForStatement(request.templateId());
@@ -163,7 +164,7 @@ public class ExpenseStatementService {
     @Transactional(readOnly = true)
     public ExpenseStatement entity(Long id) {
         return repository.findWithLinesById(id)
-                .orElseThrow(() -> new NotFoundException("Note de frais introuvable."));
+                .orElseThrow(() -> new NotFoundException("STATEMENT_NOT_FOUND", "Note de frais introuvable."));
     }
 
     /**

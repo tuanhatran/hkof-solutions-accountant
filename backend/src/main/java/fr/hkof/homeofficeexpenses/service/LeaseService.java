@@ -78,16 +78,16 @@ public class LeaseService {
     @Transactional(readOnly = true)
     public Lease resolveLease(Long landlordId, Long tenantId, Long tenantCompanyId) {
         if (landlordId == null || (tenantId == null && tenantCompanyId == null)) {
-            throw new BusinessException("Sélectionnez un bailleur et un locataire.");
+            throw new BusinessException("LEASE_PARTIES_REQUIRED", "Sélectionnez un bailleur et un locataire.");
         }
         if (tenantId != null && tenantCompanyId != null) {
-            throw new BusinessException("Sélectionnez un seul locataire.");
+            throw new BusinessException("LEASE_SINGLE_TENANT_REQUIRED", "Sélectionnez un seul locataire.");
         }
         return (tenantCompanyId != null
                 ? leases.findFirstByLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalse(landlordId,
                         tenantCompanyId)
                 : leases.findFirstByLandlordIdAndTenantIdAndDeletedFalse(landlordId, tenantId))
-                .orElseThrow(() -> new BusinessException(
+                .orElseThrow(() -> new BusinessException("LEASE_ACTIVE_NOT_FOUND",
                         "Aucun bail actif pour ce bailleur et ce locataire. Créez un bail dans la page LMNP."));
     }
 
@@ -107,9 +107,9 @@ public class LeaseService {
             return leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(companyId).orElse(null);
         }
         Lease lease = leases.findByIdAndDeletedFalse(leaseId)
-                .orElseThrow(() -> new NotFoundException("Bail introuvable."));
+                .orElseThrow(() -> new NotFoundException("LEASE_NOT_FOUND", "Bail introuvable."));
         if (lease.getCompanyId() == null || !lease.getCompanyId().equals(companyId)) {
-            throw new BusinessException("Ce bail n'appartient pas à la société.");
+            throw new BusinessException("LEASE_NOT_IN_COMPANY", "Ce bail n'appartient pas à la société.");
         }
         return lease;
     }
@@ -140,19 +140,19 @@ public class LeaseService {
 
     private void apply(Lease lease, LeaseRequest request, Long currentId, Long currentCompanyId) {
         if (request.landlordId() == null) {
-            throw new BusinessException("Sélectionnez un bailleur.");
+            throw new BusinessException("LEASE_LANDLORD_REQUIRED", "Sélectionnez un bailleur.");
         }
-        Person landlord = party(request.landlordId(), "Bailleur introuvable.");
+        Person landlord = party(request.landlordId(), "PERSON_NOT_FOUND", "Bailleur introuvable.");
         boolean companyLease = Boolean.TRUE.equals(request.companyLease());
         Person tenant = null;
         Long companyId;
         if (companyLease) {
             if (request.tenantId() != null) {
-                throw new BusinessException(
+                throw new BusinessException("LEASE_COMPANY_TENANT_INVALID",
                         "Un bail société ne comporte pas de locataire personne physique.");
             }
             if (request.companyId() == null) {
-                throw new BusinessException("Sélectionnez la société locataire.");
+                throw new BusinessException("LEASE_TENANT_COMPANY_REQUIRED", "Sélectionnez la société locataire.");
             }
             Company company = companies.entity(request.companyId());
             companyId = company.getId();
@@ -162,16 +162,16 @@ public class LeaseService {
                     : leases.existsByLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalseAndIdNot(
                             landlord.getId(), companyId, currentId);
             if (pairTaken) {
-                throw new BusinessException(
+                throw new BusinessException("LEASE_ALREADY_EXISTS",
                         "Un bail actif existe déjà pour ce bailleur et ce locataire.");
             }
         } else {
             if (request.tenantId() == null) {
-                throw new BusinessException("Sélectionnez un locataire.");
+                throw new BusinessException("LEASE_TENANT_REQUIRED", "Sélectionnez un locataire.");
             }
-            tenant = party(request.tenantId(), "Locataire introuvable.");
+            tenant = party(request.tenantId(), "PERSON_NOT_FOUND", "Locataire introuvable.");
             if (tenant.getId().equals(landlord.getId())) {
-                throw new BusinessException(
+                throw new BusinessException("LEASE_PARTIES_IDENTICAL",
                         "Le bailleur et le locataire doivent être deux personnes distinctes.");
             }
             boolean pairTaken = currentId == null
@@ -179,7 +179,7 @@ public class LeaseService {
                     : leases.existsByLandlordIdAndTenantIdAndDeletedFalseAndIdNot(landlord.getId(), tenant.getId(),
                             currentId);
             if (pairTaken) {
-                throw new BusinessException(
+                throw new BusinessException("LEASE_ALREADY_EXISTS",
                         "Un bail actif existe déjà pour ce bailleur et ce locataire.");
             }
             companyId = request.companyId() != null ? companies.entity(request.companyId()).getId()
@@ -190,14 +190,14 @@ public class LeaseService {
                     ? leases.existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalse(companyId)
                     : leases.existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalseAndIdNot(companyId, currentId);
             if (companyTaken) {
-                throw new BusinessException("Cette société est déjà liée à un bail actif.");
+                throw new BusinessException("LEASE_COMPANY_ALREADY_LINKED", "Cette société est déjà liée à un bail actif.");
             }
         }
         lease.setLandlord(landlord);
         lease.setTenant(tenant);
         lease.setCompanyId(companyId);
         lease.setAddress(addresses.findOrCreate(
-                requiredText(request.propertyAddress(), "L'adresse du bien est obligatoire.")));
+                requiredText(request.propertyAddress(), "ADDRESS_REQUIRED", "L'adresse du bien est obligatoire.")));
         lease.setRentExclCharges(Amounts.decimal(request.rentExclCharges(), "loyer hors charges", false));
         lease.setCharges(request.charges() == null || request.charges().isBlank()
                 ? ZERO
@@ -207,7 +207,8 @@ public class LeaseService {
             BigDecimal totalArea = Amounts.optionalDecimal(request.totalArea(), "surface totale");
             BigDecimal businessArea = Amounts.optionalDecimal(request.businessArea(), "surface professionnelle");
             if (totalArea == null || businessArea == null) {
-                throw new BusinessException("Les surfaces sont obligatoires pour un bail société.");
+                throw new BusinessException("LEASE_SURFACES_REQUIRED",
+                        "Les surfaces sont obligatoires pour un bail société.");
             }
             CalculationService.proRataBase(businessArea, totalArea);
             lease.setTotalArea(totalArea);
@@ -218,23 +219,23 @@ public class LeaseService {
         }
     }
 
-    private Person party(Long id, String notFound) {
+    private Person party(Long id, String code, String notFound) {
         if (employees.existsByIdAndDeletedFalse(id)) {
-            throw new BusinessException("Un salarié ne peut pas être partie à un bail.");
+            throw new BusinessException("LEASE_EMPLOYEE_PARTY", "Un salarié ne peut pas être partie à un bail.");
         }
         return persons.findNaturalPersonById(id)
-                .orElseThrow(() -> new NotFoundException(notFound));
+                .orElseThrow(() -> new NotFoundException(code, notFound));
     }
 
     private Lease lease(Long id) {
         return leases.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new NotFoundException("Bail introuvable."));
+                .orElseThrow(() -> new NotFoundException("LEASE_NOT_FOUND", "Bail introuvable."));
     }
 
-    private String requiredText(String value, String message) {
+    private String requiredText(String value, String code, String message) {
         String cleaned = value == null ? "" : value.trim();
         if (cleaned.isEmpty()) {
-            throw new BusinessException(message);
+            throw new BusinessException(code, message);
         }
         return cleaned;
     }

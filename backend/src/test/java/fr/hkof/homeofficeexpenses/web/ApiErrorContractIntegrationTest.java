@@ -113,6 +113,15 @@ class ApiErrorContractIntegrationTest {
     }
 
     @Test
+    @DisplayName("A real endpoint surfaces a core domain code")
+    void coreDomainCodeOverHttp() throws Exception {
+        mockMvc.perform(get("/api/rent-receipts").param("month", "2026-13"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MONTH_INVALID"))
+                .andExpect(jsonPath("$.detail").value("Le mois doit être au format AAAA-MM."));
+    }
+
+    @Test
     @DisplayName("ProblemDetail params are serialized as JSON strings")
     void paramsSerializeAsJsonStrings() throws Exception {
         mockMvc.perform(get("/api/error-contract/params-probe"))

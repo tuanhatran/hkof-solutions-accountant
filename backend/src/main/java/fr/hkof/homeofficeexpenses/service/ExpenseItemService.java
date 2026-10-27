@@ -3,6 +3,7 @@ package fr.hkof.homeofficeexpenses.service;
 import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,26 +47,28 @@ public class ExpenseItemService {
     @Transactional(readOnly = true)
     public ExpenseItem entity(Long companyId, String code) {
         return repository.findByCompanyIdAndCodeAndDeletedFalse(companyId, code)
-                .orElseThrow(() -> new BusinessException("Type de frais inconnu : " + code));
+                .orElseThrow(() -> new BusinessException("EXPENSE_ITEM_UNKNOWN_CODE",
+                        "Type de frais inconnu : " + code, Map.of("code", code)));
     }
 
     @Transactional
     public ExpenseItemDto create(ExpenseItemRequest request) {
         if (request.companyId() == null) {
-            throw new BusinessException("Sélectionnez une société.");
+            throw new BusinessException("COMPANY_REQUIRED", "Sélectionnez une société.");
         }
         companies.entity(request.companyId());
         if (request.leaseId() != null) {
             leases.resolveExpenseLease(request.companyId(), request.leaseId());
         }
         if (request.label() == null || request.label().isBlank()) {
-            throw new BusinessException("Le libellé du poste est obligatoire.");
+            throw new BusinessException("EXPENSE_ITEM_LABEL_REQUIRED", "Le libellé du poste est obligatoire.");
         }
         String code = request.code() == null || request.code().isBlank()
                 ? generateCode(request.label())
                 : normalizeCode(request.code());
         if (repository.existsByCompanyIdAndCode(request.companyId(), code)) {
-            throw new BusinessException("Un poste avec le code « " + code + " » existe déjà.");
+            throw new BusinessException("EXPENSE_ITEM_CODE_DUPLICATE",
+                    "Un poste avec le code « " + code + " » existe déjà.", Map.of("code", code));
         }
         ExpenseItem expenseItem = new ExpenseItem();
         expenseItem.setCompanyId(request.companyId());
@@ -98,12 +101,12 @@ public class ExpenseItemService {
     private ExpenseItem activeItem(Long id) {
         return repository.findById(id)
                 .filter(item -> !item.isDeleted())
-                .orElseThrow(() -> new NotFoundException("Poste introuvable."));
+                .orElseThrow(() -> new NotFoundException("EXPENSE_ITEM_NOT_FOUND", "Poste introuvable."));
     }
 
     private void apply(ExpenseItem expenseItem, ExpenseItemRequest request) {
         if (request.label() == null || request.label().isBlank()) {
-            throw new BusinessException("Le libellé du poste est obligatoire.");
+            throw new BusinessException("EXPENSE_ITEM_LABEL_REQUIRED", "Le libellé du poste est obligatoire.");
         }
         expenseItem.setLabel(request.label().trim());
         expenseItem.setSupplier(request.supplier() == null ? null : request.supplier().trim());
@@ -121,7 +124,8 @@ public class ExpenseItemService {
         try {
             return Periodicity.valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
-            throw new BusinessException("Périodicité invalide : " + value);
+            throw new BusinessException("EXPENSE_ITEM_PERIODICITY_INVALID", "Périodicité invalide : " + value,
+                    Map.of("periodicity", value));
         }
     }
 
@@ -132,7 +136,7 @@ public class ExpenseItemService {
                 .replaceAll("^_+|_+$", "")
                 .toLowerCase(Locale.ROOT);
         if (code.isBlank()) {
-            throw new BusinessException("Le code du poste est invalide.");
+            throw new BusinessException("EXPENSE_ITEM_CODE_INVALID", "Le code du poste est invalide.");
         }
         return code;
     }
