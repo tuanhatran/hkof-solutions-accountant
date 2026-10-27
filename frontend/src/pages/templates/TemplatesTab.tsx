@@ -1,5 +1,6 @@
 import "./TemplatesTab.css";
 import { ShieldCheck } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { TemplatesCard } from "./TemplatesCard";
 import type { ConfigurationType } from "./templateTypes";
 
@@ -14,6 +15,7 @@ export function TemplatesTab({
   configuration: ConfigurationType;
   embedded?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="templates-tab">
       <TemplatesCard configuration={configuration} embedded={embedded} />
@@ -23,12 +25,7 @@ export function TemplatesTab({
           className="templates-tab-warning-icon"
           aria-hidden="true"
         />
-        <p>
-          Les templates ne peuvent exécuter aucun code : Mustache sans logique,
-          HTML assaini, images en data URI uniquement, aucune ressource
-          distante. Un fichier refusé affiche les erreurs de validation sans
-          être enregistré.
-        </p>
+        <p>{t("templates.tab.warning")}</p>
       </div>
     </div>
   );

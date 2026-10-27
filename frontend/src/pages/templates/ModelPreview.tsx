@@ -2,6 +2,7 @@ import "./ModelPreview.css";
 import { Check, X } from "lucide-react";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import type { TemplateDto } from "@/api/types";
 import { Button } from "@/components/ui/Button";
 import { PdfViewer } from "@/components/pdf/PdfViewer";
@@ -20,6 +21,7 @@ export function ModelPreview({
   onActivate: () => void;
   activationInProgress: boolean;
 }) {
+  const { t } = useTranslation();
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -49,10 +51,13 @@ export function ModelPreview({
         <div className="model-preview-bar">
           <div className="model-preview-heading">
             <h2 id="apercu-template-titre" className="model-preview-title">
-              Aperçu — {template.name} · v{template.version}
+              {t("templates.preview.title", {
+                name: template.name,
+                version: template.version,
+              })}
             </h2>
             <p className="model-preview-subtitle">
-              Données d’exemple · filigrane « APERÇU » · rien n’est persisté.
+              {t("templates.preview.subtitle")}
             </p>
           </div>
           <div className="model-preview-actions">
@@ -64,14 +69,14 @@ export function ModelPreview({
                 loading={activationInProgress}
                 icon={<Check size={14} />}
               >
-                Activer ce modèle
+                {t("templates.preview.activate")}
               </Button>
             ) : null}
             <button
               type="button"
               onClick={onClose}
               className="model-preview-close"
-              aria-label="Fermer l’aperçu"
+              aria-label={t("templates.preview.closeAria")}
             >
               <X size={18} />
             </button>

@@ -397,6 +397,126 @@ export const fr = {
     pageLabel: "Page {{current}} / {{total}}",
     download: "Télécharger l’aperçu",
   },
+  templates: {
+    tab: {
+      warning:
+        "Les templates ne peuvent exécuter aucun code : Mustache sans logique, HTML assaini, images en data URI uniquement, aucune ressource distante. Un fichier refusé affiche les erreurs de validation sans être enregistré.",
+    },
+    types: {
+      rentReceipt: {
+        title: "Quittance de loyer",
+        description: "Modèle utilisé pour les quittances mensuelles.",
+      },
+      expenseStatement: {
+        title: "Note de frais d’occupation",
+        description:
+          "Modèle utilisé pour les notes de frais et leur version complète.",
+      },
+    },
+    card: {
+      loading: "Chargement des modèles…",
+      downloadDefault: "Télécharger le modèle par défaut intégré",
+      resetDefault: "Revenir au modèle par défaut",
+      resetDefaultBlocked: "Le modèle intégré est déjà actif.",
+      note: "Un seul modèle actif par type. Les documents déjà générés conservent la référence de leur version. La suppression est logique : aucune version n’est réellement effacée.",
+      deleteDialog: {
+        title: "Supprimer cette version ?",
+        message:
+          "La version v{{version}} de « {{name}} » ne sera plus proposée. Les documents qui l’utilisent restent inchangés.",
+      },
+      resetDialog: {
+        title: "Revenir au modèle par défaut ?",
+        message:
+          "Le modèle intégré « {{name}} » (v{{version}}) redeviendra actif. Vos versions importées restent disponibles.",
+        messageFallback:
+          "Le modèle intégré redeviendra actif. Vos versions importées restent disponibles.",
+        confirm: "Restaurer le modèle",
+      },
+    },
+    actions: {
+      preview: "Aperçu",
+      download: "Télécharger",
+      activate: "Activer",
+      delete: "Supprimer",
+      restoreBuiltIn: "Restaurer le modèle intégré",
+    },
+    badges: {
+      builtIn: "intégré",
+      active: "active",
+    },
+    active: {
+      eyebrow: "Modèle actif",
+      importedOn: "importé le {{date}}",
+      empty: "Aucun modèle actif.",
+    },
+    versions: {
+      title: "Versions",
+      count_one: "{{count}} version",
+      count_other: "{{count}} versions",
+      empty: "Aucune version précédente archivée.",
+      deleteBuiltInTitle: "Le modèle intégré ne peut pas être supprimé.",
+      deleteActiveTitle: "Le modèle actif ne peut pas être supprimé.",
+      followupPreview: "Aperçu de la version v{{version}}",
+      followupActivate: "Activer la version v{{version}}",
+    },
+    import: {
+      title: "Importer une nouvelle version",
+      intro:
+        "Fichier HTML UTF-8, 5 Mo maximum. Le nouveau modèle est validé puis importé sans être activé : vous pouvez d’abord l’aperçu avec des données d’exemple.",
+      nameLabel: "Nom de la version",
+      namePlaceholder: "Ex. Quittance — version 2027",
+      dropzoneText: "Déposez votre template HTML",
+      dropzoneAria: "Choisir un fichier template HTML",
+      submit: "Valider et importer",
+      note: "Une version importée doit être activée explicitement.",
+    },
+    report: {
+      title: "Rapport de validation",
+      structureValid: "Structure valide",
+      structureInvalid: "Structure invalide",
+      recognized: "Variables reconnues ({{count}})",
+      unknown: "Variables inconnues ({{count}})",
+      missing: "Obligatoires manquantes ({{count}})",
+      errors: "Erreurs",
+      warning:
+        "Avertissement : le modèle sera accepté, mais les champs obligatoires absents apparaîtront vides dans le document.",
+    },
+    preview: {
+      title: "Aperçu — {{name}} · v{{version}}",
+      subtitle:
+        "Données d’exemple · filigrane « APERÇU » · rien n’est persisté.",
+      activate: "Activer ce modèle",
+      closeAria: "Fermer l’aperçu",
+    },
+    reference: {
+      title: "Référence des variables",
+      show: "Afficher",
+      hide: "Masquer",
+      loading: "Chargement des variables…",
+      intro:
+        "Les montants sont déjà formatés en français par le backend : le template ne calcule rien. Les expressions non échappées, scripts, iframes, ressources distantes et expressions Thymeleaf/JSP sont refusés.",
+      loopTitle: "Boucle des frais",
+      loopBefore: "Dans la boucle",
+      loopAfter: ", les variables internes s’écrivent",
+      loopAnd: "et",
+      variable: "Variable",
+      description: "Description",
+      example: "Exemple",
+      copy: "Copier",
+      required: "requis",
+      copyAria: "Copier la variable {{name}}",
+      copied: "{{variable}} copié dans le presse-papiers.",
+      copyError:
+        "Impossible de copier dans le presse-papiers. Sélectionnez la variable manuellement.",
+    },
+    toasts: {
+      imported:
+        "Version v{{version}} importée. Vérifiez l’aperçu puis activez-la.",
+      activated: "Le modèle « {{name}} » v{{version}} est désormais actif.",
+      deleted: "Version supprimée. Le fichier reste archivé côté stockage.",
+      reset: "Modèle intégré restauré et activé (v{{version}}).",
+    },
+  },
   history: {
     page: {
       eyebrow: "Suivi",

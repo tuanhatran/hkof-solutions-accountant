@@ -1,29 +1,37 @@
 import { FileText, ReceiptText } from "lucide-react";
 import type { TemplateType } from "@/api/types";
+import i18n from "@/i18n";
 
 export const MAX_TEMPLATE_SIZE = 5 * 1024 * 1024;
 
 export interface ConfigurationType {
   type: TemplateType;
-  title: string;
-  description: string;
+  readonly title: string;
+  readonly description: string;
   dataCy: string;
   icon: typeof FileText;
 }
 
 export const RENT_RECEIPT_CONFIGURATION: ConfigurationType = {
   type: "RENT_RECEIPT",
-  title: "Quittance de loyer",
-  description: "Modèle utilisé pour les quittances mensuelles.",
+  get title() {
+    return i18n.t("templates.types.rentReceipt.title");
+  },
+  get description() {
+    return i18n.t("templates.types.rentReceipt.description");
+  },
   dataCy: "dropzone-template-quittance",
   icon: ReceiptText,
 };
 
 export const EXPENSE_STATEMENT_CONFIGURATION: ConfigurationType = {
   type: "EXPENSE_STATEMENT",
-  title: "Note de frais d’occupation",
-  description:
-    "Modèle utilisé pour les notes de frais et leur version complète.",
+  get title() {
+    return i18n.t("templates.types.expenseStatement.title");
+  },
+  get description() {
+    return i18n.t("templates.types.expenseStatement.description");
+  },
   dataCy: "dropzone-template-note",
   icon: FileText,
 };

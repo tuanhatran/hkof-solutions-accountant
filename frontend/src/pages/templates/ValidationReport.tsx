@@ -1,9 +1,11 @@
 import "./ValidationReport.css";
 import { Check, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { ValidationReportDto } from "@/api/types";
 import { cn } from "@/lib/cn";
 
 function BadgeStructure({ valid }: { valid: boolean }) {
+  const { t } = useTranslation();
   return (
     <span className={cn("badge", valid ? "badge-accent" : "badge-danger")}>
       {valid ? (
@@ -11,7 +13,9 @@ function BadgeStructure({ valid }: { valid: boolean }) {
       ) : (
         <X size={12} aria-hidden="true" />
       )}
-      {valid ? "Structure valide" : "Structure invalide"}
+      {valid
+        ? t("templates.report.structureValid")
+        : t("templates.report.structureInvalid")}
     </span>
   );
 }
@@ -54,6 +58,7 @@ function VariableList({
 
 /** Server-side validation report of an imported template. */
 export function ValidationReport({ report }: { report: ValidationReportDto }) {
+  const { t } = useTranslation();
   const recognizedVariables = report.recognizedVariables ?? [];
   const unknownVariables = report.unknownVariables ?? [];
   const missingVariables = report.missingVariables ?? [];
@@ -62,27 +67,35 @@ export function ValidationReport({ report }: { report: ValidationReportDto }) {
   return (
     <div className="validation-report" data-cy="rapport-validation-template">
       <div className="validation-report-header">
-        <p className="validation-report-title">Rapport de validation</p>
+        <p className="validation-report-title">{t("templates.report.title")}</p>
         <BadgeStructure valid={Boolean(report.structureValid)} />
       </div>
       <VariableList
-        title={`Variables reconnues (${recognizedVariables.length})`}
+        title={t("templates.report.recognized", {
+          count: recognizedVariables.length,
+        })}
         variables={recognizedVariables}
         tone="accent"
       />
       <VariableList
-        title={`Variables inconnues (${unknownVariables.length})`}
+        title={t("templates.report.unknown", {
+          count: unknownVariables.length,
+        })}
         variables={unknownVariables}
         tone="danger"
       />
       <VariableList
-        title={`Obligatoires manquantes (${missingVariables.length})`}
+        title={t("templates.report.missing", {
+          count: missingVariables.length,
+        })}
         variables={missingVariables}
         tone="warning"
       />
       {errorList.length > 0 ? (
         <div className="validation-report-errors">
-          <p className="validation-report-errors-title">Erreurs</p>
+          <p className="validation-report-errors-title">
+            {t("templates.report.errors")}
+          </p>
           <ul className="validation-report-errors-list">
             {errorList.map((errorText) => (
               <li key={errorText}>{errorText}</li>
@@ -92,8 +105,7 @@ export function ValidationReport({ report }: { report: ValidationReportDto }) {
       ) : null}
       {missingVariables.length > 0 && errorList.length === 0 ? (
         <p className="validation-report-warning">
-          Avertissement : le modèle sera accepté, mais les champs obligatoires
-          absents apparaîtront vides dans le document.
+          {t("templates.report.warning")}
         </p>
       ) : null}
     </div>

@@ -378,6 +378,125 @@ export const en = {
     pageLabel: "Page {{current}} / {{total}}",
     download: "Download the preview",
   },
+  templates: {
+    tab: {
+      warning:
+        "Templates cannot execute any code: logic-less Mustache, sanitized HTML, data URI images only, no remote resources. A rejected file displays validation errors without being saved.",
+    },
+    types: {
+      rentReceipt: {
+        title: "Rent receipt",
+        description: "Template used for monthly rent receipts.",
+      },
+      expenseStatement: {
+        title: "Home-office expense statement",
+        description:
+          "Template used for expense statements and their full version.",
+      },
+    },
+    card: {
+      loading: "Loading templates…",
+      downloadDefault: "Download the built-in default template",
+      resetDefault: "Revert to the default template",
+      resetDefaultBlocked: "The built-in template is already active.",
+      note: "One active template per type. Documents already generated keep the reference of their version. Deletion is logical: no version is actually erased.",
+      deleteDialog: {
+        title: "Delete this version?",
+        message:
+          "Version v{{version}} of “{{name}}” will no longer be offered. Documents using it stay unchanged.",
+      },
+      resetDialog: {
+        title: "Revert to the default template?",
+        message:
+          "The built-in template “{{name}}” (v{{version}}) will become active again. Your imported versions stay available.",
+        messageFallback:
+          "The built-in template will become active again. Your imported versions stay available.",
+        confirm: "Restore the template",
+      },
+    },
+    actions: {
+      preview: "Preview",
+      download: "Download",
+      activate: "Activate",
+      delete: "Delete",
+      restoreBuiltIn: "Restore the built-in template",
+    },
+    badges: {
+      builtIn: "Built-in",
+      active: "Active",
+    },
+    active: {
+      eyebrow: "Active template",
+      importedOn: "imported on {{date}}",
+      empty: "No active template.",
+    },
+    versions: {
+      title: "Versions",
+      count_one: "{{count}} version",
+      count_other: "{{count}} versions",
+      empty: "No previous archived version.",
+      deleteBuiltInTitle: "The built-in template cannot be deleted.",
+      deleteActiveTitle: "The active template cannot be deleted.",
+      followupPreview: "Preview version v{{version}}",
+      followupActivate: "Activate version v{{version}}",
+    },
+    import: {
+      title: "Import a new version",
+      intro:
+        "UTF-8 HTML file, 5 MB maximum. The new template is validated then imported without being activated: you can preview it first with sample data.",
+      nameLabel: "Version name",
+      namePlaceholder: "e.g. Rent receipt — 2027 version",
+      dropzoneText: "Drop your HTML template",
+      dropzoneAria: "Choose an HTML template file",
+      submit: "Validate and import",
+      note: "An imported version must be activated explicitly.",
+    },
+    report: {
+      title: "Validation report",
+      structureValid: "Valid structure",
+      structureInvalid: "Invalid structure",
+      recognized: "Recognized variables ({{count}})",
+      unknown: "Unknown variables ({{count}})",
+      missing: "Missing required variables ({{count}})",
+      errors: "Errors",
+      warning:
+        "Warning: the template will be accepted, but missing required fields will appear empty in the document.",
+    },
+    preview: {
+      title: "Preview — {{name}} · v{{version}}",
+      subtitle: "Sample data · “PREVIEW” watermark · nothing is persisted.",
+      activate: "Activate this template",
+      closeAria: "Close the preview",
+    },
+    reference: {
+      title: "Variable reference",
+      show: "Show",
+      hide: "Hide",
+      loading: "Loading variables…",
+      intro:
+        "Amounts are already formatted in French by the backend: the template computes nothing. Unescaped expressions, scripts, iframes, remote resources and Thymeleaf/JSP expressions are rejected.",
+      loopTitle: "Expense loop",
+      loopBefore: "Inside the",
+      loopAfter: " loop, the inner variables are written",
+      loopAnd: "and",
+      variable: "Variable",
+      description: "Description",
+      example: "Example",
+      copy: "Copy",
+      required: "required",
+      copyAria: "Copy the {{name}} variable",
+      copied: "{{variable}} copied to the clipboard.",
+      copyError:
+        "Unable to copy to the clipboard. Select the variable manually.",
+    },
+    toasts: {
+      imported:
+        "Version v{{version}} imported. Check the preview then activate it.",
+      activated: "The template “{{name}}” v{{version}} is now active.",
+      deleted: "Version deleted. The file stays archived in storage.",
+      reset: "Built-in template restored and activated (v{{version}}).",
+    },
+  },
   history: {
     page: {
       eyebrow: "Tracking",

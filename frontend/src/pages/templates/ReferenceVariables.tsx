@@ -1,6 +1,7 @@
 import "./ReferenceVariables.css";
 import { Check, Clipboard, FileCode2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { useTemplateVariables } from "@/api/queries";
 import type { TemplateType } from "@/api/types";
@@ -8,6 +9,7 @@ import { toast } from "@/state/toasts";
 
 /** Collapsible list of Mustache variables available for a template type. */
 export function ReferenceVariables({ type }: { type: TemplateType }) {
+  const { t } = useTranslation();
   const variables = useTemplateVariables(type);
   const [copy, setCopy] = useState<string | null>(null);
 
@@ -23,11 +25,11 @@ export function ReferenceVariables({ type }: { type: TemplateType }) {
     try {
       await navigator.clipboard.writeText(`{{${name}}}`);
       setCopy(name);
-      toast.success(`{{${name}}} copié dans le presse-papiers.`);
-    } catch {
-      toast.error(
-        "Impossible de copier dans le presse-papiers. Sélectionnez la variable manuellement.",
+      toast.success(
+        t("templates.reference.copied", { variable: `{{${name}}}` }),
       );
+    } catch {
+      toast.error(t("templates.reference.copyError"));
     }
   }
 
@@ -40,17 +42,23 @@ export function ReferenceVariables({ type }: { type: TemplateType }) {
             className="reference-variables-icon"
             aria-hidden="true"
           />
-          Référence des variables
+          {t("templates.reference.title")}
           <span className="badge badge-neutral">
             {variables.data?.length ?? "—"}
           </span>
         </span>
-        <span className="reference-variables-more">Afficher</span>
-        <span className="reference-variables-less">Masquer</span>
+        <span className="reference-variables-more">
+          {t("templates.reference.show")}
+        </span>
+        <span className="reference-variables-less">
+          {t("templates.reference.hide")}
+        </span>
       </summary>
 
       {variables.isPending ? (
-        <p className="reference-variables-message">Chargement des variables…</p>
+        <p className="reference-variables-message">
+          {t("templates.reference.loading")}
+        </p>
       ) : variables.isError ? (
         <p className="reference-variables-error">
           {errorMessage(variables.error)}
@@ -58,25 +66,24 @@ export function ReferenceVariables({ type }: { type: TemplateType }) {
       ) : (
         <div className="reference-variables-body">
           <p className="reference-variables-intro">
-            Les montants sont déjà formatés en français par le backend : le
-            template ne calcule rien. Les expressions non échappées, scripts,
-            iframes, ressources distantes et expressions Thymeleaf/JSP sont
-            refusés.
+            {t("templates.reference.intro")}
           </p>
           {type === "EXPENSE_STATEMENT" ? (
             <div className="reference-variables-loop">
-              <p className="reference-variables-loop-title">Boucle des frais</p>
+              <p className="reference-variables-loop-title">
+                {t("templates.reference.loopTitle")}
+              </p>
               <pre className="reference-variables-loop-code">
                 {`{{#lignes}}
   {{poste}} — {{fournisseur}} — {{montant_retenu}}
 {{/lignes}}`}
               </pre>
               <p className="reference-variables-loop-note">
-                Dans la boucle{" "}
+                {t("templates.reference.loopBefore")}{" "}
                 <code className="reference-variables-code">
                   {"{{#lignes}}"}
                 </code>
-                , les variables internes s’écrivent{" "}
+                {t("templates.reference.loopAfter")}{" "}
                 <code className="reference-variables-code">{"{{poste}}"}</code>,{" "}
                 <code className="reference-variables-code">
                   {"{{fournisseur}}"}
@@ -93,7 +100,7 @@ export function ReferenceVariables({ type }: { type: TemplateType }) {
                 <code className="reference-variables-code">
                   {"{{prorata}}"}
                 </code>{" "}
-                et{" "}
+                {t("templates.reference.loopAnd")}{" "}
                 <code className="reference-variables-code">
                   {"{{montant_retenu}}"}
                 </code>
@@ -105,10 +112,12 @@ export function ReferenceVariables({ type }: { type: TemplateType }) {
             <table className="expense-table">
               <thead>
                 <tr>
-                  <th>Variable</th>
-                  <th>Description</th>
-                  <th>Exemple</th>
-                  <th className="reference-variables-copy-column">Copier</th>
+                  <th>{t("templates.reference.variable")}</th>
+                  <th>{t("templates.reference.description")}</th>
+                  <th>{t("templates.reference.example")}</th>
+                  <th className="reference-variables-copy-column">
+                    {t("templates.reference.copy")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -122,7 +131,7 @@ export function ReferenceVariables({ type }: { type: TemplateType }) {
                         </code>
                         {variable.required ? (
                           <span className="reference-variables-required">
-                            requis
+                            {t("templates.reference.required")}
                           </span>
                         ) : null}
                       </td>
@@ -137,8 +146,10 @@ export function ReferenceVariables({ type }: { type: TemplateType }) {
                           type="button"
                           onClick={() => void copyTemplate(name)}
                           className="reference-variables-copy"
-                          aria-label={`Copier la variable ${name}`}
-                          title="Copier"
+                          aria-label={t("templates.reference.copyAria", {
+                            name,
+                          })}
+                          title={t("templates.reference.copy")}
                         >
                           {copy === name ? (
                             <Check size={15} />
