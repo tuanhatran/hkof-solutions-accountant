@@ -61,6 +61,23 @@ export const queryKeys = {
       month ?? "all",
       leaseId ?? "all-leases",
     ] as const,
+  drafts: ["drafts"] as const,
+  rentReceiptDraft: (
+    month: string,
+    landlordId: number | null,
+    tenantId: number | null,
+    tenantCompanyId: number | null,
+  ) =>
+    [
+      "drafts",
+      "rent-receipts",
+      month,
+      landlordId ?? null,
+      tenantId ?? null,
+      tenantCompanyId ?? null,
+    ] as const,
+  statementDraft: (companyId: number | null, month: string) =>
+    ["drafts", "expense-statements", companyId ?? null, month] as const,
 };
 
 export function useCompanies() {
@@ -203,6 +220,49 @@ export function useActiveStatement(companyId: number | null, month: string) {
     queryFn: () => api.expenseStatements.active(companyId as number, month),
     enabled: companyId !== null && /^\d{4}-\d{2}$/.test(month),
     staleTime: 10_000,
+  });
+}
+
+/**
+ * Saved rent receipt draft for one month and exactly one tenant. Disabled until the
+ * pair is complete, so the preview pane only shows a status for a real scope.
+ */
+export function useSavedRentReceiptDraft(
+  month: string,
+  landlordId: number | null,
+  tenantId: number | null,
+  tenantCompanyId: number | null,
+) {
+  const singleTenant = (tenantId === null) !== (tenantCompanyId === null);
+  return useQuery({
+    queryKey: queryKeys.rentReceiptDraft(
+      month,
+      landlordId,
+      tenantId,
+      tenantCompanyId,
+    ),
+    queryFn: () =>
+      api.drafts.getRentReceipt(
+        month,
+        landlordId as number,
+        tenantId,
+        tenantCompanyId,
+      ),
+    enabled: /^\d{4}-\d{2}$/.test(month) && landlordId !== null && singleTenant,
+    staleTime: 0,
+  });
+}
+
+/** Saved expense statement draft for one company and month. */
+export function useSavedStatementDraft(
+  companyId: number | null,
+  month: string,
+) {
+  return useQuery({
+    queryKey: queryKeys.statementDraft(companyId, month),
+    queryFn: () => api.drafts.getStatement(companyId as number, month),
+    enabled: companyId !== null && /^\d{4}-\d{2}$/.test(month),
+    staleTime: 0,
   });
 }
 

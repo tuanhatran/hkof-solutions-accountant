@@ -11,7 +11,9 @@ import type {
   StatementGenerationRequest,
 } from "@/api/types";
 import { estimatedRetainedAmount, formatMonth } from "@/lib/format";
-import { missingTypes, typeAlreadyAdded } from "@/lib/lines";
+import { linesToRequests, missingTypes, typeAlreadyAdded } from "@/lib/lines";
+import type { StatementDraftRequest } from "@/api/endpoints";
+import { useDraftSaver } from "@/state/draftSaver";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { toast } from "@/state/toasts";
 import { useExpenseStatementAnalysis } from "./useExpenseStatementAnalysis";
@@ -49,6 +51,7 @@ export function useExpenseStatementPage(
   const [result, setResult] = useState<StatementDto | null>(null);
   const [regenerationDialog, setRegenerationDialog] = useState(false);
   const [generationInProgress, setGenerationInProgress] = useState(false);
+  const [draftSaving, setDraftSaving] = useState(false);
 
   const context = useExpenseStatementContext(options);
   const form: ExpenseStatementForm = useExpenseStatementForm({
@@ -120,6 +123,7 @@ export function useExpenseStatementPage(
       await queryClient.invalidateQueries({
         queryKey: queryKeys.statementsAll,
       });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.drafts });
       toast.success(
         t("expenseStatement.toasts.generated", {
           month: formatMonth(month),
@@ -132,6 +136,34 @@ export function useExpenseStatementPage(
       setGenerationInProgress(false);
     }
   }
+
+  async function saveDraft(): Promise<boolean> {
+    if (activeCompanyId === null) {
+      return false;
+    }
+    try {
+      setDraftSaving(true);
+      const requestBody: StatementDraftRequest = {
+        companyId: activeCompanyId,
+        month,
+        templateId: context.selectedTemplate,
+        complete: context.complete,
+        lines: linesToRequests(orderedLines),
+      };
+      const saved = await api.drafts.saveStatement(requestBody);
+      context.draft.markSaved(saved);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.drafts });
+      toast.success(t("draft.saved"));
+      return true;
+    } catch (error) {
+      toast.error(errorMessage(error));
+      return false;
+    } finally {
+      setDraftSaving(false);
+    }
+  }
+
+  useDraftSaver(saveDraft);
 
   function requestGeneration() {
     if (context.activeStatement.data) {
@@ -239,6 +271,7 @@ export function useExpenseStatementPage(
     regenerationDialog,
     setRegenerationDialog,
     generationInProgress,
+    draftSaving,
     result,
     typeRef: form.typeRef,
     formCardRef: form.formCardRef,
@@ -257,6 +290,8 @@ export function useExpenseStatementPage(
     calculationUpToDate,
     preview,
     previewRequest,
+    savedDraft: context.savedDraft,
+    saveDraft,
     goToRentReceipt,
     generateStatement,
     requestGeneration,

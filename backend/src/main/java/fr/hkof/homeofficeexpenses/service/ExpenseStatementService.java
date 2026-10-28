@@ -43,12 +43,13 @@ public class ExpenseStatementService {
     private final ExpenseStatementLineCalculator lineCalculator;
     private final ExpenseStatementDocumentService documents;
     private final LeaseService leases;
+    private final DocumentDraftService documentDraftService;
 
     public ExpenseStatementService(ExpenseStatementRepository repository, CompanyService companies,
             ExpenseItemService expenseItemService, RentReceiptService rentReceiptService,
             TemplateDataService templateDataService, StorageService storage,
             ExpenseStatementLineCalculator lineCalculator, ExpenseStatementDocumentService documents,
-            LeaseService leases) {
+            LeaseService leases, DocumentDraftService documentDraftService) {
         this.repository = repository;
         this.companies = companies;
         this.expenseItemService = expenseItemService;
@@ -58,6 +59,7 @@ public class ExpenseStatementService {
         this.lineCalculator = lineCalculator;
         this.documents = documents;
         this.leases = leases;
+        this.documentDraftService = documentDraftService;
     }
 
     @Transactional(readOnly = true)
@@ -139,6 +141,9 @@ public class ExpenseStatementService {
         statement.setFullPdfPath(
                 storage.storePdf("note_frais_" + month + "_v" + version + "_complet.pdf", generated.completePdf()));
         ExpenseStatement saved = repository.saveAndFlush(statement);
+        // Generating clears the draft of the same scope in the same transaction: a
+        // generated statement never leaves an active draft behind.
+        documentDraftService.deleteActiveStatement(saved.getCompanyId(), saved.getMonth());
         return toDto(saved);
     }
 

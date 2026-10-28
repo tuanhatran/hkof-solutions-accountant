@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { downloadBlob } from "@/api/client";
-import { api } from "@/api/endpoints";
+import { api, type StatementDraftDto } from "@/api/endpoints";
 import type {
   CompanyDto,
   EmployeeDto,
@@ -42,6 +42,7 @@ let templatesState: QueryLike<TemplateDto[]>;
 let rentReceiptState: QueryLike<{ id: number; total: string }>;
 let activeStatementState: QueryLike<{ id: number; version: number }>;
 let signaturesState: QueryLike<SignatureDto[]>;
+let savedDraftState: QueryLike<StatementDraftDto | null>;
 let analysisState: AnalysisState;
 let mediaMobile = false;
 let lastPreviewLoader: ((signal: AbortSignal) => Promise<unknown>) | null =
@@ -71,6 +72,11 @@ vi.mock("@/api/endpoints", () => ({
       pdf: vi.fn(),
       zip: vi.fn(),
     },
+    drafts: {
+      getStatement: vi.fn(),
+      saveStatement: vi.fn(),
+      delete: vi.fn(),
+    },
   },
 }));
 
@@ -89,6 +95,7 @@ vi.mock("@/api/queries", async (importOriginal) => {
     useTemplates: () => templatesState,
     useActiveRentReceipt: () => rentReceiptState,
     useActiveStatement: () => activeStatementState,
+    useSavedStatementDraft: () => savedDraftState,
     useSignatures: (personId: number | null) => ({
       ...signaturesState,
       data:
@@ -252,6 +259,9 @@ function resetDraft(lines: DraftLine[] = []) {
     completeByMonth: {},
     primedReceiptByMonth: {},
     dirtyByMonth: {},
+    baselineByMonth: {},
+    draftIdByMonth: {},
+    savedAtByMonth: {},
   });
 }
 
@@ -279,6 +289,7 @@ beforeEach(() => {
     null as unknown as { id: number; version: number },
   );
   signaturesState = readyQuery([LANDLORD, CEO, CEO_V2]);
+  savedDraftState = readyQuery(null);
   analysisState = { status: "idle" };
   mediaMobile = false;
   lastPreviewLoader = null;
@@ -319,6 +330,17 @@ beforeEach(() => {
     blob: new Blob(),
     fileName: "pieces.zip",
   });
+  vi.mocked(api.drafts.saveStatement).mockReset();
+  vi.mocked(api.drafts.saveStatement).mockResolvedValue({
+    id: 90,
+    companyId: 1,
+    month: MONTH,
+    complete: true,
+    lines: [],
+    savedAt: "2026-01-15T10:30:00Z",
+  });
+  vi.mocked(api.drafts.delete).mockReset();
+  vi.mocked(api.drafts.delete).mockResolvedValue(undefined);
   vi.mocked(downloadBlob).mockReset();
   resetDraft();
   useRentReceiptDraft.setState({
@@ -1915,5 +1937,188 @@ describe("useExpenseStatementPage scoped options", () => {
 
     expect(result.current.activeCompanyId).toBe(2);
     expect(useStatementDraft.getState().companyId).toBe(1);
+  });
+});
+
+describe("useExpenseStatementPage drafts", () => {
+  it("never marks the draft dirty when only the company is selected", async () => {
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.activeCompanyId).toBe(1));
+
+    expect(useStatementDraft.getState().dirtyByMonth[SCOPE]).toBeUndefined();
+  });
+
+  it("saves the current lines and records the draft id and timestamp", async () => {
+    resetDraft([line({ key: "gaz-1", receiptId: 7 })]);
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.calculationUpToDate).toBe(true), {
+      timeout: 2000,
+    });
+
+    let saved = false;
+    await act(async () => {
+      saved = await result.current.saveDraft();
+    });
+
+    expect(saved).toBe(true);
+    expect(api.drafts.saveStatement).toHaveBeenCalledWith(
+      expect.objectContaining({
+        companyId: 1,
+        month: MONTH,
+        templateId: 5,
+        complete: true,
+        lines: [
+          expect.objectContaining({
+            itemCode: "gaz",
+            amountInclVat: "80.00",
+            proRataPct: "100",
+          }),
+        ],
+      }),
+    );
+    expect(useStatementDraft.getState().draftIdByMonth[SCOPE]).toBe(90);
+    expect(useStatementDraft.getState().savedAtByMonth[SCOPE]).toBe(
+      "2026-01-15T10:30:00Z",
+    );
+    expect(useStatementDraft.getState().dirtyByMonth[SCOPE]).toBe(false);
+    expect(toastMessages()).toContain("Brouillon enregistré.");
+  });
+
+  it("reports a failed draft save without recording it", async () => {
+    vi.mocked(api.drafts.saveStatement).mockRejectedValue(new Error("Refusé"));
+    resetDraft([line()]);
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.calculationUpToDate).toBe(true), {
+      timeout: 2000,
+    });
+
+    let saved = true;
+    await act(async () => {
+      saved = await result.current.saveDraft();
+    });
+
+    expect(saved).toBe(false);
+    expect(toastMessages()).toContain("Refusé");
+    expect(useStatementDraft.getState().draftIdByMonth[SCOPE]).toBeUndefined();
+  });
+
+  it("reloads the saved draft of the same company and month", async () => {
+    savedDraftState = readyQuery({
+      id: 91,
+      companyId: 1,
+      month: MONTH,
+      templateId: 7,
+      complete: false,
+      savedAt: "2026-01-10T09:00:00Z",
+      lines: [
+        {
+          itemCode: "gaz",
+          amountInclVat: "70.00",
+          proRataPct: "100",
+          amountSource: "MANUAL",
+        },
+      ],
+    });
+
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.orderedLines).toHaveLength(1));
+
+    expect(result.current.orderedLines[0]).toMatchObject({
+      itemCode: "gaz",
+      amountInclVat: "70.00",
+    });
+    expect(result.current.selectedTemplate).toBe(7);
+    expect(result.current.complete).toBe(false);
+    expect(useStatementDraft.getState().dirtyByMonth[SCOPE]).toBe(false);
+    expect(useStatementDraft.getState().draftIdByMonth[SCOPE]).toBe(91);
+    expect(useStatementDraft.getState().savedAtByMonth[SCOPE]).toBe(
+      "2026-01-10T09:00:00Z",
+    );
+  });
+
+  it("preserves lines edited while the save refetch resolves", async () => {
+    resetDraft([line({ key: "kept", amountInclVat: "95.00" })]);
+    useStatementDraft.setState({ draftIdByMonth: { [SCOPE]: 91 } });
+    savedDraftState = readyQuery({
+      id: 91,
+      companyId: 1,
+      month: MONTH,
+      savedAt: "2026-01-10T09:00:00Z",
+      lines: [
+        {
+          itemCode: "gaz",
+          amountInclVat: "70.00",
+          proRataPct: "100",
+          amountSource: "MANUAL",
+        },
+      ],
+    });
+
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.savedDraft.data?.id).toBe(91));
+
+    expect(result.current.orderedLines[0]?.amountInclVat).toBe("95.00");
+  });
+
+  it("keeps an open line edit when the saved row refetch resolves", async () => {
+    resetDraft([
+      line({ key: "edit-me", itemCode: "loyer", amountInclVat: "80.00" }),
+    ]);
+    useStatementDraft.setState({ draftIdByMonth: { [SCOPE]: 91 } });
+    savedDraftState = readyQuery({
+      id: 91,
+      companyId: 1,
+      month: MONTH,
+      savedAt: "2026-01-10T09:00:00Z",
+      lines: [
+        {
+          itemCode: "loyer",
+          amountInclVat: "70.00",
+          proRataPct: "100",
+          amountSource: "MANUAL",
+        },
+      ],
+    });
+
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.savedDraft.data?.id).toBe(91));
+
+    act(() =>
+      result.current.editLine(
+        useStatementDraft.getState().linesByMonth[SCOPE][0],
+      ),
+    );
+    act(() =>
+      result.current.saveExpense({
+        itemCode: "loyer",
+        amountInclVat: "95,00",
+        proRataPct: "100",
+      }),
+    );
+
+    const lines = useStatementDraft.getState().linesByMonth[SCOPE];
+    expect(lines).toHaveLength(1);
+    expect(lines[0].amountInclVat).toBe("95.00");
+  });
+
+  it("leaves the draft deletion to the backend after a successful generation", async () => {
+    resetDraft([line()]);
+    useStatementDraft.setState({
+      draftIdByMonth: { [SCOPE]: 80 },
+      savedAtByMonth: { [SCOPE]: "2026-01-10T09:00:00Z" },
+    });
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.calculationUpToDate).toBe(true), {
+      timeout: 2000,
+    });
+
+    await act(async () => {
+      await result.current.generateStatement();
+    });
+
+    expect(api.expenseStatements.create).toHaveBeenCalled();
+    expect(api.drafts.delete).not.toHaveBeenCalled();
+    expect(useStatementDraft.getState().draftIdByMonth[SCOPE]).toBeNull();
+    expect(useStatementDraft.getState().savedAtByMonth[SCOPE]).toBeNull();
   });
 });

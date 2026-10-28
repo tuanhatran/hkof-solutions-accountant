@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
 import {
   useActiveRentReceipt,
@@ -6,6 +6,7 @@ import {
   useCompanies,
   useEmployees,
   useExpenseItems,
+  useSavedStatementDraft,
   useSignatures,
   useTemplates,
 } from "@/api/queries";
@@ -80,6 +81,36 @@ export function useExpenseStatementContext(
 
   const scope = draftScopeKey(activeCompanyId, month);
   const lines = draft.linesByMonth[scope] ?? NO_LINES;
+  const savedDraft = useSavedStatementDraft(
+    options.draft === undefined ? activeCompanyId : null,
+    month,
+  );
+  const hydratedScope = useRef<string | null>(null);
+
+  // Only the global /generer page reloads the saved draft; scoped editors used by
+  // modals keep their own isolated state and never read the generation draft.
+  useEffect(() => {
+    const saved = savedDraft.data;
+    if (options.draft !== undefined || !saved || saved.id === undefined) {
+      return;
+    }
+    const companyId = saved.companyId ?? activeCompanyId;
+    const savedMonth = saved.month ?? month;
+    const savedScope = draftScopeKey(companyId, savedMonth);
+    // The refetch after a save returns the row just written: hydrating it would
+    // overwrite the edits made while the PUT then GET round-trip was in flight,
+    // and re-keying the lines would break an open line edit.
+    if (draftStore.getState().draftIdByMonth[savedScope] === saved.id) {
+      return;
+    }
+    const scope = `${companyId}|${savedMonth}|${saved.id}`;
+    if (hydratedScope.current === scope) {
+      return;
+    }
+    hydratedScope.current = scope;
+    draftStore.getState().loadFromServerDraft(saved);
+  }, [savedDraft.data, options.draft, draftStore, activeCompanyId, month]);
+
   const activeCompany =
     companyRows.find((company) => company.id === activeCompanyId) ?? null;
   const companySelectionRequired =
@@ -185,6 +216,7 @@ export function useExpenseStatementContext(
     templates,
     rentReceipt,
     activeStatement,
+    savedDraft,
     signatures,
     employees,
     ceo,

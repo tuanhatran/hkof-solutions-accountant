@@ -1,5 +1,6 @@
 import "./AppShell.css";
 import { ShieldCheck } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
 import { MobileNavigation, SideNavigation } from "@/components/layout/AppNav";
@@ -9,6 +10,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ToastHost } from "@/components/ui/ToastHost";
 import { useDraftBlock } from "@/hooks/useDraftBlock";
 import { cn } from "@/lib/cn";
+import { saveActiveDraft } from "@/state/draftSaver";
 
 function Brand({ compact = false }: { compact?: boolean }) {
   const { t } = useTranslation();
@@ -48,6 +50,21 @@ function Brand({ compact = false }: { compact?: boolean }) {
 export function AppShell() {
   const { t } = useTranslation();
   const blocker = useDraftBlock();
+  const [savingDraft, setSavingDraft] = useState(false);
+
+  async function saveAndLeave() {
+    if (blocker.state !== "blocked") {
+      return;
+    }
+    setSavingDraft(true);
+    try {
+      if (await saveActiveDraft()) {
+        blocker.proceed();
+      }
+    } finally {
+      setSavingDraft(false);
+    }
+  }
 
   return (
     <div className="app-shell">
@@ -100,6 +117,11 @@ export function AppShell() {
         confirmLabel={t("shell.draftDialog.confirm")}
         cancelLabel={t("shell.draftDialog.cancel")}
         variant="danger"
+        extraAction={{
+          label: t("shell.draftDialog.save"),
+          onClick: () => void saveAndLeave(),
+          loading: savingDraft,
+        }}
         onConfirm={() => {
           if (blocker.state === "blocked") {
             blocker.proceed();

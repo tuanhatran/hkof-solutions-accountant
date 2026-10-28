@@ -52,6 +52,7 @@ class RentReceiptServiceTest {
     private SignatureService signatureService;
     private PdfService pdfService;
     private StorageService storage;
+    private DocumentDraftService documentDraftService;
     private RentReceiptService service;
 
     @BeforeEach
@@ -65,8 +66,9 @@ class RentReceiptServiceTest {
         signatureService = mock(SignatureService.class);
         pdfService = mock(PdfService.class);
         storage = mock(StorageService.class);
+        documentDraftService = mock(DocumentDraftService.class);
         service = new RentReceiptService(repository, companies, leaseService, templateService,
-                templateDataService, signatureService, pdfService, storage,
+                templateDataService, signatureService, pdfService, storage, documentDraftService,
                 new RentReceiptMapper(persons, companies),
                 Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
@@ -198,6 +200,23 @@ class RentReceiptServiceTest {
         assertThat(dto.issueDate()).isEqualTo(LocalDate.of(2026, 10, 1));
         assertThat(dto.paymentDate()).isEqualTo(LocalDate.of(2026, 10, 1));
         verify(storage).storePdf("quittance_2026-10_l1_t2_v1.pdf", new byte[]{1});
+        verify(documentDraftService).deleteActiveRentReceipt("2026-10", 1L, 2L, null);
+    }
+
+    @Test
+    @DisplayName("Generation clears the active draft of the generated company lease scope")
+    void generateClearsCompanyLeaseDraft() {
+        TemplateDocument template = template(4L, TemplateType.RENT_RECEIPT, "Quittance", 2);
+        stubGenerationDependencies(template);
+        when(companies.entity(TENANT_COMPANY_ID)).thenReturn(company(TENANT_COMPANY_ID, "Société Locataire"));
+        when(companies.find(TENANT_COMPANY_ID)).thenReturn(Optional.of(company(TENANT_COMPANY_ID, "Société Locataire")));
+        when(leaseService.resolveLease(1L, null, TENANT_COMPANY_ID)).thenReturn(companyLease());
+        when(repository.findFirstByMonthAndLandlordIdAndTenantCompanyIdOrderByVersionDescIdDesc(
+                "2026-10", 1L, TENANT_COMPANY_ID)).thenReturn(Optional.empty());
+
+        service.generate(companyRequest("2026-10", null, null));
+
+        verify(documentDraftService).deleteActiveRentReceipt("2026-10", 1L, null, TENANT_COMPANY_ID);
     }
 
     @Test

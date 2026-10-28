@@ -20,6 +20,12 @@ export const en = {
       hint: "AI-detected amount — confirm it to add the expense.",
     },
   },
+  draft: {
+    none: "No saved draft",
+    savedAt: "Draft saved on {{date}}",
+    save: "Save draft",
+    saved: "Draft saved.",
+  },
   api: {
     errors: {
       VALIDATION_FAILED: "Some fields are invalid.",
@@ -247,11 +253,12 @@ export const en = {
       "No data leaves your machine as long as the LLM URL stays local.",
     footer: "HomeOfficeExpenses · personal use",
     draftDialog: {
-      title: "Draft not generated",
+      title: "Unsaved changes",
       message:
-        "Some entered information is not saved yet. Do you really want to leave this page? The draft is kept for the session, but the document will not be generated.",
-      confirm: "Leave page",
+        "Some changes to this draft are not saved yet. What do you want to do?",
+      confirm: "Leave without saving",
       cancel: "Stay",
+      save: "Save and leave",
     },
   },
   rentReceipt: {

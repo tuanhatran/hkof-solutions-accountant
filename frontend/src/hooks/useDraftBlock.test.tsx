@@ -58,14 +58,39 @@ describe("useDraftBlock", () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
-  it("blocks leaving the generation pages with a dirty statement draft", async () => {
+  it("warns before unload when a statement draft is dirty", () => {
     useStatementDraft.setState({
       month: "2026-01",
       companyId: null,
-      // The draft is scoped by company: a dirty bucket outside that scope must
-      // not block navigation.
       dirtyByMonth: { [draftScopeKey(null, "2026-01")]: true },
     });
+
+    renderAt("/generer/note-frais");
+
+    const event = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it("blocks leaving the note-frais page with a dirty statement draft", async () => {
+    useStatementDraft.setState({
+      month: "2026-01",
+      companyId: null,
+      dirtyByMonth: { [draftScopeKey(null, "2026-01")]: true },
+    });
+
+    const router = renderAt("/generer/note-frais");
+    await act(async () => {
+      await router.navigate("/historique");
+    });
+
+    expect(screen.queryByText("Historique")).toBeNull();
+    expect(screen.getByTestId("blocker-state")).toHaveTextContent("blocked");
+  });
+
+  it("blocks leaving the quittance page with a dirty rent receipt draft", async () => {
+    useRentReceiptDraft.setState({ dirty: true });
 
     const router = renderAt("/generer/quittance");
     await act(async () => {
@@ -74,6 +99,34 @@ describe("useDraftBlock", () => {
 
     expect(screen.queryByText("Historique")).toBeNull();
     expect(screen.getByTestId("blocker-state")).toHaveTextContent("blocked");
+  });
+
+  it("allows leaving the note-frais page with only a dirty rent receipt draft", async () => {
+    useRentReceiptDraft.setState({ dirty: true });
+
+    const router = renderAt("/generer/note-frais");
+    await act(async () => {
+      await router.navigate("/historique");
+    });
+
+    expect(await screen.findByText("Historique")).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/historique");
+  });
+
+  it("allows leaving the quittance page with only a dirty statement draft", async () => {
+    useStatementDraft.setState({
+      month: "2026-01",
+      companyId: null,
+      dirtyByMonth: { [draftScopeKey(null, "2026-01")]: true },
+    });
+
+    const router = renderAt("/generer/quittance");
+    await act(async () => {
+      await router.navigate("/historique");
+    });
+
+    expect(await screen.findByText("Historique")).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/historique");
   });
 
   it("allows navigation between generation pages", async () => {

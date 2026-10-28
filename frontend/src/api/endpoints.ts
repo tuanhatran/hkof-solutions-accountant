@@ -1,4 +1,11 @@
 import { request, blobRequest, type ResponseBlob } from "./client";
+import type { components } from "./schema";
+
+type Schemas = components["schemas"];
+export type RentReceiptDraftRequest = Schemas["RentReceiptDraftRequest"];
+export type RentReceiptDraftDto = Schemas["RentReceiptDraftDto"];
+export type StatementDraftRequest = Schemas["StatementDraftRequest"];
+export type StatementDraftDto = Schemas["StatementDraftDto"];
 import type {
   AnalysisDto,
   AnalysisStartResponse,
@@ -226,6 +233,41 @@ export const api = {
     zip: (id: number): Promise<ResponseBlob> =>
       blobRequest(`/api/expense-statements/${id}/zip`),
     zipUrl: (id: number) => `/api/expense-statements/${id}/zip`,
+  },
+
+  drafts: {
+    getRentReceipt: async (
+      month: string,
+      landlordId: number,
+      tenantId?: number | null,
+      tenantCompanyId?: number | null,
+    ): Promise<RentReceiptDraftDto | null> => {
+      const result = await request<RentReceiptDraftDto | undefined>(
+        `/api/drafts/rent-receipts${query({ month, landlordId, tenantId, tenantCompanyId })}`,
+      );
+      return result ?? null;
+    },
+    saveRentReceipt: (requestBody: RentReceiptDraftRequest) =>
+      request<RentReceiptDraftDto>(
+        "/api/drafts/rent-receipts",
+        json({ method: "PUT", body: JSON.stringify(requestBody) }),
+      ),
+    getStatement: async (
+      companyId: number,
+      month: string,
+    ): Promise<StatementDraftDto | null> => {
+      const result = await request<StatementDraftDto | undefined>(
+        `/api/drafts/expense-statements${query({ companyId, month })}`,
+      );
+      return result ?? null;
+    },
+    saveStatement: (requestBody: StatementDraftRequest) =>
+      request<StatementDraftDto>(
+        "/api/drafts/expense-statements",
+        json({ method: "PUT", body: JSON.stringify(requestBody) }),
+      ),
+    delete: (id: number) =>
+      request<void>(`/api/drafts/${id}`, { method: "DELETE" }),
   },
 
   signatures: {

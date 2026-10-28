@@ -25,6 +25,7 @@ const LINE: DraftLine = {
 
 const MONTH = "2026-01";
 const KEY = draftScopeKey(null, MONTH);
+const SCOPE = draftScopeKey(1, MONTH);
 
 function resetDraft() {
   useStatementDraft.setState({
@@ -35,6 +36,9 @@ function resetDraft() {
     completeByMonth: {},
     primedReceiptByMonth: {},
     dirtyByMonth: {},
+    baselineByMonth: {},
+    draftIdByMonth: {},
+    savedAtByMonth: {},
   });
 }
 
@@ -45,6 +49,14 @@ describe("useStatementDraft", () => {
     useStatementDraft.getState().changeMonth("2026-03");
 
     expect(useStatementDraft.getState().month).toBe("2026-03");
+  });
+
+  it("does not mark a draft dirty when only the company is selected", () => {
+    useStatementDraft.getState().selectCompany(2);
+
+    const state = useStatementDraft.getState();
+    expect(state.companyId).toBe(2);
+    expect(state.dirtyByMonth[draftScopeKey(2, MONTH)]).toBeUndefined();
   });
 
   it("adds a line to the active month and marks it dirty", () => {
@@ -183,6 +195,51 @@ describe("useStatementDraft", () => {
     const state = useStatementDraft.getState();
     expect(state.companyId).toBe(2);
     expect(state.linesByMonth[draftScopeKey(2, "2026-04")]).toEqual([]);
+  });
+
+  it("hydrates a saved statement draft without marking it dirty", () => {
+    useStatementDraft.getState().loadFromServerDraft({
+      id: 31,
+      companyId: 1,
+      month: MONTH,
+      templateId: 6,
+      complete: false,
+      lines: [
+        {
+          itemCode: "gaz",
+          amountInclVat: "80.00",
+          proRataPct: "100",
+          receiptId: 3,
+          amountSource: "MANUAL",
+        },
+      ],
+      savedAt: "2026-10-05T09:30:00Z",
+    });
+
+    const state = useStatementDraft.getState();
+    expect(state.linesByMonth[SCOPE]).toHaveLength(1);
+    expect(state.linesByMonth[SCOPE]?.[0]?.itemCode).toBe("gaz");
+    expect(state.templatesByMonth[SCOPE]).toBe(6);
+    expect(state.completeByMonth[SCOPE]).toBe(false);
+    expect(state.dirtyByMonth[SCOPE]).toBe(false);
+    expect(state.draftIdByMonth[SCOPE]).toBe(31);
+    expect(state.savedAtByMonth[SCOPE]).toBe("2026-10-05T09:30:00Z");
+  });
+
+  it("records a successful save and clears the dirty state", () => {
+    useStatementDraft.getState().addLine(LINE);
+    expect(useStatementDraft.getState().dirtyByMonth[KEY]).toBe(true);
+
+    useStatementDraft.getState().markSaved({
+      id: 32,
+      month: MONTH,
+      savedAt: "2026-10-05T10:00:00Z",
+    });
+
+    const state = useStatementDraft.getState();
+    expect(state.dirtyByMonth[KEY]).toBe(false);
+    expect(state.draftIdByMonth[KEY]).toBe(32);
+    expect(state.savedAtByMonth[KEY]).toBe("2026-10-05T10:00:00Z");
   });
 
   it("exposes the current lines and dirty flag through selectors", () => {

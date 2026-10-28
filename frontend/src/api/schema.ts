@@ -304,6 +304,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/drafts/rent-receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Brouillon de quittance enregistré pour un bailleur, un locataire et un mois. Répond 204 quand aucun brouillon actif n'existe pour cette portée. */
+        get: operations["getRentReceiptDraft"];
+        /** @description Enregistre l'état éditable d'une quittance. Chaque enregistrement insère un nouveau brouillon et supprime logiquement le brouillon actif de la même portée. */
+        put: operations["saveRentReceiptDraft"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/drafts/expense-statements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Brouillon de note de frais enregistré pour une société et un mois. Répond 204 quand aucun brouillon actif n'existe pour cette portée. */
+        get: operations["getStatementDraft"];
+        /** @description Enregistre l'état éditable d'une note de frais. Chaque enregistrement insère un nouveau brouillon et supprime logiquement le brouillon actif de la même portée. */
+        put: operations["saveStatementDraft"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/drafts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Supprime logiquement un brouillon, par exemple après génération du document. */
+        delete: operations["deleteDraft"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/expense-items": {
         parameters: {
             query?: never;
@@ -1207,6 +1260,81 @@ export interface components {
             complete?: boolean;
             lines?: components["schemas"]["ExpenseLineRequest"][];
         };
+        RentReceiptDraftRequest: {
+            /** @description Mois du brouillon (AAAA-MM). */
+            month: string;
+            /** Format: int64 */
+            landlordId: number;
+            /**
+             * Format: int64
+             * @description Locataire personne physique ; exclusif avec tenantCompanyId.
+             */
+            tenantId?: number | null;
+            /**
+             * Format: int64
+             * @description Locataire société ; exclusif avec tenantId.
+             */
+            tenantCompanyId?: number | null;
+            /** Format: date */
+            periodStart?: string;
+            /** Format: date */
+            periodEnd?: string;
+            rentExclCharges?: string;
+            charges?: string;
+            /** Format: date */
+            paymentDate?: string;
+            /** Format: date */
+            issueDate?: string;
+            /** Format: int64 */
+            templateId?: number | null;
+        };
+        RentReceiptDraftDto: {
+            /** Format: int64 */
+            id?: number;
+            month?: string;
+            /** Format: int64 */
+            landlordId?: number;
+            /** Format: int64 */
+            tenantId?: number;
+            /** Format: int64 */
+            tenantCompanyId?: number;
+            /** Format: date */
+            periodStart?: string;
+            /** Format: date */
+            periodEnd?: string;
+            rentExclCharges?: string;
+            charges?: string;
+            /** Format: date */
+            paymentDate?: string;
+            /** Format: date */
+            issueDate?: string;
+            /** Format: int64 */
+            templateId?: number;
+            /** Format: date-time */
+            savedAt?: string;
+        };
+        StatementDraftRequest: {
+            /** Format: int64 */
+            companyId: number;
+            month: string;
+            /** Format: int64 */
+            templateId?: number | null;
+            complete?: boolean;
+            lines?: components["schemas"]["ExpenseLineRequest"][];
+        };
+        StatementDraftDto: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            companyId?: number;
+            month?: string;
+            /** Format: int64 */
+            templateId?: number;
+            complete?: boolean;
+            lines?: components["schemas"]["ExpenseLineRequest"][];
+            /** Format: date-time */
+            savedAt?: string;
+        };
         DraftDto: {
             month?: string;
             rentReceipt?: components["schemas"]["RentReceiptDto"];
@@ -2076,6 +2204,147 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CalculationResponse"];
+                };
+            };
+        };
+    };
+    getRentReceiptDraft: {
+        parameters: {
+            query: {
+                month: string;
+                landlordId: number;
+                /** @description Locataire personne physique ; exclusif avec tenantCompanyId. */
+                tenantId?: number;
+                /** @description Locataire société ; exclusif avec tenantId. */
+                tenantCompanyId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Brouillon actif */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RentReceiptDraftDto"];
+                };
+            };
+            /** @description Aucun brouillon actif pour cette portée */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    saveRentReceiptDraft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RentReceiptDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description Brouillon enregistré */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RentReceiptDraftDto"];
+                };
+            };
+        };
+    };
+    getStatementDraft: {
+        parameters: {
+            query: {
+                companyId: number;
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Brouillon actif */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StatementDraftDto"];
+                };
+            };
+            /** @description Aucun brouillon actif pour cette portée */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    saveStatementDraft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatementDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description Brouillon enregistré */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StatementDraftDto"];
+                };
+            };
+        };
+    };
+    deleteDraft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Brouillon supprimé */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Brouillon introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProblemDetail"];
                 };
             };
         };

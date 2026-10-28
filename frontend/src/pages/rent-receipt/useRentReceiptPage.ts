@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -12,9 +12,11 @@ import {
   useCompanies,
   useLeases,
   usePersons,
+  useSavedRentReceiptDraft,
   useSignatures,
   useTemplates,
 } from "@/api/queries";
+import type { RentReceiptDraftRequest } from "@/api/endpoints";
 import type { RentReceiptDto } from "@/api/types";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { usePdfPreview } from "@/hooks/usePdfPreview";
@@ -26,6 +28,7 @@ import {
   tenantKeyFromLease,
   type RentReceiptFormValues,
 } from "@/lib/validation";
+import { useDraftSaver } from "@/state/draftSaver";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft } from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
@@ -49,6 +52,7 @@ export function useRentReceiptPage() {
   const mobile = useMediaQuery("(max-width: 1023px)");
   const [mobilePanel, setMobilePanel] = useState<"saisie" | "apercu">("saisie");
   const [generationInProgress, setGenerationInProgress] = useState(false);
+  const [draftSaving, setDraftSaving] = useState(false);
   const [result, setResult] = useState<RentReceiptDto | null>(null);
   const [chosenSignatureId, setChosenSignatureId] = useState<number | null>(
     null,
@@ -157,6 +161,66 @@ export function useRentReceiptPage() {
   const activePairReceipt = pairSelected
     ? (activeRentReceipt.data ?? null)
     : null;
+  const singleTenant =
+    (selectedTenantId === null) !== (selectedTenantCompanyId === null);
+  const draftScopeReady = selectedLandlordId !== null && singleTenant;
+  const savedDraft = useSavedRentReceiptDraft(
+    draft.month,
+    selectedLandlordId,
+    selectedTenantId,
+    selectedTenantCompanyId,
+  );
+  const hydratedScope = useRef<string | null>(null);
+
+  // Re-selecting the same pair and month reloads the saved draft. Auto-prefill and
+  // pair selection stay clean because the store captures a baseline on each action.
+  useEffect(() => {
+    const saved = savedDraft.data;
+    if (!saved || saved.id === undefined) {
+      return;
+    }
+    // The refetch after a save returns the row just written: hydrating it would
+    // overwrite the edits made while the PUT then GET round-trip was in flight.
+    if (draft.draftId !== null && saved.id === draft.draftId) {
+      return;
+    }
+    const scopeKey = [
+      saved.month ?? draft.month,
+      saved.landlordId ?? "",
+      saved.tenantId ?? "",
+      saved.tenantCompanyId ?? "",
+      saved.id,
+    ].join("|");
+    if (hydratedScope.current === scopeKey) {
+      return;
+    }
+    hydratedScope.current = scopeKey;
+    draft.loadFromDraft(saved);
+    setValue("month", saved.month ?? draft.month, { shouldValidate: true });
+    setValue(
+      "landlordId",
+      saved.landlordId === undefined || saved.landlordId === null
+        ? ""
+        : String(saved.landlordId),
+      { shouldValidate: true },
+    );
+    const tenantKey =
+      saved.tenantId !== undefined && saved.tenantId !== null
+        ? `person:${saved.tenantId}`
+        : saved.tenantCompanyId !== undefined && saved.tenantCompanyId !== null
+          ? `company:${saved.tenantCompanyId}`
+          : "";
+    setValue("tenantKey", tenantKey, { shouldValidate: true });
+    setValue("periodStart", saved.periodStart ?? "", { shouldValidate: true });
+    setValue("periodEnd", saved.periodEnd ?? "", { shouldValidate: true });
+    setValue("rentExclCharges", saved.rentExclCharges ?? "", {
+      shouldValidate: true,
+    });
+    setValue("charges", saved.charges ?? "", { shouldValidate: true });
+    setValue("paymentDate", saved.paymentDate ?? "", { shouldValidate: true });
+    setValue("issueDate", saved.issueDate ?? "", { shouldValidate: true });
+  }, [savedDraft.data, draft, setValue]);
+
   const request =
     validation.success && selectedLease
       ? requestFromValues(
@@ -184,7 +248,12 @@ export function useRentReceiptPage() {
   );
 
   useEffect(() => {
-    if (leases.isPending || leases.isError || draft.initialized) {
+    if (
+      leases.isPending ||
+      leases.isError ||
+      draft.initialized ||
+      savedDraft.data
+    ) {
       return;
     }
     const candidates = leases.data ?? [];
@@ -234,10 +303,24 @@ export function useRentReceiptPage() {
     try {
       const rentReceipt = await api.rentReceipts.create(requestBody);
       setResult(rentReceipt);
+      // The generation deleted the scope draft server-side: drop the cached row
+      // first, otherwise the hydration effect reloads it once `draftId` is gone.
+      for (const month of new Set([submittedValues.month, draft.month])) {
+        queryClient.setQueryData(
+          queryKeys.rentReceiptDraft(
+            month,
+            selectedLandlordId,
+            selectedTenantId,
+            selectedTenantCompanyId,
+          ),
+          null,
+        );
+      }
       draft.markGenerated();
       await queryClient.invalidateQueries({
         queryKey: queryKeys.rentReceiptsAll,
       });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.drafts });
       toast.success(
         t("rentReceipt.toasts.generated", {
           month: formatMonth(submittedValues.month),
@@ -320,6 +403,40 @@ export function useRentReceiptPage() {
     setValue("periodEnd", period.end, { shouldValidate: true });
   }
 
+  async function saveDraft(): Promise<boolean> {
+    if (!draftScopeReady || selectedLandlordId === null) {
+      return false;
+    }
+    const requestBody: RentReceiptDraftRequest = {
+      month: draft.month,
+      landlordId: selectedLandlordId,
+      tenantId: selectedTenantId,
+      tenantCompanyId: selectedTenantCompanyId,
+      periodStart: draft.periodStart,
+      periodEnd: draft.periodEnd,
+      rentExclCharges: draft.rentExclCharges,
+      charges: draft.charges,
+      paymentDate: draft.paymentDate,
+      issueDate: draft.issueDate,
+      templateId: draft.templateId,
+    };
+    try {
+      setDraftSaving(true);
+      const saved = await api.drafts.saveRentReceipt(requestBody);
+      draft.markSaved(saved);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.drafts });
+      toast.success(t("draft.saved"));
+      return true;
+    } catch (error) {
+      toast.error(errorMessage(error));
+      return false;
+    } finally {
+      setDraftSaving(false);
+    }
+  }
+
+  useDraftSaver(saveDraft);
+
   const activeVersion = activePairReceipt?.version;
   const displayedTotal = result
     ? formatEUR(result.total)
@@ -359,6 +476,9 @@ export function useRentReceiptPage() {
     landlordWithoutSignature,
     activeRentReceipt,
     activePairReceipt,
+    savedDraft,
+    draftScopeReady,
+    saveDraft,
     activeVersion,
     displayedTotal,
     estimatedTotal,
@@ -366,6 +486,7 @@ export function useRentReceiptPage() {
     validation,
     result,
     generationInProgress,
+    draftSaving,
     submit,
     downloadRentReceipt,
     goToStatement,

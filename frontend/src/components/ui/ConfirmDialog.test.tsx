@@ -190,6 +190,36 @@ describe("ConfirmDialog", () => {
     expect(opener).toHaveFocus();
   });
 
+  it("renders the extra action after the confirm action", async () => {
+    const onExtra = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        title="Modifications non enregistrées"
+        cancelLabel="Rester"
+        confirmLabel="Quitter sans enregistrer"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+        extraAction={{ label: "Enregistrer et quitter", onClick: onExtra }}
+      />,
+    );
+
+    const buttons = screen.getAllByRole("button");
+    const labels = buttons
+      .map((button) => button.textContent)
+      .filter((label) => label !== "");
+    expect(labels).toEqual([
+      "Rester",
+      "Quitter sans enregistrer",
+      "Enregistrer et quitter",
+    ]);
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Enregistrer et quitter" }));
+    expect(onExtra).toHaveBeenCalledTimes(1);
+  });
+
   it("renders nothing when closed and cleans the key listener", () => {
     const onCancel = vi.fn();
     const { container, rerender } = render(

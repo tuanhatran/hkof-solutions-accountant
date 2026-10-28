@@ -53,6 +53,7 @@ class ExpenseStatementServiceTest {
     private ExpenseStatementLineCalculator lineCalculator;
     private ExpenseStatementDocumentService documents;
     private LeaseService leases;
+    private DocumentDraftService documentDraftService;
     private ExpenseStatementService service;
 
     @BeforeEach
@@ -66,8 +67,9 @@ class ExpenseStatementServiceTest {
         lineCalculator = mock(ExpenseStatementLineCalculator.class);
         documents = mock(ExpenseStatementDocumentService.class);
         leases = mock(LeaseService.class);
+        documentDraftService = mock(DocumentDraftService.class);
         service = new ExpenseStatementService(repository, companies, expenseItemService, rentReceiptService,
-                templateDataService, storage, lineCalculator, documents, leases);
+                templateDataService, storage, lineCalculator, documents, leases, documentDraftService);
         when(companies.entity(COMPANY_ID)).thenReturn(company());
         when(companies.find(COMPANY_ID)).thenReturn(Optional.of(company()));
         when(leases.proRata(any(), any())).thenReturn(
@@ -234,6 +236,7 @@ class ExpenseStatementServiceTest {
         verify(repository).flush();
         verify(storage).storePdf("note_frais_2026-10_v6.pdf", new byte[]{1});
         verify(storage).storePdf("note_frais_2026-10_v6_complet.pdf", new byte[]{2});
+        verify(documentDraftService).deleteActiveStatement(COMPANY_ID, "2026-10");
     }
 
     @Test
