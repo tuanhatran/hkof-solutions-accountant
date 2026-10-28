@@ -67,7 +67,7 @@ read-only git: do not paste the full diff into the message.
 ## Models
 
 `lead` pins `DeepSeek-Flash` (no code, routing only); `builder` and `reviewer` pin
-`Qwen3.8-Max`. OpenCode keeps its own pin and Copilot selects its own. Never pass a `model`
+`DeepSeek-Flash`. OpenCode keeps its own pin and Copilot selects its own. Never pass a `model`
 override when routing.
 
 ## Handoff
