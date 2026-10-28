@@ -12,6 +12,7 @@ import type {
 } from "@/api/types";
 import i18n from "@/i18n";
 import { formatEUR } from "@/lib/format";
+import type { AdditionalChargeFormValues } from "@/lib/validation";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft } from "@/state/statementDraft";
 import { useToasts } from "@/state/toasts";
@@ -151,6 +152,7 @@ function snapshot() {
     baseline: null,
     draftId: null as number | null,
     savedAt: null as string | null,
+    additionalCharges: [] as AdditionalChargeFormValues[],
   };
 }
 
@@ -829,5 +831,33 @@ describe("useRentReceiptPage preview and generation", () => {
     expect(result.current.activeRentReceipt.data?.id).toBe(40);
     expect(result.current.activePairReceipt).toBeNull();
     expect(result.current.displayedTotal).toBeNull();
+  });
+});
+
+describe("useRentReceiptPage additional charges", () => {
+  it("cancels the edit when the edited charge row is removed", () => {
+    resetDraft({
+      initialized: true,
+      additionalCharges: [
+        { label: "Eau", amount: "20.00" },
+        { label: "Gaz", amount: "30.00" },
+      ],
+    });
+    const { result } = renderController();
+
+    act(() => result.current.startEditAdditionalCharge(1));
+    expect(result.current.editingAdditionalCharge).toEqual({
+      index: 1,
+      label: "Gaz",
+      amount: "30.00",
+      errors: {},
+    });
+
+    act(() => result.current.removeAdditionalCharge(1));
+
+    expect(result.current.editingAdditionalCharge).toBeNull();
+    expect(result.current.values.additionalCharges).toEqual([
+      { label: "Eau", amount: "20.00" },
+    ]);
   });
 });

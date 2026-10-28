@@ -1393,6 +1393,85 @@ describe("GenerateRentReceiptPage", () => {
     ).toBeEnabled();
   });
 
+  it("saves the edited charge in place when an earlier row is removed", async () => {
+    renderPage();
+    const user = userEvent.setup();
+
+    const addCharge = async (label: string, amount: string) => {
+      await user.click(
+        screen.getByRole("button", {
+          name: "Ajouter une charge supplémentaire",
+        }),
+      );
+      await user.type(screen.getByLabelText("Libellé"), label);
+      await user.type(screen.getByLabelText("Montant"), amount);
+      await user.click(
+        screen.getByRole("button", {
+          name: "Enregistrer la charge supplémentaire",
+        }),
+      );
+      await screen.findByText(label);
+    };
+
+    await addCharge("Eau", "10.00");
+    await addCharge("Gaz", "20.00");
+    await addCharge("Bois", "30.00");
+
+    // Edit the middle row, then remove the first one: the edit must stay on Gaz.
+    await user.click(
+      screen.getByRole("button", {
+        name: "Modifier la charge supplémentaire 2",
+      }),
+    );
+    await user.clear(screen.getByLabelText("Montant"));
+    await user.type(screen.getByLabelText("Montant"), "25,00");
+    await user.click(
+      screen.getByRole("button", {
+        name: "Retirer la charge supplémentaire 1",
+      }),
+    );
+    expect(screen.getByLabelText("Libellé")).toHaveValue("Gaz");
+    await user.click(
+      screen.getByRole("button", {
+        name: "Enregistrer la charge supplémentaire",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-cy="charge-supplementaire-1"]'),
+      ).not.toBeNull(),
+    );
+    const first = document.querySelector('[data-cy="charge-supplementaire-0"]');
+    const second = document.querySelector(
+      '[data-cy="charge-supplementaire-1"]',
+    );
+    expect(within(first as HTMLElement).getByText("Gaz")).toBeVisible();
+    expect(within(first as HTMLElement).getByText(/25,00\s?€/)).toBeVisible();
+    expect(within(second as HTMLElement).getByText("Bois")).toBeVisible();
+    expect(within(second as HTMLElement).getByText(/30,00\s?€/)).toBeVisible();
+    expect(
+      document.querySelector('[data-cy="charge-supplementaire-2"]'),
+    ).toBeNull();
+    expect(screen.getByText(/1\s?355,00/)).toBeVisible();
+    expect(useRentReceiptDraft.getState().additionalCharges).toEqual([
+      { label: "Gaz", amount: "25.00" },
+      { label: "Bois", amount: "30.00" },
+    ]);
+
+    await waitFor(() => expect(lastPreviewLoader).not.toBeNull());
+    await lastPreviewLoader?.(new AbortController().signal);
+    expect(api.rentReceipts.preview).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        additionalCharges: [
+          { label: "Gaz", amount: "25.00" },
+          { label: "Bois", amount: "30.00" },
+        ],
+      }),
+      expect.anything(),
+    );
+  });
+
   it("restores the saved additional charges of a draft as read-only text", async () => {
     savedDraft = {
       id: 60,

@@ -538,9 +538,19 @@ export function useRentReceiptPage() {
   function removeAdditionalCharge(index: number) {
     const current = getValues("additionalCharges") ?? [];
     setAdditionalCharges(current.filter((_, position) => position !== index));
-    if (editingAdditionalCharge?.index === index) {
-      setEditingAdditionalCharge(null);
-    }
+    // The editing index points into the saved rows: shift it in the same update,
+    // otherwise a later Save writes the edited charge onto another row.
+    setEditingAdditionalCharge((editing) => {
+      if (editing === null || editing.index === null) {
+        return editing;
+      }
+      if (editing.index === index) {
+        return null;
+      }
+      return editing.index > index
+        ? { ...editing, index: editing.index - 1 }
+        : editing;
+    });
   }
 
   async function saveDraft(): Promise<boolean> {
