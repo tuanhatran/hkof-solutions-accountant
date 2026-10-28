@@ -198,9 +198,27 @@ function renderPage() {
   );
 }
 
+function setMobile(matches: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: (query: string) => ({
+      matches,
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    }),
+  });
+}
+
 describe("GenerateExpenseStatementPage signatures", () => {
   beforeEach(() => {
     lastPreviewLoader = null;
+    setMobile(false);
     signatureList = [LANDLORD, CEO, CEO_V2];
     signatureError = null;
     signaturePending = false;
@@ -631,14 +649,36 @@ describe("GenerateExpenseStatementPage signatures", () => {
   });
 
   it("switches between the mobile input and preview panels", async () => {
+    setMobile(true);
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("tab", { name: "Aperçu" }));
-    expect(screen.getByRole("tab", { name: "Aperçu" })).toHaveAttribute(
-      "aria-selected",
-      "true",
+    const previewTab = screen.getByRole("tab", { name: "Aperçu" });
+    expect(previewTab).toHaveAttribute("id", "expense-view-tab-preview");
+    expect(previewTab).toHaveAttribute(
+      "aria-controls",
+      "expense-preview-panel",
     );
+    expect(document.querySelector('[data-cy="volet-saisie"]')).toHaveAttribute(
+      "id",
+      "expense-input-panel",
+    );
+    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveAttribute(
+      "id",
+      "expense-preview-panel",
+    );
+
+    await user.click(previewTab);
+    expect(previewTab).toHaveAttribute("aria-selected", "true");
+    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveAttribute(
+      "role",
+      "tabpanel",
+    );
+    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveAttribute(
+      "aria-labelledby",
+      "expense-view-tab-preview",
+    );
+
     await user.click(screen.getByRole("tab", { name: "Saisie" }));
     expect(screen.getByRole("tab", { name: "Saisie" })).toHaveAttribute(
       "aria-selected",

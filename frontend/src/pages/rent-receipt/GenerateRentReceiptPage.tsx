@@ -71,17 +71,23 @@ export function GenerateRentReceiptPage() {
       <div className="generate-rent-receipt-page-tabs">
         <ViewTabs
           ariaLabel={t("rentReceipt.page.tabsAriaLabel")}
+          idPrefix="rent-receipt-view"
           active={c.mobilePanel}
           onChange={(value) =>
             c.setMobilePanel(value === "apercu" ? "apercu" : "saisie")
           }
           tabs={[
-            { value: "saisie", label: t("rentReceipt.page.inputTab") },
+            {
+              value: "saisie",
+              label: t("rentReceipt.page.inputTab"),
+              panelId: "rent-receipt-input-panel",
+            },
             {
               value: "apercu",
               label: t("rentReceipt.page.previewTab"),
               updated: Boolean(c.preview.updatedAt),
               className: "flex items-center justify-center gap-2",
+              panelId: "rent-receipt-preview-panel",
             },
           ]}
         />
@@ -90,6 +96,11 @@ export function GenerateRentReceiptPage() {
       <div className="generate-rent-receipt-page-grid">
         <div
           data-cy="volet-saisie"
+          id="rent-receipt-input-panel"
+          role={c.mobile ? "tabpanel" : undefined}
+          aria-labelledby={
+            c.mobile ? "rent-receipt-view-tab-saisie" : undefined
+          }
           className={cn(
             "generate-rent-receipt-page-input",
             c.mobile && c.mobilePanel !== "saisie" && "hidden",
@@ -100,7 +111,13 @@ export function GenerateRentReceiptPage() {
           <RentReceiptForm c={c} />
         </div>
 
-        <RentReceiptPreviewPane c={c} />
+        <RentReceiptPreviewPane
+          c={c}
+          panel={{
+            id: "rent-receipt-preview-panel",
+            labelledBy: "rent-receipt-view-tab-apercu",
+          }}
+        />
       </div>
     </>
   );

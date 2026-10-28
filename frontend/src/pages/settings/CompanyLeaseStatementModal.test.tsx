@@ -220,7 +220,25 @@ function dialog(): HTMLElement {
   ) as HTMLElement;
 }
 
+function setMobile(matches: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: (query: string) => ({
+      matches,
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    }),
+  });
+}
+
 beforeEach(() => {
+  setMobile(false);
   receiptList = [];
   signatureList = [LANDLORD, CEO];
   companiesError = false;
@@ -496,12 +514,34 @@ describe("CompanyLeaseStatementModal", () => {
   });
 
   it("switches the mobile view tabs between Saisie and Aperçu", async () => {
+    setMobile(true);
     receiptList = [rentReceipt({ id: 51, version: 2, total: "950.00" })];
     renderModal();
     const user = userEvent.setup();
     await waitFor(() => expect(dialog()).not.toBeNull());
 
-    await user.click(screen.getByRole("tab", { name: "Aperçu" }));
+    const previewTab = screen.getByRole("tab", { name: "Aperçu" });
+    expect(previewTab).toHaveAttribute("id", "lease-view-tab-preview");
+    expect(previewTab).toHaveAttribute("aria-controls", "lease-preview-panel");
+    expect(document.querySelector('[data-cy="volet-saisie"]')).toHaveAttribute(
+      "id",
+      "lease-input-panel",
+    );
+    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveAttribute(
+      "id",
+      "lease-preview-panel",
+    );
+
+    await user.click(previewTab);
+    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveAttribute(
+      "role",
+      "tabpanel",
+    );
+    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveAttribute(
+      "aria-labelledby",
+      "lease-view-tab-preview",
+    );
+
     await user.click(screen.getByRole("tab", { name: "Saisie" }));
     expect(dialog()).not.toBeNull();
   });

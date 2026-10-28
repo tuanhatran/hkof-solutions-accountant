@@ -299,6 +299,11 @@ describe("SettingsPage tabs", () => {
       '[role="tabpanel"].company-section-tabpanel',
     );
     expect(panel).not.toBeNull();
+    expect(panel).toHaveAttribute("id", "company-section-panel");
+    expect(panel).toHaveAttribute(
+      "aria-labelledby",
+      "company-tabs-tab-identification",
+    );
     expect(panel?.closest("section.card.company-section")).not.toBeNull();
 
     const identity = queryByCy("info-societe");

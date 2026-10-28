@@ -29,21 +29,25 @@ export function CompanySection() {
       value: "identification",
       label: t("settings.company.tabs.identification"),
       dataCy: "onglet-entreprise-identification",
+      panelId: "company-section-panel",
     },
     {
       value: "bail-frais",
       label: t("settings.company.tabs.leaseExpenses"),
       dataCy: "onglet-entreprise-bail-frais",
+      panelId: "company-section-panel",
     },
     {
       value: "salaries",
       label: t("settings.company.tabs.employees"),
       dataCy: "onglet-entreprise-salaries",
+      panelId: "company-section-panel",
     },
     {
       value: "templates",
       label: t("settings.company.tabs.templates"),
       dataCy: "onglet-entreprise-templates",
+      panelId: "company-section-panel",
     },
   ];
   const queryClient = useQueryClient();
@@ -159,6 +163,7 @@ export function CompanySection() {
       <div className="company-section-tabs">
         <ViewTabs
           ariaLabel={t("settings.company.tabsAria")}
+          idPrefix="company-tabs"
           tabs={tabs}
           active={tab}
           onChange={setTab}
@@ -184,7 +189,12 @@ export function CompanySection() {
             />
           </div>
         ) : null}
-        <div role="tabpanel" className="company-section-tabpanel">
+        <div
+          id="company-section-panel"
+          role="tabpanel"
+          aria-labelledby={`company-tabs-tab-${tab}`}
+          className="company-section-tabpanel"
+        >
           {selected && tab === "identification" ? (
             <CompanyIdentityView
               company={selected}

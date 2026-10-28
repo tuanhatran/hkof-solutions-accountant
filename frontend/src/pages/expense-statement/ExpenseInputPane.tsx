@@ -8,12 +8,17 @@ import { ExpenseResultCard } from "./ExpenseResultCard";
 /** Input pane: entry form, draft lines and last generated result. */
 export function ExpenseInputPane({
   controller: c,
+  panel,
 }: {
   controller: ExpenseStatementController;
+  panel?: { id: string; labelledBy: string };
 }) {
   return (
     <div
       data-cy="volet-saisie"
+      id={panel?.id}
+      role={c.mobile && panel ? "tabpanel" : undefined}
+      aria-labelledby={c.mobile && panel ? panel.labelledBy : undefined}
       className={cn(
         "expense-input-pane",
         c.mobile && c.mobilePanel !== "input" && "hidden",

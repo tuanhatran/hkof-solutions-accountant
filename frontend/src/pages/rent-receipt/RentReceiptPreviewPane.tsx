@@ -5,11 +5,20 @@ import { cn } from "@/lib/cn";
 import type { RentReceiptController } from "./useRentReceiptPage";
 
 /** Preview pane with the template selector. */
-export function RentReceiptPreviewPane({ c }: { c: RentReceiptController }) {
+export function RentReceiptPreviewPane({
+  c,
+  panel,
+}: {
+  c: RentReceiptController;
+  panel?: { id: string; labelledBy: string };
+}) {
   const { t } = useTranslation();
   return (
     <div
       data-cy="volet-apercu"
+      id={panel?.id}
+      role={c.mobile && panel ? "tabpanel" : undefined}
+      aria-labelledby={c.mobile && panel ? panel.labelledBy : undefined}
       className={cn(
         "rent-receipt-preview-pane",
         c.mobile && c.mobilePanel !== "apercu" && "hidden",

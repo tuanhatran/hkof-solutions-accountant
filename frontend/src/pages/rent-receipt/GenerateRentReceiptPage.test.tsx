@@ -934,12 +934,37 @@ describe("GenerateRentReceiptPage", () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole("tab", { name: "Aperçu" }));
+    const inputPanel = document.querySelector('[data-cy="volet-saisie"]');
+    const previewPanel = document.querySelector('[data-cy="volet-apercu"]');
+    expect(inputPanel).toHaveAttribute("id", "rent-receipt-input-panel");
+    expect(inputPanel).toHaveAttribute("role", "tabpanel");
+    expect(inputPanel).toHaveAttribute(
+      "aria-labelledby",
+      "rent-receipt-view-tab-saisie",
+    );
+    expect(previewPanel).toHaveAttribute("id", "rent-receipt-preview-panel");
+
+    const previewTab = await screen.findByRole("tab", { name: "Aperçu" });
+    expect(previewTab).toHaveAttribute("id", "rent-receipt-view-tab-apercu");
+    expect(previewTab).toHaveAttribute(
+      "aria-controls",
+      "rent-receipt-preview-panel",
+    );
+
+    await user.click(previewTab);
     expect(document.querySelector('[data-cy="volet-saisie"]')).toHaveClass(
       "hidden",
     );
     expect(document.querySelector('[data-cy="volet-apercu"]')).not.toHaveClass(
       "hidden",
+    );
+    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveAttribute(
+      "role",
+      "tabpanel",
+    );
+    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveAttribute(
+      "aria-labelledby",
+      "rent-receipt-view-tab-apercu",
     );
 
     await user.click(screen.getByRole("tab", { name: "Saisie" }));

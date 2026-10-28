@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import i18n from "@/i18n";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -80,6 +81,68 @@ describe("ConfirmDialog", () => {
 
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onCancel).toHaveBeenCalledTimes(3);
+  });
+
+  it("traps Tab and Shift+Tab inside the panel", async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <button type="button">Hors dialogue</button>
+        <ConfirmDialog
+          open
+          title="Quitter"
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      </>,
+    );
+
+    const outside = screen.getByRole("button", { name: "Hors dialogue" });
+    const cancel = screen.getByRole("button", { name: "Annuler" });
+    const confirm = screen.getByRole("button", { name: "Confirmer" });
+    const close = screen.getByRole("button", { name: "Fermer" });
+
+    expect(cancel).toHaveFocus();
+    await user.tab();
+    expect(confirm).toHaveFocus();
+    await user.tab();
+    expect(close).toHaveFocus();
+    expect(outside).not.toHaveFocus();
+
+    await user.tab({ shift: true });
+    expect(confirm).toHaveFocus();
+  });
+
+  it("restores focus to the opener once the dialog closes", async () => {
+    function Harness() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>
+            Ouvrir la confirmation
+          </button>
+          <ConfirmDialog
+            open={open}
+            title="Quitter"
+            onConfirm={() => setOpen(false)}
+            onCancel={() => setOpen(false)}
+          />
+        </>
+      );
+    }
+
+    render(<Harness />);
+    const user = userEvent.setup();
+    const opener = screen.getByRole("button", {
+      name: "Ouvrir la confirmation",
+    });
+
+    await user.click(opener);
+    expect(screen.getByRole("button", { name: "Annuler" })).toHaveFocus();
+
+    await user.click(screen.getByRole("button", { name: "Confirmer" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(opener).toHaveFocus();
   });
 
   it("renders nothing when closed and cleans the key listener", () => {
