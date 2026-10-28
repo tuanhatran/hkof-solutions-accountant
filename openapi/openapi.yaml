@@ -767,7 +767,7 @@ paths:
         - document-draft-controller
       operationId: getStatementDraft
       description: >-
-        Brouillon de note de frais enregistré pour une société et un mois.
+        Brouillon de note de frais enregistré pour une société, un mois et, si fourni, un bail.
         Répond 204 quand aucun brouillon actif n'existe pour cette portée.
       parameters:
         - name: companyId
@@ -781,6 +781,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: leaseId
+          in: query
+          required: false
+          description: Identifiant du bail. Absent, la portée historique de la société est utilisée.
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: Brouillon actif
@@ -1161,7 +1168,7 @@ paths:
       tags:
         - expense-statement-controller
       operationId: getActiveExpenseStatement
-      description: Retourne la note de frais active d'une société pour un mois.
+      description: Retourne la note de frais active d'une société pour un mois et, si fourni, pour un bail.
       parameters:
         - name: companyId
           in: query
@@ -1175,6 +1182,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: leaseId
+          in: query
+          required: false
+          description: Identifiant du bail. Absent, la portée historique de la société est utilisée.
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
@@ -2595,6 +2609,11 @@ components:
           format: int64
         month:
           type: string
+        leaseId:
+          type:
+            - integer
+            - "null"
+          format: int64
         templateId:
           type:
             - integer
@@ -2617,6 +2636,9 @@ components:
           format: int64
         month:
           type: string
+        leaseId:
+          type: integer
+          format: int64
         templateId:
           type: integer
           format: int64

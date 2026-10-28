@@ -225,6 +225,98 @@ class MultiLeaseExpensesIntegrationTest {
     }
 
     @Test
+    @DisplayName("Statements are versioned, active and drafted per lease")
+    void statementsAreScopedToLease() throws Exception {
+        long companyId = createCompany("Société notes par bail");
+        long landlordA = createLandlord("Bailleur notes A");
+        long landlordB = createLandlord("Bailleur notes B");
+        long leaseA = createCompanyLease(companyId, landlordA, "80", "20");
+        long leaseB = createCompanyLease(companyId, landlordB, "60", "10");
+        long itemId = createItem(companyId, "loyer", "Loyer");
+        long ceoId = createCeo(companyId);
+        uploadSignature(ceoId);
+
+        long firstA = generateStatement(companyId, leaseA, "2026-08");
+        long firstB = generateStatement(companyId, leaseB, "2026-08");
+        activeStatement(companyId, leaseA, firstA, 1);
+        activeStatement(companyId, leaseB, firstB, 1);
+
+        long secondA = generateStatement(companyId, leaseA, "2026-08");
+        activeStatement(companyId, leaseA, secondA, 2);
+        activeStatement(companyId, leaseB, firstB, 1);
+
+        saveDraft(companyId, leaseA, "Brouillon A");
+        saveDraft(companyId, leaseB, "Brouillon B");
+        findDraft(companyId, leaseA, "Brouillon A");
+        findDraft(companyId, leaseB, "Brouillon B");
+
+        long thirdA = generateStatement(companyId, leaseA, "2026-08");
+        activeStatement(companyId, leaseA, thirdA, 3);
+        mockMvc.perform(get("/api/drafts/expense-statements")
+                        .param("companyId", String.valueOf(companyId))
+                        .param("month", "2026-08")
+                        .param("leaseId", String.valueOf(leaseA)))
+                .andExpect(status().isNoContent());
+        findDraft(companyId, leaseB, "Brouillon B");
+
+        mockMvc.perform(delete("/api/expense-items/{id}", itemId)).andExpect(status().isNoContent());
+        statements.deleteById(firstA);
+        statements.deleteById(firstB);
+        statements.deleteById(secondA);
+        statements.deleteById(thirdA);
+        mockMvc.perform(delete("/api/leases/{id}", leaseA)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/leases/{id}", leaseB)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/companies/{id}", companyId)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/persons/{id}", landlordA)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/persons/{id}", landlordB)).andExpect(status().isNoContent());
+    }
+
+    private long generateStatement(long companyId, long leaseId, String month) throws Exception {
+        return id(post("/api/expense-statements")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"companyId":%d,"leaseId":%d,"month":"%s","lines":[
+                          {"itemCode":"loyer","amountInclVat":"950.00","proRataPct":"100"}
+                        ]}
+                        """.formatted(companyId, leaseId, month)));
+    }
+
+    private void activeStatement(long companyId, long leaseId, long id, int version) throws Exception {
+        mockMvc.perform(get("/api/expense-statements/active")
+                        .param("companyId", String.valueOf(companyId))
+                        .param("month", "2026-08")
+                        .param("leaseId", String.valueOf(leaseId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.leaseId").value(leaseId))
+                .andExpect(jsonPath("$.version").value(version))
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    private void saveDraft(long companyId, long leaseId, String code) throws Exception {
+        mockMvc.perform(put("/api/drafts/expense-statements")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"companyId":%d,"month":"2026-08","leaseId":%d,"complete":true,"lines":[
+                                  {"itemCode":"%s","amountInclVat":"10.00","proRataPct":"100"}
+                                ]}
+                                """.formatted(companyId, leaseId, code)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.leaseId").value(leaseId))
+                .andExpect(jsonPath("$.lines[0].itemCode").value(code));
+    }
+
+    private void findDraft(long companyId, long leaseId, String code) throws Exception {
+        mockMvc.perform(get("/api/drafts/expense-statements")
+                        .param("companyId", String.valueOf(companyId))
+                        .param("month", "2026-08")
+                        .param("leaseId", String.valueOf(leaseId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.leaseId").value(leaseId))
+                .andExpect(jsonPath("$.lines[0].itemCode").value(code));
+    }
+
+    @Test
     @DisplayName("Selecting another company lease persists the active lease and switches its pro-rata")
     void switchingActiveLeasePersistsAndDrivesProRata() throws Exception {
         long companyId = createCompany("Société bail actif");

@@ -22,6 +22,7 @@ import org.mockito.ArgumentCaptor;
 import tools.jackson.databind.ObjectMapper;
 
 import fr.hkof.homeofficeexpenses.domain.DocumentDraft;
+import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.repository.DocumentDraftRepository;
 import fr.hkof.homeofficeexpenses.web.dto.DocumentDraftDtos.RentReceiptDraftDto;
 import fr.hkof.homeofficeexpenses.web.dto.DocumentDraftDtos.RentReceiptDraftRequest;
@@ -36,14 +37,16 @@ class DocumentDraftServiceTest {
     private static final Clock CLOCK = Clock.fixed(NOW, ZoneOffset.UTC);
 
     private DocumentDraftRepository repository;
+    private LeaseService leases;
     private DocumentDraftService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(DocumentDraftRepository.class);
+        leases = mock(LeaseService.class);
         when(repository.save(any(DocumentDraft.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(repository.saveAndFlush(any(DocumentDraft.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        service = new DocumentDraftService(repository, new ObjectMapper(), CLOCK);
+        service = new DocumentDraftService(repository, leases, new ObjectMapper(), CLOCK);
     }
 
     private static RentReceiptDraftRequest rentReceiptRequest() {
@@ -54,7 +57,7 @@ class DocumentDraftServiceTest {
 
     private static StatementDraftRequest statementRequest() {
         return new StatementDraftRequest(
-                3L, "2026-01", 9L, true,
+                3L, "2026-01", null, 9L, true,
                 List.of(new ExpenseLineRequest("gaz", "80,00", "100", 5L, "MANUAL", null, null)));
     }
 
@@ -206,7 +209,7 @@ class DocumentDraftServiceTest {
     void savesStatementDraft() {
         DocumentDraft previous = new DocumentDraft();
         previous.setId(20L);
-        when(repository.findFirstByTypeAndMonthAndCompanyIdAndDeletedFalseOrderByIdDesc(
+        when(repository.findFirstByTypeAndMonthAndCompanyIdAndLeaseIdIsNullAndDeletedFalseOrderByIdDesc(
                 DocumentDraft.Type.EXPENSE_STATEMENT, "2026-01", 3L)).thenReturn(Optional.of(previous));
 
         StatementDraftDto dto = service.saveStatement(statementRequest());
@@ -220,18 +223,54 @@ class DocumentDraftServiceTest {
     }
 
     @Test
+    @DisplayName("Scopes an expense statement draft to its lease and validates the lease company")
+    void savesStatementDraftPerLease() {
+        DocumentDraft previous = new DocumentDraft();
+        previous.setId(21L);
+        when(repository.findFirstByTypeAndMonthAndCompanyIdAndLeaseIdAndDeletedFalseOrderByIdDesc(
+                DocumentDraft.Type.EXPENSE_STATEMENT, "2026-01", 3L, 7L)).thenReturn(Optional.of(previous));
+        Lease lease = new Lease();
+        lease.setId(7L);
+        lease.setCompanyId(3L);
+        when(leases.resolveExpenseLease(3L, 7L)).thenReturn(lease);
+
+        StatementDraftDto dto = service.saveStatement(new StatementDraftRequest(
+                3L, "2026-01", 7L, 9L, true,
+                List.of(new ExpenseLineRequest("gaz", "80,00", "100", null, "MANUAL", null, null))));
+
+        assertThat(previous.isDeleted()).isTrue();
+        assertThat(dto.leaseId()).isEqualTo(7L);
+        ArgumentCaptor<DocumentDraft> captor = ArgumentCaptor.forClass(DocumentDraft.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getLeaseId()).isEqualTo(7L);
+    }
+
+    @Test
+    @DisplayName("Rejects an expense statement draft lease that does not belong to the company")
+    void rejectsStatementDraftOfForeignLease() {
+        when(leases.resolveExpenseLease(3L, 7L))
+                .thenThrow(new BusinessException("LEASE_NOT_IN_COMPANY", "Ce bail n'appartient pas à la société."));
+
+        assertThatThrownBy(() -> service.saveStatement(new StatementDraftRequest(
+                3L, "2026-01", 7L, 9L, true, List.of())))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Ce bail n'appartient pas à la société.");
+        verify(repository, never()).save(any(DocumentDraft.class));
+    }
+
+    @Test
     @DisplayName("Rejects an expense statement line without item or with an invalid amount")
     void rejectsInvalidStatementLines() {
         assertThatThrownBy(() -> service.saveStatement(new StatementDraftRequest(
-                3L, "2026-01", null, true,
+                3L, "2026-01", null, null, true,
                 List.of(new ExpenseLineRequest("", "80.00", "100", null, "MANUAL", null, null)))))
                 .isInstanceOf(BusinessException.class);
         assertThatThrownBy(() -> service.saveStatement(new StatementDraftRequest(
-                3L, "2026-01", null, true,
+                3L, "2026-01", null, null, true,
                 List.of(new ExpenseLineRequest("gaz", "80.00", "101", null, "MANUAL", null, null)))))
                 .isInstanceOf(BusinessException.class);
         assertThatThrownBy(() -> service.saveStatement(new StatementDraftRequest(
-                null, "2026-01", null, true, List.of())))
+                null, "2026-01", null, null, true, List.of())))
                 .isInstanceOf(BusinessException.class);
     }
 
@@ -279,10 +318,10 @@ class DocumentDraftServiceTest {
     void clearsActiveStatementDraft() {
         DocumentDraft previous = new DocumentDraft();
         previous.setId(32L);
-        when(repository.findFirstByTypeAndMonthAndCompanyIdAndDeletedFalseOrderByIdDesc(
+        when(repository.findFirstByTypeAndMonthAndCompanyIdAndLeaseIdIsNullAndDeletedFalseOrderByIdDesc(
                 DocumentDraft.Type.EXPENSE_STATEMENT, "2026-01", 3L)).thenReturn(Optional.of(previous));
 
-        service.deleteActiveStatement(3L, "2026-01");
+        service.deleteActiveStatement(3L, "2026-01", null);
 
         assertThat(previous.isDeleted()).isTrue();
         verify(repository).saveAndFlush(previous);

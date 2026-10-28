@@ -194,7 +194,7 @@ vi.mock("@/api/queries", async (importOriginal) => {
 });
 
 const MONTH = "2026-01";
-const SCOPE = draftScopeKey(1, MONTH);
+const SCOPE = draftScopeKey(1, MONTH, 5);
 
 const LANDLORD: SignatureDto = {
   id: 3,
@@ -321,6 +321,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     useStatementDraft.setState({
       month: MONTH,
       companyId: 1,
+      leaseId: 5,
       linesByMonth: {
         [SCOPE]: [
           {
@@ -613,6 +614,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     useStatementDraft.setState({
       month: MONTH,
       companyId: 1,
+      leaseId: 5,
       linesByMonth: {
         [SCOPE]: [
           {
@@ -711,6 +713,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     useStatementDraft.setState({
       month: MONTH,
       companyId: 1,
+      leaseId: 5,
       linesByMonth: { [SCOPE]: [] },
       templatesByMonth: {},
       completeByMonth: {},
@@ -1002,6 +1005,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
       id: 91,
       companyId: 1,
       month: MONTH,
+      leaseId: 5,
       templateId: 7,
       complete: false,
       savedAt: "2026-01-10T09:00:00Z",

@@ -72,19 +72,76 @@ export function useExpenseStatementContext(
     setSelectedCompanyId(companyId);
   }
 
-  // The draft is scoped by company: switching company reads another bucket.
+  // The draft is scoped by company and lease: switching either reads another
+  // bucket. A company without a lease keeps an inert, unscoped bucket that the
+  // page never submits.
+  const leasesQuery = useLeases();
+  const companyLeases = useMemo(
+    () =>
+      (leasesQuery.data ?? []).filter(
+        (lease) => lease.companyId === activeCompanyId,
+      ),
+    [leasesQuery.data, activeCompanyId],
+  );
+  const [selectedLeaseId, setSelectedLeaseId] = useState<number | null>(
+    options.leaseId ?? null,
+  );
+
+  // Keep the lease selection valid: a locked scoped lease stays, a lease that
+  // no longer belongs to the company is forgotten, and a lone lease is selected
+  // automatically. Several leases require an explicit choice.
+  useEffect(() => {
+    if (leasesQuery.data === undefined) {
+      return;
+    }
+    const ids = companyLeases
+      .map((lease) => lease.id)
+      .filter((id): id is number => typeof id === "number");
+    if (options.leaseId !== undefined) {
+      setSelectedLeaseId(options.leaseId);
+      return;
+    }
+    setSelectedLeaseId((current) => {
+      if (current !== null && ids.includes(current)) {
+        return current;
+      }
+      return ids.length === 1 ? ids[0]! : null;
+    });
+  }, [leasesQuery.data, companyLeases, options.leaseId]);
+
+  function selectLease(leaseId: number | null) {
+    if (options.leaseId !== undefined) {
+      return;
+    }
+    setSelectedLeaseId(leaseId);
+  }
+
   useEffect(() => {
     const store = draftStore.getState();
     if (store.companyId !== activeCompanyId) {
       store.selectCompany(activeCompanyId);
     }
   }, [draftStore, activeCompanyId]);
+  useEffect(() => {
+    const store = draftStore.getState();
+    if (store.leaseId !== selectedLeaseId) {
+      store.selectLease(selectedLeaseId);
+    }
+  }, [draftStore, selectedLeaseId]);
 
-  const scope = draftScopeKey(activeCompanyId, month);
+  const leaseSelectionRequired =
+    companies.isSuccess &&
+    activeCompanyId !== null &&
+    leasesQuery.data !== undefined &&
+    companyLeases.length > 1 &&
+    selectedLeaseId === null;
+
+  const scope = draftScopeKey(activeCompanyId, month, selectedLeaseId);
   const lines = draft.linesByMonth[scope] ?? NO_LINES;
   const savedDraft = useSavedStatementDraft(
     options.draft === undefined ? activeCompanyId : null,
     month,
+    selectedLeaseId,
   );
   const hydratedScope = useRef<string | null>(null);
 
@@ -97,41 +154,39 @@ export function useExpenseStatementContext(
     }
     const companyId = saved.companyId ?? activeCompanyId;
     const savedMonth = saved.month ?? month;
-    const savedScope = draftScopeKey(companyId, savedMonth);
+    const savedLeaseId = saved.leaseId ?? null;
+    const savedScope = draftScopeKey(companyId, savedMonth, savedLeaseId);
     // The refetch after a save returns the row just written: hydrating it would
     // overwrite the edits made while the PUT then GET round-trip was in flight,
     // and re-keying the lines would break an open line edit.
     if (draftStore.getState().draftIdByMonth[savedScope] === saved.id) {
       return;
     }
-    const scope = `${companyId}|${savedMonth}|${saved.id}`;
+    const scope = `${companyId}|${savedMonth}|${savedLeaseId}|${saved.id}`;
     if (hydratedScope.current === scope) {
       return;
     }
     hydratedScope.current = scope;
     draftStore.getState().loadFromServerDraft(saved);
-  }, [savedDraft.data, options.draft, draftStore, activeCompanyId, month]);
+  }, [
+    savedDraft.data,
+    options.draft,
+    draftStore,
+    activeCompanyId,
+    month,
+    selectedLeaseId,
+  ]);
 
   const activeCompany =
     companyRows.find((company) => company.id === activeCompanyId) ?? null;
   const companySelectionRequired =
     companies.isSuccess && activeCompanyId === null && companyRows.length > 1;
-  // Statements and postes are scoped to the active company's derived lease.
-  // A company without a lease keeps the historical unscoped behaviour.
-  const selectedLeaseId =
-    options.leaseId !== undefined
-      ? options.leaseId
-      : (activeCompany?.leaseId ?? null);
-  const leasesQuery = useLeases();
   const selectedLease =
-    selectedLeaseId === null
-      ? null
-      : (leasesQuery.data?.find((lease) => lease.id === selectedLeaseId) ??
-        null);
+    companyLeases.find((lease) => lease.id === selectedLeaseId) ?? null;
 
   // Every company-scoped request carries the active company; a null id disables them.
   const expenseItemsQuery = useExpenseItems(
-    activeCompanyId,
+    selectedLeaseId === null ? null : activeCompanyId,
     false,
     selectedLeaseId,
   );
@@ -139,7 +194,7 @@ export function useExpenseStatementContext(
   // The month list is server-ordered (version then id, descending): its first
   // row is the newest receipt and the default selection.
   const rentReceiptsQuery = useRentReceipts(
-    options.rentReceipt ? null : activeCompanyId,
+    options.rentReceipt || selectedLeaseId === null ? null : activeCompanyId,
     month,
   );
   const [chosenRentReceiptId, setChosenRentReceiptId] = useState<number | null>(
@@ -155,15 +210,15 @@ export function useExpenseStatementContext(
     const receipts = rentReceiptsQuery.data ?? [];
     // A company-month list mixes every lease of the company: keep only the
     // receipts the page lease can produce (same landlord, then tenant company
-    // for a company lease or tenant person for a person lease). An unresolved
-    // lease keeps the historical unscoped list.
+    // for a company lease or tenant person for a person lease). Without a
+    // selected lease nothing can be proposed.
     if (selectedLease === null) {
-      return receipts;
+      return [];
     }
     return receipts.filter(
       (receipt) =>
         receipt.landlordId === selectedLease.landlordId &&
-        (selectedLease.companyId != null
+        (selectedLease.companyLease
           ? receipt.tenantCompanyId === selectedLease.companyId
           : receipt.tenantId === selectedLease.tenantId),
     );
@@ -182,7 +237,11 @@ export function useExpenseStatementContext(
   function selectRentReceipt(rentReceiptId: number) {
     setChosenRentReceiptId(rentReceiptId);
   }
-  const activeStatement = useActiveStatement(activeCompanyId, month);
+  const activeStatement = useActiveStatement(
+    activeCompanyId,
+    month,
+    selectedLeaseId,
+  );
   const employees = useEmployees(activeCompanyId);
 
   // The statement uses the company CEO's signature. The backend resolves the
@@ -261,7 +320,13 @@ export function useExpenseStatementContext(
     activeCompanyId,
     companySelectionRequired,
     selectCompany,
+    leasesQuery,
+    companyLeases,
+    selectedLease,
     selectedLeaseId,
+    selectLease,
+    leaseSelectionRequired,
+    leaseLocked: options.leaseId !== undefined,
     expenseItemsQuery,
     templates,
     rentReceipt,

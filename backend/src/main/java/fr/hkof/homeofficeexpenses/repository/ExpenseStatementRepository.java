@@ -25,9 +25,23 @@ public interface ExpenseStatementRepository extends JpaRepository<ExpenseStateme
 
     Optional<ExpenseStatement> findFirstByCompanyIdAndMonthOrderByVersionDesc(Long companyId, String month);
 
+    Optional<ExpenseStatement> findFirstByCompanyIdAndMonthAndLeaseIdOrderByVersionDesc(Long companyId, String month,
+            Long leaseId);
+
+    Optional<ExpenseStatement> findFirstByCompanyIdAndMonthAndLeaseIdIsNullOrderByVersionDesc(Long companyId,
+            String month);
+
     @EntityGraph(attributePaths = {"lines", "lines.expenseItem", "lines.receipt"})
     Optional<ExpenseStatement> findFirstByCompanyIdAndMonthAndStatusOrderByVersionDesc(Long companyId, String month,
             DocumentStatus status);
+
+    @EntityGraph(attributePaths = {"lines", "lines.expenseItem", "lines.receipt"})
+    Optional<ExpenseStatement> findFirstByCompanyIdAndMonthAndLeaseIdAndStatusOrderByVersionDesc(Long companyId,
+            String month, Long leaseId, DocumentStatus status);
+
+    @EntityGraph(attributePaths = {"lines", "lines.expenseItem", "lines.receipt"})
+    Optional<ExpenseStatement> findFirstByCompanyIdAndMonthAndLeaseIdIsNullAndStatusOrderByVersionDesc(Long companyId,
+            String month, DocumentStatus status);
 
     boolean existsByCompanyId(Long companyId);
 }

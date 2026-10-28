@@ -233,7 +233,7 @@ const LANDLORD: SignatureDto = {
 };
 
 const MONTH = "2026-01";
-const SCOPE = draftScopeKey(1, MONTH);
+const SCOPE = draftScopeKey(1, MONTH, 5);
 
 function readyQuery<T>(data: T): QueryLike<T> {
   return {
@@ -266,6 +266,7 @@ function resetDraft(lines: DraftLine[] = []) {
   useStatementDraft.setState({
     month: MONTH,
     companyId: 1,
+    leaseId: 5,
     linesByMonth: lines.length > 0 ? { [SCOPE]: lines } : {},
     templatesByMonth: {},
     completeByMonth: {},
@@ -423,6 +424,22 @@ describe("useExpenseStatementPage defaults", () => {
 
   it("recalculates for the newly selected company", async () => {
     companiesState = readyQuery([COMPANY, { id: 2, name: "Autre SARL" }]);
+    leasesState = readyQuery([
+      {
+        id: 5,
+        landlordId: 2,
+        companyId: 1,
+        companyLease: true,
+        tenantId: null,
+      },
+      {
+        id: 6,
+        landlordId: 3,
+        companyId: 2,
+        companyLease: true,
+        tenantId: null,
+      },
+    ]);
     resetDraft([line()]);
     const { result } = renderController();
     await waitFor(() =>
@@ -437,11 +454,12 @@ describe("useExpenseStatementPage defaults", () => {
     act(() => result.current.selectCompany(2));
 
     await waitFor(() => expect(result.current.activeCompanyId).toBe(2));
+    await waitFor(() => expect(result.current.selectedLeaseId).toBe(6));
     await waitFor(() => expect(result.current.calculationUpToDate).toBe(true), {
       timeout: 2000,
     });
     expect(api.expenseStatements.calculate).toHaveBeenLastCalledWith(
-      expect.objectContaining({ companyId: 2 }),
+      expect.objectContaining({ companyId: 2, leaseId: 6 }),
       expect.anything(),
     );
   });
@@ -1592,6 +1610,22 @@ describe("useExpenseStatementPage edge branches", () => {
 
   it("resets the chosen rent receipt when the company changes", () => {
     companiesState = readyQuery([COMPANY, { id: 2, name: "Autre SARL" }]);
+    leasesState = readyQuery([
+      {
+        id: 5,
+        landlordId: 2,
+        companyId: 1,
+        companyLease: true,
+        tenantId: null,
+      },
+      {
+        id: 6,
+        landlordId: 4,
+        companyId: 2,
+        companyLease: true,
+        tenantId: null,
+      },
+    ]);
     rentReceiptsState = readyQuery([
       {
         id: 8,
@@ -1610,13 +1644,37 @@ describe("useExpenseStatementPage edge branches", () => {
         tenantCompanyId: 1,
       },
     ]);
-    const { result } = renderController();
+    const { result, rerender } = renderController();
+    act(() => result.current.selectCompany(1));
+    expect(result.current.activeCompanyId).toBe(1);
+    expect(result.current.selectedLeaseId).toBe(5);
     act(() => result.current.selectRentReceipt(7));
     expect(result.current.selectedRentReceiptId).toBe(7);
 
+    rentReceiptsState = readyQuery([
+      {
+        id: 16,
+        total: "2400.00",
+        version: 2,
+        landlordId: 4,
+        tenantId: null,
+        tenantCompanyId: 2,
+      },
+      {
+        id: 14,
+        total: "2300.00",
+        version: 1,
+        landlordId: 4,
+        tenantId: null,
+        tenantCompanyId: 2,
+      },
+    ]);
+    rerender();
     act(() => result.current.selectCompany(2));
 
-    expect(result.current.selectedRentReceiptId).toBe(8);
+    expect(result.current.activeCompanyId).toBe(2);
+    expect(result.current.selectedLeaseId).toBe(6);
+    expect(result.current.selectedRentReceiptId).toBe(16);
   });
 
   it("offers only the rent receipts of the company lease used by the page", () => {
@@ -1668,7 +1726,7 @@ describe("useExpenseStatementPage edge branches", () => {
       {
         id: 9,
         landlordId: 2,
-        companyId: null,
+        companyId: 3,
         companyLease: false,
         tenantId: 7,
       },
@@ -1707,7 +1765,7 @@ describe("useExpenseStatementPage edge branches", () => {
     expect(result.current.selectedRentReceiptId).toBe(19);
   });
 
-  it("keeps every company receipt when the lease list is not resolved", () => {
+  it("shows no candidate while no lease is selected", async () => {
     leasesState = {
       data: undefined,
       isPending: true,
@@ -1736,10 +1794,21 @@ describe("useExpenseStatementPage edge branches", () => {
     ]);
     const { result } = renderController();
 
-    expect(result.current.rentReceiptCandidates.map((item) => item.id)).toEqual(
-      [12, 7],
-    );
-    expect(result.current.selectedRentReceiptId).toBe(12);
+    await waitFor(() => expect(result.current.activeCompanyId).toBe(1));
+    expect(result.current.selectedLeaseId).toBeNull();
+    expect(result.current.rentReceiptCandidates).toEqual([]);
+    expect(result.current.selectedRentReceiptId).toBeNull();
+    expect(result.current.availableRent).toBe(false);
+
+    let saved = true;
+    await act(async () => {
+      saved = await result.current.saveDraft();
+    });
+    expect(saved).toBe(false);
+    await act(async () => {
+      await result.current.generateStatement();
+    });
+    expect(api.expenseStatements.create).not.toHaveBeenCalled();
   });
 
   it("resets the chosen rent receipt when the resolved lease changes", () => {
@@ -2045,7 +2114,7 @@ describe("useExpenseStatementPage scoped options", () => {
   const SCOPED_GO_TO_RENT = vi.fn();
 
   function scopedStore(lines: DraftLine[] = []): StatementDraftStore {
-    const store = createStatementDraftStore(MONTH, 2);
+    const store = createStatementDraftStore(MONTH, 2, 9);
     for (const entry of lines) {
       store.getState().addLine(entry);
     }
@@ -2087,6 +2156,15 @@ describe("useExpenseStatementPage scoped options", () => {
 
   beforeEach(() => {
     SCOPED_GO_TO_RENT.mockReset();
+    leasesState = readyQuery([
+      {
+        id: 9,
+        landlordId: 2,
+        companyId: 2,
+        companyLease: true,
+        tenantId: null,
+      },
+    ]);
   });
 
   it("carries the scoped companyId and leaseId in the calculation and preview bodies", async () => {
@@ -2142,10 +2220,12 @@ describe("useExpenseStatementPage scoped options", () => {
       }),
     );
 
-    expect(store.getState().linesByMonth[draftScopeKey(2, MONTH)]).toHaveLength(
-      1,
+    expect(
+      store.getState().linesByMonth[draftScopeKey(2, MONTH, 9)],
+    ).toHaveLength(1);
+    expect(store.getState().dirtyByMonth[draftScopeKey(2, MONTH, 9)]).toBe(
+      true,
     );
-    expect(store.getState().dirtyByMonth[draftScopeKey(2, MONTH)]).toBe(true);
     expect(useStatementDraft.getState().linesByMonth[SCOPE]).toBeUndefined();
     expect(result.current.orderedLines).toHaveLength(1);
 
@@ -2286,6 +2366,7 @@ describe("useExpenseStatementPage drafts", () => {
       id: 91,
       companyId: 1,
       month: MONTH,
+      leaseId: 5,
       templateId: 7,
       complete: false,
       savedAt: "2026-01-10T09:00:00Z",

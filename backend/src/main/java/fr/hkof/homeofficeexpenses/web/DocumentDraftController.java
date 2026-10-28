@@ -55,8 +55,9 @@ public class DocumentDraftController {
 
     @GetMapping("/expense-statements")
     public ResponseEntity<StatementDraftDto> getStatementDraft(@RequestParam Long companyId,
-            @RequestParam String month) {
-        return service.findStatement(companyId, month)
+            @RequestParam String month,
+            @RequestParam(required = false) Long leaseId) {
+        return service.findStatement(companyId, month, leaseId)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }

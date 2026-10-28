@@ -50,6 +50,7 @@ public final class DocumentDraftDtos {
     public record StatementDraftRequest(
             Long companyId,
             String month,
+            Long leaseId,
             Long templateId,
             Boolean complete,
             List<ExpenseLineRequest> lines) {
@@ -59,6 +60,7 @@ public final class DocumentDraftDtos {
             Long id,
             Long companyId,
             String month,
+            Long leaseId,
             Long templateId,
             boolean complete,
             List<ExpenseLineRequest> lines,

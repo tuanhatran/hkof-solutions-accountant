@@ -25,6 +25,7 @@ import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
 import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
 import fr.hkof.homeofficeexpenses.domain.ExpenseLine;
 import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
+import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.Receipt;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
@@ -129,7 +130,7 @@ class ExpenseStatementServiceTest {
     @Test
     @DisplayName("A draft without rent receipt only lists missing items")
     void draftWithoutReceipt() {
-        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(null);
+        when(rentReceiptService.activeForLease(COMPANY_ID, "2026-10", null)).thenReturn(null);
         when(expenseItemService.list(COMPANY_ID, null, false)).thenReturn(List.of(
                 itemDto(1L, "loyer", "Loyer"), itemDto(2L, "gaz", "Gaz")));
 
@@ -146,7 +147,7 @@ class ExpenseStatementServiceTest {
     void draftWithReceipt() {
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setTotal(new BigDecimal("950.00"));
-        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(rentReceipt);
+        when(rentReceiptService.activeForLease(COMPANY_ID, "2026-10", null)).thenReturn(rentReceipt);
         RentReceiptDto receiptDto = new RentReceiptDto(9L, COMPANY_ID, "HKOF", "2026-10", 1L, 2L, null,
                 "Bailleur", "Locataire", null, null, "900.00", "50.00", "950.00", null, null, 1, "ACTIVE",
                 1L, "Quittance", 1, null, true, null);
@@ -206,7 +207,7 @@ class ExpenseStatementServiceTest {
         existing.setVersion(5);
         ExpenseStatement archivedAlready = new ExpenseStatement();
         archivedAlready.setStatus(DocumentStatus.ARCHIVED);
-        when(repository.findFirstByCompanyIdAndMonthOrderByVersionDesc(COMPANY_ID, "2026-10"))
+        when(repository.findFirstByCompanyIdAndMonthAndLeaseIdIsNullOrderByVersionDesc(COMPANY_ID, "2026-10"))
                 .thenReturn(Optional.of(existing));
         when(repository.findByCompanyIdAndMonthOrderByVersionDesc(COMPANY_ID, "2026-10"))
                 .thenReturn(List.of(existing, archivedAlready));
@@ -234,9 +235,9 @@ class ExpenseStatementServiceTest {
         assertThat(existing.getStatus()).isEqualTo(DocumentStatus.ARCHIVED);
         verify(repository).saveAll(List.of(existing, archivedAlready));
         verify(repository).flush();
-        verify(storage).storePdf("note_frais_2026-10_v6.pdf", new byte[]{1});
-        verify(storage).storePdf("note_frais_2026-10_v6_complet.pdf", new byte[]{2});
-        verify(documentDraftService).deleteActiveStatement(COMPANY_ID, "2026-10");
+        verify(storage).storePdf("note_frais_2026-10_l0_v6.pdf", new byte[]{1});
+        verify(storage).storePdf("note_frais_2026-10_l0_v6_complet.pdf", new byte[]{2});
+        verify(documentDraftService).deleteActiveStatement(COMPANY_ID, "2026-10", null);
     }
 
     @Test
@@ -246,7 +247,7 @@ class ExpenseStatementServiceTest {
         when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of(calculatedLine(gaz)));
         when(documents.signatureDataUri(null, COMPANY_ID)).thenReturn("signature");
         when(documents.templateForStatement(null)).thenReturn(new TemplateDocument());
-        when(repository.findFirstByCompanyIdAndMonthOrderByVersionDesc(COMPANY_ID, "2026-10"))
+        when(repository.findFirstByCompanyIdAndMonthAndLeaseIdIsNullOrderByVersionDesc(COMPANY_ID, "2026-10"))
                 .thenReturn(Optional.empty());
         when(repository.findByCompanyIdAndMonthOrderByVersionDesc(COMPANY_ID, "2026-10")).thenReturn(List.of());
         ExpenseStatement generated = new ExpenseStatement();
@@ -265,6 +266,51 @@ class ExpenseStatementServiceTest {
 
         verify(repository, never()).flush();
         verify(repository, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("Generation versions, archives and names files per lease")
+    void generateScopesToLease() {
+        Lease lease = new Lease();
+        lease.setId(7L);
+        lease.setCompanyId(COMPANY_ID);
+        when(leases.resolveExpenseLease(COMPANY_ID, 7L)).thenReturn(lease);
+        ExpenseItem gaz = item("gaz", "Gaz", 20);
+        when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of(calculatedLine(gaz)));
+        when(documents.signatureDataUri(null, COMPANY_ID)).thenReturn("signature");
+        when(documents.templateForStatement(null)).thenReturn(new TemplateDocument());
+        ExpenseStatement sameLease = new ExpenseStatement();
+        sameLease.setLeaseId(7L);
+        sameLease.setStatus(DocumentStatus.ACTIVE);
+        sameLease.setVersion(2);
+        ExpenseStatement otherLease = new ExpenseStatement();
+        otherLease.setLeaseId(8L);
+        otherLease.setStatus(DocumentStatus.ACTIVE);
+        otherLease.setVersion(1);
+        when(repository.findFirstByCompanyIdAndMonthAndLeaseIdOrderByVersionDesc(COMPANY_ID, "2026-10", 7L))
+                .thenReturn(Optional.of(sameLease));
+        when(repository.findByCompanyIdAndMonthOrderByVersionDesc(COMPANY_ID, "2026-10"))
+                .thenReturn(List.of(sameLease, otherLease));
+        ExpenseStatement generated = new ExpenseStatement();
+        generated.setCompanyId(COMPANY_ID);
+        generated.setLeaseId(7L);
+        generated.setMonth("2026-10");
+        generated.setStatus(DocumentStatus.ACTIVE);
+        generated.setLines(List.of());
+        when(documents.generate(any(), any(), eq(3), any(), any(), any(), eq(7L)))
+                .thenReturn(new ExpenseStatementDocumentService.GeneratedStatement(generated, new byte[]{1},
+                        new byte[]{2}));
+        when(storage.storePdf(anyString(), any())).thenReturn("/data/note.pdf");
+        when(repository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.generate(new StatementGenerationRequest(COMPANY_ID, 7L, "2026-10", null,
+                List.of(new ExpenseLineRequest("gaz", "100", "50", null, null, null, null)), null));
+
+        assertThat(sameLease.getStatus()).isEqualTo(DocumentStatus.ARCHIVED);
+        assertThat(otherLease.getStatus()).isEqualTo(DocumentStatus.ACTIVE);
+        verify(storage).storePdf("note_frais_2026-10_l7_v3.pdf", new byte[]{1});
+        verify(storage).storePdf("note_frais_2026-10_l7_v3_complet.pdf", new byte[]{2});
+        verify(documentDraftService).deleteActiveStatement(COMPANY_ID, "2026-10", 7L);
     }
 
     @Test
@@ -306,8 +352,29 @@ class ExpenseStatementServiceTest {
         when(repository.findFirstByCompanyIdAndMonthAndStatusOrderByVersionDesc(COMPANY_ID, "2026-11",
                 DocumentStatus.ACTIVE)).thenReturn(Optional.empty());
 
-        assertThat(service.activeDtoForMonth(COMPANY_ID, "2026-10")).isPresent();
-        assertThat(service.activeDtoForMonth(COMPANY_ID, "2026-11")).isEmpty();
+        assertThat(service.activeDtoForMonth(COMPANY_ID, "2026-10", null)).isPresent();
+        assertThat(service.activeDtoForMonth(COMPANY_ID, "2026-11", null)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("The active statement of a lease ignores another lease active for the same month")
+    void activeDtoOfLease() {
+        Lease lease = new Lease();
+        lease.setId(7L);
+        lease.setCompanyId(COMPANY_ID);
+        when(leases.resolveExpenseLease(COMPANY_ID, 7L)).thenReturn(lease);
+        ExpenseStatement statement = new ExpenseStatement();
+        statement.setCompanyId(COMPANY_ID);
+        statement.setLeaseId(7L);
+        statement.setStatus(DocumentStatus.ACTIVE);
+        statement.setLines(List.of());
+        when(repository.findFirstByCompanyIdAndMonthAndLeaseIdAndStatusOrderByVersionDesc(COMPANY_ID, "2026-10",
+                7L, DocumentStatus.ACTIVE)).thenReturn(Optional.of(statement));
+
+        Optional<StatementDto> active = service.activeDtoForMonth(COMPANY_ID, "2026-10", 7L);
+
+        assertThat(active).isPresent();
+        assertThat(active.get().leaseId()).isEqualTo(7L);
     }
 
     @Test

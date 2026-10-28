@@ -72,7 +72,7 @@ public class ExpenseStatementDocumentService {
                 templateDataService.dataStatement(company, statement, complete, signature));
         byte[] pdf = pdfService.renderHtmlToPdf(html);
         if (complete) {
-            pdf = pdfService.merge(withAttachments(pdf, statement, month, company.getId()));
+            pdf = pdfService.merge(withAttachments(pdf, statement, month));
         }
         return pdfService.addWatermark(pdf);
     }
@@ -83,7 +83,7 @@ public class ExpenseStatementDocumentService {
         String html = templateService.render(template,
                 templateDataService.dataStatement(company, statement, true, signature));
         byte[] pdf = pdfService.renderHtmlToPdf(html);
-        byte[] completePdf = pdfService.merge(withAttachments(pdf, statement, month, company.getId()));
+        byte[] completePdf = pdfService.merge(withAttachments(pdf, statement, month));
         return new GeneratedStatement(statement, pdf, completePdf);
     }
 
@@ -108,7 +108,8 @@ public class ExpenseStatementDocumentService {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream();
                 ZipOutputStream zip = new ZipOutputStream(out, StandardCharsets.UTF_8)) {
             addEntry(zip, "note_frais_" + month + ".pdf", storage.read(statement.getPdfPath()));
-            RentReceipt rentReceipt = rentReceiptService.activeForMonth(statement.getCompanyId(), month, null, null, null);
+            RentReceipt rentReceipt = rentReceiptService.activeForLease(statement.getCompanyId(), month,
+                    statement.getLeaseId());
             if (rentReceipt != null && rentReceipt.getPdfPath() != null
                     && !rentReceipt.getPdfPath().isBlank()) {
                 addEntry(zip, "quittance_" + month + ".pdf", storage.read(rentReceipt.getPdfPath()));
@@ -189,12 +190,12 @@ public class ExpenseStatementDocumentService {
         return statement;
     }
 
-    private List<byte[]> withAttachments(byte[] statementPdf, ExpenseStatement statement, YearMonth month,
-            Long companyId) {
+    private List<byte[]> withAttachments(byte[] statementPdf, ExpenseStatement statement, YearMonth month) {
         List<byte[]> pdfs = new ArrayList<>();
         pdfs.add(statementPdf);
-        // Expense statements keep a month-scoped rent receipt: pair selection is out of scope.
-        RentReceipt rentReceipt = rentReceiptService.activeForMonth(companyId, month.toString(), null, null, null);
+        // The rent annex follows the statement lease, so two leases of a month keep distinct annexes.
+        RentReceipt rentReceipt = rentReceiptService.activeForLease(statement.getCompanyId(), month.toString(),
+                statement.getLeaseId());
         if (rentReceipt != null && rentReceipt.getPdfPath() != null) {
             pdfs.add(storage.read(rentReceipt.getPdfPath()));
         }

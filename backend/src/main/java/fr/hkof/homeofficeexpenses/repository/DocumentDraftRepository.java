@@ -16,4 +16,10 @@ public interface DocumentDraftRepository extends JpaRepository<DocumentDraft, Lo
 
     Optional<DocumentDraft> findFirstByTypeAndMonthAndCompanyIdAndDeletedFalseOrderByIdDesc(
             DocumentDraft.Type type, String month, Long companyId);
+
+    Optional<DocumentDraft> findFirstByTypeAndMonthAndCompanyIdAndLeaseIdAndDeletedFalseOrderByIdDesc(
+            DocumentDraft.Type type, String month, Long companyId, Long leaseId);
+
+    Optional<DocumentDraft> findFirstByTypeAndMonthAndCompanyIdAndLeaseIdIsNullAndDeletedFalseOrderByIdDesc(
+            DocumentDraft.Type type, String month, Long companyId);
 }

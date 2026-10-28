@@ -149,7 +149,7 @@ class ExpenseStatementDocumentServiceTest {
 
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setPdfPath("/data/quittance.pdf");
-        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(rentReceipt);
+        when(rentReceiptService.activeForLease(COMPANY_ID, "2026-10", null)).thenReturn(rentReceipt);
         when(storage.read("/data/quittance.pdf")).thenReturn(new byte[]{3});
 
         Receipt pdfReceipt = receipt(1L, "application/pdf", "/data/gaz.pdf", "gaz.pdf");
@@ -186,7 +186,7 @@ class ExpenseStatementDocumentServiceTest {
         when(templateService.active(TemplateType.EXPENSE_STATEMENT)).thenReturn(template);
         stubDocumentRendering(template, "<html></html>");
         when(pdfService.merge(any())).thenReturn(new byte[]{2});
-        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(null);
+        when(rentReceiptService.activeForLease(COMPANY_ID, "2026-10", null)).thenReturn(null);
 
         List<CalculatedLine> lines = List.of(
                 line(item("gaz", "Gaz", 20), null),
@@ -238,7 +238,7 @@ class ExpenseStatementDocumentServiceTest {
         TemplateDocument template = template(4L, TemplateType.EXPENSE_STATEMENT);
         stubDocumentRendering(template, "<html></html>");
         when(pdfService.merge(any())).thenReturn(new byte[]{2});
-        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(null);
+        when(rentReceiptService.activeForLease(COMPANY_ID, "2026-10", null)).thenReturn(null);
 
         ExpenseStatementDocumentService.GeneratedStatement generated = service.generate(YearMonth.of(2026, 10),
                 List.of(line(item("gaz", "Gaz", 20), null)), 3, template, "signature", company(), 5L);
@@ -306,7 +306,7 @@ class ExpenseStatementDocumentServiceTest {
 
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setPdfPath("/data/quittance.pdf");
-        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(rentReceipt);
+        when(rentReceiptService.activeForLease(COMPANY_ID, "2026-10", null)).thenReturn(rentReceipt);
         when(storage.read("/data/quittance.pdf"))
                 .thenReturn("%PDF-quittance".getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
@@ -343,7 +343,7 @@ class ExpenseStatementDocumentServiceTest {
 
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setPdfPath(" ");
-        when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(rentReceipt);
+        when(rentReceiptService.activeForLease(COMPANY_ID, "2026-10", null)).thenReturn(rentReceipt);
 
         Receipt blankName = receipt(2L, "application/pdf", "/data/x.pdf", " ");
         ExpenseLine line = new ExpenseLine();

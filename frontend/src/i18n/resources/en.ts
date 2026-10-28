@@ -1242,10 +1242,19 @@ export const en = {
       selectCompanyTitle: "Select a company",
       selectCompanyDescription:
         "Select the relevant company to enter this month's expenses.",
+      noLeaseTitle: "No lease for this company",
+      noLeaseDescription:
+        "Add a company lease on the LMNP page to generate an expense statement.",
+      selectLeaseTitle: "Select a lease",
+      selectLeaseDescription:
+        "Several leases are linked to this company. Select the relevant lease to enter this month's expenses.",
     },
     header: {
       companyLabel: "Relevant company",
       companyPlaceholder: "Select a company",
+      leaseLabel: "Relevant lease",
+      leasePlaceholder: "Select a lease",
+      leaseChip: "Lease {{name}}",
       bannerTitle: "{{month}} — statement version {{version}} already active",
       bannerText:
         "Total {{total}}. Generating again will create version {{next}}.",
@@ -1322,6 +1331,7 @@ export const en = {
       missingSignatureAfter: " page.",
       companyLink: "Company",
       generate: "Generate the expense statement",
+      hintNoLease: "Select a lease to enter expenses.",
       hintNoLine: "Add at least one expense to generate the statement.",
       hintNoSignature: "Configure a signature to generate the statement.",
       hintStaleCalculation: "Recalculating…",

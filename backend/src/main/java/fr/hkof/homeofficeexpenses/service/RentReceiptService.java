@@ -16,7 +16,6 @@ import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
 import fr.hkof.homeofficeexpenses.domain.Signature;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
-import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.repository.RentReceiptRepository;
 import fr.hkof.homeofficeexpenses.service.template.TemplateDataService;
 import fr.hkof.homeofficeexpenses.service.template.TemplateService;
@@ -37,12 +36,14 @@ public class RentReceiptService {
     private final StorageService storage;
     private final DocumentDraftService documentDraftService;
     private final RentReceiptMapper mapper;
+    private final RentReceiptAssembler assembler;
     private final Clock clock;
 
     public RentReceiptService(RentReceiptRepository repository, CompanyService companies, LeaseService leaseService,
             TemplateService templateService, TemplateDataService templateDataService,
             SignatureService signatureService, PdfService pdfService, StorageService storage,
             DocumentDraftService documentDraftService, RentReceiptMapper mapper,
+            RentReceiptAssembler assembler,
             Clock clock) {
         this.repository = repository;
         this.companies = companies;
@@ -54,6 +55,7 @@ public class RentReceiptService {
         this.storage = storage;
         this.documentDraftService = documentDraftService;
         this.mapper = mapper;
+        this.assembler = assembler;
         this.clock = clock;
     }
 
@@ -72,11 +74,11 @@ public class RentReceiptService {
         BigDecimal total = CalculationService.totalRentReceipt(rentExclCharges, charges,
                 RentReceiptAdditionalCharges.amounts(additionalCharges));
         String signature = signatureDataUri(request.signatureId(), lease.getLandlord().getId());
-        TemplateDocument template = template(request.templateId());
-        int version = nextVersion(month, lease);
+        TemplateDocument template = assembler.template(request.templateId());
+        int version = assembler.nextVersion(month, lease);
 
         RentReceipt rentReceipt = new RentReceipt();
-        fill(rentReceipt, company, lease, month, periodStart, periodEnd, rentExclCharges, charges, total,
+        assembler.fill(rentReceipt, company, lease, month, periodStart, periodEnd, rentExclCharges, charges, total,
                 additionalCharges);
         rentReceipt.setPaymentDate(dateOr(request.paymentDate(), LocalDate.now(clock)));
         rentReceipt.setIssueDate(dateOr(request.issueDate(), LocalDate.now(clock)));
@@ -90,7 +92,7 @@ public class RentReceiptService {
         String html = templateService.render(template, templateDataService.dataRentReceipt(
                 company, lease.getLandlord(), lease.getTenant(), tenantCompany(lease), lease, rentReceipt, signature));
         byte[] pdf = pdfService.renderHtmlToPdf(html);
-        String path = storage.storePdf(fileName(month, lease, version), pdf);
+        String path = storage.storePdf(assembler.fileName(month, lease, version), pdf);
         rentReceipt.setPdfPath(path);
         RentReceipt saved = repository.save(rentReceipt);
         // Generating clears the draft of the same scope in the same transaction: a
@@ -113,14 +115,14 @@ public class RentReceiptService {
         List<AdditionalCharge> additionalCharges = RentReceiptAdditionalCharges
                 .normalize(request.additionalCharges());
         RentReceipt rentReceipt = new RentReceipt();
-        fill(rentReceipt, company, lease, month, periodStart, periodEnd, rentExclCharges, charges,
+        assembler.fill(rentReceipt, company, lease, month, periodStart, periodEnd, rentExclCharges, charges,
                 CalculationService.totalRentReceipt(rentExclCharges, charges,
                         RentReceiptAdditionalCharges.amounts(additionalCharges)),
                 additionalCharges);
         rentReceipt.setIssueDate(dateOr(request.issueDate(), LocalDate.now(clock)));
         rentReceipt.setPaymentDate(dateOr(request.paymentDate(), LocalDate.now(clock)));
         String signature = signatureDataUri(request.signatureId(), lease.getLandlord().getId());
-        TemplateDocument template = template(request.templateId());
+        TemplateDocument template = assembler.template(request.templateId());
         String html = templateService.render(template, templateDataService.dataRentReceipt(
                 company, lease.getLandlord(), lease.getTenant(), tenantCompany(lease), lease, rentReceipt, signature));
         return pdfService.addWatermark(pdfService.renderHtmlToPdf(html));
@@ -185,6 +187,19 @@ public class RentReceiptService {
                 DocumentStatus.ACTIVE).orElse(null));
     }
 
+    /**
+     * Active rent receipt scoped by an expense lease: the lease parties select the pair, and a
+     * null lease keeps the legacy company + month scope.
+     */
+    @Transactional(readOnly = true)
+    public RentReceipt activeForLease(Long companyId, String month, Long leaseId) {
+        LeaseService.RentReceiptScope scope = LeaseService.rentReceiptScope(
+                leaseId == null ? null : leaseService.resolveExpenseLease(companyId, leaseId));
+        return scope == null
+                ? activeForMonth(companyId, month, null, null, null)
+                : activeForMonth(companyId, month, scope.landlordId(), scope.tenantId(), scope.tenantCompanyId());
+    }
+
     /** Loads the additional charge rows while the session is open: the controller maps a detached receipt. */
     private RentReceipt withAdditionalCharges(RentReceipt rentReceipt) {
         if (rentReceipt != null) {
@@ -199,50 +214,6 @@ public class RentReceiptService {
             throw new NotFoundException("RENT_RECEIPT_PDF_NOT_FOUND", "Le PDF de cette quittance est introuvable.");
         }
         return storage.read(rentReceipt.getPdfPath());
-    }
-
-    private void fill(RentReceipt rentReceipt, Company company, Lease lease, YearMonth month,
-            LocalDate periodStart, LocalDate periodEnd, BigDecimal rentExclCharges, BigDecimal charges,
-            BigDecimal total, List<AdditionalCharge> additionalCharges) {
-        rentReceipt.setCompanyId(company == null ? null : company.getId());
-        rentReceipt.setMonth(month.toString());
-        rentReceipt.setLandlordId(lease.getLandlord().getId());
-        rentReceipt.setTenantId(lease.isCompanyLease() || lease.getTenant() == null ? null
-                : lease.getTenant().getId());
-        rentReceipt.setTenantCompanyId(lease.isCompanyLease() ? lease.getCompanyId() : null);
-        rentReceipt.setPeriodStart(periodStart);
-        rentReceipt.setPeriodEnd(periodEnd);
-        rentReceipt.setRentExclCharges(rentExclCharges);
-        rentReceipt.setCharges(charges);
-        rentReceipt.setTotal(total);
-        RentReceiptAdditionalCharges.entities(additionalCharges).forEach(rentReceipt::addAdditionalCharge);
-    }
-
-    private int nextVersion(YearMonth month, Lease lease) {
-        var existing = lease.isCompanyLease()
-                ? repository.findFirstByMonthAndLandlordIdAndTenantCompanyIdOrderByVersionDescIdDesc(
-                        month.toString(), lease.getLandlord().getId(), lease.getCompanyId())
-                : repository.findFirstByMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc(
-                        month.toString(), lease.getLandlord().getId(), lease.getTenant().getId());
-        return existing.map(receipt -> receipt.getVersion() + 1).orElse(1);
-    }
-
-    private String fileName(YearMonth month, Lease lease, int version) {
-        String tenant = lease.isCompanyLease()
-                ? "c" + lease.getCompanyId()
-                : "t" + lease.getTenant().getId();
-        return "quittance_" + month + "_l" + lease.getLandlord().getId() + "_" + tenant + "_v" + version + ".pdf";
-    }
-
-    private TemplateDocument template(Long templateId) {
-        TemplateDocument template = templateId != null
-                ? templateService.byId(templateId)
-                : templateService.active(TemplateType.RENT_RECEIPT);
-        if (template.getType() != TemplateType.RENT_RECEIPT) {
-            throw new BusinessException("RENT_RECEIPT_TEMPLATE_INVALID",
-                    "Le template sélectionné n'est pas un template de quittance.");
-        }
-        return template;
     }
 
     /**

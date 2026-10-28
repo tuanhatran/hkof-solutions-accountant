@@ -62,8 +62,9 @@ public class ExpenseStatementController {
 
     @GetMapping("/active")
     public ResponseEntity<StatementDto> getActiveExpenseStatement(@RequestParam Long companyId,
-            @RequestParam String month) {
-        return service.activeDtoForMonth(companyId, month)
+            @RequestParam String month,
+            @RequestParam(required = false) Long leaseId) {
+        return service.activeDtoForMonth(companyId, month, leaseId)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }

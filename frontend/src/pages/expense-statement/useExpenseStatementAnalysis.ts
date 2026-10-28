@@ -31,6 +31,7 @@ export function useExpenseStatementAnalysis(
     draftStore,
     activeCompanyId,
     month,
+    selectedLeaseId,
     expenseItemByCode,
     expenseItemsQuery,
   } = context;
@@ -62,7 +63,7 @@ export function useExpenseStatementAnalysis(
     // already hold the detected single-line type.
     const currentLines = (
       draftStore.getState().linesByMonth[
-        draftScopeKey(activeCompanyId, month)
+        draftScopeKey(activeCompanyId, month, selectedLeaseId)
       ] ?? []
     ).filter((line) => expenseItemByCode.has(line.itemCode));
     let appliedType = false;

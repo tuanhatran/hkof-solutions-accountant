@@ -58,7 +58,7 @@ class DocumentDraftPersistencePostgresTest {
 
     private static StatementDraftRequest statement(String month, String amount) {
         return new StatementDraftRequest(
-                3L, month, 9L, true,
+                3L, month, null, 9L, true,
                 List.of(new ExpenseLineRequest("gaz", amount, "100", 5L, "MANUAL", null, null)));
     }
 

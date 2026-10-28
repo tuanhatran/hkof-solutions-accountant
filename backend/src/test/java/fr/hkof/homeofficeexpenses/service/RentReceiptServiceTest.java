@@ -73,6 +73,7 @@ class RentReceiptServiceTest {
         service = new RentReceiptService(repository, companies, leaseService, templateService,
                 templateDataService, signatureService, pdfService, storage, documentDraftService,
                 new RentReceiptMapper(persons, companies),
+                new RentReceiptAssembler(repository, templateService),
                 Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
