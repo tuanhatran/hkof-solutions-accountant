@@ -4,6 +4,7 @@ import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,7 +16,9 @@ import fr.hkof.homeofficeexpenses.web.dto.ExpenseItemDtos.ExpenseItemDto;
 import fr.hkof.homeofficeexpenses.web.dto.ExpenseItemDtos.ExpenseItemRequest;
 
 /**
- * Expense items are owned by one company; codes are unique inside a company only.
+ * Expense items are owned by one company and one lease scope. Codes are unique per scope: the
+ * company-global inherited rows (null lease) collide with every lease, while two leases of the
+ * same company may reuse a code.
  */
 @Service
 public class ExpenseItemService {
@@ -44,9 +47,15 @@ public class ExpenseItemService {
                 .toList();
     }
 
+    /**
+     * Resolves the item visible from a lease: its own item first, then the inherited company one.
+     */
     @Transactional(readOnly = true)
-    public ExpenseItem entity(Long companyId, String code) {
-        return repository.findByCompanyIdAndCodeAndDeletedFalse(companyId, code)
+    public ExpenseItem entity(Long companyId, Long leaseId, String code) {
+        Optional<ExpenseItem> exact = leaseId == null
+                ? Optional.empty()
+                : repository.findFirstByCompanyIdAndLeaseIdAndCodeAndDeletedFalse(companyId, leaseId, code);
+        return exact.or(() -> repository.findFirstByCompanyIdAndLeaseIdIsNullAndCodeAndDeletedFalse(companyId, code))
                 .orElseThrow(() -> new BusinessException("EXPENSE_ITEM_UNKNOWN_CODE",
                         "Type de frais inconnu : " + code, Map.of("code", code)));
     }
@@ -66,10 +75,7 @@ public class ExpenseItemService {
         String code = request.code() == null || request.code().isBlank()
                 ? generateCode(request.label())
                 : normalizeCode(request.code());
-        if (repository.existsByCompanyIdAndCode(request.companyId(), code)) {
-            throw new BusinessException("EXPENSE_ITEM_CODE_DUPLICATE",
-                    "Un poste avec le code « " + code + " » existe déjà.", Map.of("code", code));
-        }
+        rejectDuplicate(request.companyId(), request.leaseId(), code, null);
         ExpenseItem expenseItem = new ExpenseItem();
         expenseItem.setCompanyId(request.companyId());
         expenseItem.setLeaseId(request.leaseId());
@@ -85,6 +91,7 @@ public class ExpenseItemService {
         if (request.leaseId() != null) {
             leases.resolveExpenseLease(expenseItem.getCompanyId(), request.leaseId());
         }
+        rejectDuplicate(expenseItem.getCompanyId(), request.leaseId(), expenseItem.getCode(), id);
         expenseItem.setLeaseId(request.leaseId());
         apply(expenseItem, request);
         return toDto(repository.save(expenseItem));
@@ -96,6 +103,28 @@ public class ExpenseItemService {
         expenseItem.setDeleted(true);
         expenseItem.setActive(false);
         repository.save(expenseItem);
+    }
+
+    /**
+     * Rejects a code already visible from the target scope. The company-global inherited scope is
+     * visible from every lease, so inherited rows collide with all of them and a lease item blocks
+     * the inherited scope of its company. Deleted rows keep reserving their code.
+     */
+    private void rejectDuplicate(Long companyId, Long leaseId, String code, Long excludedId) {
+        boolean duplicate = repository.findByCompanyIdAndCode(companyId, code).stream()
+                .filter(item -> excludedId == null || !excludedId.equals(item.getId()))
+                .anyMatch(item -> visibleFrom(item, leaseId));
+        if (duplicate) {
+            throw new BusinessException("EXPENSE_ITEM_CODE_DUPLICATE",
+                    "Un poste avec le code « " + code + " » existe déjà.", Map.of("code", code));
+        }
+    }
+
+    private boolean visibleFrom(ExpenseItem item, Long leaseId) {
+        if (leaseId == null) {
+            return true;
+        }
+        return item.getLeaseId() == null || leaseId.equals(item.getLeaseId());
     }
 
     private ExpenseItem activeItem(Long id) {

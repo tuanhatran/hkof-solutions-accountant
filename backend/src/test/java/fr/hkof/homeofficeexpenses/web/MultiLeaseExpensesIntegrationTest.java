@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import com.jayway.jsonpath.JsonPath;
 
 import fr.hkof.homeofficeexpenses.repository.ExpenseStatementRepository;
+import fr.hkof.homeofficeexpenses.repository.RentReceiptRepository;
 
 /**
  * Multi-lease company expenses: expense items and statements carry a {@code leaseId} filtered
@@ -45,6 +46,9 @@ class MultiLeaseExpensesIntegrationTest {
 
     @Autowired
     private ExpenseStatementRepository statements;
+
+    @Autowired
+    private RentReceiptRepository rentReceipts;
 
     @Test
     @DisplayName("A company can hold two active leases and both are listed with their pro-rata")
@@ -374,6 +378,140 @@ class MultiLeaseExpensesIntegrationTest {
         mockMvc.perform(delete("/api/persons/{id}", otherLandlord)).andExpect(status().isNoContent());
     }
 
+    @Test
+    @DisplayName("The same expense code is allowed on two leases and calculation uses the selected one")
+    void sameCodeIsScopedPerLease() throws Exception {
+        long companyId = createCompany("Société postes même code");
+        long landlordA = createLandlord("Bailleur code A");
+        long landlordB = createLandlord("Bailleur code B");
+        long leaseA = createCompanyLease(companyId, landlordA, "80", "20");
+        long leaseB = createCompanyLease(companyId, landlordB, "60", "10");
+
+        long loyerA = id(post("/api/expense-items")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"companyId":%d,"leaseId":%d,"code":"loyer","label":"Loyer du bail A","proRataPct":"100"}
+                        """.formatted(companyId, leaseA)));
+
+        // The reported payload: « loyer » already exists on lease A, creating it on lease B works.
+        long loyerB = id(post("/api/expense-items")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"companyId":%d,"leaseId":%d,"label":"Quittance de loyer","supplier":"Vivian",
+                         "proRataPct":"23","periodicity":"MONTHLY","sortOrder":10,"active":true,
+                         "multipleLinesAllowed":false,"code":"Loyer"}
+                        """.formatted(companyId, leaseB)));
+
+        mockMvc.perform(get("/api/expense-items")
+                        .param("companyId", String.valueOf(companyId))
+                        .param("leaseId", String.valueOf(leaseA)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.leaseId == " + leaseA + " && @.label == 'Loyer du bail A')]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.leaseId == " + leaseB + ")]").isEmpty());
+        mockMvc.perform(get("/api/expense-items")
+                        .param("companyId", String.valueOf(companyId))
+                        .param("leaseId", String.valueOf(leaseB)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.leaseId == " + leaseB + " && @.supplier == 'Vivian')]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.leaseId == " + leaseA + ")]").isEmpty());
+
+        // The same code twice on one lease is rejected in French.
+        mockMvc.perform(post("/api/expense-items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"companyId":%d,"leaseId":%d,"code":"loyer","label":"Doublon","proRataPct":"10"}
+                                """.formatted(companyId, leaseB)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Un poste avec le code « loyer » existe déjà."));
+
+        // An inherited item blocks the code on every lease and cannot be created over a lease one.
+        long gazId = createItem(companyId, "gaz", "Gaz");
+        mockMvc.perform(post("/api/expense-items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"companyId":%d,"leaseId":%d,"code":"gaz","label":"Gaz bail A","proRataPct":"10"}
+                                """.formatted(companyId, leaseA)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Un poste avec le code « gaz » existe déjà."));
+        mockMvc.perform(post("/api/expense-items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"companyId":%d,"code":"loyer","label":"Loyer hérité","proRataPct":"10"}
+                                """.formatted(companyId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Un poste avec le code « loyer » existe déjà."));
+
+        // Moving an item to a lease that already owns its code is a 400, not a database error.
+        mockMvc.perform(put("/api/expense-items/{id}", loyerA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"companyId":%d,"leaseId":%d,"label":"Loyer du bail A","proRataPct":"100"}
+                                """.formatted(companyId, leaseB)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Un poste avec le code « loyer » existe déjà."));
+
+        // The calculation of lease B uses lease B's item, never lease A's.
+        mockMvc.perform(post("/api/expense-statements/calculation")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"companyId":%d,"leaseId":%d,"month":"2026-06","lines":[
+                                  {"itemCode":"loyer","amountInclVat":"100.00","proRataPct":"100"}
+                                ]}
+                                """.formatted(companyId, leaseB)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lines[0].itemLabel").value("Quittance de loyer"))
+                .andExpect(jsonPath("$.lines[0].supplier").value("Vivian"));
+
+        mockMvc.perform(delete("/api/expense-items/{id}", loyerA)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/expense-items/{id}", loyerB)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/expense-items/{id}", gazId)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/leases/{id}", leaseA)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/leases/{id}", leaseB)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/companies/{id}", companyId)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/persons/{id}", landlordA)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/persons/{id}", landlordB)).andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("A legacy draft without leaseId prefills the rent line from the first lease item")
+    void legacyDraftWithoutLeaseUsesEffectiveLeaseItem() throws Exception {
+        long companyId = createCompany("Société brouillon hérité");
+        long landlordId = createLandlord("Bailleur brouillon hérité");
+        long signatureId = uploadSignature(landlordId);
+        long firstLease = createCompanyLease(companyId, landlordId, "80", "20");
+        long loyerId = id(post("/api/expense-items")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"companyId":%d,"leaseId":%d,"code":"loyer","label":"Loyer du bail hérité",
+                         "proRataPct":"100"}
+                        """.formatted(companyId, firstLease)));
+        long receiptId = id(post("/api/rent-receipts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"month":"2026-09","landlordId":%d,"tenantCompanyId":%d}
+                        """.formatted(landlordId, companyId)));
+
+        // The supported UI sends leaseId; the legacy company-only call must still resolve the
+        // expense lease item while reading the rent receipt from the historical null scope.
+        mockMvc.perform(post("/api/expense-statements/draft")
+                        .param("companyId", String.valueOf(companyId))
+                        .param("month", "2026-09"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rentReceipt.id").value(receiptId))
+                .andExpect(jsonPath("$.lines[0].itemCode").value("loyer"))
+                .andExpect(jsonPath("$.lines[0].itemLabel").value("Loyer du bail hérité"))
+                .andExpect(jsonPath("$.missingItems").isEmpty());
+
+        mockMvc.perform(delete("/api/expense-items/{id}", loyerId)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/signatures/{id}", signatureId)).andExpect(status().isNoContent());
+        // Test-only physical cleanup: receipts have no delete endpoint and a receipt-bearing
+        // company cannot be removed through the API.
+        rentReceipts.deleteById(receiptId);
+        mockMvc.perform(delete("/api/leases/{id}", firstLease)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/companies/{id}", companyId)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/persons/{id}", landlordId)).andExpect(status().isNoContent());
+    }
+
     private long createCompany(String name) throws Exception {
         return id(post("/api/companies")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -417,12 +555,14 @@ class MultiLeaseExpensesIntegrationTest {
                         """.formatted(companyId)));
     }
 
-    private void uploadSignature(long personId) throws Exception {
-        mockMvc.perform(multipart("/api/signatures")
+    private long uploadSignature(long personId) throws Exception {
+        String created = mockMvc.perform(multipart("/api/signatures")
                         .file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
                         .param("personId", String.valueOf(personId))
                         .param("name", "Signature gérant"))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return ((Number) JsonPath.read(created, "$.id")).longValue();
     }
 
     private long id(MockHttpServletRequestBuilder request) throws Exception {

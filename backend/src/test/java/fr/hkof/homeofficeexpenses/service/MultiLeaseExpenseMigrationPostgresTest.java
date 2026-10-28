@@ -192,6 +192,61 @@ class MultiLeaseExpenseMigrationPostgresTest {
         }
     }
 
+    @Test
+    @DisplayName("V18 allows the same code on two leases and keeps one code per scope")
+    void scopesExpenseItemCodesPerLease() throws Exception {
+        resetSchema();
+        migrateTo("17");
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            statement.execute("INSERT INTO company (id, name, deleted, created_at) VALUES (3, 'Société codes', FALSE, NOW())");
+            statement.execute(itemInsert(1, 3, 4L, "loyer"));
+            statement.execute(itemInsert(2, 3, null, "heritage"));
+        }
+
+        migrateTo("18");
+
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            assertThat(count(statement, "SELECT COUNT(*) FROM expense_item")).isEqualTo(2);
+            assertThat(singleLong(statement, "SELECT lease_id FROM expense_item WHERE id = 1")).isEqualTo(4L);
+            assertThat(singleNull(statement, "SELECT lease_id FROM expense_item WHERE id = 2")).isNull();
+            assertThat(count(statement, "SELECT COUNT(*) FROM pg_constraint"
+                    + " WHERE conname = 'uq_expense_item_company_code'")).isZero();
+            assertThat(count(statement, "SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'expense_item'"
+                    + " AND indexname = 'uq_expense_item_company_lease_code'")).isEqualTo(1);
+
+            // A second lease of the same company may own the same code.
+            statement.execute(itemInsert(3, 3, 5L, "loyer"));
+            // Same company, same lease scope, same code collides.
+            assertThatThrownBy(() -> statement.execute(itemInsert(4, 3, 4L, "loyer")))
+                    .isInstanceOf(SQLException.class);
+            // The legacy NULL scope stays its own unique scope.
+            assertThatThrownBy(() -> statement.execute(itemInsert(5, 3, null, "heritage")))
+                    .isInstanceOf(SQLException.class);
+            statement.execute(itemInsert(6, 3, null, "loyer"));
+        }
+    }
+
+    @Test
+    @DisplayName("V18 applies on a fresh database")
+    void appliesOnFreshDatabase() throws Exception {
+        resetSchema();
+        migrateTo("18");
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            statement.execute("INSERT INTO company (id, name, deleted, created_at) VALUES (3, 'Société fraîche', FALSE, NOW())");
+            statement.execute(itemInsert(1, 3, 4L, "loyer"));
+            statement.execute(itemInsert(2, 3, 5L, "loyer"));
+            assertThat(count(statement, "SELECT COUNT(*) FROM expense_item")).isEqualTo(2);
+        }
+    }
+
+    private String itemInsert(long id, long companyId, Long leaseId, String code) {
+        return """
+                INSERT INTO expense_item (id, company_id, lease_id, code, label, pro_rata_pct, periodicity,
+                    active, sort_order, multiple_lines_allowed, deleted)
+                VALUES (%d, %d, %s, '%s', 'Poste', 100.00, 'MONTHLY', TRUE, 0, FALSE, FALSE)
+                """.formatted(id, companyId, leaseId == null ? "NULL" : leaseId, code);
+    }
+
     private String statementInsert(long id, long companyId, int version, Long leaseId, String status) {
         return """
                 INSERT INTO expense_statement (id, company_id, lease_id, billing_month, statement_number, total,

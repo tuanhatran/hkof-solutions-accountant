@@ -1006,7 +1006,7 @@ export interface components {
              * @description Bail société auquel le poste est rattaché ; facultatif. Doit être un bail actif de la société, sinon 400. NULL = poste hérité non affecté.
              */
             leaseId?: number | null;
-            /** @description Code unique au sein de la société. */
+            /** @description Code unique par société et par bail ; un poste hérité (leaseId null) partage son code avec tous les baux de la société. Généré depuis le libellé quand vide. */
             code?: string;
             label?: string;
             supplier?: string;

@@ -34,7 +34,7 @@ public class ExpenseStatementLineCalculator {
         this.receiptService = receiptService;
     }
 
-    public List<CalculatedLine> calculateLines(Long companyId, List<ExpenseLineRequest> requests) {
+    public List<CalculatedLine> calculateLines(Long companyId, Long leaseId, List<ExpenseLineRequest> requests) {
         if (requests == null || requests.isEmpty()) {
             return List.of();
         }
@@ -44,7 +44,7 @@ public class ExpenseStatementLineCalculator {
             if (request.itemCode() == null || request.itemCode().isBlank()) {
                 throw new BusinessException("EXPENSE_ITEM_REQUIRED", "Le type de frais est obligatoire.");
             }
-            ExpenseItem expenseItem = expenseItemService.entity(companyId, request.itemCode());
+            ExpenseItem expenseItem = expenseItemService.entity(companyId, leaseId, request.itemCode());
             if (!expenseItem.isMultipleLinesAllowed() && !codes.add(expenseItem.getCode())) {
                 throw new BusinessException("EXPENSE_ITEM_SINGLE_USE",
                         "Le type « " + expenseItem.getLabel() + " » ne peut être ajouté qu'une fois.",

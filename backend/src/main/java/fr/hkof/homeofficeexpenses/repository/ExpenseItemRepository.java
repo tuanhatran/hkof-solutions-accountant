@@ -13,11 +13,15 @@ public interface ExpenseItemRepository extends JpaRepository<ExpenseItem, Long> 
 
     List<ExpenseItem> findByCompanyIdAndDeletedFalseAndActiveTrueOrderBySortOrderAscIdAsc(Long companyId);
 
-    Optional<ExpenseItem> findByCompanyIdAndCodeAndDeletedFalse(Long companyId, String code);
+    /** Every scope of a code in a company; null lease is the inherited scope shared by all leases. */
+    List<ExpenseItem> findByCompanyIdAndCode(Long companyId, String code);
+
+    Optional<ExpenseItem> findFirstByCompanyIdAndLeaseIdAndCodeAndDeletedFalse(Long companyId, Long leaseId,
+            String code);
+
+    Optional<ExpenseItem> findFirstByCompanyIdAndLeaseIdIsNullAndCodeAndDeletedFalse(Long companyId, String code);
 
     Optional<ExpenseItem> findFirstByCompanyIdAndCode(Long companyId, String code);
-
-    boolean existsByCompanyIdAndCode(Long companyId, String code);
 
     boolean existsByCompanyIdAndDeletedFalse(Long companyId);
 }
