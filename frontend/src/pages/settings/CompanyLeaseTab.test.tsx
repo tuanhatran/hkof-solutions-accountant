@@ -245,11 +245,11 @@ describe("CompanyLeaseTab", () => {
     renderTab();
 
     await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
-    expect(queryByCy("bail-societe-5")).toHaveAttribute(
+    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toHaveAttribute(
       "aria-expanded",
       "false",
     );
-    expect(queryByCy("bail-societe-6")).toHaveAttribute(
+    expect(queryByCy("btn-afficher-frais-bail-societe-6")).toHaveAttribute(
       "aria-expanded",
       "false",
     );
@@ -265,35 +265,30 @@ describe("CompanyLeaseTab", () => {
     );
   });
 
-  it("toggles the lease expansion from the row click without persisting", async () => {
+  it("ignores a click on the lease row without persisting", async () => {
     renderTab();
     const user = userEvent.setup();
     await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    const row = queryByCy("bail-societe-5") as HTMLElement;
+    expect(row.tagName).not.toBe("BUTTON");
+    expect(row).not.toHaveAttribute("aria-expanded");
+    expect(row).not.toHaveAttribute("role");
+    expect(row).not.toHaveAttribute("tabindex");
+    expect(row.className).not.toContain("cursor-pointer");
 
-    await user.click(queryByCy("bail-societe-5") as HTMLElement);
-
-    expect(api.companies.update).not.toHaveBeenCalled();
-    expect(queryByCy("bail-societe-5")).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
-    expect(
-      document.querySelectorAll(".company-lease-view-details"),
-    ).toHaveLength(1);
-    expect(document.querySelector(".company-lease-tab-none")).toBeNull();
-    await waitFor(() =>
-      expect(api.expenseItems.list).toHaveBeenCalledWith(1, true, 5),
-    );
-
-    await user.click(queryByCy("bail-societe-5") as HTMLElement);
+    await user.click(row);
 
     expect(api.companies.update).not.toHaveBeenCalled();
-    expect(queryByCy("bail-societe-5")).toHaveAttribute(
+    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toHaveAttribute(
       "aria-expanded",
       "false",
     );
+    expect(
+      document.querySelectorAll(".company-lease-view-details"),
+    ).toHaveLength(0);
     expect(queryByCy("bail-societe-lie")).toBeNull();
-    expect(queryByCy("aucun-bail-societe")).not.toBeNull();
+    expect(document.querySelector(".company-lease-tab-none")).not.toBeNull();
+    expect(api.expenseItems.list).not.toHaveBeenCalledWith(1, true, 5);
   });
 
   it("orders the leases by the chosen sort only, ignoring company.leaseId", async () => {
@@ -301,11 +296,11 @@ describe("CompanyLeaseTab", () => {
     const user = userEvent.setup();
     await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
 
-    expect(toggleOrder()).toEqual([5, 6]);
+    expect(rowOrder()).toEqual([5, 6]);
 
     await user.click(screen.getByRole("button", { name: "Tri croissant" }));
 
-    expect(toggleOrder()).toEqual([6, 5]);
+    expect(rowOrder()).toEqual([6, 5]);
     expect(api.companies.update).not.toHaveBeenCalled();
   });
 
@@ -313,7 +308,7 @@ describe("CompanyLeaseTab", () => {
     renderTab({ ...COMPANY, leaseId: 6 });
 
     await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
-    expect(toggleOrder()).toEqual([5, 6]);
+    expect(rowOrder()).toEqual([5, 6]);
     expect(withinLease("bail-societe-5").queryByText("Bail actif")).toBeNull();
     expect(withinLease("bail-societe-6").queryByText("Bail actif")).toBeNull();
   });
@@ -322,22 +317,24 @@ describe("CompanyLeaseTab", () => {
     renderTab();
     const user = userEvent.setup();
     await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
-    expect(queryByCy("bail-societe-6")).toHaveAttribute(
+    expect(queryByCy("btn-afficher-frais-bail-societe-6")).toHaveAttribute(
       "aria-expanded",
       "false",
     );
 
-    await user.click(queryByCy("bail-societe-6") as HTMLElement);
+    await user.click(
+      queryByCy("btn-afficher-frais-bail-societe-6") as HTMLElement,
+    );
 
     await waitFor(() =>
       expect(api.expenseItems.list).toHaveBeenCalledWith(1, true, 6),
     );
     expect(api.companies.update).not.toHaveBeenCalled();
-    expect(queryByCy("bail-societe-6")).toHaveAttribute(
+    expect(queryByCy("btn-afficher-frais-bail-societe-6")).toHaveAttribute(
       "aria-expanded",
       "true",
     );
-    expect(queryByCy("bail-societe-5")).toHaveAttribute(
+    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toHaveAttribute(
       "aria-expanded",
       "false",
     );
@@ -371,7 +368,7 @@ describe("CompanyLeaseTab", () => {
     await user.click(
       queryByCy("btn-afficher-frais-bail-societe-6") as HTMLElement,
     );
-    expect(queryByCy("bail-societe-6")).toHaveAttribute(
+    expect(queryByCy("btn-afficher-frais-bail-societe-6")).toHaveAttribute(
       "aria-expanded",
       "true",
     );
@@ -382,11 +379,11 @@ describe("CompanyLeaseTab", () => {
     await user.click(
       queryByCy("btn-afficher-frais-bail-societe-5") as HTMLElement,
     );
-    expect(queryByCy("bail-societe-5")).toHaveAttribute(
+    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toHaveAttribute(
       "aria-expanded",
       "true",
     );
-    expect(queryByCy("bail-societe-6")).toHaveAttribute(
+    expect(queryByCy("btn-afficher-frais-bail-societe-6")).toHaveAttribute(
       "aria-expanded",
       "false",
     );
@@ -397,7 +394,7 @@ describe("CompanyLeaseTab", () => {
     await user.click(
       queryByCy("btn-afficher-frais-bail-societe-5") as HTMLElement,
     );
-    expect(queryByCy("bail-societe-5")).toHaveAttribute(
+    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toHaveAttribute(
       "aria-expanded",
       "false",
     );
@@ -410,7 +407,9 @@ describe("CompanyLeaseTab", () => {
     const user = userEvent.setup();
     await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
 
-    await user.click(queryByCy("bail-societe-5") as HTMLElement);
+    await user.click(
+      queryByCy("btn-afficher-frais-bail-societe-5") as HTMLElement,
+    );
 
     await waitFor(() => expect(queryByCy("bail-societe-lie")).not.toBeNull());
     expect(api.companies.update).not.toHaveBeenCalled();
@@ -509,11 +508,11 @@ describe("CompanyLeaseTab", () => {
     expect(queryByCy("input-surface-totale")).toHaveValue("40,00");
     expect(api.companies.update).not.toHaveBeenCalled();
     expect(withinLease("bail-societe-5").queryByText("Bail actif")).toBeNull();
-    expect(queryByCy("bail-societe-5")).toHaveAttribute(
+    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toHaveAttribute(
       "aria-expanded",
       "false",
     );
-    expect(queryByCy("bail-societe-6")).toHaveAttribute(
+    expect(queryByCy("btn-afficher-frais-bail-societe-6")).toHaveAttribute(
       "aria-expanded",
       "false",
     );
@@ -523,8 +522,10 @@ describe("CompanyLeaseTab", () => {
     renderTab();
     const user = userEvent.setup();
     await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
-    await user.click(queryByCy("bail-societe-5") as HTMLElement);
-    expect(queryByCy("bail-societe-5")).toHaveAttribute(
+    await user.click(
+      queryByCy("btn-afficher-frais-bail-societe-5") as HTMLElement,
+    );
+    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toHaveAttribute(
       "aria-expanded",
       "true",
     );
@@ -534,7 +535,7 @@ describe("CompanyLeaseTab", () => {
     await user.click(screen.getByRole("button", { name: "Annuler" }));
 
     expect(queryByCy("dialogue-formulaire-bail")).toBeNull();
-    expect(queryByCy("bail-societe-5")).toHaveAttribute(
+    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toHaveAttribute(
       "aria-expanded",
       "true",
     );
@@ -756,7 +757,7 @@ describe("CompanyLeaseTab", () => {
     );
 
     await user.click(queryByCy("filtre-effacer-baux-societe") as HTMLElement);
-    expect(toggleOrder()).toEqual([5, 6]);
+    expect(rowOrder()).toEqual([5, 6]);
 
     await user.type(queryByCy("filtre-baux-societe") as HTMLElement, "zzz");
 
@@ -764,7 +765,7 @@ describe("CompanyLeaseTab", () => {
       "Aucun résultat pour « zzz ».",
     );
     expect(queryByCy("entetes-baux-societe")).toBeNull();
-    expect(toggleOrder()).toEqual([]);
+    expect(rowOrder()).toEqual([]);
   });
 
   it("places the lease filter in the section header next to Ajouter un bail", async () => {
@@ -803,9 +804,9 @@ function withinLease(cy: string): ReturnType<typeof within> {
   return within(element as HTMLElement);
 }
 
-/** Lease ids in DOM order, read on the row toggle buttons. */
-function toggleOrder(): number[] {
-  return [...document.querySelectorAll(".company-lease-tab-item-toggle")].map(
+/** Lease ids in DOM order, read on the row summaries. */
+function rowOrder(): number[] {
+  return [...document.querySelectorAll(".company-lease-tab-item-summary")].map(
     (element) =>
       Number(
         (element as HTMLElement).dataset.cy?.replace("bail-societe-", "") ??

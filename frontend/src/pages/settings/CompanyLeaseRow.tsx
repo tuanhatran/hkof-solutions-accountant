@@ -27,9 +27,8 @@ interface CompanyLeaseRowProps {
  * One compact lease row of the "Baux & Frais" tab: the amounts, the
  * "Afficher les frais", "Générer la note de frais" and "Modifier le bail"
  * actions, the always-visible statement history, and the inline details and
- * postes when the row is expanded. The row carries no active-lease state: the
- * toggle only drives the expansion, the row click and the show-expenses button
- * call the same callback.
+ * postes when the row is expanded. The row carries no active-lease state and no
+ * click behaviour: only the "Afficher les frais" button drives the expansion.
  */
 export function CompanyLeaseRow({
   lease,
@@ -50,11 +49,8 @@ export function CompanyLeaseRow({
   return (
     <li className="company-lease-tab-list-item">
       <div className="company-lease-tab-item">
-        <button
-          type="button"
-          className="company-lease-tab-item-toggle"
-          onClick={onToggle}
-          aria-expanded={expanded}
+        <div
+          className="company-lease-tab-item-summary"
           data-cy={`bail-societe-${lease.id}`}
         >
           <span className="company-lease-tab-item-main">
@@ -82,7 +78,7 @@ export function CompanyLeaseRow({
           >
             {formatEUR(lease.charges ?? "0.00")}
           </span>
-        </button>
+        </div>
         <div
           className="company-lease-tab-item-actions"
           data-cy={`actions-bail-societe-${lease.id}`}

@@ -23,10 +23,11 @@ import { ExpenseItemsManager } from "./ExpenseItemsManager";
  * "Baux & Frais" tab: the leases owned by the company as a compact accordion
  * list. There is no active-lease notion here: the list follows the toolbar
  * sort only, and no row writes `company.leaseId`. Every row arrives collapsed;
- * clicking a row or its "Afficher les frais" button expands that lease's
- * details and postes inline, switching the expansion from another row and
- * toggling the same row closed. While no lease is expanded the company-level
- * fallback (details and postes without a lease) stays visible. The search
+ * only its "Afficher les frais" button expands that lease's details and postes
+ * inline, switching the expansion from another row and toggling the same row
+ * closed (the row itself is not clickable). While no lease is expanded the
+ * company-level fallback (details and postes without a lease) stays visible.
+ * The search
  * field sits in the section header next to "Ajouter un bail", while the sort
  * field, direction toggle and count remain in the shared toolbar. Each row
  * also offers "Générer la note de frais", opening the full expense-statement

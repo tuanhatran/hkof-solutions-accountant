@@ -9,8 +9,8 @@
     @apply flex flex-col gap-2 rounded-xl border border-line bg-surface px-4 py-3 md:grid md:min-h-9 md:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem_13rem] md:items-center md:gap-3 md:py-1.5;
   }
 
-  .company-lease-tab-item-toggle {
-    @apply flex min-w-0 flex-col gap-1 bg-transparent text-left md:col-span-3 md:grid md:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem] md:items-center md:gap-3;
+  .company-lease-tab-item-summary {
+    @apply flex min-w-0 flex-col gap-1 md:col-span-3 md:grid md:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem] md:items-center md:gap-3;
   }
 
   .company-lease-tab-item-main {

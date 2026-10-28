@@ -274,15 +274,27 @@ function createAnnexeCompany(): void {
       cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
 
       // The "Baux & Frais" tab lists the company leases collapsed; its pro-rata
-      // (the backend's) appears once expanded with "Afficher les frais".
+      // (the backend's) appears once expanded with "Afficher les frais". The
+      // row itself is not an activation target: only the button expands.
       cy.get(`[data-cy="bail-societe-${leaseId}"]`, { timeout: 20_000 })
         .should("contain.text", ANNEXE_LEASE.propertyAddress)
         .and("not.contain.text", "Bail actif")
-        .and("have.attr", "aria-expanded", "false");
+        .and("not.have.attr", "aria-expanded");
+      cy.get(`[data-cy="btn-afficher-frais-bail-societe-${leaseId}"]`).should(
+        "have.attr",
+        "aria-expanded",
+        "false",
+      );
+      cy.get(`[data-cy="bail-societe-${leaseId}"]`).click();
+      cy.get(`[data-cy="btn-afficher-frais-bail-societe-${leaseId}"]`).should(
+        "have.attr",
+        "aria-expanded",
+        "false",
+      );
       cy.get('[data-cy="prorata-bail-societe"]').should("not.exist");
 
       expandFirstLease();
-      cy.get(`[data-cy="bail-societe-${leaseId}"]`).should(
+      cy.get(`[data-cy="btn-afficher-frais-bail-societe-${leaseId}"]`).should(
         "have.attr",
         "aria-expanded",
         "true",
@@ -333,10 +345,13 @@ function createAnnexeCompany(): void {
           })
             .should("contain.text", ANNEXE_SECOND_LEASE.propertyAddress)
             .and("not.contain.text", "Bail actif")
-            .and("have.attr", "aria-expanded", "false");
+            .and("not.have.attr", "aria-expanded");
+          cy.get(
+            `[data-cy="btn-afficher-frais-bail-societe-${secondLeaseId}"]`,
+          ).should("have.attr", "aria-expanded", "false");
 
           // The list follows the address sort only: no active pinning.
-          cy.get("button[data-cy^='bail-societe-']")
+          cy.get(".company-lease-tab-item-summary")
             .first()
             .should("have.attr", "data-cy", `bail-societe-${leaseId}`);
 
@@ -346,50 +361,47 @@ function createAnnexeCompany(): void {
           cy.get(
             `[data-cy="btn-afficher-frais-bail-societe-${secondLeaseId}"]`,
           ).click();
-          cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`)
-            .should("have.attr", "aria-expanded", "true")
-            .and("not.contain.text", "Bail actif");
-          cy.get(`[data-cy="bail-societe-${leaseId}"]`).should(
-            "have.attr",
-            "aria-expanded",
-            "false",
+          cy.get(
+            `[data-cy="btn-afficher-frais-bail-societe-${secondLeaseId}"]`,
+          ).should("have.attr", "aria-expanded", "true");
+          cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`).should(
+            "not.contain.text",
+            "Bail actif",
           );
+          cy.get(
+            `[data-cy="btn-afficher-frais-bail-societe-${leaseId}"]`,
+          ).should("have.attr", "aria-expanded", "false");
           cy.get("@updateCompany.all").should("have.length", 0);
 
           // Toggling the same row closed brings back the company-level fallback.
           cy.get(
             `[data-cy="btn-afficher-frais-bail-societe-${secondLeaseId}"]`,
           ).click();
-          cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`).should(
-            "have.attr",
-            "aria-expanded",
-            "false",
-          );
+          cy.get(
+            `[data-cy="btn-afficher-frais-bail-societe-${secondLeaseId}"]`,
+          ).should("have.attr", "aria-expanded", "false");
           cy.get('[data-cy="bail-societe-lie"]').should("not.exist");
           cy.get('[data-cy="aucun-bail-societe"]').should("exist");
           cy.get("@updateCompany.all").should("have.length", 0);
 
-          // The row click keeps toggling the same expansion, still without a PUT.
+          // The row click no longer toggles the expansion, still without a PUT.
           cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`).click();
-          cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`).should(
-            "have.attr",
-            "aria-expanded",
-            "true",
-          );
+          cy.get(
+            `[data-cy="btn-afficher-frais-bail-societe-${secondLeaseId}"]`,
+          ).should("have.attr", "aria-expanded", "false");
+          cy.get('[data-cy="bail-societe-lie"]').should("not.exist");
           cy.get("@updateCompany.all").should("have.length", 0);
 
           // Back to the first lease: the rest of the spec assumes its postes.
-          cy.get(`[data-cy="bail-societe-${leaseId}"]`).click();
-          cy.get(`[data-cy="bail-societe-${leaseId}"]`).should(
-            "have.attr",
-            "aria-expanded",
-            "true",
-          );
-          cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`).should(
-            "have.attr",
-            "aria-expanded",
-            "false",
-          );
+          cy.get(
+            `[data-cy="btn-afficher-frais-bail-societe-${leaseId}"]`,
+          ).click();
+          cy.get(
+            `[data-cy="btn-afficher-frais-bail-societe-${leaseId}"]`,
+          ).should("have.attr", "aria-expanded", "true");
+          cy.get(
+            `[data-cy="btn-afficher-frais-bail-societe-${secondLeaseId}"]`,
+          ).should("have.attr", "aria-expanded", "false");
           cy.get("@updateCompany.all").should("have.length", 0);
         });
       });
