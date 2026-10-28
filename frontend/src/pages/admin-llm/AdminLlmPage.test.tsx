@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
@@ -543,6 +543,20 @@ describe("AdminLlmPage", () => {
       ),
     ).toBeInTheDocument();
   });
+
+  it("keeps the connection test in the status card and the page header free of actions", async () => {
+    renderPage();
+
+    const statusCard = (await screen.findByText("Connecté")).closest(
+      "section",
+    ) as HTMLElement;
+    expect(
+      within(statusCard).getByRole("button", { name: "Tester la connexion" }),
+    ).toBeVisible();
+    expect(
+      within(screen.getByRole("banner")).queryAllByRole("button"),
+    ).toHaveLength(0);
+  });
 });
 
 describe("AdminLlmPage in English", () => {
@@ -573,7 +587,7 @@ describe("AdminLlmPage in English", () => {
     expect(
       screen.getAllByRole("button", { name: "Test the connection" }),
     ).toHaveLength(2);
-    expect(screen.getAllByRole("button", { name: "Save" })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Save" })).toHaveLength(1);
 
     await act(async () => {
       await i18n.changeLanguage("fr");

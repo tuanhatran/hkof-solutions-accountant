@@ -22,9 +22,15 @@
   }
 
   /* Uniform action box on every page header: same height, one shared min-width
-     that still grows with longer content, square corners and a single border
-     weight/colour whatever the inner primitive or variant. */
+     that still grows with longer content, square corners, a single border
+     weight/colour and the same surface background whatever the inner primitive
+     or variant. The primary variant only shows its accent fill on hover so
+     every box reads identically at rest. */
   .page-header .page-header-actions > * {
-    @apply inline-flex h-9 min-w-[9.5rem] max-w-full items-center justify-center gap-2 rounded-none border border-line px-3;
+    @apply inline-flex h-9 min-w-[9.5rem] max-w-full items-center justify-center gap-2 rounded-none border border-line bg-surface px-3 text-ink;
+  }
+
+  .page-header .page-header-actions > .btn-primary:hover {
+    @apply border-accent bg-accent text-white;
   }
 }
