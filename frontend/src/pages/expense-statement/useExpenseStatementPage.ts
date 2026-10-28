@@ -15,7 +15,6 @@ import { linesToRequests, missingTypes, typeAlreadyAdded } from "@/lib/lines";
 import type { StatementDraftRequest } from "@/api/endpoints";
 import { useDraftSaver } from "@/state/draftSaver";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
-import { draftScopeKey } from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
 import { useExpenseStatementAnalysis } from "./useExpenseStatementAnalysis";
 import { useExpenseStatementCalculation } from "./useExpenseStatementCalculation";
@@ -52,6 +51,7 @@ export function useExpenseStatementPage(
   const [result, setResult] = useState<StatementDto | null>(null);
   const [regenerationDialog, setRegenerationDialog] = useState(false);
   const [generationInProgress, setGenerationInProgress] = useState(false);
+  const [draftSaving, setDraftSaving] = useState(false);
 
   const context = useExpenseStatementContext(options);
   const form: ExpenseStatementForm = useExpenseStatementForm({
@@ -119,13 +119,7 @@ export function useExpenseStatementPage(
       }
       const statement = await api.expenseStatements.create(requestBody);
       setResult(statement);
-      const generatedDraftId =
-        context.draft.draftIdByMonth[draftScopeKey(activeCompanyId, month)] ??
-        null;
       context.draft.markGenerated();
-      if (generatedDraftId !== null) {
-        void api.drafts.delete(generatedDraftId).catch(() => undefined);
-      }
       await queryClient.invalidateQueries({
         queryKey: queryKeys.statementsAll,
       });
@@ -148,6 +142,7 @@ export function useExpenseStatementPage(
       return false;
     }
     try {
+      setDraftSaving(true);
       const requestBody: StatementDraftRequest = {
         companyId: activeCompanyId,
         month,
@@ -163,6 +158,8 @@ export function useExpenseStatementPage(
     } catch (error) {
       toast.error(errorMessage(error));
       return false;
+    } finally {
+      setDraftSaving(false);
     }
   }
 
@@ -274,6 +271,7 @@ export function useExpenseStatementPage(
     regenerationDialog,
     setRegenerationDialog,
     generationInProgress,
+    draftSaving,
     result,
     typeRef: form.typeRef,
     formCardRef: form.formCardRef,

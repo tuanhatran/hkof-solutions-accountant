@@ -34,12 +34,14 @@ public class RentReceiptService {
     private final SignatureService signatureService;
     private final PdfService pdfService;
     private final StorageService storage;
+    private final DocumentDraftService documentDraftService;
     private final RentReceiptMapper mapper;
     private final Clock clock;
 
     public RentReceiptService(RentReceiptRepository repository, CompanyService companies, LeaseService leaseService,
             TemplateService templateService, TemplateDataService templateDataService,
-            SignatureService signatureService, PdfService pdfService, StorageService storage, RentReceiptMapper mapper,
+            SignatureService signatureService, PdfService pdfService, StorageService storage,
+            DocumentDraftService documentDraftService, RentReceiptMapper mapper,
             Clock clock) {
         this.repository = repository;
         this.companies = companies;
@@ -49,6 +51,7 @@ public class RentReceiptService {
         this.signatureService = signatureService;
         this.pdfService = pdfService;
         this.storage = storage;
+        this.documentDraftService = documentDraftService;
         this.mapper = mapper;
         this.clock = clock;
     }
@@ -84,7 +87,12 @@ public class RentReceiptService {
         byte[] pdf = pdfService.renderHtmlToPdf(html);
         String path = storage.storePdf(fileName(month, lease, version), pdf);
         rentReceipt.setPdfPath(path);
-        return toDto(repository.save(rentReceipt));
+        RentReceipt saved = repository.save(rentReceipt);
+        // Generating clears the draft of the same scope in the same transaction: a
+        // generated receipt never leaves an active draft behind.
+        documentDraftService.deleteActiveRentReceipt(saved.getMonth(), saved.getLandlordId(),
+                saved.getTenantId(), saved.getTenantCompanyId());
+        return toDto(saved);
     }
 
     @Transactional(readOnly = true)

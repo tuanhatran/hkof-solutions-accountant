@@ -942,7 +942,41 @@ describe("GenerateExpenseStatementPage signatures", () => {
     await waitFor(() => expect(generate).toBeEnabled());
     await user.click(generate);
 
-    await waitFor(() => expect(api.drafts.delete).toHaveBeenCalledWith(80));
+    await waitFor(() =>
+      expect(api.expenseStatements.create).toHaveBeenCalled(),
+    );
+    expect(api.drafts.delete).not.toHaveBeenCalled();
     expect(useStatementDraft.getState().draftIdByMonth[SCOPE]).toBeNull();
+    expect(useStatementDraft.getState().savedAtByMonth[SCOPE]).toBeNull();
+  });
+
+  it("disables the draft save button while a save is in flight", async () => {
+    let resolveSave: (value: StatementDraftDto) => void = () => undefined;
+    vi.mocked(api.drafts.saveStatement).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+
+    renderPage();
+    const save = await screen.findByRole("button", {
+      name: "Enregistrer le brouillon",
+    });
+    await waitFor(() => expect(save).toBeEnabled());
+    const user = userEvent.setup();
+    await user.click(save);
+
+    await waitFor(() => expect(save).toBeDisabled());
+
+    resolveSave({
+      id: 90,
+      companyId: 1,
+      month: MONTH,
+      complete: true,
+      lines: [],
+      savedAt: "2026-01-15T10:30:00Z",
+    });
+    await waitFor(() => expect(save).toBeEnabled());
   });
 });

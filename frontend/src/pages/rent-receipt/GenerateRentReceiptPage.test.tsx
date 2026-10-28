@@ -1037,7 +1037,34 @@ describe("GenerateRentReceiptPage", () => {
     expect(useRentReceiptDraft.getState().dirty).toBe(false);
   });
 
-  it("deletes the saved draft after generating the receipt", async () => {
+  it("disables the draft save button while a save is in flight", async () => {
+    let resolveSave: (value: RentReceiptDraftDto) => void = () => undefined;
+    vi.mocked(api.drafts.saveRentReceipt).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+
+    renderPage();
+    const save = await screen.findByRole("button", {
+      name: "Enregistrer le brouillon",
+    });
+    await userEvent.setup().click(save);
+
+    await waitFor(() => expect(save).toBeDisabled());
+
+    resolveSave({
+      id: 50,
+      month: MONTH,
+      landlordId: 1,
+      tenantId: 2,
+      savedAt: "2026-01-15T10:30:00Z",
+    });
+    await waitFor(() => expect(save).toBeEnabled());
+  });
+
+  it("leaves the draft deletion to the backend after generating the receipt", async () => {
     useRentReceiptDraft.setState({
       draftId: 70,
       savedAt: "2026-01-10T09:00:00Z",
@@ -1056,8 +1083,10 @@ describe("GenerateRentReceiptPage", () => {
         await screen.findByRole("button", { name: /Générer la quittance/ }),
       );
 
-    await waitFor(() => expect(api.drafts.delete).toHaveBeenCalledWith(70));
+    await waitFor(() => expect(api.rentReceipts.create).toHaveBeenCalled());
+    expect(api.drafts.delete).not.toHaveBeenCalled();
     expect(useRentReceiptDraft.getState().draftId).toBeNull();
+    expect(useRentReceiptDraft.getState().savedAt).toBeNull();
   });
 
   it("echoes the filled dates in French under the native date inputs", () => {

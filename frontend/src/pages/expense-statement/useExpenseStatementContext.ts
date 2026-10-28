@@ -94,7 +94,16 @@ export function useExpenseStatementContext(
     if (options.draft !== undefined || !saved || saved.id === undefined) {
       return;
     }
-    const scope = `${saved.companyId ?? activeCompanyId}|${saved.month ?? month}|${saved.id}`;
+    const companyId = saved.companyId ?? activeCompanyId;
+    const savedMonth = saved.month ?? month;
+    const savedScope = draftScopeKey(companyId, savedMonth);
+    // The refetch after a save returns the row just written: hydrating it would
+    // overwrite the edits made while the PUT then GET round-trip was in flight,
+    // and re-keying the lines would break an open line edit.
+    if (draftStore.getState().draftIdByMonth[savedScope] === saved.id) {
+      return;
+    }
+    const scope = `${companyId}|${savedMonth}|${saved.id}`;
     if (hydratedScope.current === scope) {
       return;
     }

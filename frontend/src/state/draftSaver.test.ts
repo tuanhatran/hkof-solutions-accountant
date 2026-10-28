@@ -30,6 +30,20 @@ describe("draftSaver", () => {
     await expect(saveActiveDraft()).resolves.toBe(false);
   });
 
+  it("runs only the saver of the mounted page when several pages register", async () => {
+    const rentSaver = vi.fn().mockResolvedValue(true);
+    const statementSaver = vi.fn().mockResolvedValue(true);
+    renderHook(() => useDraftSaver(rentSaver));
+    renderHook(() => useDraftSaver(statementSaver));
+
+    await act(async () => {
+      await saveActiveDraft();
+    });
+
+    expect(statementSaver).toHaveBeenCalledTimes(1);
+    expect(rentSaver).not.toHaveBeenCalled();
+  });
+
   it("keeps the registry clean after the owner unregisters", async () => {
     const saver = vi.fn().mockResolvedValue(true);
     setDraftSaver(saver);

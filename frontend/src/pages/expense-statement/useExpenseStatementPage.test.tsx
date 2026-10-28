@@ -2036,7 +2036,72 @@ describe("useExpenseStatementPage drafts", () => {
     );
   });
 
-  it("deletes the saved draft after a successful generation", async () => {
+  it("preserves lines edited while the save refetch resolves", async () => {
+    resetDraft([line({ key: "kept", amountInclVat: "95.00" })]);
+    useStatementDraft.setState({ draftIdByMonth: { [SCOPE]: 91 } });
+    savedDraftState = readyQuery({
+      id: 91,
+      companyId: 1,
+      month: MONTH,
+      savedAt: "2026-01-10T09:00:00Z",
+      lines: [
+        {
+          itemCode: "gaz",
+          amountInclVat: "70.00",
+          proRataPct: "100",
+          amountSource: "MANUAL",
+        },
+      ],
+    });
+
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.savedDraft.data?.id).toBe(91));
+
+    expect(result.current.orderedLines[0]?.amountInclVat).toBe("95.00");
+  });
+
+  it("keeps an open line edit when the saved row refetch resolves", async () => {
+    resetDraft([
+      line({ key: "edit-me", itemCode: "loyer", amountInclVat: "80.00" }),
+    ]);
+    useStatementDraft.setState({ draftIdByMonth: { [SCOPE]: 91 } });
+    savedDraftState = readyQuery({
+      id: 91,
+      companyId: 1,
+      month: MONTH,
+      savedAt: "2026-01-10T09:00:00Z",
+      lines: [
+        {
+          itemCode: "loyer",
+          amountInclVat: "70.00",
+          proRataPct: "100",
+          amountSource: "MANUAL",
+        },
+      ],
+    });
+
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.savedDraft.data?.id).toBe(91));
+
+    act(() =>
+      result.current.editLine(
+        useStatementDraft.getState().linesByMonth[SCOPE][0],
+      ),
+    );
+    act(() =>
+      result.current.saveExpense({
+        itemCode: "loyer",
+        amountInclVat: "95,00",
+        proRataPct: "100",
+      }),
+    );
+
+    const lines = useStatementDraft.getState().linesByMonth[SCOPE];
+    expect(lines).toHaveLength(1);
+    expect(lines[0].amountInclVat).toBe("95.00");
+  });
+
+  it("leaves the draft deletion to the backend after a successful generation", async () => {
     resetDraft([line()]);
     useStatementDraft.setState({
       draftIdByMonth: { [SCOPE]: 80 },
@@ -2052,7 +2117,7 @@ describe("useExpenseStatementPage drafts", () => {
     });
 
     expect(api.expenseStatements.create).toHaveBeenCalled();
-    expect(api.drafts.delete).toHaveBeenCalledWith(80);
+    expect(api.drafts.delete).not.toHaveBeenCalled();
     expect(useStatementDraft.getState().draftIdByMonth[SCOPE]).toBeNull();
     expect(useStatementDraft.getState().savedAtByMonth[SCOPE]).toBeNull();
   });

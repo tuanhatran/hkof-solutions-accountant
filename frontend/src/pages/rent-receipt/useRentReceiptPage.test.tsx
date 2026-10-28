@@ -779,7 +779,31 @@ describe("useRentReceiptPage preview and generation", () => {
     expect(result.current.draft.dirty).toBe(false);
   });
 
-  it("deletes the saved draft after a successful generation", async () => {
+  it("preserves a field edited while the save refetch resolves", async () => {
+    resetDraft({
+      draftId: 60,
+      landlordId: 1,
+      tenantKey: "person:2",
+      rentExclCharges: "1500.00",
+      initialized: true,
+    });
+    savedDraftState = readyQuery({
+      id: 60,
+      month: MONTH,
+      landlordId: 1,
+      tenantId: 2,
+      rentExclCharges: "1200.00",
+      charges: "40.00",
+      savedAt: "2026-01-10T09:00:00Z",
+    });
+
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.savedDraft.data?.id).toBe(60));
+
+    expect(result.current.values.rentExclCharges).toBe("1500.00");
+  });
+
+  it("leaves the draft deletion to the backend after a successful generation", async () => {
     resetDraft({ draftId: 70, savedAt: "2026-01-10T09:00:00Z" });
     const { result } = renderController();
     act(() => result.current.selectPair("1", "person:2"));
@@ -789,7 +813,7 @@ describe("useRentReceiptPage preview and generation", () => {
     });
 
     await waitFor(() => expect(api.rentReceipts.create).toHaveBeenCalled());
-    expect(api.drafts.delete).toHaveBeenCalledWith(70);
+    expect(api.drafts.delete).not.toHaveBeenCalled();
     expect(useRentReceiptDraft.getState().draftId).toBeNull();
     expect(useRentReceiptDraft.getState().savedAt).toBeNull();
   });

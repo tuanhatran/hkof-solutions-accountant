@@ -91,6 +91,32 @@ public class DocumentDraftService {
         softDelete(draft);
     }
 
+    /**
+     * Logically deletes the active rent receipt draft of a generation scope. Called
+     * inside the generation transaction so a generated document never leaves a draft.
+     */
+    @Transactional
+    public void deleteActiveRentReceipt(String month, Long landlordId, Long tenantId, Long tenantCompanyId) {
+        if (landlordId == null) {
+            return;
+        }
+        requireSingleTenant(tenantId, tenantCompanyId);
+        findActiveRentReceipt(Amounts.month(month).toString(), landlordId, tenantId, tenantCompanyId)
+                .ifPresent(this::softDelete);
+    }
+
+    /**
+     * Logically deletes the active expense statement draft of a generation scope.
+     * Called inside the generation transaction so a generated document never leaves a draft.
+     */
+    @Transactional
+    public void deleteActiveStatement(Long companyId, String month) {
+        if (companyId == null) {
+            return;
+        }
+        findActiveStatement(Amounts.month(month).toString(), companyId).ifPresent(this::softDelete);
+    }
+
     /** Serialises a validated request, exposed for the tests that seed a stored payload. */
     public String write(Object request) {
         try {

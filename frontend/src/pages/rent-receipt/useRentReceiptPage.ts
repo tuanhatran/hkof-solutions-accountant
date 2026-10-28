@@ -52,6 +52,7 @@ export function useRentReceiptPage() {
   const mobile = useMediaQuery("(max-width: 1023px)");
   const [mobilePanel, setMobilePanel] = useState<"saisie" | "apercu">("saisie");
   const [generationInProgress, setGenerationInProgress] = useState(false);
+  const [draftSaving, setDraftSaving] = useState(false);
   const [result, setResult] = useState<RentReceiptDto | null>(null);
   const [chosenSignatureId, setChosenSignatureId] = useState<number | null>(
     null,
@@ -178,6 +179,11 @@ export function useRentReceiptPage() {
     if (!saved || saved.id === undefined) {
       return;
     }
+    // The refetch after a save returns the row just written: hydrating it would
+    // overwrite the edits made while the PUT then GET round-trip was in flight.
+    if (draft.draftId !== null && saved.id === draft.draftId) {
+      return;
+    }
     const scopeKey = [
       saved.month ?? draft.month,
       saved.landlordId ?? "",
@@ -297,11 +303,7 @@ export function useRentReceiptPage() {
     try {
       const rentReceipt = await api.rentReceipts.create(requestBody);
       setResult(rentReceipt);
-      const generatedDraftId = draft.draftId;
       draft.markGenerated();
-      if (generatedDraftId !== null) {
-        void api.drafts.delete(generatedDraftId).catch(() => undefined);
-      }
       await queryClient.invalidateQueries({
         queryKey: queryKeys.rentReceiptsAll,
       });
@@ -406,6 +408,7 @@ export function useRentReceiptPage() {
       templateId: draft.templateId,
     };
     try {
+      setDraftSaving(true);
       const saved = await api.drafts.saveRentReceipt(requestBody);
       draft.markSaved(saved);
       await queryClient.invalidateQueries({ queryKey: queryKeys.drafts });
@@ -414,6 +417,8 @@ export function useRentReceiptPage() {
     } catch (error) {
       toast.error(errorMessage(error));
       return false;
+    } finally {
+      setDraftSaving(false);
     }
   }
 
@@ -468,6 +473,7 @@ export function useRentReceiptPage() {
     validation,
     result,
     generationInProgress,
+    draftSaving,
     submit,
     downloadRentReceipt,
     goToStatement,

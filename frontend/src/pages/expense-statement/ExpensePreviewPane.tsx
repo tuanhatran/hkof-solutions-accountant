@@ -90,7 +90,7 @@ export function ExpensePreviewPane({
           variant="secondary"
           small
           onClick={() => void c.saveDraft()}
-          disabled={c.activeCompanyId === null}
+          disabled={c.activeCompanyId === null || c.draftSaving}
           data-cy="btn-enregistrer-brouillon"
         >
           {t("draft.save")}

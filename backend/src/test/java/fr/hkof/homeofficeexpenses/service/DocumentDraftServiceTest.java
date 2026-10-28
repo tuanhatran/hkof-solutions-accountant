@@ -202,6 +202,45 @@ class DocumentDraftServiceTest {
     }
 
     @Test
+    @DisplayName("Clears the active rent receipt draft of a generation scope")
+    void clearsActiveRentReceiptDraft() {
+        DocumentDraft previous = new DocumentDraft();
+        previous.setId(31L);
+        when(repository.findFirstByTypeAndMonthAndLandlordIdAndTenantIdAndDeletedFalseOrderByIdDesc(
+                DocumentDraft.Type.RENT_RECEIPT, "2026-01", 4L, 7L)).thenReturn(Optional.of(previous));
+
+        service.deleteActiveRentReceipt("2026-01", 4L, 7L, null);
+
+        assertThat(previous.isDeleted()).isTrue();
+        verify(repository).save(previous);
+    }
+
+    @Test
+    @DisplayName("Clears nothing when the generation scope holds no rent receipt draft")
+    void ignoresMissingRentReceiptDraft() {
+        when(repository.findFirstByTypeAndMonthAndLandlordIdAndTenantCompanyIdAndDeletedFalseOrderByIdDesc(
+                DocumentDraft.Type.RENT_RECEIPT, "2026-01", 4L, 9L)).thenReturn(Optional.empty());
+
+        service.deleteActiveRentReceipt("2026-01", 4L, null, 9L);
+
+        verify(repository, never()).save(any(DocumentDraft.class));
+    }
+
+    @Test
+    @DisplayName("Clears the active expense statement draft of a company and month")
+    void clearsActiveStatementDraft() {
+        DocumentDraft previous = new DocumentDraft();
+        previous.setId(32L);
+        when(repository.findFirstByTypeAndMonthAndCompanyIdAndDeletedFalseOrderByIdDesc(
+                DocumentDraft.Type.EXPENSE_STATEMENT, "2026-01", 3L)).thenReturn(Optional.of(previous));
+
+        service.deleteActiveStatement(3L, "2026-01");
+
+        assertThat(previous.isDeleted()).isTrue();
+        verify(repository).save(previous);
+    }
+
+    @Test
     @DisplayName("Rejects deleting an unknown draft")
     void rejectsUnknownDraft() {
         when(repository.findById(5L)).thenReturn(Optional.empty());

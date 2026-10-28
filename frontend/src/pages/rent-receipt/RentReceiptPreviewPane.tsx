@@ -78,7 +78,7 @@ export function RentReceiptPreviewPane({
           variant="secondary"
           small
           onClick={() => void c.saveDraft()}
-          disabled={!c.draftScopeReady}
+          disabled={!c.draftScopeReady || c.draftSaving}
           data-cy="btn-enregistrer-brouillon"
         >
           {t("draft.save")}
