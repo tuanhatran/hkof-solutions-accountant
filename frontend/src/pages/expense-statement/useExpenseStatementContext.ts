@@ -5,6 +5,7 @@ import {
   useCompanies,
   useEmployees,
   useExpenseItems,
+  useLeases,
   useRentReceipts,
   useSavedStatementDraft,
   useSignatures,
@@ -121,6 +122,12 @@ export function useExpenseStatementContext(
     options.leaseId !== undefined
       ? options.leaseId
       : (activeCompany?.leaseId ?? null);
+  const leasesQuery = useLeases();
+  const selectedLease =
+    selectedLeaseId === null
+      ? null
+      : (leasesQuery.data?.find((lease) => lease.id === selectedLeaseId) ??
+        null);
 
   // Every company-scoped request carries the active company; a null id disables them.
   const expenseItemsQuery = useExpenseItems(
@@ -140,13 +147,27 @@ export function useExpenseStatementContext(
   );
   useEffect(() => {
     setChosenRentReceiptId(null);
-  }, [activeCompanyId, month]);
+  }, [activeCompanyId, month, selectedLeaseId, selectedLease]);
   const rentReceiptCandidates = useMemo<RentReceiptDto[]>(() => {
     if (options.rentReceipt) {
       return options.rentReceipt.data ? [options.rentReceipt.data] : [];
     }
-    return rentReceiptsQuery.data ?? [];
-  }, [options.rentReceipt, rentReceiptsQuery.data]);
+    const receipts = rentReceiptsQuery.data ?? [];
+    // A company-month list mixes every lease of the company: keep only the
+    // receipts the page lease can produce (same landlord, then tenant company
+    // for a company lease or tenant person for a person lease). An unresolved
+    // lease keeps the historical unscoped list.
+    if (selectedLease === null) {
+      return receipts;
+    }
+    return receipts.filter(
+      (receipt) =>
+        receipt.landlordId === selectedLease.landlordId &&
+        (selectedLease.companyId != null
+          ? receipt.tenantCompanyId === selectedLease.companyId
+          : receipt.tenantId === selectedLease.tenantId),
+    );
+  }, [options.rentReceipt, rentReceiptsQuery.data, selectedLease]);
   const selectedRentReceipt =
     rentReceiptCandidates.find(
       (candidate) => candidate.id === chosenRentReceiptId,
