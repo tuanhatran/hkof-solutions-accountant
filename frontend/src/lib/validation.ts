@@ -63,6 +63,24 @@ export const expenseSchema = z.object({
 
 export type ExpenseFormValues = z.infer<typeof expenseSchema>;
 
+/** Free additional charge of a rent receipt: label plus a strictly positive amount. */
+export const additionalChargeSchema = z.object({
+  label: z
+    .string()
+    .trim()
+    .min(1, {
+      error: () => rentReceiptMessage("additionalChargeLabel"),
+    })
+    .max(120, {
+      error: () => rentReceiptMessage("additionalChargeLabelTooLong"),
+    }),
+  amount: z.string().refine((value) => isValidAmount(value, true), {
+    error: () => rentReceiptMessage("additionalChargeAmount"),
+  }),
+});
+
+export type AdditionalChargeFormValues = z.infer<typeof additionalChargeSchema>;
+
 /** Encoded tenant of a rent receipt: `person:<id>` or `company:<id>`. */
 export const TENANT_KEY_PATTERN = /^(person|company):[1-9]\d*$/;
 
@@ -121,6 +139,10 @@ export const rentReceiptSchema = z
     }),
     paymentDate: optionalDate,
     issueDate: optionalDate,
+    additionalCharges: z
+      .array(additionalChargeSchema)
+      .max(20, { error: () => rentReceiptMessage("additionalChargeLimit") })
+      .optional(),
   })
   .refine((values) => values.periodEnd >= values.periodStart, {
     path: ["periodEnd"],
@@ -182,6 +204,7 @@ export const employeeSchema = z.object({
   title: z.enum(["CEO", "CFO", "ACCOUNTANT", "EMPLOYEE"], {
     error: () => employeeMessage("title"),
   }),
+  issuePlace: z.string(),
 });
 
 export type EmployeeFormValues = z.infer<typeof employeeSchema>;

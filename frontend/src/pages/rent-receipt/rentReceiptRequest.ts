@@ -37,5 +37,14 @@ export function requestFromValues(
   if (signatureId !== null) {
     request.signatureId = signatureId;
   }
+  const additionalCharges = (values.additionalCharges ?? [])
+    .map((charge) => ({
+      label: charge.label.trim(),
+      amount: parseAmount(charge.amount) ?? "",
+    }))
+    .filter((charge) => charge.label !== "" && charge.amount !== "");
+  if (additionalCharges.length > 0) {
+    request.additionalCharges = additionalCharges;
+  }
   return request;
 }

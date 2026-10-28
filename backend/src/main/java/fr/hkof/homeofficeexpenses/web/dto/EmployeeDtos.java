@@ -11,7 +11,8 @@ public final class EmployeeDtos {
             String lastName,
             String email,
             String address,
-            String title) {
+            String title,
+            String issuePlace) {
     }
 
     public record EmployeeDto(
@@ -22,6 +23,7 @@ public final class EmployeeDtos {
             String email,
             String address,
             int signatureCount,
-            String title) {
+            String title,
+            String issuePlace) {
     }
 }

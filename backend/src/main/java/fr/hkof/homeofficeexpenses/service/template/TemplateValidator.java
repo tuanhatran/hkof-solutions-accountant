@@ -1,6 +1,8 @@
 package fr.hkof.homeofficeexpenses.service.template;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -38,7 +40,7 @@ class TemplateValidator {
         Set<String> presentVariables = new TreeSet<>();
 
         Matcher matcher = VARIABLE.matcher(content);
-        int lineDepth = 0;
+        Deque<String> sections = new ArrayDeque<>();
         while (matcher.find()) {
             String prefix = matcher.group(1);
             String name = matcher.group(2).trim();
@@ -46,15 +48,19 @@ class TemplateValidator {
                 continue;
             }
             if ("/".equals(prefix)) {
-                if ("lignes".equals(name)) {
-                    lineDepth = Math.max(0, lineDepth - 1);
+                if (!sections.isEmpty() && sections.peek().equals(name)) {
+                    sections.pop();
                 }
                 continue;
             }
             String canonical = name;
-            if (!allowed.contains(canonical) && lineDepth > 0
-                    && allowed.contains("lignes." + name)) {
-                canonical = "lignes." + name;
+            if (!allowed.contains(canonical)) {
+                for (String section : sections) {
+                    if (allowed.contains(section + "." + name)) {
+                        canonical = section + "." + name;
+                        break;
+                    }
+                }
             }
             if (!allowed.contains(canonical)) {
                 if (!unknown.contains(name)) {
@@ -66,8 +72,8 @@ class TemplateValidator {
             if (!recognized.contains(canonical)) {
                 recognized.add(canonical);
             }
-            if ("#".equals(prefix) && "lignes".equals(name)) {
-                lineDepth++;
+            if ("#".equals(prefix) && isSection(allowed, name)) {
+                sections.push(name);
             }
         }
         for (String required : requires) {
@@ -86,6 +92,10 @@ class TemplateValidator {
             errors.add("Variables inconnues : " + String.join(", ", unknown));
         }
         return new ValidationReportDto(recognized, unknown, missing, errors.isEmpty(), errors);
+    }
+
+    private static boolean isSection(Set<String> allowed, String name) {
+        return allowed.stream().anyMatch(variable -> variable.startsWith(name + "."));
     }
 
     private List<String> checkSecurity(String content) {

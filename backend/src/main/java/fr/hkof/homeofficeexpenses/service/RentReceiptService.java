@@ -20,6 +20,7 @@ import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.repository.RentReceiptRepository;
 import fr.hkof.homeofficeexpenses.service.template.TemplateDataService;
 import fr.hkof.homeofficeexpenses.service.template.TemplateService;
+import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.AdditionalCharge;
 import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.RentReceiptDto;
 import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.RentReceiptRequest;
 
@@ -66,13 +67,17 @@ public class RentReceiptService {
         checkPeriod(periodStart, periodEnd);
         BigDecimal rentExclCharges = rentExclCharges(request, lease);
         BigDecimal charges = charges(request, lease);
-        BigDecimal total = CalculationService.totalRentReceipt(rentExclCharges, charges);
+        List<AdditionalCharge> additionalCharges = RentReceiptAdditionalCharges
+                .normalize(request.additionalCharges());
+        BigDecimal total = CalculationService.totalRentReceipt(rentExclCharges, charges,
+                RentReceiptAdditionalCharges.amounts(additionalCharges));
         String signature = signatureDataUri(request.signatureId(), lease.getLandlord().getId());
         TemplateDocument template = template(request.templateId());
         int version = nextVersion(month, lease);
 
         RentReceipt rentReceipt = new RentReceipt();
-        fill(rentReceipt, company, lease, month, periodStart, periodEnd, rentExclCharges, charges, total);
+        fill(rentReceipt, company, lease, month, periodStart, periodEnd, rentExclCharges, charges, total,
+                additionalCharges);
         rentReceipt.setPaymentDate(dateOr(request.paymentDate(), LocalDate.now(clock)));
         rentReceipt.setIssueDate(dateOr(request.issueDate(), LocalDate.now(clock)));
         rentReceipt.setVersion(version);
@@ -105,9 +110,13 @@ public class RentReceiptService {
         checkPeriod(periodStart, periodEnd);
         BigDecimal rentExclCharges = rentExclCharges(request, lease);
         BigDecimal charges = charges(request, lease);
+        List<AdditionalCharge> additionalCharges = RentReceiptAdditionalCharges
+                .normalize(request.additionalCharges());
         RentReceipt rentReceipt = new RentReceipt();
         fill(rentReceipt, company, lease, month, periodStart, periodEnd, rentExclCharges, charges,
-                CalculationService.totalRentReceipt(rentExclCharges, charges));
+                CalculationService.totalRentReceipt(rentExclCharges, charges,
+                        RentReceiptAdditionalCharges.amounts(additionalCharges)),
+                additionalCharges);
         rentReceipt.setIssueDate(dateOr(request.issueDate(), LocalDate.now(clock)));
         rentReceipt.setPaymentDate(dateOr(request.paymentDate(), LocalDate.now(clock)));
         String signature = signatureDataUri(request.signatureId(), lease.getLandlord().getId());
@@ -155,25 +164,33 @@ public class RentReceiptService {
     public RentReceipt activeForMonth(Long companyId, String month, Long landlordId, Long tenantId,
             Long tenantCompanyId) {
         if (landlordId != null && tenantCompanyId != null) {
-            return repository
+            return withAdditionalCharges(repository
                     .findFirstByMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
                             month, landlordId, tenantCompanyId, DocumentStatus.ACTIVE)
-                    .orElse(null);
+                    .orElse(null));
         }
         if (landlordId != null && tenantId != null) {
-            return repository
+            return withAdditionalCharges(repository
                     .findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
                             month, landlordId, tenantId, DocumentStatus.ACTIVE)
-                    .orElse(null);
+                    .orElse(null));
         }
         if (companyId != null) {
-            return repository
+            return withAdditionalCharges(repository
                     .findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
                             companyId, month, DocumentStatus.ACTIVE)
-                    .orElse(null);
+                    .orElse(null));
         }
-        return repository.findFirstByMonthAndStatusOrderByVersionDescIdDesc(month, DocumentStatus.ACTIVE)
-                .orElse(null);
+        return withAdditionalCharges(repository.findFirstByMonthAndStatusOrderByVersionDescIdDesc(month,
+                DocumentStatus.ACTIVE).orElse(null));
+    }
+
+    /** Loads the additional charge rows while the session is open: the controller maps a detached receipt. */
+    private RentReceipt withAdditionalCharges(RentReceipt rentReceipt) {
+        if (rentReceipt != null) {
+            rentReceipt.getAdditionalCharges().size();
+        }
+        return rentReceipt;
     }
 
     public byte[] pdf(Long id) {
@@ -186,7 +203,7 @@ public class RentReceiptService {
 
     private void fill(RentReceipt rentReceipt, Company company, Lease lease, YearMonth month,
             LocalDate periodStart, LocalDate periodEnd, BigDecimal rentExclCharges, BigDecimal charges,
-            BigDecimal total) {
+            BigDecimal total, List<AdditionalCharge> additionalCharges) {
         rentReceipt.setCompanyId(company == null ? null : company.getId());
         rentReceipt.setMonth(month.toString());
         rentReceipt.setLandlordId(lease.getLandlord().getId());
@@ -198,6 +215,7 @@ public class RentReceiptService {
         rentReceipt.setRentExclCharges(rentExclCharges);
         rentReceipt.setCharges(charges);
         rentReceipt.setTotal(total);
+        RentReceiptAdditionalCharges.entities(additionalCharges).forEach(rentReceipt::addAdditionalCharge);
     }
 
     private int nextVersion(YearMonth month, Lease lease) {

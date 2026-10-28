@@ -302,6 +302,15 @@ export const fr = {
       rentExclCharges: "Loyer hors charges",
       rentExclChargesHelp: "Modifiable pour une régularisation ponctuelle.",
       charges: "Provision pour charges",
+      additionalCharges: "Charges supplémentaires",
+      additionalChargeLabel: "Libellé",
+      additionalChargeAmount: "Montant",
+      addAdditionalCharge: "Ajouter une charge supplémentaire",
+      saveAdditionalCharge: "Enregistrer la charge supplémentaire",
+      cancelAdditionalCharge: "Annuler",
+      editAdditionalCharge: "Modifier la charge supplémentaire {{index}}",
+      removeAdditionalCharge: "Retirer la charge supplémentaire {{index}}",
+      removeAdditionalChargeShort: "Retirer",
       estimatedTotal: "Total estimé",
       estimatedTotalNote:
         "Affichage estimé. Le total du PDF est recalculé avec arrondi au centime.",
@@ -384,6 +393,14 @@ export const fr = {
       periodEnd: "Date de fin invalide.",
       rentExclCharges: "Loyer hors charges invalide.",
       charges: "Provision pour charges invalide.",
+      additionalChargeLabel:
+        "Le libellé de la charge supplémentaire est obligatoire.",
+      additionalChargeLabelTooLong:
+        "Le libellé de la charge supplémentaire ne peut pas dépasser 120 caractères.",
+      additionalChargeAmount:
+        "Le montant de la charge supplémentaire doit être strictement positif.",
+      additionalChargeLimit:
+        "Une quittance accepte au maximum 20 charges supplémentaires.",
       date: "Date invalide (JJ/MM/AAAA).",
       periodOrder: "La fin de période doit être postérieure au début.",
     },
@@ -890,6 +907,9 @@ export const fr = {
         emailHelp: "Facultative ; unique dans la société.",
         title: "Intitulé",
         titleHelp: "Descriptif : il ne donne encore aucun droit.",
+        issuePlace: "Lieu d’émission",
+        issuePlaceHelp:
+          "Imprimé sur la note de frais ; à défaut, le lieu de la société est utilisé.",
         address: "Adresse personnelle",
         addressHelp: "Facultative.",
         hint: "Enregistrez le salarié pour ajouter ses signatures sans fermer cette fenêtre.",

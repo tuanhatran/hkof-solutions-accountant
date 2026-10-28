@@ -62,7 +62,7 @@ class EmployeeServiceTest {
     }
 
     private EmployeeRequest request(Long companyId, String firstName, String lastName, String email, String title) {
-        return new EmployeeRequest(companyId, firstName, lastName, email, null, title);
+        return new EmployeeRequest(companyId, firstName, lastName, email, null, title, null);
     }
 
     @Test
@@ -90,14 +90,36 @@ class EmployeeServiceTest {
         });
 
         EmployeeDto dto = service.create(1L, new EmployeeRequest(null, "  Camille ", " Martin ",
-                " camille@example.fr ", " 2 rue du Salarié ", "cfo"));
+                " camille@example.fr ", " 2 rue du Salarié ", "cfo", "  Lyon  "));
 
         assertThat(dto.id()).isEqualTo(7L);
         assertThat(dto.firstName()).isEqualTo("Camille");
         assertThat(dto.email()).isEqualTo("camille@example.fr");
         assertThat(dto.address()).isEqualTo("2 rue du Salarié");
         assertThat(dto.title()).isEqualTo("CFO");
+        assertThat(dto.issuePlace()).isEqualTo("Lyon");
         assertThat(dto.companyId()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("The first non-blank CEO issue place is used, ignoring blank places and other titles")
+    void ceoIssuePlace() {
+        Employee blankCeo = employee();
+        blankCeo.setTitle(EmployeeTitle.CEO);
+        blankCeo.setIssuePlace("   ");
+        Employee cfo = employee();
+        cfo.setId(8L);
+        cfo.setTitle(EmployeeTitle.CFO);
+        cfo.setIssuePlace("Paris");
+        Employee ceo = employee();
+        ceo.setId(9L);
+        ceo.setTitle(EmployeeTitle.CEO);
+        ceo.setIssuePlace("  Lyon  ");
+        when(repository.findAllByCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(1L))
+                .thenReturn(List.of(blankCeo, cfo, ceo));
+
+        assertThat(service.ceoIssuePlace(1L)).contains("Lyon");
+        assertThat(service.ceoIssuePlace(null)).isEmpty();
     }
 
     @Test

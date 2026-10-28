@@ -289,6 +289,7 @@ describe("GenerateRentReceiptPage", () => {
       templateId: null,
       landlordId: 1,
       tenantKey: "person:2",
+      additionalCharges: [],
       initialized: true,
       dirty: false,
     });
@@ -1205,6 +1206,294 @@ describe("GenerateRentReceiptPage", () => {
         "Affichage estimé. Le total du PDF est recalculé avec arrondi au centime.",
       ),
     ).toBeVisible();
+  });
+
+  it("adds a charge with plain labels, saves it as read-only text and edits it back", async () => {
+    renderPage();
+    const user = userEvent.setup();
+
+    expect(screen.queryByText("Charges supplémentaires")).toBeNull();
+    const addButton = screen.getByRole("button", {
+      name: "Ajouter une charge supplémentaire",
+    });
+    await user.click(addButton);
+    expect(screen.getByText("Charges supplémentaires")).toBeVisible();
+    expect(screen.getByLabelText("Libellé")).toBeVisible();
+    expect(screen.getByLabelText("Montant")).toBeVisible();
+    expect(addButton).toBeDisabled();
+
+    // An invalid row stays editable and shows the French errors.
+    await user.type(screen.getByLabelText("Montant"), "0");
+    await user.click(
+      screen.getByRole("button", {
+        name: "Enregistrer la charge supplémentaire",
+      }),
+    );
+    expect(
+      await screen.findByText(
+        "Le libellé de la charge supplémentaire est obligatoire.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Le montant de la charge supplémentaire doit être strictement positif.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Libellé")).toBeVisible();
+
+    // The unsaved row never reaches the estimate.
+    await user.type(screen.getByLabelText("Libellé"), "Eau");
+    await user.clear(screen.getByLabelText("Montant"));
+    await user.type(screen.getByLabelText("Montant"), "20,00");
+    expect(screen.getByText(/1\s?300,00/)).toBeVisible();
+    await user.click(
+      screen.getByRole("button", {
+        name: "Enregistrer la charge supplémentaire",
+      }),
+    );
+
+    const row = document.querySelector('[data-cy="charge-supplementaire-0"]');
+    expect(row).not.toBeNull();
+    expect(within(row as HTMLElement).getByText("Eau")).toBeVisible();
+    expect(within(row as HTMLElement).getByText(/20,00\s?€/)).toBeVisible();
+    expect(screen.queryByLabelText("Libellé")).toBeNull();
+    expect(screen.getByText(/1\s?320,00/)).toBeVisible();
+    expect(addButton).toBeEnabled();
+
+    // Editing re-opens the saved values and keeps them in the estimate.
+    await user.click(
+      screen.getByRole("button", {
+        name: "Modifier la charge supplémentaire 1",
+      }),
+    );
+    expect(screen.getByLabelText("Libellé")).toHaveValue("Eau");
+    expect(screen.getByLabelText("Montant")).toHaveValue("20.00");
+    expect(addButton).toBeDisabled();
+    expect(screen.getByText(/1\s?320,00/)).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
+    expect(screen.getByText(/1\s?320,00/)).toBeVisible();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Retirer la charge supplémentaire 1",
+      }),
+    );
+    expect(screen.queryByText("Charges supplémentaires")).toBeNull();
+    expect(screen.getByText(/1\s?300,00/)).toBeVisible();
+  });
+
+  it("sends saved additional charges to the preview, the generation and the saved draft", async () => {
+    vi.mocked(api.rentReceipts.create).mockResolvedValue({
+      id: 1,
+      month: MONTH,
+      version: 1,
+      total: "1320.00",
+    });
+
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter une charge supplémentaire" }),
+    );
+    await user.type(screen.getByLabelText("Libellé"), "Eau");
+    await user.type(screen.getByLabelText("Montant"), "20.00");
+
+    // An unsaved row blocks generation: it is never silently discarded.
+    expect(
+      screen.getByRole("button", { name: /Générer la quittance/ }),
+    ).toBeDisabled();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Enregistrer la charge supplémentaire",
+      }),
+    );
+    await waitFor(() => expect(screen.getByText(/1\s?320,00/)).toBeVisible());
+
+    await waitFor(() => expect(lastPreviewLoader).not.toBeNull());
+    await lastPreviewLoader?.(new AbortController().signal);
+    expect(api.rentReceipts.preview).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        additionalCharges: [{ label: "Eau", amount: "20.00" }],
+      }),
+      expect.anything(),
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: /Générer la quittance/ }),
+    );
+    await waitFor(() =>
+      expect(api.rentReceipts.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          additionalCharges: [{ label: "Eau", amount: "20.00" }],
+        }),
+      ),
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Enregistrer le brouillon" }),
+    );
+    await waitFor(() =>
+      expect(api.drafts.saveRentReceipt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          additionalCharges: [{ label: "Eau", amount: "20.00" }],
+        }),
+      ),
+    );
+  });
+
+  it("keeps the saved charge in the estimate and the preview while editing", async () => {
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter une charge supplémentaire" }),
+    );
+    await user.type(screen.getByLabelText("Libellé"), "Eau");
+    await user.type(screen.getByLabelText("Montant"), "20.00");
+    await user.click(
+      screen.getByRole("button", {
+        name: "Enregistrer la charge supplémentaire",
+      }),
+    );
+    await waitFor(() => expect(screen.getByText(/1\s?320,00/)).toBeVisible());
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Modifier la charge supplémentaire 1",
+      }),
+    );
+    await user.clear(screen.getByLabelText("Montant"));
+    await user.type(screen.getByLabelText("Montant"), "25,00");
+    expect(screen.getByText(/1\s?320,00/)).toBeVisible();
+
+    await waitFor(() => expect(lastPreviewLoader).not.toBeNull());
+    await lastPreviewLoader?.(new AbortController().signal);
+    expect(api.rentReceipts.preview).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        additionalCharges: [{ label: "Eau", amount: "20.00" }],
+      }),
+      expect.anything(),
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Enregistrer la charge supplémentaire",
+      }),
+    );
+    await waitFor(() => expect(screen.getByText(/1\s?325,00/)).toBeVisible());
+    await lastPreviewLoader?.(new AbortController().signal);
+    expect(api.rentReceipts.preview).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        additionalCharges: [{ label: "Eau", amount: "25.00" }],
+      }),
+      expect.anything(),
+    );
+    expect(
+      screen.getByRole("button", { name: "Ajouter une charge supplémentaire" }),
+    ).toBeEnabled();
+  });
+
+  it("saves the edited charge in place when an earlier row is removed", async () => {
+    renderPage();
+    const user = userEvent.setup();
+
+    const addCharge = async (label: string, amount: string) => {
+      await user.click(
+        screen.getByRole("button", {
+          name: "Ajouter une charge supplémentaire",
+        }),
+      );
+      await user.type(screen.getByLabelText("Libellé"), label);
+      await user.type(screen.getByLabelText("Montant"), amount);
+      await user.click(
+        screen.getByRole("button", {
+          name: "Enregistrer la charge supplémentaire",
+        }),
+      );
+      await screen.findByText(label);
+    };
+
+    await addCharge("Eau", "10.00");
+    await addCharge("Gaz", "20.00");
+    await addCharge("Bois", "30.00");
+
+    // Edit the middle row, then remove the first one: the edit must stay on Gaz.
+    await user.click(
+      screen.getByRole("button", {
+        name: "Modifier la charge supplémentaire 2",
+      }),
+    );
+    await user.clear(screen.getByLabelText("Montant"));
+    await user.type(screen.getByLabelText("Montant"), "25,00");
+    await user.click(
+      screen.getByRole("button", {
+        name: "Retirer la charge supplémentaire 1",
+      }),
+    );
+    expect(screen.getByLabelText("Libellé")).toHaveValue("Gaz");
+    await user.click(
+      screen.getByRole("button", {
+        name: "Enregistrer la charge supplémentaire",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-cy="charge-supplementaire-1"]'),
+      ).not.toBeNull(),
+    );
+    const first = document.querySelector('[data-cy="charge-supplementaire-0"]');
+    const second = document.querySelector(
+      '[data-cy="charge-supplementaire-1"]',
+    );
+    expect(within(first as HTMLElement).getByText("Gaz")).toBeVisible();
+    expect(within(first as HTMLElement).getByText(/25,00\s?€/)).toBeVisible();
+    expect(within(second as HTMLElement).getByText("Bois")).toBeVisible();
+    expect(within(second as HTMLElement).getByText(/30,00\s?€/)).toBeVisible();
+    expect(
+      document.querySelector('[data-cy="charge-supplementaire-2"]'),
+    ).toBeNull();
+    expect(screen.getByText(/1\s?355,00/)).toBeVisible();
+    expect(useRentReceiptDraft.getState().additionalCharges).toEqual([
+      { label: "Gaz", amount: "25.00" },
+      { label: "Bois", amount: "30.00" },
+    ]);
+
+    await waitFor(() => expect(lastPreviewLoader).not.toBeNull());
+    await lastPreviewLoader?.(new AbortController().signal);
+    expect(api.rentReceipts.preview).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        additionalCharges: [
+          { label: "Gaz", amount: "25.00" },
+          { label: "Bois", amount: "30.00" },
+        ],
+      }),
+      expect.anything(),
+    );
+  });
+
+  it("restores the saved additional charges of a draft as read-only text", async () => {
+    savedDraft = {
+      id: 60,
+      month: MONTH,
+      landlordId: 1,
+      tenantId: 2,
+      periodStart: "2026-01-02",
+      periodEnd: "2026-01-30",
+      rentExclCharges: "1200.00",
+      charges: "40.00",
+      paymentDate: "2026-01-04",
+      issueDate: "2026-01-03",
+      additionalCharges: [{ label: "Eau", amount: "15.50" }],
+      savedAt: "2026-01-10T09:00:00Z",
+    };
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Eau")).toBeVisible());
+    expect(screen.getByText(/15,50\s?€/)).toBeVisible();
+    expect(screen.queryByLabelText("Libellé")).toBeNull();
+    expect(screen.getByText(/1\s?255,50/)).toBeVisible();
   });
 
   it("switches the mobile input and preview panels", async () => {

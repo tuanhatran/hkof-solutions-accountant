@@ -24,6 +24,9 @@ public final class TemplateCatalog {
         variable(RENT_RECEIPT_VARIABLES, "periode.fin", "Fin de la période", true, "31/10/2026");
         variable(RENT_RECEIPT_VARIABLES, "loyer_hc", "Loyer hors charges formaté", true, "900,00 €");
         variable(RENT_RECEIPT_VARIABLES, "charges", "Provision pour charges formatée", false, "50,00 €");
+        variable(RENT_RECEIPT_VARIABLES, "charges_supplementaires", "Section répétée pour chaque charge supplémentaire", false, "—");
+        variable(RENT_RECEIPT_VARIABLES, "charges_supplementaires.libelle", "Libellé de la charge supplémentaire", true, "Eau");
+        variable(RENT_RECEIPT_VARIABLES, "charges_supplementaires.montant", "Montant de la charge supplémentaire formaté", true, "20,00 €");
         variable(RENT_RECEIPT_VARIABLES, "total", "Total de la quittance formaté", true, "950,00 €");
         variable(RENT_RECEIPT_VARIABLES, "total_en_lettres", "Total en toutes lettres", true, "neuf cent cinquante euros");
         variable(RENT_RECEIPT_VARIABLES, "date_paiement", "Date de paiement", false, "05/10/2026");

@@ -853,6 +853,12 @@ export interface components {
             proRataBaseDetail?: string;
             issuePlace?: string;
         };
+        AdditionalCharge: {
+            /** @description Libellé libre de la charge supplémentaire d'une quittance. */
+            label: string;
+            /** @description Montant en euros, strictement positif, fourni sous forme de chaîne décimale. Il entre dans le total calculé par le backend. */
+            amount: string;
+        };
         EmployeeRequest: {
             /**
              * Format: int64
@@ -870,6 +876,8 @@ export interface components {
              * @enum {string}
              */
             title: "CEO" | "CFO" | "ACCOUNTANT" | "EMPLOYEE";
+            /** @description Lieu d'émission facultatif du salarié. Le premier lieu non vide d'un salarié CEO est imprimé sur la note de frais de la société, sinon le lieu d'émission de la société s'applique. */
+            issuePlace?: string | null;
         };
         EmployeeDto: {
             /** Format: int64 */
@@ -887,6 +895,8 @@ export interface components {
             readonly signatureCount?: number;
             /** @enum {string} */
             title?: "CEO" | "CFO" | "ACCOUNTANT" | "EMPLOYEE";
+            /** @description Lieu d'émission facultatif du salarié. */
+            issuePlace?: string | null;
         };
         PersonRequest: {
             /** @description Nom de la personne physique. */
@@ -1114,6 +1124,8 @@ export interface components {
             templateId?: number;
             /** Format: int64 */
             signatureId?: number;
+            /** @description Charges supplémentaires libres ajoutées au total de la quittance. Chaque libellé est obligatoire (120 caractères maximum) et chaque montant est strictement positif. */
+            additionalCharges?: components["schemas"]["AdditionalCharge"][];
         };
         RentReceiptDto: {
             /** Format: int64 */
@@ -1152,6 +1164,8 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
             pdfAvailable?: boolean;
+            /** @description Charges supplémentaires incluses dans le total de cette version. */
+            additionalCharges?: components["schemas"]["AdditionalCharge"][];
         };
         ReceiptDto: {
             /** Format: int64 */
@@ -1287,6 +1301,8 @@ export interface components {
             issueDate?: string;
             /** Format: int64 */
             templateId?: number | null;
+            /** @description Charges supplémentaires conservées dans le brouillon. */
+            additionalCharges?: components["schemas"]["AdditionalCharge"][];
         };
         RentReceiptDraftDto: {
             /** Format: int64 */
@@ -1312,6 +1328,8 @@ export interface components {
             templateId?: number;
             /** Format: date-time */
             savedAt?: string;
+            /** @description Charges supplémentaires restaurées avec le brouillon. */
+            additionalCharges?: components["schemas"]["AdditionalCharge"][];
         };
         StatementDraftRequest: {
             /** Format: int64 */

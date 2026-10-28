@@ -1,4 +1,5 @@
 import {
+  FEBRUARY,
   MONTHS,
   SEED_RENT,
   SEED_TOTAL,
@@ -20,6 +21,71 @@ interface RentReceiptSummary {
 }
 
 describe("Rent receipt", () => {
+  it("adds an additional charge to the total and the generated PDF", () => {
+    normalLease().then((lease) => {
+      cy.visit("/generer/quittance");
+      cy.get('[data-cy="select-bailleur"]').select(String(lease.landlordId));
+      cy.get('[data-cy="select-locataire"]').select(`person:${lease.tenantId}`);
+      cy.chooseMonth(FEBRUARY);
+      waitForValue("#quittance-loyer", SEED_RENT);
+
+      cy.get('[data-cy="btn-ajouter-charge-supplementaire"]').click();
+      cy.get('[data-cy="input-charge-supplementaire-libelle"]').type("Eau");
+      cy.get('[data-cy="input-charge-supplementaire-montant"]').type("20,00");
+      cy.get('[data-cy="btn-ajouter-charge-supplementaire"]').should(
+        "be.disabled",
+      );
+      cy.get('[data-cy="btn-generer-quittance"]').should("be.disabled");
+      cy.contains("1 300,00 €").should("be.visible");
+
+      cy.get('[data-cy="btn-enregistrer-charge-supplementaire"]').click();
+      cy.get('[data-cy="charge-supplementaire-0"]')
+        .should("be.visible")
+        .and("contain.text", "Eau")
+        .and("contain.text", "20,00");
+      cy.get('[data-cy="input-charge-supplementaire-libelle"]').should(
+        "not.exist",
+      );
+      cy.get('[data-cy="btn-ajouter-charge-supplementaire"]').should(
+        "not.be.disabled",
+      );
+      cy.contains("1 320,00 €").should("be.visible");
+
+      // Editing keeps the saved charge effective until the new value is saved.
+      cy.get('[data-cy="btn-modifier-charge-supplementaire-0"]').click();
+      cy.get('[data-cy="input-charge-supplementaire-libelle"]').should(
+        "have.value",
+        "Eau",
+      );
+      cy.get('[data-cy="input-charge-supplementaire-montant"]')
+        .should("have.value", "20.00")
+        .clear()
+        .type("25,00");
+      cy.contains("1 320,00 €").should("be.visible");
+      cy.get('[data-cy="btn-enregistrer-charge-supplementaire"]').click();
+      cy.get('[data-cy="charge-supplementaire-0"]')
+        .should("be.visible")
+        .and("contain.text", "25,00");
+
+      cy.get('[data-cy="btn-generer-quittance"]')
+        .should("not.be.disabled")
+        .click();
+      cy.contains("Quittance générée", { timeout: 25_000 }).should(
+        "be.visible",
+      );
+
+      downloadAndReadPdf(
+        '[data-cy="btn-telecharger-quittance"]',
+        "quittance_2026-02.pdf",
+        (text) => {
+          expect(text).to.contain("Eau");
+          expect(text).to.contain("1 325,00 €");
+          expect(text).to.contain("1 325,00");
+        },
+      );
+    });
+  });
+
   it("keeps several active receipts for the same pair in one month", () => {
     normalLease().then((lease) => {
       cy.visit("/generer/quittance");

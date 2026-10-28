@@ -27,6 +27,7 @@ import fr.hkof.homeofficeexpenses.web.dto.DocumentDraftDtos.RentReceiptDraftDto;
 import fr.hkof.homeofficeexpenses.web.dto.DocumentDraftDtos.RentReceiptDraftRequest;
 import fr.hkof.homeofficeexpenses.web.dto.DocumentDraftDtos.StatementDraftDto;
 import fr.hkof.homeofficeexpenses.web.dto.DocumentDraftDtos.StatementDraftRequest;
+import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.AdditionalCharge;
 import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.ExpenseLineRequest;
 
 class DocumentDraftServiceTest {
@@ -48,7 +49,7 @@ class DocumentDraftServiceTest {
     private static RentReceiptDraftRequest rentReceiptRequest() {
         return new RentReceiptDraftRequest(
                 "2026-01", 4L, 7L, null,
-                "2026-01-01", "2026-01-31", "1 300,00", "50", "2026-01-05", "2026-01-05", 9L);
+                "2026-01-01", "2026-01-31", "1 300,00", "50", "2026-01-05", "2026-01-05", 9L, null);
     }
 
     private static StatementDraftRequest statementRequest() {
@@ -76,6 +77,52 @@ class DocumentDraftServiceTest {
         assertThat(saved.getPayload()).contains("\"periodStart\":\"2026-01-01\"");
         assertThat(dto.savedAt()).isEqualTo(NOW);
         assertThat(dto.rentExclCharges()).isEqualTo("1300.00");
+        assertThat(dto.additionalCharges()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Keeps the additional charges of a rent receipt draft through a save and find round-trip")
+    void keepsAdditionalChargesInRentReceiptDraft() {
+        RentReceiptDraftRequest request = new RentReceiptDraftRequest(
+                "2026-01", 4L, 7L, null,
+                "2026-01-01", "2026-01-31", "1300.00", "50.00",
+                "2026-01-05", "2026-01-05", 9L,
+                List.of(new AdditionalCharge("  Eau  ", "15.5"), new AdditionalCharge("Ordures", "4.5")));
+
+        RentReceiptDraftDto saved = service.saveRentReceipt(request);
+
+        assertThat(saved.additionalCharges()).containsExactly(
+                new AdditionalCharge("Eau", "15.50"), new AdditionalCharge("Ordures", "4.50"));
+        ArgumentCaptor<DocumentDraft> captor = ArgumentCaptor.forClass(DocumentDraft.class);
+        verify(repository).save(captor.capture());
+        DocumentDraft stored = captor.getValue();
+        stored.setId(21L);
+        stored.setSavedAt(NOW);
+        assertThat(stored.getPayload()).contains("\"amount\":\"15.50\"");
+        when(repository.findFirstByTypeAndMonthAndLandlordIdAndTenantIdAndDeletedFalseOrderByIdDesc(
+                DocumentDraft.Type.RENT_RECEIPT, "2026-01", 4L, 7L)).thenReturn(Optional.of(stored));
+
+        RentReceiptDraftDto found = service.findRentReceipt("2026-01", 4L, 7L, null).orElseThrow();
+
+        assertThat(found.additionalCharges()).containsExactly(
+                new AdditionalCharge("Eau", "15.50"), new AdditionalCharge("Ordures", "4.50"));
+    }
+
+    @Test
+    @DisplayName("Rejects an invalid additional charge in a rent receipt draft")
+    void rejectsInvalidDraftAdditionalCharge() {
+        assertThatThrownBy(() -> service.saveRentReceipt(new RentReceiptDraftRequest(
+                "2026-01", 4L, 7L, null, "2026-01-01", "2026-01-31",
+                "1300.00", "0.00", "2026-01-05", "2026-01-05", null,
+                List.of(new AdditionalCharge(" ", "10.00")))))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("libellé");
+        assertThatThrownBy(() -> service.saveRentReceipt(new RentReceiptDraftRequest(
+                "2026-01", 4L, 7L, null, "2026-01-01", "2026-01-31",
+                "1300.00", "0.00", "2026-01-05", "2026-01-05", null,
+                List.of(new AdditionalCharge("Eau", "0.00")))))
+                .isInstanceOf(BusinessException.class);
+        verify(repository, never()).save(any(DocumentDraft.class));
     }
 
     @Test
@@ -120,12 +167,12 @@ class DocumentDraftServiceTest {
     void requiresExactlyOneTenant() {
         assertThatThrownBy(() -> service.saveRentReceipt(new RentReceiptDraftRequest(
                 "2026-01", 4L, null, null, "2026-01-01", "2026-01-31",
-                "1300.00", "0.00", "2026-01-05", "2026-01-05", null)))
+                "1300.00", "0.00", "2026-01-05", "2026-01-05", null, null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("locataire");
         assertThatThrownBy(() -> service.saveRentReceipt(new RentReceiptDraftRequest(
                 "2026-01", 4L, 7L, 8L, "2026-01-01", "2026-01-31",
-                "1300.00", "0.00", "2026-01-05", "2026-01-05", null)))
+                "1300.00", "0.00", "2026-01-05", "2026-01-05", null, null)))
                 .isInstanceOf(BusinessException.class);
         assertThatThrownBy(() -> service.findRentReceipt("2026-01", 4L, null, null))
                 .isInstanceOf(BusinessException.class);
@@ -137,20 +184,20 @@ class DocumentDraftServiceTest {
     void rejectsInvalidValues() {
         assertThatThrownBy(() -> service.saveRentReceipt(new RentReceiptDraftRequest(
                 "2026-13", 4L, 7L, null, "2026-01-01", "2026-01-31",
-                "1300.00", "0.00", "2026-01-05", "2026-01-05", null)))
+                "1300.00", "0.00", "2026-01-05", "2026-01-05", null, null)))
                 .isInstanceOf(BusinessException.class);
         assertThatThrownBy(() -> service.saveRentReceipt(new RentReceiptDraftRequest(
                 "2026-01", 4L, 7L, null, "2026-01-01", "2026-01-31",
-                "abc", "0.00", "2026-01-05", "2026-01-05", null)))
+                "abc", "0.00", "2026-01-05", "2026-01-05", null, null)))
                 .isInstanceOf(BusinessException.class);
         assertThatThrownBy(() -> service.saveRentReceipt(new RentReceiptDraftRequest(
                 "2026-01", 4L, 7L, null, "2026-01-31", "2026-01-01",
-                "1300.00", "0.00", "2026-01-05", "2026-01-05", null)))
+                "1300.00", "0.00", "2026-01-05", "2026-01-05", null, null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("période");
         assertThatThrownBy(() -> service.saveRentReceipt(new RentReceiptDraftRequest(
                 "2026-01", 4L, 7L, null, "2026-01-01", "2026-01-31",
-                "1300.00", "0.00", "05/01/2026", "2026-01-05", null)))
+                "1300.00", "0.00", "05/01/2026", "2026-01-05", null, null)))
                 .isInstanceOf(BusinessException.class);
     }
 

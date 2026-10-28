@@ -23,9 +23,11 @@ import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
 import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
+import fr.hkof.homeofficeexpenses.domain.RentReceiptAdditionalCharge;
 import fr.hkof.homeofficeexpenses.domain.Signature;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.service.CompanyService;
+import fr.hkof.homeofficeexpenses.service.EmployeeService;
 import fr.hkof.homeofficeexpenses.service.LeaseService;
 import fr.hkof.homeofficeexpenses.service.SignatureService;
 import fr.hkof.homeofficeexpenses.web.dto.CompanyDtos.CompanyDto;
@@ -37,6 +39,7 @@ class TemplateDataServiceTest {
     private CompanyService companyService;
     private SignatureService signatureService;
     private LeaseService leaseService;
+    private EmployeeService employeeService;
     private TemplateDataService service;
 
     @BeforeEach
@@ -44,7 +47,8 @@ class TemplateDataServiceTest {
         companyService = mock(CompanyService.class);
         signatureService = mock(SignatureService.class);
         leaseService = mock(LeaseService.class);
-        service = new TemplateDataService(companyService, signatureService, leaseService);
+        employeeService = mock(EmployeeService.class);
+        service = new TemplateDataService(companyService, signatureService, leaseService, employeeService);
     }
 
     private Company company() {
@@ -125,11 +129,36 @@ class TemplateDataServiceTest {
                 "data:image/png;base64,AAAA");
 
         assertThat(data).containsKeys("bailleur", "locataire", "logement", "mois_libelle", "periode", "loyer_hc",
-                "charges", "total", "total_en_lettres", "date_paiement", "date_emission", "lieu", "signature");
+                "charges", "charges_supplementaires", "total", "total_en_lettres", "date_paiement", "date_emission",
+                "lieu", "signature");
         assertThat(data.get("mois_libelle")).isEqualTo("Octobre 2026");
         assertThat(data.get("total")).isEqualTo("950,00\u00A0€");
         assertThat(data.get("total_en_lettres")).isEqualTo("neuf cent cinquante euros");
         assertThat(data.get("lieu")).isEqualTo("Paris");
+        assertThat((List<?>) data.get("charges_supplementaires")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Additional charges are exposed as French label and formatted amount rows")
+    void rentReceiptAdditionalCharges() {
+        RentReceipt receipt = rentReceipt();
+        RentReceiptAdditionalCharge water = new RentReceiptAdditionalCharge();
+        water.setLabel("Eau");
+        water.setAmount(new BigDecimal("15.50"));
+        water.setPosition(0);
+        receipt.addAdditionalCharge(water);
+        RentReceiptAdditionalCharge waste = new RentReceiptAdditionalCharge();
+        waste.setLabel("Ordures ménagères");
+        waste.setAmount(new BigDecimal("4.50"));
+        waste.setPosition(1);
+        receipt.addAdditionalCharge(waste);
+
+        Map<String, Object> data = service.dataRentReceipt(company(), landlord(), tenant(), null, lease(), receipt,
+                null);
+
+        assertThat(data.get("charges_supplementaires")).isEqualTo(List.of(
+                Map.of("libelle", "Eau", "montant", "15,50\u00A0€"),
+                Map.of("libelle", "Ordures ménagères", "montant", "4,50\u00A0€")));
     }
 
     @Test
@@ -208,6 +237,24 @@ class TemplateDataServiceTest {
         assertThat(data.get("complete")).isEqualTo(true);
         assertThat((List<?>) data.get("lignes")).hasSize(1);
         assertThat(data.get("base_prorata")).isEqualTo("Surface pro 25 m² / 70 m² = 35,71 %");
+    }
+
+    @Test
+    @DisplayName("A statement prints the first CEO issue place, then the company place")
+    void statementIssuePlace() {
+        ExpenseStatement statement = new ExpenseStatement();
+        statement.setMonth("2026-10");
+        statement.setNumber("NF-2026-10");
+        statement.setTotal(new BigDecimal("42.85"));
+        statement.setLines(List.of());
+        when(leaseService.proRata(COMPANY_ID, null)).thenReturn(new LeaseService.ProRata(
+                new BigDecimal("35.71"), "détail"));
+
+        when(employeeService.ceoIssuePlace(COMPANY_ID)).thenReturn(Optional.of("  Lyon  "));
+        assertThat(service.dataStatement(company(), statement, true, null).get("lieu")).isEqualTo("Lyon");
+
+        when(employeeService.ceoIssuePlace(COMPANY_ID)).thenReturn(Optional.empty());
+        assertThat(service.dataStatement(company(), statement, true, null).get("lieu")).isEqualTo("Paris");
     }
 
     @Test

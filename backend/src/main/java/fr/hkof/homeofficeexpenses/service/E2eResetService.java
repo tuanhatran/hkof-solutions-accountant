@@ -34,6 +34,7 @@ import fr.hkof.homeofficeexpenses.repository.LeaseRepository;
 import fr.hkof.homeofficeexpenses.repository.LlmConfigRepository;
 import fr.hkof.homeofficeexpenses.repository.PersonRepository;
 import fr.hkof.homeofficeexpenses.repository.ReceiptRepository;
+import fr.hkof.homeofficeexpenses.repository.RentReceiptAdditionalChargeRepository;
 import fr.hkof.homeofficeexpenses.repository.RentReceiptRepository;
 import fr.hkof.homeofficeexpenses.repository.SignatureRepository;
 import fr.hkof.homeofficeexpenses.repository.TemplateDocumentRepository;
@@ -60,6 +61,7 @@ public class E2eResetService {
     private final ExpenseLineRepository lines;
     private final ExpenseStatementRepository statements;
     private final RentReceiptRepository rentReceipts;
+    private final RentReceiptAdditionalChargeRepository additionalCharges;
     private final ReceiptRepository receipts;
     private final TemplateDocumentRepository templates;
     private final LlmConfigRepository llmConfigs;
@@ -74,7 +76,8 @@ public class E2eResetService {
     private final DataInitializer initializer;
 
     public E2eResetService(AnalysisDocumentRepository analyses, ExpenseLineRepository lines,
-            ExpenseStatementRepository statements, RentReceiptRepository rentReceipts, ReceiptRepository receipts,
+            ExpenseStatementRepository statements, RentReceiptRepository rentReceipts,
+            RentReceiptAdditionalChargeRepository additionalCharges, ReceiptRepository receipts,
             TemplateDocumentRepository templates, LlmConfigRepository llmConfigs, ExpenseItemRepository items,
             CompanyRepository companies, EmployeeRepository employees, LeaseRepository leases,
             AddressRepository addresses, PersonRepository persons, SignatureRepository signatures,
@@ -83,6 +86,7 @@ public class E2eResetService {
         this.lines = lines;
         this.statements = statements;
         this.rentReceipts = rentReceipts;
+        this.additionalCharges = additionalCharges;
         this.receipts = receipts;
         this.templates = templates;
         this.llmConfigs = llmConfigs;
@@ -103,6 +107,7 @@ public class E2eResetService {
         analyses.deleteAllInBatch();
         lines.deleteAllInBatch();
         statements.deleteAllInBatch();
+        additionalCharges.deleteAllInBatch();
         rentReceipts.deleteAllInBatch();
         receipts.deleteAllInBatch();
         templates.deleteAllInBatch();

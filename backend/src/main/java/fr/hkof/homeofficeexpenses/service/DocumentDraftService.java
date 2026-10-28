@@ -183,7 +183,8 @@ public class DocumentDraftService {
                 amount(request.charges(), "charges"),
                 date(request.paymentDate(), "date de paiement"),
                 date(request.issueDate(), "date d'émission"),
-                request.templateId());
+                request.templateId(),
+                RentReceiptAdditionalCharges.normalize(request.additionalCharges()));
     }
 
     private StatementDraftRequest normalizeStatement(StatementDraftRequest request) {
@@ -272,7 +273,8 @@ public class DocumentDraftService {
                 request.paymentDate(),
                 request.issueDate(),
                 request.templateId(),
-                entity.getSavedAt());
+                entity.getSavedAt(),
+                request.additionalCharges() == null ? List.of() : request.additionalCharges());
     }
 
     private StatementDraftDto toStatementDto(DocumentDraft entity) {

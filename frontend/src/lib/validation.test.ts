@@ -95,6 +95,7 @@ describe("rentReceiptSchema", () => {
     charges: "50,00",
     paymentDate: "",
     issueDate: "",
+    additionalCharges: [],
   };
 
   it("accepts the month period and empty optional dates", () => {
@@ -111,6 +112,50 @@ describe("rentReceiptSchema", () => {
     expect(
       rentReceiptSchema.safeParse({ ...VALID, tenantKey: "societe:2" }).success,
     ).toBe(false);
+  });
+
+  it("validates additional charge labels, amounts and the line limit", () => {
+    expect(
+      rentReceiptSchema.safeParse({
+        ...VALID,
+        additionalCharges: [{ label: "Eau", amount: "15,50" }],
+      }).success,
+    ).toBe(true);
+
+    const blankLabel = rentReceiptSchema.safeParse({
+      ...VALID,
+      additionalCharges: [{ label: "  ", amount: "15.50" }],
+    });
+    expect(blankLabel.error?.issues[0]?.message).toBe(
+      "Le libellé de la charge supplémentaire est obligatoire.",
+    );
+
+    const zero = rentReceiptSchema.safeParse({
+      ...VALID,
+      additionalCharges: [{ label: "Eau", amount: "0" }],
+    });
+    expect(zero.error?.issues[0]?.message).toBe(
+      "Le montant de la charge supplémentaire doit être strictement positif.",
+    );
+
+    const tooLong = rentReceiptSchema.safeParse({
+      ...VALID,
+      additionalCharges: [{ label: "x".repeat(121), amount: "1.00" }],
+    });
+    expect(tooLong.error?.issues[0]?.message).toBe(
+      "Le libellé de la charge supplémentaire ne peut pas dépasser 120 caractères.",
+    );
+
+    const tooMany = rentReceiptSchema.safeParse({
+      ...VALID,
+      additionalCharges: Array.from({ length: 21 }, () => ({
+        label: "Eau",
+        amount: "1.00",
+      })),
+    });
+    expect(tooMany.error?.issues[0]?.message).toBe(
+      "Une quittance accepte au maximum 20 charges supplémentaires.",
+    );
   });
 
   it("rejects a reversed period and an invalid month", () => {
@@ -235,6 +280,7 @@ describe("employeeSchema", () => {
     address: "",
     email: "camille@example.fr",
     title: "CEO" as const,
+    issuePlace: "",
   };
 
   it("accepts a complete employee and an empty email", () => {
@@ -271,6 +317,7 @@ describe("employeeSchema", () => {
       address: "",
       email: "camille",
       title: "DIRECTOR",
+      issuePlace: "",
     });
     expect(english.success).toBe(false);
     if (english.success) {

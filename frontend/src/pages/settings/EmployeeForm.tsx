@@ -45,6 +45,7 @@ export function EmployeeForm({
       address: employee?.address ?? "",
       email: employee?.email ?? "",
       title: employee?.title ?? "EMPLOYEE",
+      issuePlace: employee?.issuePlace ?? "",
     },
   });
 
@@ -57,6 +58,8 @@ export function EmployeeForm({
         address: values.address.trim() === "" ? null : values.address.trim(),
         email: values.email.trim() === "" ? null : values.email.trim(),
         title: values.title,
+        issuePlace:
+          values.issuePlace.trim() === "" ? null : values.issuePlace.trim(),
       };
       return savedId === null
         ? api.employees.create(companyId, requestBody)
@@ -155,6 +158,20 @@ export function EmployeeForm({
               </option>
             ))}
           </select>
+        </FieldGroup>
+        <FieldGroup
+          id="salarie-lieu-emission"
+          label={t("settings.employees.form.issuePlace")}
+          error={errors.issuePlace?.message}
+          help={t("settings.employees.form.issuePlaceHelp")}
+        >
+          <input
+            id="salarie-lieu-emission"
+            className={cn("field", errors.issuePlace && "field-error")}
+            placeholder="Paris"
+            {...register("issuePlace")}
+            data-cy="input-salarie-lieu-emission"
+          />
         </FieldGroup>
         <FieldGroup
           id="salarie-adresse"

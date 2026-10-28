@@ -3,7 +3,10 @@ package fr.hkof.homeofficeexpenses.domain;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -11,6 +14,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 @Entity
@@ -78,6 +83,24 @@ public class RentReceipt {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
+    @OneToMany(mappedBy = "rentReceipt", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("position ASC")
+    private List<RentReceiptAdditionalCharge> additionalCharges = new ArrayList<>();
+
+    /** Adds one immutable child charge to this receipt version. */
+    public void addAdditionalCharge(RentReceiptAdditionalCharge charge) {
+        charge.setRentReceipt(this);
+        this.additionalCharges.add(charge);
+    }
+
+    public List<RentReceiptAdditionalCharge> getAdditionalCharges() {
+        return additionalCharges;
+    }
+
+    public void setAdditionalCharges(List<RentReceiptAdditionalCharge> additionalCharges) {
+        this.additionalCharges = additionalCharges;
+    }
 
     public Long getId() {
         return id;

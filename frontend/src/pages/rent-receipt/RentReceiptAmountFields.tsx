@@ -1,8 +1,11 @@
 import "./RentReceiptAmountFields.css";
+import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/Button";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
 import { formatDate } from "@/lib/format";
+import { RentReceiptAdditionalChargeRow } from "./RentReceiptAdditionalChargeRow";
 import type { RentReceiptController } from "./useRentReceiptPage";
 
 /** Period, amounts, dates and the estimated-total block. */
@@ -92,6 +95,40 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
             <span className="rent-receipt-amount-fields-unit">€</span>
           </div>
         </FieldGroup>
+      </div>
+
+      <div className="rent-receipt-amount-fields-charges">
+        {(c.values.additionalCharges ?? []).length > 0 ||
+        c.editingAdditionalCharge !== null ? (
+          <p className="rent-receipt-amount-fields-charges-title">
+            {t("rentReceipt.fields.additionalCharges")}
+          </p>
+        ) : null}
+        <ul className="rent-receipt-amount-fields-charges-list">
+          {(c.values.additionalCharges ?? []).map((charge, index) => (
+            <RentReceiptAdditionalChargeRow
+              key={index}
+              c={c}
+              index={index}
+              charge={charge}
+            />
+          ))}
+          {c.editingAdditionalCharge?.index === null ? (
+            <RentReceiptAdditionalChargeRow key="nouvelle" c={c} index={null} />
+          ) : null}
+        </ul>
+        <div className="rent-receipt-amount-fields-charges-actions">
+          <Button
+            variant="secondary"
+            small
+            icon={<Plus size={14} />}
+            onClick={c.startAddAdditionalCharge}
+            disabled={!c.canAddAdditionalCharge}
+            data-cy="btn-ajouter-charge-supplementaire"
+          >
+            {t("rentReceipt.fields.addAdditionalCharge")}
+          </Button>
+        </div>
       </div>
 
       <div className="rent-receipt-amount-fields-total">

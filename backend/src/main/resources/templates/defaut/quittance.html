@@ -178,6 +178,12 @@
           <td>Provision pour charges</td>
           <td class="droite">{{charges}}</td>
         </tr>
+        {{#charges_supplementaires}}
+        <tr>
+          <td>{{libelle}}</td>
+          <td class="droite">{{montant}}</td>
+        </tr>
+        {{/charges_supplementaires}}
         <tr class="total">
           <td>Total</td>
           <td class="droite">{{total}}</td>

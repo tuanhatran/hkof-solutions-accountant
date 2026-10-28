@@ -734,6 +734,7 @@ describe("SettingsPage tabs", () => {
         address: null,
         email: null,
         title: "EMPLOYEE",
+        issuePlace: null,
       }),
     );
   });

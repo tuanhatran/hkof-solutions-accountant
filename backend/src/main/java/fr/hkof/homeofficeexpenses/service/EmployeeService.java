@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
@@ -89,6 +90,24 @@ public class EmployeeService {
                 .orElseThrow(() -> new NotFoundException("EMPLOYEE_NOT_FOUND", "Salarié introuvable."));
     }
 
+    /**
+     * First non-blank issue place of a CEO employee of the company, in the same directory
+     * order as the employee list. Used as the note de frais issue place before the company
+     * fallback.
+     */
+    @Transactional(readOnly = true)
+    public Optional<String> ceoIssuePlace(Long companyId) {
+        if (companyId == null) {
+            return Optional.empty();
+        }
+        return repository.findAllByCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(companyId).stream()
+                .filter(employee -> employee.getTitle() == EmployeeTitle.CEO)
+                .map(Employee::getIssuePlace)
+                .filter(place -> place != null && !place.isBlank())
+                .findFirst()
+                .map(String::trim);
+    }
+
     public EmployeeDto toDto(Employee employee) {
         long signatureCount = employee.getId() == null ? 0
                 : signatures.countByPersonIdAndDeletedFalse(employee.getId());
@@ -100,7 +119,8 @@ public class EmployeeService {
                 employee.getEmail(),
                 employee.getAddress(),
                 (int) signatureCount,
-                employee.getTitle().name());
+                employee.getTitle().name(),
+                employee.getIssuePlace());
     }
 
     private void apply(Employee employee, EmployeeRequest request, Long companyId, Long currentId) {
@@ -125,6 +145,7 @@ public class EmployeeService {
         }
         employee.setEmail(email);
         employee.setAddress(optionalText(request.address()));
+        employee.setIssuePlace(optionalText(request.issuePlace()));
         employee.setTitle(title(request.title()));
     }
 

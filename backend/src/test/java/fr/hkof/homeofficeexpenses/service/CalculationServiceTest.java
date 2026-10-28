@@ -80,9 +80,26 @@ class CalculationServiceTest {
     }
 
     @Test
+    @DisplayName("The rent receipt total adds the additional charges with HALF_UP and accepts nulls")
+    void totalRentReceiptWithAdditionalCharges() {
+        assertThat(CalculationService.totalRentReceipt(
+                new BigDecimal("900.00"), new BigDecimal("50.00"),
+                List.of(new BigDecimal("15.50"), new BigDecimal("4.49"))))
+                .isEqualByComparingTo("969.99");
+        assertThat(CalculationService.totalRentReceipt(
+                new BigDecimal("900.005"), new BigDecimal("50.00"),
+                List.of(new BigDecimal("0.01"))))
+                .isEqualByComparingTo("950.02");
+        assertThat(CalculationService.totalRentReceipt(null, null, null))
+                .isEqualByComparingTo("0.00");
+        assertThat(CalculationService.totalRentReceipt(
+                new BigDecimal("950.00"), BigDecimal.ZERO, List.of()))
+                .isEqualByComparingTo("950.00");
+    }
+
+    @Test
     @DisplayName("The TTC amount is the HT amount plus VAT, rounded HALF_UP")
-    void grossFromNet() {
-        assertThat(CalculationService.grossFromNet(new BigDecimal("41.66"), new BigDecimal("20")))
+    void grossFromNet() {        assertThat(CalculationService.grossFromNet(new BigDecimal("41.66"), new BigDecimal("20")))
                 .isEqualByComparingTo("49.99");
         assertThat(CalculationService.grossFromNet(new BigDecimal("100"), new BigDecimal("5.5")))
                 .isEqualByComparingTo("105.50");

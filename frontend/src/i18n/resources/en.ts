@@ -286,6 +286,15 @@ export const en = {
       rentExclCharges: "Rent excluding charges",
       rentExclChargesHelp: "Editable for a one-off adjustment.",
       charges: "Charges provision",
+      additionalCharges: "Additional charges",
+      additionalChargeLabel: "Label",
+      additionalChargeAmount: "Amount",
+      addAdditionalCharge: "Add an additional charge",
+      saveAdditionalCharge: "Save the additional charge",
+      cancelAdditionalCharge: "Cancel",
+      editAdditionalCharge: "Edit additional charge {{index}}",
+      removeAdditionalCharge: "Remove additional charge {{index}}",
+      removeAdditionalChargeShort: "Remove",
       estimatedTotal: "Estimated total",
       estimatedTotalNote:
         "Estimated display. The PDF total is recalculated and rounded to the cent.",
@@ -365,6 +374,13 @@ export const en = {
       periodEnd: "Invalid end date.",
       rentExclCharges: "Invalid rent excluding charges.",
       charges: "Invalid charges provision.",
+      additionalChargeLabel: "The additional charge label is required.",
+      additionalChargeLabelTooLong:
+        "The additional charge label cannot exceed 120 characters.",
+      additionalChargeAmount:
+        "The additional charge amount must be strictly positive.",
+      additionalChargeLimit:
+        "A rent receipt accepts at most 20 additional charges.",
       date: "Invalid date (DD/MM/YYYY).",
       periodOrder: "The period end must be after the start.",
     },
@@ -866,6 +882,9 @@ export const en = {
         emailHelp: "Optional; unique within the company.",
         title: "Title",
         titleHelp: "Descriptive: it does not grant any rights yet.",
+        issuePlace: "Issue place",
+        issuePlaceHelp:
+          "Printed on the expense statement; the company place is used when blank.",
         address: "Personal address",
         addressHelp: "Optional.",
         hint: "Save the employee to add signatures without closing this window.",
