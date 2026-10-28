@@ -14,11 +14,44 @@
   }
 
   .template-versions-list {
-    @apply mt-2 divide-y divide-line rounded-xl border border-line;
+    @apply mt-2 divide-y divide-line rounded-lg border border-line;
+  }
+
+  /* One grid shared by the header and every version row; fixed actions track. */
+  .template-versions-grid {
+    @apply flex min-h-9 flex-col gap-0.5 px-3 py-1.5 text-xs xl:grid xl:grid-cols-[1.5rem_minmax(0,1fr)_4.5rem_8rem_21rem] xl:items-center xl:gap-x-3 xl:gap-y-0;
+  }
+
+  .template-versions-check {
+    @apply flex items-center;
+  }
+
+  .template-versions-checkbox {
+    @apply size-4 cursor-pointer accent-accent disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .template-versions-selection {
+    @apply mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/20 bg-accent-soft/60 px-3 py-2;
+  }
+
+  .template-versions-selection-count {
+    @apply text-xs font-medium text-ink;
+  }
+
+  .template-versions-selection-actions {
+    @apply flex items-center gap-1.5;
+  }
+
+  .template-versions-header {
+    @apply border-b border-line text-[11px] font-normal text-ink-soft;
+  }
+
+  .template-versions-number {
+    @apply text-right;
   }
 
   .template-versions-list-item {
-    @apply flex flex-wrap items-center justify-between gap-2 px-3 py-2.5;
+    @apply text-xs;
   }
 
   .template-versions-list-main {
@@ -31,6 +64,10 @@
 
   .template-versions-list-name {
     @apply truncate;
+  }
+
+  .template-versions-list-version {
+    @apply justify-self-start;
   }
 
   .template-versions-list-active {

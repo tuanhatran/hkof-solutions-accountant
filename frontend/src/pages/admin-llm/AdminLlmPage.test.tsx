@@ -550,7 +550,7 @@ describe("AdminLlmPage in English", () => {
     await i18n.changeLanguage("en");
     renderPage();
 
-    expect(screen.getByRole("heading", { name: "AI Admin" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "AI analysis" })).toBeVisible();
     expect(screen.getByText("Settings")).toBeVisible();
     expect(screen.getByText(/Ollama stays local by default/)).toBeVisible();
     expect(screen.getAllByText("Ollama connection")).toHaveLength(2);
@@ -579,7 +579,7 @@ describe("AdminLlmPage in English", () => {
       await i18n.changeLanguage("fr");
     });
 
-    expect(screen.getByRole("heading", { name: "Admin IA" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Analyse IA" })).toBeVisible();
     expect(screen.getByText("Paramètres avancés")).toBeVisible();
     expect(screen.getByText("Configuration à jour.")).toBeVisible();
   });

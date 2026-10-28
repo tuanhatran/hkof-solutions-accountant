@@ -53,6 +53,27 @@ const CEO: EmployeeDto = {
   title: "CEO",
 };
 
+const CFO: EmployeeDto = {
+  id: 4,
+  companyId: 1,
+  firstName: "Élodie",
+  lastName: "Zéphyr",
+  email: "elodie@exemple.fr",
+  address: "2 rue de l'Église, 75005 Paris",
+  title: "CFO",
+  signatureCount: 2,
+};
+
+/** Employee ids in DOM order, read on the row items. */
+function employeeOrder(): number[] {
+  return [...document.querySelectorAll('[data-cy^="salarie-"]')].map(
+    (element) =>
+      Number(
+        (element as HTMLElement).dataset.cy?.replace("salarie-", "") ?? NaN,
+      ),
+  );
+}
+
 function readyQuery(data: EmployeeDto[]): QueryLike<EmployeeDto[]> {
   return {
     data,
@@ -413,5 +434,75 @@ describe("EmployeeSection", () => {
     expect(
       screen.queryByRole("dialog", { name: "Supprimer ce salarié ?" }),
     ).toBeNull();
+  });
+
+  it("filters the employees accent- and case-insensitively with a live count", async () => {
+    employeesState = readyQuery([CEO, CFO]);
+    renderSection();
+    const user = userEvent.setup();
+
+    expect(
+      document.querySelector('[data-cy="filtre-compteur-salaries"]'),
+    ).toHaveTextContent("2 sur 2");
+
+    await user.type(screen.getByLabelText("Filtrer la liste"), "elodie");
+
+    expect(document.querySelector('[data-cy="salarie-4"]')).not.toBeNull();
+    expect(document.querySelector('[data-cy="salarie-3"]')).toBeNull();
+    expect(
+      document.querySelector('[data-cy="filtre-compteur-salaries"]'),
+    ).toHaveTextContent("1 sur 2");
+
+    await user.click(
+      document.querySelector(
+        '[data-cy="filtre-effacer-salaries"]',
+      ) as HTMLElement,
+    );
+    expect(employeeOrder()).toEqual([3, 4]);
+
+    await user.type(screen.getByLabelText("Filtrer la liste"), "pdg");
+    expect(document.querySelector('[data-cy="salarie-3"]')).not.toBeNull();
+    expect(document.querySelector('[data-cy="salarie-4"]')).toBeNull();
+  });
+
+  it("shows a no-match message instead of the headers and rows", async () => {
+    employeesState = readyQuery([CEO, CFO]);
+    renderSection();
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Filtrer la liste"), "zzz");
+
+    expect(
+      document.querySelector('[data-cy="aucun-resultat-salaries"]'),
+    ).toHaveTextContent("Aucun résultat pour « zzz ».");
+    expect(document.querySelector('[data-cy="entetes-salaries"]')).toBeNull();
+    expect(employeeOrder()).toEqual([]);
+    expect(
+      document.querySelector('[data-cy="filtre-compteur-salaries"]'),
+    ).toHaveTextContent("0 sur 2");
+  });
+
+  it("sorts the employees and toggles the direction", async () => {
+    employeesState = readyQuery([CFO, CEO]);
+    renderSection();
+    const user = userEvent.setup();
+
+    expect(
+      screen.getAllByRole("option").map((option) => option.textContent),
+    ).toEqual(["Salarié", "Intitulé", "Signatures"]);
+    expect(employeeOrder()).toEqual([3, 4]);
+
+    await user.selectOptions(screen.getByLabelText("Trier par"), "signatures");
+    expect(employeeOrder()).toEqual([3, 4]);
+
+    await user.click(screen.getByRole("button", { name: "Tri croissant" }));
+    expect(employeeOrder()).toEqual([4, 3]);
+  });
+
+  it("hides the list toolbar when there is no employee", () => {
+    employeesState = readyQuery([]);
+    renderSection();
+
+    expect(document.querySelector('[data-cy="filtre-salaries"]')).toBeNull();
   });
 });

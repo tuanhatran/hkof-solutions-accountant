@@ -251,7 +251,7 @@ export const fr = {
       history: "Historique",
       company: "Société",
       lmnp: "LMNP",
-      aiAdmin: "Admin IA",
+      aiAdmin: "Analyse IA",
     },
   },
   shell: {
@@ -460,6 +460,10 @@ export const fr = {
       deleteActiveTitle: "Le modèle actif ne peut pas être supprimé.",
       followupPreview: "Aperçu de la version v{{version}}",
       followupActivate: "Activer la version v{{version}}",
+      name: "Modèle",
+      versionColumn: "Version",
+      importedAt: "Importé le",
+      actions: "Actions",
     },
     import: {
       title: "Importer une nouvelle version",
@@ -489,6 +493,17 @@ export const fr = {
         "Données d’exemple · filigrane « APERÇU » · rien n’est persisté.",
       activate: "Activer ce modèle",
       closeAria: "Fermer l’aperçu",
+    },
+    compare: {
+      title: "Comparer les versions",
+      subtitle: "Aperçu côte à côte de deux versions du modèle.",
+      select: "Comparer {{name}} v{{version}}",
+      selection_one: "{{count}} version sélectionnée",
+      selection_other: "{{count}} versions sélectionnées",
+      action: "Comparer",
+      clear: "Annuler",
+      closeAria: "Fermer la comparaison",
+      loading: "Préparation des aperçus…",
     },
     reference: {
       title: "Référence des variables",
@@ -572,8 +587,24 @@ export const fr = {
       downloadPdf: "Télécharger le PDF",
       downloadComplete: "Note complète (ZIP)",
     },
+    versions: {
+      version: "Version",
+      parties: "Parties",
+      date: "Date",
+      amount: "Montant",
+      actions: "Actions",
+    },
   },
   settings: {
+    list: {
+      filterLabel: "Filtrer la liste",
+      sortLabel: "Trier par",
+      ascending: "Tri croissant",
+      descending: "Tri décroissant",
+      clear: "Effacer le filtre",
+      noMatch: "Aucun résultat pour « {{query}} ».",
+      count: "{{visible}} sur {{total}}",
+    },
     page: {
       eyebrow: "Réglages",
       title: "Société",
@@ -643,6 +674,7 @@ export const fr = {
           actions: "Actions",
         },
         add: "Ajouter un bail",
+        filterPlaceholder: "Filtrer les baux…",
         loading: "Chargement des baux…",
         empty:
           "Aucun bail pour cette société. Ajoutez le premier bail avec « Ajouter un bail ».",
@@ -681,6 +713,7 @@ export const fr = {
           total: "Total",
         },
         add: "Ajouter un bail",
+        filterPlaceholder: "Filtrer les baux…",
         addressLabel: "Adresse des baux",
         addressHelp: "Seuls les baux de l’adresse sélectionnée sont affichés.",
         loadingAddresses: "Chargement des adresses…",
@@ -817,6 +850,7 @@ export const fr = {
         signatures: "Signatures",
       },
       add: "Ajouter un salarié",
+      filterPlaceholder: "Filtrer les salariés…",
       selectCompany: "Sélectionnez une société pour gérer ses salariés.",
       loading: "Chargement des salariés…",
       empty:
@@ -868,6 +902,7 @@ export const fr = {
       description:
         "Libellés, fournisseurs, prorata par défaut et périodicité alimentent la note de frais. Suppression logique uniquement.",
       add: "Ajouter un poste",
+      filterPlaceholder: "Filtrer les postes…",
       loading: "Chargement des postes…",
       empty:
         "Aucun poste configuré. Ajoutez au moins « Loyer » et vos frais courants.",
@@ -937,6 +972,7 @@ export const fr = {
         signatures: "Signatures",
       },
       add: "Ajouter une personne",
+      filterPlaceholder: "Filtrer les personnes…",
       loading: "Chargement des personnes…",
       empty:
         "Aucune personne configurée. Ajoutez le bailleur ou le locataire du logement.",
@@ -1015,7 +1051,7 @@ export const fr = {
   adminLlm: {
     page: {
       eyebrow: "Réglages",
-      title: "Admin IA",
+      title: "Analyse IA",
       loading: "Chargement de la configuration IA…",
       description:
         "Ollama reste local par défaut. Le modèle ne fait que proposer une extraction : tous les montants sont vérifiés et calculés par le backend.",

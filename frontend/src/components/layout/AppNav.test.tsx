@@ -35,7 +35,7 @@ describe("SideNavigation", () => {
     expect(historyLink.querySelector(".app-nav-icon-active")).not.toBeNull();
 
     const adminLink = within(navigation).getByRole("link", {
-      name: /Admin IA/,
+      name: /Analyse IA/,
     });
     expect(adminLink).toHaveAttribute("href", "/admin");
     expect(adminLink).toHaveAttribute("data-cy", "tab-admin");
@@ -99,7 +99,7 @@ describe("SideNavigation", () => {
       within(navigation).getByRole("link", { name: /Company/ }),
     ).toHaveAttribute("href", "/configuration/entreprise");
     expect(
-      within(navigation).getByRole("link", { name: /AI Admin/ }),
+      within(navigation).getByRole("link", { name: /AI analysis/ }),
     ).toHaveAttribute("href", "/admin");
     expect(within(navigation).queryByText("Suivi")).toBeNull();
     expect(within(navigation).queryByText("Réglages")).toBeNull();
@@ -144,14 +144,14 @@ describe("MobileNavigation", () => {
       "Historique",
       "Société",
       "LMNP",
-      "Admin IA",
+      "Analyse IA",
     ]);
     const active = within(mobileNavigation).getByRole("link", {
       name: "Historique",
     });
     expect(active.className).toContain("app-nav-mobile-link-active");
     expect(
-      within(mobileNavigation).getByRole("link", { name: "Admin IA" })
+      within(mobileNavigation).getByRole("link", { name: "Analyse IA" })
         .className,
     ).toContain("app-nav-mobile-link-idle");
   });
@@ -173,7 +173,7 @@ describe("MobileNavigation", () => {
       "History",
       "Company",
       "LMNP",
-      "AI Admin",
+      "AI analysis",
     ]);
   });
 });

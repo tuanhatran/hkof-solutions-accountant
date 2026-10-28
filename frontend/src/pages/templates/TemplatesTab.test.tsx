@@ -242,6 +242,76 @@ describe("TemplatesTab", () => {
     expect(within(rent).getByText("requis")).toBeInTheDocument();
   });
 
+  it("aligns the version header and rows on one shared grid", () => {
+    renderTab();
+
+    const header = document.querySelector(
+      '[data-cy="entetes-versions-modele"]',
+    );
+    if (!(header instanceof HTMLElement)) {
+      throw new Error("Version header not found");
+    }
+    expect(header).toHaveClass(
+      "template-versions-grid",
+      "template-versions-header",
+      "hidden",
+      "xl:grid",
+    );
+    expect(Array.from(header.children).map((cell) => cell.textContent)).toEqual(
+      ["", "Modèle", "Version", "Importé le", "Actions"],
+    );
+    expect(header.children[0]).toHaveAttribute("aria-hidden", "true");
+
+    const rows = within(card()).getAllByRole("listitem");
+    expect(rows).toHaveLength(3);
+    for (const row of rows) {
+      expect(row).toHaveClass(
+        "template-versions-grid",
+        "template-versions-row",
+      );
+    }
+
+    const archivedRow = screen.getByText("Quittance archivée").closest("li");
+    if (!archivedRow) {
+      throw new Error("Archived version row not found");
+    }
+    expect(
+      archivedRow.querySelector(".template-versions-list-meta"),
+    ).toHaveTextContent("HTML");
+    const dateCell = archivedRow.querySelector(".template-versions-list-date");
+    if (!(dateCell instanceof HTMLElement)) {
+      throw new Error("Imported date cell not found");
+    }
+    expect(dateCell).toHaveClass("number", "template-versions-number");
+    expect(dateCell.textContent).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+  });
+
+  it("renders a comparison checkbox per version without changing the row actions", () => {
+    renderTab();
+
+    const archived = screen.getByRole("checkbox", {
+      name: "Comparer Quittance archivée v2",
+    });
+    expect(archived).not.toBeChecked();
+    expect(archived).toHaveAttribute("data-cy", "comparer-modele-2");
+
+    const rows = within(card()).getAllByRole("listitem");
+    for (const row of rows) {
+      expect(row.children[0]).toHaveClass("template-versions-check");
+      expect(within(row as HTMLElement).getByRole("checkbox")).toBeVisible();
+    }
+
+    const archivedRow = archived.closest("li");
+    if (!archivedRow) {
+      throw new Error("Archived version row not found");
+    }
+    for (const action of ["Aperçu", "Télécharger", "Activer", "Supprimer"]) {
+      expect(
+        within(archivedRow).getByRole("button", { name: action }),
+      ).toBeVisible();
+    }
+  });
+
   it("renders the expense statement card when configured for it", () => {
     renderTab(EXPENSE_STATEMENT_CONFIGURATION);
 
@@ -771,6 +841,13 @@ describe("TemplatesTab", () => {
 
     const rent = card();
     expect(within(rent).getByText("Active template")).toBeVisible();
+    const header = rent.querySelector('[data-cy="entetes-versions-modele"]');
+    if (!(header instanceof HTMLElement)) {
+      throw new Error("English version header not found");
+    }
+    expect(Array.from(header.children).map((cell) => cell.textContent)).toEqual(
+      ["", "Template", "Version", "Imported on", "Actions"],
+    );
     expect(within(rent).getByText(/imported on/)).toBeVisible();
     expect(within(rent).getAllByText("Built-in").length).toBeGreaterThan(0);
     expect(within(rent).getByText("Active")).toBeVisible();

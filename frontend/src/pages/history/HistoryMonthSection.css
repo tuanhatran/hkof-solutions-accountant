@@ -40,4 +40,34 @@
   .history-month-section-empty {
     @apply px-5 py-8 text-sm text-ink-soft sm:px-6;
   }
+
+  /* One grid shared by the column header and every version row. */
+  .history-versions-grid {
+    @apply flex min-h-9 flex-col gap-0.5 rounded-lg border-b border-line/70 px-3 py-1.5 text-xs last:border-b-0 xl:grid xl:items-center xl:gap-x-3 xl:gap-y-0;
+  }
+
+  .history-versions-header {
+    @apply text-[11px] font-normal text-ink-soft;
+  }
+
+  .history-versions-grid-quittance {
+    @apply xl:grid-cols-[2.5rem_minmax(0,1fr)_6.5rem_5rem_3rem];
+  }
+
+  .history-versions-grid-note {
+    @apply xl:grid-cols-[2.5rem_6.5rem_5rem_11rem];
+  }
+
+  .history-versions-number {
+    @apply text-right;
+  }
+
+  .history-versions-grid-quittance .history-actions-pdf-link {
+    @apply gap-0.5 px-1;
+  }
+
+  .history-versions-grid-note .history-actions-pdf-link,
+  .history-versions-grid-note .statement-month-panel-history-load {
+    @apply px-1;
+  }
 }

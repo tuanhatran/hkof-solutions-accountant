@@ -8,6 +8,7 @@ import { LoadingState, ErrorState } from "@/components/ui/States";
 import { ModelPreview } from "./ModelPreview";
 import { ReferenceVariables } from "./ReferenceVariables";
 import { TemplateActiveModel } from "./TemplateActiveModel";
+import { TemplateCompare } from "./TemplateCompare";
 import { TemplateImportForm } from "./TemplateImportForm";
 import { TemplateVersionsList } from "./TemplateVersionsList";
 import type { ConfigurationType } from "./templateTypes";
@@ -146,6 +147,14 @@ export function TemplatesCard({
           onClose={() => c.setPreview(null)}
           onActivate={() => c.activate.mutate(preview.template)}
           activationInProgress={c.activate.isPending}
+        />
+      ) : null}
+
+      {c.compare || c.compareInProgress ? (
+        <TemplateCompare
+          compare={c.compare}
+          loading={c.compareInProgress}
+          onClose={c.closeCompare}
         />
       ) : null}
     </section>

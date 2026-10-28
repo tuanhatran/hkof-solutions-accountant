@@ -236,7 +236,7 @@ export const en = {
       history: "History",
       company: "Company",
       lmnp: "LMNP",
-      aiAdmin: "AI Admin",
+      aiAdmin: "AI analysis",
     },
   },
   shell: {
@@ -441,6 +441,10 @@ export const en = {
       deleteActiveTitle: "The active template cannot be deleted.",
       followupPreview: "Preview version v{{version}}",
       followupActivate: "Activate version v{{version}}",
+      name: "Template",
+      versionColumn: "Version",
+      importedAt: "Imported on",
+      actions: "Actions",
     },
     import: {
       title: "Import a new version",
@@ -469,6 +473,17 @@ export const en = {
       subtitle: "Sample data · “PREVIEW” watermark · nothing is persisted.",
       activate: "Activate this template",
       closeAria: "Close the preview",
+    },
+    compare: {
+      title: "Compare versions",
+      subtitle: "Side-by-side preview of two versions of the template.",
+      select: "Compare {{name}} v{{version}}",
+      selection_one: "{{count}} version selected",
+      selection_other: "{{count}} versions selected",
+      action: "Compare",
+      clear: "Cancel",
+      closeAria: "Close the comparison",
+      loading: "Preparing the previews…",
     },
     reference: {
       title: "Variable reference",
@@ -552,8 +567,24 @@ export const en = {
       downloadPdf: "Download the PDF",
       downloadComplete: "Complete statement (ZIP)",
     },
+    versions: {
+      version: "Version",
+      parties: "Parties",
+      date: "Date",
+      amount: "Amount",
+      actions: "Actions",
+    },
   },
   settings: {
+    list: {
+      filterLabel: "Filter the list",
+      sortLabel: "Sort by",
+      ascending: "Ascending order",
+      descending: "Descending order",
+      clear: "Clear the filter",
+      noMatch: "No result for “{{query}}”.",
+      count: "{{visible}} of {{total}}",
+    },
     page: {
       eyebrow: "Settings",
       title: "Company",
@@ -622,6 +653,7 @@ export const en = {
           actions: "Actions",
         },
         add: "Add a lease",
+        filterPlaceholder: "Filter leases…",
         loading: "Loading leases…",
         empty:
           "No lease for this company. Add the first lease with “Add a lease”.",
@@ -659,6 +691,7 @@ export const en = {
           total: "Total",
         },
         add: "Add a lease",
+        filterPlaceholder: "Filter leases…",
         addressLabel: "Lease addresses",
         addressHelp: "Only the leases of the selected address are displayed.",
         loadingAddresses: "Loading addresses…",
@@ -793,6 +826,7 @@ export const en = {
         signatures: "Signatures",
       },
       add: "Add an employee",
+      filterPlaceholder: "Filter employees…",
       selectCompany: "Select a company to manage its employees.",
       loading: "Loading employees…",
       empty:
@@ -844,6 +878,7 @@ export const en = {
       description:
         "Labels, suppliers, default pro rata and periodicity feed the expense statement. Logical deletion only.",
       add: "Add an expense item",
+      filterPlaceholder: "Filter expense items…",
       loading: "Loading expense items…",
       empty:
         "No expense item configured. Add at least “Rent” and your current expenses.",
@@ -912,6 +947,7 @@ export const en = {
         signatures: "Signatures",
       },
       add: "Add a person",
+      filterPlaceholder: "Filter people…",
       loading: "Loading people…",
       empty:
         "No person configured. Add the landlord or tenant of the property.",
@@ -989,7 +1025,7 @@ export const en = {
   adminLlm: {
     page: {
       eyebrow: "Settings",
-      title: "AI Admin",
+      title: "AI analysis",
       loading: "Loading the AI configuration…",
       description:
         "Ollama stays local by default. The model only proposes an extraction: every amount is verified and calculated by the backend.",

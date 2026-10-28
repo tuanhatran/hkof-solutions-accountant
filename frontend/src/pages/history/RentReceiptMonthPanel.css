@@ -2,7 +2,7 @@
 
 @layer components {
   .rent-receipt-month-panel {
-    @apply px-6 py-2 sm:px-6;
+    @apply p-0;
   }
 
   .rent-receipt-month-panel-header {
@@ -26,19 +26,19 @@
   }
 
   .rent-receipt-month-panel-history {
-    @apply mb-2 rounded-xl border border-line bg-paper/35 px-3 py-2;
+    @apply mb-1 rounded-lg border border-line;
   }
 
   .rent-receipt-month-panel-summary {
-    @apply cursor-pointer text-xs font-semibold text-ink-soft;
+    @apply flex min-h-9 cursor-pointer items-center border-b border-line px-3 py-1.5 text-[11px] font-semibold text-ink-soft;
   }
 
   .rent-receipt-month-panel-history-list {
-    @apply mb-2 space-y-1.5;
+    @apply m-0 list-none p-0;
   }
 
   .rent-receipt-month-panel-history-item {
-    @apply flex flex-wrap items-center justify-between gap-2 rounded-lg py-1 text-xs;
+    @apply text-xs;
   }
 
   .rent-receipt-month-panel-history-meta {
