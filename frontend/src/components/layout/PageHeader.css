@@ -27,7 +27,13 @@
      or variant. The primary variant only shows its accent fill on hover so
      every box reads identically at rest. */
   .page-header .page-header-actions > * {
-    @apply inline-flex h-9 min-w-[9.5rem] max-w-full items-center justify-center gap-2 rounded-none border border-line bg-surface px-3 text-ink;
+    @apply inline-flex h-9 min-w-[9.5rem] max-w-full items-center justify-center gap-2 rounded-none border border-line bg-surface px-3 text-sm font-medium text-ink;
+  }
+
+  /* Same text style inside the box: chip, badge, month and company values read
+     at the button size and weight instead of the smaller field defaults. */
+  .page-header .page-header-actions > * :is(input, select) {
+    @apply text-sm font-medium;
   }
 
   .page-header .page-header-actions > .btn-primary:hover {
