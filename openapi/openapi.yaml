@@ -2637,7 +2637,9 @@ components:
         month:
           type: string
         leaseId:
-          type: integer
+          type:
+            - integer
+            - "null"
           format: int64
         templateId:
           type: integer

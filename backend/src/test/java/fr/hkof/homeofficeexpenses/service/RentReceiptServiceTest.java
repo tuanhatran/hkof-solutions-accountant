@@ -506,6 +506,60 @@ class RentReceiptServiceTest {
     }
 
     @Test
+    @DisplayName("An expense company lease resolves its rent receipt by the lease landlord and tenant company")
+    void activeForLeaseCompanyLease() {
+        Lease lease = companyLease();
+        lease.setCompanyId(COMPANY_ID);
+        when(leaseService.resolveExpenseLease(COMPANY_ID, 3L)).thenReturn(lease);
+        RentReceipt receipt = new RentReceipt();
+        when(repository.findFirstByMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
+                "2026-10", 1L, COMPANY_ID, DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
+
+        assertThat(service.activeForLease(COMPANY_ID, "2026-10", 3L)).isSameAs(receipt);
+
+        verify(repository).findFirstByMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
+                "2026-10", 1L, COMPANY_ID, DocumentStatus.ACTIVE);
+        verify(repository, never()).findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
+                any(), any(), any(), any());
+        verify(repository, never()).findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("An expense person lease resolves its rent receipt by the lease landlord and tenant person")
+    void activeForLeasePersonLease() {
+        when(leaseService.resolveExpenseLease(COMPANY_ID, 3L)).thenReturn(normalLease());
+        RentReceipt receipt = new RentReceipt();
+        when(repository.findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
+                "2026-10", 1L, 2L, DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
+
+        assertThat(service.activeForLease(COMPANY_ID, "2026-10", 3L)).isSameAs(receipt);
+
+        verify(repository).findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
+                "2026-10", 1L, 2L, DocumentStatus.ACTIVE);
+        verify(repository, never()).findFirstByMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
+                any(), any(), any(), any());
+        verify(repository, never()).findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("A null expense lease keeps the legacy company and month rent receipt scope")
+    void activeForLeaseNullLease() {
+        RentReceipt receipt = new RentReceipt();
+        when(repository.findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
+                COMPANY_ID, "2026-10", DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
+
+        assertThat(service.activeForLease(COMPANY_ID, "2026-10", null)).isSameAs(receipt);
+
+        verify(repository).findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
+                COMPANY_ID, "2026-10", DocumentStatus.ACTIVE);
+        verify(leaseService, never()).resolveExpenseLease(any(), any());
+        verify(repository, never()).findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
+                any(), any(), any(), any());
+        verify(repository, never()).findFirstByMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
+                any(), any(), any(), any());
+    }
+
+    @Test
     @DisplayName("The PDF is read from storage or reported missing")
     void pdf() {
         RentReceipt receipt = new RentReceipt();

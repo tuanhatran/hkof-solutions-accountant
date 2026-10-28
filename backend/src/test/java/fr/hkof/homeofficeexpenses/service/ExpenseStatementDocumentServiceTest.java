@@ -233,12 +233,15 @@ class ExpenseStatementDocumentServiceTest {
     }
 
     @Test
-    @DisplayName("Generation builds the statement, its PDF and its complete PDF")
+    @DisplayName("Generation builds the statement, its PDF and its complete PDF with the statement lease annex")
     void generate() {
         TemplateDocument template = template(4L, TemplateType.EXPENSE_STATEMENT);
         stubDocumentRendering(template, "<html></html>");
         when(pdfService.merge(any())).thenReturn(new byte[]{2});
-        when(rentReceiptService.activeForLease(COMPANY_ID, "2026-10", null)).thenReturn(null);
+        RentReceipt rentReceipt = new RentReceipt();
+        rentReceipt.setPdfPath("/data/quittance.pdf");
+        when(rentReceiptService.activeForLease(COMPANY_ID, "2026-10", 5L)).thenReturn(rentReceipt);
+        when(storage.read("/data/quittance.pdf")).thenReturn(new byte[]{3});
 
         ExpenseStatementDocumentService.GeneratedStatement generated = service.generate(YearMonth.of(2026, 10),
                 List.of(line(item("gaz", "Gaz", 20), null)), 3, template, "signature", company(), 5L);
@@ -255,6 +258,12 @@ class ExpenseStatementDocumentServiceTest {
         assertThat(generated.statement().getLines()).hasSize(1);
         assertThat(generated.pdf()).containsExactly(1);
         assertThat(generated.completePdf()).containsExactly(2);
+        @SuppressWarnings("unchecked")
+        org.mockito.ArgumentCaptor<List<byte[]>> merged = org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(pdfService).merge(merged.capture());
+        assertThat(merged.getValue()).containsExactly(new byte[]{1}, new byte[]{3});
+        verify(rentReceiptService).activeForLease(COMPANY_ID, "2026-10", 5L);
+        verify(rentReceiptService, never()).activeForLease(COMPANY_ID, "2026-10", null);
     }
 
     @Test
@@ -296,17 +305,18 @@ class ExpenseStatementDocumentServiceTest {
     }
 
     @Test
-    @DisplayName("The ZIP archive contains the note, the rent receipt and each attachment once")
+    @DisplayName("The ZIP archive contains the note, the statement lease rent receipt and each attachment once")
     void zip() throws Exception {
         ExpenseStatement statement = new ExpenseStatement();
         statement.setCompanyId(COMPANY_ID);
+        statement.setLeaseId(5L);
         statement.setMonth("2026-10");
         statement.setPdfPath("/data/note.pdf");
         when(storage.read("/data/note.pdf")).thenReturn("%PDF-note".getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
         RentReceipt rentReceipt = new RentReceipt();
         rentReceipt.setPdfPath("/data/quittance.pdf");
-        when(rentReceiptService.activeForLease(COMPANY_ID, "2026-10", null)).thenReturn(rentReceipt);
+        when(rentReceiptService.activeForLease(COMPANY_ID, "2026-10", 5L)).thenReturn(rentReceipt);
         when(storage.read("/data/quittance.pdf"))
                 .thenReturn("%PDF-quittance".getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
@@ -330,6 +340,35 @@ class ExpenseStatementDocumentServiceTest {
 
         assertThat(names).containsExactly("note_frais_2026-10.pdf", "quittance_2026-10.pdf",
                 "justificatifs/01_note.txt");
+        verify(rentReceiptService).activeForLease(COMPANY_ID, "2026-10", 5L);
+        verify(rentReceiptService, never()).activeForLease(COMPANY_ID, "2026-10", null);
+    }
+
+    @Test
+    @DisplayName("The ZIP archive of a legacy statement keeps the null lease scope")
+    void zipLegacyNullLease() throws Exception {
+        ExpenseStatement statement = new ExpenseStatement();
+        statement.setCompanyId(COMPANY_ID);
+        statement.setLeaseId(null);
+        statement.setMonth("2026-10");
+        statement.setPdfPath("/data/note.pdf");
+        when(storage.read("/data/note.pdf")).thenReturn(new byte[]{1});
+
+        RentReceipt rentReceipt = new RentReceipt();
+        rentReceipt.setPdfPath("/data/quittance.pdf");
+        when(rentReceiptService.activeForLease(COMPANY_ID, "2026-10", null)).thenReturn(rentReceipt);
+        when(storage.read("/data/quittance.pdf")).thenReturn(new byte[]{2});
+
+        List<String> names = new ArrayList<>();
+        try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(service.zip(statement)))) {
+            ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                names.add(entry.getName());
+            }
+        }
+
+        assertThat(names).containsExactly("note_frais_2026-10.pdf", "quittance_2026-10.pdf");
+        verify(rentReceiptService).activeForLease(COMPANY_ID, "2026-10", null);
     }
 
     @Test

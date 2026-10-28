@@ -2200,6 +2200,20 @@ describe("useExpenseStatementPage scoped options", () => {
     );
   });
 
+  it("locks the scoped lease and keeps the store on that lease", async () => {
+    const store = scopedStore([line()]);
+    const { result } = renderScoped(store);
+    await waitFor(() => expect(result.current.selectedLeaseId).toBe(9));
+
+    expect(result.current.leaseLocked).toBe(true);
+    expect(store.getState().leaseId).toBe(9);
+
+    act(() => result.current.selectLease(7));
+
+    expect(result.current.selectedLeaseId).toBe(9);
+    expect(store.getState().leaseId).toBe(9);
+  });
+
   it("reads and writes the scoped draft store, leaving the global draft untouched", async () => {
     vi.mocked(api.receipts.upload).mockResolvedValue({
       id: 9,

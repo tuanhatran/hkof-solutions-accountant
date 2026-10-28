@@ -1349,7 +1349,7 @@ export interface components {
             companyId?: number;
             month?: string;
             /** Format: int64 */
-            leaseId?: number;
+            leaseId?: number | null;
             /** Format: int64 */
             templateId?: number;
             complete?: boolean;
