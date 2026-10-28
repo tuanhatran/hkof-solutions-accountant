@@ -1,8 +1,6 @@
 import "./AdminLlmPage.css";
-import { Activity, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
-import { Button } from "@/components/ui/Button";
 import { LoadingState, ErrorState } from "@/components/ui/States";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { LlmAdvancedSection } from "./LlmAdvancedSection";
@@ -50,32 +48,9 @@ export function AdminLlmPage() {
         eyebrow={t("adminLlm.page.eyebrow")}
         title={t("adminLlm.page.title")}
         description={t("adminLlm.page.description")}
-        actions={
-          <>
-            <Button
-              variant="secondary"
-              icon={<Activity size={15} />}
-              loading={c.testInProgress}
-              onClick={() => void c.runTest()}
-              data-cy="btn-test-llm"
-            >
-              {t("adminLlm.page.testConnection")}
-            </Button>
-            <Button
-              variant="primary"
-              type="submit"
-              form="form-llm"
-              icon={<Save size={15} />}
-              loading={c.save.isPending}
-              data-cy="btn-enregistrer-llm"
-            >
-              {t("adminLlm.page.save")}
-            </Button>
-          </>
-        }
       />
 
-      <LlmStatusCard />
+      <LlmStatusCard c={c} />
 
       {c.remoteUrl ? <LlmRemoteWarning /> : null}
 

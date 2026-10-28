@@ -6,9 +6,10 @@ import type { LlmStatus } from "@/api/types";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import { STATUSES } from "./adminLlmHelpers";
+import type { AdminLlmController } from "./useAdminLlmPage";
 
 /** Live Ollama status card, refreshed independently from the form. */
-export function LlmStatusCard() {
+export function LlmStatusCard({ c }: { c: AdminLlmController }) {
   const { t } = useTranslation();
   const status = useLlmStatus();
   const key = (status.data?.status as LlmStatus | undefined) ?? null;
@@ -80,6 +81,16 @@ export function LlmStatusCard() {
                 ? t("adminLlm.status.inactiveSuffix")
                 : ""}
           </span>
+          <Button
+            variant="secondary"
+            small
+            icon={<Activity size={14} />}
+            loading={c.testInProgress}
+            onClick={() => void c.runTest()}
+            data-cy="btn-test-llm"
+          >
+            {t("adminLlm.connection.testConnection")}
+          </Button>
           <Button
             variant="secondary"
             small
