@@ -494,6 +494,17 @@ export const fr = {
       activate: "Activer ce modèle",
       closeAria: "Fermer l’aperçu",
     },
+    compare: {
+      title: "Comparer les versions",
+      subtitle: "Aperçu côte à côte de deux versions du modèle.",
+      select: "Comparer {{name}} v{{version}}",
+      selection_one: "{{count}} version sélectionnée",
+      selection_other: "{{count}} versions sélectionnées",
+      action: "Comparer",
+      clear: "Annuler",
+      closeAria: "Fermer la comparaison",
+      loading: "Préparation des aperçus…",
+    },
     reference: {
       title: "Référence des variables",
       show: "Afficher",

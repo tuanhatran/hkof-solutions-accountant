@@ -258,8 +258,9 @@ describe("TemplatesTab", () => {
       "xl:grid",
     );
     expect(Array.from(header.children).map((cell) => cell.textContent)).toEqual(
-      ["Modèle", "Version", "Importé le", "Actions"],
+      ["", "Modèle", "Version", "Importé le", "Actions"],
     );
+    expect(header.children[0]).toHaveAttribute("aria-hidden", "true");
 
     const rows = within(card()).getAllByRole("listitem");
     expect(rows).toHaveLength(3);
@@ -283,6 +284,32 @@ describe("TemplatesTab", () => {
     }
     expect(dateCell).toHaveClass("number", "template-versions-number");
     expect(dateCell.textContent).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+  });
+
+  it("renders a comparison checkbox per version without changing the row actions", () => {
+    renderTab();
+
+    const archived = screen.getByRole("checkbox", {
+      name: "Comparer Quittance archivée v2",
+    });
+    expect(archived).not.toBeChecked();
+    expect(archived).toHaveAttribute("data-cy", "comparer-modele-2");
+
+    const rows = within(card()).getAllByRole("listitem");
+    for (const row of rows) {
+      expect(row.children[0]).toHaveClass("template-versions-check");
+      expect(within(row as HTMLElement).getByRole("checkbox")).toBeVisible();
+    }
+
+    const archivedRow = archived.closest("li");
+    if (!archivedRow) {
+      throw new Error("Archived version row not found");
+    }
+    for (const action of ["Aperçu", "Télécharger", "Activer", "Supprimer"]) {
+      expect(
+        within(archivedRow).getByRole("button", { name: action }),
+      ).toBeVisible();
+    }
   });
 
   it("renders the expense statement card when configured for it", () => {
@@ -819,7 +846,7 @@ describe("TemplatesTab", () => {
       throw new Error("English version header not found");
     }
     expect(Array.from(header.children).map((cell) => cell.textContent)).toEqual(
-      ["Template", "Version", "Imported on", "Actions"],
+      ["", "Template", "Version", "Imported on", "Actions"],
     );
     expect(within(rent).getByText(/imported on/)).toBeVisible();
     expect(within(rent).getAllByText("Built-in").length).toBeGreaterThan(0);

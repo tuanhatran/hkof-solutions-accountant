@@ -98,6 +98,31 @@ describe("i18n", () => {
     expect(flattenKeys(en).sort()).toEqual(flattenKeys(fr).sort());
   });
 
+  it("exposes the template comparison labels in French and English", () => {
+    expect(fr.templates.compare).toEqual({
+      title: "Comparer les versions",
+      subtitle: "Aperçu côte à côte de deux versions du modèle.",
+      select: "Comparer {{name}} v{{version}}",
+      selection_one: "{{count}} version sélectionnée",
+      selection_other: "{{count}} versions sélectionnées",
+      action: "Comparer",
+      clear: "Annuler",
+      closeAria: "Fermer la comparaison",
+      loading: "Préparation des aperçus…",
+    });
+    expect(en.templates.compare).toEqual({
+      title: "Compare versions",
+      subtitle: "Side-by-side preview of two versions of the template.",
+      select: "Compare {{name}} v{{version}}",
+      selection_one: "{{count}} version selected",
+      selection_other: "{{count}} versions selected",
+      action: "Compare",
+      clear: "Cancel",
+      closeAria: "Close the comparison",
+      loading: "Preparing the previews…",
+    });
+  });
+
   it("uses the canonical French terminology for the managed entity", () => {
     expect(fr.settings.company.tabsAria).toBe("Sections de la société");
     expect(fr.settings.company.tabs.templates).toBe("Modèles");

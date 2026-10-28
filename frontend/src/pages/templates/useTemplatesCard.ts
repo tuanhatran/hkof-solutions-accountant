@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { errorMessage, downloadBlob } from "@/api/client";
 import { api } from "@/api/endpoints";
@@ -8,9 +8,19 @@ import type { TemplateDto, ValidationReportDto } from "@/api/types";
 import { toast } from "@/state/toasts";
 import { downloadFileName, type ConfigurationType } from "./templateTypes";
 
+export interface TemplateComparisonSide {
+  template: TemplateDto;
+  url: string;
+}
+
+export interface TemplateComparison {
+  left: TemplateComparisonSide;
+  right: TemplateComparisonSide;
+}
+
 /**
  * Controller of one template-type card: versions, import, activation,
- * deletion, reset and preview.
+ * deletion, reset, preview and side-by-side comparison.
  */
 export function useTemplatesCard(configuration: ConfigurationType) {
   const { t } = useTranslation();
@@ -31,6 +41,10 @@ export function useTemplatesCard(configuration: ConfigurationType) {
   );
   const [toDelete, setToDelete] = useState<TemplateDto | null>(null);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [compareSelection, setCompareSelection] = useState<number[]>([]);
+  const [compare, setCompare] = useState<TemplateComparison | null>(null);
+  const [compareInProgress, setCompareInProgress] = useState(false);
+  const compareRequest = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -39,6 +53,15 @@ export function useTemplatesCard(configuration: ConfigurationType) {
       }
     };
   }, [preview]);
+
+  useEffect(() => {
+    return () => {
+      if (compare) {
+        URL.revokeObjectURL(compare.left.url);
+        URL.revokeObjectURL(compare.right.url);
+      }
+    };
+  }, [compare]);
 
   const versions = templates.data ?? [];
   const active =
@@ -169,6 +192,74 @@ export function useTemplatesCard(configuration: ConfigurationType) {
     }
   }
 
+  function toggleCompareSelection(template: TemplateDto) {
+    if (template.id === undefined) {
+      return;
+    }
+    const id = template.id;
+    setCompareSelection((selection) => {
+      if (selection.includes(id)) {
+        return selection.filter((value) => value !== id);
+      }
+      if (selection.length >= 2) {
+        return selection;
+      }
+      return [...selection, id];
+    });
+  }
+
+  function clearCompareSelection() {
+    setCompareSelection([]);
+  }
+
+  async function openCompare() {
+    if (compareSelection.length !== 2 || compareInProgress) {
+      return;
+    }
+    const selected = compareSelection
+      .map((id) => versions.find((template) => template.id === id))
+      .filter((template): template is TemplateDto => template !== undefined);
+    const [left, right] = selected;
+    if (!left || !right) {
+      return;
+    }
+    setCompareInProgress(true);
+    const request = ++compareRequest.current;
+    try {
+      const [leftReply, rightReply] = await Promise.all([
+        api.templates.preview(left.id as number),
+        api.templates.preview(right.id as number),
+      ]);
+      if (request !== compareRequest.current) {
+        return;
+      }
+      setCompare({
+        left: {
+          template: left,
+          url: URL.createObjectURL(leftReply.blob),
+        },
+        right: {
+          template: right,
+          url: URL.createObjectURL(rightReply.blob),
+        },
+      });
+    } catch (error) {
+      if (request === compareRequest.current) {
+        toast.error(errorMessage(error));
+      }
+    } finally {
+      if (request === compareRequest.current) {
+        setCompareInProgress(false);
+      }
+    }
+  }
+
+  function closeCompare() {
+    compareRequest.current += 1;
+    setCompare(null);
+    setCompareInProgress(false);
+  }
+
   const canUpload =
     file !== null && name.trim().length > 0 && !upload.isPending;
   const previousVersions = versions.filter((template) => !template.active);
@@ -203,6 +294,13 @@ export function useTemplatesCard(configuration: ConfigurationType) {
     chooseFile,
     canUpload,
     previousVersions,
+    compareSelection,
+    toggleCompareSelection,
+    clearCompareSelection,
+    compare,
+    compareInProgress,
+    openCompare,
+    closeCompare,
   };
 }
 

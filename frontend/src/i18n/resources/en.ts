@@ -474,6 +474,17 @@ export const en = {
       activate: "Activate this template",
       closeAria: "Close the preview",
     },
+    compare: {
+      title: "Compare versions",
+      subtitle: "Side-by-side preview of two versions of the template.",
+      select: "Compare {{name}} v{{version}}",
+      selection_one: "{{count}} version selected",
+      selection_other: "{{count}} versions selected",
+      action: "Compare",
+      clear: "Cancel",
+      closeAria: "Close the comparison",
+      loading: "Preparing the previews…",
+    },
     reference: {
       title: "Variable reference",
       show: "Show",
