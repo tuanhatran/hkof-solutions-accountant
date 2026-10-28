@@ -1,11 +1,6 @@
 import "./ConfirmDialog.css";
 import { AlertTriangle, X } from "lucide-react";
-import {
-  useEffect,
-  useRef,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type ReactNode,
-} from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
@@ -73,35 +68,34 @@ export function ConfirmDialog({
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onCancel();
+        return;
+      }
+      if (event.key !== "Tab") {
+        return;
+      }
+      const focusable =
+        panel.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (!focusable || focusable.length === 0) {
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const current = document.activeElement;
+      const inside =
+        current !== null && (panel.current?.contains(current) ?? false);
+      if (event.shiftKey) {
+        if (!inside || current === first) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (!inside || current === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onCancel]);
-
-  function trapFocus(event: ReactKeyboardEvent<HTMLDivElement>) {
-    if (event.key !== "Tab") {
-      return;
-    }
-    const focusable =
-      panel.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-    if (!focusable || focusable.length === 0) {
-      return;
-    }
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    const current = document.activeElement;
-    const inside = current !== null && panel.current?.contains(current);
-    if (event.shiftKey) {
-      if (!inside || current === first) {
-        event.preventDefault();
-        last.focus();
-      }
-    } else if (!inside || current === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
 
   if (!open) {
     return null;
@@ -118,7 +112,6 @@ export function ConfirmDialog({
     >
       <div
         ref={panel}
-        onKeyDown={trapFocus}
         className="animation-fade confirm-dialog-panel"
         role="dialog"
         aria-modal="true"

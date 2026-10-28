@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { describe, expect, it, vi } from "vitest";
 import i18n from "@/i18n";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -111,6 +112,50 @@ describe("ConfirmDialog", () => {
 
     await user.tab({ shift: true });
     expect(confirm).toHaveFocus();
+  });
+
+  it("traps Tab and Shift+Tab when focus is outside the panel", async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <button type="button">Hors dialogue</button>
+        <ConfirmDialog
+          open
+          title="Quitter"
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />
+        {createPortal(
+          <button type="button">Hors dialogue après</button>,
+          document.body,
+        )}
+      </>,
+    );
+
+    const dialog = screen.getByRole("dialog");
+    const outsideBefore = screen.getByRole("button", {
+      name: "Hors dialogue",
+    });
+    const outsideAfter = screen.getByRole("button", {
+      name: "Hors dialogue après",
+    });
+    const title = screen.getByRole("heading", { name: "Quitter" });
+
+    await user.click(title);
+    expect(document.activeElement).toBe(document.body);
+
+    await user.tab();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    expect(outsideBefore).not.toHaveFocus();
+    expect(outsideAfter).not.toHaveFocus();
+
+    await user.click(title);
+    expect(document.activeElement).toBe(document.body);
+
+    await user.tab({ shift: true });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    expect(outsideBefore).not.toHaveFocus();
+    expect(outsideAfter).not.toHaveFocus();
   });
 
   it("restores focus to the opener once the dialog closes", async () => {
