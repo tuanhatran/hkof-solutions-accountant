@@ -225,6 +225,23 @@ describe("groupHistoryByMonthAndAddress", () => {
     expect(unknown.statements).toEqual([]);
   });
 
+  it("keeps every statement version of a month in its address row", () => {
+    const versions = Array.from({ length: 5 }, (_, index) => ({
+      ...STATEMENT_ALPHA,
+      id: 300 + index,
+      version: index + 1,
+    }));
+
+    const [january] = groupHistoryByMonthAndAddress([], versions, [
+      LEASE_ALPHA,
+    ]);
+
+    expect(january.addresses).toHaveLength(1);
+    expect(january.addresses[0].statements.map((item) => item.id)).toEqual([
+      300, 301, 302, 303, 304,
+    ]);
+  });
+
   it("relabels the unknown address row when the language changes", async () => {
     await i18n.changeLanguage("en");
     const [january] = groupHistoryByMonthAndAddress(

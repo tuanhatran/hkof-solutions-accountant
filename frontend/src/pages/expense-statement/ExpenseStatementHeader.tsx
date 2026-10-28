@@ -43,15 +43,10 @@ export function ExpenseStatementHeader({
             ) : null}
             {c.companies.isSuccess && companyList.length > 1 ? (
               <div className="expense-statement-header-company">
-                <label
-                  className="expense-statement-header-company-label"
-                  htmlFor="select-societe-note-frais"
-                >
-                  {t("expenseStatement.header.companyLabel")}
-                </label>
                 <select
                   id="select-societe-note-frais"
                   data-cy="select-societe-note-frais"
+                  aria-label={t("expenseStatement.header.companyLabel")}
                   className="field expense-statement-header-company-select"
                   value={c.activeCompanyId ?? ""}
                   onChange={(event) =>

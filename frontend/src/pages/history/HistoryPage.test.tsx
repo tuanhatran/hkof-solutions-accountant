@@ -571,6 +571,32 @@ describe("HistoryPage", () => {
     expect(within(feb).getByText("Note (1)")).toBeInTheDocument();
   });
 
+  it("counts every statement version of the month in the note badge", async () => {
+    receiptsState = readyQuery([RENT_JAN_ACTIVE]);
+    statementsState = readyQuery(
+      Array.from({ length: 5 }, (_, index) => ({
+        ...STATEMENT_JAN_ACTIVE,
+        id: 80 + index,
+        version: index + 1,
+        status: index === 4 ? "ACTIVE" : "ARCHIVED",
+        createdAt: `2026-01-0${index + 1}T10:00:00Z`,
+      })),
+    );
+
+    renderPage();
+
+    const jan = (
+      await screen.findByRole("heading", { name: "Janvier 2026" })
+    ).closest("section");
+    if (!jan) {
+      throw new Error("January section not found");
+    }
+    expect(within(jan).getByText("Note (5)")).toBeInTheDocument();
+    expect(
+      within(columnOf("2026-01", "note")).getAllByText("Charger"),
+    ).toHaveLength(5);
+  });
+
   it("offers the two generation actions in the populated header", async () => {
     const user = userEvent.setup();
     renderPage();

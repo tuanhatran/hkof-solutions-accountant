@@ -31,12 +31,8 @@
     @apply flex items-center gap-2;
   }
 
-  .expense-statement-header-company-label {
-    @apply text-xs font-medium text-ink-soft;
-  }
-
   .expense-statement-header-company-select {
-    @apply min-w-44;
+    @apply mt-0 h-full w-full min-w-0 rounded-none border-0 bg-transparent px-0 py-0 text-xs focus:outline-none focus:ring-0;
   }
 
   .expense-statement-header-company-chip {
