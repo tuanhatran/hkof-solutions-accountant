@@ -106,7 +106,7 @@ describe("AppShell", () => {
     expect(historyLink.querySelector(".app-nav-icon-active")).not.toBeNull();
 
     const adminLink = within(navigation).getByRole("link", {
-      name: /Admin IA/,
+      name: /Analyse IA/,
     });
     expect(adminLink).toHaveAttribute("href", "/admin");
     expect(adminLink.className).toContain("app-nav-link-idle");
@@ -156,7 +156,7 @@ describe("AppShell", () => {
       "Historique",
       "Société",
       "LMNP",
-      "Admin IA",
+      "Analyse IA",
     ]);
     const active = within(mobileNavigation).getByRole("link", {
       name: "Historique",
@@ -307,7 +307,7 @@ describe("AppShell", () => {
       within(navigation).getByRole("link", { name: /Company/ }),
     ).toHaveAttribute("href", "/configuration/entreprise");
     expect(
-      within(navigation).getByRole("link", { name: /AI Admin/ }),
+      within(navigation).getByRole("link", { name: /AI analysis/ }),
     ).toHaveAttribute("href", "/admin");
     expect(within(navigation).queryByText("Historique")).toBeNull();
 
@@ -324,7 +324,7 @@ describe("AppShell", () => {
       "History",
       "Company",
       "LMNP",
-      "AI Admin",
+      "AI analysis",
     ]);
 
     expect(screen.getByText("Draft not generated")).toBeVisible();

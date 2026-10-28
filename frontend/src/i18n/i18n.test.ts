@@ -132,6 +132,20 @@ describe("i18n", () => {
     expect(en.rentReceipt.fields.template).toBe("Template");
   });
 
+  it("names the AI analysis page in French and English", () => {
+    expect(fr.navigation.links.aiAdmin).toBe("Analyse IA");
+    expect(fr.adminLlm.page.title).toBe("Analyse IA");
+    expect(en.navigation.links.aiAdmin).toBe("AI analysis");
+    expect(en.adminLlm.page.title).toBe("AI analysis");
+  });
+
+  it("keeps no Admin IA or AI Admin value in the translations", () => {
+    const values = [...leafValues(fr), ...leafValues(en)];
+
+    expect(values.filter((value) => /\bAdmin IA\b/i.test(value))).toEqual([]);
+    expect(values.filter((value) => /\bAI Admin\b/i.test(value))).toEqual([]);
+  });
+
   it("contains no user-facing Template or Entreprise copy in French", () => {
     const values = leafValues(fr).map((value) =>
       value.replace(/\{\{[^}]+\}\}/g, ""),

@@ -236,7 +236,7 @@ export const en = {
       history: "History",
       company: "Company",
       lmnp: "LMNP",
-      aiAdmin: "AI Admin",
+      aiAdmin: "AI analysis",
     },
   },
   shell: {
@@ -989,7 +989,7 @@ export const en = {
   adminLlm: {
     page: {
       eyebrow: "Settings",
-      title: "AI Admin",
+      title: "AI analysis",
       loading: "Loading the AI configuration…",
       description:
         "Ollama stays local by default. The model only proposes an extraction: every amount is verified and calculated by the backend.",
