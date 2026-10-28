@@ -242,6 +242,49 @@ describe("TemplatesTab", () => {
     expect(within(rent).getByText("requis")).toBeInTheDocument();
   });
 
+  it("aligns the version header and rows on one shared grid", () => {
+    renderTab();
+
+    const header = document.querySelector(
+      '[data-cy="entetes-versions-modele"]',
+    );
+    if (!(header instanceof HTMLElement)) {
+      throw new Error("Version header not found");
+    }
+    expect(header).toHaveClass(
+      "template-versions-grid",
+      "template-versions-header",
+      "hidden",
+      "xl:grid",
+    );
+    expect(Array.from(header.children).map((cell) => cell.textContent)).toEqual(
+      ["Modèle", "Version", "Importé le", "Actions"],
+    );
+
+    const rows = within(card()).getAllByRole("listitem");
+    expect(rows).toHaveLength(3);
+    for (const row of rows) {
+      expect(row).toHaveClass(
+        "template-versions-grid",
+        "template-versions-row",
+      );
+    }
+
+    const archivedRow = screen.getByText("Quittance archivée").closest("li");
+    if (!archivedRow) {
+      throw new Error("Archived version row not found");
+    }
+    expect(
+      archivedRow.querySelector(".template-versions-list-meta"),
+    ).toHaveTextContent("HTML");
+    const dateCell = archivedRow.querySelector(".template-versions-list-date");
+    if (!(dateCell instanceof HTMLElement)) {
+      throw new Error("Imported date cell not found");
+    }
+    expect(dateCell).toHaveClass("number", "template-versions-number");
+    expect(dateCell.textContent).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+  });
+
   it("renders the expense statement card when configured for it", () => {
     renderTab(EXPENSE_STATEMENT_CONFIGURATION);
 
@@ -771,6 +814,13 @@ describe("TemplatesTab", () => {
 
     const rent = card();
     expect(within(rent).getByText("Active template")).toBeVisible();
+    const header = rent.querySelector('[data-cy="entetes-versions-modele"]');
+    if (!(header instanceof HTMLElement)) {
+      throw new Error("English version header not found");
+    }
+    expect(Array.from(header.children).map((cell) => cell.textContent)).toEqual(
+      ["Template", "Version", "Imported on", "Actions"],
+    );
     expect(within(rent).getByText(/imported on/)).toBeVisible();
     expect(within(rent).getAllByText("Built-in").length).toBeGreaterThan(0);
     expect(within(rent).getByText("Active")).toBeVisible();

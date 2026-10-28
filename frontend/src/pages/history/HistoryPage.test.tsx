@@ -944,6 +944,22 @@ describe("HistoryPage", () => {
       throw new Error("January section not found");
     }
     expect(within(jan).getByText("Month")).toBeInTheDocument();
+    const receiptHeader = jan.querySelector(
+      '[data-cy="entetes-versions-quittance"]',
+    );
+    const noteHeader = jan.querySelector('[data-cy="entetes-versions-note"]');
+    if (
+      !(receiptHeader instanceof HTMLElement) ||
+      !(noteHeader instanceof HTMLElement)
+    ) {
+      throw new Error("English version headers not found");
+    }
+    expect(
+      Array.from(receiptHeader.children).map((cell) => cell.textContent),
+    ).toEqual(["Version", "Parties", "Date", "Amount", "Actions"]);
+    expect(
+      Array.from(noteHeader.children).map((cell) => cell.textContent),
+    ).toEqual(["Version", "Date", "Amount", "Actions"]);
     expect(within(jan).getByText("Rent receipt (2)")).toBeInTheDocument();
     expect(within(jan).getByText("Statement (2)")).toBeInTheDocument();
     expect(
@@ -1042,6 +1058,77 @@ describe("HistoryPage", () => {
     expect(
       useToasts.getState().toasts.map((element) => element.message),
     ).toContain("January 2026 lines reloaded into the draft.");
+  });
+
+  it("aligns the version headers and rows on one shared grid", async () => {
+    renderPage();
+    await screen.findByText("2 mois suivis");
+
+    const receiptColumn = columnOf("2026-01", "quittance");
+    const receiptHeaders = receiptColumn.querySelectorAll(
+      '[data-cy="entetes-versions-quittance"]',
+    );
+    expect(receiptHeaders).toHaveLength(1);
+    const receiptHeader = receiptHeaders[0];
+    expect(receiptHeader).toHaveClass(
+      "history-versions-grid",
+      "history-versions-grid-quittance",
+      "hidden",
+      "xl:grid",
+    );
+    expect(
+      Array.from(receiptHeader.children).map((cell) => cell.textContent),
+    ).toEqual(["Version", "Parties", "Date", "Montant", "Actions"]);
+
+    const receiptRow = document.querySelector(
+      '[data-cy="historique-quittance-10"]',
+    );
+    if (!(receiptRow instanceof HTMLElement)) {
+      throw new Error("Archived rent receipt row not found");
+    }
+    expect(receiptRow).toHaveClass(
+      "history-versions-grid",
+      "history-versions-grid-quittance",
+    );
+    expect(
+      receiptRow.querySelector(".rent-receipt-month-panel-history-date"),
+    ).toHaveClass("number", "history-versions-number");
+    expect(
+      receiptRow.querySelector(".rent-receipt-month-panel-history-amount"),
+    ).toHaveClass("number", "history-versions-number");
+
+    const noteColumn = columnOf("2026-01", "note");
+    const noteHeaders = noteColumn.querySelectorAll(
+      '[data-cy="entetes-versions-note"]',
+    );
+    expect(noteHeaders).toHaveLength(1);
+    const noteHeader = noteHeaders[0];
+    expect(noteHeader).toHaveClass(
+      "history-versions-grid",
+      "history-versions-grid-note",
+      "hidden",
+      "xl:grid",
+    );
+    expect(
+      Array.from(noteHeader.children).map((cell) => cell.textContent),
+    ).toEqual(["Version", "Date", "Montant", "Actions"]);
+
+    const noteRow = noteColumn.querySelector(
+      "li.statement-month-panel-history-item",
+    );
+    if (!(noteRow instanceof HTMLElement)) {
+      throw new Error("Statement version row not found");
+    }
+    expect(noteRow).toHaveClass(
+      "history-versions-grid",
+      "history-versions-grid-note",
+    );
+    expect(
+      noteRow.querySelector(".statement-month-panel-history-date"),
+    ).toHaveClass("number", "history-versions-number");
+    expect(
+      noteRow.querySelector(".statement-month-panel-history-amount"),
+    ).toHaveClass("number", "history-versions-number");
   });
 
   it("relabels the month cards and address rows without a reload", async () => {

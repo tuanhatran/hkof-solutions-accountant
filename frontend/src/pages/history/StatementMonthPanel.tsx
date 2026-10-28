@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { api } from "@/api/endpoints";
 import type { StatementDto } from "@/api/types";
-import { formatDateTime, formatEUR } from "@/lib/format";
+import { formatDate, formatEUR } from "@/lib/format";
 import { PdfActionLink, VersionBadge } from "./HistoryActions";
 import { current, type AddressGroup } from "./historyHelpers";
 import "./StatementMonthPanel.css";
@@ -26,18 +26,21 @@ export function StatementMonthPanel({
     <div className="statement-month-panel-history">
       <ul className="statement-month-panel-history-list">
         {address.statements.map((version) => (
-          <li key={version.id} className="statement-month-panel-history-item">
-            <span className="statement-month-panel-history-meta">
+          <li
+            key={version.id}
+            className="history-versions-grid history-versions-grid-note statement-month-panel-history-item"
+          >
+            <span className="justify-self-start">
               <VersionBadge
                 version={version.version ?? 1}
                 active={version.status === "ACTIVE"}
               />
-              <span className="text-ink-soft">
-                {formatDateTime(version.createdAt)}
-              </span>
-              <span className="number statement-month-panel-history-amount">
-                {formatEUR(version.total)}
-              </span>
+            </span>
+            <span className="number history-versions-number statement-month-panel-history-date">
+              {formatDate(version.createdAt)}
+            </span>
+            <span className="number history-versions-number statement-month-panel-history-amount font-medium text-ink">
+              {formatEUR(version.total)}
             </span>
             <span className="statement-month-panel-history-actions">
               {version.id ? (

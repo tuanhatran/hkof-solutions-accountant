@@ -441,6 +441,10 @@ export const en = {
       deleteActiveTitle: "The active template cannot be deleted.",
       followupPreview: "Preview version v{{version}}",
       followupActivate: "Activate version v{{version}}",
+      name: "Template",
+      versionColumn: "Version",
+      importedAt: "Imported on",
+      actions: "Actions",
     },
     import: {
       title: "Import a new version",
@@ -551,6 +555,13 @@ export const en = {
       complete: "Complete",
       downloadPdf: "Download the PDF",
       downloadComplete: "Complete statement (ZIP)",
+    },
+    versions: {
+      version: "Version",
+      parties: "Parties",
+      date: "Date",
+      amount: "Amount",
+      actions: "Actions",
     },
   },
   settings: {

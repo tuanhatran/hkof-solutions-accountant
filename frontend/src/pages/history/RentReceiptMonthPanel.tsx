@@ -2,7 +2,7 @@ import "./RentReceiptMonthPanel.css";
 import { useTranslation } from "react-i18next";
 import { api } from "@/api/endpoints";
 import type { RentReceiptDto } from "@/api/types";
-import { formatDateTime, formatEUR } from "@/lib/format";
+import { formatDate, formatEUR } from "@/lib/format";
 import { PdfActionLink, VersionBadge } from "./HistoryActions";
 import {
   latestReceipt,
@@ -59,21 +59,21 @@ function RentReceiptHistoryItem({ version }: { version: RentReceiptDto }) {
 
   return (
     <li
-      className="rent-receipt-month-panel-history-item"
+      className="history-versions-grid history-versions-grid-quittance rent-receipt-month-panel-history-item"
       data-cy={`historique-quittance-${version.id}`}
     >
-      <span className="rent-receipt-month-panel-history-meta">
+      <span className="justify-self-start">
         <VersionBadge
           version={version.version ?? 1}
           active={version.status === "ACTIVE"}
         />
-        <span className="text-ink">{pairLabel(version)}</span>
-        <span className="text-ink-soft">
-          {formatDateTime(version.createdAt)}
-        </span>
-        <span className="number rent-receipt-month-panel-history-amount">
-          {formatEUR(version.total)}
-        </span>
+      </span>
+      <span className="min-w-0 truncate text-ink">{pairLabel(version)}</span>
+      <span className="number history-versions-number rent-receipt-month-panel-history-date">
+        {formatDate(version.createdAt)}
+      </span>
+      <span className="number history-versions-number rent-receipt-month-panel-history-amount font-medium text-ink">
+        {formatEUR(version.total)}
       </span>
       {version.id ? (
         <PdfActionLink

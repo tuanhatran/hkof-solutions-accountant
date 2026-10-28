@@ -460,6 +460,10 @@ export const fr = {
       deleteActiveTitle: "Le modèle actif ne peut pas être supprimé.",
       followupPreview: "Aperçu de la version v{{version}}",
       followupActivate: "Activer la version v{{version}}",
+      name: "Modèle",
+      versionColumn: "Version",
+      importedAt: "Importé le",
+      actions: "Actions",
     },
     import: {
       title: "Importer une nouvelle version",
@@ -571,6 +575,13 @@ export const fr = {
       complete: "Complète",
       downloadPdf: "Télécharger le PDF",
       downloadComplete: "Note complète (ZIP)",
+    },
+    versions: {
+      version: "Version",
+      parties: "Parties",
+      date: "Date",
+      amount: "Montant",
+      actions: "Actions",
     },
   },
   settings: {
