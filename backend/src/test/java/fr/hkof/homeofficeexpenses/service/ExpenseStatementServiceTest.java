@@ -205,6 +205,32 @@ class ExpenseStatementServiceTest {
     }
 
     @Test
+    @DisplayName("The legacy draft without lease uses the effective lease item and the null receipt scope")
+    void draftWithoutLeaseUsesEffectiveLeaseItem() {
+        Lease lease = new Lease();
+        lease.setId(4L);
+        lease.setCompanyId(COMPANY_ID);
+        when(leases.resolveExpenseLease(COMPANY_ID, null)).thenReturn(lease);
+        RentReceipt rentReceipt = new RentReceipt();
+        rentReceipt.setTotal(new BigDecimal("950.00"));
+        when(rentReceiptService.activeForLease(COMPANY_ID, "2026-10", null)).thenReturn(rentReceipt);
+        when(expenseItemService.entity(COMPANY_ID, null, "loyer"))
+                .thenThrow(new BusinessException("EXPENSE_ITEM_UNKNOWN_CODE",
+                        "Type de frais inconnu : loyer"));
+        when(expenseItemService.entity(COMPANY_ID, 4L, "loyer"))
+                .thenReturn(item("loyer", "Quittance bail 4", 10));
+        when(expenseItemService.list(COMPANY_ID, 4L, false)).thenReturn(List.of(itemDto(1L, "loyer", "Loyer")));
+
+        DraftDto draft = service.draft(COMPANY_ID, "2026-10", null);
+
+        assertThat(draft.lines().get(0).itemLabel()).isEqualTo("Quittance bail 4");
+        assertThat(draft.missingItems()).isEmpty();
+        verify(expenseItemService).entity(COMPANY_ID, 4L, "loyer");
+        verify(expenseItemService).list(COMPANY_ID, 4L, false);
+        verify(rentReceiptService).activeForLease(COMPANY_ID, "2026-10", null);
+    }
+
+    @Test
     @DisplayName("Preview delegates to the document collaborator")
     void preview() {
         Lease lease = new Lease();

@@ -83,11 +83,15 @@ public class ExpenseStatementService {
     public DraftDto draft(Long companyId, String monthText, Long leaseId) {
         YearMonth month = Amounts.month(monthText);
         Company company = companies.entity(companyId);
+        var lease = leases.resolveExpenseLease(company.getId(), leaseId);
+        Long itemLeaseId = lease == null ? null : lease.getId();
         LeaseService.ProRata proRata = leases.proRata(company.getId(), leaseId);
+        // The legacy call carries no lease and keeps the historical receipt scope, while the
+        // expense items come from the effective lease so a lease-scoped « loyer » resolves.
         RentReceipt rentReceipt = activeReceipt(company.getId(), month.toString(), leaseId);
         List<ExpenseLineDto> lines = new ArrayList<>();
         if (rentReceipt != null) {
-            ExpenseItem rentItem = expenseItemService.entity(company.getId(), leaseId, "loyer");
+            ExpenseItem rentItem = expenseItemService.entity(company.getId(), itemLeaseId, "loyer");
             lines.add(new ExpenseLineDto(
                     null, rentItem.getCode(), rentItem.getLabel(), rentItem.getSupplier(),
                     Amounts.apiValue(rentReceipt.getTotal()),
@@ -96,7 +100,7 @@ public class ExpenseStatementService {
                     Amounts.apiValue(rentReceipt.getTotal()),
                     null, null, AmountSource.MANUAL.name(), null, null));
         }
-        List<String> missing = expenseItemService.list(company.getId(), leaseId, false).stream()
+        List<String> missing = expenseItemService.list(company.getId(), itemLeaseId, false).stream()
                 .filter(expenseItem -> !expenseItem.code().equals("loyer"))
                 .map(expenseItem -> expenseItem.label().toLowerCase(Locale.FRENCH))
                 .toList();

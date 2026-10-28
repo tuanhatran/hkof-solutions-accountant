@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import com.jayway.jsonpath.JsonPath;
 
 import fr.hkof.homeofficeexpenses.repository.ExpenseStatementRepository;
+import fr.hkof.homeofficeexpenses.repository.RentReceiptRepository;
 
 /**
  * Multi-lease company expenses: expense items and statements carry a {@code leaseId} filtered
@@ -45,6 +46,9 @@ class MultiLeaseExpensesIntegrationTest {
 
     @Autowired
     private ExpenseStatementRepository statements;
+
+    @Autowired
+    private RentReceiptRepository rentReceipts;
 
     @Test
     @DisplayName("A company can hold two active leases and both are listed with their pro-rata")
@@ -468,6 +472,46 @@ class MultiLeaseExpensesIntegrationTest {
         mockMvc.perform(delete("/api/persons/{id}", landlordB)).andExpect(status().isNoContent());
     }
 
+    @Test
+    @DisplayName("A legacy draft without leaseId prefills the rent line from the first lease item")
+    void legacyDraftWithoutLeaseUsesEffectiveLeaseItem() throws Exception {
+        long companyId = createCompany("Société brouillon hérité");
+        long landlordId = createLandlord("Bailleur brouillon hérité");
+        long signatureId = uploadSignature(landlordId);
+        long firstLease = createCompanyLease(companyId, landlordId, "80", "20");
+        long loyerId = id(post("/api/expense-items")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"companyId":%d,"leaseId":%d,"code":"loyer","label":"Loyer du bail hérité",
+                         "proRataPct":"100"}
+                        """.formatted(companyId, firstLease)));
+        long receiptId = id(post("/api/rent-receipts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"month":"2026-09","landlordId":%d,"tenantCompanyId":%d}
+                        """.formatted(landlordId, companyId)));
+
+        // The supported UI sends leaseId; the legacy company-only call must still resolve the
+        // expense lease item while reading the rent receipt from the historical null scope.
+        mockMvc.perform(post("/api/expense-statements/draft")
+                        .param("companyId", String.valueOf(companyId))
+                        .param("month", "2026-09"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rentReceipt.id").value(receiptId))
+                .andExpect(jsonPath("$.lines[0].itemCode").value("loyer"))
+                .andExpect(jsonPath("$.lines[0].itemLabel").value("Loyer du bail hérité"))
+                .andExpect(jsonPath("$.missingItems").isEmpty());
+
+        mockMvc.perform(delete("/api/expense-items/{id}", loyerId)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/signatures/{id}", signatureId)).andExpect(status().isNoContent());
+        // Test-only physical cleanup: receipts have no delete endpoint and a receipt-bearing
+        // company cannot be removed through the API.
+        rentReceipts.deleteById(receiptId);
+        mockMvc.perform(delete("/api/leases/{id}", firstLease)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/companies/{id}", companyId)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/persons/{id}", landlordId)).andExpect(status().isNoContent());
+    }
+
     private long createCompany(String name) throws Exception {
         return id(post("/api/companies")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -511,12 +555,14 @@ class MultiLeaseExpensesIntegrationTest {
                         """.formatted(companyId)));
     }
 
-    private void uploadSignature(long personId) throws Exception {
-        mockMvc.perform(multipart("/api/signatures")
+    private long uploadSignature(long personId) throws Exception {
+        String created = mockMvc.perform(multipart("/api/signatures")
                         .file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
                         .param("personId", String.valueOf(personId))
                         .param("name", "Signature gérant"))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return ((Number) JsonPath.read(created, "$.id")).longValue();
     }
 
     private long id(MockHttpServletRequestBuilder request) throws Exception {
