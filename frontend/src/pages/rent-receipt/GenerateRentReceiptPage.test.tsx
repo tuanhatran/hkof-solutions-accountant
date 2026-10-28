@@ -935,15 +935,12 @@ describe("GenerateRentReceiptPage", () => {
     const month = screen.getByLabelText("Mois concerné");
     expect(month).toBeVisible();
     expect(month).toHaveValue(MONTH);
-    expect(screen.getByText("Janvier 2026")).toHaveAttribute(
-      "aria-live",
-      "polite",
-    );
+    expect(screen.queryByText("Janvier 2026")).toBeNull();
 
     fireEvent.change(month, { target: { value: "2026-02" } });
 
     expect(month).toHaveValue("2026-02");
-    expect(screen.getByText("Février 2026")).toBeVisible();
+    expect(screen.queryByText("Février 2026")).toBeNull();
     expect(useRentReceiptDraft.getState().month).toBe("2026-02");
     expect(useRentReceiptDraft.getState().periodStart).toBe("2026-02-01");
     expect(useRentReceiptDraft.getState().periodEnd).toBe("2026-02-28");

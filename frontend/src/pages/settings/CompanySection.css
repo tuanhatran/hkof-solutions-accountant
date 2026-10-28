@@ -10,7 +10,7 @@
   }
 
   .company-section-tabs {
-    @apply w-full max-w-md;
+    @apply w-full max-w-[35rem];
   }
 
   .company-section-select {

@@ -725,7 +725,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     ).toBeVisible();
   });
 
-  it("keeps one header month control that updates the month and its French echo", () => {
+  it("keeps one header month control that updates the month", () => {
     renderPage();
 
     const monthInputs = document.querySelectorAll('[data-cy="select-mois"]');
@@ -733,16 +733,13 @@ describe("GenerateExpenseStatementPage signatures", () => {
     const month = screen.getByLabelText("Mois concerné");
     expect(month).toBeVisible();
     expect(month).toHaveValue(MONTH);
-    expect(screen.getByText("Janvier 2026")).toHaveAttribute(
-      "aria-live",
-      "polite",
-    );
+    expect(screen.queryByText("Janvier 2026")).toBeNull();
 
     fireEvent.change(month, { target: { value: "2026-02" } });
 
     expect(useStatementDraft.getState().month).toBe("2026-02");
     expect(month).toHaveValue("2026-02");
-    expect(screen.getByText("Février 2026")).toBeVisible();
+    expect(screen.queryByText("Février 2026")).toBeNull();
     expect(screen.getByText("Aucun frais pour Février 2026")).toBeVisible();
   });
 

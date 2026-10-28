@@ -20,4 +20,11 @@
   .page-header-actions {
     @apply flex flex-wrap items-center gap-2;
   }
+
+  /* Uniform action box on every page header: same height, one shared min-width
+     that still grows with longer content, square corners and a single border
+     weight/colour whatever the inner primitive or variant. */
+  .page-header .page-header-actions > * {
+    @apply inline-flex h-9 min-w-[9.5rem] max-w-full items-center justify-center gap-2 rounded-none border border-line px-3;
+  }
 }

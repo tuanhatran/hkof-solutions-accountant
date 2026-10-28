@@ -2,30 +2,22 @@
 
 @layer components {
   .month-field {
-    @apply flex max-w-full flex-wrap items-center gap-x-2 gap-y-1;
-  }
-
-  .month-field-label {
-    @apply text-[11px] font-semibold text-ink-soft;
+    @apply relative flex max-w-full flex-wrap items-center gap-x-2 gap-y-1;
   }
 
   .month-field-input {
-    @apply mt-0 w-[8.5rem] max-w-full rounded-md border border-line bg-surface px-2 py-1.5 text-xs text-ink transition hover:border-line-strong focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15;
+    @apply mt-0 h-full w-full min-w-0 rounded-none border-0 bg-transparent px-0 py-0 text-xs text-ink transition focus:outline-none focus:ring-2 focus:ring-accent/15;
   }
 
   .month-field-input-error {
-    @apply border-danger/70 focus:border-danger focus:ring-danger/10;
-  }
-
-  .month-field-echo {
-    @apply text-xs font-medium text-ink-soft;
+    @apply focus:ring-danger/10;
   }
 
   .month-field-hint {
-    @apply w-full text-[11px] leading-relaxed text-ink-soft;
+    @apply absolute left-0 top-full mt-1 w-full text-[11px] leading-relaxed text-ink-soft;
   }
 
   .month-field-error {
-    @apply w-full text-[11px] font-medium leading-relaxed text-danger;
+    @apply absolute left-0 top-full mt-1 w-full text-[11px] font-medium leading-relaxed text-danger;
   }
 }
