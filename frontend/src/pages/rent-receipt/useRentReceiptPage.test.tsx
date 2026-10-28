@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { downloadBlob } from "@/api/client";
-import { api } from "@/api/endpoints";
+import { api, type RentReceiptDraftDto } from "@/api/endpoints";
 import type {
   CompanyDto,
   LeaseDto,
@@ -31,6 +31,7 @@ let templatesState: QueryLike<{ id: number; active?: boolean }[]>;
 let signaturesState: QueryLike<SignatureDto[]>;
 let companiesState: QueryLike<CompanyDto[]>;
 let activeReceiptState: QueryLike<{ id: number; total: string } | null>;
+let savedDraftState: QueryLike<RentReceiptDraftDto | null>;
 let mediaMobile = false;
 let lastPreviewLoader: ((signal: AbortSignal) => Promise<unknown>) | null =
   null;
@@ -48,6 +49,11 @@ vi.mock("@/api/endpoints", () => ({
       create: vi.fn(),
       preview: vi.fn(),
       pdf: vi.fn(),
+    },
+    drafts: {
+      getRentReceipt: vi.fn(),
+      saveRentReceipt: vi.fn(),
+      delete: vi.fn(),
     },
   },
 }));
@@ -75,6 +81,7 @@ vi.mock("@/api/queries", async (importOriginal) => {
     }),
     useCompanies: () => companiesState,
     useActiveRentReceipt: () => activeReceiptState,
+    useSavedRentReceiptDraft: () => savedDraftState,
   };
 });
 
@@ -141,6 +148,9 @@ function snapshot() {
     tenantKey: null as string | null,
     initialized: false,
     dirty: false,
+    baseline: null,
+    draftId: null as number | null,
+    savedAt: null as string | null,
   };
 }
 
@@ -182,6 +192,7 @@ beforeEach(() => {
   ]);
   companiesState = readyQuery([{ id: 3, name: "HKOF" }]);
   activeReceiptState = readyQuery(null);
+  savedDraftState = readyQuery(null);
   mediaMobile = false;
   lastPreviewLoader = null;
   lastPreviewOptions = null;
@@ -203,6 +214,16 @@ beforeEach(() => {
     blob: new Blob(),
     fileName: null,
   });
+  vi.mocked(api.drafts.saveRentReceipt).mockReset();
+  vi.mocked(api.drafts.saveRentReceipt).mockResolvedValue({
+    id: 50,
+    month: MONTH,
+    landlordId: 1,
+    tenantId: 2,
+    savedAt: "2026-01-15T10:30:00Z",
+  });
+  vi.mocked(api.drafts.delete).mockReset();
+  vi.mocked(api.drafts.delete).mockResolvedValue(undefined);
   vi.mocked(downloadBlob).mockReset();
   resetDraft();
   useStatementDraft.setState({ month: "2025-12" });
@@ -666,6 +687,111 @@ describe("useRentReceiptPage preview and generation", () => {
     act(() => result.current.setMobilePanel("apercu"));
     expect(result.current.mobilePanel).toBe("apercu");
     expect(result.current.mobile).toBe(false);
+  });
+
+  it("saves the form state and records the draft id and timestamp", async () => {
+    const { result } = renderController();
+    act(() => result.current.selectPair("1", "person:2"));
+
+    let saved = false;
+    await act(async () => {
+      saved = await result.current.saveDraft();
+    });
+
+    expect(saved).toBe(true);
+    expect(api.drafts.saveRentReceipt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        month: MONTH,
+        landlordId: 1,
+        tenantId: 2,
+        tenantCompanyId: null,
+        rentExclCharges: "1300.00",
+        charges: "50.00",
+      }),
+    );
+    expect(useRentReceiptDraft.getState()).toMatchObject({
+      draftId: 50,
+      savedAt: "2026-01-15T10:30:00Z",
+      dirty: false,
+    });
+    expect(toastMessages()).toContain("Brouillon enregistré.");
+  });
+
+  it("refuses to save without a landlord and a single tenant", async () => {
+    resetDraft({ initialized: true });
+    const { result } = renderController();
+    expect(result.current.draftScopeReady).toBe(false);
+
+    let saved = true;
+    await act(async () => {
+      saved = await result.current.saveDraft();
+    });
+
+    expect(saved).toBe(false);
+    expect(api.drafts.saveRentReceipt).not.toHaveBeenCalled();
+  });
+
+  it("reports a failed save and keeps the draft dirty", async () => {
+    vi.mocked(api.drafts.saveRentReceipt).mockRejectedValue(
+      new Error("Refusé"),
+    );
+    const { result } = renderController();
+    act(() => result.current.selectPair("1", "person:2"));
+    act(() => result.current.draft.update({ rentExclCharges: "1400.00" }));
+
+    let saved = true;
+    await act(async () => {
+      saved = await result.current.saveDraft();
+    });
+
+    expect(saved).toBe(false);
+    expect(toastMessages()).toContain("Refusé");
+    expect(useRentReceiptDraft.getState().dirty).toBe(true);
+    expect(useRentReceiptDraft.getState().draftId).toBeNull();
+  });
+
+  it("reloads the saved draft of the selected scope without marking it dirty", async () => {
+    savedDraftState = readyQuery({
+      id: 60,
+      month: MONTH,
+      landlordId: 1,
+      tenantId: 2,
+      periodStart: "2026-01-02",
+      periodEnd: "2026-01-30",
+      rentExclCharges: "1200.00",
+      charges: "40.00",
+      paymentDate: "2026-01-04",
+      issueDate: "2026-01-03",
+      templateId: 8,
+      savedAt: "2026-01-10T09:00:00Z",
+    });
+
+    const { result } = renderController();
+    await waitFor(() =>
+      expect(result.current.values.rentExclCharges).toBe("1200.00"),
+    );
+
+    expect(result.current.values.tenantKey).toBe("person:2");
+    expect(result.current.values.periodStart).toBe("2026-01-02");
+    expect(result.current.selectedModel).toBe(8);
+    expect(result.current.draft.draftId).toBe(60);
+    expect(result.current.draft.savedAt).toBe("2026-01-10T09:00:00Z");
+    expect(result.current.draft.dirty).toBe(false);
+  });
+
+  it("deletes the saved draft after a successful generation", async () => {
+    resetDraft({ draftId: 70, savedAt: "2026-01-10T09:00:00Z" });
+    const { result } = renderController();
+    act(() => result.current.selectPair("1", "person:2"));
+
+    await act(async () => {
+      result.current.submit(result.current.values as never);
+    });
+
+    await waitFor(() => expect(api.rentReceipts.create).toHaveBeenCalled());
+    expect(api.drafts.delete).toHaveBeenCalledWith(70);
+    expect(useRentReceiptDraft.getState().draftId).toBeNull();
+    expect(useRentReceiptDraft.getState().savedAt).toBeNull();
   });
 
   it("hides the active receipt when no pair is selected", () => {

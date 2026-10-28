@@ -15,6 +15,13 @@ const FOCUSABLE_SELECTOR = [
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
 
+interface ExtraAction {
+  label: string;
+  onClick: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+}
+
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
@@ -25,6 +32,8 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
   dataCy?: string;
+  /** Third, primary action rendered last, for example "Enregistrer et quitter". */
+  extraAction?: ExtraAction;
 }
 
 export function ConfirmDialog({
@@ -37,6 +46,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   dataCy = "dialogue-confirmation",
+  extraAction,
 }: ConfirmDialogProps) {
   const { t } = useTranslation();
   const cancelButton = useRef<HTMLButtonElement>(null);
@@ -158,6 +168,17 @@ export function ConfirmDialog({
           >
             {confirmLabel ?? t("common.confirm")}
           </Button>
+          {extraAction ? (
+            <Button
+              variant="primary"
+              onClick={extraAction.onClick}
+              loading={extraAction.loading}
+              disabled={extraAction.disabled}
+              data-cy="dialogue-extra"
+            >
+              {extraAction.label}
+            </Button>
+          ) : null}
         </div>
       </div>
     </div>,

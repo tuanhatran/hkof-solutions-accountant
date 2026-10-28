@@ -248,6 +248,82 @@ describe("expense statement endpoints", () => {
   });
 });
 
+describe("document draft endpoints", () => {
+  it("saves and reads a rent receipt draft by scope", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 4, month: "2026-01" }));
+
+    const saved = await api.drafts.saveRentReceipt({
+      month: "2026-01",
+      landlordId: 1,
+      tenantId: 2,
+      rentExclCharges: "1300.00",
+    });
+    expect(saved.id).toBe(4);
+    const [path, init] = lastCall();
+    expect(path).toBe("/api/drafts/rent-receipts");
+    expect(init).toMatchObject({
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        month: "2026-01",
+        landlordId: 1,
+        tenantId: 2,
+        rentExclCharges: "1300.00",
+      }),
+    });
+
+    await callJson(() => api.drafts.getRentReceipt("2026-01", 1, 2, null));
+    expect(lastCall()[0]).toBe(
+      "/api/drafts/rent-receipts?month=2026-01&landlordId=1&tenantId=2",
+    );
+  });
+
+  it("returns null for an empty rent receipt draft and a company tenant scope", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ...jsonResponse(),
+      status: 204,
+    } as unknown as Response);
+
+    const saved = await api.drafts.getRentReceipt("2026-01", 1, null, 3);
+    expect(saved).toBeNull();
+    expect(lastCall()[0]).toBe(
+      "/api/drafts/rent-receipts?month=2026-01&landlordId=1&tenantCompanyId=3",
+    );
+  });
+
+  it("saves, reads and deletes an expense statement draft", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 9, lines: [] }));
+
+    const saved = await api.drafts.saveStatement({
+      companyId: 1,
+      month: "2026-01",
+      complete: true,
+      lines: [
+        {
+          itemCode: "gaz",
+          amountInclVat: "80.00",
+          proRataPct: "100",
+          amountSource: "MANUAL",
+        },
+      ],
+    });
+    expect(saved.id).toBe(9);
+    const [savePath, saveInit] = lastCall();
+    expect(savePath).toBe("/api/drafts/expense-statements");
+    expect(saveInit).toMatchObject({ method: "PUT" });
+
+    await callJson(() => api.drafts.getStatement(1, "2026-01"));
+    expect(lastCall()[0]).toBe(
+      "/api/drafts/expense-statements?companyId=1&month=2026-01",
+    );
+
+    await callJson(() => api.drafts.delete(9));
+    const [deletePath, deleteInit] = lastCall();
+    expect(deletePath).toBe("/api/drafts/9");
+    expect(deleteInit).toMatchObject({ method: "DELETE" });
+  });
+});
+
 describe("signature, receipt and analysis endpoints", () => {
   it("lists signatures and posts a multipart form", async () => {
     await api.signatures.list();

@@ -12,9 +12,14 @@ type Blocker = {
 };
 
 let blockerState: Blocker;
+const saveActiveDraftMock = vi.fn();
 
 vi.mock("@/hooks/useDraftBlock", () => ({
   useDraftBlock: () => blockerState,
+}));
+
+vi.mock("@/state/draftSaver", () => ({
+  saveActiveDraft: () => saveActiveDraftMock(),
 }));
 
 vi.mock("@/components/llm/LlmBadge", () => ({
@@ -37,6 +42,8 @@ function renderShell(path = "/historique") {
 
 beforeEach(() => {
   localStorage.clear();
+  saveActiveDraftMock.mockReset();
+  saveActiveDraftMock.mockResolvedValue(true);
   blockerState = {
     state: "unblocked",
     proceed: vi.fn(),
@@ -150,16 +157,51 @@ describe("AppShell", () => {
 
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveAttribute("data-cy", "dialogue-quitter");
-    expect(screen.getByText("Brouillon non généré")).toBeVisible();
+    expect(screen.getByText("Modifications non enregistrées")).toBeVisible();
+    expect(screen.getByText(/Des modifications de ce brouillon/)).toBeVisible();
     expect(
-      screen.getByText(/Des informations saisies ne sont pas encore/),
+      screen.getByRole("button", { name: "Enregistrer et quitter" }),
     ).toBeVisible();
 
     await userEvent
       .setup()
-      .click(screen.getByRole("button", { name: "Quitter la page" }));
+      .click(screen.getByRole("button", { name: "Quitter sans enregistrer" }));
     expect(blockerState.proceed).toHaveBeenCalledTimes(1);
     expect(blockerState.reset).not.toHaveBeenCalled();
+  });
+
+  it("saves the draft before leaving when the user asks for it", async () => {
+    blockerState = {
+      state: "blocked",
+      proceed: vi.fn(),
+      reset: vi.fn(),
+    };
+    renderShell("/generer/quittance");
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Enregistrer et quitter" }));
+
+    expect(saveActiveDraftMock).toHaveBeenCalledTimes(1);
+    expect(blockerState.proceed).toHaveBeenCalledTimes(1);
+    expect(blockerState.reset).not.toHaveBeenCalled();
+  });
+
+  it("stays on the page when saving the draft fails", async () => {
+    saveActiveDraftMock.mockResolvedValue(false);
+    blockerState = {
+      state: "blocked",
+      proceed: vi.fn(),
+      reset: vi.fn(),
+    };
+    renderShell("/generer/note-frais");
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Enregistrer et quitter" }));
+
+    expect(saveActiveDraftMock).toHaveBeenCalledTimes(1);
+    expect(blockerState.proceed).not.toHaveBeenCalled();
   });
 
   it("resets the blocker when the user stays", async () => {
@@ -264,8 +306,13 @@ describe("AppShell", () => {
       "AI analysis",
     ]);
 
-    expect(screen.getByText("Draft not generated")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Leave page" })).toBeVisible();
+    expect(screen.getByText("Unsaved changes")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Leave without saving" }),
+    ).toBeVisible();
     expect(screen.getByRole("button", { name: "Stay" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Save and leave" }),
+    ).toBeVisible();
   });
 });

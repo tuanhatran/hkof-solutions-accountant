@@ -20,6 +20,12 @@ export const fr = {
       hint: "Montant détecté par IA — confirmez-le pour ajouter le frais.",
     },
   },
+  draft: {
+    none: "Aucun brouillon enregistré",
+    savedAt: "Brouillon enregistré le {{date}}",
+    save: "Enregistrer le brouillon",
+    saved: "Brouillon enregistré.",
+  },
   api: {
     errors: {
       VALIDATION_FAILED: "Certains champs sont invalides.",
@@ -262,11 +268,12 @@ export const fr = {
       "Aucune donnée ne quitte votre machine tant que l’URL du LLM reste locale.",
     footer: "HomeOfficeExpenses · usage personnel",
     draftDialog: {
-      title: "Brouillon non généré",
+      title: "Modifications non enregistrées",
       message:
-        "Des informations saisies ne sont pas encore enregistrées. Voulez-vous vraiment quitter cette page ? Le brouillon est conservé pendant la session, mais le document ne sera pas généré.",
-      confirm: "Quitter la page",
+        "Des modifications de ce brouillon ne sont pas encore enregistrées. Que souhaitez-vous faire ?",
+      confirm: "Quitter sans enregistrer",
       cancel: "Rester",
+      save: "Enregistrer et quitter",
     },
   },
   rentReceipt: {

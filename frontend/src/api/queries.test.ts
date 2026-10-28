@@ -19,6 +19,8 @@ import {
   useLlmStatus,
   usePersons,
   useRentReceipts,
+  useSavedRentReceiptDraft,
+  useSavedStatementDraft,
   useSignatures,
   useStatements,
   useTemplates,
@@ -37,6 +39,7 @@ vi.mock("./endpoints", () => ({
     llm: { get: vi.fn(), status: vi.fn(), models: vi.fn() },
     rentReceipts: { active: vi.fn(), list: vi.fn() },
     expenseStatements: { active: vi.fn(), list: vi.fn() },
+    drafts: { getRentReceipt: vi.fn(), getStatement: vi.fn() },
   },
 }));
 
@@ -302,6 +305,54 @@ describe("query hooks", () => {
     expect(
       queryClient.getQueryState(queryKeys.rentReceiptsAll)?.isInvalidated,
     ).toBe(true);
+  });
+
+  it("loads the saved rent receipt draft only for one tenant scope", async () => {
+    vi.mocked(api.drafts.getRentReceipt).mockResolvedValue({ id: 4 });
+
+    const saved = renderHook(
+      () => useSavedRentReceiptDraft("2026-01", 1, 2, null),
+      { wrapper },
+    );
+    await waitFor(() => expect(saved.result.current.isSuccess).toBe(true));
+    expect(api.drafts.getRentReceipt).toHaveBeenCalledWith(
+      "2026-01",
+      1,
+      2,
+      null,
+    );
+    expect(saved.result.current.data?.id).toBe(4);
+
+    vi.mocked(api.drafts.getRentReceipt).mockClear();
+    renderHook(() => useSavedRentReceiptDraft("2026-01", null, 2, null), {
+      wrapper,
+    });
+    renderHook(() => useSavedRentReceiptDraft("2026-01", 1, null, null), {
+      wrapper,
+    });
+    renderHook(() => useSavedRentReceiptDraft("2026-01", 1, 2, 3), {
+      wrapper,
+    });
+    renderHook(() => useSavedRentReceiptDraft("2026-1", 1, 2, null), {
+      wrapper,
+    });
+    expect(api.drafts.getRentReceipt).not.toHaveBeenCalled();
+  });
+
+  it("loads the saved statement draft only for a company and a valid month", async () => {
+    vi.mocked(api.drafts.getStatement).mockResolvedValue({ id: 9, lines: [] });
+
+    const saved = renderHook(() => useSavedStatementDraft(1, "2026-01"), {
+      wrapper,
+    });
+    await waitFor(() => expect(saved.result.current.isSuccess).toBe(true));
+    expect(api.drafts.getStatement).toHaveBeenCalledWith(1, "2026-01");
+    expect(saved.result.current.data?.id).toBe(9);
+
+    vi.mocked(api.drafts.getStatement).mockClear();
+    renderHook(() => useSavedStatementDraft(null, "2026-01"), { wrapper });
+    renderHook(() => useSavedStatementDraft(1, "2026-1"), { wrapper });
+    expect(api.drafts.getStatement).not.toHaveBeenCalled();
   });
 });
 

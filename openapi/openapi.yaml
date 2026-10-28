@@ -698,6 +698,140 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/CalculationResponse"
+  /api/drafts/rent-receipts:
+    get:
+      tags:
+        - document-draft-controller
+      operationId: getRentReceiptDraft
+      description: >-
+        Brouillon de quittance enregistré pour un bailleur, un locataire et un mois.
+        Répond 204 quand aucun brouillon actif n'existe pour cette portée.
+      parameters:
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: landlordId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: tenantId
+          in: query
+          required: false
+          description: Locataire personne physique ; exclusif avec tenantCompanyId.
+          schema:
+            type: integer
+            format: int64
+        - name: tenantCompanyId
+          in: query
+          required: false
+          description: Locataire société ; exclusif avec tenantId.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Brouillon actif
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/RentReceiptDraftDto"
+        "204":
+          description: Aucun brouillon actif pour cette portée
+    put:
+      tags:
+        - document-draft-controller
+      operationId: saveRentReceiptDraft
+      description: >-
+        Enregistre l'état éditable d'une quittance. Chaque enregistrement insère un
+        nouveau brouillon et supprime logiquement le brouillon actif de la même portée.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RentReceiptDraftRequest"
+        required: true
+      responses:
+        "200":
+          description: Brouillon enregistré
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/RentReceiptDraftDto"
+  /api/drafts/expense-statements:
+    get:
+      tags:
+        - document-draft-controller
+      operationId: getStatementDraft
+      description: >-
+        Brouillon de note de frais enregistré pour une société et un mois.
+        Répond 204 quand aucun brouillon actif n'existe pour cette portée.
+      parameters:
+        - name: companyId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Brouillon actif
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/StatementDraftDto"
+        "204":
+          description: Aucun brouillon actif pour cette portée
+    put:
+      tags:
+        - document-draft-controller
+      operationId: saveStatementDraft
+      description: >-
+        Enregistre l'état éditable d'une note de frais. Chaque enregistrement insère un
+        nouveau brouillon et supprime logiquement le brouillon actif de la même portée.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatementDraftRequest"
+        required: true
+      responses:
+        "200":
+          description: Brouillon enregistré
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/StatementDraftDto"
+  /api/drafts/{id}:
+    delete:
+      tags:
+        - document-draft-controller
+      operationId: deleteDraft
+      description: Supprime logiquement un brouillon, par exemple après génération du document.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: Brouillon supprimé
+        "404":
+          description: Brouillon introuvable
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/expense-items:
     get:
       tags:
@@ -2312,6 +2446,135 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ExpenseLineRequest"
+    RentReceiptDraftRequest:
+      type: object
+      required:
+        - month
+        - landlordId
+      properties:
+        month:
+          type: string
+          description: Mois du brouillon (AAAA-MM).
+        landlordId:
+          type: integer
+          format: int64
+        tenantId:
+          type:
+            - integer
+            - "null"
+          format: int64
+          description: Locataire personne physique ; exclusif avec tenantCompanyId.
+        tenantCompanyId:
+          type:
+            - integer
+            - "null"
+          format: int64
+          description: Locataire société ; exclusif avec tenantId.
+        periodStart:
+          type: string
+          format: date
+        periodEnd:
+          type: string
+          format: date
+        rentExclCharges:
+          type: string
+        charges:
+          type: string
+        paymentDate:
+          type: string
+          format: date
+        issueDate:
+          type: string
+          format: date
+        templateId:
+          type:
+            - integer
+            - "null"
+          format: int64
+    RentReceiptDraftDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        month:
+          type: string
+        landlordId:
+          type: integer
+          format: int64
+        tenantId:
+          type: integer
+          format: int64
+        tenantCompanyId:
+          type: integer
+          format: int64
+        periodStart:
+          type: string
+          format: date
+        periodEnd:
+          type: string
+          format: date
+        rentExclCharges:
+          type: string
+        charges:
+          type: string
+        paymentDate:
+          type: string
+          format: date
+        issueDate:
+          type: string
+          format: date
+        templateId:
+          type: integer
+          format: int64
+        savedAt:
+          type: string
+          format: date-time
+    StatementDraftRequest:
+      type: object
+      required:
+        - companyId
+        - month
+      properties:
+        companyId:
+          type: integer
+          format: int64
+        month:
+          type: string
+        templateId:
+          type:
+            - integer
+            - "null"
+          format: int64
+        complete:
+          type: boolean
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpenseLineRequest"
+    StatementDraftDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyId:
+          type: integer
+          format: int64
+        month:
+          type: string
+        templateId:
+          type: integer
+          format: int64
+        complete:
+          type: boolean
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpenseLineRequest"
+        savedAt:
+          type: string
+          format: date-time
     DraftDto:
       type: object
       properties:

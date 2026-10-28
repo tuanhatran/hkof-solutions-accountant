@@ -11,8 +11,11 @@ import type {
   StatementGenerationRequest,
 } from "@/api/types";
 import { estimatedRetainedAmount, formatMonth } from "@/lib/format";
-import { missingTypes, typeAlreadyAdded } from "@/lib/lines";
+import { linesToRequests, missingTypes, typeAlreadyAdded } from "@/lib/lines";
+import type { StatementDraftRequest } from "@/api/endpoints";
+import { useDraftSaver } from "@/state/draftSaver";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
+import { draftScopeKey } from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
 import { useExpenseStatementAnalysis } from "./useExpenseStatementAnalysis";
 import { useExpenseStatementCalculation } from "./useExpenseStatementCalculation";
@@ -116,10 +119,17 @@ export function useExpenseStatementPage(
       }
       const statement = await api.expenseStatements.create(requestBody);
       setResult(statement);
+      const generatedDraftId =
+        context.draft.draftIdByMonth[draftScopeKey(activeCompanyId, month)] ??
+        null;
       context.draft.markGenerated();
+      if (generatedDraftId !== null) {
+        void api.drafts.delete(generatedDraftId).catch(() => undefined);
+      }
       await queryClient.invalidateQueries({
         queryKey: queryKeys.statementsAll,
       });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.drafts });
       toast.success(
         t("expenseStatement.toasts.generated", {
           month: formatMonth(month),
@@ -132,6 +142,31 @@ export function useExpenseStatementPage(
       setGenerationInProgress(false);
     }
   }
+
+  async function saveDraft(): Promise<boolean> {
+    if (activeCompanyId === null) {
+      return false;
+    }
+    try {
+      const requestBody: StatementDraftRequest = {
+        companyId: activeCompanyId,
+        month,
+        templateId: context.selectedTemplate,
+        complete: context.complete,
+        lines: linesToRequests(orderedLines),
+      };
+      const saved = await api.drafts.saveStatement(requestBody);
+      context.draft.markSaved(saved);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.drafts });
+      toast.success(t("draft.saved"));
+      return true;
+    } catch (error) {
+      toast.error(errorMessage(error));
+      return false;
+    }
+  }
+
+  useDraftSaver(saveDraft);
 
   function requestGeneration() {
     if (context.activeStatement.data) {
@@ -257,6 +292,8 @@ export function useExpenseStatementPage(
     calculationUpToDate,
     preview,
     previewRequest,
+    savedDraft: context.savedDraft,
+    saveDraft,
     goToRentReceipt,
     generateStatement,
     requestGeneration,

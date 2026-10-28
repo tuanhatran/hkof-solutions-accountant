@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { downloadBlob } from "@/api/client";
-import { api } from "@/api/endpoints";
+import { api, type StatementDraftDto } from "@/api/endpoints";
 import type { SignatureDto } from "@/api/types";
 import i18n from "@/i18n";
 import { draftScopeKey, useStatementDraft } from "@/state/statementDraft";
@@ -36,6 +36,7 @@ let activeStatementData: {
   version?: number;
   total?: string;
 } | null = null;
+let savedStatementDraft: StatementDraftDto | null = null;
 let lastPreviewLoader: ((signal: AbortSignal) => Promise<unknown>) | null =
   null;
 
@@ -86,6 +87,11 @@ vi.mock("@/api/endpoints", () => ({
     },
     rentReceipts: {
       pdfUrl: (id: number) => `/api/rent-receipts/${id}/pdf`,
+    },
+    drafts: {
+      getStatement: vi.fn(),
+      saveStatement: vi.fn(),
+      delete: vi.fn(),
     },
   },
 }));
@@ -148,6 +154,10 @@ vi.mock("@/api/queries", async (importOriginal) => {
     }),
     useActiveStatement: () => ({
       data: activeStatementData,
+      isPending: false,
+    }),
+    useSavedStatementDraft: () => ({
+      data: savedStatementDraft,
       isPending: false,
     }),
     useSignatures: (personId: number | null) => ({
@@ -240,6 +250,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     templatesData = [];
     rentReceiptData = null;
     activeStatementData = null;
+    savedStatementDraft = null;
     vi.mocked(api.expenseStatements.calculate).mockReset();
     vi.mocked(api.expenseStatements.calculate).mockResolvedValue({
       total: "80.00",
@@ -267,6 +278,17 @@ describe("GenerateExpenseStatementPage signatures", () => {
       blob: new Blob(),
       fileName: null,
     });
+    vi.mocked(api.drafts.saveStatement).mockReset();
+    vi.mocked(api.drafts.saveStatement).mockResolvedValue({
+      id: 90,
+      companyId: 1,
+      month: MONTH,
+      complete: true,
+      lines: [],
+      savedAt: "2026-01-15T10:30:00Z",
+    });
+    vi.mocked(api.drafts.delete).mockReset();
+    vi.mocked(api.drafts.delete).mockResolvedValue(undefined);
     vi.mocked(downloadBlob).mockReset();
 
     useStatementDraft.setState({
@@ -839,5 +861,88 @@ describe("GenerateExpenseStatementPage signatures", () => {
       useToasts.getState().toasts.map((element) => element.message),
     ).toContain("Expense removed.");
     expect(screen.getByText("No expense for January 2026")).toBeVisible();
+  });
+
+  it("shows the empty draft status and saves the current lines", async () => {
+    renderPage();
+    const user = userEvent.setup();
+
+    expect(await screen.findByText("Aucun brouillon enregistré")).toBeVisible();
+    const save = screen.getByRole("button", {
+      name: "Enregistrer le brouillon",
+    });
+    await waitFor(() => expect(save).toBeEnabled());
+    await user.click(save);
+
+    await waitFor(() =>
+      expect(api.drafts.saveStatement).toHaveBeenCalledWith(
+        expect.objectContaining({
+          companyId: 1,
+          month: MONTH,
+          complete: true,
+          lines: [
+            expect.objectContaining({
+              itemCode: "gaz",
+              amountInclVat: "80.00",
+            }),
+          ],
+        }),
+      ),
+    );
+    await waitFor(() =>
+      expect(useStatementDraft.getState().savedAtByMonth[SCOPE]).toBe(
+        "2026-01-15T10:30:00Z",
+      ),
+    );
+    expect(
+      useToasts.getState().toasts.map((element) => element.message),
+    ).toContain("Brouillon enregistré.");
+  });
+
+  it("shows the saved timestamp and reloads the saved draft lines", async () => {
+    savedStatementDraft = {
+      id: 91,
+      companyId: 1,
+      month: MONTH,
+      templateId: 7,
+      complete: false,
+      savedAt: "2026-01-10T09:00:00Z",
+      lines: [
+        {
+          itemCode: "loyer",
+          amountInclVat: "950.00",
+          proRataPct: "100",
+          amountSource: "MANUAL",
+        },
+      ],
+    };
+
+    renderPage();
+
+    expect(await screen.findByText(/Brouillon enregistré le/)).toBeVisible();
+    expect(
+      await screen.findByRole("button", { name: "Modifier Loyer" }),
+    ).toBeVisible();
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(useStatementDraft.getState().dirtyByMonth[SCOPE]).toBe(false);
+    expect(useStatementDraft.getState().draftIdByMonth[SCOPE]).toBe(91);
+  });
+
+  it("deletes the saved draft after generating the statement", async () => {
+    useStatementDraft.setState({
+      draftIdByMonth: { [SCOPE]: 80 },
+      savedAtByMonth: { [SCOPE]: "2026-01-10T09:00:00Z" },
+    });
+    renderPage();
+    const user = userEvent.setup();
+
+    const generate = await screen.findByRole("button", {
+      name: /Générer la note de frais/,
+    });
+    await waitFor(() => expect(generate).toBeEnabled());
+    await user.click(generate);
+
+    await waitFor(() => expect(api.drafts.delete).toHaveBeenCalledWith(80));
+    expect(useStatementDraft.getState().draftIdByMonth[SCOPE]).toBeNull();
   });
 });

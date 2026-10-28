@@ -10,7 +10,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { api } from "@/api/endpoints";
+import { api, type RentReceiptDraftDto } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
 import i18n from "@/i18n";
 import type {
@@ -38,6 +38,7 @@ let signaturesUndefined = false;
 let leaseError: Error | null = null;
 let companiesError: Error | null = null;
 let personsError: Error | null = null;
+let savedDraft: RentReceiptDraftDto | null = null;
 const personsRefetch = vi.fn();
 const companiesRefetch = vi.fn();
 const leaseRefetch = vi.fn();
@@ -69,6 +70,11 @@ vi.mock("@/api/endpoints", () => ({
       create: vi.fn(),
       preview: vi.fn(),
       pdfUrl: (id: number) => `/api/rent-receipts/${id}/pdf`,
+    },
+    drafts: {
+      getRentReceipt: vi.fn(),
+      saveRentReceipt: vi.fn(),
+      delete: vi.fn(),
     },
   },
 }));
@@ -103,6 +109,10 @@ vi.mock("@/api/queries", async (importOriginal) => {
       refetch: companiesRefetch,
     }),
     useActiveRentReceipt: () => ({ data: activeReceipt, isPending: false }),
+    useSavedRentReceiptDraft: () => ({
+      data: savedDraft,
+      isPending: false,
+    }),
     useSignatures: (personId: number | null) => ({
       data: signaturesUndefined
         ? undefined
@@ -219,6 +229,7 @@ describe("GenerateRentReceiptPage", () => {
     leaseError = null;
     companiesError = null;
     personsError = null;
+    savedDraft = null;
     personsRefetch.mockReset();
     companiesRefetch.mockReset();
     leaseRefetch.mockReset();
@@ -230,6 +241,16 @@ describe("GenerateRentReceiptPage", () => {
       blob: new Blob(),
       fileName: null,
     });
+    vi.mocked(api.drafts.saveRentReceipt).mockReset();
+    vi.mocked(api.drafts.saveRentReceipt).mockResolvedValue({
+      id: 50,
+      month: MONTH,
+      landlordId: 1,
+      tenantId: 2,
+      savedAt: "2026-01-15T10:30:00Z",
+    });
+    vi.mocked(api.drafts.delete).mockReset();
+    vi.mocked(api.drafts.delete).mockResolvedValue(undefined);
     useRentReceiptDraft.setState({
       month: MONTH,
       periodStart: "2026-01-01",
@@ -957,6 +978,86 @@ describe("GenerateRentReceiptPage", () => {
       }),
       expect.anything(),
     );
+  });
+
+  it("shows the empty draft status and saves the current form", async () => {
+    renderPage();
+
+    expect(await screen.findByText("Aucun brouillon enregistré")).toBeVisible();
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Enregistrer le brouillon" }));
+
+    await waitFor(() =>
+      expect(api.drafts.saveRentReceipt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          month: MONTH,
+          landlordId: 1,
+          tenantId: 2,
+          rentExclCharges: "1300.00",
+        }),
+      ),
+    );
+    await waitFor(() =>
+      expect(useRentReceiptDraft.getState().savedAt).toBe(
+        "2026-01-15T10:30:00Z",
+      ),
+    );
+    expect(
+      useToasts.getState().toasts.map((element) => element.message),
+    ).toContain("Brouillon enregistré.");
+  });
+
+  it("shows the saved timestamp and reloads the saved draft values", async () => {
+    savedDraft = {
+      id: 60,
+      month: MONTH,
+      landlordId: 1,
+      tenantId: 2,
+      periodStart: "2026-01-02",
+      periodEnd: "2026-01-30",
+      rentExclCharges: "1200.00",
+      charges: "40.00",
+      paymentDate: "2026-01-04",
+      issueDate: "2026-01-03",
+      savedAt: "2026-01-10T09:00:00Z",
+    };
+
+    renderPage();
+
+    expect(await screen.findByText(/Brouillon enregistré le/)).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByLabelText("Loyer hors charges")).toHaveValue(
+        "1200.00",
+      ),
+    );
+    expect(screen.getByLabelText("Provision pour charges")).toHaveValue(
+      "40.00",
+    );
+    expect(useRentReceiptDraft.getState().dirty).toBe(false);
+  });
+
+  it("deletes the saved draft after generating the receipt", async () => {
+    useRentReceiptDraft.setState({
+      draftId: 70,
+      savedAt: "2026-01-10T09:00:00Z",
+    });
+    vi.mocked(api.rentReceipts.create).mockResolvedValue({
+      id: 1,
+      month: MONTH,
+      version: 1,
+      total: "1300.00",
+    });
+
+    renderPage();
+    await userEvent
+      .setup()
+      .click(
+        await screen.findByRole("button", { name: /Générer la quittance/ }),
+      );
+
+    await waitFor(() => expect(api.drafts.delete).toHaveBeenCalledWith(70));
+    expect(useRentReceiptDraft.getState().draftId).toBeNull();
   });
 
   it("echoes the filled dates in French under the native date inputs", () => {

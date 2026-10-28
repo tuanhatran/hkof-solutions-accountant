@@ -1,7 +1,9 @@
 import "./RentReceiptPreviewPane.css";
 import { useTranslation } from "react-i18next";
 import { PdfViewer } from "@/components/pdf/PdfViewer";
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
+import { formatDateTime } from "@/lib/format";
 import type { RentReceiptController } from "./useRentReceiptPage";
 
 /** Preview pane with the template selector. */
@@ -64,6 +66,24 @@ export function RentReceiptPreviewPane({
           </select>
         }
       />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="hint" data-cy="brouillon-statut">
+          {c.savedDraft.data
+            ? t("draft.savedAt", {
+                date: formatDateTime(c.savedDraft.data.savedAt),
+              })
+            : t("draft.none")}
+        </p>
+        <Button
+          variant="secondary"
+          small
+          onClick={() => void c.saveDraft()}
+          disabled={!c.draftScopeReady}
+          data-cy="btn-enregistrer-brouillon"
+        >
+          {t("draft.save")}
+        </Button>
+      </div>
       <p className="rent-receipt-preview-pane-note">
         {t("rentReceipt.preview.note")}
       </p>
