@@ -40,7 +40,7 @@ describe("CompanyLeaseView", () => {
     render(<CompanyLeaseView lease={null} proRataBase={null} />);
 
     expect(document.querySelector('[data-cy="bail-societe-lie"]')).toBeNull();
-    expect(screen.getByText(/^Aucun bail sélectionné/)).toBeVisible();
+    expect(screen.getByText(/^Aucun bail déplié/)).toBeVisible();
     expect(
       document.querySelector('[data-cy="aucun-bail-societe"]'),
     ).not.toBeNull();
@@ -73,6 +73,6 @@ describe("CompanyLeaseView", () => {
     view.unmount();
 
     render(<CompanyLeaseView lease={null} proRataBase={null} />);
-    expect(screen.getByText(/^No lease selected/)).toBeVisible();
+    expect(screen.getByText(/^No lease expanded/)).toBeVisible();
   });
 });

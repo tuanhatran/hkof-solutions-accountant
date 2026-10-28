@@ -230,20 +230,18 @@ describe("CompanyLeaseTab", () => {
     expect(queryByCy("actions-bail-societe-5")).not.toBeNull();
   });
 
-  it("lists only the leases of the company as click-to-select items, without dropdown", async () => {
+  it("lists only the leases of the company, without a dropdown or active badge", async () => {
     renderTab();
 
     await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
     expect(queryByCy("bail-societe-6")).not.toBeNull();
     expect(queryByCy("bail-societe-7")).toBeNull();
     expect(queryByCy("select-bail-actif")).toBeNull();
-    expect(
-      withinLease("bail-societe-5").getByText("Bail actif"),
-    ).toBeInTheDocument();
+    expect(withinLease("bail-societe-5").queryByText("Bail actif")).toBeNull();
     expect(withinLease("bail-societe-6").queryByText("Bail actif")).toBeNull();
   });
 
-  it("arrives with every lease collapsed, even when a bail actif is linked", async () => {
+  it("arrives with every lease collapsed and shows the company-level fallback", async () => {
     renderTab();
 
     await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
@@ -255,18 +253,19 @@ describe("CompanyLeaseTab", () => {
       "aria-expanded",
       "false",
     );
-    expect(
-      withinLease("bail-societe-5").getByText("Bail actif"),
-    ).toBeInTheDocument();
+    expect(withinLease("bail-societe-5").queryByText("Bail actif")).toBeNull();
     expect(queryByCy("bail-societe-lie")).toBeNull();
-    expect(queryByCy("aucun-bail-societe")).toBeNull();
+    expect(queryByCy("aucun-bail-societe")).not.toBeNull();
+    expect(document.querySelector(".company-lease-tab-none")).not.toBeNull();
     expect(
       document.querySelectorAll(".company-lease-view-details"),
     ).toHaveLength(0);
-    expect(api.expenseItems.list).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(api.expenseItems.list).toHaveBeenCalledWith(1, true, null),
+    );
   });
 
-  it("expands the collapsed active lease without persisting, then collapses it keeping it active", async () => {
+  it("toggles the lease expansion from the row click without persisting", async () => {
     renderTab();
     const user = userEvent.setup();
     await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
@@ -281,6 +280,7 @@ describe("CompanyLeaseTab", () => {
     expect(
       document.querySelectorAll(".company-lease-view-details"),
     ).toHaveLength(1);
+    expect(document.querySelector(".company-lease-tab-none")).toBeNull();
     await waitFor(() =>
       expect(api.expenseItems.list).toHaveBeenCalledWith(1, true, 5),
     );
@@ -292,41 +292,33 @@ describe("CompanyLeaseTab", () => {
       "aria-expanded",
       "false",
     );
-    expect(
-      withinLease("bail-societe-5").getByText("Bail actif"),
-    ).toBeInTheDocument();
     expect(queryByCy("bail-societe-lie")).toBeNull();
-    expect(queryByCy("aucun-bail-societe")).toBeNull();
+    expect(queryByCy("aucun-bail-societe")).not.toBeNull();
   });
 
-  it("lists the active lease first, the others in existing order", async () => {
-    vi.mocked(api.companies.update).mockResolvedValue({
-      ...COMPANY,
-      leaseId: 6,
-    });
+  it("orders the leases by the chosen sort only, ignoring company.leaseId", async () => {
     renderTab();
     const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+
     expect(toggleOrder()).toEqual([5, 6]);
 
-    await user.click(queryByCy("bail-societe-6") as HTMLElement);
+    await user.click(screen.getByRole("button", { name: "Tri croissant" }));
 
-    await waitFor(() => expect(api.companies.update).toHaveBeenCalled());
-    await waitFor(() => expect(toggleOrder()).toEqual([6, 5]));
+    expect(toggleOrder()).toEqual([6, 5]);
+    expect(api.companies.update).not.toHaveBeenCalled();
   });
 
-  it("lists the lease linked on arrival first", async () => {
+  it("does not read the linked company.leaseId", async () => {
     renderTab({ ...COMPANY, leaseId: 6 });
 
-    await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
-    expect(toggleOrder()).toEqual([6, 5]);
+    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    expect(toggleOrder()).toEqual([5, 6]);
+    expect(withinLease("bail-societe-5").queryByText("Bail actif")).toBeNull();
+    expect(withinLease("bail-societe-6").queryByText("Bail actif")).toBeNull();
   });
 
-  it("clicking a compact lease persists it via the company update, expands it and switches the postes scope", async () => {
-    vi.mocked(api.companies.update).mockResolvedValue({
-      ...COMPANY,
-      leaseId: 6,
-    });
+  it("expands a compact lease and scopes the postes without a company update", async () => {
     renderTab();
     const user = userEvent.setup();
     await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
@@ -338,14 +330,9 @@ describe("CompanyLeaseTab", () => {
     await user.click(queryByCy("bail-societe-6") as HTMLElement);
 
     await waitFor(() =>
-      expect(api.companies.update).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({ name: "HKOF", leaseId: 6 }),
-      ),
-    );
-    await waitFor(() =>
       expect(api.expenseItems.list).toHaveBeenCalledWith(1, true, 6),
     );
+    expect(api.companies.update).not.toHaveBeenCalled();
     expect(queryByCy("bail-societe-6")).toHaveAttribute(
       "aria-expanded",
       "true",
@@ -360,85 +347,65 @@ describe("CompanyLeaseTab", () => {
     ).toHaveLength(1);
   });
 
-  it("reverts the selection and shows a French toast when the switch fails", async () => {
-    vi.mocked(api.companies.update).mockRejectedValue(
-      new Error("Ce bail est déjà lié à une autre société."),
-    );
+  it("shows an Afficher les frais button before the note de frais button on each row", async () => {
+    renderTab();
+
+    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    const show = queryByCy("btn-afficher-frais-bail-societe-5");
+    const statement = queryByCy("btn-note-frais-bail-societe-5");
+    expect(show).not.toBeNull();
+    expect(show).toHaveTextContent("Afficher les frais");
+    expect(statement).not.toBeNull();
+    expect(
+      show!.compareDocumentPosition(statement!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(queryByCy("btn-afficher-frais-bail-societe-6")).not.toBeNull();
+  });
+
+  it("expands, switches then collapses the lease from the Afficher les frais button", async () => {
     renderTab();
     const user = userEvent.setup();
     await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
 
-    await user.click(queryByCy("bail-societe-6") as HTMLElement);
-
-    await waitFor(() =>
-      expect(
-        useToasts
-          .getState()
-          .toasts.some(
-            (entry) =>
-              entry.type === "error" &&
-              entry.message === "Ce bail est déjà lié à une autre société.",
-          ),
-      ).toBe(true),
+    await user.click(
+      queryByCy("btn-afficher-frais-bail-societe-6") as HTMLElement,
+    );
+    expect(queryByCy("bail-societe-6")).toHaveAttribute(
+      "aria-expanded",
+      "true",
     );
     await waitFor(() =>
-      expect(
-        withinLease("bail-societe-5").queryByText("Bail actif"),
-      ).not.toBeNull(),
+      expect(api.expenseItems.list).toHaveBeenCalledWith(1, true, 6),
+    );
+
+    await user.click(
+      queryByCy("btn-afficher-frais-bail-societe-5") as HTMLElement,
+    );
+    expect(queryByCy("bail-societe-5")).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(queryByCy("bail-societe-6")).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    await waitFor(() =>
+      expect(api.expenseItems.list).toHaveBeenCalledWith(1, true, 5),
+    );
+
+    await user.click(
+      queryByCy("btn-afficher-frais-bail-societe-5") as HTMLElement,
     );
     expect(queryByCy("bail-societe-5")).toHaveAttribute(
       "aria-expanded",
       "false",
     );
-    expect(queryByCy("bail-societe-6")).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
-    expect(queryByCy("bail-societe-lie")).toBeNull();
+    expect(document.querySelector(".company-lease-tab-none")).not.toBeNull();
+    expect(api.companies.update).not.toHaveBeenCalled();
   });
 
-  it("persists the selection once and only collapses on the second click for a sparse company", async () => {
-    vi.mocked(api.companies.update).mockResolvedValue({ id: 1, leaseId: 6 });
-    renderTab({ id: 1 });
-    const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
-    expect(queryByCy("aucun-bail-societe")).not.toBeNull();
-
-    await user.click(queryByCy("bail-societe-6") as HTMLElement);
-    await waitFor(() =>
-      expect(api.companies.update).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({
-          name: "",
-          legalForm: "",
-          siren: "",
-          address: "",
-          managerName: "",
-          issuePlace: "",
-          leaseId: 6,
-        }),
-      ),
-    );
-    await waitFor(() =>
-      expect(api.expenseItems.list).toHaveBeenCalledWith(1, true, 6),
-    );
-    expect(queryByCy("aucun-bail-societe")).toBeNull();
-
-    await user.click(queryByCy("bail-societe-6") as HTMLElement);
-
-    expect(queryByCy("bail-societe-6")).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
-    expect(api.companies.update).toHaveBeenCalledTimes(1);
-    expect(
-      withinLease("bail-societe-6").getByText("Bail actif"),
-    ).toBeInTheDocument();
-    expect(queryByCy("aucun-bail-societe")).toBeNull();
-    expect(queryByCy("bail-societe-lie")).toBeNull();
-  });
-
-  it("keeps the backend pro-rata visible for the expanded active lease", async () => {
+  it("keeps the backend pro-rata visible for the expanded lease", async () => {
     renderTab();
     const user = userEvent.setup();
     await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
@@ -504,11 +471,7 @@ describe("CompanyLeaseTab", () => {
     await waitFor(() => expect(queryByCy("bail-societe-8")).not.toBeNull());
   });
 
-  it("creates a new poste for the selected lease", async () => {
-    vi.mocked(api.companies.update).mockResolvedValue({
-      ...COMPANY,
-      leaseId: 6,
-    });
+  it("creates a new poste for the expanded lease", async () => {
     vi.mocked(api.expenseItems.create).mockResolvedValue({
       id: 11,
       label: "Gaz",
@@ -517,7 +480,9 @@ describe("CompanyLeaseTab", () => {
     const user = userEvent.setup();
     await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
 
-    await user.click(queryByCy("bail-societe-6") as HTMLElement);
+    await user.click(
+      queryByCy("btn-afficher-frais-bail-societe-6") as HTMLElement,
+    );
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
     await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
     await user.click(screen.getByRole("button", { name: "Valider" }));
@@ -543,9 +508,7 @@ describe("CompanyLeaseTab", () => {
     expect(queryByCy("input-bail-loyer")).toHaveValue("700,00");
     expect(queryByCy("input-surface-totale")).toHaveValue("40,00");
     expect(api.companies.update).not.toHaveBeenCalled();
-    expect(
-      withinLease("bail-societe-5").getByText("Bail actif"),
-    ).toBeInTheDocument();
+    expect(withinLease("bail-societe-5").queryByText("Bail actif")).toBeNull();
     expect(queryByCy("bail-societe-5")).toHaveAttribute(
       "aria-expanded",
       "false",
@@ -732,13 +695,13 @@ describe("CompanyLeaseTab", () => {
     ).toBeVisible();
     expect(
       screen.getByText(
-        "A company can be the tenant of several leases. Click a lease to activate it and expand its expenses: items and expense statements follow that lease.",
+        "A company can be the tenant of several leases. Use “Show expenses” to expand a lease and see its expense items and expense statements.",
       ),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Add a lease" })).toBeVisible();
     expect(
-      withinLease("bail-societe-5").getByText("Active lease"),
-    ).toBeVisible();
+      withinLease("bail-societe-5").queryByText("Active lease"),
+    ).toBeNull();
     expect(
       withinLease("bail-societe-5").getByText("Landlord M. Bailleur"),
     ).toBeVisible();
@@ -749,10 +712,15 @@ describe("CompanyLeaseTab", () => {
     expect(within(headers).getByText("Rent")).toBeVisible();
     expect(within(headers).getByText("Charges")).toBeVisible();
     expect(within(headers).getByText("Actions")).toBeVisible();
-    expect(queryByCy("btn-note-frais-bail-societe-5")).toHaveTextContent(
-      "Expense statement",
+    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toHaveTextContent(
+      "Show expenses",
     );
-    expect(queryByCy("btn-modifier-bail-societe-5")).toHaveTextContent("Edit");
+    expect(queryByCy("btn-note-frais-bail-societe-5")).toHaveTextContent(
+      "Generate expense statement",
+    );
+    expect(queryByCy("btn-modifier-bail-societe-5")).toHaveTextContent(
+      "Edit lease",
+    );
   });
 
   it("shows the English empty lease state", async () => {
@@ -799,26 +767,21 @@ describe("CompanyLeaseTab", () => {
     expect(toggleOrder()).toEqual([]);
   });
 
-  it("keeps the active lease first while sorting in both directions", async () => {
+  it("places the lease filter in the section header next to Ajouter un bail", async () => {
     renderTab();
-    const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
 
-    expect(
-      screen.getAllByRole("option").map((option) => option.textContent),
-    ).toEqual(["Bail", "Loyer", "Charges"]);
-    expect(toggleOrder()).toEqual([5, 6]);
-
-    await user.click(screen.getByRole("button", { name: "Tri croissant" }));
-    expect(toggleOrder()).toEqual([5, 6]);
-
-    vi.mocked(api.companies.update).mockResolvedValue({
-      ...COMPANY,
-      leaseId: 6,
-    });
-    await user.click(queryByCy("bail-societe-6") as HTMLElement);
-
-    await waitFor(() => expect(toggleOrder()).toEqual([6, 5]));
+    const search = queryByCy("filtre-baux-societe") as HTMLElement;
+    const add = queryByCy("btn-ajouter-bail-societe") as HTMLElement;
+    expect(search).not.toBeNull();
+    expect(search).toHaveAttribute("aria-label", "Filtrer la liste");
+    expect(search).toHaveAttribute("placeholder", "Filtrer les baux…");
+    expect(search.closest(".card-header")).not.toBeNull();
+    expect(add.closest(".card-header")).toBe(search.closest(".card-header"));
+    expect(document.querySelectorAll('input[type="search"]')).toHaveLength(1);
+    expect(search.closest(".list-toolbar")).toBeNull();
+    expect(queryByCy("tri-baux-societe")).not.toBeNull();
+    expect(queryByCy("filtre-compteur-baux-societe")).not.toBeNull();
   });
 
   it("hides the list toolbar when there is no company lease", async () => {

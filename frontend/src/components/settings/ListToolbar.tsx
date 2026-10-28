@@ -21,6 +21,49 @@ interface ListToolbarProps {
   sortOptions: SortOption[];
   visible: number;
   total: number;
+  /** Opt-out used when the caller places the search field in a section header. */
+  showSearch?: boolean;
+}
+
+interface ListSearchProps {
+  list: string;
+  placeholder: string;
+  query: string;
+  onQueryChange: (query: string) => void;
+}
+
+/** Search field with its clear button, shared by the toolbar and list headers. */
+export function ListSearch({
+  list,
+  placeholder,
+  query,
+  onQueryChange,
+}: ListSearchProps) {
+  const { t } = useTranslation();
+  return (
+    <div className="list-toolbar-search">
+      <input
+        type="search"
+        className="field mt-0 pr-10"
+        value={query}
+        onChange={(event) => onQueryChange(event.target.value)}
+        placeholder={placeholder}
+        aria-label={t("settings.list.filterLabel")}
+        data-cy={`filtre-${list}`}
+      />
+      {query.length > 0 ? (
+        <Button
+          variant="ghost"
+          small
+          className="list-toolbar-clear"
+          icon={<X size={13} />}
+          aria-label={t("settings.list.clear")}
+          onClick={() => onQueryChange("")}
+          data-cy={`filtre-effacer-${list}`}
+        />
+      ) : null}
+    </div>
+  );
 }
 
 /** Search, sort field, direction toggle and live count of a settings list. */
@@ -36,34 +79,21 @@ export function ListToolbar({
   sortOptions,
   visible,
   total,
+  showSearch = true,
 }: ListToolbarProps) {
   const { t } = useTranslation();
   const ascending = direction === "asc";
 
   return (
     <div className="list-toolbar">
-      <div className="list-toolbar-search">
-        <input
-          type="search"
-          className="field mt-0 pr-10"
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
+      {showSearch ? (
+        <ListSearch
+          list={list}
           placeholder={placeholder}
-          aria-label={t("settings.list.filterLabel")}
-          data-cy={`filtre-${list}`}
+          query={query}
+          onQueryChange={onQueryChange}
         />
-        {query.length > 0 ? (
-          <Button
-            variant="ghost"
-            small
-            className="list-toolbar-clear"
-            icon={<X size={13} />}
-            aria-label={t("settings.list.clear")}
-            onClick={() => onQueryChange("")}
-            data-cy={`filtre-effacer-${list}`}
-          />
-        ) : null}
-      </div>
+      ) : null}
       <div className="list-toolbar-controls">
         <select
           className="field mt-0 w-full sm:w-auto"

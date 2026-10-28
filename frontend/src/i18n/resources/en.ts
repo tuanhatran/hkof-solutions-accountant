@@ -671,7 +671,7 @@ export const en = {
       leaseTab: {
         title: "Company leases",
         description:
-          "A company can be the tenant of several leases. Click a lease to activate it and expand its expenses: items and expense statements follow that lease.",
+          "A company can be the tenant of several leases. Use “Show expenses” to expand a lease and see its expense items and expense statements.",
         columns: {
           lease: "Lease",
           rent: "Rent",
@@ -685,15 +685,16 @@ export const en = {
           "No lease for this company. Add the first lease with “Add a lease”.",
         addressFallback: "Lease without address",
         meta: "Landlord {{landlord}}",
-        activeBadge: "Active lease",
-        statement: "Expense statement",
-        edit: "Edit",
+        showExpenses: "Show expenses",
+        statement: "Generate expense statement",
+        edit: "Edit lease",
       },
       leaseView: {
         surfaces:
           "Business area {{businessArea}} m² · Total area {{totalArea}} m²",
         proRata: "Professional share {{percentage}}",
-        empty: "No lease selected: the company has no professional share.",
+        empty:
+          "No lease expanded: the company has no professional share to display.",
       },
       statementModal: {
         title: "Expense statement",

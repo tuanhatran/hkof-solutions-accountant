@@ -587,10 +587,10 @@ describe("SettingsPage tabs", () => {
     );
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
 
-    expect(screen.getByText(/^Aucun bail sélectionné/)).toBeVisible();
+    expect(screen.getByText(/^Aucun bail déplié/)).toBeVisible();
   });
 
-  it("lists the company's leases as click-to-select items with edit buttons, without the legacy modal", async () => {
+  it("lists the company's leases with show-expenses and edit buttons, without the legacy modal", async () => {
     renderPage();
     const user = userEvent.setup();
 
@@ -604,7 +604,9 @@ describe("SettingsPage tabs", () => {
     expect(queryByCy("dialogue-formulaire-bail-societe")).toBeNull();
     expect(queryByCy("btn-modifier-bail-societe")).toBeNull();
     expect(queryByCy("btn-modifier-bail-societe-5")).not.toBeNull();
-    expect(screen.getByText("Bail actif")).toBeVisible();
+    expect(queryByCy("btn-afficher-frais-bail-societe-5")).not.toBeNull();
+    expect(queryByCy("btn-note-frais-bail-societe-5")).not.toBeNull();
+    expect(screen.queryByText("Bail actif")).toBeNull();
   });
 
   it("selects the company locally in the configuration selector", async () => {

@@ -68,20 +68,19 @@ const ANNEXE_EMPLOYEE = {
 const ANNEXE_LANDLORD = "Bailleur annexe";
 
 /**
- * Expands the active lease row when the "Baux & Frais" tab arrived collapsed.
- * Does nothing when the null-lease fallback or the details are already shown.
+ * Expands the first lease row when the "Baux & Frais" tab arrived collapsed.
+ * Does nothing when a lease is already expanded.
  */
-function expandActiveLease(): void {
+function expandFirstLease(): void {
   cy.get("body").then(($body) => {
-    if (
-      $body.find('[data-cy="aucun-bail-societe"]').length > 0 ||
-      $body.find('[data-cy="bail-societe-lie"]').length > 0
-    ) {
+    if ($body.find('[data-cy="bail-societe-lie"]').length > 0) {
       return;
     }
-    cy.contains('button[data-cy^="bail-societe-"]', "Bail actif", {
+    cy.get('button[data-cy^="btn-afficher-frais-bail-societe-"]', {
       timeout: 20_000,
-    }).click();
+    })
+      .first()
+      .click();
   });
 }
 
@@ -214,7 +213,7 @@ function companyLeaseId(companyId: number): Cypress.Chainable<number> {
   });
 }
 
-/** Links a company to its active lease, as the Settings lease row does. */
+/** Links a company to a lease through the API; the Settings tab no longer does. */
 function linkCompanyLease(companyId: number, leaseId: number): void {
   cy.request<CompanyDetail>(`/api/companies/${companyId}`).then(({ body }) => {
     cy.request({
@@ -274,15 +273,15 @@ function createAnnexeCompany(): void {
       cy.get('[data-cy="select-societe"]').select(String(annexe.id));
       cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
 
-      // The "Baux & Frais" tab lists the company leases collapsed, including
-      // the active one; its pro-rata (the backend's) appears once expanded.
+      // The "Baux & Frais" tab lists the company leases collapsed; its pro-rata
+      // (the backend's) appears once expanded with "Afficher les frais".
       cy.get(`[data-cy="bail-societe-${leaseId}"]`, { timeout: 20_000 })
         .should("contain.text", ANNEXE_LEASE.propertyAddress)
-        .and("contain.text", "Bail actif")
+        .and("not.contain.text", "Bail actif")
         .and("have.attr", "aria-expanded", "false");
       cy.get('[data-cy="prorata-bail-societe"]').should("not.exist");
 
-      expandActiveLease();
+      expandFirstLease();
       cy.get(`[data-cy="bail-societe-${leaseId}"]`).should(
         "have.attr",
         "aria-expanded",
@@ -336,53 +335,62 @@ function createAnnexeCompany(): void {
             .and("not.contain.text", "Bail actif")
             .and("have.attr", "aria-expanded", "false");
 
-          // The active lease is listed first, the others keep their order.
+          // The list follows the address sort only: no active pinning.
           cy.get("button[data-cy^='bail-societe-']")
             .first()
             .should("have.attr", "data-cy", `bail-societe-${leaseId}`);
 
-          // Clicking a collapsed row selects it as bail actif (persisted) and
-          // expands it; the previous active row collapses.
-          cy.intercept("PUT", "/api/companies/*").as("lierBail");
-          cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`).click();
-          cy.wait("@lierBail");
+          // "Afficher les frais" expands the row without persisting the lease
+          // on the company, and collapses the previously expanded row.
+          cy.intercept("PUT", "/api/companies/*").as("updateCompany");
+          cy.get(
+            `[data-cy="btn-afficher-frais-bail-societe-${secondLeaseId}"]`,
+          ).click();
           cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`)
-            .should("contain.text", "Bail actif")
-            .and("have.attr", "aria-expanded", "true");
-          cy.get(`[data-cy="bail-societe-${leaseId}"]`)
-            .should("not.contain.text", "Bail actif")
-            .and("have.attr", "aria-expanded", "false");
-          cy.get("button[data-cy^='bail-societe-']")
-            .first()
-            .should("have.attr", "data-cy", `bail-societe-${secondLeaseId}`);
-          cy.request<CompanySummary>(`/api/companies/${annexe.id}`).then(
-            ({ body }) => {
-              expect(body.leaseId).to.eq(secondLeaseId);
-            },
+            .should("have.attr", "aria-expanded", "true")
+            .and("not.contain.text", "Bail actif");
+          cy.get(`[data-cy="bail-societe-${leaseId}"]`).should(
+            "have.attr",
+            "aria-expanded",
+            "false",
           );
+          cy.get("@updateCompany.all").should("have.length", 0);
 
-          // Clicking the expanded row collapses it and keeps it active: no
-          // new PUT, no fallback.
-          cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`).click();
-          cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`)
-            .should("contain.text", "Bail actif")
-            .and("have.attr", "aria-expanded", "false");
+          // Toggling the same row closed brings back the company-level fallback.
+          cy.get(
+            `[data-cy="btn-afficher-frais-bail-societe-${secondLeaseId}"]`,
+          ).click();
+          cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`).should(
+            "have.attr",
+            "aria-expanded",
+            "false",
+          );
           cy.get('[data-cy="bail-societe-lie"]').should("not.exist");
-          cy.get('[data-cy="aucun-bail-societe"]').should("not.exist");
-          cy.get("@lierBail.all").should("have.length", 1);
+          cy.get('[data-cy="aucun-bail-societe"]').should("exist");
+          cy.get("@updateCompany.all").should("have.length", 0);
 
-          // Re-expanding the already-active lease does not persist either.
+          // The row click keeps toggling the same expansion, still without a PUT.
           cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`).click();
-          cy.get("@lierBail.all").should("have.length", 1);
-
-          // Back to the first lease: the rest of the spec assumes it is active.
-          cy.get(`[data-cy="bail-societe-${leaseId}"]`).click();
-          cy.wait("@lierBail");
-          cy.request<CompanySummary>(`/api/companies/${annexe.id}`).then(
-            ({ body }) => {
-              expect(body.leaseId).to.eq(leaseId);
-            },
+          cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`).should(
+            "have.attr",
+            "aria-expanded",
+            "true",
           );
+          cy.get("@updateCompany.all").should("have.length", 0);
+
+          // Back to the first lease: the rest of the spec assumes its postes.
+          cy.get(`[data-cy="bail-societe-${leaseId}"]`).click();
+          cy.get(`[data-cy="bail-societe-${leaseId}"]`).should(
+            "have.attr",
+            "aria-expanded",
+            "true",
+          );
+          cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`).should(
+            "have.attr",
+            "aria-expanded",
+            "false",
+          );
+          cy.get("@updateCompany.all").should("have.length", 0);
         });
       });
     });
@@ -442,8 +450,8 @@ function createAnnexeExpenseItem(companyId: number): void {
   cy.get('[data-cy="tab-configuration"]').click();
   cy.get('[data-cy="select-societe"]').should("have.value", String(companyId));
   cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
-  // The tab arrives collapsed: expand the active lease to reach its postes.
-  expandActiveLease();
+  // The tab arrives collapsed: expand a lease to reach its postes.
+  expandFirstLease();
   cy.contains("Aucun poste configuré.", { timeout: 20_000 }).should(
     "be.visible",
   );
@@ -465,14 +473,14 @@ function assertSettingsIsolation(
   cy.get('[data-cy="select-societe"]').select(String(seededCompanyId));
   waitForText('[data-cy="info-societe"]', SEEDED_COMPANY);
   cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
-  expandActiveLease();
+  expandFirstLease();
   cy.contains("td", "Téléphone", { timeout: 20_000 }).should("be.visible");
   cy.contains("td", "Gaz annexe").should("not.exist");
 
   cy.get('[data-cy="select-societe"]').select(String(annexeCompanyId));
   waitForText('[data-cy="info-societe"]', ANNEXE_COMPANY.name);
   cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
-  expandActiveLease();
+  expandFirstLease();
   cy.contains("td", "Gaz annexe", { timeout: 20_000 }).should("be.visible");
   cy.contains("td", "Téléphone").should("not.exist");
 }

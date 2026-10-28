@@ -16,6 +16,7 @@ interface ListToolbarTestProps {
   sortOptions: { value: string; label: string }[];
   visible: number;
   total: number;
+  showSearch?: boolean;
 }
 
 const SORT_OPTIONS = [
@@ -114,5 +115,20 @@ describe("ListToolbar", () => {
     expect(
       document.querySelector('[data-cy="tri-direction-salaries"]'),
     ).not.toBeNull();
+  });
+
+  it("hides the search field on request but keeps sort, direction and count", () => {
+    renderToolbar({ showSearch: false });
+
+    expect(screen.queryByRole("searchbox")).toBeNull();
+    expect(document.querySelector('[data-cy="filtre-salaries"]')).toBeNull();
+    expect(
+      document.querySelector('[data-cy="filtre-effacer-salaries"]'),
+    ).toBeNull();
+    expect(screen.getByRole("combobox", { name: "Trier par" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Tri croissant" })).toBeVisible();
+    expect(
+      document.querySelector('[data-cy="filtre-compteur-salaries"]'),
+    ).toHaveTextContent("2 sur 3");
   });
 });
