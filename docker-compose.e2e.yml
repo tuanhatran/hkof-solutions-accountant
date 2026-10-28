@@ -1,5 +1,6 @@
 # E2E overlay: ephemeral Postgres (tmpfs), deterministic mock-ollama, Cypress runner.
-# Never mounts ./data or the pgdata volume. Run it with `make e2e`.
+# Never mounts ./data or the pgdata volume. Start it once with `make e2e-up`, run the
+# suite with `make e2e`, remove it with `make e2e-down` once the change is accepted.
 services:
   db:
     volumes: !reset []
@@ -36,7 +37,9 @@ services:
         aliases:
           - ollama
 
+  # Kept out of `make e2e-up`: only an explicit `make e2e` starts this service.
   cypress:
+    profiles: ["e2e"]
     image: cypress/included:16.2.0
     working_dir: /e2e
     entrypoint: ["/bin/sh", "-c"]

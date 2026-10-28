@@ -133,9 +133,9 @@ project-wide rules are:
   evidence line with the changed-line percentages and measured line counts.
 - Every production class stays under 300 lines. A class crossing 300 lines is split, never
   shrunk by deleting comments only.
-- Full E2E suite, once per task, on the task branch, in a single run:
-  `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress`,
-  then the same command with `down -v --remove-orphans`.
+- Full E2E suite, once per task, on the task branch, in a single run: `make e2e-up` once, then
+  `make e2e` (rebuilds only the changed services, keeps the stack up); `make e2e-down` removes
+  the stack and its volumes only after the user accepts.
 
 A task is never `DONE` until the full E2E suite passes on its branch in a single run: every
 spec and every test green, with no test passing only on a retry. This applies to every task

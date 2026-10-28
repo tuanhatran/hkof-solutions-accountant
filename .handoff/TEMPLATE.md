@@ -42,7 +42,7 @@ Run once, at the end, only the gates the change type requires (gate table in `bu
 - backend: `cd backend && ./mvnw -B verify`
 - frontend: `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build`
 - coverage: `scripts/diff-coverage.sh <Base> backend|frontend|all` (>= 80% changed lines)
-- e2e (backend or frontend production code, contract, migration, Docker/E2E config): `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress`
+- e2e (backend or frontend production code, contract, migration, Docker/E2E config): `make e2e-up` once, then `make e2e` (rebuilds changed services, keeps the stack up; `make e2e-down` only after acceptance)
 
 ## Evidence
 

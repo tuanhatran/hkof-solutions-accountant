@@ -50,11 +50,12 @@ Ambiguous task: ask all questions in ONE message before starting, never guess an
    | Frontend production code                                          | `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + full E2E |
    | Docker or E2E configuration                                       | Backend + frontend gates + full E2E                                                         |
 
-   Full E2E, one run, then clean up:
-   `docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress`,
-   then the same command with `down -v --remove-orphans`. Every spec and test green, none only on a
-   retry. If a required gate cannot run (for example Docker unavailable), report it as unverified and
-   do not commit. Coverage gate: changed-line coverage >= 80% via
+   Full E2E, one stack per task:
+   `make e2e-up` once, then `make e2e` for every run; `make e2e` rebuilds only the changed
+   services and leaves the stack up. Every spec and test green, none only on a retry. Keep the
+   stack running after the report; run `make e2e-down` only when the user accepts. If a required
+   gate cannot run (for example Docker unavailable), report it as unverified and do not commit.
+   Coverage gate: changed-line coverage >= 80% via
    `scripts/diff-coverage.sh <Base> backend|frontend|all` (JaCoCo XML for backend lines, Vitest
    Clover XML for frontend lines); no global bundle threshold. Every production class and
    component CSS stays under 300 lines.
@@ -66,7 +67,8 @@ Ambiguous task: ask all questions in ONE message before starting, never guess an
    `--no-verify` or push. A file with user edits you cannot separate stays uncommitted: report it.
 7. **Report, max 10 lines, then stop.** Branch and commit sha with +/-; one `PASS`/`FAIL` line per
    command with real counts; a red-then-green line per new test; E2E evidence or
-   `E2E: skipped, <table row>`; deviations. State that there was no independent review, and ask the user
+   `E2E: skipped, <table row>`; the e2e stack stays up until acceptance (`make e2e-down`); deviations.
+   State that there was no independent review, and ask the user
    to accept or request changes. Write no `.handoff/` file.
 
 ## Rules that still apply

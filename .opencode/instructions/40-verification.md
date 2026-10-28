@@ -12,7 +12,9 @@
 ```bash
 make dev                               # database, backend, Vite
 make test                              # backend tests, frontend tests, build
-make e2e                               # Cypress against the Compose stack + mock-ollama
+make e2e-up                            # e2e stack, once per task
+make e2e                               # Cypress against the running e2e stack
+make e2e-down                          # e2e stack + volumes, once the user accepts
 cd backend && ./mvnw -B test
 cd backend && ./mvnw -B verify          # tests + JaCoCo XML report
 cd frontend && npm ci && npm test && npm run build
@@ -24,6 +26,10 @@ cd frontend && npm run build           # tsc + Vite build, same as CI
 cd frontend && npm run gen:api         # after an OpenAPI change
 make up / make down
 ```
+
+The e2e stack is built once per task with `make e2e-up`. `make e2e` rebuilds only the services
+whose files changed since the previous run and never tears the stack down; `make e2e-down`
+removes it with its volumes once the user accepts the change.
 
 ## Coverage and size gate
 
@@ -39,7 +45,8 @@ make up / make down
 
 The table in `builder.md` (End of task) is the single source: docs-only, tests-only and CSS-only
 changes skip coverage and E2E; production code, contract, migration or Docker/E2E config run the
-matching coverage gates (frontend includes `npm run build`) plus one full E2E run.
+matching coverage gates (frontend includes `npm run build`) plus one full E2E run (`make e2e-up`
+once, then `make e2e`; `make e2e-down` only after acceptance).
 
 ## Evidence before claims
 
