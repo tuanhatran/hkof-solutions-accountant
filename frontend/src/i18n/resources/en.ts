@@ -105,7 +105,7 @@ export const en = {
         "An employee with this email address already exists in the company.",
       EMPLOYEE_TITLE_REQUIRED: "The employee title is required.",
       EMPLOYEE_TITLE_INVALID: "Invalid employee title: {{title}}",
-      EXPENSE_ITEM_UNKNOWN_CODE: "Unknown expense type: {{code}}",
+      EXPENSE_ITEM_UNKNOWN_CODE: "Unknown expense item: {{code}}",
       EXPENSE_ITEM_NOT_FOUND: "Expense item not found.",
       EXPENSE_ITEM_LABEL_REQUIRED: "The item label is required.",
       EXPENSE_ITEM_CODE_DUPLICATE:
@@ -615,12 +615,18 @@ export const en = {
         title: "Company leases",
         description:
           "A company can be the tenant of several leases. Click a lease to activate it and expand its expenses: items and expense statements follow that lease.",
+        columns: {
+          lease: "Lease",
+          rent: "Rent",
+          charges: "Charges",
+          actions: "Actions",
+        },
         add: "Add a lease",
         loading: "Loading leases…",
         empty:
           "No lease for this company. Add the first lease with “Add a lease”.",
         addressFallback: "Lease without address",
-        meta: "Landlord {{landlord}} · Rent {{rent}} · Charges {{charges}}",
+        meta: "Landlord {{landlord}}",
         activeBadge: "Active lease",
         statement: "Expense statement",
         edit: "Edit",
@@ -645,6 +651,13 @@ export const en = {
         title: "Leases and addresses",
         description:
           "One address can hold several leases. Select an address to display its leases and set the rent and charges.",
+        columns: {
+          lease: "Lease",
+          company: "Company",
+          rent: "Rent",
+          charges: "Charges",
+          total: "Total",
+        },
         add: "Add a lease",
         addressLabel: "Lease addresses",
         addressHelp: "Only the leases of the selected address are displayed.",
@@ -773,6 +786,12 @@ export const en = {
       title: "Employees",
       description:
         "Employees belong to the selected company. Their title is descriptive and does not grant any rights yet.",
+      columns: {
+        employee: "Employee",
+        title: "Title",
+        contact: "Contact details",
+        signatures: "Signatures",
+      },
       add: "Add an employee",
       selectCompany: "Select a company to manage its employees.",
       loading: "Loading employees…",
@@ -821,7 +840,7 @@ export const en = {
       },
     },
     expenses: {
-      title: "Expenses",
+      title: "Expense items",
       description:
         "Labels, suppliers, default pro rata and periodicity feed the expense statement. Logical deletion only.",
       add: "Add an expense item",
@@ -844,7 +863,7 @@ export const en = {
       remove: "Remove",
       deleted: "Expense item disabled and removed from the expense list.",
       deleteDialog: {
-        title: "Remove this expense type?",
+        title: "Remove this expense item?",
         message:
           "“{{label}}” will no longer be offered in the expense statement. Existing documents keep their lines and amounts.",
         confirm: "Remove the expense item",
@@ -856,7 +875,7 @@ export const en = {
       },
       form: {
         createTitle: "Add an expense item",
-        editTitle: "Edit the expense type",
+        editTitle: "Edit the expense item",
         code: "Code",
         codeHelpEdit: "The code is immutable after creation.",
         codeHelpCreate: "Optional: generated from the label when empty.",
@@ -887,6 +906,11 @@ export const en = {
       title: "People",
       description:
         "Natural persons used as the landlord or tenant of a lease. Each person can hold their signatures.",
+      columns: {
+        person: "Person",
+        address: "Address",
+        signatures: "Signatures",
+      },
       add: "Add a person",
       loading: "Loading people…",
       empty:
@@ -1185,7 +1209,7 @@ export const en = {
       count_other: "{{count}} lines",
       emptyTitle: "No expense for {{month}}",
       emptyText:
-        "Select an expense type above, drop a receipt and add the line.",
+        "Select an expense item above, drop a receipt and add the line.",
       table: {
         type: "Type",
         supplier: "Supplier",
@@ -1333,10 +1357,10 @@ export const en = {
       amount: "Enter an amount greater than 0 (e.g. 80.50).",
       proRata: "Pro rata must be between 0 and 100 (2 decimals max).",
       alreadyAdded:
-        "This type is already present. Edit the existing line or allow multiple lines.",
+        "This item is already present. Edit the existing line or allow multiple lines.",
       rentReceiptRequired:
-        "Add this month's rent receipt first to use this type.",
-      receiptRequired: "The receipt is required for this expense type.",
+        "Add this month's rent receipt first to use this item.",
+      receiptRequired: "The receipt is required for this expense item.",
     },
   },
 };

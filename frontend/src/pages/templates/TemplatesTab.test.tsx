@@ -215,7 +215,7 @@ describe("TemplatesTab", () => {
       screen.queryByRole("heading", { name: "Note de frais d’occupation" }),
     ).toBeNull();
     expect(
-      screen.getByText(/Les templates ne peuvent exécuter aucun code/),
+      screen.getByText(/Les modèles ne peuvent exécuter aucun code/),
     ).toBeVisible();
     expect(
       screen.getByText(/Mustache sans logique, HTML assaini/),
@@ -396,7 +396,7 @@ describe("TemplatesTab", () => {
       type: "text/html",
     });
     await user.upload(
-      within(rent).getByLabelText("Choisir un fichier template HTML"),
+      within(rent).getByLabelText("Choisir un fichier de modèle HTML"),
       file,
     );
     expect(within(rent).getByText("modele.html")).toBeInTheDocument();
@@ -450,7 +450,7 @@ describe("TemplatesTab", () => {
 
     const rent = card();
     await user.upload(
-      within(rent).getByLabelText("Choisir un fichier template HTML"),
+      within(rent).getByLabelText("Choisir un fichier de modèle HTML"),
       new File(["<html></html>"], "modele.html", { type: "text/html" }),
     );
     await user.click(
@@ -475,7 +475,7 @@ describe("TemplatesTab", () => {
 
     const rent = card();
     await user.upload(
-      within(rent).getByLabelText("Choisir un fichier template HTML"),
+      within(rent).getByLabelText("Choisir un fichier de modèle HTML"),
       new File(["<html></html>"], "modele.html", { type: "text/html" }),
     );
     await user.click(
@@ -707,7 +707,7 @@ describe("TemplatesTab", () => {
 
     const rent = card();
     await user.upload(
-      within(rent).getByLabelText("Choisir un fichier template HTML"),
+      within(rent).getByLabelText("Choisir un fichier de modèle HTML"),
       new File(["<html></html>"], "modele.html", { type: "text/html" }),
     );
     await user.click(

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
@@ -107,6 +107,39 @@ describe("PersonnesSection", () => {
     ).toBeVisible();
   });
 
+  it("renders dense column headers above the persons list", () => {
+    renderSection();
+
+    const headers = document.querySelector(
+      '[data-cy="entetes-personnes"]',
+    ) as HTMLElement;
+    expect(headers).not.toBeNull();
+    expect(headers).toHaveClass("hidden", "md:grid");
+    expect(within(headers).getByText("Personne")).toBeVisible();
+    expect(within(headers).getByText("Adresse")).toBeVisible();
+    expect(within(headers).getByText("Signatures")).toBeVisible();
+  });
+
+  it("aligns each person row cell and its tabular signatures column", () => {
+    renderSection();
+
+    const row = document.querySelector('[data-cy="personne-1"]') as HTMLElement;
+    expect(row).toHaveClass("personnes-section-item");
+    expect(row.querySelector(".personnes-section-cell-name")).toHaveTextContent(
+      "M. Bailleur",
+    );
+    expect(
+      row.querySelector(".personnes-section-cell-address"),
+    ).toHaveTextContent("1 avenue du Parc, 75011 Paris");
+    const signatures = row.querySelector('[data-cy="signatures-personne-1"]');
+    expect(signatures).toHaveClass(
+      "personnes-section-cell",
+      "number",
+      "text-right",
+    );
+    expect(row.querySelector(".personnes-section-cell-actions")).not.toBeNull();
+  });
+
   it("shows the loading, empty and error states", async () => {
     personsState = {
       data: undefined,
@@ -182,7 +215,13 @@ describe("PersonnesSection", () => {
         "Personne enregistrée. Ajoutez ou retirez ses signatures ci-dessous.",
       ),
     ).toBeVisible();
-    expect(screen.getByText("Signatures")).toBeVisible();
+    expect(
+      within(
+        document.querySelector(
+          '[data-cy="formulaire-personne"]',
+        ) as HTMLElement,
+      ).getByText("Signatures"),
+    ).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Ajouter une personne" }),
     ).toBeDisabled();
@@ -219,7 +258,13 @@ describe("PersonnesSection", () => {
     expect(toastMessages()).toContain(
       "Personne « M. Bailleur Modifié » mise à jour.",
     );
-    expect(screen.getByText("Signatures")).toBeVisible();
+    expect(
+      within(
+        document.querySelector(
+          '[data-cy="formulaire-personne"]',
+        ) as HTMLElement,
+      ).getByText("Signatures"),
+    ).toBeVisible();
   });
 
   it("deletes a person after confirmation in French", async () => {
@@ -254,6 +299,12 @@ describe("PersonnesSection", () => {
     renderSection();
 
     expect(screen.getByRole("heading", { name: "People" })).toBeVisible();
+    const headers = document.querySelector(
+      '[data-cy="entetes-personnes"]',
+    ) as HTMLElement;
+    expect(within(headers).getByText("Person")).toBeVisible();
+    expect(within(headers).getByText("Address")).toBeVisible();
+    expect(within(headers).getByText("Signatures")).toBeVisible();
     expect(screen.getByText("M. Bailleur")).toBeVisible();
     expect(screen.getByText("1 signature")).toBeVisible();
     expect(screen.getByText("0 signatures")).toBeVisible();

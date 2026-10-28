@@ -198,7 +198,7 @@ describe("LmnpPage", () => {
 
     expect(screen.getByRole("tab", { name: "Baux et adresses" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Personnes" })).toBeVisible();
-    expect(screen.getByRole("tab", { name: "Templates" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Modèles" })).toBeVisible();
     expect(
       screen.getByRole("heading", { name: "Baux et adresses" }),
     ).toBeVisible();
@@ -232,9 +232,9 @@ describe("LmnpPage", () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("tab", { name: "Templates" }));
+    await user.click(screen.getByRole("tab", { name: "Modèles" }));
 
-    expect(screen.getByRole("tab", { name: "Templates" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Modèles" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -248,7 +248,7 @@ describe("LmnpPage", () => {
       screen.queryByRole("heading", { name: "Note de frais d’occupation" }),
     ).toBeNull();
     expect(
-      screen.getByText(/Les templates ne peuvent exécuter aucun code/),
+      screen.getByText(/Les modèles ne peuvent exécuter aucun code/),
     ).toBeVisible();
     expect(screen.queryByLabelText("Adresse des baux")).toBeNull();
   });

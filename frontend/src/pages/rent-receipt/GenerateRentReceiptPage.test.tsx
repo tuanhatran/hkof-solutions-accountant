@@ -690,7 +690,7 @@ describe("GenerateRentReceiptPage", () => {
     expect(
       within(tenantSelect).getByRole("option", { name: "HKOF" }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Template")).toHaveDisplayValue(
+    expect(screen.getByLabelText("Modèle")).toHaveDisplayValue(
       "Modèle intégré",
     );
     expect(
@@ -790,7 +790,7 @@ describe("GenerateRentReceiptPage", () => {
     renderPage();
     const user = userEvent.setup();
 
-    const partySelect = await screen.findByLabelText("Template");
+    const partySelect = await screen.findByLabelText("Modèle");
     expect(partySelect).toHaveValue("3");
     expect(
       screen.getByRole("option", { name: "Modèle actif — v2 (actif)" }),
@@ -805,7 +805,7 @@ describe("GenerateRentReceiptPage", () => {
     fireEvent.change(partySelect, { target: { value: "" } });
     expect(partySelect).toHaveValue("3");
 
-    const previewSelect = screen.getByLabelText("Template de la quittance");
+    const previewSelect = screen.getByLabelText("Modèle de la quittance");
     await user.selectOptions(previewSelect, "4");
     expect(previewSelect).toHaveValue("4");
     fireEvent.change(previewSelect, { target: { value: "" } });

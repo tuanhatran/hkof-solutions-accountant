@@ -348,7 +348,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveAttribute("data-cy", "alerte-signature-manquante");
     expect(alert).toHaveTextContent(/Aucune signature pour le PDG/);
-    expect(screen.getByRole("link", { name: "Entreprise" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Société" })).toHaveAttribute(
       "href",
       "/configuration/entreprise",
     );
@@ -626,7 +626,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     renderPage();
     const user = userEvent.setup();
 
-    const template = screen.getByLabelText("Template de la note de frais");
+    const template = screen.getByLabelText("Modèle de la note de frais");
     expect(template).toBeEnabled();
     expect(
       within(template).getByRole("option", { name: "Modèle — v2" }),

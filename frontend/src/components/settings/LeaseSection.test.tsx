@@ -161,6 +161,43 @@ beforeEach(() => {
 });
 
 describe("LeaseSection rent receipt", () => {
+  it("renders dense column headers above the lease rows", () => {
+    renderSection();
+
+    const headers = document.querySelector(
+      '[data-cy="entetes-baux"]',
+    ) as HTMLElement;
+    expect(headers).not.toBeNull();
+    expect(headers).toHaveClass("hidden", "md:grid");
+    expect(within(headers).getByText("Bail")).toBeVisible();
+    expect(within(headers).getByText("Société")).toBeVisible();
+    expect(within(headers).getByText("Loyer")).toBeVisible();
+    expect(within(headers).getByText("Charges")).toBeVisible();
+    expect(within(headers).getByText("Total")).toBeVisible();
+  });
+
+  it("splits each lease row into aligned company and amount cells", () => {
+    renderSection();
+
+    const row = document.querySelector('[data-cy="bail-10"]') as HTMLElement;
+    expect(row.querySelector(".lease-section-cell-title")).toHaveTextContent(
+      "M. Bailleur → Mme Locataire",
+    );
+    expect(
+      row.querySelector('[data-cy="societe-bail-10"]')?.textContent?.trim(),
+    ).toBe("Aucune société");
+    expect(row.querySelector(".lease-section-cell-rent")).toHaveTextContent(
+      "1 300,00 €",
+    );
+    expect(row.querySelector(".lease-section-cell-charges")).toHaveTextContent(
+      "50,00 €",
+    );
+    const total = row.querySelector('[data-cy="total-bail-10"]');
+    expect(total).toHaveTextContent("1 350,00 €");
+    expect(total).toHaveClass("number", "text-right");
+    expect(row.querySelector(".lease-section-cell-actions")).not.toBeNull();
+  });
+
   it("opens the rent receipt modal from the Quittance button of a lease row", async () => {
     renderSection();
     const user = userEvent.setup();
@@ -218,8 +255,18 @@ describe("LeaseSection rent receipt", () => {
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Add a lease" })).toBeVisible();
     expect(screen.getByLabelText("Lease addresses")).toBeVisible();
-    expect(screen.getByText("Company: No company")).toBeVisible();
-    expect(screen.getByText(/Rent .* · charges .* · total/)).toBeVisible();
+    expect(
+      document.querySelector('[data-cy="societe-bail-10"]'),
+    ).toHaveTextContent("No company");
+    expect(
+      document.querySelector(".lease-section-cell-rent"),
+    ).toHaveTextContent("1 300,00 €");
+    expect(
+      document.querySelector(".lease-section-cell-charges"),
+    ).toHaveTextContent("50,00 €");
+    expect(
+      document.querySelector('[data-cy="total-bail-10"]'),
+    ).toHaveTextContent("1 350,00 €");
     expect(
       screen.getByRole("button", { name: "Rent receipt for lease 10" }),
     ).toHaveTextContent("Rent receipt");

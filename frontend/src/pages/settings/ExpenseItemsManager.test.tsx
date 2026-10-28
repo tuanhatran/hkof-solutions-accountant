@@ -125,7 +125,7 @@ describe("ExpenseItemsManager", () => {
     renderManager("35.71", 7);
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Ajouter un frais" }));
+    await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
     await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
     await user.click(screen.getByRole("button", { name: "Valider" }));
 
@@ -136,9 +136,29 @@ describe("ExpenseItemsManager", () => {
     );
   });
 
-  it("lists the expense items with their formatted options", () => {
+  it("renders the scoped dense table with right-aligned numbers", () => {
     renderManager();
 
+    const table = document.querySelector(
+      "table.expense-items-table",
+    ) as HTMLElement;
+    expect(table).not.toBeNull();
+    expect(table).toHaveClass("expense-table", "expense-items-table");
+    const proRata = within(table).getByRole("columnheader", {
+      name: "Prorata",
+    });
+    expect(proRata).toHaveClass("text-right");
+    const order = within(table).getByRole("columnheader", { name: "Ordre" });
+    expect(order).toHaveClass("text-right");
+    const numericCells = table.querySelectorAll("td.number");
+    expect(numericCells).toHaveLength(6);
+    numericCells.forEach((cell) => {
+      expect(cell).toHaveClass("number", "text-right");
+    });
+  });
+
+  it("lists the expense items with their formatted options", () => {
+    renderManager();
     expect(screen.getByText("Loyer")).toBeVisible();
     expect(screen.getByText("35,71 %")).toBeVisible();
     expect(screen.getByText("Mensuelle")).toBeVisible();
@@ -191,20 +211,20 @@ describe("ExpenseItemsManager", () => {
     renderManager("20,00");
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Ajouter un frais" }));
+    await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(
       document.querySelector('[data-cy="dialogue-formulaire-poste"]'),
     ).not.toBeNull();
     expect(
-      screen.getByRole("heading", { name: "Ajouter un frais de frais" }),
+      screen.getByRole("heading", { name: "Ajouter un poste" }),
     ).toBeVisible();
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
       "20,00",
     );
     expect(screen.getByLabelText("Ordre d’affichage")).toHaveValue(4);
     expect(
-      screen.getByRole("button", { name: "Ajouter un frais" }),
+      screen.getByRole("button", { name: "Ajouter un poste" }),
     ).toBeDisabled();
 
     await user.click(screen.getByRole("button", { name: "Annuler" }));
@@ -218,7 +238,7 @@ describe("ExpenseItemsManager", () => {
     await user.click(screen.getAllByRole("button", { name: "Modifier" })[0]);
 
     expect(
-      screen.getByRole("heading", { name: "Modifier le type de frais" }),
+      screen.getByRole("heading", { name: "Modifier le poste" }),
     ).toBeVisible();
     expect(screen.getByLabelText("Code")).toHaveValue("loyer");
     expect(screen.getByLabelText("Code")).toBeDisabled();
@@ -226,7 +246,7 @@ describe("ExpenseItemsManager", () => {
       "35,71",
     );
     expect(
-      screen.getByRole("button", { name: "Ajouter un frais" }),
+      screen.getByRole("button", { name: "Ajouter un poste" }),
     ).not.toBeDisabled();
   });
 
@@ -237,7 +257,7 @@ describe("ExpenseItemsManager", () => {
 
     await user.click(screen.getAllByRole("button", { name: "Retirer" })[1]);
     const dialog = screen.getByRole("dialog", {
-      name: "Retirer ce type de frais ?",
+      name: "Retirer ce poste ?",
     });
     expect(
       within(dialog).getByText(/« Eau » ne sera plus proposé/),
@@ -260,7 +280,9 @@ describe("ExpenseItemsManager", () => {
     await i18n.changeLanguage("en");
     renderManager();
 
-    expect(screen.getByRole("heading", { name: "Expenses" })).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Expense items" }),
+    ).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Add an expense item" }),
     ).toBeVisible();
@@ -298,7 +320,7 @@ describe("ExpenseItemsManager", () => {
 
     await user.click(screen.getAllByRole("button", { name: "Remove" })[1]);
     const dialog = screen.getByRole("dialog", {
-      name: "Remove this expense type?",
+      name: "Remove this expense item?",
     });
     expect(dialog).toHaveTextContent("“Eau” will no longer be offered");
     await user.click(
@@ -332,7 +354,7 @@ describe("ExpenseItemsManager", () => {
     await user.click(screen.getAllByRole("button", { name: "Retirer" })[0]);
     await user.click(
       within(
-        screen.getByRole("dialog", { name: "Retirer ce type de frais ?" }),
+        screen.getByRole("dialog", { name: "Retirer ce poste ?" }),
       ).getByRole("button", { name: "Retirer le poste" }),
     );
 
