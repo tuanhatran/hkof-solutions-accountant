@@ -158,6 +158,7 @@ describe("CompanyLeaseTab", () => {
     renderTab();
 
     await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    const table = screen.getByRole("table");
     const headers = queryByCy("entetes-baux-societe") as HTMLElement;
     expect(headers).not.toBeNull();
     expect(headers).toHaveClass("hidden", "md:grid");
@@ -166,6 +167,29 @@ describe("CompanyLeaseTab", () => {
     expect(within(headers).getByText("Loyer")).toBeVisible();
     expect(within(headers).getByText("Charges")).toBeVisible();
     expect(within(headers).getByText("Actions")).toBeVisible();
+    expect(table.querySelector('[role="rowgroup"]')).not.toBeNull();
+    const rows = within(table).getAllByRole("row");
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toBe(headers);
+  });
+
+  it("exposes valid table semantics: one header row and five cells per data row", async () => {
+    renderTab();
+
+    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    const table = screen.getByRole("table");
+    const rows = within(table).getAllByRole("row");
+    expect(rows).toHaveLength(3);
+
+    const [headerRow, ...dataRows] = rows;
+    expect(within(headerRow).getAllByRole("columnheader")).toHaveLength(5);
+    expect(within(headerRow).queryAllByRole("cell")).toHaveLength(0);
+
+    for (const row of dataRows) {
+      expect(within(row).getAllByRole("cell")).toHaveLength(5);
+      expect(within(row).queryAllByRole("columnheader")).toHaveLength(0);
+      expect(row.closest("li")).toHaveAttribute("role", "none");
+    }
   });
 
   it("renders each lease as five aligned cells without an active badge", async () => {
@@ -187,8 +211,9 @@ describe("CompanyLeaseTab", () => {
     );
     expect(queryByCy("actions-bail-societe-5")).not.toBeNull();
     expect(within(row as HTMLElement).queryByText("Bail actif")).toBeNull();
+    expect(row).toHaveAttribute("role", "row");
+    expect(row.closest("li")).toHaveAttribute("role", "none");
     expect(row).not.toHaveAttribute("aria-expanded");
-    expect(row).not.toHaveAttribute("role");
     expect(row).not.toHaveAttribute("tabindex");
   });
 

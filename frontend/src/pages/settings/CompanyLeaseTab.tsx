@@ -188,13 +188,13 @@ export function CompanyLeaseTab({
                   dataCy="aucun-resultat-baux-societe"
                 />
               ) : (
-                <div className="company-lease-tab-table">
+                <div className="company-lease-tab-table" role="table">
                   <CompanyLeaseSortHeader
                     sort={listQuery.sort}
                     direction={listQuery.direction}
                     onSort={sortBy}
                   />
-                  <ul className="company-lease-tab-list">
+                  <ul className="company-lease-tab-list" role="rowgroup">
                     {listQuery.visible.map((lease) => (
                       <CompanyLeaseRow
                         key={lease.id}

@@ -47,6 +47,7 @@ export function CompanyLeaseSortHeader({
   return (
     <div
       className="company-lease-tab-headers hidden md:grid"
+      role="row"
       data-cy="entetes-baux-societe"
     >
       {SORT_COLUMNS.map((column) => {

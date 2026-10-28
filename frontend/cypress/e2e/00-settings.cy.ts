@@ -50,6 +50,23 @@ describe("Settings", () => {
     cy.get('[data-cy="tri-direction-baux-societe"]').should("not.exist");
     cy.get('[data-cy="btn-frais-generaux-societe"]').should("not.exist");
 
+    // The grid exposes real table semantics, not bare `aria-sort` divs.
+    cy.get(".company-lease-tab-table").should("have.attr", "role", "table");
+    cy.get('[data-cy="entetes-baux-societe"]').should(
+      "have.attr",
+      "role",
+      "row",
+    );
+    cy.get('[data-cy="entetes-baux-societe"] [role="columnheader"]').should(
+      "have.length",
+      5,
+    );
+    cy.get('[data-cy^="bail-societe-"]')
+      .first()
+      .should("have.attr", "role", "row")
+      .find('[role="cell"]')
+      .should("have.length", 5);
+
     // Address is the default ascending sort; the active column toggles.
     cy.get('[data-cy="tri-adresse-baux-societe"]')
       .parent()

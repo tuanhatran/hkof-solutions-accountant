@@ -28,18 +28,23 @@ export function CompanyLeaseRow({
     lease.propertyAddress ?? t("settings.company.leaseTab.addressFallback");
 
   return (
-    <li className="company-lease-tab-list-item">
+    <li className="company-lease-tab-list-item" role="none">
       <div
         className="company-lease-tab-item"
+        role="row"
         data-cy={`bail-societe-${lease.id}`}
       >
-        <span className="company-lease-tab-item-address" title={address}>
+        <span
+          className="company-lease-tab-item-address"
+          role="cell"
+          title={address}
+        >
           {address}
         </span>
-        <span className="company-lease-tab-item-landlord">
+        <span className="company-lease-tab-item-landlord" role="cell">
           {lease.landlordName ?? "—"}
         </span>
-        <div className="company-lease-tab-item-cell">
+        <div className="company-lease-tab-item-cell" role="cell">
           <span className="company-lease-tab-item-label">
             {t("settings.company.leaseTab.columns.rent")}
           </span>
@@ -50,7 +55,7 @@ export function CompanyLeaseRow({
             {formatEUR(lease.rentExclCharges ?? "0.00")}
           </span>
         </div>
-        <div className="company-lease-tab-item-cell">
+        <div className="company-lease-tab-item-cell" role="cell">
           <span className="company-lease-tab-item-label">
             {t("settings.company.leaseTab.columns.charges")}
           </span>
@@ -63,6 +68,7 @@ export function CompanyLeaseRow({
         </div>
         <div
           className="company-lease-tab-item-actions"
+          role="cell"
           data-cy={`actions-bail-societe-${lease.id}`}
         >
           <Button
