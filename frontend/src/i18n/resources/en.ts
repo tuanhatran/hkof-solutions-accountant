@@ -267,9 +267,7 @@ export const en = {
       previewTab: "Preview",
     },
     form: {
-      step: "Step 1",
       title: "Rent receipt settings",
-      backendBadge: "Backend calculation",
       generate: "Generate the rent receipt",
       resumeLease: "Resume the lease",
       latestVersion: "Latest version: v{{version}} → v{{next}} on generation.",
@@ -284,7 +282,7 @@ export const en = {
       charges: "Charges provision",
       estimatedTotal: "Estimated total",
       estimatedTotalNote:
-        "Estimated display. The backend computes the PDF total and rounds it to the cent.",
+        "Estimated display. The PDF total is recalculated and rounded to the cent.",
       paymentDate: "Payment date",
       issueDate: "Issue date",
       leaseSourceHint:
@@ -1175,7 +1173,7 @@ export const en = {
       amountInclVat: "Amount incl. VAT",
       retainedEstimate: "Estimated retained amount",
       retainedNote:
-        "Display estimate: the backend recomputes every line, rounded to the cent.",
+        "Display estimate: each line is recalculated and rounded to the cent.",
       lowConfidence:
         "Low confidence: check the amount before adding the expense.",
     },
@@ -1206,7 +1204,7 @@ export const en = {
       inWords: "That is {{words}}.",
       proRataBase: "Pro rata base:",
       referenceShare: "Reference share:",
-      backendCalculation: "Backend calculation · automatic refresh (300 ms).",
+      calculationNote: "Amounts recalculated automatically after each change.",
       calculationError: "Calculation unavailable: {{message}}",
       signature: "Signature",
       signatureHelp:
@@ -1224,7 +1222,7 @@ export const en = {
       generate: "Generate the expense statement",
       hintNoLine: "Add at least one expense to generate the statement.",
       hintNoSignature: "Configure a signature to generate the statement.",
-      hintStaleCalculation: "Waiting for the backend calculation…",
+      hintStaleCalculation: "Recalculating…",
       hintNextVersion:
         "Version {{version}} exists: version {{next}} will be created.",
       hintSaved: "The final PDF will be saved in the history.",

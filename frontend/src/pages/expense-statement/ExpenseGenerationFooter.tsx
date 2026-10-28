@@ -52,7 +52,7 @@ export function ExpenseGenerationFooter({
               </span>
             </p>
           ) : null}
-          <p>{t("expenseStatement.footer.backendCalculation")}</p>
+          <p>{t("expenseStatement.footer.calculationNote")}</p>
         </div>
       </div>
 

@@ -282,9 +282,7 @@ export const fr = {
       previewTab: "Aperçu",
     },
     form: {
-      step: "Étape 1",
       title: "Paramètres de la quittance",
-      backendBadge: "Calcul backend",
       generate: "Générer la quittance",
       resumeLease: "Reprendre le bail",
       latestVersion:
@@ -300,7 +298,7 @@ export const fr = {
       charges: "Provision pour charges",
       estimatedTotal: "Total estimé",
       estimatedTotalNote:
-        "Affichage estimé. Le backend calcule le total du PDF avec arrondi au centime.",
+        "Affichage estimé. Le total du PDF est recalculé avec arrondi au centime.",
       paymentDate: "Date de paiement",
       issueDate: "Date d’émission",
       leaseSourceHint:
@@ -1203,7 +1201,7 @@ export const fr = {
       amountInclVat: "Montant TTC",
       retainedEstimate: "Montant retenu estimé",
       retainedNote:
-        "Estimation d’affichage : le backend recalcule chaque ligne avec arrondi au centime.",
+        "Estimation d’affichage : chaque ligne est recalculée avec arrondi au centime.",
       lowConfidence:
         "Confiance faible : vérifiez le montant avant d’ajouter le frais.",
     },
@@ -1234,7 +1232,8 @@ export const fr = {
       inWords: "Soit {{words}}.",
       proRataBase: "Base de prorata :",
       referenceShare: "Quote-part de référence :",
-      backendCalculation: "Calcul backend · recalcul automatique (300 ms).",
+      calculationNote:
+        "Montants recalculés automatiquement à chaque modification.",
       calculationError: "Calcul indisponible : {{message}}",
       signature: "Signature",
       signatureHelp:
@@ -1253,7 +1252,7 @@ export const fr = {
       generate: "Générer la note de frais",
       hintNoLine: "Ajoutez au moins un frais pour générer la note.",
       hintNoSignature: "Configurez une signature pour générer la note.",
-      hintStaleCalculation: "En attente du calcul backend à jour…",
+      hintStaleCalculation: "Mise à jour du calcul…",
       hintNextVersion:
         "Une version {{version}} existe : la version {{next}} sera créée.",
       hintSaved: "Le PDF définitif sera enregistré dans l’historique.",

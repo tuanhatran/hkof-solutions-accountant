@@ -1,10 +1,6 @@
 @reference "../../index.css";
 
 @layer components {
-  .expense-statement-header-month {
-    @apply items-center gap-1.5 rounded-full border border-line bg-surface/70 px-3 py-2 text-xs font-medium text-ink-soft;
-  }
-
   /* Layout only: the border and background overrides stay inline utilities so
      they keep winning over the `card` primitive. */
   .expense-statement-header-banner {

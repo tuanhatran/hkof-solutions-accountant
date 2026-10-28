@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
@@ -645,6 +651,44 @@ describe("GenerateExpenseStatementPage signatures", () => {
 
     expect(
       await screen.findByText("Calcul indisponible : Backend indisponible"),
+    ).toBeVisible();
+  });
+
+  it("keeps one header month control that updates the month and its French echo", () => {
+    renderPage();
+
+    const monthInputs = document.querySelectorAll('[data-cy="select-mois"]');
+    expect(monthInputs).toHaveLength(1);
+    const month = screen.getByLabelText("Mois concerné");
+    expect(month).toBeVisible();
+    expect(month).toHaveValue(MONTH);
+    expect(screen.getByText("Janvier 2026")).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
+
+    fireEvent.change(month, { target: { value: "2026-02" } });
+
+    expect(useStatementDraft.getState().month).toBe("2026-02");
+    expect(month).toHaveValue("2026-02");
+    expect(screen.getByText("Février 2026")).toBeVisible();
+    expect(screen.getByText("Aucun frais pour Février 2026")).toBeVisible();
+  });
+
+  it("removes the technical generation copy", () => {
+    renderPage();
+
+    expect(screen.queryByText(/Calcul backend/)).toBeNull();
+    expect(screen.queryByText(/recalcul automatique/)).toBeNull();
+    expect(
+      screen.getByText(
+        "Montants recalculés automatiquement à chaque modification.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Estimation d’affichage : chaque ligne est recalculée avec arrondi au centime.",
+      ),
     ).toBeVisible();
   });
 

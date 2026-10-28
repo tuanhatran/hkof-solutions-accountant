@@ -929,6 +929,69 @@ describe("GenerateRentReceiptPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("keeps one header month control that updates the draft, the period and the preview", async () => {
+    renderPage();
+
+    const monthInputs = document.querySelectorAll('[data-cy="select-mois"]');
+    expect(monthInputs).toHaveLength(1);
+    const month = screen.getByLabelText("Mois concerné");
+    expect(month).toBeVisible();
+    expect(month).toHaveValue(MONTH);
+    expect(screen.getByText("Janvier 2026")).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
+
+    fireEvent.change(month, { target: { value: "2026-02" } });
+
+    expect(month).toHaveValue("2026-02");
+    expect(screen.getByText("Février 2026")).toBeVisible();
+    expect(useRentReceiptDraft.getState().month).toBe("2026-02");
+    expect(useRentReceiptDraft.getState().periodStart).toBe("2026-02-01");
+    expect(useRentReceiptDraft.getState().periodEnd).toBe("2026-02-28");
+    expect(screen.getByLabelText("Début de période")).toHaveValue("2026-02-01");
+    expect(screen.getByLabelText("Fin de période")).toHaveValue("2026-02-28");
+
+    await waitFor(() => expect(lastPreviewLoader).not.toBeNull());
+    await lastPreviewLoader?.(new AbortController().signal);
+    expect(api.rentReceipts.preview).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        month: "2026-02",
+        periodStart: "2026-02-01",
+        periodEnd: "2026-02-28",
+      }),
+      expect.anything(),
+    );
+  });
+
+  it("echoes the filled dates in French under the native date inputs", () => {
+    renderPage();
+
+    expect(screen.getByText("01/01/2026")).toBeVisible();
+    expect(screen.getByText("31/01/2026")).toBeVisible();
+    expect(screen.getAllByText("05/01/2026")).toHaveLength(2);
+
+    fireEvent.change(screen.getByLabelText("Début de période"), {
+      target: { value: "2026-02-01" },
+    });
+
+    expect(screen.getByText("01/02/2026")).toBeVisible();
+  });
+
+  it("removes the technical generation copy", () => {
+    renderPage();
+
+    expect(screen.queryByText("Étape 1")).toBeNull();
+    expect(screen.queryByText("Calcul backend")).toBeNull();
+    expect(screen.queryByText(/recalcul automatique/)).toBeNull();
+    expect(screen.getByText("Paramètres de la quittance")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Affichage estimé. Le total du PDF est recalculé avec arrondi au centime.",
+      ),
+    ).toBeVisible();
+  });
+
   it("switches the mobile input and preview panels", async () => {
     setMobile(true);
     renderPage();

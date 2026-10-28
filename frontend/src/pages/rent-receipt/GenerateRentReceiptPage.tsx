@@ -1,12 +1,12 @@
 import "./GenerateRentReceiptPage.css";
-import { Building2, CalendarDays, ReceiptText } from "lucide-react";
+import { Building2, ReceiptText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
+import { MonthField } from "@/components/ui/MonthField";
 import { ErrorState } from "@/components/ui/States";
 import { ViewTabs } from "@/components/ui/ViewTabs";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { formatMonth } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { ActiveRentReceiptBanner } from "./ActiveRentReceiptBanner";
 import { RentReceiptForm } from "./RentReceiptForm";
@@ -45,10 +45,15 @@ export function GenerateRentReceiptPage() {
                 {c.companyName}
               </span>
             ) : null}
-            <span className="hidden generate-rent-receipt-page-month sm:inline-flex">
-              <CalendarDays size={14} aria-hidden="true" />
-              {formatMonth(c.draft.month)}
-            </span>
+            <MonthField
+              id="quittance-mois"
+              label={t("rentReceipt.fields.month")}
+              value={c.values.month}
+              onChange={c.changeMonth}
+              inputProps={c.register("month")}
+              error={c.errors.month?.message}
+              dataCy="select-mois"
+            />
           </>
         }
       />

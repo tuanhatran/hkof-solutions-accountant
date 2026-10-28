@@ -31,21 +31,6 @@ export function ExpenseEntryCard({
               : t("expenseStatement.entry.titleAdd")}
           </h2>
         </div>
-        <div className="expense-entry-card-month">
-          <div className="expense-entry-card-month-grid">
-            <label htmlFor="note-mois" className="sr-only">
-              {t("expenseStatement.entry.monthLabel")}
-            </label>
-            <input
-              id="note-mois"
-              type="month"
-              className="field mt-0 w-auto py-1.5 text-xs"
-              data-cy="select-mois"
-              value={c.month}
-              onChange={(event) => c.changeMonth(event.target.value)}
-            />
-          </div>
-        </div>
       </div>
 
       <form
