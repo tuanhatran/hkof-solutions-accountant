@@ -39,6 +39,7 @@ let leaseError: Error | null = null;
 let companiesError: Error | null = null;
 let personsError: Error | null = null;
 let savedDraft: RentReceiptDraftDto | null = null;
+let savedDraftCache: RentReceiptDraftDto | null = null;
 const personsRefetch = vi.fn();
 const companiesRefetch = vi.fn();
 const leaseRefetch = vi.fn();
@@ -81,6 +82,7 @@ vi.mock("@/api/endpoints", () => ({
 
 vi.mock("@/api/queries", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/queries")>();
+  const { useQueryClient } = await import("@tanstack/react-query");
   return {
     ...actual,
     usePersons: () => ({
@@ -109,10 +111,28 @@ vi.mock("@/api/queries", async (importOriginal) => {
       refetch: companiesRefetch,
     }),
     useActiveRentReceipt: () => ({ data: activeReceipt, isPending: false }),
-    useSavedRentReceiptDraft: () => ({
-      data: savedDraft,
-      isPending: false,
-    }),
+    // Reads the real query cache when the test seeds it, so a stale saved row
+    // behaves like the production query after a save.
+    useSavedRentReceiptDraft: (
+      month: string,
+      landlordId: number | null,
+      tenantId: number | null,
+      tenantCompanyId: number | null,
+    ) => {
+      const queryClient = useQueryClient();
+      const cached = queryClient.getQueryData<RentReceiptDraftDto | null>(
+        actual.queryKeys.rentReceiptDraft(
+          month,
+          landlordId,
+          tenantId,
+          tenantCompanyId,
+        ),
+      );
+      return {
+        data: cached === undefined ? savedDraft : cached,
+        isPending: false,
+      };
+    },
     useSignatures: (personId: number | null) => ({
       data: signaturesUndefined
         ? undefined
@@ -185,6 +205,12 @@ function renderPage() {
   const queryClient = new QueryClient();
   queryClient.setQueryData(queryKeys.rentReceiptActive(MONTH), null);
   queryClient.setQueryData(queryKeys.rentReceipts(null, MONTH), []);
+  if (savedDraftCache) {
+    queryClient.setQueryData(
+      queryKeys.rentReceiptDraft(MONTH, 1, 2, null),
+      savedDraftCache,
+    );
+  }
 
   render(
     <QueryClientProvider client={queryClient}>
@@ -230,6 +256,7 @@ describe("GenerateRentReceiptPage", () => {
     companiesError = null;
     personsError = null;
     savedDraft = null;
+    savedDraftCache = null;
     personsRefetch.mockReset();
     companiesRefetch.mockReset();
     leaseRefetch.mockReset();
@@ -1035,6 +1062,69 @@ describe("GenerateRentReceiptPage", () => {
       "40.00",
     );
     expect(useRentReceiptDraft.getState().dirty).toBe(false);
+  });
+
+  it("keeps an unsaved edit and clears the draft pane when generating after a save", async () => {
+    const saved: RentReceiptDraftDto = {
+      id: 40,
+      month: MONTH,
+      landlordId: 1,
+      tenantId: 2,
+      periodStart: "2026-01-01",
+      periodEnd: "2026-01-31",
+      rentExclCharges: "1200.00",
+      charges: "0.00",
+      paymentDate: "2026-01-05",
+      issueDate: "2026-01-05",
+      savedAt: "2026-01-10T09:00:00Z",
+    };
+    savedDraftCache = saved;
+    vi.mocked(api.rentReceipts.create).mockResolvedValue({
+      id: 1,
+      month: MONTH,
+      version: 1,
+      total: "1500.00",
+    });
+
+    const queryClient = renderPage();
+    const user = userEvent.setup();
+    const rent = await screen.findByLabelText("Loyer hors charges");
+
+    // The saved draft still hydrates normally on first load.
+    await waitFor(() => expect(rent).toHaveValue("1200.00"));
+    expect(useRentReceiptDraft.getState().draftId).toBe(40);
+
+    // Saving replaces the active row: the refetched cache holds the new id.
+    await user.click(
+      screen.getByRole("button", { name: "Enregistrer le brouillon" }),
+    );
+    await waitFor(() =>
+      expect(useRentReceiptDraft.getState().draftId).toBe(50),
+    );
+    queryClient.setQueryData(queryKeys.rentReceiptDraft(MONTH, 1, 2, null), {
+      ...saved,
+      id: 50,
+      savedAt: "2026-01-15T10:30:00Z",
+    });
+
+    // Edit after the save, without saving again, then generate.
+    await user.clear(rent);
+    await user.type(rent, "1500.00");
+
+    await user.click(
+      await screen.findByRole("button", { name: /Générer la quittance/ }),
+    );
+
+    await waitFor(() =>
+      expect(api.rentReceipts.create).toHaveBeenCalledWith(
+        expect.objectContaining({ rentExclCharges: "1500.00" }),
+      ),
+    );
+    await waitFor(() =>
+      expect(useRentReceiptDraft.getState().draftId).toBeNull(),
+    );
+    expect(rent).toHaveValue("1500.00");
+    expect(screen.getByText("Aucun brouillon enregistré")).toBeVisible();
   });
 
   it("disables the draft save button while a save is in flight", async () => {

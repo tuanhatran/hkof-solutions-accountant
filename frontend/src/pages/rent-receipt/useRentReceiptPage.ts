@@ -303,6 +303,19 @@ export function useRentReceiptPage() {
     try {
       const rentReceipt = await api.rentReceipts.create(requestBody);
       setResult(rentReceipt);
+      // The generation deleted the scope draft server-side: drop the cached row
+      // first, otherwise the hydration effect reloads it once `draftId` is gone.
+      for (const month of new Set([submittedValues.month, draft.month])) {
+        queryClient.setQueryData(
+          queryKeys.rentReceiptDraft(
+            month,
+            selectedLandlordId,
+            selectedTenantId,
+            selectedTenantCompanyId,
+          ),
+          null,
+        );
+      }
       draft.markGenerated();
       await queryClient.invalidateQueries({
         queryKey: queryKeys.rentReceiptsAll,
