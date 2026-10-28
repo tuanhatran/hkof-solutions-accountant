@@ -3,6 +3,7 @@ package fr.hkof.homeofficeexpenses.web.dto;
 import java.time.Instant;
 import java.util.List;
 
+import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.AdditionalCharge;
 import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.ExpenseLineRequest;
 
 /**
@@ -25,7 +26,8 @@ public final class DocumentDraftDtos {
             String charges,
             String paymentDate,
             String issueDate,
-            Long templateId) {
+            Long templateId,
+            List<AdditionalCharge> additionalCharges) {
     }
 
     public record RentReceiptDraftDto(
@@ -41,7 +43,8 @@ public final class DocumentDraftDtos {
             String paymentDate,
             String issueDate,
             Long templateId,
-            Instant savedAt) {
+            Instant savedAt,
+            List<AdditionalCharge> additionalCharges) {
     }
 
     public record StatementDraftRequest(

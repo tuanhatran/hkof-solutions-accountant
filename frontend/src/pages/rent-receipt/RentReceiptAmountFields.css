@@ -13,6 +13,26 @@
     @apply pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft;
   }
 
+  .rent-receipt-amount-fields-charges {
+    @apply space-y-3;
+  }
+
+  .rent-receipt-amount-fields-charges-title {
+    @apply text-[13px] font-semibold text-ink;
+  }
+
+  .rent-receipt-amount-fields-charges-list {
+    @apply space-y-3;
+  }
+
+  .rent-receipt-amount-fields-charge {
+    @apply grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_160px_auto];
+  }
+
+  .rent-receipt-amount-fields-charges-actions {
+    @apply flex justify-start;
+  }
+
   .rent-receipt-amount-fields-total {
     @apply flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/15 bg-accent-soft/45 px-4 py-3.5;
   }

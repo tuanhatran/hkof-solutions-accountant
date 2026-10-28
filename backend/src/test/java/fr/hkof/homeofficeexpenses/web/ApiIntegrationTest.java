@@ -185,7 +185,7 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.totalInWords")
                         .value("neuf cent soixante-dix-huit euros et cinquante-sept centimes"));
 
-        mockMvc.perform(post("/api/expense-statements/preview")
+        MvcResult statementPreview = mockMvc.perform(post("/api/expense-statements/preview")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"companyId":%d,"month":"2026-11","complete":true,"lines":[
@@ -194,7 +194,12 @@ class ApiIntegrationTest {
                                 ]}
                                 """.formatted(seededId("/api/companies", "HKOF"))))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_PDF));
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                .andReturn();
+        // The seeded CEO has no issue place: the note de frais falls back to the company place.
+        String statementText = pdfText(statementPreview.getResponse().getContentAsByteArray())
+                .replace('\u00A0', ' ');
+        assertThat(statementText).matches("(?s).*Fait à.*Paris.*");
 
         String statement = mockMvc.perform(post("/api/expense-statements")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -664,6 +669,126 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.issuePlace").value(org.hamcrest.Matchers.nullValue()));
 
         mockMvc.perform(delete("/api/persons/{id}", personId)).andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("Additional rent receipt charges are validated, totalled, saved and printed")
+    void additionalRentReceiptCharges() throws Exception {
+        long landlordId = seededId("/api/persons", "Nom du bailleur");
+        long companyId = seededId("/api/companies", "HKOF");
+
+        String created = mockMvc.perform(post("/api/rent-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"month":"2028-01","landlordId":%d,"tenantCompanyId":%d,
+                                 "additionalCharges":[
+                                   {"label":"  Eau  ","amount":"15.5"},
+                                   {"label":"Ordures ménagères","amount":"4.50"}]}
+                                """.formatted(landlordId, companyId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.total").value("1320.00"))
+                .andExpect(jsonPath("$.additionalCharges.length()").value(2))
+                .andExpect(jsonPath("$.additionalCharges[0].label").value("Eau"))
+                .andExpect(jsonPath("$.additionalCharges[0].amount").value("15.50"))
+                .andExpect(jsonPath("$.additionalCharges[1].label").value("Ordures ménagères"))
+                .andExpect(jsonPath("$.additionalCharges[1].amount").value("4.50"))
+                .andReturn().getResponse().getContentAsString();
+        long rentReceiptId = ((Number) JsonPath.read(created, "$.id")).longValue();
+
+        mockMvc.perform(get("/api/rent-receipts/{id}", rentReceiptId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value("1320.00"))
+                .andExpect(jsonPath("$.additionalCharges[1].label").value("Ordures ménagères"));
+
+        String text = pdfText(mockMvc.perform(get("/api/rent-receipts/{id}/pdf", rentReceiptId))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsByteArray());
+        assertThat(text).contains("Eau").contains("Ordures ménagères");
+        assertThat(text.replace('\u00A0', ' ')).contains("1 320,00");
+
+        mockMvc.perform(post("/api/rent-receipts/preview")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"month":"2028-02","landlordId":%d,"tenantCompanyId":%d,
+                                 "additionalCharges":[{"label":"Eau","amount":"20.00"}]}
+                                """.formatted(landlordId, companyId)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF));
+        mockMvc.perform(get("/api/rent-receipts").param("month", "2028-02"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+
+        mockMvc.perform(post("/api/rent-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"month":"2028-01","landlordId":%d,"tenantCompanyId":%d,
+                                 "additionalCharges":[{"label":" ","amount":"10.00"}]}
+                                """.formatted(landlordId, companyId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(
+                        "Le libellé d'une charge supplémentaire est obligatoire."));
+        mockMvc.perform(post("/api/rent-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"month":"2028-01","landlordId":%d,"tenantCompanyId":%d,
+                                 "additionalCharges":[{"label":"Eau","amount":"0.00"}]}
+                                """.formatted(landlordId, companyId)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("A rent receipt draft round-trips its additional charges")
+    void rentReceiptDraftAdditionalCharges() throws Exception {
+        long landlordId = seededId("/api/persons", "Nom du bailleur");
+        long companyId = seededId("/api/companies", "HKOF");
+
+        mockMvc.perform(put("/api/drafts/rent-receipts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"month":"2028-03","landlordId":%d,"tenantCompanyId":%d,
+                                 "periodStart":"2028-03-01","periodEnd":"2028-03-31",
+                                 "rentExclCharges":"1300.00","charges":"0.00",
+                                 "paymentDate":"2028-03-05","issueDate":"2028-03-05",
+                                 "additionalCharges":[{"label":"Eau","amount":"15.50"}]}
+                                """.formatted(landlordId, companyId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.additionalCharges.length()").value(1))
+                .andExpect(jsonPath("$.additionalCharges[0].label").value("Eau"))
+                .andExpect(jsonPath("$.additionalCharges[0].amount").value("15.50"));
+
+        mockMvc.perform(get("/api/drafts/rent-receipts")
+                        .param("month", "2028-03")
+                        .param("landlordId", String.valueOf(landlordId))
+                        .param("tenantCompanyId", String.valueOf(companyId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.additionalCharges[0].label").value("Eau"));
+    }
+
+    @Test
+    @DisplayName("An employee issue place is trimmed, persisted and clearable")
+    void employeeIssuePlace() throws Exception {
+        long companyId = seededId("/api/companies", "HKOF");
+        String created = mockMvc.perform(post("/api/companies/{companyId}/employees", companyId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"firstName":"Jeanne","lastName":"Lieu","email":null,"address":null,
+                                 "title":"EMPLOYEE","issuePlace":"  Lyon  "}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.issuePlace").value("Lyon"))
+                .andReturn().getResponse().getContentAsString();
+        long employeeId = ((Number) JsonPath.read(created, "$.id")).longValue();
+
+        mockMvc.perform(put("/api/employees/{id}", employeeId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"firstName":"Jeanne","lastName":"Lieu","email":null,"address":null,
+                                 "title":"EMPLOYEE","issuePlace":"   "}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.issuePlace").value(org.hamcrest.Matchers.nullValue()));
+
+        mockMvc.perform(delete("/api/employees/{id}", employeeId)).andExpect(status().isNoContent());
     }
 
     private long createdPerson(String name) throws Exception {

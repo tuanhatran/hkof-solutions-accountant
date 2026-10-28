@@ -3,7 +3,10 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import type { RentReceiptDraftDto } from "@/api/endpoints";
 import type { LeaseDto } from "@/api/types";
 import { todayDate, currentMonth, periodOfMonth } from "@/lib/dates";
-import { tenantKeyFromLease } from "@/lib/validation";
+import {
+  tenantKeyFromLease,
+  type AdditionalChargeFormValues,
+} from "@/lib/validation";
 
 /** Editable values compared to the baseline captured at init/select/load/save. */
 interface DraftSnapshot {
@@ -14,6 +17,7 @@ interface DraftSnapshot {
   charges: string;
   paymentDate: string;
   issueDate: string;
+  additionalCharges: AdditionalChargeFormValues[];
   templateId: number | null;
   landlordId: number | null;
   tenantKey: string | null;
@@ -36,6 +40,7 @@ interface RentReceiptDraftState extends DraftSnapshot {
         | "charges"
         | "paymentDate"
         | "issueDate"
+        | "additionalCharges"
       >
     >,
   ) => void;
@@ -58,6 +63,20 @@ const initialMonth = currentMonth();
 const initialPeriod = periodOfMonth(initialMonth);
 const today = todayDate();
 
+function sameCharges(
+  left: AdditionalChargeFormValues[],
+  right: AdditionalChargeFormValues[],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every(
+      (charge, index) =>
+        charge.label === right[index]?.label &&
+        charge.amount === right[index]?.amount,
+    )
+  );
+}
+
 function snapshotOf(state: DraftSnapshot): DraftSnapshot {
   return {
     month: state.month,
@@ -67,6 +86,7 @@ function snapshotOf(state: DraftSnapshot): DraftSnapshot {
     charges: state.charges,
     paymentDate: state.paymentDate,
     issueDate: state.issueDate,
+    additionalCharges: state.additionalCharges.map((charge) => ({ ...charge })),
     templateId: state.templateId,
     landlordId: state.landlordId,
     tenantKey: state.tenantKey,
@@ -89,6 +109,7 @@ function changedFromBaseline(
     current.charges !== baseline.charges ||
     current.paymentDate !== baseline.paymentDate ||
     current.issueDate !== baseline.issueDate ||
+    !sameCharges(current.additionalCharges, baseline.additionalCharges ?? []) ||
     current.templateId !== baseline.templateId ||
     current.landlordId !== baseline.landlordId ||
     current.tenantKey !== baseline.tenantKey
@@ -115,6 +136,7 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
       charges: "",
       paymentDate: today,
       issueDate: today,
+      additionalCharges: [],
       templateId: null,
       landlordId: null,
       tenantKey: null,
@@ -227,6 +249,12 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
             charges: draft.charges ?? "",
             paymentDate: draft.paymentDate ?? "",
             issueDate: draft.issueDate ?? "",
+            additionalCharges: (draft.additionalCharges ?? []).map(
+              (charge) => ({
+                label: charge.label,
+                amount: charge.amount,
+              }),
+            ),
             templateId: draft.templateId ?? null,
             landlordId: draft.landlordId ?? null,
             tenantKey: tenantKeyOf(draft),
@@ -259,7 +287,7 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
     }),
     {
       name: "homeofficeexpenses.receipt-draft",
-      version: 5,
+      version: 6,
       storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
         month: state.month,
@@ -269,6 +297,7 @@ export const useRentReceiptDraft = create<RentReceiptDraftState>()(
         charges: state.charges,
         paymentDate: state.paymentDate,
         issueDate: state.issueDate,
+        additionalCharges: state.additionalCharges,
         templateId: state.templateId,
         landlordId: state.landlordId,
         tenantKey: state.tenantKey,

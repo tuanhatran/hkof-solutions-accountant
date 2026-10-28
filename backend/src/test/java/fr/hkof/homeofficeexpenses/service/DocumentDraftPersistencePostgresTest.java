@@ -52,7 +52,8 @@ class DocumentDraftPersistencePostgresTest {
     private static RentReceiptDraftRequest rentReceipt(String month, String rentExclCharges) {
         return new RentReceiptDraftRequest(
                 month, 4L, 7L, null,
-                month + "-01", month + "-28", rentExclCharges, "50", month + "-05", month + "-05", 9L);
+                month + "-01", month + "-28", rentExclCharges, "50", month + "-05", month + "-05", 9L,
+                null);
     }
 
     private static StatementDraftRequest statement(String month, String amount) {

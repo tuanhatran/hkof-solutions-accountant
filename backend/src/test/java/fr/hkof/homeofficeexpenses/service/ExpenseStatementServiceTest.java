@@ -149,7 +149,7 @@ class ExpenseStatementServiceTest {
         when(rentReceiptService.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).thenReturn(rentReceipt);
         RentReceiptDto receiptDto = new RentReceiptDto(9L, COMPANY_ID, "HKOF", "2026-10", 1L, 2L, null,
                 "Bailleur", "Locataire", null, null, "900.00", "50.00", "950.00", null, null, 1, "ACTIVE",
-                1L, "Quittance", 1, null, true);
+                1L, "Quittance", 1, null, true, null);
         when(rentReceiptService.toDto(rentReceipt)).thenReturn(receiptDto);
         when(expenseItemService.entity(COMPANY_ID, "loyer"))
                 .thenReturn(item("loyer", "Quittance de loyer", 10));

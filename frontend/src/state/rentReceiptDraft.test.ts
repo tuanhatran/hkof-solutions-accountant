@@ -19,6 +19,7 @@ function resetDraft() {
     charges: "",
     paymentDate: "2026-01-05",
     issueDate: "2026-01-05",
+    additionalCharges: [],
     templateId: null,
     landlordId: null,
     tenantKey: null,
@@ -168,6 +169,57 @@ describe("useRentReceiptDraft", () => {
     expect(state.dirty).toBe(false);
   });
 
+  it("keeps the additional charges in the dirty snapshot after a save", () => {
+    useRentReceiptDraft.getState().selectPair(4, "person:7", LEASE);
+    useRentReceiptDraft.getState().update({
+      additionalCharges: [{ label: "Eau", amount: "15.50" }],
+    });
+
+    expect(useRentReceiptDraft.getState().dirty).toBe(true);
+    expect(useRentReceiptDraft.getState().additionalCharges).toEqual([
+      { label: "Eau", amount: "15.50" },
+    ]);
+
+    useRentReceiptDraft.getState().markSaved({
+      id: 23,
+      month: "2026-01",
+      landlordId: 4,
+      tenantId: 7,
+      savedAt: "2026-10-05T10:00:00Z",
+    });
+
+    const state = useRentReceiptDraft.getState();
+    expect(state.dirty).toBe(false);
+    expect(state.additionalCharges).toEqual([
+      { label: "Eau", amount: "15.50" },
+    ]);
+
+    useRentReceiptDraft.getState().update({
+      additionalCharges: [
+        { label: "Eau", amount: "15.50" },
+        { label: "Ordures", amount: "4.50" },
+      ],
+    });
+    expect(useRentReceiptDraft.getState().dirty).toBe(true);
+  });
+
+  it("hydrates the additional charges from a server draft", () => {
+    useRentReceiptDraft.getState().loadFromDraft({
+      id: 24,
+      month: "2026-01",
+      landlordId: 4,
+      tenantId: 7,
+      additionalCharges: [{ label: "Eau", amount: "15.50" }],
+      savedAt: "2026-10-05T09:30:00Z",
+    });
+
+    const state = useRentReceiptDraft.getState();
+    expect(state.additionalCharges).toEqual([
+      { label: "Eau", amount: "15.50" },
+    ]);
+    expect(state.dirty).toBe(false);
+  });
+
   it("records a successful save and clears the dirty state", () => {
     useRentReceiptDraft.getState().selectPair(4, "person:7", LEASE);
     useRentReceiptDraft.getState().update({ rentExclCharges: "1250.00" });
@@ -192,7 +244,7 @@ describe("useRentReceiptDraft", () => {
       "homeofficeexpenses.receipt-draft",
       JSON.stringify({
         state: { month: "2026-01", rentExclCharges: "1300.00", dirty: true },
-        version: 5,
+        version: 6,
       }),
     );
 

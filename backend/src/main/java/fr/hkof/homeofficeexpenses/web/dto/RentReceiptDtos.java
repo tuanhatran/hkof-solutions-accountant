@@ -2,10 +2,15 @@ package fr.hkof.homeofficeexpenses.web.dto;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 
 public final class RentReceiptDtos {
 
     private RentReceiptDtos() {
+    }
+
+    /** Free additional charge of a rent receipt, proposed by the user, validated server-side. */
+    public record AdditionalCharge(String label, String amount) {
     }
 
     public record RentReceiptRequest(
@@ -21,7 +26,8 @@ public final class RentReceiptDtos {
             String paymentDate,
             String issueDate,
             Long templateId,
-            Long signatureId) {
+            Long signatureId,
+            List<AdditionalCharge> additionalCharges) {
     }
 
     public record RentReceiptDto(
@@ -47,7 +53,8 @@ public final class RentReceiptDtos {
             String templateName,
             Integer templateVersion,
             Instant createdAt,
-            boolean pdfAvailable) {
+            boolean pdfAvailable,
+            List<AdditionalCharge> additionalCharges) {
     }
 
     public record ReceiptDto(

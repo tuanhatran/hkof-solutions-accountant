@@ -20,6 +20,7 @@ import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.service.Amounts;
 import fr.hkof.homeofficeexpenses.service.CalculationService;
 import fr.hkof.homeofficeexpenses.service.CompanyService;
+import fr.hkof.homeofficeexpenses.service.EmployeeService;
 import fr.hkof.homeofficeexpenses.service.LeaseService;
 import fr.hkof.homeofficeexpenses.service.NumberToWords;
 import fr.hkof.homeofficeexpenses.service.SignatureService;
@@ -37,12 +38,14 @@ public class TemplateDataService {
     private final CompanyService companyService;
     private final SignatureService signatureService;
     private final LeaseService leaseService;
+    private final EmployeeService employeeService;
 
     public TemplateDataService(CompanyService companyService, SignatureService signatureService,
-            LeaseService leaseService) {
+            LeaseService leaseService, EmployeeService employeeService) {
         this.companyService = companyService;
         this.signatureService = signatureService;
         this.leaseService = leaseService;
+        this.employeeService = employeeService;
     }
 
     public Map<String, Object> dataRentReceipt(Company company, Person landlord, Person tenant, Company tenantCompany,
@@ -64,6 +67,7 @@ public class TemplateDataService {
                 "fin", Amounts.formatDate(rentReceipt.getPeriodEnd())));
         data.put("loyer_hc", Amounts.formatEUR(rentReceipt.getRentExclCharges()));
         data.put("charges", Amounts.formatEUR(rentReceipt.getCharges()));
+        data.put("charges_supplementaires", additionalCharges(rentReceipt));
         data.put("total", Amounts.formatEUR(rentReceipt.getTotal()));
         data.put("total_en_lettres", NumberToWords.toWords(rentReceipt.getTotal()));
         data.put("date_paiement", Amounts.formatDate(rentReceipt.getPaymentDate()));
@@ -83,6 +87,30 @@ public class TemplateDataService {
             return landlordPlace.trim();
         }
         return company == null ? "" : text(company.getIssuePlace());
+    }
+
+    /**
+     * The first CEO employee place wins, then the company place. The fallback keeps a
+     * statement printable when no CEO place is configured.
+     */
+    private String statementIssuePlace(Company company) {
+        String ceoPlace = company == null ? null
+                : employeeService.ceoIssuePlace(company.getId()).orElse(null);
+        if (ceoPlace != null && !ceoPlace.isBlank()) {
+            return ceoPlace.trim();
+        }
+        return company == null ? "" : text(company.getIssuePlace());
+    }
+
+    private List<Map<String, Object>> additionalCharges(RentReceipt rentReceipt) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (var charge : rentReceipt.getAdditionalCharges()) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("libelle", text(charge.getLabel()));
+            row.put("montant", Amounts.formatEUR(charge.getAmount()));
+            rows.add(row);
+        }
+        return rows;
     }
 
     public Map<String, Object> dataStatement(Company company, ExpenseStatement statement, boolean complete,
@@ -111,7 +139,7 @@ public class TemplateDataService {
         data.put("total_en_lettres", NumberToWords.toWords(statement.getTotal()));
         data.put("base_prorata", statementProRataDetail(company, statement));
         data.put("date_emission", Amounts.formatDate(LocalDate.now()));
-        data.put("lieu", text(company.getIssuePlace()));
+        data.put("lieu", statementIssuePlace(company));
         data.put("complete", complete);
         data.put("signature", text(signature));
         return data;
@@ -176,7 +204,7 @@ public class TemplateDataService {
         data.put("total_en_lettres", "mille cent douze euros et quarante-sept centimes");
         data.put("base_prorata", proRataDetail(company));
         data.put("date_emission", Amounts.formatDate(LocalDate.now()));
-        data.put("lieu", text(company.getIssuePlace()));
+        data.put("lieu", statementIssuePlace(company));
         data.put("complete", complete);
         data.put("signature", text(signature));
         return data;

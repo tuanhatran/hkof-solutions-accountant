@@ -56,7 +56,26 @@ public final class CalculationService {
     }
 
     public static BigDecimal totalRentReceipt(BigDecimal rentExclCharges, BigDecimal charges) {
-        return rentExclCharges.add(charges).setScale(2, RoundingMode.HALF_UP);
+        return totalRentReceipt(rentExclCharges, charges, null);
+    }
+
+    /**
+     * Rent receipt total: rent, charges provision and every additional charge, summed
+     * with BIGDECIMAL and rounded HALF_UP at scale 2. Null values count as zero.
+     */
+    public static BigDecimal totalRentReceipt(BigDecimal rentExclCharges, BigDecimal charges,
+            List<BigDecimal> additionalAmounts) {
+        BigDecimal total = zero(rentExclCharges).add(zero(charges));
+        if (additionalAmounts != null) {
+            for (BigDecimal amount : additionalAmounts) {
+                total = total.add(zero(amount));
+            }
+        }
+        return total.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private static BigDecimal zero(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
     }
 
     /**

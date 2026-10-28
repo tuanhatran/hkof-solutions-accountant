@@ -1722,6 +1722,22 @@ components:
           type: string
         issuePlace:
           type: string
+    AdditionalCharge:
+      type: object
+      required:
+        - label
+        - amount
+      properties:
+        label:
+          type: string
+          maxLength: 120
+          description: Libellé libre de la charge supplémentaire d'une quittance.
+        amount:
+          type: string
+          pattern: "^[0-9]+(\\.[0-9]{1,2})?$"
+          description: >-
+            Montant en euros, strictement positif, fourni sous forme de chaîne
+            décimale. Il entre dans le total calculé par le backend.
     EmployeeRequest:
       type: object
       required:
@@ -1758,6 +1774,14 @@ components:
           description: >-
             Intitulé descriptif du salarié ; il ne donne aucun droit tant que
             le contrôle d'accès n'est pas implémenté.
+        issuePlace:
+          type:
+            - string
+            - "null"
+          description: >-
+            Lieu d'émission facultatif du salarié. Le premier lieu non vide
+            d'un salarié CEO est imprimé sur la note de frais de la société,
+            sinon le lieu d'émission de la société s'applique.
     EmployeeDto:
       type: object
       properties:
@@ -1791,6 +1815,11 @@ components:
             - CFO
             - ACCOUNTANT
             - EMPLOYEE
+        issuePlace:
+          type:
+            - string
+            - "null"
+          description: Lieu d'émission facultatif du salarié.
     PersonRequest:
       type: object
       required:
@@ -2194,6 +2223,15 @@ components:
         signatureId:
           type: integer
           format: int64
+        additionalCharges:
+          type: array
+          maxItems: 20
+          description: >-
+            Charges supplémentaires libres ajoutées au total de la quittance.
+            Chaque libellé est obligatoire (120 caractères maximum) et chaque
+            montant est strictement positif.
+          items:
+            $ref: "#/components/schemas/AdditionalCharge"
     RentReceiptDto:
       type: object
       properties:
@@ -2266,6 +2304,11 @@ components:
           format: date-time
         pdfAvailable:
           type: boolean
+        additionalCharges:
+          type: array
+          description: Charges supplémentaires incluses dans le total de cette version.
+          items:
+            $ref: "#/components/schemas/AdditionalCharge"
     ReceiptDto:
       type: object
       properties:
@@ -2491,6 +2534,12 @@ components:
             - integer
             - "null"
           format: int64
+        additionalCharges:
+          type: array
+          maxItems: 20
+          description: Charges supplémentaires conservées dans le brouillon.
+          items:
+            $ref: "#/components/schemas/AdditionalCharge"
     RentReceiptDraftDto:
       type: object
       properties:
@@ -2530,6 +2579,11 @@ components:
         savedAt:
           type: string
           format: date-time
+        additionalCharges:
+          type: array
+          description: Charges supplémentaires restaurées avec le brouillon.
+          items:
+            $ref: "#/components/schemas/AdditionalCharge"
     StatementDraftRequest:
       type: object
       required:

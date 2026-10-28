@@ -289,6 +289,7 @@ describe("GenerateRentReceiptPage", () => {
       templateId: null,
       landlordId: 1,
       tenantKey: "person:2",
+      additionalCharges: [],
       initialized: true,
       dirty: false,
     });
@@ -1205,6 +1206,138 @@ describe("GenerateRentReceiptPage", () => {
         "Affichage estimé. Le total du PDF est recalculé avec arrondi au centime.",
       ),
     ).toBeVisible();
+  });
+
+  it("adds removable additional charges to the estimate with French validation", async () => {
+    renderPage();
+    const user = userEvent.setup();
+
+    expect(screen.queryByText("Charges supplémentaires")).toBeNull();
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter une charge supplémentaire" }),
+    );
+    expect(screen.getByText("Charges supplémentaires")).toBeVisible();
+
+    const label = screen.getByLabelText(
+      "Libellé de la charge supplémentaire 1",
+    );
+    const amount = screen.getByLabelText(
+      "Montant de la charge supplémentaire 1",
+    );
+    await user.type(label, "Eau");
+    await user.type(amount, "20,00");
+    expect(screen.getByText(/1\s?320,00/)).toBeVisible();
+
+    await user.clear(label);
+    expect(
+      await screen.findByText(
+        "Le libellé de la charge supplémentaire est obligatoire.",
+      ),
+    ).toBeVisible();
+    await user.type(label, "Eau");
+    await user.clear(amount);
+    await user.type(amount, "0");
+    expect(
+      await screen.findByText(
+        "Le montant de la charge supplémentaire doit être strictement positif.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: /Générer la quittance/ }),
+    ).toBeDisabled();
+
+    await user.clear(amount);
+    await user.type(amount, "20,00");
+    await user.click(
+      screen.getByRole("button", {
+        name: "Retirer la charge supplémentaire 1",
+      }),
+    );
+    expect(screen.queryByText("Charges supplémentaires")).toBeNull();
+    expect(screen.getByText(/1\s?300,00/)).toBeVisible();
+  });
+
+  it("sends additional charges to the preview, the generation and the saved draft", async () => {
+    vi.mocked(api.rentReceipts.create).mockResolvedValue({
+      id: 1,
+      month: MONTH,
+      version: 1,
+      total: "1320.00",
+    });
+
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter une charge supplémentaire" }),
+    );
+    await user.type(
+      screen.getByLabelText("Libellé de la charge supplémentaire 1"),
+      "Eau",
+    );
+    await user.type(
+      screen.getByLabelText("Montant de la charge supplémentaire 1"),
+      "20.00",
+    );
+
+    await waitFor(() => expect(lastPreviewLoader).not.toBeNull());
+    await lastPreviewLoader?.(new AbortController().signal);
+    expect(api.rentReceipts.preview).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        additionalCharges: [{ label: "Eau", amount: "20.00" }],
+      }),
+      expect.anything(),
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: /Générer la quittance/ }),
+    );
+    await waitFor(() =>
+      expect(api.rentReceipts.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          additionalCharges: [{ label: "Eau", amount: "20.00" }],
+        }),
+      ),
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Enregistrer le brouillon" }),
+    );
+    await waitFor(() =>
+      expect(api.drafts.saveRentReceipt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          additionalCharges: [{ label: "Eau", amount: "20.00" }],
+        }),
+      ),
+    );
+  });
+
+  it("restores the additional charges of a saved draft", async () => {
+    savedDraft = {
+      id: 60,
+      month: MONTH,
+      landlordId: 1,
+      tenantId: 2,
+      periodStart: "2026-01-02",
+      periodEnd: "2026-01-30",
+      rentExclCharges: "1200.00",
+      charges: "40.00",
+      paymentDate: "2026-01-04",
+      issueDate: "2026-01-03",
+      additionalCharges: [{ label: "Eau", amount: "15.50" }],
+      savedAt: "2026-01-10T09:00:00Z",
+    };
+
+    renderPage();
+
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText("Libellé de la charge supplémentaire 1"),
+      ).toHaveValue("Eau"),
+    );
+    expect(
+      screen.getByLabelText("Montant de la charge supplémentaire 1"),
+    ).toHaveValue("15.50");
+    expect(screen.getByText(/1\s?255,50/)).toBeVisible();
   });
 
   it("switches the mobile input and preview panels", async () => {

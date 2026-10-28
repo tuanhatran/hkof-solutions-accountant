@@ -20,6 +20,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import fr.hkof.homeofficeexpenses.domain.Address;
 import fr.hkof.homeofficeexpenses.domain.Company;
@@ -27,6 +28,7 @@ import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
 import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
+import fr.hkof.homeofficeexpenses.domain.RentReceiptAdditionalCharge;
 import fr.hkof.homeofficeexpenses.domain.Signature;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateFormat;
@@ -35,6 +37,7 @@ import fr.hkof.homeofficeexpenses.repository.PersonRepository;
 import fr.hkof.homeofficeexpenses.repository.RentReceiptRepository;
 import fr.hkof.homeofficeexpenses.service.template.TemplateDataService;
 import fr.hkof.homeofficeexpenses.service.template.TemplateService;
+import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.AdditionalCharge;
 import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.RentReceiptDto;
 import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.RentReceiptRequest;
 
@@ -139,17 +142,22 @@ class RentReceiptServiceTest {
     private RentReceiptRequest request(String month, String periodStart, String periodEnd, String rent, String charges,
             Long templateId, Long signatureId) {
         return new RentReceiptRequest(month, COMPANY_ID, 1L, 2L, null, periodStart, periodEnd, rent, charges, null, null,
-                templateId, signatureId);
+                templateId, signatureId, null);
+    }
+
+    private RentReceiptRequest requestWithCharges(String month, List<AdditionalCharge> additionalCharges) {
+        return new RentReceiptRequest(month, COMPANY_ID, 1L, 2L, null, null, null, null, null, null, null,
+                null, null, additionalCharges);
     }
 
     private RentReceiptRequest personRequest(String month, Long templateId, Long signatureId) {
         return new RentReceiptRequest(month, null, 1L, 2L, null, null, null, null, null, null, null,
-                templateId, signatureId);
+                templateId, signatureId, null);
     }
 
     private RentReceiptRequest companyRequest(String month, Long templateId, Long signatureId) {
         return new RentReceiptRequest(month, COMPANY_ID, 1L, null, TENANT_COMPANY_ID, null, null, null, null, null, null,
-                templateId, signatureId);
+                templateId, signatureId, null);
     }
 
     private void stubGenerationDependencies(TemplateDocument template) {
@@ -201,6 +209,79 @@ class RentReceiptServiceTest {
         assertThat(dto.paymentDate()).isEqualTo(LocalDate.of(2026, 10, 1));
         verify(storage).storePdf("quittance_2026-10_l1_t2_v1.pdf", new byte[]{1});
         verify(documentDraftService).deleteActiveRentReceipt("2026-10", 1L, 2L, null);
+    }
+
+    @Test
+    @DisplayName("Generation adds the additional charges to the total and persists immutable child rows")
+    void generateWithAdditionalCharges() {
+        TemplateDocument template = template(4L, TemplateType.RENT_RECEIPT, "Quittance", 2);
+        stubGenerationDependencies(template);
+        when(repository.findFirstByMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc("2026-10", 1L, 2L))
+                .thenReturn(Optional.empty());
+
+        RentReceiptDto dto = service.generate(requestWithCharges("2026-10", List.of(
+                new AdditionalCharge("  Eau  ", "15,50"),
+                new AdditionalCharge("Ordures ménagères", "4.50"))));
+
+        assertThat(dto.total()).isEqualTo("970.00");
+        assertThat(dto.additionalCharges()).containsExactly(
+                new AdditionalCharge("Eau", "15.50"),
+                new AdditionalCharge("Ordures ménagères", "4.50"));
+
+        ArgumentCaptor<RentReceipt> captor = ArgumentCaptor.forClass(RentReceipt.class);
+        verify(repository).save(captor.capture());
+        List<RentReceiptAdditionalCharge> rows = captor.getValue().getAdditionalCharges();
+        assertThat(rows).hasSize(2);
+        assertThat(rows.get(0).getLabel()).isEqualTo("Eau");
+        assertThat(rows.get(0).getAmount()).isEqualByComparingTo("15.50");
+        assertThat(rows.get(0).getPosition()).isZero();
+        assertThat(rows.get(1).getPosition()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Preview and generation reject invalid additional charges in French")
+    void generateRejectsInvalidAdditionalCharges() {
+        when(companies.entity(COMPANY_ID)).thenReturn(company(COMPANY_ID, "HKOF"));
+        when(leaseService.resolveLease(1L, 2L, null)).thenReturn(normalLease());
+
+        assertThatThrownBy(() -> service.generate(requestWithCharges("2026-10",
+                List.of(new AdditionalCharge(" ", "10.00")))))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Le libellé d'une charge supplémentaire est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("RENT_RECEIPT_ADDITIONAL_CHARGE_LABEL_REQUIRED"));
+        assertThatThrownBy(() -> service.generate(requestWithCharges("2026-10",
+                List.of(new AdditionalCharge("Eau", "0")))))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("strictement positif");
+        assertThatThrownBy(() -> service.generate(requestWithCharges("2026-10",
+                List.of(new AdditionalCharge("Eau", "-1")))))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("strictement positif");
+        assertThatThrownBy(() -> service.generate(requestWithCharges("2026-10",
+                List.of(new AdditionalCharge("x".repeat(121), "1.00")))))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Le libellé d'une charge supplémentaire ne peut pas dépasser 120 caractères.");
+        assertThatThrownBy(() -> service.generate(requestWithCharges("2026-10",
+                java.util.Collections.nCopies(21, new AdditionalCharge("Eau", "1.00")))))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Une quittance accepte au maximum 20 charges supplémentaires.");
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Preview uses the same additional charges and total as generation")
+    void previewWithAdditionalCharges() {
+        stubGenerationDependencies(template(4L, TemplateType.RENT_RECEIPT, "Quittance", 2));
+        when(pdfService.addWatermark(new byte[]{1})).thenReturn(new byte[]{2});
+
+        service.preview(requestWithCharges("2026-10", List.of(new AdditionalCharge("Eau", "20.00"))));
+
+        ArgumentCaptor<RentReceipt> captor = ArgumentCaptor.forClass(RentReceipt.class);
+        verify(templateDataService).dataRentReceipt(any(), any(), any(), any(), any(), captor.capture(), any());
+        assertThat(captor.getValue().getTotal()).isEqualByComparingTo("970.00");
+        assertThat(captor.getValue().getAdditionalCharges()).singleElement()
+                .satisfies(charge -> assertThat(charge.getAmount()).isEqualByComparingTo("20.00"));
     }
 
     @Test

@@ -26,6 +26,7 @@ import {
   parseTenantKey,
   rentReceiptSchema,
   tenantKeyFromLease,
+  type AdditionalChargeFormValues,
   type RentReceiptFormValues,
 } from "@/lib/validation";
 import { useDraftSaver } from "@/state/draftSaver";
@@ -68,6 +69,7 @@ export function useRentReceiptPage() {
     handleSubmit,
     watch,
     setValue,
+    getValues,
     formState: { errors, isValid },
   } = useForm<RentReceiptFormValues>({
     resolver: zodResolver(rentReceiptSchema),
@@ -82,11 +84,21 @@ export function useRentReceiptPage() {
       charges: draft.charges,
       paymentDate: draft.paymentDate,
       issueDate: draft.issueDate,
+      additionalCharges: draft.additionalCharges,
     },
   });
 
   const values = watch();
   const validation = rentReceiptSchema.safeParse(values);
+
+  // The draft store mirrors the rows so the persisted draft keeps them: compare a
+  // signature to avoid a set/update loop, whatever the array reference identity.
+  useEffect(() => {
+    const signature = JSON.stringify(values.additionalCharges ?? []);
+    if (signature !== JSON.stringify(draft.additionalCharges)) {
+      draft.update({ additionalCharges: values.additionalCharges ?? [] });
+    }
+  }, [values.additionalCharges, draft]);
 
   const selectedLandlordId = values.landlordId
     ? Number(values.landlordId)
@@ -219,6 +231,9 @@ export function useRentReceiptPage() {
     setValue("charges", saved.charges ?? "", { shouldValidate: true });
     setValue("paymentDate", saved.paymentDate ?? "", { shouldValidate: true });
     setValue("issueDate", saved.issueDate ?? "", { shouldValidate: true });
+    setValue("additionalCharges", saved.additionalCharges ?? [], {
+      shouldValidate: true,
+    });
   }, [savedDraft.data, draft, setValue]);
 
   const request =
@@ -286,7 +301,11 @@ export function useRentReceiptPage() {
   const estimatedTotal = (() => {
     const rent = parseAmount(values.rentExclCharges) ?? "0";
     const costs = parseAmount(values.charges) ?? "0";
-    return formatEUR(Number(rent) + Number(costs));
+    const additional = (values.additionalCharges ?? []).reduce(
+      (sum, charge) => sum + Number(parseAmount(charge.amount) ?? "0"),
+      0,
+    );
+    return formatEUR(Number(rent) + Number(costs) + additional);
   })();
 
   async function runGeneration(submittedValues: RentReceiptFormValues) {
@@ -403,6 +422,24 @@ export function useRentReceiptPage() {
     setValue("periodEnd", period.end, { shouldValidate: true });
   }
 
+  function setAdditionalCharges(next: AdditionalChargeFormValues[]) {
+    setValue("additionalCharges", next, { shouldValidate: true });
+    draft.update({ additionalCharges: next });
+  }
+
+  function addAdditionalCharge() {
+    const current = getValues("additionalCharges") ?? [];
+    if (current.length >= 20) {
+      return;
+    }
+    setAdditionalCharges([...current, { label: "", amount: "" }]);
+  }
+
+  function removeAdditionalCharge(index: number) {
+    const current = getValues("additionalCharges") ?? [];
+    setAdditionalCharges(current.filter((_, position) => position !== index));
+  }
+
   async function saveDraft(): Promise<boolean> {
     if (!draftScopeReady || selectedLandlordId === null) {
       return false;
@@ -419,6 +456,9 @@ export function useRentReceiptPage() {
       paymentDate: draft.paymentDate,
       issueDate: draft.issueDate,
       templateId: draft.templateId,
+      additionalCharges: draft.additionalCharges.map((charge) => ({
+        ...charge,
+      })),
     };
     try {
       setDraftSaving(true);
@@ -493,6 +533,8 @@ export function useRentReceiptPage() {
     resumeLease,
     changeMonth,
     selectPair,
+    addAdditionalCharge,
+    removeAdditionalCharge,
   };
 }
 

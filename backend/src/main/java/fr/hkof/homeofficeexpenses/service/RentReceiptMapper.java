@@ -1,11 +1,14 @@
 package fr.hkof.homeofficeexpenses.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
 import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
 import fr.hkof.homeofficeexpenses.repository.PersonRepository;
+import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.AdditionalCharge;
 import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.RentReceiptDto;
 
 /**
@@ -34,6 +37,9 @@ public class RentReceiptMapper {
         String tenantCompanyName = rentReceipt.getTenantCompanyId() == null ? null
                 : companies.find(rentReceipt.getTenantCompanyId()).map(Company::getName).orElse(null);
         String tenantName = tenant != null ? tenant.getName() : tenantCompanyName;
+        List<AdditionalCharge> additionalCharges = rentReceipt.getAdditionalCharges().stream()
+                .map(charge -> new AdditionalCharge(charge.getLabel(), Amounts.apiValue(charge.getAmount())))
+                .toList();
         return new RentReceiptDto(
                 rentReceipt.getId(),
                 rentReceipt.getCompanyId(),
@@ -57,6 +63,7 @@ public class RentReceiptMapper {
                 rentReceipt.getTemplateName(),
                 rentReceipt.getTemplateVersion(),
                 rentReceipt.getCreatedAt(),
-                rentReceipt.getPdfPath() != null);
+                rentReceipt.getPdfPath() != null,
+                additionalCharges);
     }
 }

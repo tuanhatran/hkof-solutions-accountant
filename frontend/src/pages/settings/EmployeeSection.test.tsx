@@ -238,6 +238,7 @@ describe("EmployeeSection", () => {
         address: null,
         email: "camille.martin@exemple.fr",
         title: "CFO",
+        issuePlace: null,
       }),
     );
     await waitFor(() =>
@@ -251,6 +252,44 @@ describe("EmployeeSection", () => {
         document.querySelector('[data-cy="formulaire-salarie"]') as HTMLElement,
       ).getByText("Signatures"),
     ).toBeVisible();
+  });
+
+  it("prefills, trims and clears the employee issue place", async () => {
+    employeesState = readyQuery([{ ...CEO, issuePlace: "Paris" }]);
+    vi.mocked(api.employees.update).mockResolvedValue({
+      ...CEO,
+      issuePlace: "Lyon",
+    });
+    renderSection();
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Modifier le salarié Camille Martin",
+      }),
+    );
+    const issuePlace = screen.getByLabelText("Lieu d’émission");
+    expect(issuePlace).toHaveValue("Paris");
+
+    await user.clear(issuePlace);
+    await user.type(issuePlace, "  Lyon  ");
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    await waitFor(() =>
+      expect(api.employees.update).toHaveBeenCalledWith(
+        3,
+        expect.objectContaining({ issuePlace: "Lyon" }),
+      ),
+    );
+
+    await user.clear(issuePlace);
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+    await waitFor(() =>
+      expect(api.employees.update).toHaveBeenLastCalledWith(
+        3,
+        expect.objectContaining({ issuePlace: null }),
+      ),
+    );
   });
 
   it("renders the form in a modal and closes on Annuler or Escape without saving", async () => {
@@ -372,6 +411,7 @@ describe("EmployeeSection", () => {
     expect(screen.getByLabelText("Email address")).toBeVisible();
     expect(screen.getByLabelText("Title")).toBeVisible();
     expect(screen.getByRole("option", { name: "Accountant" })).toBeVisible();
+    expect(screen.getByLabelText("Issue place")).toBeVisible();
     expect(screen.getByLabelText("Personal address")).toBeVisible();
     expect(
       screen.getByText(
