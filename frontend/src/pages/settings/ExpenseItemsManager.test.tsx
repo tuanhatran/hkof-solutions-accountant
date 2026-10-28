@@ -364,4 +364,87 @@ describe("ExpenseItemsManager", () => {
       ).toContain("Poste introuvable"),
     );
   });
+
+  it("tags every expense item row with its poste code", () => {
+    renderManager();
+
+    expect(document.querySelector('[data-cy="poste-loyer"]')).not.toBeNull();
+    expect(document.querySelector('[data-cy="poste-eau"]')).not.toBeNull();
+    expect(document.querySelector('[data-cy="poste-divers"]')).not.toBeNull();
+  });
+
+  it("filters the expense items on label, code and supplier with a live count", async () => {
+    renderManager();
+    const user = userEvent.setup();
+
+    expect(
+      document.querySelector('[data-cy="filtre-compteur-postes"]'),
+    ).toHaveTextContent("3 sur 3");
+
+    await user.type(screen.getByLabelText("Filtrer la liste"), "eau");
+    expect(itemOrder()).toEqual(["eau"]);
+    expect(
+      document.querySelector('[data-cy="filtre-compteur-postes"]'),
+    ).toHaveTextContent("1 sur 3");
+
+    await user.click(
+      document.querySelector(
+        '[data-cy="filtre-effacer-postes"]',
+      ) as HTMLElement,
+    );
+    await user.type(screen.getByLabelText("Filtrer la liste"), "agence");
+    expect(itemOrder()).toEqual(["loyer"]);
+
+    await user.click(
+      document.querySelector(
+        '[data-cy="filtre-effacer-postes"]',
+      ) as HTMLElement,
+    );
+    await user.type(screen.getByLabelText("Filtrer la liste"), "divers");
+    expect(itemOrder()).toEqual(["divers"]);
+  });
+
+  it("shows a no-match message instead of the table", async () => {
+    renderManager();
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Filtrer la liste"), "zzz");
+
+    expect(
+      document.querySelector('[data-cy="aucun-resultat-postes"]'),
+    ).toHaveTextContent("Aucun résultat pour « zzz ».");
+    expect(document.querySelector("table.expense-items-table")).toBeNull();
+    expect(itemOrder()).toEqual([]);
+  });
+
+  it("sorts the expense items and toggles the direction", async () => {
+    renderManager();
+    const user = userEvent.setup();
+
+    expect(
+      screen.getAllByRole("option").map((option) => option.textContent),
+    ).toEqual(["Ordre", "Libellé", "Prorata", "Périodicité"]);
+    expect(itemOrder()).toEqual(["loyer", "eau", "divers"]);
+
+    await user.selectOptions(screen.getByLabelText("Trier par"), "label");
+    expect(itemOrder()).toEqual(["divers", "eau", "loyer"]);
+
+    await user.click(screen.getByRole("button", { name: "Tri croissant" }));
+    expect(itemOrder()).toEqual(["loyer", "eau", "divers"]);
+  });
+
+  it("hides the list toolbar when there is no expense item", () => {
+    itemsState = readyState([]);
+    renderManager();
+
+    expect(document.querySelector('[data-cy="filtre-postes"]')).toBeNull();
+  });
 });
+
+/** Expense item codes in DOM order, read on the row items. */
+function itemOrder(): string[] {
+  return [...document.querySelectorAll('[data-cy^="poste-"]')].map(
+    (element) =>
+      (element as HTMLElement).dataset.cy?.replace("poste-", "") ?? "",
+  );
+}

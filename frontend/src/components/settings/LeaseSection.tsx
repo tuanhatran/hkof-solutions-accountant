@@ -5,10 +5,12 @@ import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { useAllRentReceipts, useSignatures } from "@/api/queries";
 import type { LeaseDto } from "@/api/types";
+import { ListToolbar } from "@/components/settings/ListToolbar";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { ErrorState, LoadingState } from "@/components/ui/States";
+import { useListQuery } from "@/hooks/useListQuery";
 import { formatEUR } from "@/lib/format";
 import { LeaseForm } from "./LeaseForm";
 import { LeaseReceiptHistory } from "./LeaseReceiptHistory";
@@ -23,6 +25,45 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
   // One shared query for every row's receipt history; the lease receipt modal
   // refreshes it through the existing `rentReceiptsAll` invalidation.
   const allRentReceipts = useAllRentReceipts();
+  const listQuery = useListQuery<LeaseDto>({
+    items: c.leaseList,
+    searchText: (lease) =>
+      [
+        lease.landlordName,
+        lease.tenantName,
+        lease.propertyAddress,
+        lease.companyName,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    sorts: [
+      {
+        value: "lease",
+        compare: (left, right) =>
+          (left.propertyAddress ?? "").localeCompare(
+            right.propertyAddress ?? "",
+            "fr",
+            { sensitivity: "base" },
+          ),
+      },
+      {
+        value: "company",
+        compare: (left, right) =>
+          (left.companyName ?? "").localeCompare(
+            right.companyName ?? "",
+            "fr",
+            { sensitivity: "base" },
+          ),
+      },
+      {
+        value: "rent",
+        compare: (left, right) =>
+          Number(left.rentExclCharges ?? 0) -
+          Number(right.rentExclCharges ?? 0),
+      },
+    ],
+    defaultSort: "lease",
+  });
 
   return (
     <section className="card lease-section">
@@ -103,101 +144,139 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
           />
         ) : (
           <>
-            <div
-              className="lease-section-headers hidden md:grid"
-              data-cy="entetes-baux"
-            >
-              <span>{t("settings.lease.section.columns.lease")}</span>
-              <span>{t("settings.lease.section.columns.company")}</span>
-              <span className="lease-section-headers-amount">
-                {t("settings.lease.section.columns.rent")}
-              </span>
-              <span className="lease-section-headers-amount">
-                {t("settings.lease.section.columns.charges")}
-              </span>
-              <span className="lease-section-headers-amount">
-                {t("settings.lease.section.columns.total")}
-              </span>
-              <span aria-hidden="true" />
-            </div>
-            <ul className="lease-section-list">
-              {c.leaseList.map((lease) => (
-                <li
-                  key={lease.id}
-                  className="lease-section-item"
-                  data-cy={`bail-${lease.id}`}
+            <ListToolbar
+              list="baux"
+              placeholder={t("settings.lease.section.filterPlaceholder")}
+              query={listQuery.query}
+              onQueryChange={listQuery.setQuery}
+              sort={listQuery.sort}
+              onSortChange={listQuery.setSort}
+              direction={listQuery.direction}
+              onToggleDirection={listQuery.toggleDirection}
+              sortOptions={[
+                {
+                  value: "lease",
+                  label: t("settings.lease.section.columns.lease"),
+                },
+                {
+                  value: "company",
+                  label: t("settings.lease.section.columns.company"),
+                },
+                {
+                  value: "rent",
+                  label: t("settings.lease.section.columns.rent"),
+                },
+              ]}
+              visible={listQuery.visible.length}
+              total={listQuery.total}
+            />
+            {listQuery.visible.length === 0 ? (
+              <EmptyState
+                text={t("settings.list.noMatch", {
+                  query: listQuery.query.trim(),
+                })}
+                dataCy="aucun-resultat-baux"
+              />
+            ) : (
+              <>
+                <div
+                  className="lease-section-headers hidden md:grid"
+                  data-cy="entetes-baux"
                 >
-                  <div className="lease-section-cell lease-section-cell-title">
-                    <p className="lease-section-item-title">
-                      {lease.landlordName} → {lease.tenantName}
-                    </p>
-                    <p className="lease-section-item-address">
-                      {lease.propertyAddress}
-                    </p>
-                  </div>
-                  <p
-                    className="lease-section-cell lease-section-cell-company"
-                    data-cy={`societe-bail-${lease.id}`}
-                  >
-                    {lease.companyName ?? t("settings.lease.section.noCompany")}
-                  </p>
-                  <span className="lease-section-cell lease-section-cell-rent number text-right">
-                    {formatEUR(lease.rentExclCharges ?? "0.00")}
+                  <span>{t("settings.lease.section.columns.lease")}</span>
+                  <span>{t("settings.lease.section.columns.company")}</span>
+                  <span className="lease-section-headers-amount">
+                    {t("settings.lease.section.columns.rent")}
                   </span>
-                  <span className="lease-section-cell lease-section-cell-charges number text-right">
-                    {formatEUR(lease.charges ?? "0.00")}
+                  <span className="lease-section-headers-amount">
+                    {t("settings.lease.section.columns.charges")}
                   </span>
-                  <span
-                    className="lease-section-cell lease-section-cell-total lease-section-item-total number text-right"
-                    data-cy={`total-bail-${lease.id}`}
-                  >
-                    {formatEUR(
-                      Number(lease.rentExclCharges ?? 0) +
-                        Number(lease.charges ?? 0),
-                    )}
+                  <span className="lease-section-headers-amount">
+                    {t("settings.lease.section.columns.total")}
                   </span>
-                  <div className="lease-section-cell lease-section-cell-actions">
-                    <LeaseReceiptButton
-                      lease={lease}
-                      onOpen={() => setReceiptLease(lease)}
-                    />
-                    <Button
-                      variant="ghost"
-                      small
-                      icon={<PencilLine size={13} />}
-                      onClick={() => c.setLeaseForm(lease)}
-                      aria-label={t("settings.lease.section.editAria", {
-                        id: lease.id,
-                      })}
-                      data-cy={`btn-modifier-bail-${lease.id}`}
+                  <span aria-hidden="true" />
+                </div>
+                <ul className="lease-section-list">
+                  {listQuery.visible.map((lease) => (
+                    <li
+                      key={lease.id}
+                      className="lease-section-item"
+                      data-cy={`bail-${lease.id}`}
                     >
-                      {t("settings.lease.section.edit")}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      small
-                      icon={<Trash2 size={13} />}
-                      className="text-danger hover:bg-danger-soft"
-                      onClick={() => c.setLeaseToDelete(lease)}
-                      aria-label={t("settings.lease.section.removeAria", {
-                        id: lease.id,
-                      })}
-                      data-cy={`btn-supprimer-bail-${lease.id}`}
-                    >
-                      {t("settings.lease.section.remove")}
-                    </Button>
-                  </div>
-                  <LeaseReceiptHistory
-                    lease={lease}
-                    receipts={allRentReceipts.data}
-                    isPending={allRentReceipts.isPending}
-                    isError={allRentReceipts.isError}
-                    error={allRentReceipts.error}
-                    onRetry={() => void allRentReceipts.refetch()}
-                  />
-                </li>
-              ))}
-            </ul>
+                      <div className="lease-section-cell lease-section-cell-title">
+                        <p className="lease-section-item-title">
+                          {lease.landlordName} → {lease.tenantName}
+                        </p>
+                        <p className="lease-section-item-address">
+                          {lease.propertyAddress}
+                        </p>
+                      </div>
+                      <p
+                        className="lease-section-cell lease-section-cell-company"
+                        data-cy={`societe-bail-${lease.id}`}
+                      >
+                        {lease.companyName ??
+                          t("settings.lease.section.noCompany")}
+                      </p>
+                      <span className="lease-section-cell lease-section-cell-rent number text-right">
+                        {formatEUR(lease.rentExclCharges ?? "0.00")}
+                      </span>
+                      <span className="lease-section-cell lease-section-cell-charges number text-right">
+                        {formatEUR(lease.charges ?? "0.00")}
+                      </span>
+                      <span
+                        className="lease-section-cell lease-section-cell-total lease-section-item-total number text-right"
+                        data-cy={`total-bail-${lease.id}`}
+                      >
+                        {formatEUR(
+                          Number(lease.rentExclCharges ?? 0) +
+                            Number(lease.charges ?? 0),
+                        )}
+                      </span>
+                      <div className="lease-section-cell lease-section-cell-actions">
+                        <LeaseReceiptButton
+                          lease={lease}
+                          onOpen={() => setReceiptLease(lease)}
+                        />
+                        <Button
+                          variant="ghost"
+                          small
+                          icon={<PencilLine size={13} />}
+                          onClick={() => c.setLeaseForm(lease)}
+                          aria-label={t("settings.lease.section.editAria", {
+                            id: lease.id,
+                          })}
+                          data-cy={`btn-modifier-bail-${lease.id}`}
+                        >
+                          {t("settings.lease.section.edit")}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          small
+                          icon={<Trash2 size={13} />}
+                          className="text-danger hover:bg-danger-soft"
+                          onClick={() => c.setLeaseToDelete(lease)}
+                          aria-label={t("settings.lease.section.removeAria", {
+                            id: lease.id,
+                          })}
+                          data-cy={`btn-supprimer-bail-${lease.id}`}
+                        >
+                          {t("settings.lease.section.remove")}
+                        </Button>
+                      </div>
+                      <LeaseReceiptHistory
+                        lease={lease}
+                        receipts={allRentReceipts.data}
+                        isPending={allRentReceipts.isPending}
+                        isError={allRentReceipts.isError}
+                        error={allRentReceipts.error}
+                        onRetry={() => void allRentReceipts.refetch()}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </>
         )}
       </div>

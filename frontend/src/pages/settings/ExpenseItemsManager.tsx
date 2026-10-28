@@ -7,9 +7,12 @@ import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys, useExpenseItems } from "@/api/queries";
 import type { ExpenseItemDto } from "@/api/types";
+import { ListToolbar } from "@/components/settings/ListToolbar";
+import { EmptyState } from "@/components/settings/SettingsSection";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorState, LoadingState } from "@/components/ui/States";
+import { useListQuery } from "@/hooks/useListQuery";
 import { cn } from "@/lib/cn";
 import { formatPercentage } from "@/lib/format";
 import { toast } from "@/state/toasts";
@@ -50,6 +53,42 @@ export function ExpenseItemsManager({
   });
 
   const list = expenseItems.data ?? [];
+  const listQuery = useListQuery<ExpenseItemDto>({
+    items: list,
+    searchText: (expenseItem) =>
+      [expenseItem.label, expenseItem.code, expenseItem.supplier]
+        .filter(Boolean)
+        .join(" "),
+    sorts: [
+      {
+        value: "order",
+        compare: (left, right) =>
+          (left.sortOrder ?? Number.MAX_SAFE_INTEGER) -
+          (right.sortOrder ?? Number.MAX_SAFE_INTEGER),
+      },
+      {
+        value: "label",
+        compare: (left, right) =>
+          (left.label ?? "").localeCompare(right.label ?? "", "fr", {
+            sensitivity: "base",
+          }),
+      },
+      {
+        value: "proRata",
+        compare: (left, right) =>
+          Number(left.proRataPct ?? 0) - Number(right.proRataPct ?? 0),
+      },
+      {
+        value: "periodicity",
+        compare: (left, right) =>
+          periodicityLabel(left.periodicity, t).localeCompare(
+            periodicityLabel(right.periodicity, t),
+            "fr",
+          ),
+      },
+    ],
+    defaultSort: "order",
+  });
   const defaultOrder =
     list.reduce(
       (maximum, expenseItem) => Math.max(maximum, expenseItem.sortOrder ?? 0),
@@ -121,97 +160,139 @@ export function ExpenseItemsManager({
             {t("settings.expenses.empty")}
           </p>
         ) : (
-          <div className="expense-items-manager-table-wrapper">
-            <table className="expense-table expense-items-table">
-              <thead>
-                <tr>
-                  <th>{t("settings.expenses.table.label")}</th>
-                  <th>{t("settings.expenses.table.supplier")}</th>
-                  <th className="text-right">
-                    {t("settings.expenses.table.proRata")}
-                  </th>
-                  <th>{t("settings.expenses.table.periodicity")}</th>
-                  <th className="text-right">
-                    {t("settings.expenses.table.order")}
-                  </th>
-                  <th>{t("settings.expenses.table.options")}</th>
-                  <th className="text-right">
-                    {t("settings.expenses.table.actions")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {list.map((expenseItem) => (
-                  <tr
-                    key={expenseItem.id}
-                    className={cn(!expenseItem.active && "opacity-60")}
-                  >
-                    <td>
-                      <div className="expense-items-manager-item">
-                        <span className="expense-items-manager-item-label">
-                          {expenseItem.label}
-                        </span>
-                        <code className="expense-items-manager-item-code">
-                          {expenseItem.code}
-                        </code>
-                        {!expenseItem.active ? (
-                          <span className="badge badge-neutral">
-                            {t("settings.expenses.inactive")}
-                          </span>
-                        ) : null}
-                      </div>
-                    </td>
-                    <td className="text-ink-soft">
-                      {expenseItem.supplier || "—"}
-                    </td>
-                    <td className="number expense-items-manager-number-cell text-right">
-                      {formatPercentage(expenseItem.proRataPct)}
-                    </td>
-                    <td className="expense-items-manager-periodicity-cell">
-                      {periodicityLabel(expenseItem.periodicity, t)}
-                    </td>
-                    <td className="number expense-items-manager-order-cell text-right">
-                      {expenseItem.sortOrder}
-                    </td>
-                    <td>
-                      {expenseItem.multipleLinesAllowed ? (
-                        <span className="badge badge-accent">
-                          {t("settings.expenses.multipleLines")}
-                        </span>
-                      ) : (
-                        <span className="expense-items-manager-single-line">
-                          {t("settings.expenses.singleLine")}
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      <div className="expense-items-manager-actions">
-                        <Button
-                          variant="ghost"
-                          small
-                          icon={<PencilLine size={13} />}
-                          onClick={() => openEdit(expenseItem)}
-                          data-cy={`btn-modifier-poste-${expenseItem.code}`}
-                        >
-                          {t("settings.expenses.edit")}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          small
-                          icon={<Trash2 size={13} />}
-                          className="text-danger hover:bg-danger-soft"
-                          onClick={() => setToDelete(expenseItem)}
-                          data-cy={`btn-supprimer-poste-${expenseItem.code}`}
-                        >
-                          {t("settings.expenses.remove")}
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <ListToolbar
+              list="postes"
+              placeholder={t("settings.expenses.filterPlaceholder")}
+              query={listQuery.query}
+              onQueryChange={listQuery.setQuery}
+              sort={listQuery.sort}
+              onSortChange={listQuery.setSort}
+              direction={listQuery.direction}
+              onToggleDirection={listQuery.toggleDirection}
+              sortOptions={[
+                {
+                  value: "order",
+                  label: t("settings.expenses.table.order"),
+                },
+                {
+                  value: "label",
+                  label: t("settings.expenses.table.label"),
+                },
+                {
+                  value: "proRata",
+                  label: t("settings.expenses.table.proRata"),
+                },
+                {
+                  value: "periodicity",
+                  label: t("settings.expenses.table.periodicity"),
+                },
+              ]}
+              visible={listQuery.visible.length}
+              total={listQuery.total}
+            />
+            {listQuery.visible.length === 0 ? (
+              <EmptyState
+                text={t("settings.list.noMatch", {
+                  query: listQuery.query.trim(),
+                })}
+                dataCy="aucun-resultat-postes"
+              />
+            ) : (
+              <div className="expense-items-manager-table-wrapper">
+                <table className="expense-table expense-items-table">
+                  <thead>
+                    <tr>
+                      <th>{t("settings.expenses.table.label")}</th>
+                      <th>{t("settings.expenses.table.supplier")}</th>
+                      <th className="text-right">
+                        {t("settings.expenses.table.proRata")}
+                      </th>
+                      <th>{t("settings.expenses.table.periodicity")}</th>
+                      <th className="text-right">
+                        {t("settings.expenses.table.order")}
+                      </th>
+                      <th>{t("settings.expenses.table.options")}</th>
+                      <th className="text-right">
+                        {t("settings.expenses.table.actions")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {listQuery.visible.map((expenseItem) => (
+                      <tr
+                        key={expenseItem.id}
+                        className={cn(!expenseItem.active && "opacity-60")}
+                        data-cy={`poste-${expenseItem.code}`}
+                      >
+                        <td>
+                          <div className="expense-items-manager-item">
+                            <span className="expense-items-manager-item-label">
+                              {expenseItem.label}
+                            </span>
+                            <code className="expense-items-manager-item-code">
+                              {expenseItem.code}
+                            </code>
+                            {!expenseItem.active ? (
+                              <span className="badge badge-neutral">
+                                {t("settings.expenses.inactive")}
+                              </span>
+                            ) : null}
+                          </div>
+                        </td>
+                        <td className="text-ink-soft">
+                          {expenseItem.supplier || "—"}
+                        </td>
+                        <td className="number expense-items-manager-number-cell text-right">
+                          {formatPercentage(expenseItem.proRataPct)}
+                        </td>
+                        <td className="expense-items-manager-periodicity-cell">
+                          {periodicityLabel(expenseItem.periodicity, t)}
+                        </td>
+                        <td className="number expense-items-manager-order-cell text-right">
+                          {expenseItem.sortOrder}
+                        </td>
+                        <td>
+                          {expenseItem.multipleLinesAllowed ? (
+                            <span className="badge badge-accent">
+                              {t("settings.expenses.multipleLines")}
+                            </span>
+                          ) : (
+                            <span className="expense-items-manager-single-line">
+                              {t("settings.expenses.singleLine")}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <div className="expense-items-manager-actions">
+                            <Button
+                              variant="ghost"
+                              small
+                              icon={<PencilLine size={13} />}
+                              onClick={() => openEdit(expenseItem)}
+                              data-cy={`btn-modifier-poste-${expenseItem.code}`}
+                            >
+                              {t("settings.expenses.edit")}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              small
+                              icon={<Trash2 size={13} />}
+                              className="text-danger hover:bg-danger-soft"
+                              onClick={() => setToDelete(expenseItem)}
+                              data-cy={`btn-supprimer-poste-${expenseItem.code}`}
+                            >
+                              {t("settings.expenses.remove")}
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         )}
       </div>
 

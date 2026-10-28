@@ -156,6 +156,46 @@ describe("i18n", () => {
     expect(values.filter((value) => /frais de frais/i.test(value))).toEqual([]);
   });
 
+  it("exposes the list toolbar labels and per-list filter placeholders", () => {
+    expect(fr.settings.list).toEqual({
+      filterLabel: "Filtrer la liste",
+      sortLabel: "Trier par",
+      ascending: "Tri croissant",
+      descending: "Tri décroissant",
+      clear: "Effacer le filtre",
+      noMatch: "Aucun résultat pour « {{query}} ».",
+      count: "{{visible}} sur {{total}}",
+    });
+    expect(fr.settings.employees.filterPlaceholder).toBe(
+      "Filtrer les salariés…",
+    );
+    expect(fr.settings.people.filterPlaceholder).toBe("Filtrer les personnes…");
+    expect(fr.settings.lease.section.filterPlaceholder).toBe(
+      "Filtrer les baux…",
+    );
+    expect(fr.settings.company.leaseTab.filterPlaceholder).toBe(
+      "Filtrer les baux…",
+    );
+    expect(fr.settings.expenses.filterPlaceholder).toBe("Filtrer les postes…");
+
+    expect(en.settings.list.filterLabel).toBe("Filter the list");
+    expect(en.settings.list.sortLabel).toBe("Sort by");
+    expect(en.settings.list.ascending).toBe("Ascending order");
+    expect(en.settings.list.descending).toBe("Descending order");
+    expect(en.settings.list.clear).toBe("Clear the filter");
+    expect(en.settings.list.noMatch).toBe("No result for “{{query}}”.");
+    expect(en.settings.list.count).toBe("{{visible}} of {{total}}");
+    expect(en.settings.employees.filterPlaceholder).toBe("Filter employees…");
+    expect(en.settings.people.filterPlaceholder).toBe("Filter people…");
+    expect(en.settings.lease.section.filterPlaceholder).toBe("Filter leases…");
+    expect(en.settings.company.leaseTab.filterPlaceholder).toBe(
+      "Filter leases…",
+    );
+    expect(en.settings.expenses.filterPlaceholder).toBe(
+      "Filter expense items…",
+    );
+  });
+
   it("uses specific SCREAMING_SNAKE codes in api.errors", () => {
     const codes = flattenKeys(fr.api.errors);
 

@@ -9,12 +9,14 @@ import { queryKeys, useLeases, usePersons, useStatements } from "@/api/queries";
 import type { CompanyDto, CompanyRequest, LeaseDto } from "@/api/types";
 import { CompanyLeaseStatementHistory } from "@/components/settings/CompanyLeaseStatementHistory";
 import { LeaseForm } from "@/components/settings/LeaseForm";
+import { ListToolbar } from "@/components/settings/ListToolbar";
 import {
   EmptyState,
   SectionHeader,
 } from "@/components/settings/SettingsSection";
 import { Button } from "@/components/ui/Button";
 import { ErrorState, LoadingState } from "@/components/ui/States";
+import { useListQuery } from "@/hooks/useListQuery";
 import { cn } from "@/lib/cn";
 import { formatEUR } from "@/lib/format";
 import { toast } from "@/state/toasts";
@@ -90,15 +92,35 @@ export function CompanyLeaseTab({
       ),
     [leases.data, company.id],
   );
-  const orderedLeases = useMemo(() => {
-    const active = companyLeases.filter(
-      (lease) => lease.id === selectedLeaseId,
-    );
-    const others = companyLeases.filter(
-      (lease) => lease.id !== selectedLeaseId,
-    );
-    return [...active, ...others];
-  }, [companyLeases, selectedLeaseId]);
+  const listQuery = useListQuery<LeaseDto>({
+    items: companyLeases,
+    searchText: (lease) =>
+      [lease.propertyAddress, lease.landlordName].filter(Boolean).join(" "),
+    sorts: [
+      {
+        value: "lease",
+        compare: (left, right) =>
+          (left.propertyAddress ?? "").localeCompare(
+            right.propertyAddress ?? "",
+            "fr",
+            { sensitivity: "base" },
+          ),
+      },
+      {
+        value: "rent",
+        compare: (left, right) =>
+          Number(left.rentExclCharges ?? 0) -
+          Number(right.rentExclCharges ?? 0),
+      },
+      {
+        value: "charges",
+        compare: (left, right) =>
+          Number(left.charges ?? 0) - Number(right.charges ?? 0),
+      },
+    ],
+    defaultSort: "lease",
+    pinFirst: (lease) => lease.id === selectedLeaseId,
+  });
   const selectedLease =
     companyLeases.find((lease) => lease.id === selectedLeaseId) ?? null;
 
@@ -149,127 +171,169 @@ export function CompanyLeaseTab({
             />
           ) : (
             <>
-              <div
-                className="company-lease-tab-headers hidden md:grid"
-                data-cy="entetes-baux-societe"
-              >
-                <span>{t("settings.company.leaseTab.columns.lease")}</span>
-                <span className="company-lease-tab-headers-amount">
-                  {t("settings.company.leaseTab.columns.rent")}
-                </span>
-                <span className="company-lease-tab-headers-amount">
-                  {t("settings.company.leaseTab.columns.charges")}
-                </span>
-                <span className="company-lease-tab-headers-actions">
-                  {t("settings.company.leaseTab.columns.actions")}
-                </span>
-              </div>
-              <ul className="company-lease-tab-list">
-                {orderedLeases.map((lease) => {
-                  const selected = lease.id === selectedLeaseId;
-                  const expanded = lease.id === expandedLeaseId;
-                  return (
-                    <li key={lease.id} className="company-lease-tab-list-item">
-                      <div
-                        className={cn(
-                          "company-lease-tab-item",
-                          selected && "company-lease-tab-item-selected",
-                        )}
-                      >
-                        <button
-                          type="button"
-                          className="company-lease-tab-item-toggle"
-                          onClick={() => toggleLease(lease.id as number)}
-                          aria-expanded={expanded}
-                          disabled={linkLease.isPending}
-                          data-cy={`bail-societe-${lease.id}`}
+              <ListToolbar
+                list="baux-societe"
+                placeholder={t("settings.company.leaseTab.filterPlaceholder")}
+                query={listQuery.query}
+                onQueryChange={listQuery.setQuery}
+                sort={listQuery.sort}
+                onSortChange={listQuery.setSort}
+                direction={listQuery.direction}
+                onToggleDirection={listQuery.toggleDirection}
+                sortOptions={[
+                  {
+                    value: "lease",
+                    label: t("settings.company.leaseTab.columns.lease"),
+                  },
+                  {
+                    value: "rent",
+                    label: t("settings.company.leaseTab.columns.rent"),
+                  },
+                  {
+                    value: "charges",
+                    label: t("settings.company.leaseTab.columns.charges"),
+                  },
+                ]}
+                visible={listQuery.visible.length}
+                total={listQuery.total}
+              />
+              {listQuery.visible.length === 0 ? (
+                <EmptyState
+                  text={t("settings.list.noMatch", {
+                    query: listQuery.query.trim(),
+                  })}
+                  dataCy="aucun-resultat-baux-societe"
+                />
+              ) : (
+                <>
+                  <div
+                    className="company-lease-tab-headers hidden md:grid"
+                    data-cy="entetes-baux-societe"
+                  >
+                    <span>{t("settings.company.leaseTab.columns.lease")}</span>
+                    <span className="company-lease-tab-headers-amount">
+                      {t("settings.company.leaseTab.columns.rent")}
+                    </span>
+                    <span className="company-lease-tab-headers-amount">
+                      {t("settings.company.leaseTab.columns.charges")}
+                    </span>
+                    <span className="company-lease-tab-headers-actions">
+                      {t("settings.company.leaseTab.columns.actions")}
+                    </span>
+                  </div>
+                  <ul className="company-lease-tab-list">
+                    {listQuery.visible.map((lease) => {
+                      const selected = lease.id === selectedLeaseId;
+                      const expanded = lease.id === expandedLeaseId;
+                      return (
+                        <li
+                          key={lease.id}
+                          className="company-lease-tab-list-item"
                         >
-                          <span className="company-lease-tab-item-main">
-                            <span className="company-lease-tab-item-address">
-                              {lease.propertyAddress ??
-                                t("settings.company.leaseTab.addressFallback")}
-                            </span>
-                            <span className="company-lease-tab-item-meta">
-                              {t("settings.company.leaseTab.meta", {
-                                landlord: lease.landlordName ?? "—",
-                                rent: formatEUR(
-                                  lease.rentExclCharges ?? "0.00",
-                                ),
-                                charges: formatEUR(lease.charges ?? "0.00"),
-                              })}
-                            </span>
-                            {selected ? (
-                              <span className="badge badge-accent mt-1 self-start">
-                                {t("settings.company.leaseTab.activeBadge")}
+                          <div
+                            className={cn(
+                              "company-lease-tab-item",
+                              selected && "company-lease-tab-item-selected",
+                            )}
+                          >
+                            <button
+                              type="button"
+                              className="company-lease-tab-item-toggle"
+                              onClick={() => toggleLease(lease.id as number)}
+                              aria-expanded={expanded}
+                              disabled={linkLease.isPending}
+                              data-cy={`bail-societe-${lease.id}`}
+                            >
+                              <span className="company-lease-tab-item-main">
+                                <span className="company-lease-tab-item-address">
+                                  {lease.propertyAddress ??
+                                    t(
+                                      "settings.company.leaseTab.addressFallback",
+                                    )}
+                                </span>
+                                <span className="company-lease-tab-item-meta">
+                                  {t("settings.company.leaseTab.meta", {
+                                    landlord: lease.landlordName ?? "—",
+                                    rent: formatEUR(
+                                      lease.rentExclCharges ?? "0.00",
+                                    ),
+                                    charges: formatEUR(lease.charges ?? "0.00"),
+                                  })}
+                                </span>
+                                {selected ? (
+                                  <span className="badge badge-accent mt-1 self-start">
+                                    {t("settings.company.leaseTab.activeBadge")}
+                                  </span>
+                                ) : null}
                               </span>
-                            ) : null}
-                          </span>
-                          <span
-                            className="company-lease-tab-item-amount number text-right"
-                            data-cy={`loyer-bail-societe-${lease.id}`}
-                          >
-                            {formatEUR(lease.rentExclCharges ?? "0.00")}
-                          </span>
-                          <span
-                            className="company-lease-tab-item-amount number text-right"
-                            data-cy={`charges-bail-societe-${lease.id}`}
-                          >
-                            {formatEUR(lease.charges ?? "0.00")}
-                          </span>
-                        </button>
-                        <div
-                          className="company-lease-tab-item-actions"
-                          data-cy={`actions-bail-societe-${lease.id}`}
-                        >
-                          <Button
-                            variant="ghost"
-                            small
-                            icon={<FileText size={13} />}
-                            onClick={() => setStatementLease(lease)}
-                            data-cy={`btn-note-frais-bail-societe-${lease.id}`}
-                          >
-                            {t("settings.company.leaseTab.statement")}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            small
-                            icon={<PencilLine size={13} />}
-                            onClick={() => setEditingLease(lease)}
-                            data-cy={`btn-modifier-bail-societe-${lease.id}`}
-                          >
-                            {t("settings.company.leaseTab.edit")}
-                          </Button>
-                        </div>
-                      </div>
-                      <CompanyLeaseStatementHistory
-                        lease={lease}
-                        statements={statements.data}
-                        isPending={statements.isPending}
-                        isError={statements.isError}
-                        error={statements.error}
-                        onRetry={() => void statements.refetch()}
-                      />
-                      {expanded ? (
-                        <div className="company-lease-tab-item-expanded">
-                          <CompanyLeaseView
+                              <span
+                                className="company-lease-tab-item-amount number text-right"
+                                data-cy={`loyer-bail-societe-${lease.id}`}
+                              >
+                                {formatEUR(lease.rentExclCharges ?? "0.00")}
+                              </span>
+                              <span
+                                className="company-lease-tab-item-amount number text-right"
+                                data-cy={`charges-bail-societe-${lease.id}`}
+                              >
+                                {formatEUR(lease.charges ?? "0.00")}
+                              </span>
+                            </button>
+                            <div
+                              className="company-lease-tab-item-actions"
+                              data-cy={`actions-bail-societe-${lease.id}`}
+                            >
+                              <Button
+                                variant="ghost"
+                                small
+                                icon={<FileText size={13} />}
+                                onClick={() => setStatementLease(lease)}
+                                data-cy={`btn-note-frais-bail-societe-${lease.id}`}
+                              >
+                                {t("settings.company.leaseTab.statement")}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                small
+                                icon={<PencilLine size={13} />}
+                                onClick={() => setEditingLease(lease)}
+                                data-cy={`btn-modifier-bail-societe-${lease.id}`}
+                              >
+                                {t("settings.company.leaseTab.edit")}
+                              </Button>
+                            </div>
+                          </div>
+                          <CompanyLeaseStatementHistory
                             lease={lease}
-                            proRataBase={lease.proRataBase ?? null}
+                            statements={statements.data}
+                            isPending={statements.isPending}
+                            isError={statements.isError}
+                            error={statements.error}
+                            onRetry={() => void statements.refetch()}
                           />
-                          <ExpenseItemsManager
-                            companyId={company.id as number}
-                            leaseId={lease.id as number}
-                            defaultProRata={
-                              lease.proRataBase ??
-                              company.proRataBase ??
-                              "100.00"
-                            }
-                          />
-                        </div>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
+                          {expanded ? (
+                            <div className="company-lease-tab-item-expanded">
+                              <CompanyLeaseView
+                                lease={lease}
+                                proRataBase={lease.proRataBase ?? null}
+                              />
+                              <ExpenseItemsManager
+                                companyId={company.id as number}
+                                leaseId={lease.id as number}
+                                defaultProRata={
+                                  lease.proRataBase ??
+                                  company.proRataBase ??
+                                  "100.00"
+                                }
+                              />
+                            </div>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              )}
             </>
           )}
         </div>

@@ -769,6 +769,67 @@ describe("CompanyLeaseTab", () => {
       ),
     ).toBeVisible();
   });
+
+  it("filters the company leases by address with a live count and no-match state", async () => {
+    renderTab();
+    const user = userEvent.setup();
+    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+
+    expect(queryByCy("filtre-compteur-baux-societe")).toHaveTextContent(
+      "2 sur 2",
+    );
+
+    await user.type(queryByCy("filtre-baux-societe") as HTMLElement, "acacias");
+
+    expect(queryByCy("bail-societe-6")).not.toBeNull();
+    expect(queryByCy("bail-societe-5")).toBeNull();
+    expect(queryByCy("filtre-compteur-baux-societe")).toHaveTextContent(
+      "1 sur 2",
+    );
+
+    await user.click(queryByCy("filtre-effacer-baux-societe") as HTMLElement);
+    expect(toggleOrder()).toEqual([5, 6]);
+
+    await user.type(queryByCy("filtre-baux-societe") as HTMLElement, "zzz");
+
+    expect(queryByCy("aucun-resultat-baux-societe")).toHaveTextContent(
+      "Aucun résultat pour « zzz ».",
+    );
+    expect(queryByCy("entetes-baux-societe")).toBeNull();
+    expect(toggleOrder()).toEqual([]);
+  });
+
+  it("keeps the active lease first while sorting in both directions", async () => {
+    renderTab();
+    const user = userEvent.setup();
+    await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
+
+    expect(
+      screen.getAllByRole("option").map((option) => option.textContent),
+    ).toEqual(["Bail", "Loyer", "Charges"]);
+    expect(toggleOrder()).toEqual([5, 6]);
+
+    await user.click(screen.getByRole("button", { name: "Tri croissant" }));
+    expect(toggleOrder()).toEqual([5, 6]);
+
+    vi.mocked(api.companies.update).mockResolvedValue({
+      ...COMPANY,
+      leaseId: 6,
+    });
+    await user.click(queryByCy("bail-societe-6") as HTMLElement);
+
+    await waitFor(() => expect(toggleOrder()).toEqual([6, 5]));
+  });
+
+  it("hides the list toolbar when there is no company lease", async () => {
+    vi.mocked(api.leases.list).mockResolvedValue([]);
+    renderTab();
+
+    await waitFor(() =>
+      expect(queryByCy("liste-baux-societe-vide")).not.toBeNull(),
+    );
+    expect(queryByCy("filtre-baux-societe")).toBeNull();
+  });
 });
 
 function withinLease(cy: string): ReturnType<typeof within> {

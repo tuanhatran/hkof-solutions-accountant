@@ -1,0 +1,23 @@
+@reference "../../index.css";
+
+@layer components {
+  .list-toolbar {
+    @apply flex flex-col gap-2 sm:flex-row sm:items-center;
+  }
+
+  .list-toolbar-search {
+    @apply relative min-w-0 flex-1;
+  }
+
+  .list-toolbar-clear {
+    @apply absolute right-1 top-1/2 -translate-y-1/2;
+  }
+
+  .list-toolbar-controls {
+    @apply flex min-w-0 flex-wrap items-center gap-2;
+  }
+
+  .list-toolbar-count {
+    @apply text-xs text-ink-soft;
+  }
+}

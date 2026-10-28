@@ -585,6 +585,15 @@ export const fr = {
     },
   },
   settings: {
+    list: {
+      filterLabel: "Filtrer la liste",
+      sortLabel: "Trier par",
+      ascending: "Tri croissant",
+      descending: "Tri décroissant",
+      clear: "Effacer le filtre",
+      noMatch: "Aucun résultat pour « {{query}} ».",
+      count: "{{visible}} sur {{total}}",
+    },
     page: {
       eyebrow: "Réglages",
       title: "Société",
@@ -654,6 +663,7 @@ export const fr = {
           actions: "Actions",
         },
         add: "Ajouter un bail",
+        filterPlaceholder: "Filtrer les baux…",
         loading: "Chargement des baux…",
         empty:
           "Aucun bail pour cette société. Ajoutez le premier bail avec « Ajouter un bail ».",
@@ -692,6 +702,7 @@ export const fr = {
           total: "Total",
         },
         add: "Ajouter un bail",
+        filterPlaceholder: "Filtrer les baux…",
         addressLabel: "Adresse des baux",
         addressHelp: "Seuls les baux de l’adresse sélectionnée sont affichés.",
         loadingAddresses: "Chargement des adresses…",
@@ -828,6 +839,7 @@ export const fr = {
         signatures: "Signatures",
       },
       add: "Ajouter un salarié",
+      filterPlaceholder: "Filtrer les salariés…",
       selectCompany: "Sélectionnez une société pour gérer ses salariés.",
       loading: "Chargement des salariés…",
       empty:
@@ -879,6 +891,7 @@ export const fr = {
       description:
         "Libellés, fournisseurs, prorata par défaut et périodicité alimentent la note de frais. Suppression logique uniquement.",
       add: "Ajouter un poste",
+      filterPlaceholder: "Filtrer les postes…",
       loading: "Chargement des postes…",
       empty:
         "Aucun poste configuré. Ajoutez au moins « Loyer » et vos frais courants.",
@@ -948,6 +961,7 @@ export const fr = {
         signatures: "Signatures",
       },
       add: "Ajouter une personne",
+      filterPlaceholder: "Filtrer les personnes…",
       loading: "Chargement des personnes…",
       empty:
         "Aucune personne configurée. Ajoutez le bailleur ou le locataire du logement.",

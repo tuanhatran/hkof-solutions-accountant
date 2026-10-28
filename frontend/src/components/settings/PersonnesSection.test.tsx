@@ -32,6 +32,23 @@ const TENANT: PersonDto = {
   signatureCount: 0,
 };
 
+const ACCENTED: PersonDto = {
+  id: 3,
+  name: "Élodie Zéphyr",
+  address: "2 rue de l'Église, 75005 Paris",
+  signatureCount: 2,
+};
+
+/** Person ids in DOM order, read on the row items. */
+function personOrder(): number[] {
+  return [...document.querySelectorAll('[data-cy^="personne-"]')].map(
+    (element) =>
+      Number(
+        (element as HTMLElement).dataset.cy?.replace("personne-", "") ?? NaN,
+      ),
+  );
+}
+
 function readyQuery(data: PersonDto[]): QueryLike<PersonDto[]> {
   return {
     data,
@@ -373,5 +390,67 @@ describe("PersonnesSection", () => {
     expect(
       screen.queryByRole("dialog", { name: "Supprimer cette personne ?" }),
     ).toBeNull();
+  });
+
+  it("filters the persons on their name and address with a live count", async () => {
+    personsState = readyQuery([LANDLORD, TENANT, ACCENTED]);
+    renderSection();
+    const user = userEvent.setup();
+
+    expect(
+      document.querySelector('[data-cy="filtre-compteur-personnes"]'),
+    ).toHaveTextContent("3 sur 3");
+
+    await user.type(screen.getByLabelText("Filtrer la liste"), "elodie");
+    expect(personOrder()).toEqual([3]);
+    expect(
+      document.querySelector('[data-cy="filtre-compteur-personnes"]'),
+    ).toHaveTextContent("1 sur 3");
+
+    await user.click(
+      document.querySelector(
+        '[data-cy="filtre-effacer-personnes"]',
+      ) as HTMLElement,
+    );
+    await user.type(screen.getByLabelText("Filtrer la liste"), "parc");
+    expect(personOrder()).toEqual([1]);
+  });
+
+  it("shows a no-match message instead of the headers and rows", async () => {
+    personsState = readyQuery([LANDLORD, TENANT, ACCENTED]);
+    renderSection();
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Filtrer la liste"), "zzz");
+
+    expect(
+      document.querySelector('[data-cy="aucun-resultat-personnes"]'),
+    ).toHaveTextContent("Aucun résultat pour « zzz ».");
+    expect(document.querySelector('[data-cy="entetes-personnes"]')).toBeNull();
+    expect(personOrder()).toEqual([]);
+  });
+
+  it("sorts the persons by name or signatures with a direction toggle", async () => {
+    personsState = readyQuery([LANDLORD, TENANT, ACCENTED]);
+    renderSection();
+    const user = userEvent.setup();
+
+    expect(
+      screen.getAllByRole("option").map((option) => option.textContent),
+    ).toEqual(["Personne", "Signatures"]);
+    expect(personOrder()).toEqual([3, 1, 2]);
+
+    await user.selectOptions(screen.getByLabelText("Trier par"), "signatures");
+    expect(personOrder()).toEqual([2, 1, 3]);
+
+    await user.click(screen.getByRole("button", { name: "Tri croissant" }));
+    expect(personOrder()).toEqual([3, 1, 2]);
+  });
+
+  it("hides the list toolbar when there is no person", () => {
+    personsState = readyQuery([]);
+    renderSection();
+
+    expect(document.querySelector('[data-cy="filtre-personnes"]')).toBeNull();
   });
 });

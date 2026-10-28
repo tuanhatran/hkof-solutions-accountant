@@ -51,6 +51,26 @@ const LEASE: LeaseDto = {
   rentExclCharges: "1300.00",
   charges: "50.00",
 };
+
+const OTHER_LEASE: LeaseDto = {
+  id: 11,
+  addressId: 4,
+  landlordId: 1,
+  tenantId: 2,
+  landlordName: "M. Autre",
+  tenantName: "Mme Voisine",
+  propertyAddress: "8 impasse des Acacias, 69003 Lyon",
+  companyName: "Alpha SARL",
+  rentExclCharges: "800.00",
+  charges: "100.00",
+};
+
+/** Lease ids in DOM order, read on the row items. */
+function leaseOrder(): number[] {
+  return [...document.querySelectorAll('[data-cy^="bail-"]')].map((element) =>
+    Number((element as HTMLElement).dataset.cy?.replace("bail-", "") ?? NaN),
+  );
+}
 const TEMPLATE: TemplateDto = {
   id: 5,
   type: "RENT_RECEIPT",
@@ -75,6 +95,7 @@ let signaturesPending = false;
 let allRentReceiptRows: RentReceiptDto[] = [];
 let allRentReceiptsFailing = false;
 let allRentReceiptsRefetch = vi.fn();
+let leaseRows: LeaseDto[] = [LEASE];
 
 vi.mock("@/components/pdf/PdfViewer", () => ({
   PdfViewer: () => <div data-cy="apercu-quittance-bail" />,
@@ -111,7 +132,7 @@ vi.mock("@/api/queries", async (importOriginal) => {
     usePersons: () => readyQuery([PERSON, TENANT]),
     useCompanies: () => readyQuery([COMPANY]),
     useAddresses: () => readyQuery([ADDRESS]),
-    useLeases: () => readyQuery([LEASE]),
+    useLeases: () => readyQuery(leaseRows),
     useSignatures: (personId: number | null) =>
       signaturesPending
         ? {
@@ -158,6 +179,7 @@ beforeEach(() => {
   allRentReceiptRows = [];
   allRentReceiptsFailing = false;
   allRentReceiptsRefetch = vi.fn();
+  leaseRows = [LEASE];
 });
 
 describe("LeaseSection rent receipt", () => {
@@ -300,6 +322,74 @@ describe("LeaseSection rent receipt", () => {
         expect.objectContaining({ message: "Lease deleted." }),
       ),
     );
+  });
+
+  it("filters the leases on landlord, tenant, address and company with a live count", async () => {
+    leaseRows = [LEASE, OTHER_LEASE];
+    renderSection();
+    const user = userEvent.setup();
+
+    expect(
+      document.querySelector('[data-cy="filtre-compteur-baux"]'),
+    ).toHaveTextContent("2 sur 2");
+
+    await user.type(screen.getByLabelText("Filtrer la liste"), "acacias");
+    expect(leaseOrder()).toEqual([11]);
+    expect(
+      document.querySelector('[data-cy="filtre-compteur-baux"]'),
+    ).toHaveTextContent("1 sur 2");
+
+    await user.click(
+      document.querySelector('[data-cy="filtre-effacer-baux"]') as HTMLElement,
+    );
+    await user.type(screen.getByLabelText("Filtrer la liste"), "locataire");
+    expect(leaseOrder()).toEqual([10]);
+
+    await user.click(
+      document.querySelector('[data-cy="filtre-effacer-baux"]') as HTMLElement,
+    );
+    await user.type(screen.getByLabelText("Filtrer la liste"), "alpha");
+    expect(leaseOrder()).toEqual([11]);
+  });
+
+  it("shows a no-match message instead of the headers and rows", async () => {
+    leaseRows = [LEASE, OTHER_LEASE];
+    renderSection();
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Filtrer la liste"), "zzz");
+
+    expect(
+      document.querySelector('[data-cy="aucun-resultat-baux"]'),
+    ).toHaveTextContent("Aucun résultat pour « zzz ».");
+    expect(document.querySelector('[data-cy="entetes-baux"]')).toBeNull();
+    expect(leaseOrder()).toEqual([]);
+  });
+
+  it("sorts the leases by address, company or rent with a direction toggle", async () => {
+    leaseRows = [LEASE, OTHER_LEASE];
+    renderSection();
+    const user = userEvent.setup();
+
+    expect(
+      within(screen.getByLabelText("Trier par"))
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["Bail", "Société", "Loyer"]);
+    expect(leaseOrder()).toEqual([10, 11]);
+
+    await user.selectOptions(screen.getByLabelText("Trier par"), "rent");
+    expect(leaseOrder()).toEqual([11, 10]);
+
+    await user.click(screen.getByRole("button", { name: "Tri croissant" }));
+    expect(leaseOrder()).toEqual([10, 11]);
+  });
+
+  it("hides the list toolbar when there is no lease", () => {
+    leaseRows = [];
+    renderSection();
+
+    expect(document.querySelector('[data-cy="filtre-baux"]')).toBeNull();
   });
 });
 
