@@ -1,10 +1,11 @@
 import "./RentReceiptAmountFields.css";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
 import { formatDate } from "@/lib/format";
+import { RentReceiptAdditionalChargeRow } from "./RentReceiptAdditionalChargeRow";
 import type { RentReceiptController } from "./useRentReceiptPage";
 
 /** Period, amounts, dates and the estimated-total block. */
@@ -97,79 +98,32 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
       </div>
 
       <div className="rent-receipt-amount-fields-charges">
-        {(c.values.additionalCharges ?? []).length > 0 ? (
+        {(c.values.additionalCharges ?? []).length > 0 ||
+        c.editingAdditionalCharge !== null ? (
           <p className="rent-receipt-amount-fields-charges-title">
             {t("rentReceipt.fields.additionalCharges")}
           </p>
         ) : null}
         <ul className="rent-receipt-amount-fields-charges-list">
-          {(c.values.additionalCharges ?? []).map((_charge, index) => {
-            const fieldErrors = c.errors.additionalCharges?.[index];
-            return (
-              <li
-                key={index}
-                className="rent-receipt-amount-fields-charge"
-                data-cy={`charge-supplementaire-${index}`}
-              >
-                <FieldGroup
-                  id={`quittance-charge-libelle-${index}`}
-                  label={t("rentReceipt.fields.additionalChargeLabel", {
-                    index: index + 1,
-                  })}
-                  error={fieldErrors?.label?.message}
-                >
-                  <input
-                    id={`quittance-charge-libelle-${index}`}
-                    className={cn("field", fieldErrors?.label && "field-error")}
-                    aria-invalid={Boolean(fieldErrors?.label)}
-                    data-cy={`input-charge-supplementaire-libelle-${index}`}
-                    {...c.register(`additionalCharges.${index}.label`)}
-                  />
-                </FieldGroup>
-                <FieldGroup
-                  id={`quittance-charge-montant-${index}`}
-                  label={t("rentReceipt.fields.additionalChargeAmount", {
-                    index: index + 1,
-                  })}
-                  error={fieldErrors?.amount?.message}
-                >
-                  <div className="rent-receipt-amount-fields-amount">
-                    <input
-                      id={`quittance-charge-montant-${index}`}
-                      inputMode="decimal"
-                      className={cn(
-                        "field pr-9",
-                        fieldErrors?.amount && "field-error",
-                      )}
-                      aria-invalid={Boolean(fieldErrors?.amount)}
-                      data-cy={`input-charge-supplementaire-montant-${index}`}
-                      {...c.register(`additionalCharges.${index}.amount`)}
-                    />
-                    <span className="rent-receipt-amount-fields-unit">€</span>
-                  </div>
-                </FieldGroup>
-                <Button
-                  variant="ghost"
-                  small
-                  icon={<Trash2 size={14} />}
-                  aria-label={t("rentReceipt.fields.removeAdditionalCharge", {
-                    index: index + 1,
-                  })}
-                  onClick={() => c.removeAdditionalCharge(index)}
-                  data-cy={`btn-retirer-charge-supplementaire-${index}`}
-                >
-                  {t("rentReceipt.fields.removeAdditionalChargeShort")}
-                </Button>
-              </li>
-            );
-          })}
+          {(c.values.additionalCharges ?? []).map((charge, index) => (
+            <RentReceiptAdditionalChargeRow
+              key={index}
+              c={c}
+              index={index}
+              charge={charge}
+            />
+          ))}
+          {c.editingAdditionalCharge?.index === null ? (
+            <RentReceiptAdditionalChargeRow key="nouvelle" c={c} index={null} />
+          ) : null}
         </ul>
         <div className="rent-receipt-amount-fields-charges-actions">
           <Button
             variant="secondary"
             small
             icon={<Plus size={14} />}
-            onClick={c.addAdditionalCharge}
+            onClick={c.startAddAdditionalCharge}
+            disabled={!c.canAddAdditionalCharge}
             data-cy="btn-ajouter-charge-supplementaire"
           >
             {t("rentReceipt.fields.addAdditionalCharge")}

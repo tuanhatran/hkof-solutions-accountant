@@ -30,10 +30,42 @@ describe("Rent receipt", () => {
       waitForValue("#quittance-loyer", SEED_RENT);
 
       cy.get('[data-cy="btn-ajouter-charge-supplementaire"]').click();
-      cy.get('[data-cy="charge-supplementaire-0"]').should("be.visible");
-      cy.get('[data-cy="input-charge-supplementaire-libelle-0"]').type("Eau");
-      cy.get('[data-cy="input-charge-supplementaire-montant-0"]').type("20,00");
+      cy.get('[data-cy="input-charge-supplementaire-libelle"]').type("Eau");
+      cy.get('[data-cy="input-charge-supplementaire-montant"]').type("20,00");
+      cy.get('[data-cy="btn-ajouter-charge-supplementaire"]').should(
+        "be.disabled",
+      );
+      cy.get('[data-cy="btn-generer-quittance"]').should("be.disabled");
+      cy.contains("1 300,00 €").should("be.visible");
+
+      cy.get('[data-cy="btn-enregistrer-charge-supplementaire"]').click();
+      cy.get('[data-cy="charge-supplementaire-0"]')
+        .should("be.visible")
+        .and("contain.text", "Eau")
+        .and("contain.text", "20,00");
+      cy.get('[data-cy="input-charge-supplementaire-libelle"]').should(
+        "not.exist",
+      );
+      cy.get('[data-cy="btn-ajouter-charge-supplementaire"]').should(
+        "not.be.disabled",
+      );
       cy.contains("1 320,00 €").should("be.visible");
+
+      // Editing keeps the saved charge effective until the new value is saved.
+      cy.get('[data-cy="btn-modifier-charge-supplementaire-0"]').click();
+      cy.get('[data-cy="input-charge-supplementaire-libelle"]').should(
+        "have.value",
+        "Eau",
+      );
+      cy.get('[data-cy="input-charge-supplementaire-montant"]')
+        .should("have.value", "20.00")
+        .clear()
+        .type("25,00");
+      cy.contains("1 320,00 €").should("be.visible");
+      cy.get('[data-cy="btn-enregistrer-charge-supplementaire"]').click();
+      cy.get('[data-cy="charge-supplementaire-0"]')
+        .should("be.visible")
+        .and("contain.text", "25,00");
 
       cy.get('[data-cy="btn-generer-quittance"]')
         .should("not.be.disabled")
@@ -47,8 +79,8 @@ describe("Rent receipt", () => {
         "quittance_2026-02.pdf",
         (text) => {
           expect(text).to.contain("Eau");
-          expect(text).to.contain("1 320,00 €");
-          expect(text).to.contain("1 320,00");
+          expect(text).to.contain("1 325,00 €");
+          expect(text).to.contain("1 325,00");
         },
       );
     });

@@ -23,6 +23,7 @@ import { usePdfPreview } from "@/hooks/usePdfPreview";
 import { periodOfMonth } from "@/lib/dates";
 import { formatEUR, formatMonth, parseAmount } from "@/lib/format";
 import {
+  additionalChargeSchema,
   parseTenantKey,
   rentReceiptSchema,
   tenantKeyFromLease,
@@ -42,6 +43,17 @@ export interface TenantOption {
 }
 
 /**
+ * Charge row currently being entered: `index` is its position among the saved
+ * rows, or null for a new row not saved yet.
+ */
+export interface EditingAdditionalCharge {
+  index: number | null;
+  label: string;
+  amount: string;
+  errors: { label?: string; amount?: string };
+}
+
+/**
  * Controller for the rent receipt page: lease selection, form, preview and
  * generation.
  */
@@ -58,6 +70,10 @@ export function useRentReceiptPage() {
   const [chosenSignatureId, setChosenSignatureId] = useState<number | null>(
     null,
   );
+  // The single in-progress charge row stays outside React Hook Form so the
+  // preview, the draft and the generation only ever see saved rows.
+  const [editingAdditionalCharge, setEditingAdditionalCharge] =
+    useState<EditingAdditionalCharge | null>(null);
 
   const persons = usePersons();
   const companies = useCompanies();
@@ -234,6 +250,7 @@ export function useRentReceiptPage() {
     setValue("additionalCharges", saved.additionalCharges ?? [], {
       shouldValidate: true,
     });
+    setEditingAdditionalCharge(null);
   }, [savedDraft.data, draft, setValue]);
 
   const request =
@@ -312,6 +329,7 @@ export function useRentReceiptPage() {
     if (!validation.success) {
       return;
     }
+    setEditingAdditionalCharge(null);
     const requestBody = requestFromValues(
       submittedValues,
       selectedModel,
@@ -354,6 +372,10 @@ export function useRentReceiptPage() {
   }
 
   function submit(submittedValues: RentReceiptFormValues) {
+    // An unsaved charge row would be silently dropped: generation waits for Save.
+    if (editingAdditionalCharge !== null) {
+      return;
+    }
     // Unlimited ACTIVE receipts: every generation creates a new one, no dialog.
     void runGeneration(submittedValues);
   }
@@ -380,6 +402,7 @@ export function useRentReceiptPage() {
   }
 
   function selectPair(nextLandlordId: string, nextTenantKey: string) {
+    setEditingAdditionalCharge(null);
     setValue("landlordId", nextLandlordId, { shouldValidate: true });
     setValue("tenantKey", nextTenantKey, { shouldValidate: true });
     const landlordId = nextLandlordId ? Number(nextLandlordId) : null;
@@ -416,6 +439,7 @@ export function useRentReceiptPage() {
     if (!value) {
       return;
     }
+    setEditingAdditionalCharge(null);
     draft.changeMonth(value);
     const period = periodOfMonth(value);
     setValue("periodStart", period.start, { shouldValidate: true });
@@ -427,17 +451,96 @@ export function useRentReceiptPage() {
     draft.update({ additionalCharges: next });
   }
 
-  function addAdditionalCharge() {
+  function startAddAdditionalCharge() {
     const current = getValues("additionalCharges") ?? [];
-    if (current.length >= 20) {
+    if (editingAdditionalCharge !== null || current.length >= 20) {
       return;
     }
-    setAdditionalCharges([...current, { label: "", amount: "" }]);
+    setEditingAdditionalCharge({
+      index: null,
+      label: "",
+      amount: "",
+      errors: {},
+    });
+  }
+
+  function startEditAdditionalCharge(index: number) {
+    if (editingAdditionalCharge !== null) {
+      return;
+    }
+    const charge = (getValues("additionalCharges") ?? [])[index];
+    if (!charge) {
+      return;
+    }
+    setEditingAdditionalCharge({
+      index,
+      label: charge.label,
+      amount: charge.amount,
+      errors: {},
+    });
+  }
+
+  function changeEditingAdditionalCharge(
+    patch: Partial<Pick<EditingAdditionalCharge, "label" | "amount">>,
+  ) {
+    setEditingAdditionalCharge((current) => {
+      if (!current) {
+        return current;
+      }
+      const errors = { ...current.errors };
+      if (patch.label !== undefined) {
+        delete errors.label;
+      }
+      if (patch.amount !== undefined) {
+        delete errors.amount;
+      }
+      return { ...current, ...patch, errors };
+    });
+  }
+
+  function saveAdditionalCharge() {
+    if (!editingAdditionalCharge) {
+      return;
+    }
+    const parsed = additionalChargeSchema.safeParse({
+      label: editingAdditionalCharge.label,
+      amount: editingAdditionalCharge.amount,
+    });
+    if (!parsed.success) {
+      const issue = (field: "label" | "amount") =>
+        parsed.error.issues.find((candidate) => candidate.path[0] === field)
+          ?.message;
+      setEditingAdditionalCharge({
+        ...editingAdditionalCharge,
+        errors: { label: issue("label"), amount: issue("amount") },
+      });
+      return;
+    }
+    const saved: AdditionalChargeFormValues = {
+      label: parsed.data.label,
+      amount: parseAmount(parsed.data.amount) ?? parsed.data.amount,
+    };
+    const current = getValues("additionalCharges") ?? [];
+    const next =
+      editingAdditionalCharge.index === null
+        ? [...current, saved]
+        : current.map((charge, position) =>
+            position === editingAdditionalCharge.index ? saved : charge,
+          );
+    setAdditionalCharges(next);
+    setEditingAdditionalCharge(null);
+  }
+
+  function cancelAdditionalCharge() {
+    setEditingAdditionalCharge(null);
   }
 
   function removeAdditionalCharge(index: number) {
     const current = getValues("additionalCharges") ?? [];
     setAdditionalCharges(current.filter((_, position) => position !== index));
+    if (editingAdditionalCharge?.index === index) {
+      setEditingAdditionalCharge(null);
+    }
   }
 
   async function saveDraft(): Promise<boolean> {
@@ -533,7 +636,16 @@ export function useRentReceiptPage() {
     resumeLease,
     changeMonth,
     selectPair,
-    addAdditionalCharge,
+    editingAdditionalCharge,
+    hasUnsavedAdditionalCharge: editingAdditionalCharge !== null,
+    canAddAdditionalCharge:
+      editingAdditionalCharge === null &&
+      (values.additionalCharges ?? []).length < 20,
+    startAddAdditionalCharge,
+    startEditAdditionalCharge,
+    changeEditingAdditionalCharge,
+    saveAdditionalCharge,
+    cancelAdditionalCharge,
     removeAdditionalCharge,
   };
 }

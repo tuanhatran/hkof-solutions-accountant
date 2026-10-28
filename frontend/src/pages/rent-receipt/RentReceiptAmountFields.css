@@ -29,6 +29,26 @@
     @apply grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_160px_auto];
   }
 
+  .rent-receipt-amount-fields-charge-readonly {
+    @apply items-center rounded-lg border border-line/70 bg-paper-deep/40 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto];
+  }
+
+  .rent-receipt-amount-fields-charge-text {
+    @apply flex flex-wrap items-baseline justify-between gap-2 text-sm;
+  }
+
+  .rent-receipt-amount-fields-charge-label {
+    @apply font-medium text-ink;
+  }
+
+  .rent-receipt-amount-fields-charge-amount {
+    @apply font-semibold text-ink;
+  }
+
+  .rent-receipt-amount-fields-charge-actions {
+    @apply mb-1 flex items-center justify-start gap-1 sm:justify-end;
+  }
+
   .rent-receipt-amount-fields-charges-actions {
     @apply flex justify-start;
   }

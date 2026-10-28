@@ -40,7 +40,8 @@ export function RentReceiptForm({ c }: { c: RentReceiptController }) {
                 c.activeRentReceipt.isPending ||
                 c.templates.isPending ||
                 c.leases.isPending ||
-                !c.signatureAvailable
+                !c.signatureAvailable ||
+                c.hasUnsavedAdditionalCharge
               }
               data-cy="btn-generer-quittance"
             >

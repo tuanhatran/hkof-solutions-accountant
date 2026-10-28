@@ -1208,46 +1208,71 @@ describe("GenerateRentReceiptPage", () => {
     ).toBeVisible();
   });
 
-  it("adds removable additional charges to the estimate with French validation", async () => {
+  it("adds a charge with plain labels, saves it as read-only text and edits it back", async () => {
     renderPage();
     const user = userEvent.setup();
 
     expect(screen.queryByText("Charges supplémentaires")).toBeNull();
-    await user.click(
-      screen.getByRole("button", { name: "Ajouter une charge supplémentaire" }),
-    );
+    const addButton = screen.getByRole("button", {
+      name: "Ajouter une charge supplémentaire",
+    });
+    await user.click(addButton);
     expect(screen.getByText("Charges supplémentaires")).toBeVisible();
+    expect(screen.getByLabelText("Libellé")).toBeVisible();
+    expect(screen.getByLabelText("Montant")).toBeVisible();
+    expect(addButton).toBeDisabled();
 
-    const label = screen.getByLabelText(
-      "Libellé de la charge supplémentaire 1",
+    // An invalid row stays editable and shows the French errors.
+    await user.type(screen.getByLabelText("Montant"), "0");
+    await user.click(
+      screen.getByRole("button", {
+        name: "Enregistrer la charge supplémentaire",
+      }),
     );
-    const amount = screen.getByLabelText(
-      "Montant de la charge supplémentaire 1",
-    );
-    await user.type(label, "Eau");
-    await user.type(amount, "20,00");
-    expect(screen.getByText(/1\s?320,00/)).toBeVisible();
-
-    await user.clear(label);
     expect(
       await screen.findByText(
         "Le libellé de la charge supplémentaire est obligatoire.",
       ),
     ).toBeVisible();
-    await user.type(label, "Eau");
-    await user.clear(amount);
-    await user.type(amount, "0");
     expect(
-      await screen.findByText(
+      screen.getByText(
         "Le montant de la charge supplémentaire doit être strictement positif.",
       ),
     ).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: /Générer la quittance/ }),
-    ).toBeDisabled();
+    expect(screen.getByLabelText("Libellé")).toBeVisible();
 
-    await user.clear(amount);
-    await user.type(amount, "20,00");
+    // The unsaved row never reaches the estimate.
+    await user.type(screen.getByLabelText("Libellé"), "Eau");
+    await user.clear(screen.getByLabelText("Montant"));
+    await user.type(screen.getByLabelText("Montant"), "20,00");
+    expect(screen.getByText(/1\s?300,00/)).toBeVisible();
+    await user.click(
+      screen.getByRole("button", {
+        name: "Enregistrer la charge supplémentaire",
+      }),
+    );
+
+    const row = document.querySelector('[data-cy="charge-supplementaire-0"]');
+    expect(row).not.toBeNull();
+    expect(within(row as HTMLElement).getByText("Eau")).toBeVisible();
+    expect(within(row as HTMLElement).getByText(/20,00\s?€/)).toBeVisible();
+    expect(screen.queryByLabelText("Libellé")).toBeNull();
+    expect(screen.getByText(/1\s?320,00/)).toBeVisible();
+    expect(addButton).toBeEnabled();
+
+    // Editing re-opens the saved values and keeps them in the estimate.
+    await user.click(
+      screen.getByRole("button", {
+        name: "Modifier la charge supplémentaire 1",
+      }),
+    );
+    expect(screen.getByLabelText("Libellé")).toHaveValue("Eau");
+    expect(screen.getByLabelText("Montant")).toHaveValue("20.00");
+    expect(addButton).toBeDisabled();
+    expect(screen.getByText(/1\s?320,00/)).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
+    expect(screen.getByText(/1\s?320,00/)).toBeVisible();
+
     await user.click(
       screen.getByRole("button", {
         name: "Retirer la charge supplémentaire 1",
@@ -1257,7 +1282,7 @@ describe("GenerateRentReceiptPage", () => {
     expect(screen.getByText(/1\s?300,00/)).toBeVisible();
   });
 
-  it("sends additional charges to the preview, the generation and the saved draft", async () => {
+  it("sends saved additional charges to the preview, the generation and the saved draft", async () => {
     vi.mocked(api.rentReceipts.create).mockResolvedValue({
       id: 1,
       month: MONTH,
@@ -1270,14 +1295,20 @@ describe("GenerateRentReceiptPage", () => {
     await user.click(
       screen.getByRole("button", { name: "Ajouter une charge supplémentaire" }),
     );
-    await user.type(
-      screen.getByLabelText("Libellé de la charge supplémentaire 1"),
-      "Eau",
+    await user.type(screen.getByLabelText("Libellé"), "Eau");
+    await user.type(screen.getByLabelText("Montant"), "20.00");
+
+    // An unsaved row blocks generation: it is never silently discarded.
+    expect(
+      screen.getByRole("button", { name: /Générer la quittance/ }),
+    ).toBeDisabled();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Enregistrer la charge supplémentaire",
+      }),
     );
-    await user.type(
-      screen.getByLabelText("Montant de la charge supplémentaire 1"),
-      "20.00",
-    );
+    await waitFor(() => expect(screen.getByText(/1\s?320,00/)).toBeVisible());
 
     await waitFor(() => expect(lastPreviewLoader).not.toBeNull());
     await lastPreviewLoader?.(new AbortController().signal);
@@ -1311,7 +1342,58 @@ describe("GenerateRentReceiptPage", () => {
     );
   });
 
-  it("restores the additional charges of a saved draft", async () => {
+  it("keeps the saved charge in the estimate and the preview while editing", async () => {
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter une charge supplémentaire" }),
+    );
+    await user.type(screen.getByLabelText("Libellé"), "Eau");
+    await user.type(screen.getByLabelText("Montant"), "20.00");
+    await user.click(
+      screen.getByRole("button", {
+        name: "Enregistrer la charge supplémentaire",
+      }),
+    );
+    await waitFor(() => expect(screen.getByText(/1\s?320,00/)).toBeVisible());
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Modifier la charge supplémentaire 1",
+      }),
+    );
+    await user.clear(screen.getByLabelText("Montant"));
+    await user.type(screen.getByLabelText("Montant"), "25,00");
+    expect(screen.getByText(/1\s?320,00/)).toBeVisible();
+
+    await waitFor(() => expect(lastPreviewLoader).not.toBeNull());
+    await lastPreviewLoader?.(new AbortController().signal);
+    expect(api.rentReceipts.preview).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        additionalCharges: [{ label: "Eau", amount: "20.00" }],
+      }),
+      expect.anything(),
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Enregistrer la charge supplémentaire",
+      }),
+    );
+    await waitFor(() => expect(screen.getByText(/1\s?325,00/)).toBeVisible());
+    await lastPreviewLoader?.(new AbortController().signal);
+    expect(api.rentReceipts.preview).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        additionalCharges: [{ label: "Eau", amount: "25.00" }],
+      }),
+      expect.anything(),
+    );
+    expect(
+      screen.getByRole("button", { name: "Ajouter une charge supplémentaire" }),
+    ).toBeEnabled();
+  });
+
+  it("restores the saved additional charges of a draft as read-only text", async () => {
     savedDraft = {
       id: 60,
       month: MONTH,
@@ -1329,14 +1411,9 @@ describe("GenerateRentReceiptPage", () => {
 
     renderPage();
 
-    await waitFor(() =>
-      expect(
-        screen.getByLabelText("Libellé de la charge supplémentaire 1"),
-      ).toHaveValue("Eau"),
-    );
-    expect(
-      screen.getByLabelText("Montant de la charge supplémentaire 1"),
-    ).toHaveValue("15.50");
+    await waitFor(() => expect(screen.getByText("Eau")).toBeVisible());
+    expect(screen.getByText(/15,50\s?€/)).toBeVisible();
+    expect(screen.queryByLabelText("Libellé")).toBeNull();
     expect(screen.getByText(/1\s?255,50/)).toBeVisible();
   });
 
