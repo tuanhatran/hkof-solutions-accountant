@@ -9,15 +9,16 @@ export interface ExpenseStatementRentReceiptSource {
 }
 
 /**
- * Optional scoping of the controller. Without options the hook keeps the
- * historical page behaviour: global sessionStorage draft, active company and
- * its derived lease, company active rent receipt and navigation to
- * /generer/quittance. A scoped editor (the company lease statement modal)
- * injects its own company, lease, non-persisted draft, rent receipt source
- * and rent-receipt action; the global draft and company store stay untouched.
+ * Optional scoping of the controller. Without options the page keeps a local
+ * company selection: a single company is selected automatically, several
+ * companies require an explicit choice. A scoped editor (the company lease
+ * statement modal) injects its own locked company, lease, non-persisted draft,
+ * rent receipt source and rent-receipt action. `initialCompanyId` restores the
+ * company of a statement reopened from History.
  */
 export interface ExpenseStatementPageOptions {
   companyId?: number;
+  initialCompanyId?: number;
   leaseId?: number | null;
   draft?: StatementDraftStore;
   rentReceipt?: ExpenseStatementRentReceiptSource;

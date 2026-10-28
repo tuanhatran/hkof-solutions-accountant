@@ -522,10 +522,12 @@ describe("Multi-company and employees", () => {
         linkCompanyLease(seeded.id, seededLeaseId);
       });
 
-      // Creating the annexe company activated it; switch back to HKOF in the
-      // header context bar before generating the note through the UI.
+      // Creating a company no longer activates it globally: the note page asks
+      // for an explicit company in its header.
       cy.visit("/generer/note-frais");
-      cy.get('[data-cy="select-societe-active"]').select(String(seeded.id));
+      cy.get('[data-cy="select-societe-note-frais"]', { timeout: 20_000 })
+        .should("be.visible")
+        .select(String(seeded.id));
       cy.chooseMonth(MONTHS);
       cy.get('[data-cy="select-type-frais"]').should("not.be.disabled");
       cy.get('[data-cy="select-type-frais"] option[value="telephone"]').should(
@@ -569,7 +571,7 @@ describe("Multi-company and employees", () => {
         .should("have.length", 1);
 
       // History fans out one statement query per company: both notes show up
-      // with their own lease address, without any active-company switch.
+      // with their own lease address, without any global company switch.
       cy.get('[data-cy="tab-historique"]').click();
       cy.get('[data-cy="historique-mois-2026-01"]', {
         timeout: 20_000,
@@ -586,9 +588,16 @@ describe("Multi-company and employees", () => {
         '[data-cy^="historique-adresse-note-2026-01"]',
         ANNEXE_LEASE.propertyAddress,
       ).should("be.visible");
-      cy.get('[data-cy="select-societe-active"]')
-        .should("exist")
-        .and("have.value", String(seeded.id));
+
+      // The topbar no longer carries a global company switch.
+      cy.get('[data-cy="select-societe-active"]').should("not.exist");
+
+      // Back on the note page the choice is explicit again: outside History's
+      // navigation state, no company is restored by default.
+      cy.visit("/generer/note-frais");
+      cy.get('[data-cy="select-societe-note-frais"]', { timeout: 20_000 })
+        .should("be.visible")
+        .and("have.value", "");
     });
   });
 });

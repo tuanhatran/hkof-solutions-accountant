@@ -4,6 +4,7 @@ import type { StatementDto } from "@/api/types";
 import type { DraftLine } from "@/lib/lines";
 import {
   createStatementDraftStore,
+  draftScopeKey,
   useStatementDirty,
   useStatementDraft,
   useStatementLines,
@@ -23,10 +24,12 @@ const LINE: DraftLine = {
 };
 
 const MONTH = "2026-01";
+const KEY = draftScopeKey(null, MONTH);
 
 function resetDraft() {
   useStatementDraft.setState({
     month: MONTH,
+    companyId: null,
     linesByMonth: {},
     templatesByMonth: {},
     completeByMonth: {},
@@ -48,8 +51,8 @@ describe("useStatementDraft", () => {
     useStatementDraft.getState().addLine(LINE);
 
     const state = useStatementDraft.getState();
-    expect(state.linesByMonth[MONTH]).toEqual([LINE]);
-    expect(state.dirtyByMonth[MONTH]).toBe(true);
+    expect(state.linesByMonth[KEY]).toEqual([LINE]);
+    expect(state.dirtyByMonth[KEY]).toBe(true);
   });
 
   it("updates an existing line and ignores unknown keys", () => {
@@ -61,7 +64,7 @@ describe("useStatementDraft", () => {
       .getState()
       .updateLine("missing", { amountInclVat: "1.00" });
 
-    const lines = useStatementDraft.getState().linesByMonth[MONTH] ?? [];
+    const lines = useStatementDraft.getState().linesByMonth[KEY] ?? [];
     expect(lines).toHaveLength(1);
     expect(lines[0]?.amountInclVat).toBe("90.00");
   });
@@ -72,8 +75,8 @@ describe("useStatementDraft", () => {
 
     useStatementDraft.getState().removeLine("line-1");
 
-    expect(useStatementDraft.getState().linesByMonth[MONTH]).toHaveLength(1);
-    expect(useStatementDraft.getState().linesByMonth[MONTH]?.[0]?.key).toBe(
+    expect(useStatementDraft.getState().linesByMonth[KEY]).toHaveLength(1);
+    expect(useStatementDraft.getState().linesByMonth[KEY]?.[0]?.key).toBe(
       "line-2",
     );
   });
@@ -82,16 +85,16 @@ describe("useStatementDraft", () => {
     useStatementDraft.getState().addLine(LINE);
     useStatementDraft.getState().replaceLines([]);
 
-    expect(useStatementDraft.getState().linesByMonth[MONTH]).toEqual([]);
-    expect(useStatementDraft.getState().dirtyByMonth[MONTH]).toBe(true);
+    expect(useStatementDraft.getState().linesByMonth[KEY]).toEqual([]);
+    expect(useStatementDraft.getState().dirtyByMonth[KEY]).toBe(true);
   });
 
   it("stores the template and the complete flag per month", () => {
     useStatementDraft.getState().setTemplate(5);
     useStatementDraft.getState().setComplete(false);
 
-    expect(useStatementDraft.getState().templatesByMonth[MONTH]).toBe(5);
-    expect(useStatementDraft.getState().completeByMonth[MONTH]).toBe(false);
+    expect(useStatementDraft.getState().templatesByMonth[KEY]).toBe(5);
+    expect(useStatementDraft.getState().completeByMonth[KEY]).toBe(false);
   });
 
   it("records the primed receipt and clears the dirty flag on generation", () => {
@@ -100,8 +103,8 @@ describe("useStatementDraft", () => {
     useStatementDraft.getState().markGenerated();
 
     const state = useStatementDraft.getState();
-    expect(state.primedReceiptByMonth[MONTH]).toBe(8);
-    expect(state.dirtyByMonth[MONTH]).toBe(false);
+    expect(state.primedReceiptByMonth[KEY]).toBe(8);
+    expect(state.dirtyByMonth[KEY]).toBe(false);
   });
 
   it("loads a generated statement into the draft", () => {
@@ -125,17 +128,18 @@ describe("useStatementDraft", () => {
     useStatementDraft.getState().loadFromStatement(statement, 12);
 
     const state = useStatementDraft.getState();
+    const april = draftScopeKey(null, "2026-04");
     expect(state.month).toBe("2026-04");
-    expect(state.linesByMonth["2026-04"]).toHaveLength(1);
-    expect(state.linesByMonth["2026-04"]?.[0]).toMatchObject({
+    expect(state.linesByMonth[april]).toHaveLength(1);
+    expect(state.linesByMonth[april]?.[0]).toMatchObject({
       itemCode: "gaz",
       amountInclVat: "80.00",
       proRataPct: "35.71",
       amountSource: "AI",
     });
-    expect(state.templatesByMonth["2026-04"]).toBe(6);
-    expect(state.primedReceiptByMonth["2026-04"]).toBe(12);
-    expect(state.dirtyByMonth["2026-04"]).toBe(false);
+    expect(state.templatesByMonth[april]).toBe(6);
+    expect(state.primedReceiptByMonth[april]).toBe(12);
+    expect(state.dirtyByMonth[april]).toBe(false);
   });
 
   it("falls back to the active month and empty lines", () => {
@@ -143,8 +147,42 @@ describe("useStatementDraft", () => {
 
     const state = useStatementDraft.getState();
     expect(state.month).toBe(MONTH);
-    expect(state.linesByMonth[MONTH]).toEqual([]);
-    expect(state.templatesByMonth[MONTH]).toBeNull();
+    expect(state.linesByMonth[KEY]).toEqual([]);
+    expect(state.templatesByMonth[KEY]).toBeNull();
+  });
+
+  it("keeps the lines of two companies apart for the same month", () => {
+    const draft = useStatementDraft.getState();
+    draft.selectCompany(1);
+    draft.addLine(LINE);
+
+    draft.selectCompany(2);
+    expect(
+      useStatementDraft.getState().linesByMonth[draftScopeKey(2, MONTH)],
+    ).toBeUndefined();
+    useStatementDraft.getState().addLine({ ...LINE, key: "company-2" });
+
+    draft.selectCompany(1);
+    expect(
+      useStatementDraft.getState().linesByMonth[draftScopeKey(1, MONTH)],
+    ).toEqual([LINE]);
+
+    draft.selectCompany(2);
+    expect(
+      useStatementDraft
+        .getState()
+        .linesByMonth[draftScopeKey(2, MONTH)]?.map((line) => line.key),
+    ).toEqual(["company-2"]);
+  });
+
+  it("loads a statement into the scope of its company", () => {
+    useStatementDraft
+      .getState()
+      .loadFromStatement({ month: "2026-04", companyId: 2 }, null);
+
+    const state = useStatementDraft.getState();
+    expect(state.companyId).toBe(2);
+    expect(state.linesByMonth[draftScopeKey(2, "2026-04")]).toEqual([]);
   });
 
   it("exposes the current lines and dirty flag through selectors", () => {
@@ -166,11 +204,12 @@ describe("useStatementDraft", () => {
 });
 
 describe("createStatementDraftStore", () => {
-  it("starts on the given month with empty per-month maps", () => {
-    const store = createStatementDraftStore("2026-05");
+  it("starts on the given month and company with empty per-month maps", () => {
+    const store = createStatementDraftStore("2026-05", 7);
 
     const state = store.getState();
     expect(state.month).toBe("2026-05");
+    expect(state.companyId).toBe(7);
     expect(state.linesByMonth).toEqual({});
     expect(state.templatesByMonth).toEqual({});
     expect(state.completeByMonth).toEqual({});
@@ -179,7 +218,8 @@ describe("createStatementDraftStore", () => {
   });
 
   it("supports the same actions as the global store", () => {
-    const store = createStatementDraftStore(MONTH);
+    const store = createStatementDraftStore(MONTH, 1);
+    const scoped = draftScopeKey(1, MONTH);
 
     store.getState().addLine(LINE);
     store.getState().updateLine("line-1", { amountInclVat: "90.00" });
@@ -189,30 +229,34 @@ describe("createStatementDraftStore", () => {
     store.getState().markGenerated();
 
     const state = store.getState();
-    expect(state.linesByMonth[MONTH]?.[0]?.amountInclVat).toBe("90.00");
-    expect(state.dirtyByMonth[MONTH]).toBe(false);
-    expect(state.templatesByMonth[MONTH]).toBe(5);
-    expect(state.completeByMonth[MONTH]).toBe(false);
-    expect(state.primedReceiptByMonth[MONTH]).toBe(8);
+    expect(state.linesByMonth[scoped]?.[0]?.amountInclVat).toBe("90.00");
+    expect(state.dirtyByMonth[scoped]).toBe(false);
+    expect(state.templatesByMonth[scoped]).toBe(5);
+    expect(state.completeByMonth[scoped]).toBe(false);
+    expect(state.primedReceiptByMonth[scoped]).toBe(8);
 
     store.getState().removeLine("line-1");
-    expect(store.getState().linesByMonth[MONTH]).toEqual([]);
+    expect(store.getState().linesByMonth[scoped]).toEqual([]);
   });
 
   it("stays isolated from the global persisted draft", () => {
-    const store = createStatementDraftStore(MONTH);
+    const store = createStatementDraftStore(MONTH, 1);
 
     store.getState().addLine(LINE);
 
-    expect(useStatementDraft.getState().linesByMonth[MONTH]).toBeUndefined();
+    expect(useStatementDraft.getState().linesByMonth[KEY]).toBeUndefined();
     useStatementDraft.getState().addLine({ ...LINE, key: "global" });
-    expect(store.getState().linesByMonth[MONTH]).toHaveLength(1);
-    expect(store.getState().linesByMonth[MONTH]?.[0]?.key).toBe("line-1");
+    expect(store.getState().linesByMonth[draftScopeKey(1, MONTH)]).toHaveLength(
+      1,
+    );
+    expect(
+      store.getState().linesByMonth[draftScopeKey(1, MONTH)]?.[0]?.key,
+    ).toBe("line-1");
   });
 
   it("does not persist to the sessionStorage draft key", () => {
     sessionStorage.removeItem("homeofficeexpenses.statement-draft");
-    const store = createStatementDraftStore(MONTH);
+    const store = createStatementDraftStore(MONTH, 1);
 
     store.getState().addLine(LINE);
 
@@ -222,9 +266,12 @@ describe("createStatementDraftStore", () => {
   });
 
   it("drives component re-renders through useStore selectors", () => {
-    const store = createStatementDraftStore(MONTH);
+    const store = createStatementDraftStore(MONTH, 1);
     const { result } = renderHook(() =>
-      store((state) => state.linesByMonth[state.month]),
+      store(
+        (state) =>
+          state.linesByMonth[draftScopeKey(state.companyId, state.month)],
+      ),
     );
 
     expect(result.current).toBeUndefined();

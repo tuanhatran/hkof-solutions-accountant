@@ -15,10 +15,10 @@ import type {
 import i18n from "@/i18n";
 import type { DraftLine } from "@/lib/lines";
 import { expenseSchema } from "@/lib/validation";
-import { useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import {
   createStatementDraftStore,
+  draftScopeKey,
   useStatementDraft,
   type StatementDraftStore,
 } from "@/state/statementDraft";
@@ -29,6 +29,7 @@ import { useExpenseStatementPage } from "./useExpenseStatementPage";
 interface QueryLike<T> {
   data: T | undefined;
   isPending: boolean;
+  isSuccess: boolean;
   isError: boolean;
   error: Error | null;
   refetch: ReturnType<typeof vi.fn>;
@@ -213,11 +214,13 @@ const LANDLORD: SignatureDto = {
 };
 
 const MONTH = "2026-01";
+const SCOPE = draftScopeKey(1, MONTH);
 
 function readyQuery<T>(data: T): QueryLike<T> {
   return {
     data,
     isPending: false,
+    isSuccess: true,
     isError: false,
     error: null,
     refetch: vi.fn(),
@@ -243,7 +246,8 @@ function line(overrides: Partial<DraftLine> = {}): DraftLine {
 function resetDraft(lines: DraftLine[] = []) {
   useStatementDraft.setState({
     month: MONTH,
-    linesByMonth: lines.length > 0 ? { [MONTH]: lines } : {},
+    companyId: 1,
+    linesByMonth: lines.length > 0 ? { [SCOPE]: lines } : {},
     templatesByMonth: {},
     completeByMonth: {},
     primedReceiptByMonth: {},
@@ -268,7 +272,6 @@ function toastMessages(): string[] {
 beforeEach(() => {
   companiesState = readyQuery([COMPANY]);
   employeesState = readyQuery([CEO_EMPLOYEE]);
-  useCompanyStore.setState({ activeCompanyId: 1 });
   itemsState = readyQuery(ITEMS);
   templatesState = readyQuery(TEMPLATES);
   rentReceiptState = readyQuery({ id: 7, total: "1300.00" });
@@ -346,26 +349,47 @@ describe("useExpenseStatementPage defaults", () => {
     expect(result.current.isRent).toBe(false);
   });
 
-  it("disables the calculation without an active company", async () => {
+  it("disables the calculation without any company", async () => {
     companiesState = readyQuery([]);
-    useCompanyStore.setState({ activeCompanyId: null });
     resetDraft([line()]);
     const { result } = renderController();
 
     await waitFor(() => expect(result.current.activeCompanyId).toBeNull());
+    expect(result.current.companySelectionRequired).toBe(false);
     expect(result.current.previewRequest).toBeNull();
     expect(api.expenseStatements.calculate).not.toHaveBeenCalled();
   });
 
-  it("recalculates for the newly active company", async () => {
+  it("requires an explicit company choice when several exist", async () => {
     companiesState = readyQuery([COMPANY, { id: 2, name: "Autre SARL" }]);
     resetDraft([line()]);
     const { result } = renderController();
+
+    await waitFor(() =>
+      expect(result.current.companySelectionRequired).toBe(true),
+    );
+    expect(result.current.activeCompanyId).toBeNull();
+
+    act(() => result.current.selectCompany(2));
+
+    expect(result.current.activeCompanyId).toBe(2);
+    expect(result.current.companySelectionRequired).toBe(false);
+  });
+
+  it("recalculates for the newly selected company", async () => {
+    companiesState = readyQuery([COMPANY, { id: 2, name: "Autre SARL" }]);
+    resetDraft([line()]);
+    const { result } = renderController();
+    await waitFor(() =>
+      expect(result.current.companySelectionRequired).toBe(true),
+    );
+
+    act(() => result.current.selectCompany(1));
     await waitFor(() => expect(result.current.calculationUpToDate).toBe(true), {
       timeout: 2000,
     });
 
-    act(() => useCompanyStore.setState({ activeCompanyId: 2 }));
+    act(() => result.current.selectCompany(2));
 
     await waitFor(() => expect(result.current.activeCompanyId).toBe(2));
     await waitFor(() => expect(result.current.calculationUpToDate).toBe(true), {
@@ -391,6 +415,7 @@ describe("useExpenseStatementPage defaults", () => {
     const pending = {
       data: undefined,
       isPending: true,
+      isSuccess: false,
       isError: false,
       error: null,
       refetch: vi.fn(),
@@ -604,7 +629,7 @@ describe("useExpenseStatementPage form and upload", () => {
 
     act(() =>
       result.current.editLine(
-        useStatementDraft.getState().linesByMonth[MONTH][0],
+        useStatementDraft.getState().linesByMonth[SCOPE][0],
       ),
     );
     expect(result.current.lineBeingEdited).toBe("edit-me");
@@ -643,7 +668,7 @@ describe("useExpenseStatementPage form and upload", () => {
 
     act(() =>
       result.current.editLine(
-        useStatementDraft.getState().linesByMonth[MONTH][0],
+        useStatementDraft.getState().linesByMonth[SCOPE][0],
       ),
     );
     expect(result.current.receipt).toBeNull();
@@ -864,7 +889,7 @@ describe("useExpenseStatementPage save", () => {
       }),
     );
 
-    const lines = useStatementDraft.getState().linesByMonth[MONTH];
+    const lines = useStatementDraft.getState().linesByMonth[SCOPE];
     expect(lines).toHaveLength(1);
     expect(lines[0]).toMatchObject({
       itemCode: "gaz",
@@ -885,7 +910,7 @@ describe("useExpenseStatementPage save", () => {
 
     act(() =>
       result.current.editLine(
-        useStatementDraft.getState().linesByMonth[MONTH][0],
+        useStatementDraft.getState().linesByMonth[SCOPE][0],
       ),
     );
     act(() =>
@@ -896,7 +921,7 @@ describe("useExpenseStatementPage save", () => {
       }),
     );
 
-    const lines = useStatementDraft.getState().linesByMonth[MONTH];
+    const lines = useStatementDraft.getState().linesByMonth[SCOPE];
     expect(lines).toHaveLength(1);
     expect(lines[0].amountInclVat).toBe("95.00");
     expect(toastMessages()).toContain("Frais modifié.");
@@ -930,7 +955,7 @@ describe("useExpenseStatementPage save", () => {
         proRataPct: "100",
       }),
     );
-    expect(useStatementDraft.getState().linesByMonth[MONTH]).toBeUndefined();
+    expect(useStatementDraft.getState().linesByMonth[SCOPE]).toBeUndefined();
     expect(toastMessages()).toContain(
       "Confirmez le montant détecté par IA avant d’ajouter le frais.",
     );
@@ -943,7 +968,7 @@ describe("useExpenseStatementPage save", () => {
         proRataPct: "100",
       }),
     );
-    const lines = useStatementDraft.getState().linesByMonth[MONTH];
+    const lines = useStatementDraft.getState().linesByMonth[SCOPE];
     expect(lines[0].amountSource).toBe("AI");
     expect(lines[0].aiDetectedAmount).toBe("80.00");
   });
@@ -1009,7 +1034,7 @@ describe("useExpenseStatementPage save", () => {
     await act(async () => {
       await result.current.upload(new File(["a"], "a.pdf"));
     });
-    const before = useStatementDraft.getState().linesByMonth[MONTH];
+    const before = useStatementDraft.getState().linesByMonth[SCOPE];
     act(() =>
       result.current.saveExpense({
         itemCode: "gaz",
@@ -1017,7 +1042,7 @@ describe("useExpenseStatementPage save", () => {
         proRataPct: "100",
       }),
     );
-    expect(useStatementDraft.getState().linesByMonth[MONTH]).toEqual(before);
+    expect(useStatementDraft.getState().linesByMonth[SCOPE]).toEqual(before);
   });
 
   it("saves a rent line without a receipt and disables duplicate options", () => {
@@ -1032,7 +1057,7 @@ describe("useExpenseStatementPage save", () => {
 
     act(() =>
       result.current.editLine(
-        useStatementDraft.getState().linesByMonth[MONTH][1],
+        useStatementDraft.getState().linesByMonth[SCOPE][1],
       ),
     );
     expect(result.current.optionDisabled(ITEMS[2])).toBe(true);
@@ -1044,7 +1069,7 @@ describe("useExpenseStatementPage save", () => {
         proRataPct: "100",
       }),
     );
-    const lines = useStatementDraft.getState().linesByMonth[MONTH];
+    const lines = useStatementDraft.getState().linesByMonth[SCOPE];
     expect(lines.map((item) => item.itemCode)).toEqual(["internet", "loyer"]);
     const rentLine = lines[1];
     expect(rentLine.receiptId).toBeNull();
@@ -1053,12 +1078,12 @@ describe("useExpenseStatementPage save", () => {
   it("removes a line and resets the edition when needed", () => {
     resetDraft([line({ key: "remove-me" })]);
     const { result } = renderController();
-    const target = useStatementDraft.getState().linesByMonth[MONTH][0];
+    const target = useStatementDraft.getState().linesByMonth[SCOPE][0];
 
     act(() => result.current.setLineToRemove(target));
     act(() => result.current.removeLine());
 
-    expect(useStatementDraft.getState().linesByMonth[MONTH]).toHaveLength(0);
+    expect(useStatementDraft.getState().linesByMonth[SCOPE]).toHaveLength(0);
     expect(toastMessages()).toContain("Frais supprimé.");
     expect(result.current.lineToRemove).toBeNull();
   });
@@ -1099,7 +1124,7 @@ describe("useExpenseStatementPage save", () => {
 
     act(() =>
       result.current.setLineToRemove(
-        useStatementDraft.getState().linesByMonth[MONTH][0],
+        useStatementDraft.getState().linesByMonth[SCOPE][0],
       ),
     );
     act(() => result.current.removeLine());
@@ -1160,9 +1185,10 @@ describe("useExpenseStatementPage calculation, preview and generation", () => {
   it("honours the complete flag and the chosen signature", () => {
     useStatementDraft.setState({
       month: MONTH,
-      linesByMonth: { [MONTH]: [line()] },
+      companyId: 1,
+      linesByMonth: { [SCOPE]: [line()] },
       templatesByMonth: {},
-      completeByMonth: { [MONTH]: false },
+      completeByMonth: { [SCOPE]: false },
       primedReceiptByMonth: {},
       dirtyByMonth: {},
     });
@@ -1392,14 +1418,30 @@ describe("useExpenseStatementPage calculation, preview and generation", () => {
 });
 
 describe("useExpenseStatementPage edge branches", () => {
-  it("adopts the first company when the stored id no longer exists", async () => {
-    useCompanyStore.setState({ activeCompanyId: 999 });
+  it("selects the only company automatically", async () => {
     const { result } = renderController();
 
-    await waitFor(() =>
-      expect(useCompanyStore.getState().activeCompanyId).toBe(1),
+    await waitFor(() => expect(result.current.activeCompanyId).toBe(1));
+    expect(result.current.companySelectionRequired).toBe(false);
+  });
+
+  it("keeps the selection when the injected company is locked", async () => {
+    companiesState = readyQuery([COMPANY, { id: 2, name: "Autre SARL" }]);
+    const store = createStatementDraftStore(MONTH, 2);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
-    expect(result.current.activeCompanyId).toBe(1);
+    const { result } = renderHook(
+      () => useExpenseStatementPage({ companyId: 2, draft: store }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.activeCompanyId).toBe(2));
+    act(() => result.current.selectCompany(1));
+    expect(result.current.activeCompanyId).toBe(2);
   });
 
   it("falls back to 100% when changing to an unknown type", () => {
@@ -1417,7 +1459,7 @@ describe("useExpenseStatementPage edge branches", () => {
 
     act(() =>
       result.current.editLine(
-        useStatementDraft.getState().linesByMonth[MONTH][0],
+        useStatementDraft.getState().linesByMonth[SCOPE][0],
       ),
     );
     act(() => result.current.changeType("loyer"));
@@ -1593,7 +1635,7 @@ describe("useExpenseStatementPage edge branches", () => {
   it("resets the form when removing the line being edited", () => {
     resetDraft([line({ key: "edit-remove" })]);
     const { result } = renderController();
-    const target = useStatementDraft.getState().linesByMonth[MONTH][0];
+    const target = useStatementDraft.getState().linesByMonth[SCOPE][0];
 
     act(() => result.current.editLine(target));
     act(() => result.current.setLineToRemove(target));
@@ -1679,7 +1721,7 @@ describe("useExpenseStatementPage edge branches", () => {
 
     act(() =>
       result.current.editLine(
-        useStatementDraft.getState().linesByMonth[MONTH][0],
+        useStatementDraft.getState().linesByMonth[SCOPE][0],
       ),
     );
     await act(async () => {
@@ -1702,7 +1744,7 @@ describe("useExpenseStatementPage scoped options", () => {
   const SCOPED_GO_TO_RENT = vi.fn();
 
   function scopedStore(lines: DraftLine[] = []): StatementDraftStore {
-    const store = createStatementDraftStore(MONTH);
+    const store = createStatementDraftStore(MONTH, 2);
     for (const entry of lines) {
       store.getState().addLine(entry);
     }
@@ -1799,9 +1841,11 @@ describe("useExpenseStatementPage scoped options", () => {
       }),
     );
 
-    expect(store.getState().linesByMonth[MONTH]).toHaveLength(1);
-    expect(store.getState().dirtyByMonth[MONTH]).toBe(true);
-    expect(useStatementDraft.getState().linesByMonth[MONTH]).toBeUndefined();
+    expect(store.getState().linesByMonth[draftScopeKey(2, MONTH)]).toHaveLength(
+      1,
+    );
+    expect(store.getState().dirtyByMonth[draftScopeKey(2, MONTH)]).toBe(true);
+    expect(useStatementDraft.getState().linesByMonth[SCOPE]).toBeUndefined();
     expect(result.current.orderedLines).toHaveLength(1);
 
     act(() => result.current.changeMonth("2026-02"));
@@ -1866,11 +1910,10 @@ describe("useExpenseStatementPage scoped options", () => {
     expect(result.current.ai.type).toBe(false);
   });
 
-  it("keeps the global company store untouched in scoped mode", () => {
-    useCompanyStore.setState({ activeCompanyId: null });
+  it("keeps the global draft untouched in scoped mode", () => {
     const { result } = renderScoped(scopedStore());
 
     expect(result.current.activeCompanyId).toBe(2);
-    expect(useCompanyStore.getState().activeCompanyId).toBeNull();
+    expect(useStatementDraft.getState().companyId).toBe(1);
   });
 });

@@ -40,6 +40,7 @@ export function PersonForm({
     defaultValues: {
       name: item?.name ?? "",
       address: item?.address ?? "",
+      issuePlace: item?.issuePlace ?? "",
     },
   });
 
@@ -48,6 +49,8 @@ export function PersonForm({
       const requestBody: PersonRequest = {
         name: values.name.trim(),
         address: values.address.trim() === "" ? null : values.address.trim(),
+        issuePlace:
+          values.issuePlace.trim() === "" ? null : values.issuePlace.trim(),
       };
       return savedId === null
         ? api.persons.create(requestBody)
@@ -115,6 +118,20 @@ export function PersonForm({
             placeholder="1 avenue du Parc, 75011 Paris"
             {...register("address")}
             data-cy="input-personne-adresse"
+          />
+        </FieldGroup>
+        <FieldGroup
+          id="personne-emission"
+          label={t("settings.people.form.issuePlace")}
+          error={errors.issuePlace?.message}
+          help={t("settings.people.form.issuePlaceHelp")}
+        >
+          <input
+            id="personne-emission"
+            className="field"
+            placeholder="Paris"
+            {...register("issuePlace")}
+            data-cy="input-personne-emission"
           />
         </FieldGroup>
       </div>

@@ -1,18 +1,14 @@
 import "./AppShell.css";
 import { ShieldCheck } from "lucide-react";
-import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
-import { useCompanies } from "@/api/queries";
 import { MobileNavigation, SideNavigation } from "@/components/layout/AppNav";
-import { CompanySwitcher } from "@/components/layout/CompanySwitcher";
 import { LanguageSelector } from "@/components/layout/LanguageSelector";
 import { LlmBadge } from "@/components/llm/LlmBadge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ToastHost } from "@/components/ui/ToastHost";
 import { useDraftBlock } from "@/hooks/useDraftBlock";
 import { cn } from "@/lib/cn";
-import { resolveActiveCompanyId, useCompanyStore } from "@/state/company";
 
 function Brand({ compact = false }: { compact?: boolean }) {
   const { t } = useTranslation();
@@ -52,20 +48,6 @@ function Brand({ compact = false }: { compact?: boolean }) {
 export function AppShell() {
   const { t } = useTranslation();
   const blocker = useDraftBlock();
-  const companies = useCompanies();
-  const activeCompanyId = useCompanyStore((state) => state.activeCompanyId);
-  const setActiveCompany = useCompanyStore((state) => state.setActiveCompany);
-
-  // The stored id is kept when valid, the first company selected otherwise.
-  useEffect(() => {
-    if (!companies.isSuccess) {
-      return;
-    }
-    const resolved = resolveActiveCompanyId(activeCompanyId, companies.data);
-    if (resolved !== activeCompanyId) {
-      setActiveCompany(resolved);
-    }
-  }, [companies.isSuccess, companies.data, activeCompanyId, setActiveCompany]);
 
   return (
     <div className="app-shell">
@@ -99,8 +81,7 @@ export function AppShell() {
         </header>
 
         <div className="app-shell-topbar">
-          <CompanySwitcher />
-          <div className="app-shell-topbar-actions">
+          <div className="app-shell-topbar-actions ml-auto">
             <LlmBadge />
             <LanguageSelector />
           </div>

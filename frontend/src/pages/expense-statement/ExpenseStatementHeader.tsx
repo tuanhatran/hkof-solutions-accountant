@@ -1,6 +1,6 @@
 import "./ExpenseStatementHeader.css";
 import { useTranslation } from "react-i18next";
-import { ExternalLink, FileCheck2, ReceiptText } from "lucide-react";
+import { Building2, ExternalLink, FileCheck2, ReceiptText } from "lucide-react";
 import { api } from "@/api/endpoints";
 import { Button } from "@/components/ui/Button";
 import { MonthField } from "@/components/ui/MonthField";
@@ -16,6 +16,7 @@ export function ExpenseStatementHeader({
 }) {
   const { t } = useTranslation();
   const active = c.activeStatement.data;
+  const companyList = c.companies.data ?? [];
   return (
     <>
       <PageHeader
@@ -31,6 +32,47 @@ export function ExpenseStatementHeader({
             >
               {t("expenseStatement.page.rentReceiptButton")}
             </Button>
+            {c.companies.isSuccess && companyList.length === 1 ? (
+              <span
+                className="expense-statement-header-company-chip"
+                data-cy="societe-note-frais"
+              >
+                <Building2 size={14} aria-hidden="true" />
+                {companyList[0]?.name}
+              </span>
+            ) : null}
+            {c.companies.isSuccess && companyList.length > 1 ? (
+              <div className="expense-statement-header-company">
+                <label
+                  className="expense-statement-header-company-label"
+                  htmlFor="select-societe-note-frais"
+                >
+                  {t("expenseStatement.header.companyLabel")}
+                </label>
+                <select
+                  id="select-societe-note-frais"
+                  data-cy="select-societe-note-frais"
+                  className="field expense-statement-header-company-select"
+                  value={c.activeCompanyId ?? ""}
+                  onChange={(event) =>
+                    c.selectCompany(
+                      event.target.value === ""
+                        ? null
+                        : Number(event.target.value),
+                    )
+                  }
+                >
+                  <option value="">
+                    {t("expenseStatement.header.companyPlaceholder")}
+                  </option>
+                  {companyList.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
             <MonthField
               id="note-mois"
               label={t("expenseStatement.entry.monthLabel")}

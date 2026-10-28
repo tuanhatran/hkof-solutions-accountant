@@ -1,10 +1,8 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { CompanyDto } from "@/api/types";
 import i18n from "@/i18n";
-import { useCompanyStore } from "@/state/company";
 import { AppShell } from "./AppShell";
 
 type Blocker = {
@@ -13,22 +11,10 @@ type Blocker = {
   reset: ReturnType<typeof vi.fn>;
 };
 
-type CompaniesState = {
-  isPending: boolean;
-  isError: boolean;
-  isSuccess: boolean;
-  data?: CompanyDto[];
-};
-
 let blockerState: Blocker;
-let companiesState: CompaniesState;
 
 vi.mock("@/hooks/useDraftBlock", () => ({
   useDraftBlock: () => blockerState,
-}));
-
-vi.mock("@/api/queries", () => ({
-  useCompanies: () => companiesState,
 }));
 
 vi.mock("@/components/llm/LlmBadge", () => ({
@@ -51,20 +37,10 @@ function renderShell(path = "/historique") {
 
 beforeEach(() => {
   localStorage.clear();
-  useCompanyStore.setState({ activeCompanyId: null });
   blockerState = {
     state: "unblocked",
     proceed: vi.fn(),
     reset: vi.fn(),
-  };
-  companiesState = {
-    isPending: false,
-    isError: false,
-    isSuccess: true,
-    data: [
-      { id: 1, name: "HKOF" },
-      { id: 2, name: "Autre société" },
-    ],
   };
 });
 
@@ -206,60 +182,21 @@ describe("AppShell", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("resolves the first company and shows it in the context bar", async () => {
-    renderShell();
-
-    await waitFor(() =>
-      expect(useCompanyStore.getState().activeCompanyId).toBe(1),
-    );
-    const selector = screen.getByRole("combobox", { name: "Société active" });
-    expect(selector).toHaveAttribute("data-cy", "select-societe-active");
-    expect(selector).toHaveValue("1");
-    expect(
-      within(selector)
-        .getAllByRole("option")
-        .map((option) => option.textContent),
-    ).toEqual(["HKOF", "Autre société"]);
-  });
-
-  it("keeps a stored company that still exists", async () => {
-    useCompanyStore.setState({ activeCompanyId: 2 });
-    renderShell();
-
-    await waitFor(() =>
-      expect(useCompanyStore.getState().activeCompanyId).toBe(2),
-    );
-    expect(
-      screen.getByRole("combobox", { name: "Société active" }),
-    ).toHaveValue("2");
-  });
-
-  it("falls back on the first company when the stored id is gone", async () => {
-    useCompanyStore.setState({ activeCompanyId: 99 });
-    renderShell();
-
-    await waitFor(() =>
-      expect(useCompanyStore.getState().activeCompanyId).toBe(1),
-    );
-    expect(
-      screen.getByRole("combobox", { name: "Société active" }),
-    ).toHaveValue("1");
-  });
-
-  it("renders the company context on the left and the actions on the right", () => {
+  it("renders the actions on the right without a global company selector", () => {
     renderShell();
 
     const topbar = document.querySelector(".app-shell-topbar");
     expect(topbar).not.toBeNull();
-    const [context, actions] = Array.from(topbar?.children ?? []);
     expect(
-      context.querySelector('[data-cy="select-societe-active"]'),
-    ).not.toBeNull();
+      topbar?.querySelector('[data-cy="select-societe-active"]'),
+    ).toBeNull();
     expect(
-      within(actions as HTMLElement).getByTestId("llm-badge"),
-    ).toBeVisible();
+      screen.queryByRole("combobox", { name: /Société active/ }),
+    ).toBeNull();
+    const actions = topbar?.firstElementChild as HTMLElement;
+    expect(within(actions).getByTestId("llm-badge")).toBeVisible();
     expect(
-      within(actions as HTMLElement).getByRole("combobox", { name: "Langue" }),
+      within(actions).getByRole("combobox", { name: "Langue" }),
     ).toBeVisible();
     expect(topbar?.nextElementSibling).toBe(screen.getByRole("main"));
   });
@@ -285,8 +222,8 @@ describe("AppShell", () => {
     );
     expect(screen.getByText("HomeOfficeExpenses · personal use")).toBeVisible();
     expect(
-      screen.getByRole("combobox", { name: "Active company" }),
-    ).toHaveValue("1");
+      screen.queryByRole("combobox", { name: "Active company" }),
+    ).toBeNull();
 
     const navigation = screen.getByRole("navigation", {
       name: "Main navigation",
@@ -330,22 +267,5 @@ describe("AppShell", () => {
     expect(screen.getByText("Draft not generated")).toBeVisible();
     expect(screen.getByRole("button", { name: "Leave page" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Stay" })).toBeVisible();
-  });
-
-  it("clears the active company when none is configured", async () => {
-    companiesState = {
-      isPending: false,
-      isError: false,
-      isSuccess: true,
-      data: [],
-    };
-    renderShell();
-
-    await waitFor(() =>
-      expect(useCompanyStore.getState().activeCompanyId).toBeNull(),
-    );
-    expect(
-      document.querySelector('[data-cy="select-societe-active"]'),
-    ).toBeNull();
   });
 });

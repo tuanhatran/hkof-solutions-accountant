@@ -34,6 +34,8 @@ describe("Rent receipt", () => {
 
       waitForValue("#quittance-loyer", SEED_RENT);
       waitForText('[data-cy="detail-bail"]', "12 rue de la République");
+      // A lease between natural persons has no company: no company chip.
+      cy.get('[data-cy="societe-quittance"]').should("not.exist");
       cy.get('[data-cy="select-signature"] option:selected').should(
         "contain.text",
         "Signature du bailleur (e2e)",
@@ -62,6 +64,10 @@ describe("Rent receipt", () => {
           expect(text).to.contain("Nom du bailleur");
           expect(text).to.contain("Nom du locataire");
           expect(text).to.contain("12 rue de la République");
+          // No lease company: "Fait à" uses the landlord's issue place (the
+          // e2e reset seeds "Paris" on the synthetic landlord). Bold runs are
+          // extracted after the plain text, so match any "Paris" after it.
+          expect(text).to.match(/Fait à[\s\S]*?Paris/);
         },
       );
 

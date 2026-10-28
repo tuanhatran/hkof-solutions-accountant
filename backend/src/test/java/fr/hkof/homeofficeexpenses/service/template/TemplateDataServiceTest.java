@@ -133,6 +133,27 @@ class TemplateDataServiceTest {
     }
 
     @Test
+    @DisplayName("The landlord issue place wins over the company issue place and tolerates a missing company")
+    void rentReceiptIssuePlace() {
+        Person landlord = landlord();
+        landlord.setIssuePlace("Lyon");
+
+        Map<String, Object> withCompany = service.dataRentReceipt(company(), landlord, tenant(), null, lease(),
+                rentReceipt(), null);
+        assertThat(withCompany.get("lieu")).isEqualTo("Lyon");
+
+        Map<String, Object> withoutCompany = service.dataRentReceipt(null, landlord, tenant(), null, lease(),
+                rentReceipt(), null);
+        assertThat(withoutCompany.get("lieu")).isEqualTo("Lyon");
+
+        landlord.setIssuePlace(null);
+        assertThat(service.dataRentReceipt(company(), landlord, tenant(), null, lease(), rentReceipt(), null)
+                .get("lieu")).isEqualTo("Paris");
+        assertThat(service.dataRentReceipt(null, landlord, tenant(), null, lease(), rentReceipt(), null)
+                .get("lieu")).isEqualTo("");
+    }
+
+    @Test
     @DisplayName("Rent receipt data uses the company tenant of a company lease")
     void rentReceiptDataWithCompanyTenant() {
         Company tenantCompany = new Company();

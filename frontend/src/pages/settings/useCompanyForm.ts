@@ -28,8 +28,8 @@ interface CompanyFormApi {
 
 /**
  * React Hook Form + Zod + mutation logic shared by the company identity and
- * lease modals. It never calls `setActiveCompany`: the caller decides what a
- * saved company means for the selection.
+ * lease modals. It never touches an active-company store: the caller decides
+ * what a saved company means for the local selection.
  */
 export function useCompanyForm(company: CompanyDto | null): CompanyFormApi {
   const { t } = useTranslation();
@@ -45,8 +45,8 @@ export function useCompanyForm(company: CompanyDto | null): CompanyFormApi {
       if (payload.id === undefined) {
         return;
       }
-      // Keep the active company stable: the switcher reconciles against this list,
-      // and the refetch below is asynchronous.
+      // Seed the directory so the caller can select the new company before the
+      // asynchronous refetch below lands.
       queryClient.setQueryData<CompanyDto[]>(
         queryKeys.companiesAll,
         (current) => {

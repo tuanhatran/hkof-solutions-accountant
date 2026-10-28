@@ -642,6 +642,30 @@ class ApiIntegrationTest {
         mockMvc.perform(delete("/api/persons/{id}", landlordId)).andExpect(status().isNoContent());
     }
 
+    @Test
+    @DisplayName("A landlord issue place is trimmed, persisted and clearable")
+    void personIssuePlace() throws Exception {
+        String created = mockMvc.perform(post("/api/persons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Bailleur lieu e2e","address":null,"issuePlace":"  Lyon  "}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.issuePlace").value("Lyon"))
+                .andReturn().getResponse().getContentAsString();
+        long personId = ((Number) JsonPath.read(created, "$.id")).longValue();
+
+        mockMvc.perform(put("/api/persons/{id}", personId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Bailleur lieu e2e","address":null,"issuePlace":"   "}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.issuePlace").value(org.hamcrest.Matchers.nullValue()));
+
+        mockMvc.perform(delete("/api/persons/{id}", personId)).andExpect(status().isNoContent());
+    }
+
     private long createdPerson(String name) throws Exception {
         String body = mockMvc.perform(post("/api/persons")
                         .contentType(MediaType.APPLICATION_JSON)

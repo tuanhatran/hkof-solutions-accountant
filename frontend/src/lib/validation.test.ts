@@ -363,10 +363,15 @@ describe("directory schemas", () => {
       personSchema.safeParse({
         name: "M. Bailleur",
         address: "1 avenue du Parc",
+        issuePlace: "Lyon",
       }).success,
     ).toBe(true);
     expect(
-      personSchema.safeParse({ name: "Mme Locataire", address: "" }).success,
+      personSchema.safeParse({
+        name: "Mme Locataire",
+        address: "",
+        issuePlace: "",
+      }).success,
     ).toBe(true);
   });
 

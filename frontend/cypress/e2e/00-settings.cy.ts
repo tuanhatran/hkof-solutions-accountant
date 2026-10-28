@@ -82,6 +82,9 @@ describe("Settings", () => {
     cy.get('[data-cy="input-personne-adresse"]').type(
       "2 rue du Test, 75001 Paris",
     );
+    // Distinct from the company modal's `input-lieu-emission`.
+    cy.get('[data-cy="input-lieu-emission"]').should("not.exist");
+    cy.get('[data-cy="input-personne-emission"]').type("Lyon");
     cy.get('[data-cy="btn-enregistrer-personne"]').click();
 
     cy.contains("Personne « Personne E2E » ajoutée.", {
@@ -91,6 +94,7 @@ describe("Settings", () => {
     cy.get('[data-cy="personne-enregistree"]').should("be.visible");
 
     personByName("Personne E2E").then((person) => {
+      expect(person.issuePlace, "issue place persisted").to.eq("Lyon");
       cy.get(
         '[data-cy="dialogue-formulaire-personne"] button[aria-label="Fermer"]',
       ).click();
@@ -100,6 +104,8 @@ describe("Settings", () => {
         .and("contain.text", "2 rue du Test, 75001 Paris");
 
       cy.get(`[data-cy="btn-modifier-personne-${person.id}"]`).click();
+      waitForValue('[data-cy="input-personne-emission"]', "Lyon");
+      cy.get('[data-cy="input-personne-emission"]').clear().type("Marseille");
       cy.get('[data-cy="input-personne-nom"]')
         .clear()
         .type("Personne E2E modifiée");
@@ -107,6 +113,9 @@ describe("Settings", () => {
       cy.contains("Personne « Personne E2E modifiée » mise à jour.", {
         timeout: 15_000,
       }).should("be.visible");
+      personByName("Personne E2E modifiée")
+        .its("issuePlace")
+        .should("eq", "Marseille");
 
       cy.get(
         '[data-cy="dialogue-formulaire-personne"] button[aria-label="Fermer"]',

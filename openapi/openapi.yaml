@@ -870,7 +870,10 @@ paths:
         - name: companyId
           in: query
           required: false
-          description: Société utilisée pour l'identité et les données de domicile.
+          description: >-
+            Filtre facultatif par société. Ignoré dès qu'une paire bailleur et
+            locataire est fournie ; une quittance de bail entre particuliers
+            n'a pas de société.
           schema:
             type: integer
             format: int64
@@ -1667,6 +1670,14 @@ components:
             - string
             - "null"
           description: Adresse personnelle facultative.
+        issuePlace:
+          type:
+            - string
+            - "null"
+          description: >-
+            Lieu d'émission facultatif imprimé après « Fait à » sur les
+            quittances de ce bailleur. Vide ou nul : le lieu de la société du
+            bail, puis une chaîne vide.
     PersonDto:
       type: object
       properties:
@@ -1679,6 +1690,11 @@ components:
           type:
             - string
             - "null"
+        issuePlace:
+          type:
+            - string
+            - "null"
+          description: Lieu d'émission facultatif du bailleur.
         signatureCount:
           type: integer
           format: int32
@@ -2006,8 +2022,10 @@ components:
             - "null"
           format: int64
           description: >-
-            Société utilisée pour l'identité et les données de domicile ; la
-            société du bail est prioritaire lorsqu'elle existe.
+            Société utilisée pour l'identité et les données de domicile.
+            Facultative : la société du bail est toujours prioritaire
+            lorsqu'elle existe et une quittance de bail entre particuliers est
+            acceptée sans société.
         landlordId:
           type: integer
           format: int64

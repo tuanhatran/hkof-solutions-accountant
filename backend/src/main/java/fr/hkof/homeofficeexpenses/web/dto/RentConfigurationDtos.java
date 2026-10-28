@@ -7,13 +7,15 @@ public final class RentConfigurationDtos {
 
     public record PersonRequest(
             String name,
-            String address) {
+            String address,
+            String issuePlace) {
     }
 
     public record PersonDto(
             Long id,
             String name,
             String address,
+            String issuePlace,
             int signatureCount) {
     }
 

@@ -14,7 +14,6 @@ import { ErrorState, LoadingState } from "@/components/ui/States";
 import { ViewTabs, type ViewTab } from "@/components/ui/ViewTabs";
 import { EXPENSE_STATEMENT_CONFIGURATION } from "@/pages/templates/templateTypes";
 import { TemplatesTab } from "@/pages/templates/TemplatesTab";
-import { useCompanyStore } from "@/state/company";
 import { toast } from "@/state/toasts";
 import { CompanyIdentityModal } from "./CompanyIdentityModal";
 import { CompanyIdentityView } from "./CompanyIdentityView";
@@ -52,9 +51,7 @@ export function CompanySection() {
   ];
   const queryClient = useQueryClient();
   const companies = useCompanies();
-  const activeCompanyId = useCompanyStore((state) => state.activeCompanyId);
-  const setActiveCompany = useCompanyStore((state) => state.setActiveCompany);
-  const [selectedId, setSelectedId] = useState<number | null>(activeCompanyId);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [tab, setTab] = useState("identification");
   const [identityTarget, setIdentityTarget] = useState<
     CompanyDto | "new" | null
@@ -62,14 +59,6 @@ export function CompanySection() {
   const [toDelete, setToDelete] = useState<CompanyDto | null>(null);
 
   const list = useMemo(() => companies.data ?? [], [companies.data]);
-  useEffect(() => {
-    if (
-      activeCompanyId !== null &&
-      list.some((company) => company.id === activeCompanyId)
-    ) {
-      setSelectedId(activeCompanyId);
-    }
-  }, [activeCompanyId, list]);
   useEffect(() => {
     if (
       selectedId === null ||
@@ -92,8 +81,8 @@ export function CompanySection() {
     mutationFn: (company: CompanyDto) =>
       api.companies.delete(company.id as number),
     onSuccess: (_deleted, company) => {
-      if (activeCompanyId === company.id) {
-        setActiveCompany(null);
+      if (selectedId === company.id) {
+        setSelectedId(null);
       }
       void queryClient.invalidateQueries({ queryKey: queryKeys.companiesAll });
       void queryClient.invalidateQueries({
@@ -126,7 +115,6 @@ export function CompanySection() {
                 event.target.value === "" ? null : Number(event.target.value);
               closeModals();
               setSelectedId(nextId);
-              setActiveCompany(nextId);
             }}
             data-cy="select-societe"
           >
@@ -235,7 +223,6 @@ export function CompanySection() {
             setIdentityTarget(null);
             if (wasNew && saved.id !== undefined) {
               setSelectedId(saved.id);
-              setActiveCompany(saved.id);
             }
           }}
         />

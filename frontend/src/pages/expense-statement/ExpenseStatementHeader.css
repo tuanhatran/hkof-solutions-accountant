@@ -26,4 +26,20 @@
   .expense-statement-header-banner-actions {
     @apply flex flex-wrap gap-2;
   }
+
+  .expense-statement-header-company {
+    @apply flex items-center gap-2;
+  }
+
+  .expense-statement-header-company-label {
+    @apply text-xs font-medium text-ink-soft;
+  }
+
+  .expense-statement-header-company-select {
+    @apply min-w-44;
+  }
+
+  .expense-statement-header-company-chip {
+    @apply inline-flex max-w-64 items-center gap-1.5 truncate rounded-full border border-line bg-surface/70 px-3 py-2 text-xs font-medium text-ink-soft;
+  }
 }

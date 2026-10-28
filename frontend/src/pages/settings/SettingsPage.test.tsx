@@ -13,7 +13,6 @@ import type {
 } from "@/api/types";
 import i18n from "@/i18n";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
-import { useCompanyStore } from "@/state/company";
 import { useToasts } from "@/state/toasts";
 
 interface QueryLike<T> {
@@ -186,7 +185,6 @@ describe("SettingsPage tabs", () => {
       RENT_RECEIPT: [],
       EXPENSE_STATEMENT: [EXPENSE_BUILT_IN],
     };
-    useCompanyStore.setState({ activeCompanyId: 1 });
     vi.mocked(api.companies.update).mockReset();
     vi.mocked(api.companies.create).mockReset();
     vi.mocked(api.companies.delete).mockReset();
@@ -494,7 +492,6 @@ describe("SettingsPage tabs", () => {
 
   it("creates a company through the empty identity modal and selects it for configuration", async () => {
     companiesState = readyQuery([OTHER]);
-    useCompanyStore.setState({ activeCompanyId: 2 });
     vi.mocked(api.companies.create).mockResolvedValue(COMPANY);
     renderPage();
     const user = userEvent.setup();
@@ -506,6 +503,9 @@ describe("SettingsPage tabs", () => {
     expect(queryByCy("select-societe")).not.toBeNull();
 
     await user.type(queryByCy("input-raison-sociale") as HTMLElement, "HKOF");
+    // The create mutation invalidates the companies query: the refetched list
+    // contains the new company before the modal closes.
+    companiesState = readyQuery([COMPANY, OTHER]);
     await user.click(screen.getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
@@ -520,9 +520,8 @@ describe("SettingsPage tabs", () => {
       }),
     );
     await waitFor(() => expect(toastMessages()).toContain("Société créée."));
-    // Creating a company selects and activates it.
     await waitFor(() =>
-      expect(useCompanyStore.getState().activeCompanyId).toBe(1),
+      expect(screen.getByLabelText("Société à configurer")).toHaveValue("1"),
     );
     await waitFor(() =>
       expect(queryByCy("dialogue-formulaire-societe")).toBeNull(),
@@ -559,6 +558,9 @@ describe("SettingsPage tabs", () => {
     expect(queryByCy("dialogue-formulaire-societe")).not.toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Supprimer" }));
+    // The delete mutation invalidates the companies query: the refetched list is
+    // empty, so the selector disappears.
+    companiesState = readyQuery([]);
     await user.click(
       screen.getByRole("button", { name: "Supprimer la société" }),
     );
@@ -568,7 +570,7 @@ describe("SettingsPage tabs", () => {
       expect(toastMessages()).toContain("Société supprimée."),
     );
     expect(queryByCy("dialogue-formulaire-societe")).toBeNull();
-    expect(useCompanyStore.getState().activeCompanyId).toBeNull();
+    expect(queryByCy("select-societe")).toBeNull();
   });
 
   it("shows the no-lease sentence for a company without a lease", async () => {
@@ -605,7 +607,7 @@ describe("SettingsPage tabs", () => {
     expect(screen.getByText("Bail actif")).toBeVisible();
   });
 
-  it("activates the company selected in the selector", async () => {
+  it("selects the company locally in the configuration selector", async () => {
     companiesState = readyQuery([COMPANY, OTHER]);
     renderPage();
     const user = userEvent.setup();
@@ -617,22 +619,7 @@ describe("SettingsPage tabs", () => {
 
     expect(screen.queryByRole("button", { name: "Rendre active" })).toBeNull();
     expect(queryByCy("btn-rendre-active")).toBeNull();
-    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
-  });
-
-  it("syncs the selected company when the active company changes elsewhere", async () => {
-    companiesState = readyQuery([COMPANY, OTHER]);
-    renderPage();
-
-    expect(screen.getByLabelText("Société à configurer")).toHaveValue("1");
-
-    act(() => {
-      useCompanyStore.getState().setActiveCompany(2);
-    });
-
-    await waitFor(() =>
-      expect(screen.getByLabelText("Société à configurer")).toHaveValue("2"),
-    );
+    expect(screen.getByLabelText("Société à configurer")).toHaveValue("2");
     expect(queryByCy("info-societe")).toHaveTextContent("Autre SARL");
   });
 

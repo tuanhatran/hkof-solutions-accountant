@@ -13,12 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.DocumentStatus;
 import fr.hkof.homeofficeexpenses.domain.Lease;
-import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
 import fr.hkof.homeofficeexpenses.domain.Signature;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
-import fr.hkof.homeofficeexpenses.repository.PersonRepository;
 import fr.hkof.homeofficeexpenses.repository.RentReceiptRepository;
 import fr.hkof.homeofficeexpenses.service.template.TemplateDataService;
 import fr.hkof.homeofficeexpenses.service.template.TemplateService;
@@ -31,26 +29,27 @@ public class RentReceiptService {
     private final RentReceiptRepository repository;
     private final CompanyService companies;
     private final LeaseService leaseService;
-    private final PersonRepository persons;
     private final TemplateService templateService;
     private final TemplateDataService templateDataService;
     private final SignatureService signatureService;
     private final PdfService pdfService;
     private final StorageService storage;
+    private final RentReceiptMapper mapper;
     private final Clock clock;
 
     public RentReceiptService(RentReceiptRepository repository, CompanyService companies, LeaseService leaseService,
-            PersonRepository persons, TemplateService templateService, TemplateDataService templateDataService,
-            SignatureService signatureService, PdfService pdfService, StorageService storage, Clock clock) {
+            TemplateService templateService, TemplateDataService templateDataService,
+            SignatureService signatureService, PdfService pdfService, StorageService storage, RentReceiptMapper mapper,
+            Clock clock) {
         this.repository = repository;
         this.companies = companies;
         this.leaseService = leaseService;
-        this.persons = persons;
         this.templateService = templateService;
         this.templateDataService = templateDataService;
         this.signatureService = signatureService;
         this.pdfService = pdfService;
         this.storage = storage;
+        this.mapper = mapper;
         this.clock = clock;
     }
 
@@ -180,7 +179,7 @@ public class RentReceiptService {
     private void fill(RentReceipt rentReceipt, Company company, Lease lease, YearMonth month,
             LocalDate periodStart, LocalDate periodEnd, BigDecimal rentExclCharges, BigDecimal charges,
             BigDecimal total) {
-        rentReceipt.setCompanyId(company.getId());
+        rentReceipt.setCompanyId(company == null ? null : company.getId());
         rentReceipt.setMonth(month.toString());
         rentReceipt.setLandlordId(lease.getLandlord().getId());
         rentReceipt.setTenantId(lease.isCompanyLease() || lease.getTenant() == null ? null
@@ -220,8 +219,13 @@ public class RentReceiptService {
         return template;
     }
 
+    /**
+     * The lease company always wins. A person lease without a lease company may carry an
+     * explicit request company, and otherwise has no company at all.
+     */
     private Company resolveCompany(Lease lease, Long requestCompanyId) {
-        return companies.entity(lease.getCompanyId() != null ? lease.getCompanyId() : requestCompanyId);
+        Long companyId = lease.getCompanyId() != null ? lease.getCompanyId() : requestCompanyId;
+        return companyId == null ? null : companies.entity(companyId);
     }
 
     private Company tenantCompany(Lease lease) {
@@ -262,38 +266,6 @@ public class RentReceiptService {
     }
 
     public RentReceiptDto toDto(RentReceipt rentReceipt) {
-        Person landlord = rentReceipt.getLandlordId() == null ? null
-                : persons.findById(rentReceipt.getLandlordId()).orElse(null);
-        Person tenant = rentReceipt.getTenantId() == null ? null
-                : persons.findById(rentReceipt.getTenantId()).orElse(null);
-        String companyName = rentReceipt.getCompanyId() == null ? null
-                : companies.find(rentReceipt.getCompanyId()).map(Company::getName).orElse(null);
-        String tenantCompanyName = rentReceipt.getTenantCompanyId() == null ? null
-                : companies.find(rentReceipt.getTenantCompanyId()).map(Company::getName).orElse(null);
-        String tenantName = tenant != null ? tenant.getName() : tenantCompanyName;
-        return new RentReceiptDto(
-                rentReceipt.getId(),
-                rentReceipt.getCompanyId(),
-                companyName,
-                rentReceipt.getMonth(),
-                rentReceipt.getLandlordId(),
-                rentReceipt.getTenantId(),
-                rentReceipt.getTenantCompanyId(),
-                landlord == null ? null : landlord.getName(),
-                tenantName,
-                rentReceipt.getPeriodStart(),
-                rentReceipt.getPeriodEnd(),
-                Amounts.apiValue(rentReceipt.getRentExclCharges()),
-                Amounts.apiValue(rentReceipt.getCharges()),
-                Amounts.apiValue(rentReceipt.getTotal()),
-                rentReceipt.getPaymentDate(),
-                rentReceipt.getIssueDate(),
-                rentReceipt.getVersion(),
-                rentReceipt.getStatus() == null ? null : rentReceipt.getStatus().name(),
-                rentReceipt.getTemplateId(),
-                rentReceipt.getTemplateName(),
-                rentReceipt.getTemplateVersion(),
-                rentReceipt.getCreatedAt(),
-                rentReceipt.getPdfPath() != null);
+        return mapper.toDto(rentReceipt);
     }
 }

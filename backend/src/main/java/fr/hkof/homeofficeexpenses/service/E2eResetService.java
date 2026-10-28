@@ -48,6 +48,7 @@ public class E2eResetService {
     private static final String DEFAULT_TENANT_NAME = "Nom du locataire";
     private static final String DEFAULT_TENANT_ADDRESS = "Adresse du locataire";
     private static final String DEFAULT_LEASE_ADDRESS = "12 rue de la République, 75000 Paris";
+    private static final String DEFAULT_LANDLORD_ISSUE_PLACE = "Paris";
     private static final String DEFAULT_RENT_EXCL_CHARGES = "1300.00";
     private static final String DEFAULT_CHARGES = "0.00";
 
@@ -115,6 +116,11 @@ public class E2eResetService {
         cleanFiles();
         initializer.run(new DefaultApplicationArguments(new String[0]));
         Person landlord = naturalPerson(DEFAULT_LANDLORD_NAME);
+        // Synthetic issue place so a person lease still renders "Fait à" in e2e.
+        if (landlord != null) {
+            landlord.setIssuePlace(DEFAULT_LANDLORD_ISSUE_PLACE);
+            persons.save(landlord);
+        }
         Person tenant = seedTenant();
         seedNormalLease(landlord, tenant);
         seedSignatures(landlord, tenant);
