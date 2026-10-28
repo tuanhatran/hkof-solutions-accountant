@@ -68,20 +68,22 @@ const ANNEXE_EMPLOYEE = {
 const ANNEXE_LANDLORD = "Bailleur annexe";
 
 /**
- * Expands the first lease row when the "Baux & Frais" tab arrived collapsed.
- * Does nothing when a lease is already expanded.
+ * Opens the first lease expenses dialog of the selected company. Like the
+ * grid, every lease is reachable without an expansion step.
  */
-function expandFirstLease(): void {
-  cy.get("body").then(($body) => {
-    if ($body.find('[data-cy="bail-societe-lie"]').length > 0) {
-      return;
-    }
-    cy.get('button[data-cy^="btn-afficher-frais-bail-societe-"]', {
-      timeout: 20_000,
-    })
-      .first()
-      .click();
-  });
+function openFirstLeaseExpenses(): void {
+  cy.get('[data-cy^="btn-modifier-frais-bail-societe-"]', { timeout: 20_000 })
+    .first()
+    .click();
+  cy.get('[data-cy="dialogue-frais-bail-societe"]').should("be.visible");
+}
+
+/** Closes the lease expenses dialog through its header close button. */
+function closeLeaseExpenses(): void {
+  cy.get(
+    '[data-cy="dialogue-frais-bail-societe"] button[aria-label="Fermer"]',
+  ).click();
+  cy.get('[data-cy="dialogue-frais-bail-societe"]').should("not.exist");
 }
 
 function companies(): Cypress.Chainable<CompanySummary[]> {
@@ -273,32 +275,26 @@ function createAnnexeCompany(): void {
       cy.get('[data-cy="select-societe"]').select(String(annexe.id));
       cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
 
-      // The "Baux & Frais" tab lists the company leases collapsed; its pro-rata
-      // (the backend's) appears once expanded with "Afficher les frais". The
-      // row itself is not an activation target: only the button expands.
+      // The Baux & Frais tab is a five-column grid; the row is inert and
+      // carries no active-lease state.
       cy.get(`[data-cy="bail-societe-${leaseId}"]`, { timeout: 20_000 })
         .should("contain.text", ANNEXE_LEASE.propertyAddress)
         .and("not.contain.text", "Bail actif")
         .and("not.have.attr", "aria-expanded");
-      cy.get(`[data-cy="btn-afficher-frais-bail-societe-${leaseId}"]`).should(
-        "have.attr",
-        "aria-expanded",
-        "false",
-      );
+      cy.intercept("PUT", "/api/companies/*").as("updateCompany");
       cy.get(`[data-cy="bail-societe-${leaseId}"]`).click();
-      cy.get(`[data-cy="btn-afficher-frais-bail-societe-${leaseId}"]`).should(
-        "have.attr",
-        "aria-expanded",
-        "false",
-      );
-      cy.get('[data-cy="prorata-bail-societe"]').should("not.exist");
+      cy.get('[data-cy="dialogue-frais-bail-societe"]').should("not.exist");
+      cy.get("@updateCompany.all").should("have.length", 0);
 
-      expandFirstLease();
-      cy.get(`[data-cy="btn-afficher-frais-bail-societe-${leaseId}"]`).should(
-        "have.attr",
-        "aria-expanded",
-        "true",
-      );
+      // "Modifier les frais" opens the expenses dialog scoped to the lease,
+      // still without persisting the lease on the company.
+      cy.get(`[data-cy="btn-modifier-frais-bail-societe-${leaseId}"]`).click();
+      cy.get('[data-cy="dialogue-frais-bail-societe"]')
+        .should("be.visible")
+        .and("contain.text", ANNEXE_LEASE.propertyAddress);
+      cy.get('[role="dialog"]').should("have.length", 1);
+      cy.get("@updateCompany.all").should("have.length", 0);
+      closeLeaseExpenses();
 
       // A second landlord so the company holds a second lease; reload so the
       // lease form knows the new person.
@@ -340,68 +336,54 @@ function createAnnexeCompany(): void {
         cy.get('[data-cy="formulaire-bail"]').should("not.exist");
 
         secondAnnexeLease(annexe.id, leaseId).then((secondLeaseId) => {
+          // Both leases render as grid rows, with no active-lease state.
           cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`, {
             timeout: 20_000,
           })
             .should("contain.text", ANNEXE_SECOND_LEASE.propertyAddress)
             .and("not.contain.text", "Bail actif")
             .and("not.have.attr", "aria-expanded");
-          cy.get(
-            `[data-cy="btn-afficher-frais-bail-societe-${secondLeaseId}"]`,
-          ).should("have.attr", "aria-expanded", "false");
+          cy.get(`[data-cy="bail-societe-${leaseId}"]`)
+            .should("contain.text", ANNEXE_LEASE.propertyAddress)
+            .and("not.contain.text", "Bail actif")
+            .and("not.have.attr", "aria-expanded");
 
-          // The list follows the address sort only: no active pinning.
-          cy.get(".company-lease-tab-item-summary")
+          // The grid follows the address sort only: no active pinning.
+          cy.get(".company-lease-tab-item")
             .first()
             .should("have.attr", "data-cy", `bail-societe-${leaseId}`);
 
-          // "Afficher les frais" expands the row without persisting the lease
-          // on the company, and collapses the previously expanded row.
+          // The header opens the company-level expenses (leaseId = null)
+          // without writing the lease on the company.
           cy.intercept("PUT", "/api/companies/*").as("updateCompany");
+          cy.get('[data-cy="btn-frais-generaux-societe"]').click();
+          cy.get('[data-cy="dialogue-frais-generaux-societe"]')
+            .should("be.visible")
+            .and("contain.text", "Frais généraux");
+          cy.get('[role="dialog"]').should("have.length", 1);
+          cy.get("@updateCompany.all").should("have.length", 0);
           cy.get(
-            `[data-cy="btn-afficher-frais-bail-societe-${secondLeaseId}"]`,
+            '[data-cy="dialogue-frais-generaux-societe"] button[aria-label="Fermer"]',
           ).click();
-          cy.get(
-            `[data-cy="btn-afficher-frais-bail-societe-${secondLeaseId}"]`,
-          ).should("have.attr", "aria-expanded", "true");
-          cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`).should(
-            "not.contain.text",
-            "Bail actif",
+          cy.get('[data-cy="dialogue-frais-generaux-societe"]').should(
+            "not.exist",
           );
-          cy.get(
-            `[data-cy="btn-afficher-frais-bail-societe-${leaseId}"]`,
-          ).should("have.attr", "aria-expanded", "false");
-          cy.get("@updateCompany.all").should("have.length", 0);
 
-          // Toggling the same row closed brings back the company-level fallback.
+          // "Modifier les frais" scopes the dialog to the clicked lease.
           cy.get(
-            `[data-cy="btn-afficher-frais-bail-societe-${secondLeaseId}"]`,
+            `[data-cy="btn-modifier-frais-bail-societe-${secondLeaseId}"]`,
           ).click();
-          cy.get(
-            `[data-cy="btn-afficher-frais-bail-societe-${secondLeaseId}"]`,
-          ).should("have.attr", "aria-expanded", "false");
-          cy.get('[data-cy="bail-societe-lie"]').should("not.exist");
-          cy.get('[data-cy="aucun-bail-societe"]').should("exist");
+          cy.get('[data-cy="dialogue-frais-bail-societe"]')
+            .should("be.visible")
+            .and("contain.text", ANNEXE_SECOND_LEASE.propertyAddress)
+            .and("not.contain.text", ANNEXE_LEASE.propertyAddress);
+          cy.get('[role="dialog"]').should("have.length", 1);
           cy.get("@updateCompany.all").should("have.length", 0);
+          closeLeaseExpenses();
 
-          // The row click no longer toggles the expansion, still without a PUT.
+          // The row stays inert: a click never opens the dialog.
           cy.get(`[data-cy="bail-societe-${secondLeaseId}"]`).click();
-          cy.get(
-            `[data-cy="btn-afficher-frais-bail-societe-${secondLeaseId}"]`,
-          ).should("have.attr", "aria-expanded", "false");
-          cy.get('[data-cy="bail-societe-lie"]').should("not.exist");
-          cy.get("@updateCompany.all").should("have.length", 0);
-
-          // Back to the first lease: the rest of the spec assumes its postes.
-          cy.get(
-            `[data-cy="btn-afficher-frais-bail-societe-${leaseId}"]`,
-          ).click();
-          cy.get(
-            `[data-cy="btn-afficher-frais-bail-societe-${leaseId}"]`,
-          ).should("have.attr", "aria-expanded", "true");
-          cy.get(
-            `[data-cy="btn-afficher-frais-bail-societe-${secondLeaseId}"]`,
-          ).should("have.attr", "aria-expanded", "false");
+          cy.get('[data-cy="dialogue-frais-bail-societe"]').should("not.exist");
           cy.get("@updateCompany.all").should("have.length", 0);
         });
       });
@@ -462,20 +444,22 @@ function createAnnexeExpenseItem(companyId: number): void {
   cy.get('[data-cy="tab-configuration"]').click();
   cy.get('[data-cy="select-societe"]').should("have.value", String(companyId));
   cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
-  // The tab arrives collapsed: expand a lease to reach its postes.
-  expandFirstLease();
+  // Every lease row exposes its expenses through the scoped dialog.
+  openFirstLeaseExpenses();
   cy.contains("Aucun poste configuré.", { timeout: 20_000 }).should(
     "be.visible",
   );
 
   cy.get('[data-cy="btn-ajouter-poste"]').click();
   cy.get('[data-cy="formulaire-poste"]').should("be.visible");
+  cy.get('[data-cy="dialogue-formulaire-poste"]').should("not.exist");
   cy.get("#poste-code").type("gaz");
   cy.get('[data-cy="input-poste-libelle"]').type("Gaz annexe");
   cy.get('[data-cy="input-poste-fournisseur"]').type("EDF");
   cy.get('[data-cy="input-poste-prorata"]').clear().type("25");
   cy.get('[data-cy="btn-enregistrer-poste"]').click();
   cy.contains("td", "Gaz annexe", { timeout: 20_000 }).should("be.visible");
+  closeLeaseExpenses();
 }
 
 function assertSettingsIsolation(
@@ -485,16 +469,18 @@ function assertSettingsIsolation(
   cy.get('[data-cy="select-societe"]').select(String(seededCompanyId));
   waitForText('[data-cy="info-societe"]', SEEDED_COMPANY);
   cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
-  expandFirstLease();
+  openFirstLeaseExpenses();
   cy.contains("td", "Téléphone", { timeout: 20_000 }).should("be.visible");
   cy.contains("td", "Gaz annexe").should("not.exist");
+  closeLeaseExpenses();
 
   cy.get('[data-cy="select-societe"]').select(String(annexeCompanyId));
   waitForText('[data-cy="info-societe"]', ANNEXE_COMPANY.name);
   cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
-  expandFirstLease();
+  openFirstLeaseExpenses();
   cy.contains("td", "Gaz annexe", { timeout: 20_000 }).should("be.visible");
   cy.contains("td", "Téléphone").should("not.exist");
+  closeLeaseExpenses();
 }
 
 function assertEmployeeIsolation(

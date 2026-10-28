@@ -86,6 +86,7 @@ function readyState(data: ExpenseItemDto[]): QueryLike<ExpenseItemDto[]> {
 function renderManager(
   defaultProRata = "35.71",
   leaseId: number | null = null,
+  embedded = false,
 ) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -96,6 +97,7 @@ function renderManager(
         companyId={1}
         leaseId={leaseId}
         defaultProRata={defaultProRata}
+        embedded={embedded}
       />
     </QueryClientProvider>,
   );
@@ -438,6 +440,78 @@ describe("ExpenseItemsManager", () => {
     renderManager();
 
     expect(document.querySelector('[data-cy="filtre-postes"]')).toBeNull();
+  });
+
+  it("renders the embedded manager without the section heading", () => {
+    renderManager("35.71", 7, true);
+
+    expect(screen.queryByRole("heading", { name: "Postes" })).toBeNull();
+    expect(
+      document.querySelector("section.expense-items-manager"),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Ajouter un poste" }),
+    ).toBeVisible();
+    expect(screen.getByText("Loyer")).toBeVisible();
+  });
+
+  it("swaps the list and the inline form in the same window", async () => {
+    renderManager("35.71", 7, true);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
+
+    expect(
+      document.querySelector('[data-cy="formulaire-poste"]'),
+    ).not.toBeNull();
+    expect(
+      document.querySelector('[data-cy="dialogue-formulaire-poste"]'),
+    ).toBeNull();
+    expect(document.querySelector("table.expense-items-table")).toBeNull();
+    expect(screen.queryByText("Loyer")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
+
+    expect(document.querySelector('[data-cy="formulaire-poste"]')).toBeNull();
+    expect(document.querySelector("table.expense-items-table")).not.toBeNull();
+    expect(screen.getByText("Loyer")).toBeVisible();
+  });
+
+  it("creates a poste from the embedded form and returns to the list", async () => {
+    vi.mocked(api.expenseItems.create).mockResolvedValue({
+      id: 10,
+      label: "Gaz",
+    });
+    renderManager("35.71", 7, true);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
+    await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    await waitFor(() =>
+      expect(api.expenseItems.create).toHaveBeenCalledWith(
+        expect.objectContaining({ companyId: 1, leaseId: 7, label: "Gaz" }),
+      ),
+    );
+    await waitFor(() =>
+      expect(document.querySelector('[data-cy="formulaire-poste"]')).toBeNull(),
+    );
+    expect(document.querySelector("table.expense-items-table")).not.toBeNull();
+  });
+
+  it("opens the embedded edit form for the selected item", async () => {
+    renderManager("35.71", 7, true);
+    const user = userEvent.setup();
+
+    await user.click(screen.getAllByRole("button", { name: "Modifier" })[0]);
+
+    expect(
+      document.querySelector('[data-cy="formulaire-poste"]'),
+    ).not.toBeNull();
+    expect(screen.getByLabelText("Code")).toHaveValue("loyer");
+    expect(screen.getByLabelText("Code")).toBeDisabled();
+    expect(document.querySelector("table.expense-items-table")).toBeNull();
   });
 });
 

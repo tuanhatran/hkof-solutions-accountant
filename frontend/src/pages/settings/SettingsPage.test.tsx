@@ -321,12 +321,13 @@ describe("SettingsPage tabs", () => {
         ?.classList.contains("card"),
     ).toBe(false);
 
-    await user.click(queryByCy("btn-afficher-frais-bail-societe-5") as Element);
+    await user.click(queryByCy("btn-modifier-frais-bail-societe-5") as Element);
     expect(
       document
         .querySelector("section.expense-items-manager")
         ?.classList.contains("card"),
     ).toBe(false);
+    await user.click(screen.getByRole("button", { name: "Fermer" }));
 
     await user.click(queryByCy("onglet-entreprise-salaries") as Element);
     expect(
@@ -378,32 +379,43 @@ describe("SettingsPage tabs", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows the lease view and the expense items on the Baux & Frais tab", async () => {
+  it("shows the lease grid and opens the scoped expenses dialog", async () => {
     renderPage();
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
 
-    // Arriving on the tab, every lease is collapsed, even the active one.
-    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toHaveAttribute(
-      "aria-expanded",
-      "false",
+    expect(queryByCy("bail-societe-5")).toHaveTextContent(
+      "12 rue des Lilas, 75011 Paris",
     );
-    expect(queryByCy("bail-societe-lie")).toBeNull();
+    expect(queryByCy("bail-societe-5")).not.toHaveAttribute("aria-expanded");
 
-    // Only the show-expenses button expands; a row click changes nothing.
+    // The row itself is inert: only "Modifier les frais" opens the dialog.
     await user.click(queryByCy("bail-societe-5") as Element);
-    expect(queryByCy("bail-societe-lie")).toBeNull();
+    expect(queryByCy("dialogue-frais-bail-societe")).toBeNull();
 
-    await user.click(queryByCy("btn-afficher-frais-bail-societe-5") as Element);
+    await user.click(queryByCy("btn-modifier-frais-bail-societe-5") as Element);
 
-    expect(queryByCy("bail-societe-lie")).not.toBeNull();
-    expect(screen.getByRole("heading", { name: "Postes" })).toBeVisible();
+    expect(queryByCy("dialogue-frais-bail-societe")).not.toBeNull();
+    expect(
+      screen.getByRole("heading", { name: "Frais du bail" }),
+    ).toBeVisible();
+    expect(screen.getByText(/Aucun poste configuré/)).toBeVisible();
     expect(queryByCy("select-bail-actif")).toBeNull();
-    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
+    expect(api.companies.update).not.toHaveBeenCalled();
+  });
+
+  it("opens the company-level Frais généraux dialog", async () => {
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
+    await user.click(queryByCy("btn-frais-generaux-societe") as Element);
+
+    expect(queryByCy("dialogue-frais-generaux-societe")).not.toBeNull();
+    expect(
+      screen.getByRole("heading", { name: "Frais généraux" }),
+    ).toBeVisible();
     expect(api.companies.update).not.toHaveBeenCalled();
   });
 
@@ -577,7 +589,7 @@ describe("SettingsPage tabs", () => {
     expect(queryByCy("select-societe")).toBeNull();
   });
 
-  it("shows the no-lease sentence for a company without a lease", async () => {
+  it("shows the empty lease state and keeps Frais généraux for a company without a lease", async () => {
     companiesState = readyQuery([
       COMPANY,
       { ...OTHER, proRataBase: undefined },
@@ -591,25 +603,24 @@ describe("SettingsPage tabs", () => {
     );
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
 
-    expect(screen.getByText(/^Aucun bail déplié/)).toBeVisible();
+    expect(queryByCy("liste-baux-societe-vide")).not.toBeNull();
+    await user.click(queryByCy("btn-frais-generaux-societe") as Element);
+    expect(queryByCy("dialogue-frais-generaux-societe")).not.toBeNull();
+    expect(screen.getByText(/Aucun poste configuré/)).toBeVisible();
   });
 
-  it("lists the company's leases with show-expenses and edit buttons, without the legacy modal", async () => {
+  it("lists the company's leases with edit-expenses and edit-lease actions only", async () => {
     renderPage();
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
 
     expect(queryByCy("select-bail-actif")).toBeNull();
-    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
     expect(queryByCy("dialogue-formulaire-bail-societe")).toBeNull();
-    expect(queryByCy("btn-modifier-bail-societe")).toBeNull();
+    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toBeNull();
+    expect(queryByCy("btn-note-frais-bail-societe-5")).toBeNull();
+    expect(queryByCy("btn-modifier-frais-bail-societe-5")).not.toBeNull();
     expect(queryByCy("btn-modifier-bail-societe-5")).not.toBeNull();
-    expect(queryByCy("btn-afficher-frais-bail-societe-5")).not.toBeNull();
-    expect(queryByCy("btn-note-frais-bail-societe-5")).not.toBeNull();
     expect(screen.queryByText("Bail actif")).toBeNull();
   });
 
@@ -690,7 +701,7 @@ describe("SettingsPage tabs", () => {
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
-    await user.click(queryByCy("btn-afficher-frais-bail-societe-5") as Element);
+    await user.click(queryByCy("btn-modifier-frais-bail-societe-5") as Element);
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
@@ -705,7 +716,7 @@ describe("SettingsPage tabs", () => {
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
-    await user.click(queryByCy("btn-afficher-frais-bail-societe-5") as Element);
+    await user.click(queryByCy("btn-modifier-frais-bail-societe-5") as Element);
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(

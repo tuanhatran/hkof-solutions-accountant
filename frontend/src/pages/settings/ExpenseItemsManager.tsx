@@ -1,6 +1,6 @@
 import "./ExpenseItemsManager.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { PencilLine, Plus, ReceiptText, Trash2 } from "lucide-react";
+import { Plus, ReceiptText } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
@@ -13,21 +13,27 @@ import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorState, LoadingState } from "@/components/ui/States";
 import { useListQuery } from "@/hooks/useListQuery";
-import { cn } from "@/lib/cn";
-import { formatPercentage } from "@/lib/format";
 import { toast } from "@/state/toasts";
 import { ExpenseItemForm } from "./ExpenseItemForm";
+import { ExpenseItemsTable } from "./ExpenseItemsTable";
 import { periodicityLabel } from "./settingsValues";
 
-/** List of expense items with create/edit/delete actions. */
+/**
+ * Expense items of one company scope (`leaseId = null` for company-level
+ * expenses). Standalone it keeps the section header and the historical form
+ * above the list; embedded inside the expenses dialog it drops that chrome and
+ * swaps the list and the inline form inside the same window.
+ */
 export function ExpenseItemsManager({
   companyId,
   leaseId,
   defaultProRata: defaultProRata,
+  embedded = false,
 }: {
   companyId: number;
   leaseId: number | null;
   defaultProRata: string;
+  embedded?: boolean;
 }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -95,6 +101,11 @@ export function ExpenseItemsManager({
       -1,
     ) + 1;
 
+  function closeForm() {
+    setFormOpen(false);
+    setEditedItem(null);
+  }
+
   function openCreate() {
     setEditedItem(null);
     setFormOpen(true);
@@ -105,193 +116,132 @@ export function ExpenseItemsManager({
     setFormOpen(true);
   }
 
+  const addButton = (
+    <Button
+      variant="primary"
+      small
+      icon={<Plus size={14} />}
+      onClick={openCreate}
+      disabled={formOpen && editedItem === null}
+      data-cy="btn-ajouter-poste"
+    >
+      {t("settings.expenses.add")}
+    </Button>
+  );
+
+  const form = formOpen ? (
+    <ExpenseItemForm
+      item={editedItem}
+      companyId={companyId}
+      leaseId={leaseId}
+      defaultProRata={defaultProRata}
+      defaultOrder={defaultOrder}
+      embedded={embedded}
+      onClose={closeForm}
+    />
+  ) : null;
+
+  const listContent = expenseItems.isError ? (
+    <ErrorState
+      message={errorMessage(expenseItems.error)}
+      onRetry={() => void expenseItems.refetch()}
+    />
+  ) : expenseItems.isPending ? (
+    <LoadingState message={t("settings.expenses.loading")} />
+  ) : list.length === 0 ? (
+    <p className="expense-items-manager-empty">
+      {t("settings.expenses.empty")}
+    </p>
+  ) : (
+    <>
+      <ListToolbar
+        list="postes"
+        placeholder={t("settings.expenses.filterPlaceholder")}
+        query={listQuery.query}
+        onQueryChange={listQuery.setQuery}
+        sort={listQuery.sort}
+        onSortChange={listQuery.setSort}
+        direction={listQuery.direction}
+        onToggleDirection={listQuery.toggleDirection}
+        sortOptions={[
+          {
+            value: "order",
+            label: t("settings.expenses.table.order"),
+          },
+          {
+            value: "label",
+            label: t("settings.expenses.table.label"),
+          },
+          {
+            value: "proRata",
+            label: t("settings.expenses.table.proRata"),
+          },
+          {
+            value: "periodicity",
+            label: t("settings.expenses.table.periodicity"),
+          },
+        ]}
+        visible={listQuery.visible.length}
+        total={listQuery.total}
+      />
+      {listQuery.visible.length === 0 ? (
+        <EmptyState
+          text={t("settings.list.noMatch", {
+            query: listQuery.query.trim(),
+          })}
+          dataCy="aucun-resultat-postes"
+        />
+      ) : (
+        <ExpenseItemsTable
+          items={listQuery.visible}
+          onEdit={openEdit}
+          onRemove={setToDelete}
+        />
+      )}
+    </>
+  );
+
   return (
     <section className="expense-items-manager">
-      <div className="card-header">
-        <div className="expense-items-manager-heading">
-          <span className="expense-items-manager-icon">
-            <ReceiptText size={17} aria-hidden="true" />
-          </span>
-          <div>
-            <h2 className="expense-items-manager-title">
-              {t("settings.expenses.title")}
-            </h2>
-            <p className="expense-items-manager-description">
-              {t("settings.expenses.description")}
-            </p>
+      {embedded ? null : (
+        <div className="card-header">
+          <div className="expense-items-manager-heading">
+            <span className="expense-items-manager-icon">
+              <ReceiptText size={17} aria-hidden="true" />
+            </span>
+            <div>
+              <h2 className="expense-items-manager-title">
+                {t("settings.expenses.title")}
+              </h2>
+              <p className="expense-items-manager-description">
+                {t("settings.expenses.description")}
+              </p>
+            </div>
           </div>
+          {addButton}
         </div>
-        <Button
-          variant="primary"
-          small
-          icon={<Plus size={14} />}
-          onClick={openCreate}
-          disabled={formOpen && editedItem === null}
-          data-cy="btn-ajouter-poste"
-        >
-          {t("settings.expenses.add")}
-        </Button>
-      </div>
+      )}
 
-      <div className="card-body expense-items-manager-body">
-        {formOpen ? (
-          <ExpenseItemForm
-            item={editedItem}
-            companyId={companyId}
-            leaseId={leaseId}
-            defaultProRata={defaultProRata}
-            defaultOrder={defaultOrder}
-            onClose={() => {
-              setFormOpen(false);
-              setEditedItem(null);
-            }}
-          />
-        ) : null}
-
-        {expenseItems.isError ? (
-          <ErrorState
-            message={errorMessage(expenseItems.error)}
-            onRetry={() => void expenseItems.refetch()}
-          />
-        ) : expenseItems.isPending ? (
-          <LoadingState message={t("settings.expenses.loading")} />
-        ) : list.length === 0 ? (
-          <p className="expense-items-manager-empty">
-            {t("settings.expenses.empty")}
-          </p>
+      <div
+        className={
+          embedded
+            ? "expense-items-manager-body"
+            : "card-body expense-items-manager-body"
+        }
+      >
+        {embedded ? (
+          formOpen ? (
+            form
+          ) : (
+            <>
+              <div className="expense-items-manager-toolbar">{addButton}</div>
+              {listContent}
+            </>
+          )
         ) : (
           <>
-            <ListToolbar
-              list="postes"
-              placeholder={t("settings.expenses.filterPlaceholder")}
-              query={listQuery.query}
-              onQueryChange={listQuery.setQuery}
-              sort={listQuery.sort}
-              onSortChange={listQuery.setSort}
-              direction={listQuery.direction}
-              onToggleDirection={listQuery.toggleDirection}
-              sortOptions={[
-                {
-                  value: "order",
-                  label: t("settings.expenses.table.order"),
-                },
-                {
-                  value: "label",
-                  label: t("settings.expenses.table.label"),
-                },
-                {
-                  value: "proRata",
-                  label: t("settings.expenses.table.proRata"),
-                },
-                {
-                  value: "periodicity",
-                  label: t("settings.expenses.table.periodicity"),
-                },
-              ]}
-              visible={listQuery.visible.length}
-              total={listQuery.total}
-            />
-            {listQuery.visible.length === 0 ? (
-              <EmptyState
-                text={t("settings.list.noMatch", {
-                  query: listQuery.query.trim(),
-                })}
-                dataCy="aucun-resultat-postes"
-              />
-            ) : (
-              <div className="expense-items-manager-table-wrapper">
-                <table className="expense-table expense-items-table">
-                  <thead>
-                    <tr>
-                      <th>{t("settings.expenses.table.label")}</th>
-                      <th>{t("settings.expenses.table.supplier")}</th>
-                      <th className="text-right">
-                        {t("settings.expenses.table.proRata")}
-                      </th>
-                      <th>{t("settings.expenses.table.periodicity")}</th>
-                      <th className="text-right">
-                        {t("settings.expenses.table.order")}
-                      </th>
-                      <th>{t("settings.expenses.table.options")}</th>
-                      <th className="text-right">
-                        {t("settings.expenses.table.actions")}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {listQuery.visible.map((expenseItem) => (
-                      <tr
-                        key={expenseItem.id}
-                        className={cn(!expenseItem.active && "opacity-60")}
-                        data-cy={`poste-${expenseItem.code}`}
-                      >
-                        <td>
-                          <div className="expense-items-manager-item">
-                            <span className="expense-items-manager-item-label">
-                              {expenseItem.label}
-                            </span>
-                            <code className="expense-items-manager-item-code">
-                              {expenseItem.code}
-                            </code>
-                            {!expenseItem.active ? (
-                              <span className="badge badge-neutral">
-                                {t("settings.expenses.inactive")}
-                              </span>
-                            ) : null}
-                          </div>
-                        </td>
-                        <td className="text-ink-soft">
-                          {expenseItem.supplier || "—"}
-                        </td>
-                        <td className="number expense-items-manager-number-cell text-right">
-                          {formatPercentage(expenseItem.proRataPct)}
-                        </td>
-                        <td className="expense-items-manager-periodicity-cell">
-                          {periodicityLabel(expenseItem.periodicity, t)}
-                        </td>
-                        <td className="number expense-items-manager-order-cell text-right">
-                          {expenseItem.sortOrder}
-                        </td>
-                        <td>
-                          {expenseItem.multipleLinesAllowed ? (
-                            <span className="badge badge-accent">
-                              {t("settings.expenses.multipleLines")}
-                            </span>
-                          ) : (
-                            <span className="expense-items-manager-single-line">
-                              {t("settings.expenses.singleLine")}
-                            </span>
-                          )}
-                        </td>
-                        <td>
-                          <div className="expense-items-manager-actions">
-                            <Button
-                              variant="ghost"
-                              small
-                              icon={<PencilLine size={13} />}
-                              onClick={() => openEdit(expenseItem)}
-                              data-cy={`btn-modifier-poste-${expenseItem.code}`}
-                            >
-                              {t("settings.expenses.edit")}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              small
-                              icon={<Trash2 size={13} />}
-                              className="text-danger hover:bg-danger-soft"
-                              onClick={() => setToDelete(expenseItem)}
-                              data-cy={`btn-supprimer-poste-${expenseItem.code}`}
-                            >
-                              {t("settings.expenses.remove")}
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            {form}
+            {listContent}
           </>
         )}
       </div>

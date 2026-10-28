@@ -1,9 +1,9 @@
 import "./CompanyLeaseTab.css";
-import { KeyRound, Plus } from "lucide-react";
+import { KeyRound, Plus, ReceiptText } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
-import { useLeases, usePersons, useStatements } from "@/api/queries";
+import { useLeases, usePersons } from "@/api/queries";
 import type { CompanyDto, LeaseDto } from "@/api/types";
 import { LeaseForm } from "@/components/settings/LeaseForm";
 import { ListSearch, ListToolbar } from "@/components/settings/ListToolbar";
@@ -14,26 +14,16 @@ import {
 import { Button } from "@/components/ui/Button";
 import { ErrorState, LoadingState } from "@/components/ui/States";
 import { useListQuery } from "@/hooks/useListQuery";
+import { CompanyLeaseExpensesModal } from "./CompanyLeaseExpensesModal";
 import { CompanyLeaseRow } from "./CompanyLeaseRow";
-import { CompanyLeaseStatementModal } from "./CompanyLeaseStatementModal";
-import { CompanyLeaseView } from "./CompanyLeaseView";
-import { ExpenseItemsManager } from "./ExpenseItemsManager";
 
 /**
- * "Baux & Frais" tab: the leases owned by the company as a compact accordion
- * list. There is no active-lease notion here: the list follows the toolbar
- * sort only, and no row writes `company.leaseId`. Every row arrives collapsed;
- * only its "Afficher les frais" button expands that lease's details and postes
- * inline, switching the expansion from another row and toggling the same row
- * closed (the row itself is not clickable). While no lease is expanded the
- * company-level fallback (details and postes without a lease) stays visible.
- * The search
- * field sits in the section header next to "Ajouter un bail", while the sort
- * field, direction toggle and count remain in the shared toolbar. Each row
- * also offers "Générer la note de frais", opening the full expense-statement
- * editor scoped to that company+lease, and "Modifier le bail", opening the
- * shared LMNP LeaseForm in edit mode. Below every row its generated statements
- * are always visible, grouped by month.
+ * "Baux & Frais" tab: the leases owned by the company as a five-column grid
+ * (address, landlord, rent, charges, actions). There is no active-lease notion
+ * here: the list follows the toolbar sort only, no row writes
+ * `company.leaseId`, and every row stays inert. "Modifier les frais" opens the
+ * scoped expenses dialog, "Frais généraux" the company-level one, and
+ * "Modifier le bail" the unchanged LMNP LeaseForm.
  */
 export function CompanyLeaseTab({
   company,
@@ -45,11 +35,10 @@ export function CompanyLeaseTab({
   const { t } = useTranslation();
   const leases = useLeases();
   const persons = usePersons();
-  const statements = useStatements(company.id as number, undefined, null);
-  const [expandedLeaseId, setExpandedLeaseId] = useState<number | null>(null);
   const [addingLease, setAddingLease] = useState(false);
   const [editingLease, setEditingLease] = useState<LeaseDto | null>(null);
-  const [statementLease, setStatementLease] = useState<LeaseDto | null>(null);
+  const [expensesOpen, setExpensesOpen] = useState(false);
+  const [expensesLease, setExpensesLease] = useState<LeaseDto | null>(null);
 
   const companyLeases = useMemo(
     () =>
@@ -87,8 +76,14 @@ export function CompanyLeaseTab({
     defaultSort: "lease",
   });
 
-  function toggleLease(leaseId: number) {
-    setExpandedLeaseId((current) => (current === leaseId ? null : leaseId));
+  function openExpenses(lease: LeaseDto | null) {
+    setExpensesLease(lease);
+    setExpensesOpen(true);
+  }
+
+  function closeExpenses() {
+    setExpensesOpen(false);
+    setExpensesLease(null);
   }
 
   return (
@@ -112,6 +107,15 @@ export function CompanyLeaseTab({
                   />
                 </div>
               ) : null}
+              <Button
+                variant="secondary"
+                small
+                icon={<ReceiptText size={14} />}
+                onClick={() => openExpenses(null)}
+                data-cy="btn-frais-generaux-societe"
+              >
+                {t("settings.company.leaseTab.generalExpenses")}
+              </Button>
               <Button
                 variant="primary"
                 small
@@ -152,7 +156,7 @@ export function CompanyLeaseTab({
                 sortOptions={[
                   {
                     value: "lease",
-                    label: t("settings.company.leaseTab.columns.lease"),
+                    label: t("settings.company.leaseTab.columns.address"),
                   },
                   {
                     value: "rent",
@@ -180,7 +184,12 @@ export function CompanyLeaseTab({
                     className="company-lease-tab-headers hidden md:grid"
                     data-cy="entetes-baux-societe"
                   >
-                    <span>{t("settings.company.leaseTab.columns.lease")}</span>
+                    <span>
+                      {t("settings.company.leaseTab.columns.address")}
+                    </span>
+                    <span>
+                      {t("settings.company.leaseTab.columns.landlord")}
+                    </span>
                     <span className="company-lease-tab-headers-amount">
                       {t("settings.company.leaseTab.columns.rent")}
                     </span>
@@ -196,17 +205,8 @@ export function CompanyLeaseTab({
                       <CompanyLeaseRow
                         key={lease.id}
                         lease={lease}
-                        companyId={company.id as number}
-                        companyProRataBase={company.proRataBase}
-                        expanded={lease.id === expandedLeaseId}
-                        onToggle={() => toggleLease(lease.id as number)}
                         onEdit={() => setEditingLease(lease)}
-                        onStatement={() => setStatementLease(lease)}
-                        statements={statements.data}
-                        statementsPending={statements.isPending}
-                        statementsError={statements.isError}
-                        statementsErrorValue={statements.error}
-                        onRetryStatements={() => void statements.refetch()}
+                        onExpenses={() => openExpenses(lease)}
                       />
                     ))}
                   </ul>
@@ -216,21 +216,6 @@ export function CompanyLeaseTab({
           )}
         </div>
       </section>
-
-      {!leases.isPending && expandedLeaseId === null ? (
-        <>
-          <section className="company-lease-tab-none">
-            <div className="card-body">
-              <CompanyLeaseView lease={null} proRataBase={null} />
-            </div>
-          </section>
-          <ExpenseItemsManager
-            companyId={company.id as number}
-            leaseId={null}
-            defaultProRata={company.proRataBase ?? "100.00"}
-          />
-        </>
-      ) : null}
 
       {addingLease ? (
         <LeaseForm
@@ -251,12 +236,11 @@ export function CompanyLeaseTab({
           onClose={() => setEditingLease(null)}
         />
       ) : null}
-      {statementLease ? (
-        <CompanyLeaseStatementModal
-          key={`note-frais-bail-${statementLease.id}`}
-          lease={statementLease}
-          companyId={company.id as number}
-          onClose={() => setStatementLease(null)}
+      {expensesOpen ? (
+        <CompanyLeaseExpensesModal
+          company={company}
+          lease={expensesLease}
+          onClose={closeExpenses}
         />
       ) : null}
     </div>

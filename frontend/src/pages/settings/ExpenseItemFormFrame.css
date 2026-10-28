@@ -1,0 +1,15 @@
+@reference "../../index.css";
+
+@layer components {
+  .expense-item-form {
+    @apply flex flex-col gap-3;
+  }
+
+  .expense-item-form-error {
+    @apply rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger;
+  }
+
+  .expense-item-form-actions {
+    @apply flex flex-col-reverse gap-2 border-t border-line pt-4 sm:flex-row sm:justify-end;
+  }
+}

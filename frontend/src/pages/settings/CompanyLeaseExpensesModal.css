@@ -1,0 +1,7 @@
+@reference "../../index.css";
+
+@layer components {
+  .company-lease-expenses-address {
+    @apply mb-3 rounded-lg bg-paper-deep/40 px-3 py-2 text-xs text-ink-soft;
+  }
+}

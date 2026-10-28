@@ -671,38 +671,25 @@ export const en = {
       leaseTab: {
         title: "Company leases",
         description:
-          "A company can be the tenant of several leases. Use “Show expenses” to expand a lease and see its expense items and expense statements.",
+          "A company can be the tenant of several leases. “Edit expenses” opens the lease expense items; the company's general expenses stay available from the header.",
         columns: {
-          lease: "Lease",
+          address: "Address",
+          landlord: "Landlord",
           rent: "Rent",
           charges: "Charges",
           actions: "Actions",
         },
         add: "Add a lease",
+        generalExpenses: "General expenses",
         filterPlaceholder: "Filter leases…",
         loading: "Loading leases…",
         empty:
           "No lease for this company. Add the first lease with “Add a lease”.",
         addressFallback: "Lease without address",
-        meta: "Landlord {{landlord}}",
-        showExpenses: "Show expenses",
-        statement: "Generate expense statement",
+        expenses: "Edit expenses",
+        expensesTitle: "Lease expenses",
+        generalExpensesTitle: "General expenses",
         edit: "Edit lease",
-      },
-      leaseView: {
-        surfaces:
-          "Business area {{businessArea}} m² · Total area {{totalArea}} m²",
-        proRata: "Professional share {{percentage}}",
-        empty:
-          "No lease expanded: the company has no professional share to display.",
-      },
-      statementModal: {
-        title: "Expense statement",
-        closeAria: "Close window",
-        tabsAria: "Expense statement panels",
-        input: "Input",
-        preview: "Preview",
-        close: "Close",
       },
     },
     lease: {
@@ -821,13 +808,6 @@ export const en = {
         empty: "No rent receipt generated for this lease.",
         count_one: "{{count}} rent receipt",
         count_other: "{{count}} rent receipts",
-      },
-      statements: {
-        title: "Generated expense statements",
-        loading: "Loading the expense statements…",
-        empty: "No expense statement generated for this lease.",
-        count_one: "{{count}} statement",
-        count_other: "{{count}} statements",
       },
     },
     lmnp: {

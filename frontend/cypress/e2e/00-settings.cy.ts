@@ -17,14 +17,10 @@ describe("Settings", () => {
 
     waitForText('[data-cy="info-societe"]', "HKOF");
 
-    // Prorata is read-only on the Baux & Frais tab, shown once a lease row is
-    // expanded with "Afficher les frais" (the tab arrives collapsed).
+    // Prorata is read-only on the Baux & Frais tab; its lease grid is visible
+    // right away, without any expansion step.
     cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
-    cy.get('button[data-cy^="btn-afficher-frais-bail-societe-"]', {
-      timeout: 20_000,
-    })
-      .first()
-      .click();
+    cy.get('[data-cy^="bail-societe-"]', { timeout: 20_000 }).should("exist");
 
     // Identity edits go through the modal.
     cy.get('[data-cy="onglet-entreprise-identification"]').click();
@@ -149,14 +145,19 @@ describe("Settings", () => {
     );
 
     cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
-    // The tab arrives collapsed: expand the first lease to reach its postes.
-    cy.get('button[data-cy^="btn-afficher-frais-bail-societe-"]', {
+    // "Modifier les frais" opens the lease expenses dialog; the item form swaps
+    // inside that same window, never as a stacked dialog.
+    cy.get('[data-cy^="btn-modifier-frais-bail-societe-"]', {
       timeout: 20_000,
     })
       .first()
       .click();
+    cy.get('[data-cy="dialogue-frais-bail-societe"]').should("be.visible");
+    cy.get('[role="dialog"]').should("have.length", 1);
     cy.get('[data-cy="btn-ajouter-poste"]').click();
     cy.get('[data-cy="formulaire-poste"]').should("be.visible");
+    cy.get('[data-cy="dialogue-formulaire-poste"]').should("not.exist");
+    cy.get('[role="dialog"]').should("have.length", 1);
     cy.get("#poste-code").type("internet-pro");
     cy.get('[data-cy="input-poste-libelle"]').type("Internet pro");
     cy.get('[data-cy="input-poste-fournisseur"]').type("Free");
@@ -168,6 +169,7 @@ describe("Settings", () => {
     cy.contains("td", "50 %").should("be.visible");
 
     cy.get('[data-cy="btn-modifier-poste-internet_pro"]').click();
+    cy.get('[data-cy="formulaire-poste"]').should("be.visible");
     cy.get('[data-cy="input-poste-libelle"]')
       .clear()
       .type("Internet pro fibre");
@@ -186,6 +188,11 @@ describe("Settings", () => {
     cy.contains("td", "Internet pro fibre", { timeout: 15_000 }).should(
       "not.exist",
     );
+
+    cy.get(
+      '[data-cy="dialogue-frais-bail-societe"] button[aria-label="Fermer"]',
+    ).click();
+    cy.get('[data-cy="dialogue-frais-bail-societe"]').should("not.exist");
   });
 
   it("adds a signature to the seeded natural person from her form", () => {
