@@ -26,6 +26,7 @@ import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
 import fr.hkof.homeofficeexpenses.domain.ExpenseLine;
 import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
 import fr.hkof.homeofficeexpenses.domain.Lease;
+import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.Receipt;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
