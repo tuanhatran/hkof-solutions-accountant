@@ -90,7 +90,8 @@ file, never rewrite evidence from another agent (append only), never touch anyth
   table requires it). Without it keep `USER_REVIEW`; if a required gate cannot run (for example
   Docker unavailable), set `BLOCKED` and report the unverified gate. Never done on partial
   evidence.
-- User accepts: set `DONE`, append `lead: DONE — user accepted`.
+- User accepts: set `DONE`, append `lead: DONE — user accepted`, then run `make e2e-down` to
+  remove the e2e stack and its volumes (or tell the user to run it).
 - User feedback before acceptance: set `USER_CHANGES_REQUESTED`, append it to Goal and
   Acceptance, reset `Round:` to 0, route to `builder`.
 - Max 2 review rounds (`Round:` in the handoff). Round 2 is the last: a remaining blocker means

@@ -53,12 +53,13 @@ Cheap checks only inside the loop: never run a full gate here.
 | Frontend production code                                               | `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + full E2E |
 | `openapi/`, Flyway migration, Docker/E2E config, or both sides changed | Backend + frontend gates + full E2E                                                               |
 
-Full E2E, one run per task, in a single run:
-`docker compose -p homeofficeexpenses-e2e -f docker-compose.yml -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from cypress`,
-then the same command with `down -v --remove-orphans`. All specs and tests green, none only on a
-retry. If a required gate cannot run (for example Docker unavailable), report it as a blocker so
-the task stays `BLOCKED`; never done on partial evidence. When the lead's handoff asks for a
-gate the table skips, run it.
+Full E2E, one stack per task:
+`make e2e-up` once when the task first needs E2E, then `make e2e` for every run; `make e2e`
+rebuilds only the changed services and leaves the stack up. All specs and tests green, none only
+on a retry. Keep the stack running after the report; `make e2e-down` runs only after the user
+accepts, when the lead sets `DONE`. If a required gate cannot run (for example Docker
+unavailable), report it as a blocker so the task stays `BLOCKED`; never done on partial evidence.
+When the lead's handoff asks for a gate the table skips, run it.
 
 Coverage gate: changed-line coverage >= 80% via `scripts/diff-coverage.sh <Base> backend|frontend|all`
 (JaCoCo XML for backend lines, Vitest Clover XML for frontend lines); no global bundle threshold.

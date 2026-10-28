@@ -77,6 +77,7 @@ jobs:
         run: >
           docker compose -p homeofficeexpenses-e2e
           -f docker-compose.yml -f docker-compose.e2e.yml
+          --profile e2e
           up --build --abort-on-container-exit --exit-code-from cypress
       - name: Tear down
         if: always()

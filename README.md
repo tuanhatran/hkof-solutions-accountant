@@ -99,10 +99,16 @@ This runs the backend tests (`backend/mvnw test`), the frontend unit tests (`npm
 End-to-end tests (Cypress against the full stack, with `mock-ollama` and an ephemeral database):
 
 ```bash
-make e2e
+make e2e-up        # build and start the e2e stack once per task
+make e2e           # rebuild changed services, run the Cypress suite
+make e2e 00-settings   # run one spec (prefix match)
+make e2e-down      # remove the stack and its volumes, once the change is accepted
 ```
 
-The e2e run uses its own Compose project (`homeofficeexpenses-e2e`), never touches `./data` or `pgdata`, and removes its volumes at the end. The exit code is the Cypress result.
+`make e2e` reuses the running stack, rebuilds only `backend`, `frontend` or `mock-ollama` when
+their files changed since the previous run, and never tears the stack down. The Compose project
+(`homeofficeexpenses-e2e`) never touches `./data` or `pgdata`; volumes are removed by
+`make e2e-down` only. The exit code is the Cypress result.
 
 ## Backup and restore
 
@@ -132,7 +138,7 @@ openapi/            API contract (openapi.yaml)
 docker-compose.yml          Base stack
 docker-compose.dev.yml      Development overlay
 docker-compose.e2e.yml      End-to-end overlay
-Makefile                    Shortcuts: up, dev, test, e2e, down
+Makefile                    Shortcuts: up, dev, test, e2e-up, e2e, e2e-down, down
 .github/workflows/ci.yml    CI: backend, frontend, e2e
 ```
 
