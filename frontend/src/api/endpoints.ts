@@ -192,15 +192,16 @@ export const api = {
     active: async (
       companyId: number,
       month: string,
+      leaseId?: number | null,
     ): Promise<StatementDto | null> => {
       const result = await request<StatementDto | undefined>(
-        `/api/expense-statements/active${query({ companyId, month })}`,
+        `/api/expense-statements/active${query({ companyId, month, leaseId })}`,
       );
       return result ?? null;
     },
-    draft: (companyId: number, month: string) =>
+    draft: (companyId: number, month: string, leaseId?: number | null) =>
       request<DraftDto>(
-        `/api/expense-statements/draft${query({ companyId, month })}`,
+        `/api/expense-statements/draft${query({ companyId, month, leaseId })}`,
         {
           method: "POST",
         },
@@ -255,9 +256,10 @@ export const api = {
     getStatement: async (
       companyId: number,
       month: string,
+      leaseId?: number | null,
     ): Promise<StatementDraftDto | null> => {
       const result = await request<StatementDraftDto | undefined>(
-        `/api/drafts/expense-statements${query({ companyId, month })}`,
+        `/api/drafts/expense-statements${query({ companyId, month, leaseId })}`,
       );
       return result ?? null;
     },

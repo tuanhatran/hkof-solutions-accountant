@@ -23,7 +23,7 @@ export function useCompanyLeaseStatementModal(
   companyId: number,
 ) {
   const [draft] = useState(() =>
-    createStatementDraftStore(currentMonth(), companyId),
+    createStatementDraftStore(currentMonth(), companyId, lease.id ?? null),
   );
   const month = useStore(draft, (state) => state.month);
   const allRentReceipts = useAllRentReceipts();
@@ -53,7 +53,7 @@ export function useCompanyLeaseStatementModal(
       return;
     }
     const state = draft.getState();
-    const scope = draftScopeKey(state.companyId, month);
+    const scope = draftScopeKey(state.companyId, month, state.leaseId);
     if (state.primedReceiptByMonth[scope] === scopedReceipt.id) {
       return;
     }

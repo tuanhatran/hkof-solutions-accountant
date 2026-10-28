@@ -82,8 +82,7 @@ public class ExpenseStatementService {
         YearMonth month = Amounts.month(monthText);
         Company company = companies.entity(companyId);
         LeaseService.ProRata proRata = leases.proRata(company.getId(), leaseId);
-        // Expense statements keep a month-scoped rent receipt: pair selection is out of scope.
-        RentReceipt rentReceipt = rentReceiptService.activeForMonth(company.getId(), month.toString(), null, null, null);
+        RentReceipt rentReceipt = activeReceipt(company.getId(), month.toString(), leaseId);
         List<ExpenseLineDto> lines = new ArrayList<>();
         if (rentReceipt != null) {
             ExpenseItem rentItem = expenseItemService.entity(company.getId(), "loyer");
@@ -122,6 +121,7 @@ public class ExpenseStatementService {
         YearMonth month = Amounts.month(request.month());
         Company company = companies.entity(request.companyId());
         var lease = leases.resolveExpenseLease(company.getId(), request.leaseId());
+        Long leaseId = lease == null ? null : lease.getId();
         List<CalculatedLine> lines = lineCalculator.calculateLines(company.getId(), request.lines());
         if (lines.isEmpty()) {
             throw new BusinessException("STATEMENT_LINES_REQUIRED",
@@ -129,22 +129,24 @@ public class ExpenseStatementService {
         }
         String signature = documents.signatureDataUri(request.signatureId(), company.getId());
         TemplateDocument template = documents.templateForStatement(request.templateId());
-        int version = repository
-                .findFirstByCompanyIdAndMonthOrderByVersionDesc(company.getId(), month.toString())
-                .map(n -> n.getVersion() + 1)
-                .orElse(1);
-        archive(company.getId(), month.toString());
+        int version = nextVersion(company.getId(), month.toString(), leaseId);
+        archive(company.getId(), month.toString(), leaseId);
         ExpenseStatementDocumentService.GeneratedStatement generated = documents.generate(
-                month, lines, version, template, signature, company, request.leaseId());
+                month, lines, version, template, signature, company, leaseId);
         ExpenseStatement statement = generated.statement();
-        statement.setPdfPath(storage.storePdf("note_frais_" + month + "_v" + version + ".pdf", generated.pdf()));
-        statement.setFullPdfPath(
-                storage.storePdf("note_frais_" + month + "_v" + version + "_complet.pdf", generated.completePdf()));
+        statement.setPdfPath(storage.storePdf(pdfName(month, leaseId, version, ""), generated.pdf()));
+        statement.setFullPdfPath(storage.storePdf(pdfName(month, leaseId, version, "_complet"),
+                generated.completePdf()));
         ExpenseStatement saved = repository.saveAndFlush(statement);
         // Generating clears the draft of the same scope in the same transaction: a
         // generated statement never leaves an active draft behind.
-        documentDraftService.deleteActiveStatement(saved.getCompanyId(), saved.getMonth());
+        documentDraftService.deleteActiveStatement(saved.getCompanyId(), saved.getMonth(), saved.getLeaseId());
         return toDto(saved);
+    }
+
+    /** Stored PDF names embed the lease so two leases of a month never overwrite each other. */
+    private String pdfName(YearMonth month, Long leaseId, int version, String suffix) {
+        return "note_frais_" + month + "_l" + (leaseId == null ? 0 : leaseId) + "_v" + version + suffix + ".pdf";
     }
 
     @Transactional(readOnly = true)
@@ -175,13 +177,21 @@ public class ExpenseStatementService {
     /**
      * Returns the DTO of the active statement for the company and month, mapped inside the
      * transaction: {@code spring.jpa.open-in-view} is disabled, so the entity cannot be mapped
-     * by the controller without initializing its lazy lines.
+     * by the controller without initializing its lazy lines. Without a lease the historical
+     * company scope is used; legacy statements with no lease stay reachable.
      */
     @Transactional(readOnly = true)
-    public Optional<StatementDto> activeDtoForMonth(Long companyId, String month) {
+    public Optional<StatementDto> activeDtoForMonth(Long companyId, String month, Long leaseId) {
         companies.entity(companyId);
+        if (leaseId == null) {
+            return repository
+                    .findFirstByCompanyIdAndMonthAndStatusOrderByVersionDesc(companyId, month, DocumentStatus.ACTIVE)
+                    .map(this::toDto);
+        }
+        Long effectiveLeaseId = leases.resolveExpenseLease(companyId, leaseId).getId();
         return repository
-                .findFirstByCompanyIdAndMonthAndStatusOrderByVersionDesc(companyId, month, DocumentStatus.ACTIVE)
+                .findFirstByCompanyIdAndMonthAndLeaseIdAndStatusOrderByVersionDesc(companyId, month,
+                        effectiveLeaseId, DocumentStatus.ACTIVE)
                 .map(this::toDto);
     }
 
@@ -193,12 +203,26 @@ public class ExpenseStatementService {
         return documents.zip(entity(id));
     }
 
-    private void archive(Long companyId, String month) {
+    private int nextVersion(Long companyId, String month, Long leaseId) {
+        Optional<ExpenseStatement> last = leaseId == null
+                ? repository.findFirstByCompanyIdAndMonthAndLeaseIdIsNullOrderByVersionDesc(companyId, month)
+                : repository.findFirstByCompanyIdAndMonthAndLeaseIdOrderByVersionDesc(companyId, month, leaseId);
+        return last.map(statement -> statement.getVersion() + 1).orElse(1);
+    }
+
+    private RentReceipt activeReceipt(Long companyId, String month, Long leaseId) {
+        return rentReceiptService.activeForLease(companyId, month, leaseId);
+    }
+
+    private void archive(Long companyId, String month, Long leaseId) {
         List<ExpenseStatement> existingStatements = repository
                 .findByCompanyIdAndMonthOrderByVersionDesc(companyId, month);
         boolean modified = false;
         for (ExpenseStatement existingStatement : existingStatements) {
-            if (existingStatement.getStatus() == DocumentStatus.ACTIVE) {
+            boolean sameScope = leaseId == null
+                    ? existingStatement.getLeaseId() == null
+                    : leaseId.equals(existingStatement.getLeaseId());
+            if (sameScope && existingStatement.getStatus() == DocumentStatus.ACTIVE) {
                 existingStatement.setStatus(DocumentStatus.ARCHIVED);
                 modified = true;
             }

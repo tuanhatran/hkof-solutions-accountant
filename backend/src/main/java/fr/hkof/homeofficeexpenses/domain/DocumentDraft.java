@@ -40,6 +40,10 @@ public class DocumentDraft {
     @Column(name = "company_id")
     private Long companyId;
 
+    /** Expense statement scope: the statement lease; null is the legacy company scope. */
+    @Column(name = "lease_id")
+    private Long leaseId;
+
     @Column(name = "landlord_id")
     private Long landlordId;
 
@@ -89,6 +93,14 @@ public class DocumentDraft {
 
     public void setCompanyId(Long companyId) {
         this.companyId = companyId;
+    }
+
+    public Long getLeaseId() {
+        return leaseId;
+    }
+
+    public void setLeaseId(Long leaseId) {
+        this.leaseId = leaseId;
     }
 
     public Long getLandlordId() {

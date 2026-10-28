@@ -149,7 +149,11 @@ export function ExpenseGenerationFooter({
             icon={<Save size={16} />}
             loading={c.draftSaving}
             onClick={() => void c.saveDraft()}
-            disabled={c.activeCompanyId === null || c.draftSaving}
+            disabled={
+              c.activeCompanyId === null ||
+              c.selectedLeaseId === null ||
+              c.draftSaving
+            }
             data-cy="btn-enregistrer-brouillon"
           >
             {t("draft.save")}
@@ -159,6 +163,7 @@ export function ExpenseGenerationFooter({
             icon={<FileCheck2 size={16} />}
             loading={c.generationInProgress}
             disabled={
+              c.selectedLeaseId === null ||
               c.orderedLines.length === 0 ||
               !c.calculationUpToDate ||
               !c.signatureAvailable
@@ -170,18 +175,20 @@ export function ExpenseGenerationFooter({
           </Button>
         </div>
         <p className="expense-generation-footer-hint">
-          {c.orderedLines.length === 0
-            ? t("expenseStatement.footer.hintNoLine")
-            : !c.signatureAvailable
-              ? t("expenseStatement.footer.hintNoSignature")
-              : !c.calculationUpToDate
-                ? t("expenseStatement.footer.hintStaleCalculation")
-                : c.activeStatement.data
-                  ? t("expenseStatement.footer.hintNextVersion", {
-                      version: c.activeVersion,
-                      next: (c.activeVersion ?? 0) + 1,
-                    })
-                  : t("expenseStatement.footer.hintSaved")}
+          {c.selectedLeaseId === null
+            ? t("expenseStatement.footer.hintNoLease")
+            : c.orderedLines.length === 0
+              ? t("expenseStatement.footer.hintNoLine")
+              : !c.signatureAvailable
+                ? t("expenseStatement.footer.hintNoSignature")
+                : !c.calculationUpToDate
+                  ? t("expenseStatement.footer.hintStaleCalculation")
+                  : c.activeStatement.data
+                    ? t("expenseStatement.footer.hintNextVersion", {
+                        version: c.activeVersion,
+                        next: (c.activeVersion ?? 0) + 1,
+                      })
+                    : t("expenseStatement.footer.hintSaved")}
         </p>
       </div>
     </div>

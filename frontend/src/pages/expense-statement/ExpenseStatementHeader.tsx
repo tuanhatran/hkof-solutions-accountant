@@ -1,6 +1,12 @@
 import "./ExpenseStatementHeader.css";
 import { useTranslation } from "react-i18next";
-import { Building2, ExternalLink, FileCheck2, ReceiptText } from "lucide-react";
+import {
+  Building2,
+  ExternalLink,
+  FileCheck2,
+  KeyRound,
+  ReceiptText,
+} from "lucide-react";
 import { api } from "@/api/endpoints";
 import { Button } from "@/components/ui/Button";
 import { MonthField } from "@/components/ui/MonthField";
@@ -63,6 +69,48 @@ export function ExpenseStatementHeader({
                   {companyList.map((company) => (
                     <option key={company.id} value={company.id}>
                       {company.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+            {c.activeCompanyId !== null && c.companyLeases.length === 1 ? (
+              <span
+                className="expense-statement-header-company-chip"
+                data-cy="bail-note-frais"
+                aria-label={t("expenseStatement.header.leaseLabel")}
+              >
+                <KeyRound size={14} aria-hidden="true" />
+                {t("expenseStatement.header.leaseChip", {
+                  name: c.companyLeases[0]?.landlordName ?? "",
+                })}
+              </span>
+            ) : null}
+            {c.activeCompanyId !== null && c.companyLeases.length > 1 ? (
+              <div className="expense-statement-header-company">
+                <select
+                  id="select-bail-note-frais"
+                  data-cy="select-bail-note-frais"
+                  aria-label={t("expenseStatement.header.leaseLabel")}
+                  className="field expense-statement-header-company-select"
+                  value={c.selectedLeaseId ?? ""}
+                  disabled={c.leaseLocked}
+                  onChange={(event) =>
+                    c.selectLease(
+                      event.target.value === ""
+                        ? null
+                        : Number(event.target.value),
+                    )
+                  }
+                >
+                  <option value="">
+                    {t("expenseStatement.header.leasePlaceholder")}
+                  </option>
+                  {c.companyLeases.map((lease) => (
+                    <option key={lease.id} value={lease.id}>
+                      {lease.landlordName ??
+                        lease.propertyAddress ??
+                        `#${lease.id}`}
                     </option>
                   ))}
                 </select>

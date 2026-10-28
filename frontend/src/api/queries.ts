@@ -44,8 +44,18 @@ export const queryKeys = {
       tenantId ?? null,
       tenantCompanyId ?? null,
     ] as const,
-  statementActive: (companyId: number | null, month: string) =>
-    ["statements", companyId ?? "all", "active", month] as const,
+  statementActive: (
+    companyId: number | null,
+    month: string,
+    leaseId: number | null = null,
+  ) =>
+    [
+      "statements",
+      companyId ?? "all",
+      "active",
+      month,
+      leaseId ?? "all-leases",
+    ] as const,
   rentReceiptsAll: ["rentReceipts"] as const,
   statementsAll: ["statements"] as const,
   rentReceipts: (companyId?: number | null, month?: string) =>
@@ -76,8 +86,18 @@ export const queryKeys = {
       tenantId ?? null,
       tenantCompanyId ?? null,
     ] as const,
-  statementDraft: (companyId: number | null, month: string) =>
-    ["drafts", "expense-statements", companyId ?? null, month] as const,
+  statementDraft: (
+    companyId: number | null,
+    month: string,
+    leaseId: number | null = null,
+  ) =>
+    [
+      "drafts",
+      "expense-statements",
+      companyId ?? null,
+      month,
+      leaseId ?? "all-leases",
+    ] as const,
 };
 
 export function useCompanies() {
@@ -214,11 +234,17 @@ export function useActiveRentReceipt(
   });
 }
 
-export function useActiveStatement(companyId: number | null, month: string) {
+export function useActiveStatement(
+  companyId: number | null,
+  month: string,
+  leaseId: number | null = null,
+) {
   return useQuery({
-    queryKey: queryKeys.statementActive(companyId, month),
-    queryFn: () => api.expenseStatements.active(companyId as number, month),
-    enabled: companyId !== null && /^\d{4}-\d{2}$/.test(month),
+    queryKey: queryKeys.statementActive(companyId, month, leaseId),
+    queryFn: () =>
+      api.expenseStatements.active(companyId as number, month, leaseId),
+    enabled:
+      companyId !== null && leaseId !== null && /^\d{4}-\d{2}$/.test(month),
     staleTime: 10_000,
   });
 }
@@ -253,15 +279,17 @@ export function useSavedRentReceiptDraft(
   });
 }
 
-/** Saved expense statement draft for one company and month. */
+/** Saved expense statement draft for one company, month and lease. */
 export function useSavedStatementDraft(
   companyId: number | null,
   month: string,
+  leaseId: number | null = null,
 ) {
   return useQuery({
-    queryKey: queryKeys.statementDraft(companyId, month),
-    queryFn: () => api.drafts.getStatement(companyId as number, month),
-    enabled: companyId !== null && /^\d{4}-\d{2}$/.test(month),
+    queryKey: queryKeys.statementDraft(companyId, month, leaseId),
+    queryFn: () => api.drafts.getStatement(companyId as number, month, leaseId),
+    enabled:
+      companyId !== null && leaseId !== null && /^\d{4}-\d{2}$/.test(month),
     staleTime: 0,
   });
 }

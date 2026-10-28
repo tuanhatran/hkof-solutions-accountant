@@ -94,6 +94,7 @@ export function useExpenseStatementPage(
   async function generateStatement() {
     if (
       activeCompanyId === null ||
+      selectedLeaseId === null ||
       !requests.values ||
       orderedLines.length === 0 ||
       !calculationUpToDate ||
@@ -138,7 +139,7 @@ export function useExpenseStatementPage(
   }
 
   async function saveDraft(): Promise<boolean> {
-    if (activeCompanyId === null) {
+    if (activeCompanyId === null || selectedLeaseId === null) {
       return false;
     }
     try {
@@ -146,6 +147,7 @@ export function useExpenseStatementPage(
       const requestBody: StatementDraftRequest = {
         companyId: activeCompanyId,
         month,
+        leaseId: selectedLeaseId,
         templateId: context.selectedTemplate,
         complete: context.complete,
         lines: linesToRequests(orderedLines),
@@ -233,6 +235,13 @@ export function useExpenseStatementPage(
     activeCompanyId: context.activeCompanyId,
     companySelectionRequired: context.companySelectionRequired,
     selectCompany: context.selectCompany,
+    leasesQuery: context.leasesQuery,
+    companyLeases: context.companyLeases,
+    selectedLease: context.selectedLease,
+    selectedLeaseId: context.selectedLeaseId,
+    selectLease: context.selectLease,
+    leaseSelectionRequired: context.leaseSelectionRequired,
+    leaseLocked: context.leaseLocked,
     expenseItemsQuery: context.expenseItemsQuery,
     templates: context.templates,
     rentReceipt: context.rentReceipt,

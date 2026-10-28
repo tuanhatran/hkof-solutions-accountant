@@ -77,7 +77,10 @@ export function useExpenseStatementCalculation({
 
   useEffect(() => {
     const controller = new AbortController();
-    if (activeCompanyId === null) {
+    if (activeCompanyId === null || selectedLeaseId === null) {
+      setCalculation(null);
+      setCalculatedSignature(null);
+      setCalculationError(null);
       setCalculationInProgress(false);
       return () => controller.abort();
     }
@@ -141,6 +144,7 @@ export function useExpenseStatementCalculation({
   const previewRequest = useMemo<StatementPreviewRequest | null>(() => {
     if (
       activeCompanyId === null ||
+      selectedLeaseId === null ||
       !requests.values ||
       orderedLines.length === 0
     ) {

@@ -167,6 +167,16 @@ class LeaseServiceTest {
     }
 
     @Test
+    @DisplayName("The rent receipt scope pairs the landlord with the tenant company or the tenant person")
+    void rentReceiptScope() {
+        assertThat(LeaseService.rentReceiptScope(companyLease()))
+                .isEqualTo(new LeaseService.RentReceiptScope(1L, null, 7L));
+        assertThat(LeaseService.rentReceiptScope(normalLease()))
+                .isEqualTo(new LeaseService.RentReceiptScope(1L, 2L, null));
+        assertThat(LeaseService.rentReceiptScope(null)).isNull();
+    }
+
+    @Test
     @DisplayName("A normal lease can be created, updated and logically deleted")
     void normalLeaseCrud() {
         when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));

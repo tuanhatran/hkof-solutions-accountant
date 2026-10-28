@@ -1271,10 +1271,19 @@ export const fr = {
       selectCompanyTitle: "Choisir une société",
       selectCompanyDescription:
         "Sélectionnez la société concernée pour saisir les frais de ce mois.",
+      noLeaseTitle: "Aucun bail pour cette société",
+      noLeaseDescription:
+        "Ajoutez un bail société dans la page LMNP pour générer une note de frais.",
+      selectLeaseTitle: "Choisir un bail",
+      selectLeaseDescription:
+        "Plusieurs baux sont liés à cette société. Sélectionnez le bail concerné pour saisir les frais de ce mois.",
     },
     header: {
       companyLabel: "Société concernée",
       companyPlaceholder: "Choisir une société",
+      leaseLabel: "Bail concerné",
+      leasePlaceholder: "Choisir un bail",
+      leaseChip: "Bail {{name}}",
       bannerTitle: "{{month}} — note version {{version}} déjà active",
       bannerText:
         "Total {{total}}. Générer à nouveau créera la version {{next}}.",
@@ -1353,6 +1362,7 @@ export const fr = {
       missingSignatureAfter: ".",
       companyLink: "Société",
       generate: "Générer la note de frais",
+      hintNoLease: "Sélectionnez un bail pour saisir les frais.",
       hintNoLine: "Ajoutez au moins un frais pour générer la note.",
       hintNoSignature: "Configurez une signature pour générer la note.",
       hintStaleCalculation: "Mise à jour du calcul…",

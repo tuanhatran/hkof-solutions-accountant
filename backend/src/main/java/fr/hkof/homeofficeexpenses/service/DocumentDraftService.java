@@ -6,7 +6,6 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +18,6 @@ import fr.hkof.homeofficeexpenses.web.dto.DocumentDraftDtos.RentReceiptDraftDto;
 import fr.hkof.homeofficeexpenses.web.dto.DocumentDraftDtos.RentReceiptDraftRequest;
 import fr.hkof.homeofficeexpenses.web.dto.DocumentDraftDtos.StatementDraftDto;
 import fr.hkof.homeofficeexpenses.web.dto.DocumentDraftDtos.StatementDraftRequest;
-import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.ExpenseLineRequest;
 
 /**
  * Persists the editable form state of the two generation pages. A draft is never a
@@ -30,15 +28,15 @@ import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.ExpenseLineRequest;
 @Service
 public class DocumentDraftService {
 
-    private static final Set<String> AMOUNT_SOURCES = Set.of("MANUAL", "AI");
-    private static final Set<String> CONFIDENCES = Set.of("haute", "moyenne", "basse");
-
     private final DocumentDraftRepository repository;
+    private final LeaseService leases;
     private final ObjectMapper mapper;
     private final Clock clock;
 
-    public DocumentDraftService(DocumentDraftRepository repository, ObjectMapper mapper, Clock clock) {
+    public DocumentDraftService(DocumentDraftRepository repository, LeaseService leases, ObjectMapper mapper,
+            Clock clock) {
         this.repository = repository;
+        this.leases = leases;
         this.mapper = mapper;
         this.clock = clock;
     }
@@ -68,19 +66,23 @@ public class DocumentDraftService {
 
     @Transactional
     public StatementDraftDto saveStatement(StatementDraftRequest request) {
-        StatementDraftRequest normalized = normalizeStatement(request);
-        findActiveStatement(normalized.month(), normalized.companyId()).ifPresent(this::softDelete);
+        StatementDraftRequest normalized = StatementDraftNormalizer.normalize(request);
+        requireLeaseInCompany(normalized.companyId(), normalized.leaseId());
+        findActiveStatement(normalized.month(), normalized.companyId(), normalized.leaseId())
+                .ifPresent(this::softDelete);
         DocumentDraft entity = newEntity(DocumentDraft.Type.EXPENSE_STATEMENT, normalized.month(), normalized);
         entity.setCompanyId(normalized.companyId());
+        entity.setLeaseId(normalized.leaseId());
         return toStatementDto(repository.save(entity));
     }
 
     @Transactional(readOnly = true)
-    public Optional<StatementDraftDto> findStatement(Long companyId, String month) {
+    public Optional<StatementDraftDto> findStatement(Long companyId, String month, Long leaseId) {
         if (companyId == null) {
             throw new BusinessException("DRAFT_COMPANY_REQUIRED", "La société du brouillon est obligatoire.");
         }
-        return findActiveStatement(Amounts.month(month).toString(), companyId).map(this::toStatementDto);
+        requireLeaseInCompany(companyId, leaseId);
+        return findActiveStatement(Amounts.month(month).toString(), companyId, leaseId).map(this::toStatementDto);
     }
 
     @Transactional
@@ -110,11 +112,11 @@ public class DocumentDraftService {
      * Called inside the generation transaction so a generated document never leaves a draft.
      */
     @Transactional
-    public void deleteActiveStatement(Long companyId, String month) {
+    public void deleteActiveStatement(Long companyId, String month, Long leaseId) {
         if (companyId == null) {
             return;
         }
-        findActiveStatement(Amounts.month(month).toString(), companyId).ifPresent(this::softDelete);
+        findActiveStatement(Amounts.month(month).toString(), companyId, leaseId).ifPresent(this::softDelete);
     }
 
     /** Serialises a validated request, exposed for the tests that seed a stored payload. */
@@ -135,9 +137,19 @@ public class DocumentDraftService {
                         DocumentDraft.Type.RENT_RECEIPT, month, landlordId, tenantCompanyId);
     }
 
-    private Optional<DocumentDraft> findActiveStatement(String month, Long companyId) {
-        return repository.findFirstByTypeAndMonthAndCompanyIdAndDeletedFalseOrderByIdDesc(
-                DocumentDraft.Type.EXPENSE_STATEMENT, month, companyId);
+    private Optional<DocumentDraft> findActiveStatement(String month, Long companyId, Long leaseId) {
+        return leaseId == null
+                ? repository.findFirstByTypeAndMonthAndCompanyIdAndLeaseIdIsNullAndDeletedFalseOrderByIdDesc(
+                        DocumentDraft.Type.EXPENSE_STATEMENT, month, companyId)
+                : repository.findFirstByTypeAndMonthAndCompanyIdAndLeaseIdAndDeletedFalseOrderByIdDesc(
+                        DocumentDraft.Type.EXPENSE_STATEMENT, month, companyId, leaseId);
+    }
+
+    /** Rejects a lease of another company so a draft can never leak across companies. */
+    private void requireLeaseInCompany(Long companyId, Long leaseId) {
+        if (leaseId != null) {
+            leases.resolveExpenseLease(companyId, leaseId);
+        }
     }
 
     /**
@@ -185,51 +197,6 @@ public class DocumentDraftService {
                 date(request.issueDate(), "date d'émission"),
                 request.templateId(),
                 RentReceiptAdditionalCharges.normalize(request.additionalCharges()));
-    }
-
-    private StatementDraftRequest normalizeStatement(StatementDraftRequest request) {
-        if (request == null) {
-            throw new BusinessException("DRAFT_REQUIRED", "Le brouillon est obligatoire.");
-        }
-        if (request.companyId() == null) {
-            throw new BusinessException("DRAFT_COMPANY_REQUIRED", "La société du brouillon est obligatoire.");
-        }
-        YearMonth month = Amounts.month(request.month());
-        List<ExpenseLineRequest> lines = request.lines() == null
-                ? List.of()
-                : request.lines().stream().map(this::normalizeLine).toList();
-        return new StatementDraftRequest(
-                request.companyId(),
-                month.toString(),
-                request.templateId(),
-                request.complete() == null || request.complete(),
-                lines);
-    }
-
-    private ExpenseLineRequest normalizeLine(ExpenseLineRequest line) {
-        if (line == null) {
-            throw new BusinessException("DRAFT_LINE_INVALID", "Une ligne du brouillon est invalide.");
-        }
-        if (line.itemCode() == null || line.itemCode().isBlank()) {
-            throw new BusinessException("DRAFT_LINE_ITEM_REQUIRED", "Le poste d'une ligne du brouillon est obligatoire.");
-        }
-        String amountSource = line.amountSource();
-        if (amountSource != null && !AMOUNT_SOURCES.contains(amountSource)) {
-            throw new BusinessException("DRAFT_LINE_SOURCE_INVALID", "L'origine du montant d'une ligne est invalide.");
-        }
-        String confidence = line.aiConfidence();
-        if (confidence != null && !CONFIDENCES.contains(confidence)) {
-            throw new BusinessException("DRAFT_LINE_CONFIDENCE_INVALID",
-                    "La confiance d'une ligne du brouillon est invalide.");
-        }
-        return new ExpenseLineRequest(
-                line.itemCode().trim(),
-                Amounts.decimal(line.amountInclVat(), "montant TTC", false).toPlainString(),
-                Amounts.percentage(line.proRataPct()).toPlainString(),
-                line.receiptId(),
-                amountSource,
-                line.aiDetectedAmount(),
-                confidence);
     }
 
     private void requireSingleTenant(Long tenantId, Long tenantCompanyId) {
@@ -283,6 +250,7 @@ public class DocumentDraftService {
                 entity.getId(),
                 request.companyId(),
                 request.month(),
+                request.leaseId(),
                 request.templateId(),
                 Boolean.TRUE.equals(request.complete()),
                 request.lines() == null ? List.of() : request.lines(),

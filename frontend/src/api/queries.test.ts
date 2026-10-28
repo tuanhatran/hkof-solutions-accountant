@@ -167,7 +167,7 @@ describe("query hooks", () => {
     const receipt = renderHook(() => useActiveRentReceipt("2026-10", 3), {
       wrapper,
     });
-    const statement = renderHook(() => useActiveStatement(3, "2026-10"), {
+    const statement = renderHook(() => useActiveStatement(3, "2026-10", 5), {
       wrapper,
     });
 
@@ -184,18 +184,22 @@ describe("query hooks", () => {
       null,
       null,
     );
-    expect(api.expenseStatements.active).toHaveBeenCalledWith(3, "2026-10");
+    expect(api.expenseStatements.active).toHaveBeenCalledWith(3, "2026-10", 5);
   });
 
-  it("skips the active documents for an invalid month or no company", async () => {
+  it("skips the active documents for an invalid month, no company or no lease", async () => {
     const receipt = renderHook(
       () => useActiveRentReceipt("invalide", 3, 4, 5),
       { wrapper },
     );
-    const statement = renderHook(() => useActiveStatement(3, "10-2026"), {
+    const statement = renderHook(() => useActiveStatement(3, "10-2026", 5), {
       wrapper,
     });
-    const companyless = renderHook(() => useActiveStatement(null, "2026-10"), {
+    const companyless = renderHook(
+      () => useActiveStatement(null, "2026-10", 5),
+      { wrapper },
+    );
+    const leaseless = renderHook(() => useActiveStatement(3, "2026-10"), {
       wrapper,
     });
 
@@ -204,6 +208,7 @@ describe("query hooks", () => {
     );
     expect(statement.result.current.fetchStatus).toBe("idle");
     expect(companyless.result.current.fetchStatus).toBe("idle");
+    expect(leaseless.result.current.fetchStatus).toBe("idle");
     expect(api.rentReceipts.active).not.toHaveBeenCalled();
     expect(api.expenseStatements.active).not.toHaveBeenCalled();
   });
@@ -339,19 +344,20 @@ describe("query hooks", () => {
     expect(api.drafts.getRentReceipt).not.toHaveBeenCalled();
   });
 
-  it("loads the saved statement draft only for a company and a valid month", async () => {
+  it("loads the saved statement draft only for a company, a valid month and a lease", async () => {
     vi.mocked(api.drafts.getStatement).mockResolvedValue({ id: 9, lines: [] });
 
-    const saved = renderHook(() => useSavedStatementDraft(1, "2026-01"), {
+    const saved = renderHook(() => useSavedStatementDraft(1, "2026-01", 5), {
       wrapper,
     });
     await waitFor(() => expect(saved.result.current.isSuccess).toBe(true));
-    expect(api.drafts.getStatement).toHaveBeenCalledWith(1, "2026-01");
+    expect(api.drafts.getStatement).toHaveBeenCalledWith(1, "2026-01", 5);
     expect(saved.result.current.data?.id).toBe(9);
 
     vi.mocked(api.drafts.getStatement).mockClear();
-    renderHook(() => useSavedStatementDraft(null, "2026-01"), { wrapper });
-    renderHook(() => useSavedStatementDraft(1, "2026-1"), { wrapper });
+    renderHook(() => useSavedStatementDraft(null, "2026-01", 5), { wrapper });
+    renderHook(() => useSavedStatementDraft(1, "2026-1", 5), { wrapper });
+    renderHook(() => useSavedStatementDraft(1, "2026-01"), { wrapper });
     expect(api.drafts.getStatement).not.toHaveBeenCalled();
   });
 });

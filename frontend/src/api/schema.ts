@@ -329,7 +329,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Brouillon de note de frais enregistré pour une société et un mois. Répond 204 quand aucun brouillon actif n'existe pour cette portée. */
+        /** @description Brouillon de note de frais enregistré pour une société, un mois et, si fourni, un bail. Répond 204 quand aucun brouillon actif n'existe pour cette portée. */
         get: operations["getStatementDraft"];
         /** @description Enregistre l'état éditable d'une note de frais. Chaque enregistrement insère un nouveau brouillon et supprime logiquement le brouillon actif de la même portée. */
         put: operations["saveStatementDraft"];
@@ -573,7 +573,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Retourne la note de frais active d'une société pour un mois. */
+        /** @description Retourne la note de frais active d'une société pour un mois et, si fourni, pour un bail. */
         get: operations["getActiveExpenseStatement"];
         put?: never;
         post?: never;
@@ -1336,6 +1336,8 @@ export interface components {
             companyId: number;
             month: string;
             /** Format: int64 */
+            leaseId?: number | null;
+            /** Format: int64 */
             templateId?: number | null;
             complete?: boolean;
             lines?: components["schemas"]["ExpenseLineRequest"][];
@@ -1346,6 +1348,8 @@ export interface components {
             /** Format: int64 */
             companyId?: number;
             month?: string;
+            /** Format: int64 */
+            leaseId?: number | null;
             /** Format: int64 */
             templateId?: number;
             complete?: boolean;
@@ -2289,6 +2293,8 @@ export interface operations {
             query: {
                 companyId: number;
                 month: string;
+                /** @description Identifiant du bail. Absent, la portée historique de la société est utilisée. */
+                leaseId?: number;
             };
             header?: never;
             path?: never;
@@ -2710,6 +2716,8 @@ export interface operations {
                 /** @description Identifiant de la société. */
                 companyId: number;
                 month: string;
+                /** @description Identifiant du bail. Absent, la portée historique de la société est utilisée. */
+                leaseId?: number;
             };
             header?: never;
             path?: never;

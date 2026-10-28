@@ -79,6 +79,21 @@ export function GenerateExpenseStatementPage() {
         />
       ) : (
         <>
+          {c.leasesQuery.data !== undefined && c.companyLeases.length === 0 ? (
+            <div className="mb-4" data-cy="alerte-aucun-bail">
+              <EmptyState
+                title={t("expenseStatement.page.noLeaseTitle")}
+                description={t("expenseStatement.page.noLeaseDescription")}
+              />
+            </div>
+          ) : c.leaseSelectionRequired ? (
+            <div className="mb-4" data-cy="prompt-bail-note-frais">
+              <EmptyState
+                title={t("expenseStatement.page.selectLeaseTitle")}
+                description={t("expenseStatement.page.selectLeaseDescription")}
+              />
+            </div>
+          ) : null}
           <div className="generate-expense-statement-page-tabs">
             <ViewTabs
               ariaLabel={t("expenseStatement.page.tabsAriaLabel")}

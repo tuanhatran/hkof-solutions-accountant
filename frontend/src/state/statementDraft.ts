@@ -11,11 +11,12 @@ import { currentMonth } from "@/lib/dates";
 import { fromLineDto, newKey, type DraftLine } from "@/lib/lines";
 
 const EMPTY_LINES: DraftLine[] = [];
-const PERSIST_VERSION = 4;
+const PERSIST_VERSION = 5;
 
 export interface StatementDraftState {
   month: string;
   companyId: number | null;
+  leaseId: number | null;
   linesByMonth: Record<string, DraftLine[]>;
   templatesByMonth: Record<string, number | null>;
   completeByMonth: Record<string, boolean>;
@@ -27,6 +28,7 @@ export interface StatementDraftState {
   savedAtByMonth: Record<string, string | null>;
   changeMonth: (month: string) => void;
   selectCompany: (companyId: number | null) => void;
+  selectLease: (leaseId: number | null) => void;
   addLine: (line: DraftLine) => void;
   updateLine: (key: string, values: Partial<DraftLine>) => void;
   removeLine: (key: string) => void;
@@ -43,6 +45,7 @@ export interface StatementDraftState {
     statement: StatementDto,
     activeRentReceiptId: number | null,
     companyId?: number,
+    leaseId?: number | null,
   ) => void;
 }
 
@@ -52,8 +55,12 @@ export type StatementDraftStore = UseBoundStore<StoreApi<StatementDraftState>>;
  * Storage key of one company and month pair. A draft belongs to exactly one
  * company: switching company never reads or submits another company's lines.
  */
-export function draftScopeKey(companyId: number | null, month: string): string {
-  return `${companyId ?? "none"}:${month}`;
+export function draftScopeKey(
+  companyId: number | null,
+  month: string,
+  leaseId: number | null = null,
+): string {
+  return `${companyId ?? "none"}:${month}:${leaseId ?? "none"}`;
 }
 
 function lineSignature(line: DraftLine): string {
@@ -97,7 +104,8 @@ export function draftLineFromSaved(
 }
 
 const createDraftState: StateCreator<StatementDraftState> = (set, get) => {
-  const scopeKey = () => draftScopeKey(get().companyId, get().month);
+  const scopeKey = () =>
+    draftScopeKey(get().companyId, get().month, get().leaseId);
 
   const dirtyFor = (
     scope: string,
@@ -108,6 +116,7 @@ const createDraftState: StateCreator<StatementDraftState> = (set, get) => {
   return {
     month: currentMonth(),
     companyId: null,
+    leaseId: null,
     linesByMonth: {},
     templatesByMonth: {},
     completeByMonth: {},
@@ -120,6 +129,8 @@ const createDraftState: StateCreator<StatementDraftState> = (set, get) => {
     changeMonth: (month) => set({ month }),
 
     selectCompany: (companyId) => set({ companyId }),
+
+    selectLease: (leaseId) => set({ leaseId }),
 
     addLine: (line) => {
       const scope = scopeKey();
@@ -213,12 +224,14 @@ const createDraftState: StateCreator<StatementDraftState> = (set, get) => {
     loadFromServerDraft: (draft) => {
       const companyId = draft.companyId ?? get().companyId;
       const month = draft.month ?? get().month;
-      const scope = draftScopeKey(companyId, month);
+      const leaseId = draft.leaseId ?? get().leaseId;
+      const scope = draftScopeKey(companyId, month, leaseId);
       const lines = (draft.lines ?? []).map(draftLineFromSaved);
       const state = get();
       set({
         companyId,
         month,
+        leaseId,
         linesByMonth: { ...state.linesByMonth, [scope]: lines },
         templatesByMonth: {
           ...state.templatesByMonth,
@@ -244,11 +257,13 @@ const createDraftState: StateCreator<StatementDraftState> = (set, get) => {
     markSaved: (draft) => {
       const companyId = draft.companyId ?? get().companyId;
       const month = draft.month ?? get().month;
-      const scope = draftScopeKey(companyId, month);
+      const leaseId = draft.leaseId ?? get().leaseId;
+      const scope = draftScopeKey(companyId, month, leaseId);
       const state = get();
       set({
         companyId,
         month,
+        leaseId,
         baselineByMonth: {
           ...state.baselineByMonth,
           [scope]: state.linesByMonth[scope] ?? EMPTY_LINES,
@@ -265,7 +280,12 @@ const createDraftState: StateCreator<StatementDraftState> = (set, get) => {
       });
     },
 
-    loadFromStatement: (statement, activeRentReceiptId, explicitCompanyId) => {
+    loadFromStatement: (
+      statement,
+      activeRentReceiptId,
+      explicitCompanyId,
+      explicitLeaseId,
+    ) => {
       // A statement always writes into the company that will reopen it: its own
       // company, then the lease company resolved by History, then the current.
       const companyId =
@@ -273,12 +293,14 @@ const createDraftState: StateCreator<StatementDraftState> = (set, get) => {
           ? statement.companyId
           : (explicitCompanyId ?? get().companyId);
       const month = statement.month ?? get().month;
-      const scope = draftScopeKey(companyId, month);
+      const leaseId = statement.leaseId ?? explicitLeaseId ?? get().leaseId;
+      const scope = draftScopeKey(companyId, month, leaseId);
       const lines = (statement.lines ?? []).map(fromLineDto);
       const state = get();
       set({
         companyId,
         month,
+        leaseId,
         linesByMonth: { ...state.linesByMonth, [scope]: lines },
         templatesByMonth: {
           ...state.templatesByMonth,
@@ -303,11 +325,13 @@ const createDraftState: StateCreator<StatementDraftState> = (set, get) => {
 export function createStatementDraftStore(
   month: string,
   companyId: number | null = null,
+  leaseId: number | null = null,
 ) {
   return create<StatementDraftState>()((set, get, api) => ({
     ...createDraftState(set, get, api),
     month,
     companyId,
+    leaseId,
   }));
 }
 
@@ -316,6 +340,7 @@ function migratedDraft(): Record<string, unknown> {
   return {
     month: currentMonth(),
     companyId: null,
+    leaseId: null,
     linesByMonth: {},
     templatesByMonth: {},
     completeByMonth: {},
@@ -335,6 +360,7 @@ export const useStatementDraft = create<StatementDraftState>()(
     partialize: (state) => ({
       month: state.month,
       companyId: state.companyId,
+      leaseId: state.leaseId,
       linesByMonth: state.linesByMonth,
       templatesByMonth: state.templatesByMonth,
       completeByMonth: state.completeByMonth,
@@ -366,14 +392,14 @@ export const useStatementDraft = create<StatementDraftState>()(
 
 export function useStatementLines(): DraftLine[] {
   const scope = useStatementDraft((state) =>
-    draftScopeKey(state.companyId, state.month),
+    draftScopeKey(state.companyId, state.month, state.leaseId),
   );
   return useStatementDraft((state) => state.linesByMonth[scope]) ?? EMPTY_LINES;
 }
 
 export function useStatementDirty(): boolean {
   const scope = useStatementDraft((state) =>
-    draftScopeKey(state.companyId, state.month),
+    draftScopeKey(state.companyId, state.month, state.leaseId),
   );
   return useStatementDraft((state) => state.dirtyByMonth[scope]) ?? false;
 }

@@ -1,6 +1,7 @@
 package fr.hkof.homeofficeexpenses.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -141,6 +142,69 @@ class MultiLeaseExpenseMigrationPostgresTest {
             assertThat(count(statement, "SELECT COUNT(*) FROM company")).isEqualTo(2);
             assertThat(count(statement, "SELECT COUNT(*) FROM lease")).isEqualTo(3);
         }
+    }
+
+    @Test
+    @DisplayName("V17 scopes statement versions, the active statement and drafts per lease")
+    void scopesStatementsAndDraftsPerLease() throws Exception {
+        resetSchema();
+        migrateTo("16");
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            statement.execute("INSERT INTO company (id, name, deleted, created_at) VALUES (3, 'Société C', FALSE, NOW())");
+            // One legacy row per scope, inserted before V17 adds the lease column to drafts.
+            statement.execute(statementInsert(10, 3, 1, null, "ACTIVE"));
+            statement.execute("INSERT INTO document_draft (id, draft_type, billing_month, company_id, payload, saved_at)"
+                    + " VALUES (20, 'EXPENSE_STATEMENT', '2026-01', 3, '{}', NOW())");
+        }
+
+        migrateTo("17");
+
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            assertThat(count(statement, "SELECT COUNT(*) FROM expense_statement")).isEqualTo(1);
+            assertThat(count(statement, "SELECT COUNT(*) FROM document_draft")).isEqualTo(1);
+            assertThat(count(statement, "SELECT COUNT(*) FROM information_schema.columns"
+                    + " WHERE table_name = 'document_draft' AND column_name = 'lease_id'")).isEqualTo(1);
+
+            // Two leases of a company and month keep the same version independently.
+            statement.execute(statementInsert(11, 3, 1, 7L, "ACTIVE"));
+            statement.execute(statementInsert(12, 3, 1, 8L, "ACTIVE"));
+            assertThat(count(statement, "SELECT COUNT(*) FROM expense_statement")).isEqualTo(3);
+
+            // One ACTIVE statement per company + month + lease, legacy NULL being its own scope.
+            assertThatThrownBy(() -> statement.execute(statementInsert(13, 3, 2, 7L, "ACTIVE")))
+                    .isInstanceOf(SQLException.class);
+            assertThatThrownBy(() -> statement.execute(statementInsert(13, 3, 2, null, "ACTIVE")))
+                    .isInstanceOf(SQLException.class);
+            statement.execute(statementInsert(14, 3, 1, 9L, "ACTIVE"));
+            statement.execute(statementInsert(15, 3, 2, 7L, "ARCHIVED"));
+            // Versions stay unique per lease scope.
+            assertThatThrownBy(() -> statement.execute(statementInsert(16, 3, 1, 8L, "ARCHIVED")))
+                    .isInstanceOf(SQLException.class);
+            statement.execute(statementInsert(17, 3, 2, null, "ARCHIVED"));
+
+            // One active statement draft per company + month + lease.
+            statement.execute(draftInsert(21, 3, 7L));
+            statement.execute(draftInsert(22, 3, 8L));
+            assertThatThrownBy(() -> statement.execute(draftInsert(23, 3, 7L)))
+                    .isInstanceOf(SQLException.class);
+            assertThatThrownBy(() -> statement.execute(draftInsert(24, 3, null)))
+                    .isInstanceOf(SQLException.class);
+        }
+    }
+
+    private String statementInsert(long id, long companyId, int version, Long leaseId, String status) {
+        return """
+                INSERT INTO expense_statement (id, company_id, lease_id, billing_month, statement_number, total,
+                    version, status, created_at)
+                VALUES (%d, %d, %s, '2026-01', 'NF-2026-01', 100.00, %d, '%s', NOW())
+                """.formatted(id, companyId, leaseId == null ? "NULL" : leaseId, version, status);
+    }
+
+    private String draftInsert(long id, long companyId, Long leaseId) {
+        return """
+                INSERT INTO document_draft (id, draft_type, billing_month, company_id, lease_id, payload, saved_at)
+                VALUES (%d, 'EXPENSE_STATEMENT', '2026-01', %d, %s, '{}', NOW())
+                """.formatted(id, companyId, leaseId == null ? "NULL" : leaseId);
     }
 
     private String companyLeaseInsert(long id, long landlordId, long companyId, boolean companyLease, boolean deleted) {

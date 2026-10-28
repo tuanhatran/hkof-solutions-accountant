@@ -31,6 +31,7 @@ let companyRows: Array<{
 let leasesData: Array<{
   id: number;
   landlordId: number;
+  landlordName?: string;
   companyId: number | null;
   tenantId: number | null;
   companyLease: boolean;
@@ -194,7 +195,7 @@ vi.mock("@/api/queries", async (importOriginal) => {
 });
 
 const MONTH = "2026-01";
-const SCOPE = draftScopeKey(1, MONTH);
+const SCOPE = draftScopeKey(1, MONTH, 5);
 
 const LANDLORD: SignatureDto = {
   id: 3,
@@ -269,6 +270,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
       {
         id: 5,
         landlordId: 2,
+        landlordName: "M. Bailleur",
         companyId: 1,
         tenantId: null,
         companyLease: true,
@@ -321,6 +323,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     useStatementDraft.setState({
       month: MONTH,
       companyId: 1,
+      leaseId: 5,
       linesByMonth: {
         [SCOPE]: [
           {
@@ -613,6 +616,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     useStatementDraft.setState({
       month: MONTH,
       companyId: 1,
+      leaseId: 5,
       linesByMonth: {
         [SCOPE]: [
           {
@@ -711,6 +715,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     useStatementDraft.setState({
       month: MONTH,
       companyId: 1,
+      leaseId: 5,
       linesByMonth: { [SCOPE]: [] },
       templatesByMonth: {},
       completeByMonth: {},
@@ -736,6 +741,157 @@ describe("GenerateExpenseStatementPage signatures", () => {
       screen.queryByRole("combobox", { name: "Société concernée" }),
     ).toBeNull();
     expect(screen.getByLabelText("Type de frais")).toBeVisible();
+  });
+
+  it("shows the lone company lease as a chip and selects it automatically", async () => {
+    renderPage();
+
+    await waitFor(() => expect(useStatementDraft.getState().leaseId).toBe(5));
+    const chip = document.querySelector('[data-cy="bail-note-frais"]');
+    expect(chip).not.toBeNull();
+    expect(chip).toHaveTextContent("Bail M. Bailleur");
+    expect(
+      document.querySelector('[data-cy="select-bail-note-frais"]'),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("combobox", { name: "Bail concerné" }),
+    ).toBeNull();
+  });
+
+  it("requires an explicit lease choice and scopes the statement to the chosen lease", async () => {
+    const secondScope = draftScopeKey(1, MONTH, 6);
+    leasesData = [
+      {
+        id: 5,
+        landlordId: 2,
+        landlordName: "M. Bailleur",
+        companyId: 1,
+        tenantId: null,
+        companyLease: true,
+      },
+      {
+        id: 6,
+        landlordId: 3,
+        landlordName: "Mme Propriétaire",
+        companyId: 1,
+        tenantId: null,
+        companyLease: true,
+      },
+    ];
+    rentReceiptsData = [
+      {
+        id: 7,
+        total: "900.00",
+        version: 1,
+        landlordName: "M. Bailleur",
+        tenantName: "HKOF",
+        landlordId: 2,
+        tenantId: null,
+        tenantCompanyId: 1,
+      },
+      {
+        id: 8,
+        total: "1200.00",
+        version: 2,
+        landlordName: "Mme Propriétaire",
+        tenantName: "HKOF",
+        landlordId: 3,
+        tenantId: null,
+        tenantCompanyId: 1,
+      },
+    ];
+    useStatementDraft.setState({
+      linesByMonth: {
+        [secondScope]: [
+          {
+            key: "line-gaz-6",
+            itemCode: "gaz",
+            amountInclVat: "80.00",
+            proRataPct: "100",
+            receiptId: null,
+            receiptName: null,
+            amountSource: "MANUAL",
+            aiDetectedAmount: null,
+            aiConfidence: null,
+            detectedSupplier: null,
+          },
+        ],
+      },
+    });
+    renderPage();
+    const user = userEvent.setup();
+
+    const select = await screen.findByLabelText("Bail concerné");
+    expect(useStatementDraft.getState().leaseId).toBeNull();
+    expect(select).toHaveValue("");
+    const options = within(select).getAllByRole<HTMLOptionElement>("option");
+    expect(options.map((option) => option.value)).toEqual(["", "5", "6"]);
+    expect(options.map((option) => option.textContent)).toEqual([
+      "Choisir un bail",
+      "M. Bailleur",
+      "Mme Propriétaire",
+    ]);
+    expect(
+      document.querySelector('[data-cy="prompt-bail-note-frais"]'),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole("heading", { name: "Choisir un bail" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/Plusieurs baux sont liés à cette société/),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Enregistrer le brouillon" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /Générer la note de frais/ }),
+    ).toBeDisabled();
+
+    await user.selectOptions(screen.getByLabelText("Type de frais"), "loyer");
+    expect(screen.getByText("Aucune quittance pour ce mois")).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Voir le PDF" })).toBeNull();
+
+    await user.selectOptions(select, "6");
+    expect(select).toHaveValue("6");
+    expect(
+      document.querySelector('[data-cy="prompt-bail-note-frais"]'),
+    ).toBeNull();
+    expect(useStatementDraft.getState().leaseId).toBe(6);
+    expect(screen.getByText(/Quittance de Janvier 2026 \(v2\)/)).toBeVisible();
+    expect(screen.getByLabelText("Montant TTC")).toHaveValue("1200.00");
+    expect(screen.getByRole("link", { name: "Voir le PDF" })).toHaveAttribute(
+      "href",
+      "/api/rent-receipts/8/pdf",
+    );
+
+    await waitFor(
+      () =>
+        expect(api.expenseStatements.calculate).toHaveBeenCalledWith(
+          expect.objectContaining({
+            companyId: 1,
+            leaseId: 6,
+            month: MONTH,
+          }),
+          expect.anything(),
+        ),
+      { timeout: 2000 },
+    );
+    await lastPreviewLoader?.(new AbortController().signal);
+    expect(api.expenseStatements.preview).toHaveBeenLastCalledWith(
+      expect.objectContaining({ companyId: 1, leaseId: 6, month: MONTH }),
+      expect.anything(),
+    );
+
+    const generate = screen.getByRole("button", {
+      name: /Générer la note de frais/,
+    });
+    await waitFor(() => expect(generate).toBeEnabled());
+    await user.click(generate);
+    await waitFor(() =>
+      expect(api.expenseStatements.create).toHaveBeenCalledWith(
+        expect.objectContaining({ companyId: 1, leaseId: 6, month: MONTH }),
+      ),
+    );
   });
 
   it("shows an empty state with a settings link when no company exists", () => {
@@ -1002,6 +1158,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
       id: 91,
       companyId: 1,
       month: MONTH,
+      leaseId: 5,
       templateId: 7,
       complete: false,
       savedAt: "2026-01-10T09:00:00Z",

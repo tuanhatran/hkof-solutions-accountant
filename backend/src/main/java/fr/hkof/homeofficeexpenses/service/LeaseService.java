@@ -125,6 +125,19 @@ public class LeaseService {
         return new ProRata(base, Amounts.proRataDetail(lease.getBusinessArea(), lease.getTotalArea(), base));
     }
 
+    /**
+     * Rent receipt party scope of a lease: a company lease pairs the landlord with the tenant
+     * company; a person lease pairs the landlord with the tenant person.
+     */
+    public static RentReceiptScope rentReceiptScope(Lease lease) {
+        if (lease == null) {
+            return null;
+        }
+        return lease.isCompanyLease()
+                ? new RentReceiptScope(lease.getLandlord().getId(), null, lease.getCompanyId())
+                : new RentReceiptScope(lease.getLandlord().getId(), lease.getTenant().getId(), null);
+    }
+
     /** Pro-rata of the lease itself; null values when the lease carries no surfaces. */
     public static ProRata proRataOf(Lease lease) {
         if (lease == null || lease.getTotalArea() == null || lease.getBusinessArea() == null) {
@@ -136,6 +149,10 @@ public class LeaseService {
 
     /** Read-only holder: base in decimal percent plus its French detail. */
     public record ProRata(BigDecimal base, String detail) {
+    }
+
+    /** Read-only rent receipt party scope; exactly one tenant reference is set. */
+    public record RentReceiptScope(Long landlordId, Long tenantId, Long tenantCompanyId) {
     }
 
     private void apply(Lease lease, LeaseRequest request, Long currentId, Long currentCompanyId) {
