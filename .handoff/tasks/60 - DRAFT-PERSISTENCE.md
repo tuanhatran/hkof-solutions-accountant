@@ -1,5 +1,5 @@
 # 60 - DRAFT-PERSISTENCE
-Status: USER_REVIEW
+Status: DONE
 Branch: feat/60-draft-persistence
 Base: 6e01d92
 Size: L
@@ -78,3 +78,4 @@ Dirty: quittance stops persisting `dirty` and derives it from a baseline capture
 - PASS `make e2e`: exit 0, 6 specs / 26 tests passing, no retries; frontend image rebuilt; stack left up.
 - Deviations: none. Contract impact: none.
 - 2026-10-28 lead: fix verified (commit `2930c0f`) — targeted `GenerateRentReceiptPage` + `useRentReceiptPage` 65/65 PASS; USER_REVIEW.
+- 2026-10-28 lead: DONE — user accepted.
