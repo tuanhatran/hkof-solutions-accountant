@@ -42,6 +42,12 @@ export interface TenantOption {
   label: string;
 }
 
+/** Forces the receipt period onto the first and last day of its month. */
+function withMonthPeriod(values: RentReceiptFormValues): RentReceiptFormValues {
+  const period = periodOfMonth(values.month);
+  return { ...values, periodStart: period.start, periodEnd: period.end };
+}
+
 /**
  * Charge row currently being entered: `index` is its position among the saved
  * rows, or null for a new row not saved yet.
@@ -79,6 +85,7 @@ export function useRentReceiptPage() {
   const companies = useCompanies();
   const leases = useLeases();
   const templates = useTemplates("RENT_RECEIPT");
+  const initialPeriod = periodOfMonth(draft.month);
 
   const {
     register,
@@ -94,8 +101,8 @@ export function useRentReceiptPage() {
       month: draft.month,
       landlordId: draft.landlordId === null ? "" : String(draft.landlordId),
       tenantKey: draft.tenantKey ?? "",
-      periodStart: draft.periodStart,
-      periodEnd: draft.periodEnd,
+      periodStart: initialPeriod.start,
+      periodEnd: initialPeriod.end,
       rentExclCharges: draft.rentExclCharges,
       charges: draft.charges,
       paymentDate: draft.paymentDate,
@@ -223,8 +230,15 @@ export function useRentReceiptPage() {
       return;
     }
     hydratedScope.current = scopeKey;
-    draft.loadFromDraft(saved);
-    setValue("month", saved.month ?? draft.month, { shouldValidate: true });
+    const savedMonth = saved.month ?? draft.month;
+    const period = periodOfMonth(savedMonth);
+    // A stored custom period is ignored: the month always wins.
+    draft.loadFromDraft({
+      ...saved,
+      periodStart: period.start,
+      periodEnd: period.end,
+    });
+    setValue("month", savedMonth, { shouldValidate: true });
     setValue(
       "landlordId",
       saved.landlordId === undefined || saved.landlordId === null
@@ -239,8 +253,8 @@ export function useRentReceiptPage() {
           ? `company:${saved.tenantCompanyId}`
           : "";
     setValue("tenantKey", tenantKey, { shouldValidate: true });
-    setValue("periodStart", saved.periodStart ?? "", { shouldValidate: true });
-    setValue("periodEnd", saved.periodEnd ?? "", { shouldValidate: true });
+    setValue("periodStart", period.start, { shouldValidate: true });
+    setValue("periodEnd", period.end, { shouldValidate: true });
     setValue("rentExclCharges", saved.rentExclCharges ?? "", {
       shouldValidate: true,
     });
@@ -256,7 +270,7 @@ export function useRentReceiptPage() {
   const request =
     validation.success && selectedLease
       ? requestFromValues(
-          validation.data,
+          withMonthPeriod(validation.data),
           selectedModel,
           selectedSignatureId,
           receiptCompanyId,
@@ -331,7 +345,7 @@ export function useRentReceiptPage() {
     }
     setEditingAdditionalCharge(null);
     const requestBody = requestFromValues(
-      submittedValues,
+      withMonthPeriod(submittedValues),
       selectedModel,
       selectedSignatureId,
       receiptCompanyId,
@@ -557,13 +571,14 @@ export function useRentReceiptPage() {
     if (!draftScopeReady || selectedLandlordId === null) {
       return false;
     }
+    const period = periodOfMonth(draft.month);
     const requestBody: RentReceiptDraftRequest = {
       month: draft.month,
       landlordId: selectedLandlordId,
       tenantId: selectedTenantId,
       tenantCompanyId: selectedTenantCompanyId,
-      periodStart: draft.periodStart,
-      periodEnd: draft.periodEnd,
+      periodStart: period.start,
+      periodEnd: period.end,
       rentExclCharges: draft.rentExclCharges,
       charges: draft.charges,
       paymentDate: draft.paymentDate,

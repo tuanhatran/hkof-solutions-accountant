@@ -8,50 +8,11 @@ import { formatDate } from "@/lib/format";
 import { RentReceiptAdditionalChargeRow } from "./RentReceiptAdditionalChargeRow";
 import type { RentReceiptController } from "./useRentReceiptPage";
 
-/** Period, amounts, dates and the estimated-total block. */
+/** Amounts, dates and the estimated-total block. */
 export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
   const { t } = useTranslation();
   return (
     <>
-      <div className="rent-receipt-amount-fields-grid">
-        <FieldGroup
-          id="quittance-debut"
-          label={t("rentReceipt.fields.periodStart")}
-          error={c.errors.periodStart?.message}
-          help={
-            c.values.periodStart ? formatDate(c.values.periodStart) : undefined
-          }
-        >
-          <input
-            id="quittance-debut"
-            type="date"
-            className={cn("field", c.errors.periodStart && "field-error")}
-            aria-invalid={Boolean(c.errors.periodStart)}
-            {...c.register("periodStart", {
-              onChange: (event) =>
-                c.draft.update({ periodStart: event.target.value }),
-            })}
-          />
-        </FieldGroup>
-        <FieldGroup
-          id="quittance-fin"
-          label={t("rentReceipt.fields.periodEnd")}
-          error={c.errors.periodEnd?.message}
-          help={c.values.periodEnd ? formatDate(c.values.periodEnd) : undefined}
-        >
-          <input
-            id="quittance-fin"
-            type="date"
-            className={cn("field", c.errors.periodEnd && "field-error")}
-            aria-invalid={Boolean(c.errors.periodEnd)}
-            {...c.register("periodEnd", {
-              onChange: (event) =>
-                c.draft.update({ periodEnd: event.target.value }),
-            })}
-          />
-        </FieldGroup>
-      </div>
-
       <div className="rent-receipt-amount-fields-grid">
         <FieldGroup
           id="quittance-loyer"

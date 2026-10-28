@@ -1,42 +1,45 @@
 import "./LanguageSelector.css";
 import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/cn";
 import {
   resolveSupportedLanguage,
   SUPPORTED_LANGUAGES,
   type SupportedLanguage,
 } from "@/i18n";
 
-const LANGUAGE_NAMES: Record<SupportedLanguage, string> = {
-  fr: "Français",
-  en: "English",
+const LANGUAGE_KEYS: Record<SupportedLanguage, string> = {
+  fr: "common.languages.fr",
+  en: "common.languages.en",
 };
 
+/** Two-state FR/EN language toggle of the application header. */
 export function LanguageSelector() {
   const { i18n, t } = useTranslation();
   const current = resolveSupportedLanguage(i18n.resolvedLanguage);
 
   return (
-    <div className="language-selector-root">
-      <label className="language-selector-label" htmlFor="select-langue">
-        {t("common.language")}
-      </label>
-      <select
-        id="select-langue"
-        data-cy="select-langue"
-        className="language-selector-select"
-        value={current}
-        onChange={(event) => {
-          void i18n.changeLanguage(
-            resolveSupportedLanguage(event.target.value),
-          );
-        }}
-      >
-        {SUPPORTED_LANGUAGES.map((language) => (
-          <option key={language} value={language}>
-            {LANGUAGE_NAMES[language]}
-          </option>
-        ))}
-      </select>
+    <div
+      className="language-selector-root"
+      role="group"
+      aria-label={t("common.language")}
+      data-cy="select-langue"
+    >
+      {SUPPORTED_LANGUAGES.map((language) => (
+        <button
+          key={language}
+          type="button"
+          className={cn(
+            "language-selector-option",
+            current === language && "language-selector-option-active",
+          )}
+          aria-pressed={current === language}
+          onClick={() => {
+            void i18n.changeLanguage(language);
+          }}
+        >
+          {t(LANGUAGE_KEYS[language])}
+        </button>
+      ))}
     </div>
   );
 }

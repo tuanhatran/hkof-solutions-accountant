@@ -1,6 +1,6 @@
 import "./ExpenseGenerationFooter.css";
 import { useTranslation } from "react-i18next";
-import { FileCheck2 } from "lucide-react";
+import { FileCheck2, Save } from "lucide-react";
 import { Link } from "react-router-dom";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
@@ -143,20 +143,32 @@ export function ExpenseGenerationFooter({
       </div>
 
       <div className="expense-generation-footer-actions">
-        <Button
-          variant="primary"
-          icon={<FileCheck2 size={16} />}
-          loading={c.generationInProgress}
-          disabled={
-            c.orderedLines.length === 0 ||
-            !c.calculationUpToDate ||
-            !c.signatureAvailable
-          }
-          onClick={c.requestGeneration}
-          data-cy="btn-generer-note"
-        >
-          {t("expenseStatement.footer.generate")}
-        </Button>
+        <div className="expense-generation-footer-buttons">
+          <Button
+            variant="primary"
+            icon={<Save size={16} />}
+            loading={c.draftSaving}
+            onClick={() => void c.saveDraft()}
+            disabled={c.activeCompanyId === null || c.draftSaving}
+            data-cy="btn-enregistrer-brouillon"
+          >
+            {t("draft.save")}
+          </Button>
+          <Button
+            variant="primary"
+            icon={<FileCheck2 size={16} />}
+            loading={c.generationInProgress}
+            disabled={
+              c.orderedLines.length === 0 ||
+              !c.calculationUpToDate ||
+              !c.signatureAvailable
+            }
+            onClick={c.requestGeneration}
+            data-cy="btn-generer-note"
+          >
+            {t("expenseStatement.footer.generate")}
+          </Button>
+        </div>
         <p className="expense-generation-footer-hint">
           {c.orderedLines.length === 0
             ? t("expenseStatement.footer.hintNoLine")

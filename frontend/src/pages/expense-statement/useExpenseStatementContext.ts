@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
 import {
-  useActiveRentReceipt,
   useActiveStatement,
   useCompanies,
   useEmployees,
   useExpenseItems,
+  useRentReceipts,
   useSavedStatementDraft,
   useSignatures,
   useTemplates,
 } from "@/api/queries";
-import type { ExpenseItemDto } from "@/api/types";
+import type { ExpenseItemDto, RentReceiptDto } from "@/api/types";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { orderLinesByExpenseItem, type DraftLine } from "@/lib/lines";
 import { draftScopeKey, useStatementDraft } from "@/state/statementDraft";
@@ -129,9 +129,38 @@ export function useExpenseStatementContext(
     selectedLeaseId,
   );
   const templates = useTemplates("EXPENSE_STATEMENT");
-  const activeRentReceiptQuery = useActiveRentReceipt(month, activeCompanyId);
+  // The month list is server-ordered (version then id, descending): its first
+  // row is the newest receipt and the default selection.
+  const rentReceiptsQuery = useRentReceipts(
+    options.rentReceipt ? null : activeCompanyId,
+    month,
+  );
+  const [chosenRentReceiptId, setChosenRentReceiptId] = useState<number | null>(
+    null,
+  );
+  useEffect(() => {
+    setChosenRentReceiptId(null);
+  }, [activeCompanyId, month]);
+  const rentReceiptCandidates = useMemo<RentReceiptDto[]>(() => {
+    if (options.rentReceipt) {
+      return options.rentReceipt.data ? [options.rentReceipt.data] : [];
+    }
+    return rentReceiptsQuery.data ?? [];
+  }, [options.rentReceipt, rentReceiptsQuery.data]);
+  const selectedRentReceipt =
+    rentReceiptCandidates.find(
+      (candidate) => candidate.id === chosenRentReceiptId,
+    ) ??
+    rentReceiptCandidates[0] ??
+    null;
   const rentReceipt: ExpenseStatementRentReceiptSource =
-    options.rentReceipt ?? activeRentReceiptQuery;
+    options.rentReceipt ?? {
+      data: selectedRentReceipt,
+      isPending: rentReceiptsQuery.isPending,
+    };
+  function selectRentReceipt(rentReceiptId: number) {
+    setChosenRentReceiptId(rentReceiptId);
+  }
   const activeStatement = useActiveStatement(activeCompanyId, month);
   const employees = useEmployees(activeCompanyId);
 
@@ -215,6 +244,9 @@ export function useExpenseStatementContext(
     expenseItemsQuery,
     templates,
     rentReceipt,
+    rentReceiptCandidates,
+    selectedRentReceiptId: selectedRentReceipt?.id ?? null,
+    selectRentReceipt,
     activeStatement,
     savedDraft,
     signatures,

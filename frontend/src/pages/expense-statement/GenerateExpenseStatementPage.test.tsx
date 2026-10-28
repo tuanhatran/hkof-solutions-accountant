@@ -25,11 +25,13 @@ let companiesError: Error | null = null;
 let companyRows: Array<{ id: number; name: string; proRataBase?: string }> = [];
 let expenseItemsError: Error | null = null;
 let templatesData: Array<{ id: number; name: string; version: number }> = [];
-let rentReceiptData: {
+let rentReceiptsData: Array<{
   id?: number;
   total?: string;
   version?: number;
-} | null = null;
+  tenantName?: string;
+  landlordName?: string;
+}> = [];
 let activeStatementData: {
   id?: number;
   month?: string;
@@ -148,8 +150,8 @@ vi.mock("@/api/queries", async (importOriginal) => {
       refetch: vi.fn(),
     }),
     useTemplates: () => ({ data: templatesData, isPending: false }),
-    useActiveRentReceipt: () => ({
-      data: rentReceiptData,
+    useRentReceipts: () => ({
+      data: rentReceiptsData,
       isPending: false,
     }),
     useActiveStatement: () => ({
@@ -248,7 +250,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     expenseItemsError = null;
     companyRows = [{ id: 1, name: "HKOF", proRataBase: "100.00" }];
     templatesData = [];
-    rentReceiptData = null;
+    rentReceiptsData = [];
     activeStatementData = null;
     savedStatementDraft = null;
     vi.mocked(api.expenseStatements.calculate).mockReset();
@@ -452,7 +454,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
   });
 
   it("adds a rent line from the active receipt, then edits and cancels it", async () => {
-    rentReceiptData = { id: 5, total: "950.00", version: 3 };
+    rentReceiptsData = [{ id: 5, total: "950.00", version: 3 }];
     renderPage();
     const user = userEvent.setup();
 
@@ -463,6 +465,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
       "/api/rent-receipts/5/pdf",
     );
     expect(screen.getByLabelText("Montant TTC")).toHaveAttribute("readonly");
+    expect(screen.queryByRole("button", { name: "Modifier" })).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Ajouter ce frais" }));
     expect(
@@ -479,6 +482,50 @@ describe("GenerateExpenseStatementPage signatures", () => {
     expect(
       screen.getByRole("heading", { name: "Nouveau frais" }),
     ).toBeVisible();
+  });
+
+  it("offers every rent receipt of the month and applies the chosen one", async () => {
+    rentReceiptsData = [
+      {
+        id: 6,
+        total: "950.00",
+        version: 2,
+        tenantName: "Mme Locataire",
+        landlordName: "M. Bailleur",
+      },
+      {
+        id: 5,
+        total: "900.00",
+        version: 1,
+        tenantName: "Mme Locataire",
+        landlordName: "M. Bailleur",
+      },
+    ];
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.selectOptions(screen.getByLabelText("Type de frais"), "loyer");
+    expect(screen.getByText(/Quittance de Janvier 2026 \(v2\)/)).toBeVisible();
+    expect(screen.getByLabelText("Montant TTC")).toHaveValue("950.00");
+    expect(screen.queryByLabelText("Choisir la quittance")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Modifier" }));
+    const picker = screen.getByLabelText("Choisir la quittance");
+    expect(picker).toHaveValue("6");
+    const options = within(picker).getAllByRole("option");
+    expect(options).toHaveLength(2);
+    expect(options[1]).toHaveTextContent(/v1/);
+    expect(options[1]).toHaveTextContent("Mme Locataire");
+    expect(options[1]).toHaveTextContent("M. Bailleur");
+    expect(options[1]).toHaveTextContent(/900,00\s?€/);
+
+    await user.selectOptions(picker, "5");
+    expect(screen.getByText(/Quittance de Janvier 2026 \(v1\)/)).toBeVisible();
+    expect(screen.getByLabelText("Montant TTC")).toHaveValue("900.00");
+    expect(screen.getByRole("link", { name: "Voir le PDF" })).toHaveAttribute(
+      "href",
+      "/api/rent-receipts/5/pdf",
+    );
   });
 
   it("warns when the rent type is chosen without a receipt of the month", async () => {
@@ -926,6 +973,34 @@ describe("GenerateExpenseStatementPage signatures", () => {
     expect(screen.getByRole("checkbox")).not.toBeChecked();
     expect(useStatementDraft.getState().dirtyByMonth[SCOPE]).toBe(false);
     expect(useStatementDraft.getState().draftIdByMonth[SCOPE]).toBe(91);
+  });
+
+  it("renders the draft save before generate and keeps only the status in the preview", async () => {
+    renderPage();
+
+    const save = await screen.findByRole("button", {
+      name: "Enregistrer le brouillon",
+    });
+    const generate = screen.getByRole("button", {
+      name: /Générer la note de frais/,
+    });
+    expect(save).toHaveClass("btn-primary");
+    expect(generate).toHaveClass("btn-primary");
+    expect(save.parentElement).toBe(generate.parentElement);
+    expect(
+      save.compareDocumentPosition(generate) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
+
+    const preview = document.querySelector('[data-cy="volet-apercu"]');
+    expect(preview).not.toBeNull();
+    expect(
+      within(preview as HTMLElement).queryByRole("button", {
+        name: "Enregistrer le brouillon",
+      }),
+    ).toBeNull();
+    expect(
+      within(preview as HTMLElement).getByText("Aucun brouillon enregistré"),
+    ).toBeVisible();
   });
 
   it("deletes the saved draft after generating the statement", async () => {

@@ -774,11 +774,59 @@ describe("useRentReceiptPage preview and generation", () => {
     );
 
     expect(result.current.values.tenantKey).toBe("person:2");
-    expect(result.current.values.periodStart).toBe("2026-01-02");
+    expect(result.current.values.periodStart).toBe("2026-01-01");
+    expect(result.current.values.periodEnd).toBe("2026-01-31");
     expect(result.current.selectedModel).toBe(8);
     expect(result.current.draft.draftId).toBe(60);
     expect(result.current.draft.savedAt).toBe("2026-01-10T09:00:00Z");
     expect(result.current.draft.dirty).toBe(false);
+
+    await act(async () => {
+      result.current.submit(result.current.values as never);
+    });
+    await waitFor(() =>
+      expect(api.rentReceipts.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          periodStart: "2026-01-01",
+          periodEnd: "2026-01-31",
+        }),
+      ),
+    );
+  });
+
+  it("derives the period from the selected month at init", () => {
+    resetDraft({
+      month: "2026-02",
+      periodStart: "2026-02-02",
+      periodEnd: "2026-02-20",
+    });
+
+    const { result } = renderController();
+
+    expect(result.current.values.periodStart).toBe("2026-02-01");
+    expect(result.current.values.periodEnd).toBe("2026-02-28");
+  });
+
+  it("saves the month boundaries even when the draft holds a custom period", async () => {
+    resetDraft({
+      landlordId: 1,
+      tenantKey: "person:2",
+      periodStart: "2026-01-02",
+      periodEnd: "2026-01-30",
+      rentExclCharges: "1200.00",
+    });
+
+    const { result } = renderController();
+    await act(async () => {
+      await result.current.saveDraft();
+    });
+
+    expect(api.drafts.saveRentReceipt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        periodStart: "2026-01-01",
+        periodEnd: "2026-01-31",
+      }),
+    );
   });
 
   it("preserves a field edited while the save refetch resolves", async () => {

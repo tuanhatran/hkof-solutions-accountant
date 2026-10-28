@@ -39,7 +39,9 @@ let companiesState: QueryLike<CompanyDto[]>;
 let employeesState: QueryLike<EmployeeDto[]>;
 let itemsState: QueryLike<ExpenseItemDto[]>;
 let templatesState: QueryLike<TemplateDto[]>;
-let rentReceiptState: QueryLike<{ id: number; total: string }>;
+let rentReceiptsState: QueryLike<
+  Array<{ id: number; total: string; version?: number }>
+>;
 let activeStatementState: QueryLike<{ id: number; version: number }>;
 let signaturesState: QueryLike<SignatureDto[]>;
 let savedDraftState: QueryLike<StatementDraftDto | null>;
@@ -93,7 +95,7 @@ vi.mock("@/api/queries", async (importOriginal) => {
     useEmployees: () => employeesState,
     useExpenseItems: () => itemsState,
     useTemplates: () => templatesState,
-    useActiveRentReceipt: () => rentReceiptState,
+    useRentReceipts: () => rentReceiptsState,
     useActiveStatement: () => activeStatementState,
     useSavedStatementDraft: () => savedDraftState,
     useSignatures: (personId: number | null) => ({
@@ -284,7 +286,7 @@ beforeEach(() => {
   employeesState = readyQuery([CEO_EMPLOYEE]);
   itemsState = readyQuery(ITEMS);
   templatesState = readyQuery(TEMPLATES);
-  rentReceiptState = readyQuery({ id: 7, total: "1300.00" });
+  rentReceiptsState = readyQuery([{ id: 7, total: "1300.00" }]);
   activeStatementState = readyQuery(
     null as unknown as { id: number; version: number },
   );
@@ -445,7 +447,7 @@ describe("useExpenseStatementPage defaults", () => {
     templatesState = pending;
     signaturesState = pending;
     employeesState = pending;
-    rentReceiptState = pending;
+    rentReceiptsState = pending;
     const { result } = renderController();
 
     expect(result.current.activeModel).toBeNull();
@@ -544,9 +546,7 @@ describe("useExpenseStatementPage form and upload", () => {
   });
 
   it("leaves the amount empty when no rent receipt exists", () => {
-    rentReceiptState = readyQuery(
-      null as unknown as { id: number; total: string },
-    );
+    rentReceiptsState = readyQuery([]);
     const { result } = renderController();
 
     act(() => result.current.changeType("loyer"));
@@ -1025,9 +1025,7 @@ describe("useExpenseStatementPage save", () => {
       "Ce poste est déjà présent. Modifiez la ligne existante ou autorisez plusieurs lignes.",
     );
 
-    rentReceiptState = readyQuery(
-      null as unknown as { id: number; total: string },
-    );
+    rentReceiptsState = readyQuery([]);
     rerender();
     act(() =>
       result.current.saveExpense({
@@ -1494,10 +1492,60 @@ describe("useExpenseStatementPage edge branches", () => {
     const { result, rerender } = renderController();
 
     act(() => result.current.changeType("loyer"));
-    rentReceiptState = readyQuery({ id: 8, total: "1400.00" });
+    rentReceiptsState = readyQuery([{ id: 8, total: "1400.00" }]);
     rerender();
 
     expect(result.current.values.amountInclVat).toBe("1400.00");
+  });
+
+  it("defaults to the newest rent receipt and applies a chosen one", () => {
+    rentReceiptsState = readyQuery([
+      { id: 8, total: "1400.00", version: 2 },
+      { id: 7, total: "1300.00", version: 1 },
+    ]);
+    const { result } = renderController();
+
+    expect(result.current.rentReceiptCandidates.map((item) => item.id)).toEqual(
+      [8, 7],
+    );
+    expect(result.current.selectedRentReceiptId).toBe(8);
+    expect(result.current.rentReceipt.data?.id).toBe(8);
+
+    act(() => result.current.selectRentReceipt(7));
+    expect(result.current.selectedRentReceiptId).toBe(7);
+    expect(result.current.rentReceipt.data?.id).toBe(7);
+
+    act(() => result.current.changeType("loyer"));
+    expect(result.current.values.amountInclVat).toBe("1300.00");
+  });
+
+  it("resets the chosen rent receipt when the month changes", () => {
+    rentReceiptsState = readyQuery([
+      { id: 8, total: "1400.00", version: 2 },
+      { id: 7, total: "1300.00", version: 1 },
+    ]);
+    const { result } = renderController();
+    act(() => result.current.selectRentReceipt(7));
+    expect(result.current.selectedRentReceiptId).toBe(7);
+
+    act(() => result.current.changeMonth("2026-02"));
+
+    expect(result.current.selectedRentReceiptId).toBe(8);
+  });
+
+  it("resets the chosen rent receipt when the company changes", () => {
+    companiesState = readyQuery([COMPANY, { id: 2, name: "Autre SARL" }]);
+    rentReceiptsState = readyQuery([
+      { id: 8, total: "1400.00", version: 2 },
+      { id: 7, total: "1300.00", version: 1 },
+    ]);
+    const { result } = renderController();
+    act(() => result.current.selectRentReceipt(7));
+    expect(result.current.selectedRentReceiptId).toBe(7);
+
+    act(() => result.current.selectCompany(2));
+
+    expect(result.current.selectedRentReceiptId).toBe(8);
   });
 
   it("releases the attached receipt when changing month", async () => {
