@@ -140,9 +140,14 @@ public class DocumentDraftService {
                 DocumentDraft.Type.EXPENSE_STATEMENT, month, companyId);
     }
 
+    /**
+     * Flushes the logical deletion immediately: Hibernate flushes inserts before updates,
+     * so a pending update would let the next insert hit the V15 partial unique indexes
+     * while the previous row still looks active.
+     */
     private void softDelete(DocumentDraft draft) {
         draft.setDeleted(true);
-        repository.save(draft);
+        repository.saveAndFlush(draft);
     }
 
     private DocumentDraft newEntity(DocumentDraft.Type type, String month, Object payload) {

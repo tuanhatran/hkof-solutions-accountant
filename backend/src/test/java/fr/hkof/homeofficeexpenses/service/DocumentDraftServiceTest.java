@@ -41,6 +41,7 @@ class DocumentDraftServiceTest {
     void setUp() {
         repository = mock(DocumentDraftRepository.class);
         when(repository.save(any(DocumentDraft.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(repository.saveAndFlush(any(DocumentDraft.class))).thenAnswer(invocation -> invocation.getArgument(0));
         service = new DocumentDraftService(repository, new ObjectMapper(), CLOCK);
     }
 
@@ -89,10 +90,9 @@ class DocumentDraftServiceTest {
         service.saveRentReceipt(rentReceiptRequest());
 
         assertThat(previous.isDeleted()).isTrue();
-        ArgumentCaptor<DocumentDraft> captor = ArgumentCaptor.forClass(DocumentDraft.class);
-        verify(repository, org.mockito.Mockito.times(2)).save(captor.capture());
-        assertThat(captor.getAllValues().get(0)).isSameAs(previous);
-        assertThat(captor.getAllValues().get(1).isDeleted()).isFalse();
+        verify(repository).saveAndFlush(previous);
+        verify(repository).save(org.mockito.ArgumentMatchers.argThat(
+                saved -> saved != previous && !saved.isDeleted()));
     }
 
     @Test
@@ -198,7 +198,7 @@ class DocumentDraftServiceTest {
         service.delete(5L);
 
         assertThat(draft.isDeleted()).isTrue();
-        verify(repository).save(draft);
+        verify(repository).saveAndFlush(draft);
     }
 
     @Test
@@ -212,7 +212,7 @@ class DocumentDraftServiceTest {
         service.deleteActiveRentReceipt("2026-01", 4L, 7L, null);
 
         assertThat(previous.isDeleted()).isTrue();
-        verify(repository).save(previous);
+        verify(repository).saveAndFlush(previous);
     }
 
     @Test
@@ -224,6 +224,7 @@ class DocumentDraftServiceTest {
         service.deleteActiveRentReceipt("2026-01", 4L, null, 9L);
 
         verify(repository, never()).save(any(DocumentDraft.class));
+        verify(repository, never()).saveAndFlush(any(DocumentDraft.class));
     }
 
     @Test
@@ -237,7 +238,7 @@ class DocumentDraftServiceTest {
         service.deleteActiveStatement(3L, "2026-01");
 
         assertThat(previous.isDeleted()).isTrue();
-        verify(repository).save(previous);
+        verify(repository).saveAndFlush(previous);
     }
 
     @Test
