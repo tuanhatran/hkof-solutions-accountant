@@ -1,6 +1,10 @@
 export const fr = {
   common: {
     language: "Langue",
+    languages: {
+      fr: "Français",
+      en: "English",
+    },
     cancel: "Annuler",
     confirm: "Confirmer",
     validate: "Valider",
@@ -1386,6 +1390,9 @@ export const fr = {
       title: "Quittance de {{month}} (v{{version}}) :",
       hint: "Montant pré-rempli et verrouillé. La quittance sera annexée automatiquement.",
       openPdf: "Voir le PDF",
+      modify: "Modifier",
+      chooseReceipt: "Choisir la quittance",
+      receiptOption: "v{{version}} · {{tenant}} / {{landlord}} · {{total}}",
       missingTitle: "Aucune quittance pour ce mois",
       missingText:
         "Générez la quittance : le montant du loyer sera repris et verrouillé.",

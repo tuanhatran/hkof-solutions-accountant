@@ -1,5 +1,5 @@
 import "./RentReceiptForm.css";
-import { LoaderCircle, ReceiptText, RotateCcw } from "lucide-react";
+import { LoaderCircle, ReceiptText, RotateCcw, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import type { RentReceiptController } from "./useRentReceiptPage";
@@ -29,6 +29,16 @@ export function RentReceiptForm({ c }: { c: RentReceiptController }) {
 
         <div className="rent-receipt-form-footer">
           <div className="rent-receipt-form-actions">
+            <Button
+              variant="primary"
+              icon={<Save size={16} />}
+              loading={c.draftSaving}
+              onClick={() => void c.saveDraft()}
+              disabled={!c.draftScopeReady || c.draftSaving}
+              data-cy="btn-enregistrer-brouillon"
+            >
+              {t("draft.save")}
+            </Button>
             <Button
               type="submit"
               variant="primary"

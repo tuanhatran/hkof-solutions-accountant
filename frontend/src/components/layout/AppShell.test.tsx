@@ -237,9 +237,8 @@ describe("AppShell", () => {
     ).toBeNull();
     const actions = topbar?.firstElementChild as HTMLElement;
     expect(within(actions).getByTestId("llm-badge")).toBeVisible();
-    expect(
-      within(actions).getByRole("combobox", { name: "Langue" }),
-    ).toBeVisible();
+    const language = within(actions).getByRole("group", { name: "Langue" });
+    expect(within(language).getAllByRole("button")).toHaveLength(2);
     expect(topbar?.nextElementSibling).toBe(screen.getByRole("main"));
   });
 

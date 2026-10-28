@@ -65,6 +65,7 @@ function endOfMonth(month: string): string {
 export interface LeaseSummary {
   id?: number;
   addressId?: number;
+  companyId?: number | null;
   landlordId?: number;
   tenantId?: number | null;
   tenantCompanyId?: number | null;
@@ -128,21 +129,38 @@ export function personByName(name: string): Cypress.Chainable<PersonSummary> {
   });
 }
 
+/**
+ * Creates the 950.00 receipt of the lease the company expense page uses: the
+ * company lease resolved from `CompanyDto.leaseId`, never another lease.
+ */
 export function createRentReceipt(month: string = MONTHS): void {
-  normalLease().then((lease) => {
-    cy.request<{ id: number }[]>("/api/companies").then(({ body }) => {
-      const companyId = body[0]?.id;
-      if (companyId === undefined) {
-        throw new Error("seeded company missing");
+  cy.request<Array<{ id: number; leaseId?: number | null }>>(
+    "/api/companies",
+  ).then(({ body: companies }) => {
+    const company = companies[0];
+    if (company?.id === undefined) {
+      throw new Error("seeded company missing");
+    }
+    if (company.leaseId === undefined || company.leaseId === null) {
+      throw new Error("seeded company has no lease");
+    }
+    cy.request<LeaseSummary[]>("/api/leases").then(({ body: leases }) => {
+      const lease = leases.find(
+        (candidate) => candidate.id === company.leaseId,
+      );
+      if (!lease || lease.landlordId === undefined) {
+        throw new Error("seeded company lease missing");
       }
+      const companyLease = lease.companyLease === true;
       cy.request({
         method: "POST",
         url: "/api/rent-receipts",
         body: {
           month,
-          companyId,
+          companyId: company.id,
           landlordId: lease.landlordId,
-          tenantId: lease.tenantId,
+          tenantId: companyLease ? null : (lease.tenantId ?? null),
+          tenantCompanyId: companyLease ? (lease.companyId ?? null) : null,
           periodStart: `${month}-01`,
           periodEnd: endOfMonth(month),
           rentExclCharges: "900.00",

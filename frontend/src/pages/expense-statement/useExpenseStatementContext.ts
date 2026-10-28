@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
 import {
-  useActiveRentReceipt,
   useActiveStatement,
   useCompanies,
   useEmployees,
   useExpenseItems,
+  useLeases,
+  useRentReceipts,
   useSavedStatementDraft,
   useSignatures,
   useTemplates,
 } from "@/api/queries";
-import type { ExpenseItemDto } from "@/api/types";
+import type { ExpenseItemDto, RentReceiptDto } from "@/api/types";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { orderLinesByExpenseItem, type DraftLine } from "@/lib/lines";
 import { draftScopeKey, useStatementDraft } from "@/state/statementDraft";
@@ -121,6 +122,12 @@ export function useExpenseStatementContext(
     options.leaseId !== undefined
       ? options.leaseId
       : (activeCompany?.leaseId ?? null);
+  const leasesQuery = useLeases();
+  const selectedLease =
+    selectedLeaseId === null
+      ? null
+      : (leasesQuery.data?.find((lease) => lease.id === selectedLeaseId) ??
+        null);
 
   // Every company-scoped request carries the active company; a null id disables them.
   const expenseItemsQuery = useExpenseItems(
@@ -129,9 +136,52 @@ export function useExpenseStatementContext(
     selectedLeaseId,
   );
   const templates = useTemplates("EXPENSE_STATEMENT");
-  const activeRentReceiptQuery = useActiveRentReceipt(month, activeCompanyId);
+  // The month list is server-ordered (version then id, descending): its first
+  // row is the newest receipt and the default selection.
+  const rentReceiptsQuery = useRentReceipts(
+    options.rentReceipt ? null : activeCompanyId,
+    month,
+  );
+  const [chosenRentReceiptId, setChosenRentReceiptId] = useState<number | null>(
+    null,
+  );
+  useEffect(() => {
+    setChosenRentReceiptId(null);
+  }, [activeCompanyId, month, selectedLeaseId, selectedLease]);
+  const rentReceiptCandidates = useMemo<RentReceiptDto[]>(() => {
+    if (options.rentReceipt) {
+      return options.rentReceipt.data ? [options.rentReceipt.data] : [];
+    }
+    const receipts = rentReceiptsQuery.data ?? [];
+    // A company-month list mixes every lease of the company: keep only the
+    // receipts the page lease can produce (same landlord, then tenant company
+    // for a company lease or tenant person for a person lease). An unresolved
+    // lease keeps the historical unscoped list.
+    if (selectedLease === null) {
+      return receipts;
+    }
+    return receipts.filter(
+      (receipt) =>
+        receipt.landlordId === selectedLease.landlordId &&
+        (selectedLease.companyId != null
+          ? receipt.tenantCompanyId === selectedLease.companyId
+          : receipt.tenantId === selectedLease.tenantId),
+    );
+  }, [options.rentReceipt, rentReceiptsQuery.data, selectedLease]);
+  const selectedRentReceipt =
+    rentReceiptCandidates.find(
+      (candidate) => candidate.id === chosenRentReceiptId,
+    ) ??
+    rentReceiptCandidates[0] ??
+    null;
   const rentReceipt: ExpenseStatementRentReceiptSource =
-    options.rentReceipt ?? activeRentReceiptQuery;
+    options.rentReceipt ?? {
+      data: selectedRentReceipt,
+      isPending: rentReceiptsQuery.isPending,
+    };
+  function selectRentReceipt(rentReceiptId: number) {
+    setChosenRentReceiptId(rentReceiptId);
+  }
   const activeStatement = useActiveStatement(activeCompanyId, month);
   const employees = useEmployees(activeCompanyId);
 
@@ -215,6 +265,9 @@ export function useExpenseStatementContext(
     expenseItemsQuery,
     templates,
     rentReceipt,
+    rentReceiptCandidates,
+    selectedRentReceiptId: selectedRentReceipt?.id ?? null,
+    selectRentReceipt,
     activeStatement,
     savedDraft,
     signatures,

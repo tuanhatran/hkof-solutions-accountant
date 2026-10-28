@@ -788,28 +788,6 @@ describe("GenerateRentReceiptPage", () => {
       await screen.findByText("Choisissez un mois valide."),
     ).toBeInTheDocument();
 
-    await user.clear(screen.getByLabelText("Début de période"));
-    expect(
-      await screen.findByText("Date de début invalide."),
-    ).toBeInTheDocument();
-
-    await user.clear(screen.getByLabelText("Fin de période"));
-    expect(
-      await screen.findByText("Date de fin invalide."),
-    ).toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText("Début de période"), {
-      target: { value: "2026-01-31" },
-    });
-    fireEvent.change(screen.getByLabelText("Fin de période"), {
-      target: { value: "2026-01-01" },
-    });
-    expect(
-      await screen.findByText(
-        "La fin de période doit être postérieure au début.",
-      ),
-    ).toBeInTheDocument();
-
     await user.clear(screen.getByLabelText("Loyer hors charges"));
     await user.type(screen.getByLabelText("Loyer hors charges"), "abc");
     expect(
@@ -993,8 +971,8 @@ describe("GenerateRentReceiptPage", () => {
     expect(useRentReceiptDraft.getState().month).toBe("2026-02");
     expect(useRentReceiptDraft.getState().periodStart).toBe("2026-02-01");
     expect(useRentReceiptDraft.getState().periodEnd).toBe("2026-02-28");
-    expect(screen.getByLabelText("Début de période")).toHaveValue("2026-02-01");
-    expect(screen.getByLabelText("Fin de période")).toHaveValue("2026-02-28");
+    expect(screen.queryByLabelText("Début de période")).toBeNull();
+    expect(screen.queryByLabelText("Fin de période")).toBeNull();
 
     await waitFor(() => expect(lastPreviewLoader).not.toBeNull());
     await lastPreviewLoader?.(new AbortController().signal);
@@ -1063,6 +1041,20 @@ describe("GenerateRentReceiptPage", () => {
       "40.00",
     );
     expect(useRentReceiptDraft.getState().dirty).toBe(false);
+    expect(screen.queryByLabelText("Début de période")).toBeNull();
+    expect(screen.queryByLabelText("Fin de période")).toBeNull();
+    expect(useRentReceiptDraft.getState().periodStart).toBe("2026-01-01");
+    expect(useRentReceiptDraft.getState().periodEnd).toBe("2026-01-31");
+
+    await waitFor(() => expect(lastPreviewLoader).not.toBeNull());
+    await lastPreviewLoader?.(new AbortController().signal);
+    expect(api.rentReceipts.preview).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        periodStart: "2026-01-01",
+        periodEnd: "2026-01-31",
+      }),
+      expect.anything(),
+    );
   });
 
   it("keeps an unsaved edit and clears the draft pane when generating after a save", async () => {
@@ -1155,6 +1147,34 @@ describe("GenerateRentReceiptPage", () => {
     await waitFor(() => expect(save).toBeEnabled());
   });
 
+  it("renders the draft save as a primary action before generate and keeps only the status in the preview", () => {
+    renderPage();
+
+    const save = screen.getByRole("button", {
+      name: "Enregistrer le brouillon",
+    });
+    const generate = screen.getByRole("button", {
+      name: /Générer la quittance/,
+    });
+    expect(save).toHaveClass("btn-primary");
+    expect(generate).toHaveClass("btn-primary");
+    expect(save.parentElement).toBe(generate.parentElement);
+    expect(
+      save.compareDocumentPosition(generate) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
+
+    const preview = document.querySelector('[data-cy="volet-apercu"]');
+    expect(preview).not.toBeNull();
+    expect(
+      within(preview as HTMLElement).queryByRole("button", {
+        name: "Enregistrer le brouillon",
+      }),
+    ).toBeNull();
+    expect(
+      within(preview as HTMLElement).getByText("Aucun brouillon enregistré"),
+    ).toBeVisible();
+  });
+
   it("leaves the draft deletion to the backend after generating the receipt", async () => {
     useRentReceiptDraft.setState({
       draftId: 70,
@@ -1180,14 +1200,12 @@ describe("GenerateRentReceiptPage", () => {
     expect(useRentReceiptDraft.getState().savedAt).toBeNull();
   });
 
-  it("echoes the filled dates in French under the native date inputs", () => {
+  it("echoes the payment and issue dates in French under the native date inputs", () => {
     renderPage();
 
-    expect(screen.getByText("01/01/2026")).toBeVisible();
-    expect(screen.getByText("31/01/2026")).toBeVisible();
     expect(screen.getAllByText("05/01/2026")).toHaveLength(2);
 
-    fireEvent.change(screen.getByLabelText("Début de période"), {
+    fireEvent.change(screen.getByLabelText("Date de paiement"), {
       target: { value: "2026-02-01" },
     });
 

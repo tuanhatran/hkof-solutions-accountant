@@ -107,9 +107,19 @@ describe("Rent receipt", () => {
         "Signature du bailleur (e2e)",
       );
 
+      cy.intercept("POST", "/api/rent-receipts/preview", (request) => {
+        const body = request.body as { month?: string } | null;
+        if (body?.month === MONTHS) {
+          request.alias = "previewQuittance";
+        }
+      });
       cy.chooseMonth(MONTHS);
-      waitForValue("#quittance-debut", "2026-01-01");
-      waitForValue("#quittance-fin", "2026-01-31");
+      cy.wait("@previewQuittance").its("request.body").should("include", {
+        periodStart: "2026-01-01",
+        periodEnd: "2026-01-31",
+      });
+      cy.get("#quittance-debut").should("not.exist");
+      cy.get("#quittance-fin").should("not.exist");
 
       cy.get('[data-cy="btn-generer-quittance"]')
         .should("not.be.disabled")

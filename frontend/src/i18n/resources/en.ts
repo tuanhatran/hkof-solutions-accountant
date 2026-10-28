@@ -1,6 +1,10 @@
 export const en = {
   common: {
     language: "Language",
+    languages: {
+      fr: "Français",
+      en: "English",
+    },
     cancel: "Cancel",
     confirm: "Confirm",
     validate: "Save",
@@ -1354,6 +1358,9 @@ export const en = {
       title: "Rent receipt for {{month}} (v{{version}}):",
       hint: "Amount prefilled and locked. The rent receipt will be attached automatically.",
       openPdf: "View the PDF",
+      modify: "Change",
+      chooseReceipt: "Choose the rent receipt",
+      receiptOption: "v{{version}} · {{tenant}} / {{landlord}} · {{total}}",
       missingTitle: "No rent receipt for this month",
       missingText:
         "Generate the rent receipt: the rent amount will be taken and locked.",

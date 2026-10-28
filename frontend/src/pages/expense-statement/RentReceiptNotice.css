@@ -13,6 +13,18 @@
     @apply flex flex-wrap items-center justify-between gap-3;
   }
 
+  .rent-receipt-notice-actions {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .rent-receipt-notice-picker {
+    @apply mt-3 flex flex-col gap-1;
+  }
+
+  .rent-receipt-notice-picker-label {
+    @apply text-xs font-semibold text-ink-soft;
+  }
+
   .rent-receipt-notice-title {
     @apply text-sm font-semibold text-ink;
   }

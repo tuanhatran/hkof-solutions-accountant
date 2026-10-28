@@ -37,6 +37,10 @@
     @apply flex flex-wrap items-center justify-between gap-3;
   }
 
+  .expense-generation-footer-buttons {
+    @apply flex flex-wrap gap-2;
+  }
+
   .expense-generation-footer-hint {
     @apply max-w-[300px] text-[11px] leading-snug text-ink-soft;
   }
