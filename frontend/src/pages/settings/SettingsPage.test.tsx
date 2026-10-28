@@ -321,7 +321,7 @@ describe("SettingsPage tabs", () => {
         ?.classList.contains("card"),
     ).toBe(false);
 
-    await user.click(queryByCy("bail-societe-5") as Element);
+    await user.click(queryByCy("btn-afficher-frais-bail-societe-5") as Element);
     expect(
       document
         .querySelector("section.expense-items-manager")
@@ -385,18 +385,22 @@ describe("SettingsPage tabs", () => {
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
 
     // Arriving on the tab, every lease is collapsed, even the active one.
-    expect(queryByCy("bail-societe-5")).toHaveAttribute(
+    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toHaveAttribute(
       "aria-expanded",
       "false",
     );
     expect(queryByCy("bail-societe-lie")).toBeNull();
 
+    // Only the show-expenses button expands; a row click changes nothing.
     await user.click(queryByCy("bail-societe-5") as Element);
+    expect(queryByCy("bail-societe-lie")).toBeNull();
+
+    await user.click(queryByCy("btn-afficher-frais-bail-societe-5") as Element);
 
     expect(queryByCy("bail-societe-lie")).not.toBeNull();
     expect(screen.getByRole("heading", { name: "Postes" })).toBeVisible();
     expect(queryByCy("select-bail-actif")).toBeNull();
-    expect(queryByCy("bail-societe-5")).toHaveAttribute(
+    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toHaveAttribute(
       "aria-expanded",
       "true",
     );
@@ -587,24 +591,26 @@ describe("SettingsPage tabs", () => {
     );
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
 
-    expect(screen.getByText(/^Aucun bail sélectionné/)).toBeVisible();
+    expect(screen.getByText(/^Aucun bail déplié/)).toBeVisible();
   });
 
-  it("lists the company's leases as click-to-select items with edit buttons, without the legacy modal", async () => {
+  it("lists the company's leases with show-expenses and edit buttons, without the legacy modal", async () => {
     renderPage();
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
 
     expect(queryByCy("select-bail-actif")).toBeNull();
-    expect(queryByCy("bail-societe-5")).toHaveAttribute(
+    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toHaveAttribute(
       "aria-expanded",
       "false",
     );
     expect(queryByCy("dialogue-formulaire-bail-societe")).toBeNull();
     expect(queryByCy("btn-modifier-bail-societe")).toBeNull();
     expect(queryByCy("btn-modifier-bail-societe-5")).not.toBeNull();
-    expect(screen.getByText("Bail actif")).toBeVisible();
+    expect(queryByCy("btn-afficher-frais-bail-societe-5")).not.toBeNull();
+    expect(queryByCy("btn-note-frais-bail-societe-5")).not.toBeNull();
+    expect(screen.queryByText("Bail actif")).toBeNull();
   });
 
   it("selects the company locally in the configuration selector", async () => {
@@ -684,7 +690,7 @@ describe("SettingsPage tabs", () => {
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
-    await user.click(queryByCy("bail-societe-5") as Element);
+    await user.click(queryByCy("btn-afficher-frais-bail-societe-5") as Element);
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
@@ -699,7 +705,7 @@ describe("SettingsPage tabs", () => {
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
-    await user.click(queryByCy("bail-societe-5") as Element);
+    await user.click(queryByCy("btn-afficher-frais-bail-societe-5") as Element);
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(

@@ -9,6 +9,14 @@
     @apply flex flex-col gap-4;
   }
 
+  .company-lease-tab-header-actions {
+    @apply flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center;
+  }
+
+  .company-lease-tab-header-search {
+    @apply w-full sm:w-56;
+  }
+
   .company-lease-tab-list {
     @apply flex flex-col gap-2;
   }
@@ -23,46 +31,6 @@
 
   .company-lease-tab-headers-actions {
     @apply text-right;
-  }
-
-  .company-lease-tab-list-item {
-    @apply flex flex-col gap-2;
-  }
-
-  .company-lease-tab-item {
-    @apply flex flex-col gap-2 rounded-xl border border-line bg-surface px-4 py-3 md:grid md:min-h-9 md:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem_13rem] md:items-center md:gap-3 md:py-1.5;
-  }
-
-  .company-lease-tab-item-selected {
-    @apply border-accent/40 bg-accent-soft/35;
-  }
-
-  .company-lease-tab-item-toggle {
-    @apply flex min-w-0 flex-col gap-1 bg-transparent text-left md:col-span-3 md:grid md:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem] md:items-center md:gap-3;
-  }
-
-  .company-lease-tab-item-main {
-    @apply flex min-w-0 flex-col;
-  }
-
-  .company-lease-tab-item-address {
-    @apply truncate text-sm font-semibold text-ink;
-  }
-
-  .company-lease-tab-item-meta {
-    @apply mt-0.5 text-xs text-ink-soft;
-  }
-
-  .company-lease-tab-item-amount {
-    @apply text-xs text-ink-soft;
-  }
-
-  .company-lease-tab-item-actions {
-    @apply flex flex-wrap items-center justify-end gap-1;
-  }
-
-  .company-lease-tab-item-expanded {
-    @apply flex flex-col gap-3 rounded-xl border border-line bg-paper/40 p-3;
   }
 
   .company-lease-tab-none {

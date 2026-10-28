@@ -17,12 +17,14 @@ describe("Settings", () => {
 
     waitForText('[data-cy="info-societe"]', "HKOF");
 
-    // Prorata is read-only on the Baux & Frais tab, shown once the active
-    // lease row is expanded (the tab arrives collapsed).
+    // Prorata is read-only on the Baux & Frais tab, shown once a lease row is
+    // expanded with "Afficher les frais" (the tab arrives collapsed).
     cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
-    cy.contains('button[data-cy^="bail-societe-"]', "Bail actif", {
+    cy.get('button[data-cy^="btn-afficher-frais-bail-societe-"]', {
       timeout: 20_000,
-    }).click();
+    })
+      .first()
+      .click();
 
     // Identity edits go through the modal.
     cy.get('[data-cy="onglet-entreprise-identification"]').click();
@@ -147,10 +149,12 @@ describe("Settings", () => {
     );
 
     cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
-    // The tab arrives collapsed: expand the active lease to reach its postes.
-    cy.contains('button[data-cy^="bail-societe-"]', "Bail actif", {
+    // The tab arrives collapsed: expand the first lease to reach its postes.
+    cy.get('button[data-cy^="btn-afficher-frais-bail-societe-"]', {
       timeout: 20_000,
-    }).click();
+    })
+      .first()
+      .click();
     cy.get('[data-cy="btn-ajouter-poste"]').click();
     cy.get('[data-cy="formulaire-poste"]').should("be.visible");
     cy.get("#poste-code").type("internet-pro");

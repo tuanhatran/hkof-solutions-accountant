@@ -693,7 +693,7 @@ export const fr = {
       leaseTab: {
         title: "Baux de la société",
         description:
-          "Une société peut être locataire de plusieurs baux. Cliquez sur un bail pour l’activer et déplier ses frais : postes et notes de frais suivent ce bail.",
+          "Une société peut être locataire de plusieurs baux. Dépliez un bail avec « Afficher les frais » pour voir ses postes et ses notes de frais.",
         columns: {
           lease: "Bail",
           rent: "Loyer",
@@ -707,16 +707,16 @@ export const fr = {
           "Aucun bail pour cette société. Ajoutez le premier bail avec « Ajouter un bail ».",
         addressFallback: "Bail sans adresse",
         meta: "Bailleur {{landlord}}",
-        activeBadge: "Bail actif",
-        statement: "Note de frais",
-        edit: "Modifier",
+        showExpenses: "Afficher les frais",
+        statement: "Générer la note de frais",
+        edit: "Modifier le bail",
       },
       leaseView: {
         surfaces:
           "Surface professionnelle {{businessArea}} m² · Surface totale {{totalArea}} m²",
         proRata: "Quote-part professionnelle {{percentage}}",
         empty:
-          "Aucun bail sélectionné : la société n’a pas de quote-part professionnelle.",
+          "Aucun bail déplié : la société n’a pas de quote-part professionnelle à afficher.",
       },
       statementModal: {
         title: "Note de frais",
