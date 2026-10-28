@@ -12,7 +12,6 @@ import type {
 } from "@/api/types";
 import i18n from "@/i18n";
 import { formatEUR } from "@/lib/format";
-import { useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft } from "@/state/statementDraft";
 import { useToasts } from "@/state/toasts";
@@ -183,7 +182,6 @@ beforeEach(() => {
   ]);
   companiesState = readyQuery([{ id: 3, name: "HKOF" }]);
   activeReceiptState = readyQuery(null);
-  useCompanyStore.setState({ activeCompanyId: 3 });
   mediaMobile = false;
   lastPreviewLoader = null;
   lastPreviewOptions = null;
@@ -436,13 +434,13 @@ describe("useRentReceiptPage preview and generation", () => {
     act(() => result.current.selectPair("1", "person:2"));
 
     expect(result.current.validation.success).toBe(true);
+    expect(result.current.companyName).toBeNull();
     expect(lastPreviewOptions?.active).toBe(true);
     await lastPreviewLoader?.(new AbortController().signal);
 
     expect(api.rentReceipts.preview).toHaveBeenCalledWith(
       {
         month: MONTH,
-        companyId: 3,
         landlordId: 1,
         tenantId: 2,
         periodStart: "2026-01-01",
@@ -518,7 +516,6 @@ describe("useRentReceiptPage preview and generation", () => {
       expect(api.rentReceipts.create).toHaveBeenCalledWith(
         expect.objectContaining({
           month: MONTH,
-          companyId: 3,
           landlordId: 1,
           tenantId: 2,
           rentExclCharges: "1300.00",
@@ -538,7 +535,7 @@ describe("useRentReceiptPage preview and generation", () => {
     expect(result.current.activeVersion).toBeUndefined();
   });
 
-  it("uses the lease company over the active company and shows its name", async () => {
+  it("uses the lease company and shows its name", async () => {
     leasesState = readyQuery([
       { ...LEASE, companyId: 9, companyName: "Bailleur SARL" },
     ]);

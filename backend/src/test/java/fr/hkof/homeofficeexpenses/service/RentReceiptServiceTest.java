@@ -65,8 +65,9 @@ class RentReceiptServiceTest {
         signatureService = mock(SignatureService.class);
         pdfService = mock(PdfService.class);
         storage = mock(StorageService.class);
-        service = new RentReceiptService(repository, companies, leaseService, persons, templateService,
+        service = new RentReceiptService(repository, companies, leaseService, templateService,
                 templateDataService, signatureService, pdfService, storage,
+                new RentReceiptMapper(persons, companies),
                 Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
@@ -100,6 +101,12 @@ class RentReceiptServiceTest {
         return lease;
     }
 
+    private Lease personLeaseWithoutCompany() {
+        Lease lease = normalLease();
+        lease.setCompanyId(null);
+        return lease;
+    }
+
     private Lease companyLease() {
         Address address = new Address();
         address.setId(4L);
@@ -130,6 +137,11 @@ class RentReceiptServiceTest {
     private RentReceiptRequest request(String month, String periodStart, String periodEnd, String rent, String charges,
             Long templateId, Long signatureId) {
         return new RentReceiptRequest(month, COMPANY_ID, 1L, 2L, null, periodStart, periodEnd, rent, charges, null, null,
+                templateId, signatureId);
+    }
+
+    private RentReceiptRequest personRequest(String month, Long templateId, Long signatureId) {
+        return new RentReceiptRequest(month, null, 1L, 2L, null, null, null, null, null, null, null,
                 templateId, signatureId);
     }
 
@@ -230,6 +242,24 @@ class RentReceiptServiceTest {
         assertThat(dto.tenantName()).isEqualTo("Société Locataire");
         assertThat(dto.version()).isEqualTo(2);
         verify(storage).storePdf("quittance_2026-10_l1_c5_v2.pdf", new byte[]{1});
+    }
+
+    @Test
+    @DisplayName("A person lease without company generates a receipt without company")
+    void generatePersonLeaseWithoutCompany() {
+        TemplateDocument template = template(4L, TemplateType.RENT_RECEIPT, "Quittance", 2);
+        stubGenerationDependencies(template);
+        when(leaseService.resolveLease(1L, 2L, null)).thenReturn(personLeaseWithoutCompany());
+        when(repository.findFirstByMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc("2026-10", 1L, 2L))
+                .thenReturn(Optional.empty());
+
+        RentReceiptDto dto = service.generate(personRequest("2026-10", null, null));
+
+        assertThat(dto.companyId()).isNull();
+        assertThat(dto.companyName()).isNull();
+        assertThat(dto.tenantId()).isEqualTo(2L);
+        assertThat(dto.total()).isEqualTo("950.00");
+        verify(companies, never()).entity(any());
     }
 
     @Test

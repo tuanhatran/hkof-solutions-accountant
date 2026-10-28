@@ -15,7 +15,6 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/States";
 import { formatMonth } from "@/lib/format";
-import { useCompanyStore } from "@/state/company";
 import { useStatementDraft } from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
 import { HistoryEmptyState } from "./HistoryEmptyState";
@@ -91,8 +90,8 @@ export function HistoryPage() {
         ),
       );
     const rentReceipt = current(address?.rentReceipts ?? []);
-    // The statement draft is global: pin the internal company store to the
-    // statement's company so the generation page cannot resolve another one.
+    // The draft and the navigation carry the statement's company explicitly:
+    // the generation page has no global company store to fall back on.
     const lease = resolveLeaseForDocument(
       statementToReload,
       leasesQuery.data ?? [],
@@ -101,19 +100,23 @@ export function HistoryPage() {
       typeof statementToReload.companyId === "number"
         ? statementToReload.companyId
         : lease?.companyId;
-    if (typeof companyId === "number") {
-      useCompanyStore.getState().setActiveCompany(companyId);
-    }
     useStatementDraft
       .getState()
-      .loadFromStatement(statementToReload, rentReceipt?.id ?? null);
+      .loadFromStatement(
+        statementToReload,
+        rentReceipt?.id ?? null,
+        typeof companyId === "number" ? companyId : undefined,
+      );
     setStatementToReload(null);
     toast.info(
       t("history.page.reloaded", {
         month: formatMonth(statementToReload.month),
       }),
     );
-    navigate("/generer/note-frais");
+    navigate(
+      "/generer/note-frais",
+      typeof companyId === "number" ? { state: { companyId } } : undefined,
+    );
   }
 
   return (

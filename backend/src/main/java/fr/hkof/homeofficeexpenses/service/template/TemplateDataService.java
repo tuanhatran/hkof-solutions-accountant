@@ -68,9 +68,21 @@ public class TemplateDataService {
         data.put("total_en_lettres", NumberToWords.toWords(rentReceipt.getTotal()));
         data.put("date_paiement", Amounts.formatDate(rentReceipt.getPaymentDate()));
         data.put("date_emission", Amounts.formatDate(rentReceipt.getIssueDate()));
-        data.put("lieu", text(company.getIssuePlace()));
+        data.put("lieu", rentReceiptIssuePlace(company, landlord));
         data.put("signature", text(signature));
         return data;
+    }
+
+    /**
+     * The landlord issue place wins, then the lease company issue place, then an empty
+     * string so a person lease without any company still renders "Fait à".
+     */
+    private String rentReceiptIssuePlace(Company company, Person landlord) {
+        String landlordPlace = landlord == null ? null : landlord.getIssuePlace();
+        if (landlordPlace != null && !landlordPlace.isBlank()) {
+            return landlordPlace.trim();
+        }
+        return company == null ? "" : text(company.getIssuePlace());
     }
 
     public Map<String, Object> dataStatement(Company company, ExpenseStatement statement, boolean complete,

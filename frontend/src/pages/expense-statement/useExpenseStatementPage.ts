@@ -199,6 +199,8 @@ export function useExpenseStatementPage(
     companies: context.companies,
     activeCompany: context.activeCompany,
     activeCompanyId: context.activeCompanyId,
+    companySelectionRequired: context.companySelectionRequired,
+    selectCompany: context.selectCompany,
     expenseItemsQuery: context.expenseItemsQuery,
     templates: context.templates,
     rentReceipt: context.rentReceipt,

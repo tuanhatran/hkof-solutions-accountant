@@ -225,6 +225,7 @@ describe("PersonnesSection", () => {
       expect(api.persons.create).toHaveBeenCalledWith({
         name: "M. Nouveau",
         address: null,
+        issuePlace: null,
       }),
     );
     expect(
@@ -270,6 +271,7 @@ describe("PersonnesSection", () => {
       expect(api.persons.update).toHaveBeenCalledWith(1, {
         name: "M. Bailleur Modifié",
         address: "1 avenue du Parc, 75011 Paris",
+        issuePlace: null,
       }),
     );
     expect(toastMessages()).toContain(

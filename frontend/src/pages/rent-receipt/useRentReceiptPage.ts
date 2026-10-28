@@ -26,7 +26,6 @@ import {
   tenantKeyFromLease,
   type RentReceiptFormValues,
 } from "@/lib/validation";
-import { resolveActiveCompanyId, useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft } from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
@@ -104,17 +103,9 @@ export function useRentReceiptPage() {
         selectedTenantKey !== "",
     ) ?? null;
 
-  // A company-linked lease wins over the active company selected in the UI.
-  const storedCompanyId = useCompanyStore((state) => state.activeCompanyId);
-  const activeCompanyId = resolveActiveCompanyId(
-    storedCompanyId,
-    companies.data,
-  );
-  const activeCompany =
-    (companies.data ?? []).find((company) => company.id === activeCompanyId) ??
-    null;
-  const receiptCompanyId = selectedLease?.companyId ?? activeCompanyId;
-  const companyName = selectedLease?.companyName ?? activeCompany?.name ?? null;
+  // A rent receipt takes its company from the lease only: a person lease has none.
+  const receiptCompanyId = selectedLease?.companyId ?? null;
+  const companyName = selectedLease?.companyName ?? null;
   const activeRentReceipt = useActiveRentReceipt(
     draft.month,
     receiptCompanyId,

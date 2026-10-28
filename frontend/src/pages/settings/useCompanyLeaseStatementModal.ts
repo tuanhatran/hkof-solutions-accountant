@@ -6,7 +6,10 @@ import { currentMonth } from "@/lib/dates";
 import { latestReceiptForMonth } from "@/lib/leaseReceipts";
 import { buildRentLine } from "@/lib/lines";
 import { useExpenseStatementPage } from "@/pages/expense-statement/useExpenseStatementPage";
-import { createStatementDraftStore } from "@/state/statementDraft";
+import {
+  createStatementDraftStore,
+  draftScopeKey,
+} from "@/state/statementDraft";
 
 /**
  * Controller of the expense statement modal opened from one company lease row.
@@ -19,7 +22,9 @@ export function useCompanyLeaseStatementModal(
   lease: LeaseDto,
   companyId: number,
 ) {
-  const [draft] = useState(() => createStatementDraftStore(currentMonth()));
+  const [draft] = useState(() =>
+    createStatementDraftStore(currentMonth(), companyId),
+  );
   const month = useStore(draft, (state) => state.month);
   const allRentReceipts = useAllRentReceipts();
   const scopedReceipt = useMemo(
@@ -48,10 +53,11 @@ export function useCompanyLeaseStatementModal(
       return;
     }
     const state = draft.getState();
-    if (state.primedReceiptByMonth[month] === scopedReceipt.id) {
+    const scope = draftScopeKey(state.companyId, month);
+    if (state.primedReceiptByMonth[scope] === scopedReceipt.id) {
       return;
     }
-    const existing = (state.linesByMonth[month] ?? []).find(
+    const existing = (state.linesByMonth[scope] ?? []).find(
       (line) => line.itemCode === "loyer",
     );
     if (existing) {

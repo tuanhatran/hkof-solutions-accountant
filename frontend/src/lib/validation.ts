@@ -194,6 +194,7 @@ export const personSchema = z.object({
       error: () => personMessage("name"),
     }),
   address: z.string(),
+  issuePlace: z.string(),
 });
 
 export type PersonFormValues = z.infer<typeof personSchema>;

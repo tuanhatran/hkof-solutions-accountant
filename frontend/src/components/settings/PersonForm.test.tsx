@@ -12,6 +12,7 @@ const PERSON: PersonDto = {
   id: 1,
   name: "M. Bailleur",
   address: "1 avenue du Parc, 75011 Paris",
+  issuePlace: "Paris",
   signatureCount: 1,
 };
 
@@ -101,12 +102,14 @@ describe("PersonForm", () => {
       screen.getByLabelText("Adresse"),
       "2 rue du Marché, 75003 Paris",
     );
+    await user.type(screen.getByLabelText("Lieu d’émission"), "  Lyon  ");
     await user.click(screen.getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
       expect(api.persons.create).toHaveBeenCalledWith({
         name: "M. Nouveau",
         address: "2 rue du Marché, 75003 Paris",
+        issuePlace: "Lyon",
       }),
     );
     expect(
@@ -122,6 +125,30 @@ describe("PersonForm", () => {
     ).toBeVisible();
     expect(onClose).not.toHaveBeenCalled();
     expect(toastMessages()).toContain("Personne « M. Nouveau » ajoutée.");
+  });
+
+  it("sends a null issue place when the field is blank", async () => {
+    vi.mocked(api.persons.create).mockResolvedValue({
+      id: 5,
+      name: "M. Nouveau",
+      address: null,
+      issuePlace: null,
+      signatureCount: 0,
+    });
+    renderForm();
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Nom de la personne"), "M. Nouveau");
+    await user.type(screen.getByLabelText("Lieu d’émission"), "   ");
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    await waitFor(() =>
+      expect(api.persons.create).toHaveBeenCalledWith({
+        name: "M. Nouveau",
+        address: null,
+        issuePlace: null,
+      }),
+    );
   });
 
   it("rejects an empty name in French without calling the API", async () => {
@@ -153,6 +180,7 @@ describe("PersonForm", () => {
     expect(screen.getByLabelText("Adresse")).toHaveValue(
       "1 avenue du Parc, 75011 Paris",
     );
+    expect(screen.getByLabelText("Lieu d’émission")).toHaveValue("Paris");
     expect(screen.getByText("Signatures")).toBeVisible();
 
     await user.clear(screen.getByLabelText("Nom de la personne"));
@@ -166,6 +194,7 @@ describe("PersonForm", () => {
       expect(api.persons.update).toHaveBeenCalledWith(1, {
         name: "M. Bailleur Modifié",
         address: "1 avenue du Parc, 75011 Paris",
+        issuePlace: "Paris",
       }),
     );
     expect(onClose).not.toHaveBeenCalled();
@@ -197,6 +226,7 @@ describe("PersonForm", () => {
     expect(screen.getByRole("heading", { name: "Add a person" })).toBeVisible();
     expect(screen.getByLabelText("Person name")).toBeVisible();
     expect(screen.getByLabelText("Address")).toBeVisible();
+    expect(screen.getByLabelText("Place of issue")).toBeVisible();
     expect(
       screen.getByText(
         "Save the person to add their signatures without closing this window.",

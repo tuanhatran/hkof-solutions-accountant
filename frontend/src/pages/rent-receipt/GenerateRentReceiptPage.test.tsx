@@ -295,9 +295,7 @@ describe("GenerateRentReceiptPage", () => {
 
     renderPage();
 
-    expect(
-      document.querySelector('[data-cy="societe-quittance"]'),
-    ).toHaveTextContent("HKOF");
+    expect(document.querySelector('[data-cy="societe-quittance"]')).toBeNull();
     expect(await screen.findByLabelText("Bailleur")).toHaveValue("1");
     expect(screen.getByLabelText("Locataire")).toHaveValue("person:2");
     expect(screen.getByLabelText("Loyer hors charges")).toHaveValue("1300.00");

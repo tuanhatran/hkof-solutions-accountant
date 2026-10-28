@@ -107,6 +107,8 @@ class E2eResetIntegrationTest {
                 .andExpect(jsonPath("$[?(@.name == 'Nom du locataire')]").isNotEmpty())
                 .andExpect(jsonPath("$[?(@.name == 'Bailleur Test e2e')]").isEmpty())
                 .andReturn().getResponse().getContentAsString();
+        List<String> seededPlaces = JsonPath.read(persons, "$[?(@.name == 'Nom du bailleur')].issuePlace");
+        assertThat(seededPlaces).containsExactly("Paris");
         long landlordId = idByName(persons, "Nom du bailleur");
         long tenantId = idByName(persons, "Nom du locataire");
 

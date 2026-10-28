@@ -242,7 +242,6 @@ export const en = {
   shell: {
     skipLink: "Skip to content",
     tagline: "Rent receipts & home-office expenses",
-    activeCompany: "Active company",
     localDataTitle: "Local data",
     localDataText:
       "No data leaves your machine as long as the LLM URL stays local.",
@@ -974,6 +973,9 @@ export const en = {
         name: "Person name",
         address: "Address",
         addressHelp: "Optional; reused in documents.",
+        issuePlace: "Place of issue",
+        issuePlaceHelp:
+          "Optional; printed after “Fait à” on the rent receipts. Empty: the lease company's place.",
         hint: "Save the person to add their signatures without closing this window.",
         saved: "Person saved. Add or remove their signatures below.",
         created: "Person “{{name}}” added.",
@@ -1202,8 +1204,18 @@ export const en = {
           "An active statement already exists for {{month}} (version {{version}}). Version {{next}} will be created and the previous one stays available in the history.",
         confirm: "Create the new version",
       },
+      loadingCompanies: "Loading companies…",
+      noCompanyTitle: "No company configured",
+      noCompanyDescription:
+        "Create a company in the settings to generate an expense statement.",
+      configureCompany: "Configure a company",
+      selectCompanyTitle: "Select a company",
+      selectCompanyDescription:
+        "Select the relevant company to enter this month's expenses.",
     },
     header: {
+      companyLabel: "Relevant company",
+      companyPlaceholder: "Select a company",
       bannerTitle: "{{month}} — statement version {{version}} already active",
       bannerText:
         "Total {{total}}. Generating again will create version {{next}}.",

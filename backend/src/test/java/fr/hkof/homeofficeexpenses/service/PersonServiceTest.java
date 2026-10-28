@@ -67,15 +67,17 @@ class PersonServiceTest {
             saved.setId(1L);
             return saved;
         });
-        PersonDto created = service.create(new PersonRequest("  Alice ", "  "));
+        PersonDto created = service.create(new PersonRequest("  Alice ", "  ", "  Lyon  "));
         assertThat(created.name()).isEqualTo("Alice");
         assertThat(created.address()).isNull();
+        assertThat(created.issuePlace()).isEqualTo("Lyon");
 
         Person existing = person(1L, "Alice");
         when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(existing));
-        PersonDto updated = service.update(1L, new PersonRequest("Alicia", "2 rue"));
+        PersonDto updated = service.update(1L, new PersonRequest("Alicia", "2 rue", "   "));
         assertThat(updated.name()).isEqualTo("Alicia");
         assertThat(updated.address()).isEqualTo("2 rue");
+        assertThat(updated.issuePlace()).isNull();
 
         service.delete(1L);
         assertThat(existing.isDeleted()).isTrue();
@@ -103,15 +105,15 @@ class PersonServiceTest {
     @Test
     @DisplayName("Blank names and missing persons are rejected in French")
     void validation() {
-        assertThatThrownBy(() -> service.create(new PersonRequest(null, null)))
+        assertThatThrownBy(() -> service.create(new PersonRequest(null, null, null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Le nom de la personne est obligatoire.")
                 .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PERSON_NAME_REQUIRED"));
-        assertThatThrownBy(() -> service.create(new PersonRequest(" ", null)))
+        assertThatThrownBy(() -> service.create(new PersonRequest(" ", null, null)))
                 .isInstanceOf(BusinessException.class);
 
         when(persons.findNaturalPersonById(9L)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> service.update(9L, new PersonRequest("x", null)))
+        assertThatThrownBy(() -> service.update(9L, new PersonRequest("x", null, null)))
                 .isInstanceOf(NotFoundException.class).hasMessage("Personne introuvable.")
                 .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("PERSON_NOT_FOUND"));
         assertThatThrownBy(() -> service.delete(9L))

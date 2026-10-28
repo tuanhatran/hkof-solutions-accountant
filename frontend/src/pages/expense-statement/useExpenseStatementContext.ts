@@ -12,8 +12,7 @@ import {
 import type { ExpenseItemDto } from "@/api/types";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { orderLinesByExpenseItem, type DraftLine } from "@/lib/lines";
-import { resolveActiveCompanyId, useCompanyStore } from "@/state/company";
-import { useStatementDraft } from "@/state/statementDraft";
+import { draftScopeKey, useStatementDraft } from "@/state/statementDraft";
 import type {
   ExpenseStatementPageOptions,
   ExpenseStatementRentReceiptSource,
@@ -23,39 +22,68 @@ const NO_LINES: DraftLine[] = [];
 
 /**
  * Draft, company, lease, query and signature session shared by every concern of
- * the expense statement controller. Nothing here mutates the draft; the scoped
- * options keep the global store and navigation untouched.
+ * the expense statement controller. The company selection is page-local: no
+ * global store, a single company auto-selected, several companies requiring an
+ * explicit choice. Nothing here mutates the draft.
  */
 export function useExpenseStatementContext(
   options: ExpenseStatementPageOptions,
 ) {
   const draftStore = options.draft ?? useStatementDraft;
   const draft = useStore(draftStore);
-  const lines = useMemo(
-    () => draft.linesByMonth[draft.month] ?? NO_LINES,
-    [draft.linesByMonth, draft.month],
-  );
   const mobile = useMediaQuery("(max-width: 1023px)");
   const [mobilePanel, setMobilePanel] = useState<"input" | "preview">("input");
 
   const month = draft.month;
-  const scoped = options.companyId !== undefined;
   const companies = useCompanies();
-  const storedCompanyId = useCompanyStore((state) => state.activeCompanyId);
-  const setActiveCompany = useCompanyStore((state) => state.setActiveCompany);
-  const resolvedCompanyId = useMemo(
-    () => resolveActiveCompanyId(storedCompanyId, companies.data),
-    [storedCompanyId, companies.data],
+  const companyRows = useMemo(() => companies.data ?? [], [companies.data]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(
+    options.companyId ?? options.initialCompanyId ?? null,
   );
+
+  // Keep the local selection valid: a locked scoped company stays, a company
+  // that disappeared is forgotten, and a lone company is selected automatically.
   useEffect(() => {
-    if (!scoped && resolvedCompanyId !== storedCompanyId) {
-      setActiveCompany(resolvedCompanyId);
+    if (!companies.isSuccess) {
+      return;
     }
-  }, [scoped, resolvedCompanyId, storedCompanyId, setActiveCompany]);
-  const activeCompanyId = options.companyId ?? resolvedCompanyId;
+    const ids = companyRows
+      .map((company) => company.id)
+      .filter((id): id is number => typeof id === "number");
+    if (options.companyId !== undefined) {
+      setSelectedCompanyId(options.companyId);
+      return;
+    }
+    setSelectedCompanyId((current) => {
+      if (current !== null && ids.includes(current)) {
+        return current;
+      }
+      return ids.length === 1 ? ids[0]! : null;
+    });
+  }, [companies.isSuccess, companyRows, options.companyId]);
+
+  const activeCompanyId = selectedCompanyId;
+  function selectCompany(companyId: number | null) {
+    if (options.companyId !== undefined) {
+      return;
+    }
+    setSelectedCompanyId(companyId);
+  }
+
+  // The draft is scoped by company: switching company reads another bucket.
+  useEffect(() => {
+    const store = draftStore.getState();
+    if (store.companyId !== activeCompanyId) {
+      store.selectCompany(activeCompanyId);
+    }
+  }, [draftStore, activeCompanyId]);
+
+  const scope = draftScopeKey(activeCompanyId, month);
+  const lines = draft.linesByMonth[scope] ?? NO_LINES;
   const activeCompany =
-    (companies.data ?? []).find((company) => company.id === activeCompanyId) ??
-    null;
+    companyRows.find((company) => company.id === activeCompanyId) ?? null;
+  const companySelectionRequired =
+    companies.isSuccess && activeCompanyId === null && companyRows.length > 1;
   // Statements and postes are scoped to the active company's derived lease.
   // A company without a lease keeps the historical unscoped behaviour.
   const selectedLeaseId =
@@ -116,9 +144,8 @@ export function useExpenseStatementContext(
     [expenseItems],
   );
 
-  // A company switch must not send the previous company's lines. Draft lines whose
-  // item exists in the active company only are part of this statement; the others
-  // stay stored and reappear when their company becomes active again.
+  // The draft bucket is already company-scoped; the item filter additionally drops
+  // a line whose poste no longer exists for this company.
   const companyLines = useMemo(
     () =>
       expenseItemsQuery.data
@@ -138,8 +165,8 @@ export function useExpenseStatementContext(
   const models = templates.data ?? [];
   const activeModel = models.find((model) => model.active) ?? null;
   const selectedTemplate =
-    draft.templatesByMonth[month] ?? activeModel?.id ?? null;
-  const complete = draft.completeByMonth[month] ?? true;
+    draft.templatesByMonth[scope] ?? activeModel?.id ?? null;
+  const complete = draft.completeByMonth[scope] ?? true;
 
   return {
     draftStore,
@@ -151,6 +178,8 @@ export function useExpenseStatementContext(
     companies,
     activeCompany,
     activeCompanyId,
+    companySelectionRequired,
+    selectCompany,
     selectedLeaseId,
     expenseItemsQuery,
     templates,

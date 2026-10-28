@@ -76,6 +76,7 @@ export interface PersonSummary {
   id: number;
   name?: string;
   address?: string | null;
+  issuePlace?: string | null;
   signatureCount?: number;
 }
 

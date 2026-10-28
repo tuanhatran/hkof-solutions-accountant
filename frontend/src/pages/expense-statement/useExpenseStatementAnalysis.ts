@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { confidenceValid } from "@/components/llm/analysisConfidence";
 import { isEuroCurrency, parseAmount } from "@/lib/format";
 import { typeAlreadyAdded } from "@/lib/lines";
+import { draftScopeKey } from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
 import type { ExpenseStatementContext } from "./useExpenseStatementContext";
 import type { ExpenseStatementForm } from "./useExpenseStatementForm";
@@ -26,7 +27,13 @@ export function useExpenseStatementAnalysis(
     setValue,
     setAi,
   } = form;
-  const { draftStore, month, expenseItemByCode, expenseItemsQuery } = context;
+  const {
+    draftStore,
+    activeCompanyId,
+    month,
+    expenseItemByCode,
+    expenseItemsQuery,
+  } = context;
 
   useEffect(() => {
     if (analysisPhase.status !== "done" || !expenseItemsQuery.data) {
@@ -51,8 +58,12 @@ export function useExpenseStatementAnalysis(
     }
 
     const current = getValues();
+    // The draft is scoped by company: only the active company's lines can
+    // already hold the detected single-line type.
     const currentLines = (
-      draftStore.getState().linesByMonth[month] ?? []
+      draftStore.getState().linesByMonth[
+        draftScopeKey(activeCompanyId, month)
+      ] ?? []
     ).filter((line) => expenseItemByCode.has(line.itemCode));
     let appliedType = false;
     let appliedAmount = false;

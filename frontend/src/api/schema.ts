@@ -840,12 +840,16 @@ export interface components {
             name: string;
             /** @description Adresse personnelle facultative. */
             address?: string | null;
+            /** @description Lieu d'émission facultatif imprimé après « Fait à » sur les quittances de ce bailleur. Vide ou nul : le lieu de la société du bail, puis une chaîne vide. */
+            issuePlace?: string | null;
         };
         PersonDto: {
             /** Format: int64 */
             id?: number;
             name?: string;
             address?: string | null;
+            /** @description Lieu d'émission facultatif du bailleur. */
+            issuePlace?: string | null;
             /**
              * Format: int32
              * @description Nombre de signatures non supprimées de la personne.
@@ -1029,7 +1033,7 @@ export interface components {
             month?: string;
             /**
              * Format: int64
-             * @description Société utilisée pour l'identité et les données de domicile ; la société du bail est prioritaire lorsqu'elle existe.
+             * @description Société utilisée pour l'identité et les données de domicile. Facultative : la société du bail est toujours prioritaire lorsqu'elle existe et une quittance de bail entre particuliers est acceptée sans société.
              */
             companyId?: number | null;
             /**
@@ -2256,7 +2260,7 @@ export interface operations {
         parameters: {
             query: {
                 month: string;
-                /** @description Société utilisée pour l'identité et les données de domicile. */
+                /** @description Filtre facultatif par société. Ignoré dès qu'une paire bailleur et locataire est fournie ; une quittance de bail entre particuliers n'a pas de société. */
                 companyId?: number;
                 landlordId?: number;
                 /** @description Personne physique locataire ; exclusif avec tenantCompanyId. */

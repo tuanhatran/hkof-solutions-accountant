@@ -1,7 +1,7 @@
 import { act, render, screen, cleanup } from "@testing-library/react";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { useStatementDraft } from "@/state/statementDraft";
+import { draftScopeKey, useStatementDraft } from "@/state/statementDraft";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useDraftBlock } from "./useDraftBlock";
 
@@ -27,6 +27,7 @@ beforeEach(() => {
   useRentReceiptDraft.setState({ dirty: false });
   useStatementDraft.setState({
     month: "2026-01",
+    companyId: null,
     dirtyByMonth: {},
   });
 });
@@ -60,7 +61,10 @@ describe("useDraftBlock", () => {
   it("blocks leaving the generation pages with a dirty statement draft", async () => {
     useStatementDraft.setState({
       month: "2026-01",
-      dirtyByMonth: { "2026-01": true },
+      companyId: null,
+      // The draft is scoped by company: a dirty bucket outside that scope must
+      // not block navigation.
+      dirtyByMonth: { [draftScopeKey(null, "2026-01")]: true },
     });
 
     const router = renderAt("/generer/quittance");

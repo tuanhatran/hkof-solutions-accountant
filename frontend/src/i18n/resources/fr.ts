@@ -257,7 +257,6 @@ export const fr = {
   shell: {
     skipLink: "Aller au contenu",
     tagline: "Quittances & frais d’occupation",
-    activeCompany: "Société active",
     localDataTitle: "Données locales",
     localDataText:
       "Aucune donnée ne quitte votre machine tant que l’URL du LLM reste locale.",
@@ -999,6 +998,9 @@ export const fr = {
         name: "Nom de la personne",
         address: "Adresse",
         addressHelp: "Facultative ; reprise dans les documents.",
+        issuePlace: "Lieu d’émission",
+        issuePlaceHelp:
+          "Facultatif ; imprimé après « Fait à » sur les quittances. Vide : le lieu de la société du bail.",
         hint: "Enregistrez la personne pour ajouter ses signatures sans fermer cette fenêtre.",
         saved:
           "Personne enregistrée. Ajoutez ou retirez ses signatures ci-dessous.",
@@ -1230,8 +1232,18 @@ export const fr = {
           "Une note active existe déjà pour {{month}} (version {{version}}). La version {{next}} sera créée et l’ancienne restera consultable dans l’historique.",
         confirm: "Créer la nouvelle version",
       },
+      loadingCompanies: "Chargement des sociétés…",
+      noCompanyTitle: "Aucune société configurée",
+      noCompanyDescription:
+        "Créez une société dans la configuration pour générer une note de frais.",
+      configureCompany: "Configurer une société",
+      selectCompanyTitle: "Choisir une société",
+      selectCompanyDescription:
+        "Sélectionnez la société concernée pour saisir les frais de ce mois.",
     },
     header: {
+      companyLabel: "Société concernée",
+      companyPlaceholder: "Choisir une société",
       bannerTitle: "{{month}} — note version {{version}} déjà active",
       bannerText:
         "Total {{total}}. Générer à nouveau créera la version {{next}}.",

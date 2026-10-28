@@ -13,7 +13,6 @@ import type {
 import i18n from "@/i18n";
 import { currentMonth, periodOfMonth } from "@/lib/dates";
 import { formatEUR, formatMonth, formatPeriod } from "@/lib/format";
-import { useCompanyStore } from "@/state/company";
 import { useToasts } from "@/state/toasts";
 import { LeaseReceiptModal } from "./LeaseReceiptModal";
 
@@ -134,7 +133,6 @@ beforeEach(() => {
   templateRows = [TEMPLATE];
   signatureRows = [SIGNATURE];
   companyRows = [{ id: 3, name: "HKOF" }];
-  useCompanyStore.setState({ activeCompanyId: null });
   vi.mocked(api.rentReceipts.preview).mockReset();
   vi.mocked(api.rentReceipts.preview).mockResolvedValue({
     blob: new Blob(["pdf"]),
@@ -171,14 +169,14 @@ describe("LeaseReceiptModal", () => {
     expect(screen.getByText("Mme Locataire")).toBeVisible();
     expect(
       document.querySelector('[data-cy="societe-quittance-bail"]'),
-    ).toHaveTextContent("HKOF");
+    ).toHaveTextContent("Aucune société");
     expect(screen.getByLabelText("Loyer hors charges")).toHaveValue("1300,00");
     expect(screen.getByLabelText("Provision pour charges")).toHaveValue(
       "50,00",
     );
   });
 
-  it("sends the active company for a natural-person lease without a company", async () => {
+  it("sends no company for a natural-person lease without a company", async () => {
     renderModal();
 
     const month = currentMonth();
@@ -189,7 +187,6 @@ describe("LeaseReceiptModal", () => {
           month,
           landlordId: 1,
           tenantId: 2,
-          companyId: 3,
           periodStart: period.start,
           periodEnd: period.end,
           rentExclCharges: "1300.00",
@@ -200,6 +197,8 @@ describe("LeaseReceiptModal", () => {
         expect.any(AbortSignal),
       ),
     );
+    const previewBody = vi.mocked(api.rentReceipts.preview).mock.calls[0][0];
+    expect(previewBody.companyId).toBeUndefined();
     await waitFor(() =>
       expect(
         document.querySelector('[data-cy="apercu-quittance-bail"]'),
@@ -207,13 +206,13 @@ describe("LeaseReceiptModal", () => {
     );
   });
 
-  it("prefers the stored active company over the first company", async () => {
-    companyRows = [
-      { id: 3, name: "HKOF" },
-      { id: 9, name: "MARTIN" },
-    ];
-    useCompanyStore.setState({ activeCompanyId: 9 });
-    renderModal();
+  it("uses the lease company for a natural-person lease", async () => {
+    const companyLease: LeaseDto = {
+      ...LEASE,
+      companyId: 9,
+      companyName: "MARTIN",
+    };
+    renderModal(companyLease);
 
     expect(
       document.querySelector('[data-cy="societe-quittance-bail"]'),
@@ -325,7 +324,6 @@ describe("LeaseReceiptModal", () => {
         month,
         landlordId: 1,
         tenantId: 2,
-        companyId: 3,
         periodStart: period.start,
         periodEnd: period.end,
         rentExclCharges: "1400.00",

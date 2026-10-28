@@ -14,8 +14,7 @@ import { downloadBlob } from "@/api/client";
 import { api } from "@/api/endpoints";
 import type { SignatureDto } from "@/api/types";
 import i18n from "@/i18n";
-import { useCompanyStore } from "@/state/company";
-import { useStatementDraft } from "@/state/statementDraft";
+import { draftScopeKey, useStatementDraft } from "@/state/statementDraft";
 import { useToasts } from "@/state/toasts";
 import { GenerateExpenseStatementPage } from "@/pages/expense-statement/GenerateExpenseStatementPage";
 
@@ -23,6 +22,7 @@ let signatureList: SignatureDto[] = [];
 let signatureError: Error | null = null;
 let signaturePending = false;
 let companiesError: Error | null = null;
+let companyRows: Array<{ id: number; name: string; proRataBase?: string }> = [];
 let expenseItemsError: Error | null = null;
 let templatesData: Array<{ id: number; name: string; version: number }> = [];
 let rentReceiptData: {
@@ -95,8 +95,9 @@ vi.mock("@/api/queries", async (importOriginal) => {
   return {
     ...actual,
     useCompanies: () => ({
-      data: [{ id: 1, name: "HKOF", proRataBase: "100.00" }],
+      data: companyRows,
       isError: companiesError !== null,
+      isSuccess: companiesError === null,
       error: companiesError,
       isPending: false,
       refetch: vi.fn(),
@@ -165,6 +166,7 @@ vi.mock("@/api/queries", async (importOriginal) => {
 });
 
 const MONTH = "2026-01";
+const SCOPE = draftScopeKey(1, MONTH);
 
 const LANDLORD: SignatureDto = {
   id: 3,
@@ -193,11 +195,15 @@ const CEO_V2: SignatureDto = {
   createdAt: "2026-10-23T10:00:00Z",
 };
 
-function renderPage() {
+function renderPage(
+  initialEntry: { pathname: string; state?: unknown } = {
+    pathname: "/generer/note-frais",
+  },
+) {
   const queryClient = new QueryClient();
   render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <GenerateExpenseStatementPage />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -230,7 +236,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     signaturePending = false;
     companiesError = null;
     expenseItemsError = null;
-    useCompanyStore.setState({ activeCompanyId: 1 });
+    companyRows = [{ id: 1, name: "HKOF", proRataBase: "100.00" }];
     templatesData = [];
     rentReceiptData = null;
     activeStatementData = null;
@@ -265,8 +271,9 @@ describe("GenerateExpenseStatementPage signatures", () => {
 
     useStatementDraft.setState({
       month: MONTH,
+      companyId: 1,
       linesByMonth: {
-        [MONTH]: [
+        [SCOPE]: [
           {
             key: "line-gaz",
             itemCode: "gaz",
@@ -284,7 +291,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
       templatesByMonth: {},
       completeByMonth: {},
       primedReceiptByMonth: {},
-      dirtyByMonth: { [MONTH]: true },
+      dirtyByMonth: { [SCOPE]: true },
     });
   });
 
@@ -485,8 +492,9 @@ describe("GenerateExpenseStatementPage signatures", () => {
     });
     useStatementDraft.setState({
       month: MONTH,
+      companyId: 1,
       linesByMonth: {
-        [MONTH]: [
+        [SCOPE]: [
           {
             key: "line-gaz",
             itemCode: "gaz",
@@ -504,7 +512,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
       templatesByMonth: {},
       completeByMonth: {},
       primedReceiptByMonth: {},
-      dirtyByMonth: { [MONTH]: true },
+      dirtyByMonth: { [SCOPE]: true },
     });
     renderPage();
 
@@ -582,7 +590,8 @@ describe("GenerateExpenseStatementPage signatures", () => {
   it("shows the empty draft messages", () => {
     useStatementDraft.setState({
       month: MONTH,
-      linesByMonth: { [MONTH]: [] },
+      companyId: 1,
+      linesByMonth: { [SCOPE]: [] },
       templatesByMonth: {},
       completeByMonth: {},
       primedReceiptByMonth: {},
@@ -595,6 +604,68 @@ describe("GenerateExpenseStatementPage signatures", () => {
     expect(
       screen.getByText("Ajoutez au moins un frais pour générer la note."),
     ).toBeVisible();
+  });
+
+  it("shows the company chip and the editor when only one company exists", () => {
+    renderPage();
+
+    expect(
+      document.querySelector('[data-cy="societe-note-frais"]'),
+    ).toHaveTextContent("HKOF");
+    expect(
+      screen.queryByRole("combobox", { name: "Société concernée" }),
+    ).toBeNull();
+    expect(screen.getByLabelText("Type de frais")).toBeVisible();
+  });
+
+  it("shows an empty state with a settings link when no company exists", () => {
+    companyRows = [];
+    renderPage();
+
+    expect(screen.getByText("Aucune société configurée")).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Configurer une société" }),
+    ).toHaveAttribute("href", "/configuration/entreprise");
+    expect(screen.queryByLabelText("Type de frais")).toBeNull();
+  });
+
+  it("requires an explicit company before rendering the panes", async () => {
+    companyRows = [
+      { id: 1, name: "HKOF" },
+      { id: 2, name: "Autre SARL" },
+    ];
+    renderPage();
+
+    const select = screen.getByRole("combobox", {
+      name: "Société concernée",
+    });
+    expect(select).toHaveValue("");
+    expect(
+      within(select).getByRole("option", { name: "Choisir une société" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Type de frais")).toBeNull();
+
+    await userEvent.setup().selectOptions(select, "2");
+
+    expect(await screen.findByLabelText("Type de frais")).toBeVisible();
+    expect(useStatementDraft.getState().companyId).toBe(2);
+  });
+
+  it("opens the company carried by the History reload", async () => {
+    companyRows = [
+      { id: 1, name: "HKOF" },
+      { id: 2, name: "Autre SARL" },
+    ];
+    renderPage({
+      pathname: "/generer/note-frais",
+      state: { companyId: 2 },
+    });
+
+    await waitFor(() => expect(useStatementDraft.getState().companyId).toBe(2));
+    expect(
+      screen.getByRole("combobox", { name: "Société concernée" }),
+    ).toHaveValue("2");
+    expect(screen.getByLabelText("Type de frais")).toBeVisible();
   });
 
   it("shows the company and expense item loading errors with retries", async () => {

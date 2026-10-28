@@ -9,7 +9,6 @@ import type {
   StatementDto,
 } from "@/api/types";
 import i18n from "@/i18n";
-import { useCompanyStore } from "@/state/company";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
 import { useStatementDraft } from "@/state/statementDraft";
 import { useToasts } from "@/state/toasts";
@@ -294,7 +293,16 @@ function readyQuery<T>(data: T[]): QueryLike<T[]> {
 
 function LocationProbe() {
   const location = useLocation();
-  return <div data-cy="location">{location.pathname}</div>;
+  const companyId = (location.state as { companyId?: number } | null)
+    ?.companyId;
+  return (
+    <div
+      data-cy="location"
+      data-company-id={companyId === undefined ? "" : String(companyId)}
+    >
+      {location.pathname}
+    </div>
+  );
 }
 
 function renderPage() {
@@ -308,6 +316,14 @@ function renderPage() {
 
 function currentPath(): string | null {
   return document.querySelector('[data-cy="location"]')?.textContent ?? null;
+}
+
+function reloadedCompanyId(): string | null {
+  return (
+    document
+      .querySelector('[data-cy="location"]')
+      ?.getAttribute("data-company-id") ?? null
+  );
 }
 
 function columnOf(month: string, kind: "quittance" | "note"): HTMLElement {
@@ -337,6 +353,7 @@ function resetDrafts() {
   });
   useStatementDraft.setState({
     month: "2025-12",
+    companyId: 1,
     linesByMonth: {},
     templatesByMonth: {},
     completeByMonth: {},
@@ -356,7 +373,6 @@ beforeEach(() => {
   leasesState = readyQuery([]);
   statementsCompanyIds = [];
   resetDrafts();
-  useCompanyStore.setState({ activeCompanyId: 1 });
   useToasts.setState({ toasts: [] });
 });
 
@@ -653,7 +669,7 @@ describe("HistoryPage", () => {
     expect(draft.month).toBe("2025-12");
   });
 
-  it("pins the statement company before reloading it into the draft", async () => {
+  it("carries the statement company to the generation page", async () => {
     companiesState = readyQuery([
       { id: 1, name: "HKOF" },
       { id: 2, name: "HKOF Annexe" },
@@ -666,7 +682,8 @@ describe("HistoryPage", () => {
 
     await confirmStatementReload();
 
-    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
+    expect(reloadedCompanyId()).toBe("2");
+    expect(useStatementDraft.getState().companyId).toBe(2);
   });
 
   it("falls back to the statement lease company when the statement has none", async () => {
@@ -682,10 +699,11 @@ describe("HistoryPage", () => {
 
     await confirmStatementReload();
 
-    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
+    expect(reloadedCompanyId()).toBe("2");
+    expect(useStatementDraft.getState().companyId).toBe(2);
   });
 
-  it("keeps the active company when neither the statement nor its lease names one", async () => {
+  it("navigates without a company when neither the statement nor its lease names one", async () => {
     companiesState = readyQuery([
       { id: 1, name: "HKOF" },
       { id: 2, name: "HKOF Annexe" },
@@ -698,7 +716,8 @@ describe("HistoryPage", () => {
 
     await confirmStatementReload();
 
-    expect(useCompanyStore.getState().activeCompanyId).toBe(1);
+    expect(reloadedCompanyId()).toBe("");
+    expect(useStatementDraft.getState().companyId).toBe(1);
   });
 
   it("shows a French empty state in a column without a generated document and no generate buttons", async () => {

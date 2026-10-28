@@ -35,6 +35,10 @@ public class Person {
     @Column(name = "address")
     private String address;
 
+    /** Optional issue place printed after "Fait à" on this landlord's rent receipts. */
+    @Column(name = "issue_place")
+    private String issuePlace;
+
     @Column(name = "deleted", nullable = false)
     private boolean deleted;
 
@@ -66,6 +70,14 @@ public class Person {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getIssuePlace() {
+        return issuePlace;
+    }
+
+    public void setIssuePlace(String issuePlace) {
+        this.issuePlace = issuePlace;
     }
 
     public boolean isDeleted() {
