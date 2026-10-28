@@ -693,7 +693,7 @@ export const fr = {
       leaseTab: {
         title: "Baux de la société",
         description:
-          "Une société peut être locataire de plusieurs baux. « Modifier les frais » ouvre les postes du bail ; les frais généraux de la société restent accessibles depuis l’en-tête.",
+          "Une société peut être locataire de plusieurs baux. « Modifier les frais » ouvre les postes du bail ; les postes hérités au niveau de la société restent visibles et modifiables dans chaque bail.",
         columns: {
           address: "Adresse",
           landlord: "Bailleur",
@@ -702,15 +702,14 @@ export const fr = {
           actions: "Actions",
         },
         add: "Ajouter un bail",
-        generalExpenses: "Frais généraux",
         filterPlaceholder: "Filtrer les baux…",
         loading: "Chargement des baux…",
         empty:
           "Aucun bail pour cette société. Ajoutez le premier bail avec « Ajouter un bail ».",
         addressFallback: "Bail sans adresse",
         expenses: "Modifier les frais",
+        addExpenses: "Ajouter des frais",
         expensesTitle: "Frais du bail",
-        generalExpensesTitle: "Frais généraux",
         edit: "Modifier le bail",
       },
     },

@@ -154,6 +154,34 @@ export function useExpenseItems(
   });
 }
 
+/**
+ * Presence of expense items for several leases, one cached query per lease.
+ * It reuses `queryKeys.expenseItems` so the grid row and the scoped dialog
+ * share the same cache entry. `undefined` means pending or failed, so only a
+ * successful empty response tells the row that the lease has no item.
+ */
+export function useLeaseExpenseItemPresence(
+  companyId: number,
+  leaseIds: number[],
+): ReadonlyMap<number, boolean | undefined> {
+  const results = useQueries({
+    queries: leaseIds.map((leaseId) => ({
+      queryKey: queryKeys.expenseItems(companyId, true, leaseId),
+      queryFn: () => api.expenseItems.list(companyId, true, leaseId),
+      staleTime: 30_000,
+    })),
+  });
+  const presence = new Map<number, boolean | undefined>();
+  leaseIds.forEach((leaseId, index) => {
+    const result = results[index];
+    presence.set(
+      leaseId,
+      result?.isSuccess ? (result.data?.length ?? 0) > 0 : undefined,
+    );
+  });
+  return presence;
+}
+
 export function useTemplates(type: TemplateType) {
   return useQuery({
     queryKey: queryKeys.templates(type),

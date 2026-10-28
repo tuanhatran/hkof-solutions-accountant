@@ -2,11 +2,11 @@
 
 @layer components {
   .company-lease-tab-list-item {
-    @apply flex flex-col;
+    @apply border-b border-line/70 last:border-b-0;
   }
 
   .company-lease-tab-item {
-    @apply flex flex-col gap-1 rounded-xl border border-line bg-surface px-4 py-3 md:grid md:min-h-9 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_6.5rem_auto] md:items-center md:gap-3 md:py-1.5;
+    @apply flex flex-col gap-1 bg-surface px-4 py-3 transition-colors hover:bg-paper/40 focus-within:bg-paper/60 md:grid md:min-h-11 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_6.5rem_auto] md:items-center md:gap-3 md:py-0;
   }
 
   .company-lease-tab-item-address {
@@ -17,11 +17,19 @@
     @apply truncate text-xs text-ink-soft md:text-sm;
   }
 
+  .company-lease-tab-item-cell {
+    @apply flex items-center justify-between gap-3 md:block;
+  }
+
+  .company-lease-tab-item-label {
+    @apply text-[11px] font-medium uppercase tracking-wide text-ink-soft md:hidden;
+  }
+
   .company-lease-tab-item-amount {
-    @apply text-xs text-ink-soft;
+    @apply text-xs text-ink-soft md:text-sm md:text-ink;
   }
 
   .company-lease-tab-item-actions {
-    @apply flex flex-wrap items-center justify-end gap-1;
+    @apply flex flex-wrap items-center justify-end gap-1 border-t border-line/70 pt-2 md:border-t-0 md:pt-0;
   }
 }

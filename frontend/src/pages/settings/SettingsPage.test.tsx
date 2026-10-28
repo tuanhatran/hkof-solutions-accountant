@@ -189,6 +189,8 @@ describe("SettingsPage tabs", () => {
     vi.mocked(api.companies.create).mockReset();
     vi.mocked(api.companies.delete).mockReset();
     vi.mocked(api.employees.create).mockReset();
+    vi.mocked(api.expenseItems.list).mockReset();
+    vi.mocked(api.expenseItems.list).mockResolvedValue([]);
     useToasts.setState({ toasts: [] });
   });
 
@@ -389,6 +391,12 @@ describe("SettingsPage tabs", () => {
       "12 rue des Lilas, 75011 Paris",
     );
     expect(queryByCy("bail-societe-5")).not.toHaveAttribute("aria-expanded");
+    expect(queryByCy("btn-frais-generaux-societe")).toBeNull();
+    await waitFor(() =>
+      expect(queryByCy("btn-modifier-frais-bail-societe-5")).toHaveTextContent(
+        "Ajouter des frais",
+      ),
+    );
 
     // The row itself is inert: only "Modifier les frais" opens the dialog.
     await user.click(queryByCy("bail-societe-5") as Element);
@@ -405,17 +413,40 @@ describe("SettingsPage tabs", () => {
     expect(api.companies.update).not.toHaveBeenCalled();
   });
 
-  it("opens the company-level Frais généraux dialog", async () => {
+  it("sorts the lease grid from the column headers", async () => {
     renderPage();
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
-    await user.click(queryByCy("btn-frais-generaux-societe") as Element);
 
-    expect(queryByCy("dialogue-frais-generaux-societe")).not.toBeNull();
-    expect(
-      screen.getByRole("heading", { name: "Frais généraux" }),
-    ).toBeVisible();
+    const header = (name: string) =>
+      document.querySelector(
+        `[data-cy="entetes-baux-societe"] [role="columnheader"] [data-cy="${name}"]`,
+      )?.parentElement;
+    expect(header("tri-adresse-baux-societe")).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
+    expect(header("tri-loyer-baux-societe")).toHaveAttribute(
+      "aria-sort",
+      "none",
+    );
+
+    await user.click(queryByCy("tri-loyer-baux-societe") as Element);
+    expect(header("tri-loyer-baux-societe")).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
+    expect(header("tri-adresse-baux-societe")).toHaveAttribute(
+      "aria-sort",
+      "none",
+    );
+
+    await user.click(queryByCy("tri-loyer-baux-societe") as Element);
+    expect(header("tri-loyer-baux-societe")).toHaveAttribute(
+      "aria-sort",
+      "descending",
+    );
     expect(api.companies.update).not.toHaveBeenCalled();
   });
 
@@ -589,7 +620,7 @@ describe("SettingsPage tabs", () => {
     expect(queryByCy("select-societe")).toBeNull();
   });
 
-  it("shows the empty lease state and keeps Frais généraux for a company without a lease", async () => {
+  it("shows the empty lease state without a filter or an expenses header action", async () => {
     companiesState = readyQuery([
       COMPANY,
       { ...OTHER, proRataBase: undefined },
@@ -604,9 +635,11 @@ describe("SettingsPage tabs", () => {
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
 
     expect(queryByCy("liste-baux-societe-vide")).not.toBeNull();
-    await user.click(queryByCy("btn-frais-generaux-societe") as Element);
-    expect(queryByCy("dialogue-frais-generaux-societe")).not.toBeNull();
-    expect(screen.getByText(/Aucun poste configuré/)).toBeVisible();
+    expect(queryByCy("filtre-baux-societe")).toBeNull();
+    expect(queryByCy("filtre-compteur-baux-societe")).toBeNull();
+    expect(queryByCy("tri-compact-baux-societe")).toBeNull();
+    expect(queryByCy("btn-frais-generaux-societe")).toBeNull();
+    expect(queryByCy("dialogue-frais-generaux-societe")).toBeNull();
   });
 
   it("lists the company's leases with edit-expenses and edit-lease actions only", async () => {

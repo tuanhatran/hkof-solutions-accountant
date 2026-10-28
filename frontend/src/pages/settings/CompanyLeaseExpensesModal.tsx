@@ -5,10 +5,10 @@ import { Dialog } from "@/components/ui/Dialog";
 import { ExpenseItemsManager } from "./ExpenseItemsManager";
 
 /**
- * Single expenses window of the "Baux & Frais" tab. It is scoped either to a
- * company lease or, with `lease = null`, to the company-level "Frais généraux".
- * The list and the item form swap inside this same dialog; the header title and
- * the selector suffix stay stable while the view changes.
+ * Single expenses window of the "Baux & Frais" tab, always scoped to a
+ * company lease. The list and the item form swap inside this same dialog; the
+ * header title and the lease address stay stable while the view changes.
+ * Company-level items with `leaseId = null` remain inherited in this scope.
  */
 export function CompanyLeaseExpensesModal({
   company,
@@ -16,32 +16,21 @@ export function CompanyLeaseExpensesModal({
   onClose,
 }: {
   company: CompanyDto;
-  lease: LeaseDto | null;
+  lease: LeaseDto;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const leaseId = lease?.id ?? null;
-  const defaultProRata = lease
-    ? (lease.proRataBase ?? company.proRataBase ?? "100.00")
-    : (company.proRataBase ?? "100.00");
+  const defaultProRata = lease.proRataBase ?? company.proRataBase ?? "100.00";
 
   return (
     <Dialog
       open
       wide
-      title={
-        lease
-          ? t("settings.company.leaseTab.expensesTitle")
-          : t("settings.company.leaseTab.generalExpensesTitle")
-      }
+      title={t("settings.company.leaseTab.expensesTitle")}
       onClose={onClose}
-      dataCy={
-        lease
-          ? "dialogue-frais-bail-societe"
-          : "dialogue-frais-generaux-societe"
-      }
+      dataCy="dialogue-frais-bail-societe"
     >
-      {lease?.propertyAddress ? (
+      {lease.propertyAddress ? (
         <p className="company-lease-expenses-address">
           {lease.propertyAddress}
         </p>
@@ -49,7 +38,7 @@ export function CompanyLeaseExpensesModal({
       <ExpenseItemsManager
         embedded
         companyId={company.id as number}
-        leaseId={leaseId}
+        leaseId={lease.id ?? null}
         defaultProRata={defaultProRata}
       />
     </Dialog>

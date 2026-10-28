@@ -37,6 +37,81 @@ describe("Settings", () => {
     waitForText('[data-cy="info-societe"]', "HKOF E2E");
   });
 
+  it("sorts the company leases from the headers and filters from the section header", () => {
+    cy.visit("/configuration/entreprise");
+    cy.get('[data-cy="info-societe"]', { timeout: 20_000 }).should(
+      "be.visible",
+    );
+    cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+    cy.get('[data-cy^="bail-societe-"]', { timeout: 20_000 }).should("exist");
+
+    // No list toolbar and no company-level expenses action on this tab.
+    cy.get('[data-cy="tri-baux-societe"]').should("not.exist");
+    cy.get('[data-cy="tri-direction-baux-societe"]').should("not.exist");
+    cy.get('[data-cy="btn-frais-generaux-societe"]').should("not.exist");
+
+    // Address is the default ascending sort; the active column toggles.
+    cy.get('[data-cy="tri-adresse-baux-societe"]')
+      .parent()
+      .should("have.attr", "aria-sort", "ascending");
+    cy.get('[data-cy="tri-loyer-baux-societe"]')
+      .parent()
+      .should("have.attr", "aria-sort", "none");
+    cy.get('[data-cy="tri-loyer-baux-societe"]').click();
+    cy.get('[data-cy="tri-loyer-baux-societe"]')
+      .parent()
+      .should("have.attr", "aria-sort", "ascending");
+    cy.get('[data-cy="tri-adresse-baux-societe"]')
+      .parent()
+      .should("have.attr", "aria-sort", "none");
+    cy.get('[data-cy="tri-loyer-baux-societe"]').click();
+    cy.get('[data-cy="tri-loyer-baux-societe"]')
+      .parent()
+      .should("have.attr", "aria-sort", "descending");
+
+    // The filter and its live count stay in the section header.
+    cy.get('[data-cy="filtre-compteur-baux-societe"]').should(
+      "contain.text",
+      "1 sur 1",
+    );
+    cy.get('[data-cy="filtre-baux-societe"]').type("introuvable");
+    cy.get('[data-cy="filtre-compteur-baux-societe"]').should(
+      "contain.text",
+      "0 sur 1",
+    );
+    cy.get('[data-cy="aucun-resultat-baux-societe"]').should("be.visible");
+    cy.get('[data-cy="filtre-effacer-baux-societe"]').click();
+    cy.get('[data-cy="filtre-compteur-baux-societe"]').should(
+      "contain.text",
+      "1 sur 1",
+    );
+  });
+
+  it("keeps the lease sort reachable on mobile", () => {
+    cy.viewport(390, 844);
+    cy.visit("/configuration/entreprise");
+    cy.get('[data-cy="info-societe"]', { timeout: 20_000 }).should(
+      "be.visible",
+    );
+    cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+
+    cy.get('[data-cy="tri-compact-baux-societe"]', { timeout: 20_000 })
+      .should("be.visible")
+      .select("charges");
+    cy.get('[data-cy="tri-compact-direction-baux-societe"]')
+      .should("have.attr", "aria-label", "Tri croissant")
+      .click();
+    cy.get('[data-cy="tri-compact-direction-baux-societe"]').should(
+      "have.attr",
+      "aria-label",
+      "Tri décroissant",
+    );
+    cy.get('[data-cy="tri-compact-baux-societe"]').should(
+      "have.value",
+      "charges",
+    );
+  });
+
   it("edits the seeded lease amounts in the LMNP Baux et adresses tab", () => {
     cy.visit("/configuration/lmnp");
     cy.get('[data-cy="onglet-baux"]').should(

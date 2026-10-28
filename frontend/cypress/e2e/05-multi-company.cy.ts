@@ -348,28 +348,48 @@ function createAnnexeCompany(): void {
             .and("not.contain.text", "Bail actif")
             .and("not.have.attr", "aria-expanded");
 
-          // The grid follows the address sort only: no active pinning.
+          // The grid follows the address sort by default: no active pinning.
           cy.get(".company-lease-tab-item")
             .first()
             .should("have.attr", "data-cy", `bail-societe-${leaseId}`);
 
-          // The header opens the company-level expenses (leaseId = null)
+          // No list toolbar and no company-level expenses action remain.
+          cy.get('[data-cy="tri-baux-societe"]').should("not.exist");
+          cy.get('[data-cy="tri-direction-baux-societe"]').should("not.exist");
+          cy.get('[data-cy="btn-frais-generaux-societe"]').should("not.exist");
+
+          // Address is the default ascending sort; an inactive column starts
+          // ascending, the active column toggles.
+          cy.get('[data-cy="tri-adresse-baux-societe"]')
+            .parent()
+            .should("have.attr", "aria-sort", "ascending");
+          cy.get('[data-cy="tri-loyer-baux-societe"]').click();
+          cy.get('[data-cy="tri-loyer-baux-societe"]')
+            .parent()
+            .should("have.attr", "aria-sort", "ascending");
+          cy.get(".company-lease-tab-item")
+            .first()
+            .should("have.attr", "data-cy", `bail-societe-${secondLeaseId}`);
+          cy.get('[data-cy="tri-loyer-baux-societe"]').click();
+          cy.get('[data-cy="tri-loyer-baux-societe"]')
+            .parent()
+            .should("have.attr", "aria-sort", "descending");
+          cy.get(".company-lease-tab-item")
+            .first()
+            .should("have.attr", "data-cy", `bail-societe-${leaseId}`);
+          cy.get('[data-cy="tri-adresse-baux-societe"]').click();
+
+          // Both fresh leases have no expense item yet.
+          cy.get(
+            `[data-cy="btn-modifier-frais-bail-societe-${leaseId}"]`,
+          ).should("contain.text", "Ajouter des frais");
+          cy.get(
+            `[data-cy="btn-modifier-frais-bail-societe-${secondLeaseId}"]`,
+          ).should("contain.text", "Ajouter des frais");
+
+          // "Modifier les frais" scopes the dialog to the clicked lease,
           // without writing the lease on the company.
           cy.intercept("PUT", "/api/companies/*").as("updateCompany");
-          cy.get('[data-cy="btn-frais-generaux-societe"]').click();
-          cy.get('[data-cy="dialogue-frais-generaux-societe"]')
-            .should("be.visible")
-            .and("contain.text", "Frais généraux");
-          cy.get('[role="dialog"]').should("have.length", 1);
-          cy.get("@updateCompany.all").should("have.length", 0);
-          cy.get(
-            '[data-cy="dialogue-frais-generaux-societe"] button[aria-label="Fermer"]',
-          ).click();
-          cy.get('[data-cy="dialogue-frais-generaux-societe"]').should(
-            "not.exist",
-          );
-
-          // "Modifier les frais" scopes the dialog to the clicked lease.
           cy.get(
             `[data-cy="btn-modifier-frais-bail-societe-${secondLeaseId}"]`,
           ).click();
@@ -460,6 +480,15 @@ function createAnnexeExpenseItem(companyId: number): void {
   cy.get('[data-cy="btn-enregistrer-poste"]').click();
   cy.contains("td", "Gaz annexe", { timeout: 20_000 }).should("be.visible");
   closeLeaseExpenses();
+
+  // The decorated lease now offers "Modifier les frais"; its itemless
+  // sibling still offers "Ajouter des frais".
+  cy.get('[data-cy^="btn-modifier-frais-bail-societe-"]')
+    .eq(0)
+    .should("contain.text", "Modifier les frais");
+  cy.get('[data-cy^="btn-modifier-frais-bail-societe-"]')
+    .eq(1)
+    .should("contain.text", "Ajouter des frais");
 }
 
 function assertSettingsIsolation(

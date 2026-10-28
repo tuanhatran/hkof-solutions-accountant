@@ -1,12 +1,16 @@
 import "./CompanyLeaseTab.css";
-import { KeyRound, Plus, ReceiptText } from "lucide-react";
+import { KeyRound, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
-import { useLeases, usePersons } from "@/api/queries";
+import {
+  useLeaseExpenseItemPresence,
+  useLeases,
+  usePersons,
+} from "@/api/queries";
 import type { CompanyDto, LeaseDto } from "@/api/types";
 import { LeaseForm } from "@/components/settings/LeaseForm";
-import { ListSearch, ListToolbar } from "@/components/settings/ListToolbar";
+import { ListSearch } from "@/components/settings/ListToolbar";
 import {
   EmptyState,
   SectionHeader,
@@ -16,14 +20,18 @@ import { ErrorState, LoadingState } from "@/components/ui/States";
 import { useListQuery } from "@/hooks/useListQuery";
 import { CompanyLeaseExpensesModal } from "./CompanyLeaseExpensesModal";
 import { CompanyLeaseRow } from "./CompanyLeaseRow";
+import {
+  CompanyLeaseMobileSort,
+  CompanyLeaseSortHeader,
+} from "./CompanyLeaseSortHeader";
 
 /**
  * "Baux & Frais" tab: the leases owned by the company as a five-column grid
  * (address, landlord, rent, charges, actions). There is no active-lease notion
- * here: the list follows the toolbar sort only, no row writes
- * `company.leaseId`, and every row stays inert. "Modifier les frais" opens the
- * scoped expenses dialog, "Frais généraux" the company-level one, and
- * "Modifier le bail" the unchanged LMNP LeaseForm.
+ * here: sorting lives in the column headers (with a compact mobile control),
+ * no row writes `company.leaseId`, and every row stays inert. "Modifier les
+ * frais" opens the scoped expenses dialog and "Modifier le bail" the unchanged
+ * LMNP LeaseForm.
  */
 export function CompanyLeaseTab({
   company,
@@ -37,7 +45,6 @@ export function CompanyLeaseTab({
   const persons = usePersons();
   const [addingLease, setAddingLease] = useState(false);
   const [editingLease, setEditingLease] = useState<LeaseDto | null>(null);
-  const [expensesOpen, setExpensesOpen] = useState(false);
   const [expensesLease, setExpensesLease] = useState<LeaseDto | null>(null);
 
   const companyLeases = useMemo(
@@ -47,16 +54,34 @@ export function CompanyLeaseTab({
       ),
     [leases.data, company.id],
   );
+  const leaseIds = useMemo(
+    () => companyLeases.map((lease) => lease.id as number),
+    [companyLeases],
+  );
+  const expensePresence = useLeaseExpenseItemPresence(
+    company.id as number,
+    leaseIds,
+  );
+
   const listQuery = useListQuery<LeaseDto>({
     items: companyLeases,
     searchText: (lease) =>
       [lease.propertyAddress, lease.landlordName].filter(Boolean).join(" "),
     sorts: [
       {
-        value: "lease",
+        value: "address",
         compare: (left, right) =>
           (left.propertyAddress ?? "").localeCompare(
             right.propertyAddress ?? "",
+            "fr",
+            { sensitivity: "base" },
+          ),
+      },
+      {
+        value: "landlord",
+        compare: (left, right) =>
+          (left.landlordName ?? "").localeCompare(
+            right.landlordName ?? "",
             "fr",
             { sensitivity: "base" },
           ),
@@ -73,17 +98,19 @@ export function CompanyLeaseTab({
           Number(left.charges ?? 0) - Number(right.charges ?? 0),
       },
     ],
-    defaultSort: "lease",
+    defaultSort: "address",
   });
 
-  function openExpenses(lease: LeaseDto | null) {
-    setExpensesLease(lease);
-    setExpensesOpen(true);
-  }
-
-  function closeExpenses() {
-    setExpensesOpen(false);
-    setExpensesLease(null);
+  /** An inactive column starts ascending, the active column toggles. */
+  function sortBy(column: string) {
+    if (listQuery.sort === column) {
+      listQuery.toggleDirection();
+      return;
+    }
+    listQuery.setSort(column);
+    if (listQuery.direction !== "asc") {
+      listQuery.toggleDirection();
+    }
   }
 
   return (
@@ -96,26 +123,35 @@ export function CompanyLeaseTab({
           action={
             <div className="company-lease-tab-header-actions">
               {companyLeases.length > 0 ? (
-                <div className="company-lease-tab-header-search">
-                  <ListSearch
-                    list="baux-societe"
-                    placeholder={t(
-                      "settings.company.leaseTab.filterPlaceholder",
-                    )}
-                    query={listQuery.query}
-                    onQueryChange={listQuery.setQuery}
+                <>
+                  <div className="company-lease-tab-header-search">
+                    <ListSearch
+                      list="baux-societe"
+                      placeholder={t(
+                        "settings.company.leaseTab.filterPlaceholder",
+                      )}
+                      query={listQuery.query}
+                      onQueryChange={listQuery.setQuery}
+                    />
+                  </div>
+                  <span
+                    className="company-lease-tab-count"
+                    aria-live="polite"
+                    data-cy="filtre-compteur-baux-societe"
+                  >
+                    {t("settings.list.count", {
+                      visible: listQuery.visible.length,
+                      total: listQuery.total,
+                    })}
+                  </span>
+                  <CompanyLeaseMobileSort
+                    sort={listQuery.sort}
+                    direction={listQuery.direction}
+                    onSort={sortBy}
+                    onToggleDirection={listQuery.toggleDirection}
                   />
-                </div>
+                </>
               ) : null}
-              <Button
-                variant="secondary"
-                small
-                icon={<ReceiptText size={14} />}
-                onClick={() => openExpenses(null)}
-                data-cy="btn-frais-generaux-societe"
-              >
-                {t("settings.company.leaseTab.generalExpenses")}
-              </Button>
               <Button
                 variant="primary"
                 small
@@ -144,33 +180,6 @@ export function CompanyLeaseTab({
             />
           ) : (
             <>
-              <ListToolbar
-                list="baux-societe"
-                placeholder={t("settings.company.leaseTab.filterPlaceholder")}
-                query={listQuery.query}
-                onQueryChange={listQuery.setQuery}
-                sort={listQuery.sort}
-                onSortChange={listQuery.setSort}
-                direction={listQuery.direction}
-                onToggleDirection={listQuery.toggleDirection}
-                sortOptions={[
-                  {
-                    value: "lease",
-                    label: t("settings.company.leaseTab.columns.address"),
-                  },
-                  {
-                    value: "rent",
-                    label: t("settings.company.leaseTab.columns.rent"),
-                  },
-                  {
-                    value: "charges",
-                    label: t("settings.company.leaseTab.columns.charges"),
-                  },
-                ]}
-                visible={listQuery.visible.length}
-                total={listQuery.total}
-                showSearch={false}
-              />
               {listQuery.visible.length === 0 ? (
                 <EmptyState
                   text={t("settings.list.noMatch", {
@@ -179,38 +188,26 @@ export function CompanyLeaseTab({
                   dataCy="aucun-resultat-baux-societe"
                 />
               ) : (
-                <>
-                  <div
-                    className="company-lease-tab-headers hidden md:grid"
-                    data-cy="entetes-baux-societe"
-                  >
-                    <span>
-                      {t("settings.company.leaseTab.columns.address")}
-                    </span>
-                    <span>
-                      {t("settings.company.leaseTab.columns.landlord")}
-                    </span>
-                    <span className="company-lease-tab-headers-amount">
-                      {t("settings.company.leaseTab.columns.rent")}
-                    </span>
-                    <span className="company-lease-tab-headers-amount">
-                      {t("settings.company.leaseTab.columns.charges")}
-                    </span>
-                    <span className="company-lease-tab-headers-actions">
-                      {t("settings.company.leaseTab.columns.actions")}
-                    </span>
-                  </div>
+                <div className="company-lease-tab-table">
+                  <CompanyLeaseSortHeader
+                    sort={listQuery.sort}
+                    direction={listQuery.direction}
+                    onSort={sortBy}
+                  />
                   <ul className="company-lease-tab-list">
                     {listQuery.visible.map((lease) => (
                       <CompanyLeaseRow
                         key={lease.id}
                         lease={lease}
+                        showAddExpenses={
+                          expensePresence.get(lease.id as number) === false
+                        }
                         onEdit={() => setEditingLease(lease)}
-                        onExpenses={() => openExpenses(lease)}
+                        onExpenses={() => setExpensesLease(lease)}
                       />
                     ))}
                   </ul>
-                </>
+                </div>
               )}
             </>
           )}
@@ -236,11 +233,11 @@ export function CompanyLeaseTab({
           onClose={() => setEditingLease(null)}
         />
       ) : null}
-      {expensesOpen ? (
+      {expensesLease ? (
         <CompanyLeaseExpensesModal
           company={company}
           lease={expensesLease}
-          onClose={closeExpenses}
+          onClose={() => setExpensesLease(null)}
         />
       ) : null}
     </div>

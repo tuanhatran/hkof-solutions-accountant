@@ -61,10 +61,7 @@ const ITEM: ExpenseItemDto = {
   multipleLinesAllowed: false,
 };
 
-function renderModal(
-  lease: LeaseDto | null = LEASE,
-  company: CompanyDto = COMPANY,
-) {
+function renderModal(lease: LeaseDto = LEASE, company: CompanyDto = COMPANY) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -98,20 +95,6 @@ describe("CompanyLeaseExpensesModal", () => {
     expect(dialog).toHaveTextContent("8 impasse des Acacias, 69003 Lyon");
     await waitFor(() =>
       expect(api.expenseItems.list).toHaveBeenCalledWith(1, true, 6),
-    );
-    expect(await screen.findByText("Gaz")).toBeVisible();
-  });
-
-  it("opens the same dialog for company-level expenses with leaseId null", async () => {
-    renderModal(null);
-
-    const dialog = screen.getByRole("dialog", { name: "Frais généraux" });
-    expect(dialog).toHaveAttribute(
-      "data-cy",
-      "dialogue-frais-generaux-societe",
-    );
-    await waitFor(() =>
-      expect(api.expenseItems.list).toHaveBeenCalledWith(1, true, null),
     );
     expect(await screen.findByText("Gaz")).toBeVisible();
   });

@@ -671,7 +671,7 @@ export const en = {
       leaseTab: {
         title: "Company leases",
         description:
-          "A company can be the tenant of several leases. “Edit expenses” opens the lease expense items; the company's general expenses stay available from the header.",
+          "A company can be the tenant of several leases. “Edit expenses” opens the lease expense items; items inherited at company level stay visible and editable in each lease.",
         columns: {
           address: "Address",
           landlord: "Landlord",
@@ -680,15 +680,14 @@ export const en = {
           actions: "Actions",
         },
         add: "Add a lease",
-        generalExpenses: "General expenses",
         filterPlaceholder: "Filter leases…",
         loading: "Loading leases…",
         empty:
           "No lease for this company. Add the first lease with “Add a lease”.",
         addressFallback: "Lease without address",
         expenses: "Edit expenses",
+        addExpenses: "Add expenses",
         expensesTitle: "Lease expenses",
-        generalExpensesTitle: "General expenses",
         edit: "Edit lease",
       },
     },

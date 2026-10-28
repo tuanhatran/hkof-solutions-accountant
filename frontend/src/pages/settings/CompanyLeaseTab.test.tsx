@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
-import type { CompanyDto, LeaseDto } from "@/api/types";
+import type { CompanyDto, ExpenseItemDto, LeaseDto } from "@/api/types";
 import i18n from "@/i18n";
 import { useToasts } from "@/state/toasts";
 import { CompanyLeaseTab } from "./CompanyLeaseTab";
@@ -86,6 +86,18 @@ const LEASE7: LeaseDto = {
   propertyAddress: "5 rue de l'Autre, 75004 Paris",
   rentExclCharges: "500.00",
   charges: "0.00",
+};
+
+const EXPENSE_ITEM: ExpenseItemDto = {
+  id: 1,
+  code: "gaz",
+  label: "Gaz",
+  supplier: "EDF",
+  proRataPct: "25.00",
+  periodicity: "MONTHLY",
+  sortOrder: 1,
+  active: true,
+  multipleLinesAllowed: false,
 };
 
 function queryByCy(cy: string): Element | null {
@@ -209,7 +221,6 @@ describe("CompanyLeaseTab", () => {
     expect(queryByCy("dialogue-frais-bail-societe")).toBeNull();
     expect(queryByCy("dialogue-frais-generaux-societe")).toBeNull();
     expect(api.companies.update).not.toHaveBeenCalled();
-    expect(api.expenseItems.list).not.toHaveBeenCalled();
   });
 
   it("opens the expenses dialog scoped to the lease and restores focus on Escape", async () => {
@@ -237,24 +248,6 @@ describe("CompanyLeaseTab", () => {
 
     expect(queryByCy("dialogue-frais-bail-societe")).toBeNull();
     expect(opener).toHaveFocus();
-  });
-
-  it("opens the Frais généraux dialog with the company-level scope", async () => {
-    renderTab();
-    const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
-
-    await user.click(queryByCy("btn-frais-generaux-societe") as HTMLElement);
-
-    const dialog = queryByCy("dialogue-frais-generaux-societe") as HTMLElement;
-    expect(dialog).not.toBeNull();
-    expect(
-      within(dialog).getByRole("heading", { name: "Frais généraux" }),
-    ).toBeVisible();
-    await waitFor(() =>
-      expect(api.expenseItems.list).toHaveBeenCalledWith(1, true, null),
-    );
-    expect(api.companies.update).not.toHaveBeenCalled();
   });
 
   it("uses the lease then company then 100 % pro-rata in the dialog", async () => {
@@ -316,17 +309,148 @@ describe("CompanyLeaseTab", () => {
     expect(queryByCy("dialogue-frais-bail-societe")).not.toBeNull();
   });
 
-  it("orders the leases by the chosen sort only, ignoring company.leaseId", async () => {
+  it("sorts from the column headers: inactive starts ascending, active toggles", async () => {
     renderTab();
     const user = userEvent.setup();
     await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
 
     expect(rowOrder()).toEqual([5, 6]);
 
-    await user.click(screen.getByRole("button", { name: "Tri croissant" }));
+    await user.click(screen.getByRole("button", { name: "Loyer" }));
 
     expect(rowOrder()).toEqual([6, 5]);
+    expect(
+      within(queryByCy("entetes-baux-societe") as HTMLElement).getByRole(
+        "columnheader",
+        { name: "Loyer" },
+      ),
+    ).toHaveAttribute("aria-sort", "ascending");
+
+    await user.click(screen.getByRole("button", { name: "Loyer" }));
+
+    expect(rowOrder()).toEqual([5, 6]);
+    expect(
+      within(queryByCy("entetes-baux-societe") as HTMLElement).getByRole(
+        "columnheader",
+        { name: "Loyer" },
+      ),
+    ).toHaveAttribute("aria-sort", "descending");
+
+    // An inactive column always starts ascending, even after a descending sort.
+    await user.click(screen.getByRole("button", { name: "Adresse" }));
+
+    expect(rowOrder()).toEqual([5, 6]);
+    const headers = queryByCy("entetes-baux-societe") as HTMLElement;
+    expect(
+      within(headers).getByRole("columnheader", { name: "Adresse" }),
+    ).toHaveAttribute("aria-sort", "ascending");
+    expect(
+      within(headers).getByRole("columnheader", { name: "Loyer" }),
+    ).toHaveAttribute("aria-sort", "none");
     expect(api.companies.update).not.toHaveBeenCalled();
+  });
+
+  it("sorts by landlord with the French base locale", async () => {
+    vi.mocked(api.leases.list).mockResolvedValue([
+      { ...LEASE5, landlordName: "Élodie" },
+      { ...LEASE6, landlordName: "alice" },
+    ]);
+    renderTab();
+    const user = userEvent.setup();
+    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+
+    await user.click(screen.getByRole("button", { name: "Bailleur" }));
+
+    expect(rowOrder()).toEqual([6, 5]);
+  });
+
+  it("marks the sorted column with aria-sort and a hidden direction icon", async () => {
+    renderTab();
+    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    const headers = queryByCy("entetes-baux-societe") as HTMLElement;
+
+    expect(
+      within(headers).getByRole("columnheader", { name: "Adresse" }),
+    ).toHaveAttribute("aria-sort", "ascending");
+    expect(
+      within(headers).getByRole("columnheader", { name: "Bailleur" }),
+    ).toHaveAttribute("aria-sort", "none");
+    expect(
+      within(headers).getByRole("columnheader", { name: "Actions" }),
+    ).not.toHaveAttribute("aria-sort");
+    expect(
+      within(headers).queryByRole("button", { name: "Actions" }),
+    ).toBeNull();
+
+    const rentButton = within(headers).getByRole("button", { name: "Loyer" });
+    expect(rentButton.querySelector("svg")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+  });
+
+  it("keeps sorting reachable on mobile with the compact control", async () => {
+    renderTab();
+    const user = userEvent.setup();
+    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+
+    const select = queryByCy("tri-compact-baux-societe") as HTMLElement;
+    const direction = queryByCy(
+      "tri-compact-direction-baux-societe",
+    ) as HTMLElement;
+    expect(select).toHaveAttribute("aria-label", "Trier par");
+    expect(direction).toHaveAttribute("aria-label", "Tri croissant");
+
+    await user.selectOptions(select, "rent");
+    expect(rowOrder()).toEqual([6, 5]);
+
+    await user.click(direction);
+    expect(direction).toHaveAttribute("aria-label", "Tri décroissant");
+    expect(rowOrder()).toEqual([5, 6]);
+  });
+
+  it("labels the row action Ajouter des frais for a lease without an expense item", async () => {
+    vi.mocked(api.expenseItems.list).mockImplementation(
+      (_companyId, _all, leaseId) =>
+        Promise.resolve(leaseId === 5 ? [EXPENSE_ITEM] : []),
+    );
+    renderTab();
+
+    await waitFor(() =>
+      expect(queryByCy("btn-modifier-frais-bail-societe-5")).toHaveTextContent(
+        "Modifier les frais",
+      ),
+    );
+    await waitFor(() =>
+      expect(queryByCy("btn-modifier-frais-bail-societe-6")).toHaveTextContent(
+        "Ajouter des frais",
+      ),
+    );
+    expect(api.expenseItems.list).toHaveBeenCalledWith(1, true, 5);
+    expect(api.expenseItems.list).toHaveBeenCalledWith(1, true, 6);
+  });
+
+  it("keeps Modifier les frais while the expense query is pending", async () => {
+    vi.mocked(api.expenseItems.list).mockImplementation(
+      () => new Promise(() => {}),
+    );
+    renderTab();
+    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    expect(queryByCy("btn-modifier-frais-bail-societe-5")).toHaveTextContent(
+      "Modifier les frais",
+    );
+  });
+
+  it("keeps Modifier les frais when the expense query fails", async () => {
+    vi.mocked(api.expenseItems.list).mockRejectedValue(new Error("boom"));
+    renderTab();
+    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+
+    await waitFor(() =>
+      expect(queryByCy("btn-modifier-frais-bail-societe-5")).toHaveTextContent(
+        "Modifier les frais",
+      ),
+    );
   });
 
   it("does not read the linked company.leaseId", async () => {
@@ -478,6 +602,10 @@ describe("CompanyLeaseTab", () => {
 
   it("renders the company lease tab in English", async () => {
     await i18n.changeLanguage("en");
+    vi.mocked(api.expenseItems.list).mockImplementation(
+      (_companyId, _all, leaseId) =>
+        Promise.resolve(leaseId === 6 ? [] : [EXPENSE_ITEM]),
+    );
     renderTab();
 
     await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
@@ -486,13 +614,13 @@ describe("CompanyLeaseTab", () => {
     ).toBeVisible();
     expect(
       screen.getByText(
-        "A company can be the tenant of several leases. “Edit expenses” opens the lease expense items; the company's general expenses stay available from the header.",
+        "A company can be the tenant of several leases. “Edit expenses” opens the lease expense items; items inherited at company level stay visible and editable in each lease.",
       ),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Add a lease" })).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "General expenses" }),
-    ).toBeVisible();
+      screen.queryByRole("button", { name: "General expenses" }),
+    ).toBeNull();
     expect(queryByCy("bail-societe-5")).toHaveTextContent("M. Bailleur");
     expect(queryByCy("loyer-bail-societe-5")).toHaveTextContent("900,00 €");
     expect(queryByCy("charges-bail-societe-5")).toHaveTextContent("50,00 €");
@@ -502,8 +630,15 @@ describe("CompanyLeaseTab", () => {
     expect(within(headers).getByText("Rent")).toBeVisible();
     expect(within(headers).getByText("Charges")).toBeVisible();
     expect(within(headers).getByText("Actions")).toBeVisible();
-    expect(queryByCy("btn-modifier-frais-bail-societe-5")).toHaveTextContent(
-      "Edit expenses",
+    await waitFor(() =>
+      expect(queryByCy("btn-modifier-frais-bail-societe-5")).toHaveTextContent(
+        "Edit expenses",
+      ),
+    );
+    await waitFor(() =>
+      expect(queryByCy("btn-modifier-frais-bail-societe-6")).toHaveTextContent(
+        "Add expenses",
+      ),
     );
     expect(queryByCy("btn-modifier-bail-societe-5")).toHaveTextContent(
       "Edit lease",
@@ -554,28 +689,29 @@ describe("CompanyLeaseTab", () => {
     expect(rowOrder()).toEqual([]);
   });
 
-  it("places the filter, Frais généraux and Ajouter un bail in the section header", async () => {
+  it("keeps the filter, its live count and the add action in the section header", async () => {
     renderTab();
     await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
 
     const search = queryByCy("filtre-baux-societe") as HTMLElement;
+    const count = queryByCy("filtre-compteur-baux-societe") as HTMLElement;
     const add = queryByCy("btn-ajouter-bail-societe") as HTMLElement;
-    const general = queryByCy("btn-frais-generaux-societe") as HTMLElement;
     expect(search).not.toBeNull();
     expect(search).toHaveAttribute("aria-label", "Filtrer la liste");
     expect(search).toHaveAttribute("placeholder", "Filtrer les baux…");
     expect(search.closest(".card-header")).not.toBeNull();
+    expect(count.closest(".card-header")).toBe(search.closest(".card-header"));
+    expect(count).toHaveAttribute("aria-live", "polite");
+    expect(count).toHaveTextContent("2 sur 2");
     expect(add.closest(".card-header")).toBe(search.closest(".card-header"));
-    expect(general.closest(".card-header")).toBe(
-      search.closest(".card-header"),
-    );
     expect(document.querySelectorAll('input[type="search"]')).toHaveLength(1);
     expect(search.closest(".list-toolbar")).toBeNull();
-    expect(queryByCy("tri-baux-societe")).not.toBeNull();
-    expect(queryByCy("filtre-compteur-baux-societe")).not.toBeNull();
+    expect(queryByCy("tri-baux-societe")).toBeNull();
+    expect(queryByCy("tri-direction-baux-societe")).toBeNull();
+    expect(queryByCy("tri-compact-baux-societe")).not.toBeNull();
   });
 
-  it("hides the list toolbar when there is no company lease but keeps Frais généraux", async () => {
+  it("shows no filter, count or expenses action when there is no company lease", async () => {
     vi.mocked(api.leases.list).mockResolvedValue([]);
     renderTab();
 
@@ -583,7 +719,9 @@ describe("CompanyLeaseTab", () => {
       expect(queryByCy("liste-baux-societe-vide")).not.toBeNull(),
     );
     expect(queryByCy("filtre-baux-societe")).toBeNull();
-    expect(queryByCy("btn-frais-generaux-societe")).not.toBeNull();
+    expect(queryByCy("filtre-compteur-baux-societe")).toBeNull();
+    expect(queryByCy("tri-compact-baux-societe")).toBeNull();
+    expect(queryByCy("btn-frais-generaux-societe")).toBeNull();
   });
 });
 
