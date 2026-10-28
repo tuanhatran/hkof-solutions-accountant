@@ -1,5 +1,5 @@
 import "./GenerateRentReceiptPage.css";
-import { Building2, ReceiptText } from "lucide-react";
+import { ReceiptText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
@@ -36,15 +36,6 @@ export function GenerateRentReceiptPage() {
             >
               {t("rentReceipt.page.statementButton")}
             </Button>
-            {c.companyName ? (
-              <span
-                className="generate-rent-receipt-page-company"
-                data-cy="societe-quittance"
-              >
-                <Building2 size={14} aria-hidden="true" />
-                {c.companyName}
-              </span>
-            ) : null}
             <MonthField
               id="quittance-mois"
               label={t("rentReceipt.fields.month")}
