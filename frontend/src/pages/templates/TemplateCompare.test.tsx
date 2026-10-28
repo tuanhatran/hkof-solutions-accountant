@@ -108,11 +108,13 @@ function renderTab() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
+  const tree = () => (
     <QueryClientProvider client={queryClient}>
       <TemplatesTab configuration={RENT_RECEIPT_CONFIGURATION} />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+  const view = render(tree());
+  return { ...view, rerenderTab: () => view.rerender(tree()) };
 }
 
 function checkbox(name: string): HTMLInputElement {
@@ -407,6 +409,57 @@ describe("TemplateCompare", () => {
 
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:compare-1");
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:compare-2");
+  });
+
+  it("discards the previews when the card unmounts while they are pending", async () => {
+    const deferreds: Array<(value: ResponseBlob) => void> = [];
+    vi.mocked(api.templates.preview).mockImplementation(
+      () =>
+        new Promise<ResponseBlob>((resolve) => {
+          deferreds.push(resolve);
+        }),
+    );
+    const user = userEvent.setup();
+    const { unmount } = renderTab();
+
+    await selectTwo(user);
+    await user.click(screen.getByRole("button", { name: "Comparer" }));
+    await screen.findByRole("dialog", { name: "Comparer les versions" });
+    expect(deferreds).toHaveLength(2);
+
+    unmount();
+
+    await act(async () => {
+      deferreds[0]?.({ blob: new Blob(["gauche"]), fileName: null });
+      deferreds[1]?.({ blob: new Blob(["droite"]), fileName: null });
+    });
+
+    expect(createObjectURL).not.toHaveBeenCalled();
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(toastMessages()).toEqual([]);
+  });
+
+  it("prunes a selected version that disappears from the list", async () => {
+    const user = userEvent.setup();
+    const { rerenderTab } = renderTab();
+
+    await selectTwo(user);
+    expect(
+      document.querySelector('[data-cy="barre-comparaison"]'),
+    ).toHaveTextContent("2 versions sélectionnées");
+
+    templates = [ACTIVE, BUILT_IN];
+    await act(async () => {
+      rerenderTab();
+    });
+
+    expect(
+      document.querySelector('[data-cy="barre-comparaison"]'),
+    ).toHaveTextContent("1 version sélectionnée");
+    expect(checkbox("Comparer Quittance intégrée v1")).toBeChecked();
+    expect(screen.getByRole("button", { name: "Comparer" })).toBeDisabled();
+    // The freed slot lets an unchecked row be selected again.
+    expect(checkbox("Comparer Quittance 2026 v3")).toBeEnabled();
   });
 
   it("toasts a preview failure and keeps the selection", async () => {

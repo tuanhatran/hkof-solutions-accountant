@@ -45,6 +45,21 @@ export function useTemplatesCard(configuration: ConfigurationType) {
   const [compare, setCompare] = useState<TemplateComparison | null>(null);
   const [compareInProgress, setCompareInProgress] = useState(false);
   const compareRequest = useRef(0);
+  const versions = templates.data ?? [];
+
+  useEffect(() => {
+    return () => {
+      compareRequest.current += 1;
+    };
+  }, []);
+
+  useEffect(() => {
+    const ids = new Set((templates.data ?? []).map((template) => template.id));
+    setCompareSelection((selection) => {
+      const pruned = selection.filter((id) => ids.has(id));
+      return pruned.length === selection.length ? selection : pruned;
+    });
+  }, [templates.data]);
 
   useEffect(() => {
     return () => {
@@ -63,7 +78,6 @@ export function useTemplatesCard(configuration: ConfigurationType) {
     };
   }, [compare]);
 
-  const versions = templates.data ?? [];
   const active =
     versions.find((template) => template.active) ??
     versions.find((template) => template.builtIn) ??
@@ -213,12 +227,15 @@ export function useTemplatesCard(configuration: ConfigurationType) {
   }
 
   async function openCompare() {
-    if (compareSelection.length !== 2 || compareInProgress) {
+    if (compareInProgress) {
       return;
     }
     const selected = compareSelection
       .map((id) => versions.find((template) => template.id === id))
       .filter((template): template is TemplateDto => template !== undefined);
+    if (selected.length !== 2) {
+      return;
+    }
     const [left, right] = selected;
     if (!left || !right) {
       return;
