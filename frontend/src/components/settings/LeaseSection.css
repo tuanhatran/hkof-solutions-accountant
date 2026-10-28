@@ -18,7 +18,7 @@
   }
 
   .lease-section-headers {
-    @apply grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_6.5rem_7rem_auto] items-center gap-3 border-b border-line px-3 py-1.5 text-[11px] text-ink-soft;
+    @apply grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_6.5rem_7rem_17.5rem] items-center gap-3 border-b border-line px-3 py-1.5 text-[11px] text-ink-soft;
   }
 
   .lease-section-headers-amount {
@@ -26,7 +26,7 @@
   }
 
   .lease-section-item {
-    @apply grid gap-x-3 gap-y-1 px-3 py-2 md:min-h-9 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_6.5rem_7rem_auto] md:items-center md:py-1.5;
+    @apply grid gap-x-3 gap-y-1 px-3 py-2 md:min-h-9 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_6.5rem_7rem_17.5rem] md:items-center md:py-1.5;
   }
 
   .lease-section-item > .lease-receipt-history {

@@ -14,7 +14,7 @@
   }
 
   .company-lease-tab-headers {
-    @apply grid-cols-[minmax(0,1fr)_6.5rem_6.5rem_auto] items-center gap-3 border-b border-line px-4 py-1.5 text-[11px] text-ink-soft;
+    @apply grid-cols-[minmax(0,1fr)_6.5rem_6.5rem_13rem] items-center gap-3 border-b border-line px-4 py-1.5 text-[11px] text-ink-soft;
   }
 
   .company-lease-tab-headers-amount {
@@ -30,7 +30,7 @@
   }
 
   .company-lease-tab-item {
-    @apply flex flex-col gap-2 rounded-xl border border-line bg-surface px-4 py-3 md:grid md:min-h-9 md:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem_auto] md:items-center md:gap-3 md:py-1.5;
+    @apply flex flex-col gap-2 rounded-xl border border-line bg-surface px-4 py-3 md:grid md:min-h-9 md:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem_13rem] md:items-center md:gap-3 md:py-1.5;
   }
 
   .company-lease-tab-item-selected {

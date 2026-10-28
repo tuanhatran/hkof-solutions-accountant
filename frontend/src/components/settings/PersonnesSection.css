@@ -14,7 +14,7 @@
   }
 
   .personnes-section-headers {
-    @apply grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_6.5rem_auto] items-center gap-3 border-b border-line px-3 py-1.5 text-[11px] text-ink-soft;
+    @apply grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_6.5rem_12rem] items-center gap-3 border-b border-line px-3 py-1.5 text-[11px] text-ink-soft;
   }
 
   .personnes-section-headers-signatures {
@@ -22,7 +22,7 @@
   }
 
   .personnes-section-item {
-    @apply grid gap-x-3 gap-y-1 px-3 py-2 md:min-h-9 md:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_6.5rem_auto] md:items-center md:py-1.5;
+    @apply grid gap-x-3 gap-y-1 px-3 py-2 md:min-h-9 md:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_6.5rem_12rem] md:items-center md:py-1.5;
   }
 
   .personnes-section-cell {
