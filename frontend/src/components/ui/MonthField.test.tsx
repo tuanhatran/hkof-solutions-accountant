@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { MonthField } from "@/components/ui/MonthField";
 
 describe("MonthField", () => {
-  it("renders a visible label bound to a native month input and the French echo", () => {
+  it("names the native month input without repeating the month on screen", () => {
     render(
       <MonthField
         id="mois"
@@ -18,14 +18,16 @@ describe("MonthField", () => {
     expect(input).toHaveAttribute("type", "month");
     expect(input).toHaveAttribute("data-cy", "select-mois");
     expect(input).toHaveValue("2026-01");
-    const echo = screen.getByText("Janvier 2026");
-    expect(echo).toHaveAttribute("aria-live", "polite");
+    expect(screen.queryByText("Mois concerné")).toBeNull();
+    expect(screen.queryByText("Janvier 2026")).toBeNull();
+    expect(document.querySelector("label")).toBeNull();
   });
 
-  it("shows a dash when no month is selected", () => {
+  it("renders no month echo when no month is selected", () => {
     render(<MonthField id="mois" label="Mois" value="" onChange={vi.fn()} />);
 
-    expect(screen.getByText("—")).toHaveAttribute("aria-live", "polite");
+    expect(screen.getByLabelText("Mois")).toHaveValue("");
+    expect(screen.queryByText("—")).toBeNull();
   });
 
   it("composes inputProps.onChange before forwarding the native value", () => {

@@ -1,7 +1,6 @@
 import "./MonthField.css";
 import type { ChangeEvent, InputHTMLAttributes, Ref } from "react";
 import { cn } from "@/lib/cn";
-import { formatMonth } from "@/lib/format";
 
 /**
  * Extra native input props forwarded to the month input, including the
@@ -29,8 +28,8 @@ interface MonthFieldProps {
 
 /**
  * Compact month control of the generation page headers: a native
- * `type="month"` input, its visible label and a French month echo. The native
- * picker is kept; the echo only restates the selected month.
+ * `type="month"` input named by its label. The native picker already displays
+ * the selected month, so neither a visible label nor a French echo is shown.
  */
 export function MonthField({
   id,
@@ -52,23 +51,18 @@ export function MonthField({
 
   return (
     <div className="month-field">
-      <label htmlFor={id} className="month-field-label">
-        {label}
-      </label>
       <input
         {...rest}
         id={id}
         type="month"
         value={value}
         onChange={handleChange}
+        aria-label={label}
         aria-invalid={Boolean(error)}
         aria-describedby={descriptionId}
         data-cy={dataCy}
         className={cn("month-field-input", error && "month-field-input-error")}
       />
-      <span className="month-field-echo" aria-live="polite">
-        {formatMonth(value)}
-      </span>
       {help && !error ? (
         <p className="month-field-hint" id={`${id}-hint`}>
           {help}
