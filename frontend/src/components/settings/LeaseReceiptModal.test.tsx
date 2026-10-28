@@ -162,6 +162,9 @@ describe("LeaseReceiptModal", () => {
     const period = periodOfMonth(month);
     expect(screen.getByLabelText("Mois")).toHaveValue(month);
     expect(
+      screen.getByText(/La période se déduit du mois choisi\./),
+    ).toHaveTextContent(formatMonth(month));
+    expect(
       screen.getByText(formatPeriod(period.start, period.end)),
     ).toBeVisible();
     expect(screen.getByText("M. Bailleur")).toBeVisible();
@@ -243,6 +246,9 @@ describe("LeaseReceiptModal", () => {
     expect(
       screen.getByText(formatPeriod("2026-02-01", "2026-02-28")),
     ).toBeVisible();
+    expect(
+      screen.getByText(/La période se déduit du mois choisi\./),
+    ).toHaveTextContent("Février 2026");
     await waitFor(() =>
       expect(api.rentReceipts.preview).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -508,8 +514,8 @@ describe("LeaseReceiptModal", () => {
     );
     expect(screen.getByLabelText("Charges provision")).toHaveValue("50,00");
     expect(
-      screen.getByText("The period is derived from the chosen month."),
-    ).toBeVisible();
+      screen.getByText(/The period is derived from the chosen month\./),
+    ).toHaveTextContent(formatMonth(month));
     expect(
       screen.getByRole("button", { name: "Generate the rent receipt" }),
     ).toBeEnabled();

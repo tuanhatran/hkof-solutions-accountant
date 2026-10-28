@@ -207,7 +207,7 @@ describe("SettingsPage tabs", () => {
     );
     expect(screen.getByRole("tab", { name: "Baux & Frais" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Salariés" })).toBeVisible();
-    expect(screen.getByRole("tab", { name: "Templates" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Modèles" })).toBeVisible();
     expect(queryByCy("info-societe")).not.toBeNull();
     expect(queryByCy("onglet-entreprise-identification")).not.toBeNull();
     expect(queryByCy("input-raison-sociale")).toBeNull();
@@ -284,7 +284,7 @@ describe("SettingsPage tabs", () => {
     expect(controls[2]).toHaveTextContent("Supprimer");
 
     const tabs = screen.getByRole("tablist", {
-      name: "Sections de l’entreprise",
+      name: "Sections de la société",
     });
     const card = document.querySelector("section.card.company-section");
     expect(card).not.toBeNull();
@@ -299,6 +299,11 @@ describe("SettingsPage tabs", () => {
       '[role="tabpanel"].company-section-tabpanel',
     );
     expect(panel).not.toBeNull();
+    expect(panel).toHaveAttribute("id", "company-section-panel");
+    expect(panel).toHaveAttribute(
+      "aria-labelledby",
+      "company-tabs-tab-identification",
+    );
     expect(panel?.closest("section.card.company-section")).not.toBeNull();
 
     const identity = queryByCy("info-societe");
@@ -358,7 +363,7 @@ describe("SettingsPage tabs", () => {
     expect(queryByCy("dropzone-template-note")).not.toBeNull();
     expect(queryByCy("dropzone-template-quittance")).toBeNull();
     expect(
-      screen.getByText(/Les templates ne peuvent exécuter aucun code/),
+      screen.getByText(/Les modèles ne peuvent exécuter aucun code/),
     ).toBeVisible();
     expect(queryByCy("info-societe")).toBeNull();
   });
@@ -391,7 +396,7 @@ describe("SettingsPage tabs", () => {
     await user.click(queryByCy("bail-societe-5") as Element);
 
     expect(queryByCy("bail-societe-lie")).not.toBeNull();
-    expect(screen.getByRole("heading", { name: "Frais" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Postes" })).toBeVisible();
     expect(queryByCy("select-bail-actif")).toBeNull();
     expect(queryByCy("bail-societe-5")).toHaveAttribute(
       "aria-expanded",
@@ -515,8 +520,10 @@ describe("SettingsPage tabs", () => {
       }),
     );
     await waitFor(() => expect(toastMessages()).toContain("Société créée."));
-    // Creating a company selects it for configuration but never activates it.
-    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
+    // Creating a company selects and activates it.
+    await waitFor(() =>
+      expect(useCompanyStore.getState().activeCompanyId).toBe(1),
+    );
     await waitFor(() =>
       expect(queryByCy("dialogue-formulaire-societe")).toBeNull(),
     );
@@ -561,6 +568,7 @@ describe("SettingsPage tabs", () => {
       expect(toastMessages()).toContain("Société supprimée."),
     );
     expect(queryByCy("dialogue-formulaire-societe")).toBeNull();
+    expect(useCompanyStore.getState().activeCompanyId).toBeNull();
   });
 
   it("shows the no-lease sentence for a company without a lease", async () => {
@@ -597,7 +605,7 @@ describe("SettingsPage tabs", () => {
     expect(screen.getByText("Bail actif")).toBeVisible();
   });
 
-  it("never offers to make another company active", async () => {
+  it("activates the company selected in the selector", async () => {
     companiesState = readyQuery([COMPANY, OTHER]);
     renderPage();
     const user = userEvent.setup();
@@ -609,7 +617,23 @@ describe("SettingsPage tabs", () => {
 
     expect(screen.queryByRole("button", { name: "Rendre active" })).toBeNull();
     expect(queryByCy("btn-rendre-active")).toBeNull();
-    expect(useCompanyStore.getState().activeCompanyId).toBe(1);
+    expect(useCompanyStore.getState().activeCompanyId).toBe(2);
+  });
+
+  it("syncs the selected company when the active company changes elsewhere", async () => {
+    companiesState = readyQuery([COMPANY, OTHER]);
+    renderPage();
+
+    expect(screen.getByLabelText("Société à configurer")).toHaveValue("1");
+
+    act(() => {
+      useCompanyStore.getState().setActiveCompany(2);
+    });
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Société à configurer")).toHaveValue("2"),
+    );
+    expect(queryByCy("info-societe")).toHaveTextContent("Autre SARL");
   });
 
   it("shows the loading then error states of the companies", async () => {
@@ -674,7 +698,7 @@ describe("SettingsPage tabs", () => {
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
     await user.click(queryByCy("bail-societe-5") as Element);
-    await user.click(screen.getByRole("button", { name: "Ajouter un frais" }));
+    await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
       "35,71",
@@ -689,7 +713,7 @@ describe("SettingsPage tabs", () => {
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
     await user.click(queryByCy("bail-societe-5") as Element);
-    await user.click(screen.getByRole("button", { name: "Ajouter un frais" }));
+    await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
       "100,00",

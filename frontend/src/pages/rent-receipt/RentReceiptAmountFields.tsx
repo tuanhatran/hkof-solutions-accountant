@@ -2,6 +2,7 @@ import "./RentReceiptAmountFields.css";
 import { useTranslation } from "react-i18next";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
+import { formatDate } from "@/lib/format";
 import type { RentReceiptController } from "./useRentReceiptPage";
 
 /** Period, amounts, dates and the estimated-total block. */
@@ -14,6 +15,9 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
           id="quittance-debut"
           label={t("rentReceipt.fields.periodStart")}
           error={c.errors.periodStart?.message}
+          help={
+            c.values.periodStart ? formatDate(c.values.periodStart) : undefined
+          }
         >
           <input
             id="quittance-debut"
@@ -30,6 +34,7 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
           id="quittance-fin"
           label={t("rentReceipt.fields.periodEnd")}
           error={c.errors.periodEnd?.message}
+          help={c.values.periodEnd ? formatDate(c.values.periodEnd) : undefined}
         >
           <input
             id="quittance-fin"
@@ -108,6 +113,9 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
           id="quittance-paiement"
           label={t("rentReceipt.fields.paymentDate")}
           error={c.errors.paymentDate?.message}
+          help={
+            c.values.paymentDate ? formatDate(c.values.paymentDate) : undefined
+          }
         >
           <input
             id="quittance-paiement"
@@ -123,6 +131,7 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
           id="quittance-emission"
           label={t("rentReceipt.fields.issueDate")}
           error={c.errors.issueDate?.message}
+          help={c.values.issueDate ? formatDate(c.values.issueDate) : undefined}
         >
           <input
             id="quittance-emission"

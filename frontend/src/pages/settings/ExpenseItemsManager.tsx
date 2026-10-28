@@ -122,7 +122,7 @@ export function ExpenseItemsManager({
           </p>
         ) : (
           <div className="expense-items-manager-table-wrapper">
-            <table className="expense-table">
+            <table className="expense-table expense-items-table">
               <thead>
                 <tr>
                   <th>{t("settings.expenses.table.label")}</th>
@@ -131,7 +131,7 @@ export function ExpenseItemsManager({
                     {t("settings.expenses.table.proRata")}
                   </th>
                   <th>{t("settings.expenses.table.periodicity")}</th>
-                  <th className="text-center">
+                  <th className="text-right">
                     {t("settings.expenses.table.order")}
                   </th>
                   <th>{t("settings.expenses.table.options")}</th>
@@ -164,13 +164,13 @@ export function ExpenseItemsManager({
                     <td className="text-ink-soft">
                       {expenseItem.supplier || "—"}
                     </td>
-                    <td className="number expense-items-manager-number-cell">
+                    <td className="number expense-items-manager-number-cell text-right">
                       {formatPercentage(expenseItem.proRataPct)}
                     </td>
                     <td className="expense-items-manager-periodicity-cell">
                       {periodicityLabel(expenseItem.periodicity, t)}
                     </td>
-                    <td className="number expense-items-manager-order-cell">
+                    <td className="number expense-items-manager-order-cell text-right">
                       {expenseItem.sortOrder}
                     </td>
                     <td>

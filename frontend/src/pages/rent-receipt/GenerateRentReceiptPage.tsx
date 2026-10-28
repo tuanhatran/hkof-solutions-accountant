@@ -1,12 +1,12 @@
 import "./GenerateRentReceiptPage.css";
-import { Building2, CalendarDays, ReceiptText } from "lucide-react";
+import { Building2, ReceiptText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { Button } from "@/components/ui/Button";
+import { MonthField } from "@/components/ui/MonthField";
 import { ErrorState } from "@/components/ui/States";
 import { ViewTabs } from "@/components/ui/ViewTabs";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { formatMonth } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { ActiveRentReceiptBanner } from "./ActiveRentReceiptBanner";
 import { RentReceiptForm } from "./RentReceiptForm";
@@ -45,10 +45,15 @@ export function GenerateRentReceiptPage() {
                 {c.companyName}
               </span>
             ) : null}
-            <span className="hidden generate-rent-receipt-page-month sm:inline-flex">
-              <CalendarDays size={14} aria-hidden="true" />
-              {formatMonth(c.draft.month)}
-            </span>
+            <MonthField
+              id="quittance-mois"
+              label={t("rentReceipt.fields.month")}
+              value={c.values.month}
+              onChange={c.changeMonth}
+              inputProps={c.register("month")}
+              error={c.errors.month?.message}
+              dataCy="select-mois"
+            />
           </>
         }
       />
@@ -71,17 +76,23 @@ export function GenerateRentReceiptPage() {
       <div className="generate-rent-receipt-page-tabs">
         <ViewTabs
           ariaLabel={t("rentReceipt.page.tabsAriaLabel")}
+          idPrefix="rent-receipt-view"
           active={c.mobilePanel}
           onChange={(value) =>
             c.setMobilePanel(value === "apercu" ? "apercu" : "saisie")
           }
           tabs={[
-            { value: "saisie", label: t("rentReceipt.page.inputTab") },
+            {
+              value: "saisie",
+              label: t("rentReceipt.page.inputTab"),
+              panelId: "rent-receipt-input-panel",
+            },
             {
               value: "apercu",
               label: t("rentReceipt.page.previewTab"),
               updated: Boolean(c.preview.updatedAt),
               className: "flex items-center justify-center gap-2",
+              panelId: "rent-receipt-preview-panel",
             },
           ]}
         />
@@ -90,6 +101,11 @@ export function GenerateRentReceiptPage() {
       <div className="generate-rent-receipt-page-grid">
         <div
           data-cy="volet-saisie"
+          id="rent-receipt-input-panel"
+          role={c.mobile ? "tabpanel" : undefined}
+          aria-labelledby={
+            c.mobile ? "rent-receipt-view-tab-saisie" : undefined
+          }
           className={cn(
             "generate-rent-receipt-page-input",
             c.mobile && c.mobilePanel !== "saisie" && "hidden",
@@ -100,7 +116,13 @@ export function GenerateRentReceiptPage() {
           <RentReceiptForm c={c} />
         </div>
 
-        <RentReceiptPreviewPane c={c} />
+        <RentReceiptPreviewPane
+          c={c}
+          panel={{
+            id: "rent-receipt-preview-panel",
+            labelledBy: "rent-receipt-view-tab-apercu",
+          }}
+        />
       </div>
     </>
   );

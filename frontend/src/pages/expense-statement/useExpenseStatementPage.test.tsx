@@ -975,7 +975,7 @@ describe("useExpenseStatementPage save", () => {
       }),
     );
     expect(result.current.errors.itemCode?.message).toBe(
-      "Ce type est déjà présent. Modifiez la ligne existante ou autorisez plusieurs lignes.",
+      "Ce poste est déjà présent. Modifiez la ligne existante ou autorisez plusieurs lignes.",
     );
 
     rentReceiptState = readyQuery(
@@ -990,7 +990,7 @@ describe("useExpenseStatementPage save", () => {
       }),
     );
     expect(result.current.fileError).toBe(
-      "Ajoutez d’abord la quittance du mois pour utiliser ce type.",
+      "Ajoutez d’abord la quittance du mois pour utiliser ce poste.",
     );
 
     act(() => result.current.removeFile());
@@ -1002,7 +1002,7 @@ describe("useExpenseStatementPage save", () => {
       }),
     );
     expect(result.current.fileError).toBe(
-      "Le justificatif est obligatoire pour ce type de frais.",
+      "Le justificatif est obligatoire pour ce poste.",
     );
 
     vi.mocked(api.receipts.upload).mockResolvedValue({ id: 10 });

@@ -29,28 +29,32 @@ export function CompanySection() {
       value: "identification",
       label: t("settings.company.tabs.identification"),
       dataCy: "onglet-entreprise-identification",
+      panelId: "company-section-panel",
     },
     {
       value: "bail-frais",
       label: t("settings.company.tabs.leaseExpenses"),
       dataCy: "onglet-entreprise-bail-frais",
+      panelId: "company-section-panel",
     },
     {
       value: "salaries",
       label: t("settings.company.tabs.employees"),
       dataCy: "onglet-entreprise-salaries",
+      panelId: "company-section-panel",
     },
     {
       value: "templates",
       label: t("settings.company.tabs.templates"),
       dataCy: "onglet-entreprise-templates",
+      panelId: "company-section-panel",
     },
   ];
   const queryClient = useQueryClient();
   const companies = useCompanies();
-  const [selectedId, setSelectedId] = useState<number | null>(
-    useCompanyStore.getState().activeCompanyId,
-  );
+  const activeCompanyId = useCompanyStore((state) => state.activeCompanyId);
+  const setActiveCompany = useCompanyStore((state) => state.setActiveCompany);
+  const [selectedId, setSelectedId] = useState<number | null>(activeCompanyId);
   const [tab, setTab] = useState("identification");
   const [identityTarget, setIdentityTarget] = useState<
     CompanyDto | "new" | null
@@ -58,6 +62,14 @@ export function CompanySection() {
   const [toDelete, setToDelete] = useState<CompanyDto | null>(null);
 
   const list = useMemo(() => companies.data ?? [], [companies.data]);
+  useEffect(() => {
+    if (
+      activeCompanyId !== null &&
+      list.some((company) => company.id === activeCompanyId)
+    ) {
+      setSelectedId(activeCompanyId);
+    }
+  }, [activeCompanyId, list]);
   useEffect(() => {
     if (
       selectedId === null ||
@@ -79,7 +91,10 @@ export function CompanySection() {
   const remove = useMutation({
     mutationFn: (company: CompanyDto) =>
       api.companies.delete(company.id as number),
-    onSuccess: () => {
+    onSuccess: (_deleted, company) => {
+      if (activeCompanyId === company.id) {
+        setActiveCompany(null);
+      }
       void queryClient.invalidateQueries({ queryKey: queryKeys.companiesAll });
       void queryClient.invalidateQueries({
         queryKey: queryKeys.expenseItemsAll,
@@ -107,10 +122,11 @@ export function CompanySection() {
             className="field company-section-select"
             value={selectedId ?? ""}
             onChange={(event) => {
+              const nextId =
+                event.target.value === "" ? null : Number(event.target.value);
               closeModals();
-              setSelectedId(
-                event.target.value === "" ? null : Number(event.target.value),
-              );
+              setSelectedId(nextId);
+              setActiveCompany(nextId);
             }}
             data-cy="select-societe"
           >
@@ -147,6 +163,7 @@ export function CompanySection() {
       <div className="company-section-tabs">
         <ViewTabs
           ariaLabel={t("settings.company.tabsAria")}
+          idPrefix="company-tabs"
           tabs={tabs}
           active={tab}
           onChange={setTab}
@@ -172,7 +189,12 @@ export function CompanySection() {
             />
           </div>
         ) : null}
-        <div role="tabpanel" className="company-section-tabpanel">
+        <div
+          id="company-section-panel"
+          role="tabpanel"
+          aria-labelledby={`company-tabs-tab-${tab}`}
+          className="company-section-tabpanel"
+        >
           {selected && tab === "identification" ? (
             <CompanyIdentityView
               company={selected}
@@ -213,6 +235,7 @@ export function CompanySection() {
             setIdentityTarget(null);
             if (wasNew && saved.id !== undefined) {
               setSelectedId(saved.id);
+              setActiveCompany(saved.id);
             }
           }}
         />

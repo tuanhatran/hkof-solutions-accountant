@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
@@ -198,9 +204,27 @@ function renderPage() {
   );
 }
 
+function setMobile(matches: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: (query: string) => ({
+      matches,
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    }),
+  });
+}
+
 describe("GenerateExpenseStatementPage signatures", () => {
   beforeEach(() => {
     lastPreviewLoader = null;
+    setMobile(false);
     signatureList = [LANDLORD, CEO, CEO_V2];
     signatureError = null;
     signaturePending = false;
@@ -324,7 +348,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveAttribute("data-cy", "alerte-signature-manquante");
     expect(alert).toHaveTextContent(/Aucune signature pour le PDG/);
-    expect(screen.getByRole("link", { name: "Entreprise" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Société" })).toHaveAttribute(
       "href",
       "/configuration/entreprise",
     );
@@ -602,7 +626,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     renderPage();
     const user = userEvent.setup();
 
-    const template = screen.getByLabelText("Template de la note de frais");
+    const template = screen.getByLabelText("Modèle de la note de frais");
     expect(template).toBeEnabled();
     expect(
       within(template).getByRole("option", { name: "Modèle — v2" }),
@@ -630,15 +654,75 @@ describe("GenerateExpenseStatementPage signatures", () => {
     ).toBeVisible();
   });
 
+  it("keeps one header month control that updates the month and its French echo", () => {
+    renderPage();
+
+    const monthInputs = document.querySelectorAll('[data-cy="select-mois"]');
+    expect(monthInputs).toHaveLength(1);
+    const month = screen.getByLabelText("Mois concerné");
+    expect(month).toBeVisible();
+    expect(month).toHaveValue(MONTH);
+    expect(screen.getByText("Janvier 2026")).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
+
+    fireEvent.change(month, { target: { value: "2026-02" } });
+
+    expect(useStatementDraft.getState().month).toBe("2026-02");
+    expect(month).toHaveValue("2026-02");
+    expect(screen.getByText("Février 2026")).toBeVisible();
+    expect(screen.getByText("Aucun frais pour Février 2026")).toBeVisible();
+  });
+
+  it("removes the technical generation copy", () => {
+    renderPage();
+
+    expect(screen.queryByText(/Calcul backend/)).toBeNull();
+    expect(screen.queryByText(/recalcul automatique/)).toBeNull();
+    expect(
+      screen.getByText(
+        "Montants recalculés automatiquement à chaque modification.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Estimation d’affichage : chaque ligne est recalculée avec arrondi au centime.",
+      ),
+    ).toBeVisible();
+  });
+
   it("switches between the mobile input and preview panels", async () => {
+    setMobile(true);
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("tab", { name: "Aperçu" }));
-    expect(screen.getByRole("tab", { name: "Aperçu" })).toHaveAttribute(
-      "aria-selected",
-      "true",
+    const previewTab = screen.getByRole("tab", { name: "Aperçu" });
+    expect(previewTab).toHaveAttribute("id", "expense-view-tab-preview");
+    expect(previewTab).toHaveAttribute(
+      "aria-controls",
+      "expense-preview-panel",
     );
+    expect(document.querySelector('[data-cy="volet-saisie"]')).toHaveAttribute(
+      "id",
+      "expense-input-panel",
+    );
+    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveAttribute(
+      "id",
+      "expense-preview-panel",
+    );
+
+    await user.click(previewTab);
+    expect(previewTab).toHaveAttribute("aria-selected", "true");
+    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveAttribute(
+      "role",
+      "tabpanel",
+    );
+    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveAttribute(
+      "aria-labelledby",
+      "expense-view-tab-preview",
+    );
+
     await user.click(screen.getByRole("tab", { name: "Saisie" }));
     expect(screen.getByRole("tab", { name: "Saisie" })).toHaveAttribute(
       "aria-selected",

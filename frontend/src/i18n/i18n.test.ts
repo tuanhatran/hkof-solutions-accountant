@@ -13,6 +13,16 @@ function flattenKeys(value: unknown, prefix = ""): string[] {
   );
 }
 
+function leafValues(value: unknown): string[] {
+  if (typeof value === "string") {
+    return [value];
+  }
+  if (typeof value !== "object" || value === null) {
+    return [];
+  }
+  return Object.values(value as Record<string, unknown>).flatMap(leafValues);
+}
+
 function stubBrowserLanguages(languages: string[]) {
   vi.spyOn(window.navigator, "languages", "get").mockReturnValue(languages);
   vi.spyOn(window.navigator, "language", "get").mockReturnValue(
@@ -82,6 +92,54 @@ describe("i18n", () => {
     expect(flattenKeys(en.api.errors).sort()).toEqual(
       flattenKeys(fr.api.errors).sort(),
     );
+  });
+
+  it("keeps the whole FR and EN translation trees in parity", () => {
+    expect(flattenKeys(en).sort()).toEqual(flattenKeys(fr).sort());
+  });
+
+  it("uses the canonical French terminology for the managed entity", () => {
+    expect(fr.settings.company.tabsAria).toBe("Sections de la société");
+    expect(fr.settings.company.tabs.templates).toBe("Modèles");
+    expect(fr.settings.lmnp.tabs.templates).toBe("Modèles");
+    expect(fr.expenseStatement.footer.companyLink).toBe("Société");
+    expect(fr.settings.expenses.title).toBe("Postes");
+    expect(fr.settings.expenses.add).toBe("Ajouter un poste");
+    expect(fr.settings.expenses.form.createTitle).toBe("Ajouter un poste");
+    expect(fr.settings.expenses.form.editTitle).toBe("Modifier le poste");
+    expect(fr.settings.expenses.deleteDialog.title).toBe("Retirer ce poste ?");
+    expect(fr.api.errors.EXPENSE_ITEM_UNKNOWN_CODE).toBe(
+      "Poste inconnu : {{code}}",
+    );
+    expect(fr.expenseStatement.fields.type).toBe("Type de frais");
+    expect(fr.api.errors.EXPENSE_ITEM_REQUIRED).toBe(
+      "Le type de frais est obligatoire.",
+    );
+  });
+
+  it("mirrors the entity terminology in English", () => {
+    expect(en.settings.company.tabs.templates).toBe("Templates");
+    expect(en.settings.lmnp.tabs.templates).toBe("Templates");
+    expect(en.settings.expenses.title).toBe("Expense items");
+    expect(en.settings.expenses.form.editTitle).toBe("Edit the expense item");
+    expect(en.settings.expenses.deleteDialog.title).toBe(
+      "Remove this expense item?",
+    );
+    expect(en.api.errors.EXPENSE_ITEM_UNKNOWN_CODE).toBe(
+      "Unknown expense item: {{code}}",
+    );
+    expect(en.expenseStatement.fields.type).toBe("Expense type");
+    expect(en.rentReceipt.fields.template).toBe("Template");
+  });
+
+  it("contains no user-facing Template or Entreprise copy in French", () => {
+    const values = leafValues(fr).map((value) =>
+      value.replace(/\{\{[^}]+\}\}/g, ""),
+    );
+
+    expect(values.filter((value) => /\btemplates?\b/i.test(value))).toEqual([]);
+    expect(values.filter((value) => /\bentreprise\b/i.test(value))).toEqual([]);
+    expect(values.filter((value) => /frais de frais/i.test(value))).toEqual([]);
   });
 
   it("uses specific SCREAMING_SNAKE codes in api.errors", () => {

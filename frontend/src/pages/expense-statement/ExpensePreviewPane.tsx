@@ -7,13 +7,18 @@ import type { ExpenseStatementController } from "./useExpenseStatementPage";
 /** Preview pane: backend-rendered PDF with template and annex options. */
 export function ExpensePreviewPane({
   controller: c,
+  panel,
 }: {
   controller: ExpenseStatementController;
+  panel?: { id: string; labelledBy: string };
 }) {
   const { t } = useTranslation();
   return (
     <div
       data-cy="volet-apercu"
+      id={panel?.id}
+      role={c.mobile && panel ? "tabpanel" : undefined}
+      aria-labelledby={c.mobile && panel ? panel.labelledBy : undefined}
       className={cn(
         "expense-preview-pane",
         c.mobile && c.mobilePanel !== "preview" && "hidden",

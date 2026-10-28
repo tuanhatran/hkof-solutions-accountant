@@ -6,6 +6,15 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",");
+
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
@@ -31,6 +40,25 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const { t } = useTranslation();
   const cancelButton = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
+
+  // Runs before the focus effect so the opener is still the active element.
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const active = document.activeElement;
+    opener.current =
+      active instanceof HTMLElement && active !== document.body ? active : null;
+    return () => {
+      const target = opener.current;
+      opener.current = null;
+      if (target?.isConnected) {
+        target.focus();
+      }
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -40,6 +68,29 @@ export function ConfirmDialog({
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onCancel();
+        return;
+      }
+      if (event.key !== "Tab") {
+        return;
+      }
+      const focusable =
+        panel.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (!focusable || focusable.length === 0) {
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const current = document.activeElement;
+      const inside =
+        current !== null && (panel.current?.contains(current) ?? false);
+      if (event.shiftKey) {
+        if (!inside || current === first) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (!inside || current === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
     document.addEventListener("keydown", onKey);
@@ -60,6 +111,7 @@ export function ConfirmDialog({
       }}
     >
       <div
+        ref={panel}
         className="animation-fade confirm-dialog-panel"
         role="dialog"
         aria-modal="true"

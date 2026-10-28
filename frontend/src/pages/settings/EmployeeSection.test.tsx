@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
@@ -102,6 +102,43 @@ describe("EmployeeSection", () => {
     ).toBeVisible();
   });
 
+  it("renders dense column headers above the employee list", () => {
+    renderSection();
+
+    const headers = document.querySelector(
+      '[data-cy="entetes-salaries"]',
+    ) as HTMLElement;
+    expect(headers).not.toBeNull();
+    expect(headers).toHaveClass("hidden", "md:grid");
+    expect(within(headers).getByText("Salarié")).toBeVisible();
+    expect(within(headers).getByText("Intitulé")).toBeVisible();
+    expect(within(headers).getByText("Coordonnées")).toBeVisible();
+    expect(within(headers).getByText("Signatures")).toBeVisible();
+  });
+
+  it("aligns each employee row cell and its tabular signatures column", () => {
+    renderSection();
+
+    const row = document.querySelector('[data-cy="salarie-3"]') as HTMLElement;
+    expect(row).toHaveClass("employee-section-item");
+    expect(row.querySelector(".employee-section-cell-name")).toHaveTextContent(
+      "Camille Martin",
+    );
+    expect(row.querySelector(".employee-section-cell-title")).toHaveTextContent(
+      "PDG",
+    );
+    expect(
+      row.querySelector(".employee-section-cell-contact"),
+    ).toHaveTextContent("camille.martin@exemple.fr");
+    const signatures = row.querySelector('[data-cy="signatures-salarie-3"]');
+    expect(signatures).toHaveClass(
+      "employee-section-cell",
+      "number",
+      "text-right",
+    );
+    expect(row.querySelector(".employee-section-cell-actions")).not.toBeNull();
+  });
+
   it("shows the loading then empty states", () => {
     employeesState = {
       data: undefined,
@@ -188,7 +225,11 @@ describe("EmployeeSection", () => {
     expect(
       screen.getByRole("heading", { name: "Modifier le salarié" }),
     ).toBeVisible();
-    expect(screen.getByText("Signatures")).toBeVisible();
+    expect(
+      within(
+        document.querySelector('[data-cy="formulaire-salarie"]') as HTMLElement,
+      ).getByText("Signatures"),
+    ).toBeVisible();
   });
 
   it("renders the form in a modal and closes on Annuler or Escape without saving", async () => {
@@ -274,6 +315,12 @@ describe("EmployeeSection", () => {
     renderSection();
 
     expect(screen.getByRole("heading", { name: "Employees" })).toBeVisible();
+    const headers = document.querySelector(
+      '[data-cy="entetes-salaries"]',
+    ) as HTMLElement;
+    expect(within(headers).getByText("Employee")).toBeVisible();
+    expect(within(headers).getByText("Title")).toBeVisible();
+    expect(within(headers).getByText("Contact details")).toBeVisible();
     expect(screen.getAllByText("CEO")).toHaveLength(2);
     expect(screen.getAllByText("No address provided")).toHaveLength(2);
     expect(screen.getByText("0 signatures")).toBeVisible();

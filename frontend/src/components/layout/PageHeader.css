@@ -10,7 +10,7 @@
   }
 
   .page-header-title {
-    @apply mt-2 text-[30px] leading-[1.1] text-ink sm:text-[38px];
+    @apply mt-1 text-2xl font-semibold leading-tight text-ink;
   }
 
   .page-header-description {

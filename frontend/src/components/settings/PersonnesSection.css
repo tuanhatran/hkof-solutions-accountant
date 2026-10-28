@@ -10,26 +10,38 @@
   }
 
   .personnes-section-list {
-    @apply grid gap-3 sm:grid-cols-2;
+    @apply divide-y divide-line overflow-hidden rounded-xl border border-line bg-paper/40;
+  }
+
+  .personnes-section-headers {
+    @apply grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_6.5rem_12rem] items-center gap-3 border-b border-line px-3 py-1.5 text-[11px] text-ink-soft;
+  }
+
+  .personnes-section-headers-signatures {
+    @apply text-right;
   }
 
   .personnes-section-item {
-    @apply flex flex-wrap items-start gap-3 rounded-xl border border-line bg-paper/40 p-3;
+    @apply grid gap-x-3 gap-y-1 px-3 py-2 md:min-h-9 md:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_6.5rem_12rem] md:items-center md:py-1.5;
   }
 
-  .personnes-section-item-body {
-    @apply min-w-0 flex-1;
+  .personnes-section-cell {
+    @apply min-w-0;
   }
 
-  .personnes-section-item-name {
+  .personnes-section-cell-name {
     @apply truncate text-sm font-semibold text-ink;
   }
 
-  .personnes-section-item-address {
-    @apply mt-0.5 text-xs text-ink-soft;
+  .personnes-section-cell-address {
+    @apply break-words text-xs text-ink-soft;
+  }
+
+  .personnes-section-cell-actions {
+    @apply flex items-center justify-end gap-1;
   }
 
   .personnes-section-item-meta {
-    @apply mt-1 text-[11px] font-semibold text-accent;
+    @apply text-[11px] font-semibold text-accent;
   }
 }

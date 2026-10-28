@@ -23,6 +23,7 @@ export function LeaseReceiptModal({
   const c = useLeaseReceiptModal(leaseRow);
   const panel = useRef<HTMLDivElement>(null);
   const result = c.result;
+  const monthHelp = t("settings.lease.receiptModal.monthHelp");
 
   useEffect(() => {
     panel.current?.focus();
@@ -125,7 +126,11 @@ export function LeaseReceiptModal({
             <FieldGroup
               id="quittance-bail-mois"
               label={t("settings.lease.receiptModal.month")}
-              help={t("settings.lease.receiptModal.monthHelp")}
+              help={
+                c.values.month
+                  ? `${monthHelp} ${formatMonth(c.values.month)}`
+                  : monthHelp
+              }
             >
               <input
                 id="quittance-bail-mois"

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
 import { useCompanies } from "@/api/queries";
 import { MobileNavigation, SideNavigation } from "@/components/layout/AppNav";
+import { CompanySwitcher } from "@/components/layout/CompanySwitcher";
 import { LanguageSelector } from "@/components/layout/LanguageSelector";
 import { LlmBadge } from "@/components/llm/LlmBadge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -55,8 +56,7 @@ export function AppShell() {
   const activeCompanyId = useCompanyStore((state) => state.activeCompanyId);
   const setActiveCompany = useCompanyStore((state) => state.setActiveCompany);
 
-  // Internal plumbing only: no UI switches the active company any more, the
-  // stored id is kept when valid and the first company selected otherwise.
+  // The stored id is kept when valid, the first company selected otherwise.
   useEffect(() => {
     if (!companies.isSuccess) {
       return;
@@ -78,19 +78,13 @@ export function AppShell() {
           <Brand />
         </div>
         <SideNavigation />
-        <div className="app-shell-info-card">
-          <div className="app-shell-info-header">
-            <ShieldCheck
-              size={14}
-              className="app-shell-info-icon"
-              aria-hidden="true"
-            />
-            {t("shell.localDataTitle")}
-          </div>
-          <p className="app-shell-info-text">{t("shell.localDataText")}</p>
-          <div className="mt-3">
-            <LlmBadge dark />
-          </div>
+        <div className="app-shell-local-data" title={t("shell.localDataText")}>
+          <ShieldCheck
+            size={14}
+            className="app-shell-local-data-icon"
+            aria-hidden="true"
+          />
+          <span>{t("shell.localDataTitle")}</span>
         </div>
         <p className="app-shell-footer">{t("shell.footer")}</p>
       </aside>
@@ -99,13 +93,17 @@ export function AppShell() {
         <header className="app-shell-mobile-header lg:hidden">
           <div className="app-shell-mobile-top">
             <Brand compact />
-            <LlmBadge dark />
+            <LlmBadge />
           </div>
           <MobileNavigation />
         </header>
 
         <div className="app-shell-topbar">
-          <LanguageSelector />
+          <CompanySwitcher />
+          <div className="app-shell-topbar-actions">
+            <LlmBadge />
+            <LanguageSelector />
+          </div>
         </div>
 
         <main id="contenu" className="app-shell-main">

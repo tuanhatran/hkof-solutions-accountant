@@ -522,9 +522,10 @@ describe("Multi-company and employees", () => {
         linkCompanyLease(seeded.id, seededLeaseId);
       });
 
-      // No shell switch exists: a cold generation page falls back to the first
-      // company (HKOF), whose "telephone" poste is not configured on the annexe.
+      // Creating the annexe company activated it; switch back to HKOF in the
+      // header context bar before generating the note through the UI.
       cy.visit("/generer/note-frais");
+      cy.get('[data-cy="select-societe-active"]').select(String(seeded.id));
       cy.chooseMonth(MONTHS);
       cy.get('[data-cy="select-type-frais"]').should("not.be.disabled");
       cy.get('[data-cy="select-type-frais"] option[value="telephone"]').should(
@@ -585,7 +586,9 @@ describe("Multi-company and employees", () => {
         '[data-cy^="historique-adresse-note-2026-01"]',
         ANNEXE_LEASE.propertyAddress,
       ).should("be.visible");
-      cy.get('[data-cy="select-societe-active"]').should("not.exist");
+      cy.get('[data-cy="select-societe-active"]')
+        .should("exist")
+        .and("have.value", String(seeded.id));
     });
   });
 });

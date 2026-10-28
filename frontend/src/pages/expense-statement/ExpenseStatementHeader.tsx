@@ -1,13 +1,9 @@
 import "./ExpenseStatementHeader.css";
 import { useTranslation } from "react-i18next";
-import {
-  CalendarDays,
-  ExternalLink,
-  FileCheck2,
-  ReceiptText,
-} from "lucide-react";
+import { ExternalLink, FileCheck2, ReceiptText } from "lucide-react";
 import { api } from "@/api/endpoints";
 import { Button } from "@/components/ui/Button";
+import { MonthField } from "@/components/ui/MonthField";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { formatEUR, formatMonth } from "@/lib/format";
 import type { ExpenseStatementController } from "./useExpenseStatementPage";
@@ -35,10 +31,13 @@ export function ExpenseStatementHeader({
             >
               {t("expenseStatement.page.rentReceiptButton")}
             </Button>
-            <span className="hidden expense-statement-header-month sm:inline-flex">
-              <CalendarDays size={14} aria-hidden="true" />
-              {formatMonth(c.month)}
-            </span>
+            <MonthField
+              id="note-mois"
+              label={t("expenseStatement.entry.monthLabel")}
+              value={c.month}
+              onChange={c.changeMonth}
+              dataCy="select-mois"
+            />
           </>
         }
       />

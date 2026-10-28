@@ -102,86 +102,103 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
             dataCy="aucun-bail"
           />
         ) : (
-          <ul className="lease-section-list">
-            {c.leaseList.map((lease) => (
-              <li
-                key={lease.id}
-                className="lease-section-item"
-                data-cy={`bail-${lease.id}`}
-              >
-                <div className="lease-section-item-body">
-                  <p className="lease-section-item-title">
-                    {lease.landlordName} → {lease.tenantName}
-                  </p>
-                  <p className="lease-section-item-address">
-                    {lease.propertyAddress}
-                  </p>
+          <>
+            <div
+              className="lease-section-headers hidden md:grid"
+              data-cy="entetes-baux"
+            >
+              <span>{t("settings.lease.section.columns.lease")}</span>
+              <span>{t("settings.lease.section.columns.company")}</span>
+              <span className="lease-section-headers-amount">
+                {t("settings.lease.section.columns.rent")}
+              </span>
+              <span className="lease-section-headers-amount">
+                {t("settings.lease.section.columns.charges")}
+              </span>
+              <span className="lease-section-headers-amount">
+                {t("settings.lease.section.columns.total")}
+              </span>
+              <span aria-hidden="true" />
+            </div>
+            <ul className="lease-section-list">
+              {c.leaseList.map((lease) => (
+                <li
+                  key={lease.id}
+                  className="lease-section-item"
+                  data-cy={`bail-${lease.id}`}
+                >
+                  <div className="lease-section-cell lease-section-cell-title">
+                    <p className="lease-section-item-title">
+                      {lease.landlordName} → {lease.tenantName}
+                    </p>
+                    <p className="lease-section-item-address">
+                      {lease.propertyAddress}
+                    </p>
+                  </div>
                   <p
-                    className="lease-section-item-company"
+                    className="lease-section-cell lease-section-cell-company"
                     data-cy={`societe-bail-${lease.id}`}
                   >
-                    {t("settings.lease.section.company", {
-                      company:
-                        lease.companyName ??
-                        t("settings.lease.section.noCompany"),
-                    })}
+                    {lease.companyName ?? t("settings.lease.section.noCompany")}
                   </p>
-                  <p className="lease-section-item-amounts">
-                    {t("settings.lease.section.amounts", {
-                      rent: formatEUR(lease.rentExclCharges ?? "0.00"),
-                      charges: formatEUR(lease.charges ?? "0.00"),
-                    })}{" "}
-                    <span
-                      className="lease-section-item-total"
-                      data-cy={`total-bail-${lease.id}`}
+                  <span className="lease-section-cell lease-section-cell-rent number text-right">
+                    {formatEUR(lease.rentExclCharges ?? "0.00")}
+                  </span>
+                  <span className="lease-section-cell lease-section-cell-charges number text-right">
+                    {formatEUR(lease.charges ?? "0.00")}
+                  </span>
+                  <span
+                    className="lease-section-cell lease-section-cell-total lease-section-item-total number text-right"
+                    data-cy={`total-bail-${lease.id}`}
+                  >
+                    {formatEUR(
+                      Number(lease.rentExclCharges ?? 0) +
+                        Number(lease.charges ?? 0),
+                    )}
+                  </span>
+                  <div className="lease-section-cell lease-section-cell-actions">
+                    <LeaseReceiptButton
+                      lease={lease}
+                      onOpen={() => setReceiptLease(lease)}
+                    />
+                    <Button
+                      variant="ghost"
+                      small
+                      icon={<PencilLine size={13} />}
+                      onClick={() => c.setLeaseForm(lease)}
+                      aria-label={t("settings.lease.section.editAria", {
+                        id: lease.id,
+                      })}
+                      data-cy={`btn-modifier-bail-${lease.id}`}
                     >
-                      {formatEUR(
-                        Number(lease.rentExclCharges ?? 0) +
-                          Number(lease.charges ?? 0),
-                      )}
-                    </span>
-                  </p>
-                </div>
-                <LeaseReceiptButton
-                  lease={lease}
-                  onOpen={() => setReceiptLease(lease)}
-                />
-                <Button
-                  variant="ghost"
-                  small
-                  icon={<PencilLine size={13} />}
-                  onClick={() => c.setLeaseForm(lease)}
-                  aria-label={t("settings.lease.section.editAria", {
-                    id: lease.id,
-                  })}
-                  data-cy={`btn-modifier-bail-${lease.id}`}
-                >
-                  {t("settings.lease.section.edit")}
-                </Button>
-                <Button
-                  variant="ghost"
-                  small
-                  icon={<Trash2 size={13} />}
-                  className="text-danger hover:bg-danger-soft"
-                  onClick={() => c.setLeaseToDelete(lease)}
-                  aria-label={t("settings.lease.section.removeAria", {
-                    id: lease.id,
-                  })}
-                  data-cy={`btn-supprimer-bail-${lease.id}`}
-                >
-                  {t("settings.lease.section.remove")}
-                </Button>
-                <LeaseReceiptHistory
-                  lease={lease}
-                  receipts={allRentReceipts.data}
-                  isPending={allRentReceipts.isPending}
-                  isError={allRentReceipts.isError}
-                  error={allRentReceipts.error}
-                  onRetry={() => void allRentReceipts.refetch()}
-                />
-              </li>
-            ))}
-          </ul>
+                      {t("settings.lease.section.edit")}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      small
+                      icon={<Trash2 size={13} />}
+                      className="text-danger hover:bg-danger-soft"
+                      onClick={() => c.setLeaseToDelete(lease)}
+                      aria-label={t("settings.lease.section.removeAria", {
+                        id: lease.id,
+                      })}
+                      data-cy={`btn-supprimer-bail-${lease.id}`}
+                    >
+                      {t("settings.lease.section.remove")}
+                    </Button>
+                  </div>
+                  <LeaseReceiptHistory
+                    lease={lease}
+                    receipts={allRentReceipts.data}
+                    isPending={allRentReceipts.isPending}
+                    isError={allRentReceipts.isError}
+                    error={allRentReceipts.error}
+                    onRetry={() => void allRentReceipts.refetch()}
+                  />
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
 

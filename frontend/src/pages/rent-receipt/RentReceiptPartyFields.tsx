@@ -10,61 +10,39 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
   const { t } = useTranslation();
   return (
     <>
-      <div className="rent-receipt-party-fields-grid">
-        <FieldGroup
-          id="quittance-mois"
-          label={t("rentReceipt.fields.month")}
-          error={c.errors.month?.message}
-          help={t("rentReceipt.fields.monthHelp")}
-        >
-          <input
-            id="quittance-mois"
-            type="month"
-            className={cn("field", c.errors.month && "field-error")}
-            data-cy="select-mois"
-            aria-invalid={Boolean(c.errors.month)}
-            {...c.register("month", {
-              onChange: (event) => c.changeMonth(event.target.value),
-            })}
-          />
-        </FieldGroup>
-
-        <FieldGroup
+      <FieldGroup
+        id="quittance-template"
+        label={t("rentReceipt.fields.template")}
+        help={t("rentReceipt.fields.templateHelp")}
+        badge={
+          <span className="badge badge-neutral">
+            {t("rentReceipt.fields.versionedBadge")}
+          </span>
+        }
+      >
+        <select
           id="quittance-template"
-          label={t("rentReceipt.fields.template")}
-          help={t("rentReceipt.fields.templateHelp")}
-          badge={
-            <span className="badge badge-neutral">
-              {t("rentReceipt.fields.versionedBadge")}
-            </span>
+          className="field"
+          data-cy="select-template"
+          value={c.selectedModel ?? ""}
+          onChange={(event) =>
+            c.draft.setTemplate(
+              event.target.value ? Number(event.target.value) : null,
+            )
           }
+          disabled={c.templates.isPending || c.models.length === 0}
         >
-          <select
-            id="quittance-template"
-            className="field"
-            data-cy="select-template"
-            value={c.selectedModel ?? ""}
-            onChange={(event) =>
-              c.draft.setTemplate(
-                event.target.value ? Number(event.target.value) : null,
-              )
-            }
-            disabled={c.templates.isPending || c.models.length === 0}
-          >
-            {c.models.length === 0 ? (
-              <option value="">
-                {t("rentReceipt.fields.builtInTemplate")}
-              </option>
-            ) : null}
-            {c.models.map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.name} — v{model.version}
-                {model.active ? t("rentReceipt.fields.activeSuffix") : ""}
-              </option>
-            ))}
-          </select>
-        </FieldGroup>
-      </div>
+          {c.models.length === 0 ? (
+            <option value="">{t("rentReceipt.fields.builtInTemplate")}</option>
+          ) : null}
+          {c.models.map((model) => (
+            <option key={model.id} value={model.id}>
+              {model.name} — v{model.version}
+              {model.active ? t("rentReceipt.fields.activeSuffix") : ""}
+            </option>
+          ))}
+        </select>
+      </FieldGroup>
 
       <div className="rent-receipt-party-fields-grid">
         <FieldGroup

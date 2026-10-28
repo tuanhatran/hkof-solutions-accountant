@@ -42,25 +42,43 @@ export function GenerateExpenseStatementPage() {
       <div className="generate-expense-statement-page-tabs">
         <ViewTabs
           ariaLabel={t("expenseStatement.page.tabsAriaLabel")}
+          idPrefix="expense-view"
           active={c.mobilePanel}
           onChange={(value) =>
             c.setMobilePanel(value === "preview" ? "preview" : "input")
           }
           tabs={[
-            { value: "input", label: t("expenseStatement.page.inputTab") },
+            {
+              value: "input",
+              label: t("expenseStatement.page.inputTab"),
+              panelId: "expense-input-panel",
+            },
             {
               value: "preview",
               label: t("expenseStatement.page.previewTab"),
               updated: Boolean(c.preview.updatedAt),
               className: "flex items-center justify-center gap-2",
+              panelId: "expense-preview-panel",
             },
           ]}
         />
       </div>
 
       <div className="generate-expense-statement-page-grid">
-        <ExpenseInputPane controller={c} />
-        <ExpensePreviewPane controller={c} />
+        <ExpenseInputPane
+          controller={c}
+          panel={{
+            id: "expense-input-panel",
+            labelledBy: "expense-view-tab-input",
+          }}
+        />
+        <ExpensePreviewPane
+          controller={c}
+          panel={{
+            id: "expense-preview-panel",
+            labelledBy: "expense-view-tab-preview",
+          }}
+        />
       </div>
 
       <ConfirmDialog

@@ -1,5 +1,10 @@
 import "./FieldGroup.css";
-import type { ReactNode } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 
 interface FieldGroupProps {
   id: string;
@@ -11,6 +16,44 @@ interface FieldGroupProps {
   children: ReactNode;
 }
 
+type DescribedProps = {
+  "aria-describedby"?: string;
+  children?: ReactNode;
+};
+
+const DESCRIBED_CONTROLS = new Set(["input", "select", "textarea"]);
+
+/** Adds the description id to the native controls found in the children tree. */
+function withDescribedBy(children: ReactNode, describedBy: string): ReactNode {
+  if (Array.isArray(children)) {
+    return children.map((child) => withDescribedBy(child, describedBy));
+  }
+  if (!isValidElement(children)) {
+    return children;
+  }
+  const element = children as ReactElement<DescribedProps>;
+  const props = element.props;
+  if (
+    typeof element.type === "string" &&
+    DESCRIBED_CONTROLS.has(element.type)
+  ) {
+    const existing = props["aria-describedby"];
+    const tokens = existing ? existing.split(/\s+/).filter(Boolean) : [];
+    if (tokens.includes(describedBy)) {
+      return children;
+    }
+    return cloneElement(element, {
+      "aria-describedby": [...tokens, describedBy].join(" "),
+    });
+  }
+  if (props.children === undefined) {
+    return children;
+  }
+  return cloneElement(element, {
+    children: withDescribedBy(props.children, describedBy),
+  });
+}
+
 export function FieldGroup({
   id,
   label,
@@ -20,6 +63,10 @@ export function FieldGroup({
   className,
   children,
 }: FieldGroupProps) {
+  const describedBy = errorText ? `${id}-error` : help ? `${id}-hint` : null;
+  const controls = describedBy
+    ? withDescribedBy(children, describedBy)
+    : children;
   return (
     <div className={className}>
       <div className="field-group-header">
@@ -28,7 +75,7 @@ export function FieldGroup({
         </label>
         {badge}
       </div>
-      {children}
+      {controls}
       {help && !errorText ? (
         <p className="hint" id={`${id}-hint`}>
           {help}

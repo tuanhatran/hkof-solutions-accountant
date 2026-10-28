@@ -6,7 +6,7 @@
   }
 
   .expense-lines-table {
-    @apply min-w-[760px];
+    @apply min-w-[680px];
   }
 
   .expense-lines-table-col-right {

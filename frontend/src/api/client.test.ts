@@ -358,7 +358,7 @@ describe("errorMessage translations", () => {
 
   it("renders a known code in French with its params", () => {
     expect(errorMessage(fileTooLarge)).toBe(
-      "Le fichier dépasse la taille maximale autorisée (10 Mo pour un justificatif, 5 Mo pour un template).",
+      "Le fichier dépasse la taille maximale autorisée (10 Mo pour un justificatif, 5 Mo pour un modèle).",
     );
   });
 

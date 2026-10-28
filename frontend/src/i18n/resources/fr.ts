@@ -29,7 +29,7 @@ export const fr = {
         "Un paramètre de la requête est manquant ou invalide.",
       INVALID_BODY: "Le corps de la requête est absent ou mal formé.",
       FILE_TOO_LARGE:
-        "Le fichier dépasse la taille maximale autorisée ({{maxJustificatif}} Mo pour un justificatif, {{maxTemplate}} Mo pour un template).",
+        "Le fichier dépasse la taille maximale autorisée ({{maxJustificatif}} Mo pour un justificatif, {{maxTemplate}} Mo pour un modèle).",
       INVALID_FILE:
         "Le fichier n'a pas pu être reçu. Vérifiez son format et sa taille.",
       METHOD_NOT_ALLOWED:
@@ -114,7 +114,7 @@ export const fr = {
         "Un salarié avec cette adresse électronique existe déjà dans la société.",
       EMPLOYEE_TITLE_REQUIRED: "L'intitulé du salarié est obligatoire.",
       EMPLOYEE_TITLE_INVALID: "Intitulé de salarié invalide : {{title}}",
-      EXPENSE_ITEM_UNKNOWN_CODE: "Type de frais inconnu : {{code}}",
+      EXPENSE_ITEM_UNKNOWN_CODE: "Poste inconnu : {{code}}",
       EXPENSE_ITEM_NOT_FOUND: "Poste introuvable.",
       EXPENSE_ITEM_LABEL_REQUIRED: "Le libellé du poste est obligatoire.",
       EXPENSE_ITEM_CODE_DUPLICATE:
@@ -138,7 +138,7 @@ export const fr = {
       RENT_RECEIPT_NOT_FOUND: "Quittance introuvable.",
       RENT_RECEIPT_PDF_NOT_FOUND: "Le PDF de cette quittance est introuvable.",
       RENT_RECEIPT_TEMPLATE_INVALID:
-        "Le template sélectionné n'est pas un template de quittance.",
+        "Le modèle sélectionné n'est pas un modèle de quittance.",
       RENT_RECEIPT_PERIOD_INVALID:
         "La fin de période ne peut pas précéder le début.",
       SIGNATURE_MISSING:
@@ -167,20 +167,20 @@ export const fr = {
       SIGNATURE_TOO_LARGE: "Image trop volumineuse (maximum 2 Mo).",
       SIGNATURE_UNSUPPORTED_FORMAT:
         "La signature doit être une image PNG ou JPEG.",
-      TEMPLATE_EMPTY: "Le fichier template est vide.",
-      TEMPLATE_TOO_LARGE: "Template trop volumineux (maximum 5 Mo).",
+      TEMPLATE_EMPTY: "Le fichier du modèle est vide.",
+      TEMPLATE_TOO_LARGE: "Modèle trop volumineux (maximum 5 Mo).",
       TEMPLATE_EXTENSION_INVALID:
-        "Le template doit être un fichier HTML (.html).",
-      TEMPLATE_NOT_TEXT: "Le template HTML doit être un fichier texte UTF-8.",
-      TEMPLATE_ACTIVE_NOT_FOUND: "Aucun template actif pour {{type}}.",
-      TEMPLATE_NOT_FOUND: "Template introuvable.",
-      TEMPLATE_RENDER_FAILED: "Le template « {{name}} » n'a pas pu être rendu.",
-      TEMPLATE_NAME_REQUIRED: "Le nom du template est obligatoire.",
-      TEMPLATE_FILE_UNREADABLE: "Impossible de lire le fichier template.",
+        "Le modèle doit être un fichier HTML (.html).",
+      TEMPLATE_NOT_TEXT: "Le modèle HTML doit être un fichier texte UTF-8.",
+      TEMPLATE_ACTIVE_NOT_FOUND: "Aucun modèle actif pour {{type}}.",
+      TEMPLATE_NOT_FOUND: "Modèle introuvable.",
+      TEMPLATE_RENDER_FAILED: "Le modèle « {{name}} » n'a pas pu être rendu.",
+      TEMPLATE_NAME_REQUIRED: "Le nom du modèle est obligatoire.",
+      TEMPLATE_FILE_UNREADABLE: "Impossible de lire le fichier du modèle.",
       TEMPLATE_BUILT_IN_NOT_DELETABLE:
         "Le modèle intégré ne peut pas être supprimé.",
       TEMPLATE_ACTIVE_NOT_DELETABLE:
-        "Le template actif ne peut pas être supprimé. Activez d'abord un autre modèle.",
+        "Le modèle actif ne peut pas être supprimé. Activez d'abord un autre modèle.",
       TEMPLATE_BUILT_IN_NOT_FOUND: "Modèle intégré introuvable.",
       DOCUMENT_UNSUPPORTED_FORMAT:
         "Format de document non pris en charge pour l'analyse.",
@@ -234,17 +234,20 @@ export const fr = {
       STATEMENT_SIGNATURE_MISSING:
         "Aucune signature configurée pour le gérant. Ajoutez une signature au salarié gérant dans la page LMNP.",
       STATEMENT_TEMPLATE_INVALID:
-        "Le template sélectionné n'est pas un template de note de frais.",
+        "Le modèle sélectionné n'est pas un modèle de note de frais.",
     },
   },
   navigation: {
     ariaLabel: "Navigation principale",
     mobileAriaLabel: "Navigation principale mobile",
     sections: {
+      documents: "Documents",
       tracking: "Suivi",
       settings: "Réglages",
     },
     links: {
+      rentReceipt: "Quittance",
+      expenseStatement: "Note de frais",
       history: "Historique",
       company: "Société",
       lmnp: "LMNP",
@@ -254,6 +257,7 @@ export const fr = {
   shell: {
     skipLink: "Aller au contenu",
     tagline: "Quittances & frais d’occupation",
+    activeCompany: "Société active",
     localDataTitle: "Données locales",
     localDataText:
       "Aucune donnée ne quitte votre machine tant que l’URL du LLM reste locale.",
@@ -278,9 +282,7 @@ export const fr = {
       previewTab: "Aperçu",
     },
     form: {
-      step: "Étape 1",
       title: "Paramètres de la quittance",
-      backendBadge: "Calcul backend",
       generate: "Générer la quittance",
       resumeLease: "Reprendre le bail",
       latestVersion:
@@ -296,7 +298,7 @@ export const fr = {
       charges: "Provision pour charges",
       estimatedTotal: "Total estimé",
       estimatedTotalNote:
-        "Affichage estimé. Le backend calcule le total du PDF avec arrondi au centime.",
+        "Affichage estimé. Le total du PDF est recalculé avec arrondi au centime.",
       paymentDate: "Date de paiement",
       issueDate: "Date d’émission",
       leaseSourceHint:
@@ -304,7 +306,7 @@ export const fr = {
       configurationLink: "configuration",
       month: "Mois concerné",
       monthHelp: "La période est recalculée automatiquement.",
-      template: "Template",
+      template: "Modèle",
       templateHelp: "Le modèle actif est utilisé par défaut.",
       versionedBadge: "Versionné",
       builtInTemplate: "Modèle intégré",
@@ -341,15 +343,15 @@ export const fr = {
       missingLease:
         "Sélectionnez un bailleur et un locataire liés par un bail actif.",
       missingSignature: "Configurez une signature pour afficher l’aperçu.",
-      templateAria: "Template de la quittance",
+      templateAria: "Modèle de la quittance",
       builtInTemplate: "Modèle intégré",
-      note: "L’aperçu est rendu par le backend à partir du template actif. Il porte un filigrane et n’est jamais enregistré.",
+      note: "L’aperçu est rendu par le backend à partir du modèle actif. Il porte un filigrane et n’est jamais enregistré.",
     },
     result: {
       title: "Quittance générée",
       meta: "{{month}} · version {{version}} · {{total}}",
       recorded:
-        "Enregistrée dans l’historique avec le template « {{name}} » v{{version}}.",
+        "Enregistrée dans l’historique avec le modèle « {{name}} » v{{version}}.",
       builtInTemplate: "modèle intégré",
       download: "Télécharger le PDF",
       open: "Ouvrir",
@@ -400,7 +402,7 @@ export const fr = {
   templates: {
     tab: {
       warning:
-        "Les templates ne peuvent exécuter aucun code : Mustache sans logique, HTML assaini, images en data URI uniquement, aucune ressource distante. Un fichier refusé affiche les erreurs de validation sans être enregistré.",
+        "Les modèles ne peuvent exécuter aucun code : Mustache sans logique, HTML assaini, images en data URI uniquement, aucune ressource distante. Un fichier refusé affiche les erreurs de validation sans être enregistré.",
     },
     types: {
       rentReceipt: {
@@ -465,8 +467,8 @@ export const fr = {
         "Fichier HTML UTF-8, 5 Mo maximum. Le nouveau modèle est validé puis importé sans être activé : vous pouvez d’abord l’aperçu avec des données d’exemple.",
       nameLabel: "Nom de la version",
       namePlaceholder: "Ex. Quittance — version 2027",
-      dropzoneText: "Déposez votre template HTML",
-      dropzoneAria: "Choisir un fichier template HTML",
+      dropzoneText: "Déposez votre modèle HTML",
+      dropzoneAria: "Choisir un fichier de modèle HTML",
       submit: "Valider et importer",
       note: "Une version importée doit être activée explicitement.",
     },
@@ -494,7 +496,7 @@ export const fr = {
       hide: "Masquer",
       loading: "Chargement des variables…",
       intro:
-        "Les montants sont déjà formatés en français par le backend : le template ne calcule rien. Les expressions non échappées, scripts, iframes, ressources distantes et expressions Thymeleaf/JSP sont refusés.",
+        "Les montants sont déjà formatés en français par le backend : le modèle ne calcule rien. Les expressions non échappées, scripts, iframes, ressources distantes et expressions Thymeleaf/JSP sont refusés.",
       loopTitle: "Boucle des frais",
       loopBefore: "Dans la boucle",
       loopAfter: ", les variables internes s’écrivent",
@@ -582,12 +584,12 @@ export const fr = {
       selectAria: "Société à configurer",
       newCompany: "Nouvelle société",
       deleteButton: "Supprimer",
-      tabsAria: "Sections de l’entreprise",
+      tabsAria: "Sections de la société",
       tabs: {
         identification: "Info générale",
         leaseExpenses: "Baux & Frais",
         employees: "Salariés",
-        templates: "Templates",
+        templates: "Modèles",
       },
       loading: "Chargement des sociétés…",
       empty: "Aucune société configurée. Créez la première société.",
@@ -634,12 +636,18 @@ export const fr = {
         title: "Baux de la société",
         description:
           "Une société peut être locataire de plusieurs baux. Cliquez sur un bail pour l’activer et déplier ses frais : postes et notes de frais suivent ce bail.",
+        columns: {
+          lease: "Bail",
+          rent: "Loyer",
+          charges: "Charges",
+          actions: "Actions",
+        },
         add: "Ajouter un bail",
         loading: "Chargement des baux…",
         empty:
           "Aucun bail pour cette société. Ajoutez le premier bail avec « Ajouter un bail ».",
         addressFallback: "Bail sans adresse",
-        meta: "Bailleur {{landlord}} · Loyer {{rent}} · Charges {{charges}}",
+        meta: "Bailleur {{landlord}}",
         activeBadge: "Bail actif",
         statement: "Note de frais",
         edit: "Modifier",
@@ -665,6 +673,13 @@ export const fr = {
         title: "Baux et adresses",
         description:
           "Une adresse peut porter plusieurs baux. Sélectionnez une adresse pour afficher ses baux et fixer le loyer et les charges.",
+        columns: {
+          lease: "Bail",
+          company: "Société",
+          rent: "Loyer",
+          charges: "Charges",
+          total: "Total",
+        },
         add: "Ajouter un bail",
         addressLabel: "Adresse des baux",
         addressHelp: "Seuls les baux de l’adresse sélectionnée sont affichés.",
@@ -788,13 +803,19 @@ export const fr = {
       tabs: {
         leases: "Baux et adresses",
         persons: "Personnes",
-        templates: "Templates",
+        templates: "Modèles",
       },
     },
     employees: {
       title: "Salariés",
       description:
         "Les salariés appartiennent à la société sélectionnée. Leur intitulé est descriptif et ne donne encore aucun droit.",
+      columns: {
+        employee: "Salarié",
+        title: "Intitulé",
+        contact: "Coordonnées",
+        signatures: "Signatures",
+      },
       add: "Ajouter un salarié",
       selectCompany: "Sélectionnez une société pour gérer ses salariés.",
       loading: "Chargement des salariés…",
@@ -843,10 +864,10 @@ export const fr = {
       },
     },
     expenses: {
-      title: "Frais",
+      title: "Postes",
       description:
         "Libellés, fournisseurs, prorata par défaut et périodicité alimentent la note de frais. Suppression logique uniquement.",
-      add: "Ajouter un frais",
+      add: "Ajouter un poste",
       loading: "Chargement des postes…",
       empty:
         "Aucun poste configuré. Ajoutez au moins « Loyer » et vos frais courants.",
@@ -866,7 +887,7 @@ export const fr = {
       remove: "Retirer",
       deleted: "Poste désactivé et retiré de la liste des frais.",
       deleteDialog: {
-        title: "Retirer ce type de frais ?",
+        title: "Retirer ce poste ?",
         message:
           "« {{label}} » ne sera plus proposé dans la note de frais. Les documents existants conservent leurs lignes et leurs montants.",
         confirm: "Retirer le poste",
@@ -877,8 +898,8 @@ export const fr = {
         ANNUAL: "Annuelle",
       },
       form: {
-        createTitle: "Ajouter un frais de frais",
-        editTitle: "Modifier le type de frais",
+        createTitle: "Ajouter un poste",
+        editTitle: "Modifier le poste",
         code: "Code",
         codeHelpEdit: "Le code est immuable après création.",
         codeHelpCreate: "Facultatif : généré depuis le libellé si vide.",
@@ -910,6 +931,11 @@ export const fr = {
       title: "Personnes",
       description:
         "Personnes physiques utilisées comme bailleur ou locataire d’un bail. Chaque personne peut porter ses signatures.",
+      columns: {
+        person: "Personne",
+        address: "Adresse",
+        signatures: "Signatures",
+      },
       add: "Ajouter une personne",
       loading: "Chargement des personnes…",
       empty:
@@ -1199,7 +1225,7 @@ export const fr = {
       amountInclVat: "Montant TTC",
       retainedEstimate: "Montant retenu estimé",
       retainedNote:
-        "Estimation d’affichage : le backend recalcule chaque ligne avec arrondi au centime.",
+        "Estimation d’affichage : chaque ligne est recalculée avec arrondi au centime.",
       lowConfidence:
         "Confiance faible : vérifiez le montant avant d’ajouter le frais.",
     },
@@ -1211,7 +1237,7 @@ export const fr = {
       count_other: "{{count}} lignes",
       emptyTitle: "Aucun frais pour {{month}}",
       emptyText:
-        "Sélectionnez un type de frais ci-dessus, déposez un justificatif et ajoutez la ligne.",
+        "Sélectionnez un poste ci-dessus, déposez un justificatif et ajoutez la ligne.",
       table: {
         type: "Type",
         supplier: "Fournisseur",
@@ -1230,7 +1256,8 @@ export const fr = {
       inWords: "Soit {{words}}.",
       proRataBase: "Base de prorata :",
       referenceShare: "Quote-part de référence :",
-      backendCalculation: "Calcul backend · recalcul automatique (300 ms).",
+      calculationNote:
+        "Montants recalculés automatiquement à chaque modification.",
       calculationError: "Calcul indisponible : {{message}}",
       signature: "Signature",
       signatureHelp:
@@ -1245,11 +1272,11 @@ export const fr = {
       missingSignatureBefore:
         "Aucune signature pour le PDG. Ajoutez-en une dans sa fiche salarié, page",
       missingSignatureAfter: ".",
-      companyLink: "Entreprise",
+      companyLink: "Société",
       generate: "Générer la note de frais",
       hintNoLine: "Ajoutez au moins un frais pour générer la note.",
       hintNoSignature: "Configurez une signature pour générer la note.",
-      hintStaleCalculation: "En attente du calcul backend à jour…",
+      hintStaleCalculation: "Mise à jour du calcul…",
       hintNextVersion:
         "Une version {{version}} existe : la version {{next}} sera créée.",
       hintSaved: "Le PDF définitif sera enregistré dans l’historique.",
@@ -1258,7 +1285,7 @@ export const fr = {
       invalidLines: "Corrigez les lignes en rouge pour actualiser l’aperçu.",
       noLine: "Ajoutez un frais pour voir l’aperçu de la note.",
       noSignature: "Configurez une signature pour afficher l’aperçu.",
-      templateAria: "Template de la note de frais",
+      templateAria: "Modèle de la note de frais",
       builtInTemplate: "Modèle intégré",
       builtInTemplateName: "modèle intégré",
       withAttachments: "Avec annexes",
@@ -1268,7 +1295,7 @@ export const fr = {
       title: "Note de frais générée",
       meta: "{{month}} · version {{version}} · {{total}}",
       recorded:
-        "Enregistrée avec le template « {{name}} » v{{version}} le {{date}}.",
+        "Enregistrée avec le modèle « {{name}} » v{{version}} le {{date}}.",
       download: "Télécharger la note seule",
       downloadComplete: "Télécharger la note complète (ZIP)",
       open: "Ouvrir",
@@ -1362,10 +1389,10 @@ export const fr = {
       amount: "Saisissez un montant supérieur à 0 (ex. 80,50).",
       proRata: "Prorata attendu entre 0 et 100 (2 décimales max).",
       alreadyAdded:
-        "Ce type est déjà présent. Modifiez la ligne existante ou autorisez plusieurs lignes.",
+        "Ce poste est déjà présent. Modifiez la ligne existante ou autorisez plusieurs lignes.",
       rentReceiptRequired:
-        "Ajoutez d’abord la quittance du mois pour utiliser ce type.",
-      receiptRequired: "Le justificatif est obligatoire pour ce type de frais.",
+        "Ajoutez d’abord la quittance du mois pour utiliser ce poste.",
+      receiptRequired: "Le justificatif est obligatoire pour ce poste.",
     },
   },
 };

@@ -2,31 +2,31 @@
 
 @layer components {
   .app-nav {
-    @apply mt-8 flex-1 space-y-6;
+    @apply mt-7 flex-1 space-y-5;
   }
 
   .app-nav-section {
-    @apply px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35;
+    @apply px-2 text-[11px] font-semibold text-ink-soft;
   }
 
   .app-nav-group {
-    @apply mt-3 pl-6 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30;
+    @apply mt-3 pl-5 text-[11px] font-medium text-ink-soft;
   }
 
   .app-nav-links {
-    @apply mt-2 space-y-1;
+    @apply mt-1.5 space-y-0.5;
   }
 
   .app-nav-link {
-    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium transition;
+    @apply flex min-h-11 items-center gap-2.5 rounded-md px-2 py-2 text-[13.5px] font-medium transition;
   }
 
   .app-nav-link-active {
-    @apply bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)];
+    @apply bg-accent-soft text-accent;
   }
 
   .app-nav-link-idle {
-    @apply text-white/60 hover:bg-white/[0.06] hover:text-white/90;
+    @apply text-ink-soft hover:bg-paper hover:text-ink;
   }
 
   .app-nav-icon {
@@ -34,30 +34,30 @@
   }
 
   .app-nav-icon-active {
-    @apply text-copper-light;
+    @apply text-accent;
   }
 
   .app-nav-icon-idle {
-    @apply text-white/45 group-hover:text-white/70;
+    @apply text-ink-soft;
   }
 
   .app-nav-dot {
-    @apply h-1.5 w-1.5 rounded-full bg-copper-light;
+    @apply h-1.5 w-1.5 rounded-full bg-accent;
   }
 
   .app-nav-mobile {
-    @apply -mx-1 mt-3 flex gap-1 overflow-x-auto pb-0.5;
+    @apply -mx-1 mt-2.5 flex gap-1 overflow-x-auto pb-0.5;
   }
 
   .app-nav-mobile-link {
-    @apply flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition;
+    @apply flex min-h-11 shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-medium transition;
   }
 
   .app-nav-mobile-link-active {
-    @apply bg-white/12 text-white;
+    @apply bg-accent-soft text-accent;
   }
 
   .app-nav-mobile-link-idle {
-    @apply text-white/60 hover:text-white/90;
+    @apply text-ink-soft hover:bg-paper hover:text-ink;
   }
 }

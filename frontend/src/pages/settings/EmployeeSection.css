@@ -10,23 +10,35 @@
   }
 
   .employee-section-list {
-    @apply space-y-3;
+    @apply divide-y divide-line overflow-hidden rounded-xl border border-line bg-paper/40;
+  }
+
+  .employee-section-headers {
+    @apply grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1.8fr)_6.5rem_12rem] items-center gap-3 border-b border-line px-3 py-1.5 text-[11px] text-ink-soft;
+  }
+
+  .employee-section-headers-signatures {
+    @apply text-right;
   }
 
   .employee-section-item {
-    @apply flex flex-wrap items-start gap-3 rounded-xl border border-line bg-paper/40 p-3;
+    @apply grid gap-x-3 gap-y-1 px-3 py-2 md:min-h-9 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1.8fr)_6.5rem_12rem] md:items-center md:py-1.5;
   }
 
-  .employee-section-item-body {
-    @apply min-w-0 flex-1;
+  .employee-section-cell {
+    @apply min-w-0;
   }
 
-  .employee-section-item-title {
+  .employee-section-cell-name {
     @apply text-sm font-semibold text-ink;
   }
 
-  .employee-section-item-meta {
-    @apply mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-soft;
+  .employee-section-cell-contact {
+    @apply flex flex-col gap-0.5 text-xs text-ink-soft;
+  }
+
+  .employee-section-cell-actions {
+    @apply flex items-center justify-end gap-1;
   }
 
   .employee-section-item-email {
@@ -34,11 +46,11 @@
   }
 
   .employee-section-item-address {
-    @apply mt-1 text-xs text-ink-soft;
+    @apply break-words;
   }
 
   .employee-section-item-signatures {
-    @apply mt-1 text-[11px] font-semibold text-accent;
+    @apply text-[11px] font-semibold text-accent;
   }
 
   .employee-form {

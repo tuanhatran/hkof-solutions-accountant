@@ -96,68 +96,84 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
             dataCy="aucun-salarie"
           />
         ) : (
-          <ul className="employee-section-list">
-            {list.map((employee) => (
-              <li
-                key={employee.id}
-                className="employee-section-item"
-                data-cy={`salarie-${employee.id}`}
-              >
-                <div className="employee-section-item-body">
-                  <p className="employee-section-item-title">
+          <>
+            <div
+              className="employee-section-headers hidden md:grid"
+              data-cy="entetes-salaries"
+            >
+              <span>{t("settings.employees.columns.employee")}</span>
+              <span>{t("settings.employees.columns.title")}</span>
+              <span>{t("settings.employees.columns.contact")}</span>
+              <span className="employee-section-headers-signatures">
+                {t("settings.employees.columns.signatures")}
+              </span>
+              <span aria-hidden="true" />
+            </div>
+            <ul className="employee-section-list">
+              {list.map((employee) => (
+                <li
+                  key={employee.id}
+                  className="employee-section-item"
+                  data-cy={`salarie-${employee.id}`}
+                >
+                  <p className="employee-section-cell employee-section-cell-name employee-section-item-title">
                     {employee.firstName} {employee.lastName}
                   </p>
-                  <p className="employee-section-item-meta">
+                  <div className="employee-section-cell employee-section-cell-title">
                     <span className="badge badge-neutral">
                       {employeeTitleLabel(employee.title, t)}
                     </span>
+                  </div>
+                  <div className="employee-section-cell employee-section-cell-contact">
                     {employee.email ? (
                       <span className="employee-section-item-email">
                         {employee.email}
                       </span>
                     ) : null}
-                  </p>
-                  <p className="employee-section-item-address">
-                    {employee.address ||
-                      t("settings.employees.addressFallback")}
-                  </p>
+                    <span className="employee-section-item-address">
+                      {employee.address ||
+                        t("settings.employees.addressFallback")}
+                    </span>
+                  </div>
                   <p
-                    className="employee-section-item-signatures"
+                    className="employee-section-cell employee-section-cell-signatures employee-section-item-signatures number text-right"
                     data-cy={`signatures-salarie-${employee.id}`}
                   >
                     {t("settings.employees.signatureCount", {
                       count: employee.signatureCount ?? 0,
                     })}
                   </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  small
-                  icon={<PencilLine size={13} />}
-                  onClick={() => setEmployeeForm(employee)}
-                  aria-label={t("settings.employees.editAria", {
-                    name: `${employee.firstName ?? ""} ${employee.lastName ?? ""}`,
-                  })}
-                  data-cy={`btn-modifier-salarie-${employee.id}`}
-                >
-                  {t("settings.employees.edit")}
-                </Button>
-                <Button
-                  variant="ghost"
-                  small
-                  icon={<Trash2 size={13} />}
-                  className="text-danger hover:bg-danger-soft"
-                  onClick={() => setToDelete(employee)}
-                  aria-label={t("settings.employees.removeAria", {
-                    name: `${employee.firstName ?? ""} ${employee.lastName ?? ""}`,
-                  })}
-                  data-cy={`btn-supprimer-salarie-${employee.id}`}
-                >
-                  {t("settings.employees.remove")}
-                </Button>
-              </li>
-            ))}
-          </ul>
+                  <div className="employee-section-cell employee-section-cell-actions">
+                    <Button
+                      variant="ghost"
+                      small
+                      icon={<PencilLine size={13} />}
+                      onClick={() => setEmployeeForm(employee)}
+                      aria-label={t("settings.employees.editAria", {
+                        name: `${employee.firstName ?? ""} ${employee.lastName ?? ""}`,
+                      })}
+                      data-cy={`btn-modifier-salarie-${employee.id}`}
+                    >
+                      {t("settings.employees.edit")}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      small
+                      icon={<Trash2 size={13} />}
+                      className="text-danger hover:bg-danger-soft"
+                      onClick={() => setToDelete(employee)}
+                      aria-label={t("settings.employees.removeAria", {
+                        name: `${employee.firstName ?? ""} ${employee.lastName ?? ""}`,
+                      })}
+                      data-cy={`btn-supprimer-salarie-${employee.id}`}
+                    >
+                      {t("settings.employees.remove")}
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
 

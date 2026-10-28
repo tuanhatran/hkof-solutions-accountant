@@ -78,57 +78,70 @@ export function PersonnesSection() {
             dataCy="aucune-personne"
           />
         ) : (
-          <ul className="personnes-section-list">
-            {list.map((person) => (
-              <li
-                key={person.id}
-                className="personnes-section-item"
-                data-cy={`personne-${person.id}`}
-              >
-                <div className="personnes-section-item-body">
-                  <p className="personnes-section-item-name">
+          <>
+            <div
+              className="personnes-section-headers hidden md:grid"
+              data-cy="entetes-personnes"
+            >
+              <span>{t("settings.people.columns.person")}</span>
+              <span>{t("settings.people.columns.address")}</span>
+              <span className="personnes-section-headers-signatures">
+                {t("settings.people.columns.signatures")}
+              </span>
+              <span aria-hidden="true" />
+            </div>
+            <ul className="personnes-section-list">
+              {list.map((person) => (
+                <li
+                  key={person.id}
+                  className="personnes-section-item"
+                  data-cy={`personne-${person.id}`}
+                >
+                  <p className="personnes-section-cell personnes-section-cell-name personnes-section-item-name">
                     {person.name ?? t("settings.people.nameFallback")}
                   </p>
-                  <p className="personnes-section-item-address">
+                  <p className="personnes-section-cell personnes-section-cell-address personnes-section-item-address">
                     {person.address || t("settings.people.addressFallback")}
                   </p>
                   <p
-                    className="personnes-section-item-meta"
+                    className="personnes-section-cell personnes-section-cell-signatures personnes-section-item-meta number text-right"
                     data-cy={`signatures-personne-${person.id}`}
                   >
                     {t("settings.people.signatureCount", {
                       count: person.signatureCount ?? 0,
                     })}
                   </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  small
-                  icon={<PencilLine size={13} />}
-                  onClick={() => setForm(person)}
-                  aria-label={t("settings.people.editAria", {
-                    name: person.name ?? t("settings.people.editFallback"),
-                  })}
-                  data-cy={`btn-modifier-personne-${person.id}`}
-                >
-                  {t("settings.people.edit")}
-                </Button>
-                <Button
-                  variant="ghost"
-                  small
-                  icon={<Trash2 size={13} />}
-                  className="text-danger hover:bg-danger-soft"
-                  onClick={() => setToDelete(person)}
-                  aria-label={t("settings.people.removeAria", {
-                    name: person.name ?? t("settings.people.editFallback"),
-                  })}
-                  data-cy={`btn-supprimer-personne-${person.id}`}
-                >
-                  {t("settings.people.remove")}
-                </Button>
-              </li>
-            ))}
-          </ul>
+                  <div className="personnes-section-cell personnes-section-cell-actions">
+                    <Button
+                      variant="ghost"
+                      small
+                      icon={<PencilLine size={13} />}
+                      onClick={() => setForm(person)}
+                      aria-label={t("settings.people.editAria", {
+                        name: person.name ?? t("settings.people.editFallback"),
+                      })}
+                      data-cy={`btn-modifier-personne-${person.id}`}
+                    >
+                      {t("settings.people.edit")}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      small
+                      icon={<Trash2 size={13} />}
+                      className="text-danger hover:bg-danger-soft"
+                      onClick={() => setToDelete(person)}
+                      aria-label={t("settings.people.removeAria", {
+                        name: person.name ?? t("settings.people.editFallback"),
+                      })}
+                      data-cy={`btn-supprimer-personne-${person.id}`}
+                    >
+                      {t("settings.people.remove")}
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
 

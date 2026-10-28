@@ -1,5 +1,5 @@
 import "./RentReceiptForm.css";
-import { LoaderCircle, ReceiptText, RotateCcw, Sparkles } from "lucide-react";
+import { LoaderCircle, ReceiptText, RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import type { RentReceiptController } from "./useRentReceiptPage";
@@ -15,15 +15,10 @@ export function RentReceiptForm({ c }: { c: RentReceiptController }) {
       <div className="card">
         <div className="card-header">
           <div>
-            <p className="eyebrow">{t("rentReceipt.form.step")}</p>
             <h2 className="rent-receipt-form-title">
               {t("rentReceipt.form.title")}
             </h2>
           </div>
-          <span className="badge badge-neutral">
-            <Sparkles size={11} aria-hidden="true" />
-            {t("rentReceipt.form.backendBadge")}
-          </span>
         </div>
 
         <div className="card-body rent-receipt-form-body">

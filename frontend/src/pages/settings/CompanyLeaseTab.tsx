@@ -148,91 +148,129 @@ export function CompanyLeaseTab({
               dataCy="liste-baux-societe-vide"
             />
           ) : (
-            <ul className="company-lease-tab-list">
-              {orderedLeases.map((lease) => {
-                const selected = lease.id === selectedLeaseId;
-                const expanded = lease.id === expandedLeaseId;
-                return (
-                  <li key={lease.id} className="company-lease-tab-list-item">
-                    <div
-                      className={cn(
-                        "company-lease-tab-item",
-                        selected && "company-lease-tab-item-selected",
-                      )}
-                    >
-                      <button
-                        type="button"
-                        className="company-lease-tab-item-toggle"
-                        onClick={() => toggleLease(lease.id as number)}
-                        aria-expanded={expanded}
-                        disabled={linkLease.isPending}
-                        data-cy={`bail-societe-${lease.id}`}
+            <>
+              <div
+                className="company-lease-tab-headers hidden md:grid"
+                data-cy="entetes-baux-societe"
+              >
+                <span>{t("settings.company.leaseTab.columns.lease")}</span>
+                <span className="company-lease-tab-headers-amount">
+                  {t("settings.company.leaseTab.columns.rent")}
+                </span>
+                <span className="company-lease-tab-headers-amount">
+                  {t("settings.company.leaseTab.columns.charges")}
+                </span>
+                <span className="company-lease-tab-headers-actions">
+                  {t("settings.company.leaseTab.columns.actions")}
+                </span>
+              </div>
+              <ul className="company-lease-tab-list">
+                {orderedLeases.map((lease) => {
+                  const selected = lease.id === selectedLeaseId;
+                  const expanded = lease.id === expandedLeaseId;
+                  return (
+                    <li key={lease.id} className="company-lease-tab-list-item">
+                      <div
+                        className={cn(
+                          "company-lease-tab-item",
+                          selected && "company-lease-tab-item-selected",
+                        )}
                       >
-                        <span className="company-lease-tab-item-main">
-                          <span className="company-lease-tab-item-address">
-                            {lease.propertyAddress ??
-                              t("settings.company.leaseTab.addressFallback")}
+                        <button
+                          type="button"
+                          className="company-lease-tab-item-toggle"
+                          onClick={() => toggleLease(lease.id as number)}
+                          aria-expanded={expanded}
+                          disabled={linkLease.isPending}
+                          data-cy={`bail-societe-${lease.id}`}
+                        >
+                          <span className="company-lease-tab-item-main">
+                            <span className="company-lease-tab-item-address">
+                              {lease.propertyAddress ??
+                                t("settings.company.leaseTab.addressFallback")}
+                            </span>
+                            <span className="company-lease-tab-item-meta">
+                              {t("settings.company.leaseTab.meta", {
+                                landlord: lease.landlordName ?? "—",
+                                rent: formatEUR(
+                                  lease.rentExclCharges ?? "0.00",
+                                ),
+                                charges: formatEUR(lease.charges ?? "0.00"),
+                              })}
+                            </span>
+                            {selected ? (
+                              <span className="badge badge-accent mt-1 self-start">
+                                {t("settings.company.leaseTab.activeBadge")}
+                              </span>
+                            ) : null}
                           </span>
-                          <span className="company-lease-tab-item-meta">
-                            {t("settings.company.leaseTab.meta", {
-                              landlord: lease.landlordName ?? "—",
-                              rent: formatEUR(lease.rentExclCharges ?? "0.00"),
-                              charges: formatEUR(lease.charges ?? "0.00"),
-                            })}
+                          <span
+                            className="company-lease-tab-item-amount number text-right"
+                            data-cy={`loyer-bail-societe-${lease.id}`}
+                          >
+                            {formatEUR(lease.rentExclCharges ?? "0.00")}
                           </span>
-                        </span>
-                        {selected ? (
-                          <span className="badge badge-accent">
-                            {t("settings.company.leaseTab.activeBadge")}
+                          <span
+                            className="company-lease-tab-item-amount number text-right"
+                            data-cy={`charges-bail-societe-${lease.id}`}
+                          >
+                            {formatEUR(lease.charges ?? "0.00")}
                           </span>
-                        ) : null}
-                      </button>
-                      <Button
-                        variant="ghost"
-                        small
-                        icon={<FileText size={13} />}
-                        onClick={() => setStatementLease(lease)}
-                        data-cy={`btn-note-frais-bail-societe-${lease.id}`}
-                      >
-                        {t("settings.company.leaseTab.statement")}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        small
-                        icon={<PencilLine size={13} />}
-                        onClick={() => setEditingLease(lease)}
-                        data-cy={`btn-modifier-bail-societe-${lease.id}`}
-                      >
-                        {t("settings.company.leaseTab.edit")}
-                      </Button>
-                    </div>
-                    <CompanyLeaseStatementHistory
-                      lease={lease}
-                      statements={statements.data}
-                      isPending={statements.isPending}
-                      isError={statements.isError}
-                      error={statements.error}
-                      onRetry={() => void statements.refetch()}
-                    />
-                    {expanded ? (
-                      <div className="company-lease-tab-item-expanded">
-                        <CompanyLeaseView
-                          lease={lease}
-                          proRataBase={lease.proRataBase ?? null}
-                        />
-                        <ExpenseItemsManager
-                          companyId={company.id as number}
-                          leaseId={lease.id as number}
-                          defaultProRata={
-                            lease.proRataBase ?? company.proRataBase ?? "100.00"
-                          }
-                        />
+                        </button>
+                        <div
+                          className="company-lease-tab-item-actions"
+                          data-cy={`actions-bail-societe-${lease.id}`}
+                        >
+                          <Button
+                            variant="ghost"
+                            small
+                            icon={<FileText size={13} />}
+                            onClick={() => setStatementLease(lease)}
+                            data-cy={`btn-note-frais-bail-societe-${lease.id}`}
+                          >
+                            {t("settings.company.leaseTab.statement")}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            small
+                            icon={<PencilLine size={13} />}
+                            onClick={() => setEditingLease(lease)}
+                            data-cy={`btn-modifier-bail-societe-${lease.id}`}
+                          >
+                            {t("settings.company.leaseTab.edit")}
+                          </Button>
+                        </div>
                       </div>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
+                      <CompanyLeaseStatementHistory
+                        lease={lease}
+                        statements={statements.data}
+                        isPending={statements.isPending}
+                        isError={statements.isError}
+                        error={statements.error}
+                        onRetry={() => void statements.refetch()}
+                      />
+                      {expanded ? (
+                        <div className="company-lease-tab-item-expanded">
+                          <CompanyLeaseView
+                            lease={lease}
+                            proRataBase={lease.proRataBase ?? null}
+                          />
+                          <ExpenseItemsManager
+                            companyId={company.id as number}
+                            leaseId={lease.id as number}
+                            defaultProRata={
+                              lease.proRataBase ??
+                              company.proRataBase ??
+                              "100.00"
+                            }
+                          />
+                        </div>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
           )}
         </div>
       </section>

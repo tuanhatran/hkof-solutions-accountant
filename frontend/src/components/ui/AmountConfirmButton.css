@@ -6,7 +6,7 @@
   }
 
   .amount-confirm-button {
-    @apply grid h-8 w-8 shrink-0 place-items-center rounded-lg border transition;
+    @apply grid h-11 w-11 shrink-0 place-items-center rounded-lg border transition;
   }
 
   .amount-confirm-button-confirmed {
@@ -18,7 +18,7 @@
   }
 
   .amount-confirm-button-text {
-    @apply text-[11px] leading-snug;
+    @apply text-[12px] leading-snug;
   }
 
   .amount-confirm-button-text-confirmed {

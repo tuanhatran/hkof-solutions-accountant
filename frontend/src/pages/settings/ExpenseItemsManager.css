@@ -33,6 +33,14 @@
     @apply overflow-x-auto rounded-xl border border-line;
   }
 
+  .expense-table.expense-items-table th {
+    @apply h-9 px-3 py-1.5;
+  }
+
+  .expense-table.expense-items-table td {
+    @apply h-9 px-3 py-1.5 align-middle;
+  }
+
   .expense-items-manager-item {
     @apply flex flex-wrap items-center gap-1.5;
   }
@@ -54,7 +62,7 @@
   }
 
   .expense-items-manager-order-cell {
-    @apply text-center text-ink-soft;
+    @apply text-right text-ink-soft;
   }
 
   .expense-items-manager-single-line {

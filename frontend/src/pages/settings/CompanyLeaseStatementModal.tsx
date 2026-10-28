@@ -105,6 +105,7 @@ export function CompanyLeaseStatementModal({
         <div className="company-lease-statement-tabs">
           <ViewTabs
             ariaLabel={t("settings.company.statementModal.tabsAria")}
+            idPrefix="lease-view"
             active={c.mobilePanel}
             onChange={(value) =>
               c.setMobilePanel(value === "preview" ? "preview" : "input")
@@ -113,20 +114,34 @@ export function CompanyLeaseStatementModal({
               {
                 value: "input",
                 label: t("settings.company.statementModal.input"),
+                panelId: "lease-input-panel",
               },
               {
                 value: "preview",
                 label: t("settings.company.statementModal.preview"),
                 updated: Boolean(c.preview.updatedAt),
                 className: "flex items-center justify-center gap-2",
+                panelId: "lease-preview-panel",
               },
             ]}
           />
         </div>
 
         <div className="company-lease-statement-grid">
-          <ExpenseInputPane controller={c} />
-          <ExpensePreviewPane controller={c} />
+          <ExpenseInputPane
+            controller={c}
+            panel={{
+              id: "lease-input-panel",
+              labelledBy: "lease-view-tab-input",
+            }}
+          />
+          <ExpensePreviewPane
+            controller={c}
+            panel={{
+              id: "lease-preview-panel",
+              labelledBy: "lease-view-tab-preview",
+            }}
+          />
         </div>
 
         <div className="company-lease-statement-actions">

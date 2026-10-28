@@ -73,7 +73,7 @@ describe("ExpenseItemForm", () => {
     renderForm();
 
     expect(
-      screen.getByRole("heading", { name: "Ajouter un frais de frais" }),
+      screen.getByRole("heading", { name: "Ajouter un poste" }),
     ).toBeVisible();
     expect(screen.getByLabelText("Code")).toBeEnabled();
     expect(screen.getByLabelText("Code")).toHaveValue("");
@@ -216,7 +216,7 @@ describe("ExpenseItemForm", () => {
     const { onClose } = renderForm({ item: ITEM });
 
     expect(
-      screen.getByRole("heading", { name: "Modifier le type de frais" }),
+      screen.getByRole("heading", { name: "Modifier le poste" }),
     ).toBeVisible();
     expect(screen.getByText("gaz")).toBeVisible();
     expect(screen.getByLabelText("Code")).toBeDisabled();
@@ -335,7 +335,7 @@ describe("ExpenseItemForm", () => {
     renderForm({ item: ITEM });
 
     expect(
-      screen.getByRole("heading", { name: "Edit the expense type" }),
+      screen.getByRole("heading", { name: "Edit the expense item" }),
     ).toBeVisible();
     expect(
       screen.getByText("The code is immutable after creation."),

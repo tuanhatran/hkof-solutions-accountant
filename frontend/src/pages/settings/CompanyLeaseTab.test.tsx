@@ -197,6 +197,39 @@ beforeEach(() => {
 });
 
 describe("CompanyLeaseTab", () => {
+  it("renders dense column headers above the company lease rows", async () => {
+    renderTab();
+
+    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    const headers = queryByCy("entetes-baux-societe") as HTMLElement;
+    expect(headers).not.toBeNull();
+    expect(headers).toHaveClass("hidden", "md:grid");
+    expect(within(headers).getByText("Bail")).toBeVisible();
+    expect(within(headers).getByText("Loyer")).toBeVisible();
+    expect(within(headers).getByText("Charges")).toBeVisible();
+    expect(within(headers).getByText("Actions")).toBeVisible();
+  });
+
+  it("aligns rent, charges and actions in each company lease row", async () => {
+    renderTab();
+
+    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    expect(
+      withinLease("bail-societe-5").getByText("Bailleur M. Bailleur"),
+    ).toBeVisible();
+    expect(queryByCy("loyer-bail-societe-5")).toHaveTextContent("900,00 €");
+    expect(queryByCy("charges-bail-societe-5")).toHaveTextContent("50,00 €");
+    expect(queryByCy("loyer-bail-societe-5")).toHaveClass(
+      "number",
+      "text-right",
+    );
+    expect(queryByCy("charges-bail-societe-5")).toHaveClass(
+      "number",
+      "text-right",
+    );
+    expect(queryByCy("actions-bail-societe-5")).not.toBeNull();
+  });
+
   it("lists only the leases of the company as click-to-select items, without dropdown", async () => {
     renderTab();
 
@@ -485,7 +518,7 @@ describe("CompanyLeaseTab", () => {
     await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
 
     await user.click(queryByCy("bail-societe-6") as HTMLElement);
-    await user.click(screen.getByRole("button", { name: "Ajouter un frais" }));
+    await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
     await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
     await user.click(screen.getByRole("button", { name: "Valider" }));
 
@@ -707,10 +740,15 @@ describe("CompanyLeaseTab", () => {
       withinLease("bail-societe-5").getByText("Active lease"),
     ).toBeVisible();
     expect(
-      withinLease("bail-societe-5").getByText(
-        "Landlord M. Bailleur · Rent 900,00 € · Charges 50,00 €",
-      ),
+      withinLease("bail-societe-5").getByText("Landlord M. Bailleur"),
     ).toBeVisible();
+    expect(queryByCy("loyer-bail-societe-5")).toHaveTextContent("900,00 €");
+    expect(queryByCy("charges-bail-societe-5")).toHaveTextContent("50,00 €");
+    const headers = queryByCy("entetes-baux-societe") as HTMLElement;
+    expect(within(headers).getByText("Lease")).toBeVisible();
+    expect(within(headers).getByText("Rent")).toBeVisible();
+    expect(within(headers).getByText("Charges")).toBeVisible();
+    expect(within(headers).getByText("Actions")).toBeVisible();
     expect(queryByCy("btn-note-frais-bail-societe-5")).toHaveTextContent(
       "Expense statement",
     );
