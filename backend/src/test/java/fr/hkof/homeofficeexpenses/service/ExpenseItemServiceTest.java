@@ -78,8 +78,11 @@ class ExpenseItemServiceTest {
     @Test
     @DisplayName("An unknown code is rejected in French")
     void entityNotFound() {
-        when(repository.findByCompanyIdAndCodeAndDeletedFalse(COMPANY_ID, "inconnu")).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> service.entity(COMPANY_ID, "inconnu"))
+        when(repository.findFirstByCompanyIdAndLeaseIdAndCodeAndDeletedFalse(COMPANY_ID, 4L, "inconnu"))
+                .thenReturn(Optional.empty());
+        when(repository.findFirstByCompanyIdAndLeaseIdIsNullAndCodeAndDeletedFalse(COMPANY_ID, "inconnu"))
+                .thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.entity(COMPANY_ID, 4L, "inconnu"))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Type de frais inconnu : inconnu")
                 .satisfies(ex -> {
@@ -89,11 +92,35 @@ class ExpenseItemServiceTest {
     }
 
     @Test
-    @DisplayName("An existing code is returned")
-    void entityFound() {
-        when(repository.findByCompanyIdAndCodeAndDeletedFalse(COMPANY_ID, "gaz"))
+    @DisplayName("The item of the selected lease wins over the inherited one")
+    void entityPrefersLeaseItem() {
+        when(repository.findFirstByCompanyIdAndLeaseIdAndCodeAndDeletedFalse(COMPANY_ID, 4L, "loyer"))
+                .thenReturn(Optional.of(item(2L, "loyer", "Loyer du bail 4", false, 4L)));
+        when(repository.findFirstByCompanyIdAndLeaseIdIsNullAndCodeAndDeletedFalse(COMPANY_ID, "loyer"))
+                .thenReturn(Optional.of(item(1L, "loyer", "Loyer hérité", false)));
+
+        assertThat(service.entity(COMPANY_ID, 4L, "loyer").getLabel()).isEqualTo("Loyer du bail 4");
+        assertThat(service.entity(COMPANY_ID, 4L, "loyer").getId()).isEqualTo(2L);
+    }
+
+    @Test
+    @DisplayName("An inherited item backs a code missing from the selected lease")
+    void entityFallsBackToInheritedItem() {
+        when(repository.findFirstByCompanyIdAndLeaseIdAndCodeAndDeletedFalse(COMPANY_ID, 4L, "gaz"))
+                .thenReturn(Optional.empty());
+        when(repository.findFirstByCompanyIdAndLeaseIdIsNullAndCodeAndDeletedFalse(COMPANY_ID, "gaz"))
                 .thenReturn(Optional.of(item(1L, "gaz", "Gaz", false)));
-        assertThat(service.entity(COMPANY_ID, "gaz").getLabel()).isEqualTo("Gaz");
+
+        assertThat(service.entity(COMPANY_ID, 4L, "gaz").getLabel()).isEqualTo("Gaz");
+    }
+
+    @Test
+    @DisplayName("Without a lease only the inherited item is visible")
+    void entityWithoutLeaseUsesInheritedScope() {
+        when(repository.findFirstByCompanyIdAndLeaseIdIsNullAndCodeAndDeletedFalse(COMPANY_ID, "gaz"))
+                .thenReturn(Optional.of(item(1L, "gaz", "Gaz", false)));
+
+        assertThat(service.entity(COMPANY_ID, null, "gaz").getLabel()).isEqualTo("Gaz");
     }
 
     @Test
@@ -114,7 +141,7 @@ class ExpenseItemServiceTest {
     @Test
     @DisplayName("A blank code is generated from the label and normalized")
     void createGeneratesCode() {
-        when(repository.existsByCompanyIdAndCode(COMPANY_ID, "assurance_habitation")).thenReturn(false);
+        when(repository.findByCompanyIdAndCode(COMPANY_ID, "assurance_habitation")).thenReturn(List.of());
         when(repository.save(any(ExpenseItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ExpenseItemDto dto = service.create(request(null, "Assurance habitation", null));
@@ -127,9 +154,10 @@ class ExpenseItemServiceTest {
     }
 
     @Test
-    @DisplayName("A provided code is normalized and an existing code is rejected")
+    @DisplayName("A provided code is normalized and an existing inherited code is rejected")
     void createNormalizesAndRejectsDuplicate() {
-        when(repository.existsByCompanyIdAndCode(COMPANY_ID, "electricite")).thenReturn(true);
+        when(repository.findByCompanyIdAndCode(COMPANY_ID, "electricite"))
+                .thenReturn(List.of(item(1L, "electricite", "Électricité", false)));
         assertThatThrownBy(() -> service.create(request("Électricité", "Électricité", "MONTHLY")))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Un poste avec le code « electricite » existe déjà.")
@@ -137,6 +165,76 @@ class ExpenseItemServiceTest {
                     assertThat(((BusinessException) ex).getCode()).isEqualTo("EXPENSE_ITEM_CODE_DUPLICATE");
                     assertThat(((BusinessException) ex).getParams()).containsEntry("code", "electricite");
                 });
+    }
+
+    @Test
+    @DisplayName("The reported case: the same code is allowed on another lease of the company")
+    void createSameCodeOnAnotherLease() {
+        when(leases.resolveExpenseLease(COMPANY_ID, 4L)).thenReturn(lease(4L));
+        when(repository.findByCompanyIdAndCode(COMPANY_ID, "loyer"))
+                .thenReturn(List.of(item(1L, "loyer", "Loyer du bail 1", false, 1L)));
+        when(repository.save(any(ExpenseItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ExpenseItemDto dto = service.create(new ExpenseItemRequest(COMPANY_ID, 4L, "Loyer",
+                "Quittance de loyer", "Vivian", "23", "MONTHLY", true, 10, false));
+
+        assertThat(dto.code()).isEqualTo("loyer");
+        assertThat(dto.leaseId()).isEqualTo(4L);
+        assertThat(dto.label()).isEqualTo("Quittance de loyer");
+        assertThat(dto.supplier()).isEqualTo("Vivian");
+    }
+
+    @Test
+    @DisplayName("The same code twice on one lease is rejected")
+    void createRejectsSameLeaseDuplicate() {
+        when(leases.resolveExpenseLease(COMPANY_ID, 4L)).thenReturn(lease(4L));
+        when(repository.findByCompanyIdAndCode(COMPANY_ID, "loyer"))
+                .thenReturn(List.of(item(2L, "loyer", "Loyer du bail 4", false, 4L)));
+
+        assertThatThrownBy(() -> service.create(new ExpenseItemRequest(COMPANY_ID, 4L, "Loyer",
+                "Quittance de loyer", null, "23", null, null, null, null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Un poste avec le code « loyer » existe déjà.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("EXPENSE_ITEM_CODE_DUPLICATE"));
+    }
+
+    @Test
+    @DisplayName("An inherited code blocks every lease of the company")
+    void createRejectsInheritedDuplicate() {
+        when(leases.resolveExpenseLease(COMPANY_ID, 4L)).thenReturn(lease(4L));
+        when(repository.findByCompanyIdAndCode(COMPANY_ID, "loyer"))
+                .thenReturn(List.of(item(1L, "loyer", "Loyer hérité", false)));
+
+        assertThatThrownBy(() -> service.create(new ExpenseItemRequest(COMPANY_ID, 4L, "Loyer",
+                "Quittance de loyer", null, "23", null, null, null, null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Un poste avec le code « loyer » existe déjà.");
+    }
+
+    @Test
+    @DisplayName("An inherited code collides with the leases that already own it")
+    void createInheritedCodeRejectsLeaseDuplicate() {
+        when(repository.findByCompanyIdAndCode(COMPANY_ID, "loyer"))
+                .thenReturn(List.of(item(2L, "loyer", "Loyer du bail 4", false, 4L)));
+
+        assertThatThrownBy(() -> service.create(new ExpenseItemRequest(COMPANY_ID, null, "Loyer",
+                "Quittance de loyer", null, "23", null, null, null, null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Un poste avec le code « loyer » existe déjà.");
+    }
+
+    @Test
+    @DisplayName("A deleted item still reserves its code in its scope")
+    void createRejectsDeletedDuplicate() {
+        when(leases.resolveExpenseLease(COMPANY_ID, 4L)).thenReturn(lease(4L));
+        when(repository.findByCompanyIdAndCode(COMPANY_ID, "loyer"))
+                .thenReturn(List.of(item(2L, "loyer", "Loyer supprimé", true, 4L)));
+
+        assertThatThrownBy(() -> service.create(new ExpenseItemRequest(COMPANY_ID, 4L, "Loyer",
+                "Quittance de loyer", null, "23", null, null, null, null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Un poste avec le code « loyer » existe déjà.");
     }
 
     @Test
@@ -223,13 +321,64 @@ class ExpenseItemServiceTest {
     }
 
     @Test
+    @DisplayName("Updating an item to a lease that already owns its code is rejected")
+    void updateRejectsCollisionInTargetLease() {
+        ExpenseItem moving = item(1L, "loyer", "Loyer du bail 5", false, 5L);
+        when(repository.findById(1L)).thenReturn(Optional.of(moving));
+        when(repository.findByCompanyIdAndCode(COMPANY_ID, "loyer"))
+                .thenReturn(List.of(moving, item(2L, "loyer", "Loyer du bail 4", false, 4L)));
+
+        assertThatThrownBy(() -> service.update(1L,
+                new ExpenseItemRequest(COMPANY_ID, 4L, null, "Loyer", null, "23", null, null, null, null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Un poste avec le code « loyer » existe déjà.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("EXPENSE_ITEM_CODE_DUPLICATE"));
+    }
+
+    @Test
+    @DisplayName("Updating an item onto an inherited code is rejected")
+    void updateRejectsInheritedCollision() {
+        ExpenseItem moving = item(1L, "loyer", "Loyer du bail 4", false, 4L);
+        when(repository.findById(1L)).thenReturn(Optional.of(moving));
+        when(repository.findByCompanyIdAndCode(COMPANY_ID, "loyer"))
+                .thenReturn(List.of(moving, item(2L, "loyer", "Loyer hérité", false)));
+
+        assertThatThrownBy(() -> service.update(1L,
+                new ExpenseItemRequest(COMPANY_ID, null, null, "Loyer", null, "23", null, null, null, null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Un poste avec le code « loyer » existe déjà.");
+    }
+
+    @Test
+    @DisplayName("Keeping an item in its own lease is not a duplicate of itself")
+    void updateAllowsOwnCode() {
+        ExpenseItem existing = item(1L, "loyer", "Loyer", false, 4L);
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+        when(repository.findByCompanyIdAndCode(COMPANY_ID, "loyer")).thenReturn(List.of(existing));
+        when(repository.save(any(ExpenseItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ExpenseItemDto dto = service.update(1L,
+                new ExpenseItemRequest(COMPANY_ID, 4L, null, "Loyer", null, "23", null, null, null, null));
+
+        assertThat(dto.leaseId()).isEqualTo(4L);
+    }
+
+    private Lease lease(Long id) {
+        Lease lease = new Lease();
+        lease.setId(id);
+        lease.setCompanyId(COMPANY_ID);
+        return lease;
+    }
+
+    @Test
     @DisplayName("Items created with a lease keep it and the lease filter keeps legacy rows")
     void createsAndFiltersByLease() {
         Lease lease = new Lease();
         lease.setId(5L);
         lease.setCompanyId(COMPANY_ID);
         when(leases.resolveExpenseLease(COMPANY_ID, 5L)).thenReturn(lease);
-        when(repository.existsByCompanyIdAndCode(COMPANY_ID, "eau")).thenReturn(false);
+        when(repository.findByCompanyIdAndCode(COMPANY_ID, "eau")).thenReturn(List.of());
         when(repository.save(any(ExpenseItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ExpenseItemDto created = service.create(new ExpenseItemRequest(

@@ -116,7 +116,7 @@ class ExpenseStatementServiceTest {
     @DisplayName("Calculation maps the lines, total, words and pro-rata detail")
     void calculate() {
         ExpenseItem gaz = item("gaz", "Gaz", 20);
-        when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of(calculatedLine(gaz)));
+        when(lineCalculator.calculateLines(eq(COMPANY_ID), any(), any())).thenReturn(List.of(calculatedLine(gaz)));
         when(lineCalculator.toDto(any())).thenCallRealMethod();
         CalculationResponse response = service.calculate(
                 new StatementCalculationRequest(COMPANY_ID, null, "2026-10", List.of()));
@@ -125,6 +125,25 @@ class ExpenseStatementServiceTest {
         assertThat(response.totalInWords()).isEqualTo("cinquante euros");
         assertThat(response.proRataBase()).isEqualTo("35.71");
         assertThat(response.proRataBaseDetail()).contains("Surface pro");
+    }
+
+    @Test
+    @DisplayName("Calculation resolves the expense items of the selected lease")
+    void calculateUsesSelectedLease() {
+        Lease lease = new Lease();
+        lease.setId(4L);
+        lease.setCompanyId(COMPANY_ID);
+        when(leases.resolveExpenseLease(COMPANY_ID, 4L)).thenReturn(lease);
+        ExpenseItem loyer = item("loyer", "Loyer du bail 4", 10);
+        when(lineCalculator.calculateLines(COMPANY_ID, 4L, List.of()))
+                .thenReturn(List.of(calculatedLine(loyer)));
+        when(lineCalculator.toDto(any())).thenCallRealMethod();
+
+        CalculationResponse response = service.calculate(
+                new StatementCalculationRequest(COMPANY_ID, 4L, "2026-10", List.of()));
+
+        assertThat(response.lines().get(0).itemLabel()).isEqualTo("Loyer du bail 4");
+        verify(lineCalculator).calculateLines(COMPANY_ID, 4L, List.of());
     }
 
     @Test
@@ -152,7 +171,7 @@ class ExpenseStatementServiceTest {
                 "Bailleur", "Locataire", null, null, "900.00", "50.00", "950.00", null, null, 1, "ACTIVE",
                 1L, "Quittance", 1, null, true, null);
         when(rentReceiptService.toDto(rentReceipt)).thenReturn(receiptDto);
-        when(expenseItemService.entity(COMPANY_ID, "loyer"))
+        when(expenseItemService.entity(COMPANY_ID, null, "loyer"))
                 .thenReturn(item("loyer", "Quittance de loyer", 10));
         when(expenseItemService.list(COMPANY_ID, null, false)).thenReturn(List.of(itemDto(1L, "loyer", "Loyer")));
 
@@ -166,22 +185,47 @@ class ExpenseStatementServiceTest {
     }
 
     @Test
+    @DisplayName("The draft prefills the rent line from the selected lease item")
+    void draftUsesSelectedLeaseItem() {
+        Lease lease = new Lease();
+        lease.setId(4L);
+        lease.setCompanyId(COMPANY_ID);
+        when(leases.resolveExpenseLease(COMPANY_ID, 4L)).thenReturn(lease);
+        RentReceipt rentReceipt = new RentReceipt();
+        rentReceipt.setTotal(new BigDecimal("950.00"));
+        when(rentReceiptService.activeForLease(COMPANY_ID, "2026-10", 4L)).thenReturn(rentReceipt);
+        when(expenseItemService.entity(COMPANY_ID, 4L, "loyer"))
+                .thenReturn(item("loyer", "Quittance bail 4", 10));
+        when(expenseItemService.list(COMPANY_ID, 4L, false)).thenReturn(List.of(itemDto(1L, "loyer", "Loyer")));
+
+        DraftDto draft = service.draft(COMPANY_ID, "2026-10", 4L);
+
+        assertThat(draft.lines().get(0).itemLabel()).isEqualTo("Quittance bail 4");
+        verify(expenseItemService).entity(COMPANY_ID, 4L, "loyer");
+    }
+
+    @Test
     @DisplayName("Preview delegates to the document collaborator")
     void preview() {
-        when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of());
+        Lease lease = new Lease();
+        lease.setId(4L);
+        lease.setCompanyId(COMPANY_ID);
+        when(leases.resolveExpenseLease(COMPANY_ID, 4L)).thenReturn(lease);
+        when(lineCalculator.calculateLines(eq(COMPANY_ID), eq(4L), any())).thenReturn(List.of());
         when(documents.preview(any(), any(), any(), any(), any())).thenReturn(new byte[]{1});
 
         byte[] pdf = service.preview(
-                new StatementPreviewRequest(COMPANY_ID, null, "2026-10", null, false, List.of(), null));
+                new StatementPreviewRequest(COMPANY_ID, 4L, "2026-10", null, false, List.of(), null));
 
         assertThat(pdf).containsExactly(1);
-        verify(documents).preview(eq(YearMonth.of(2026, 10)), any(), any(), any(), any());
+        verify(lineCalculator).calculateLines(COMPANY_ID, 4L, List.of());
+        verify(documents).preview(eq(YearMonth.of(2026, 10)), any(), any(), any(), eq(4L));
     }
 
     @Test
     @DisplayName("Generation requires at least one line")
     void generateRequiresLines() {
-        when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of());
+        when(lineCalculator.calculateLines(eq(COMPANY_ID), any(), any())).thenReturn(List.of());
         assertThatThrownBy(() -> service.generate(
                 new StatementGenerationRequest(COMPANY_ID, null, "2026-10", null, List.of(), null)))
                 .isInstanceOf(BusinessException.class)
@@ -194,7 +238,7 @@ class ExpenseStatementServiceTest {
     @DisplayName("Generation archives active statements and stores both PDFs")
     void generate() {
         ExpenseItem gaz = item("gaz", "Gaz", 20);
-        when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of(calculatedLine(gaz)));
+        when(lineCalculator.calculateLines(eq(COMPANY_ID), any(), any())).thenReturn(List.of(calculatedLine(gaz)));
         when(documents.signatureDataUri(null, COMPANY_ID)).thenReturn("signature");
         TemplateDocument template = new TemplateDocument();
         template.setId(4L);
@@ -244,7 +288,7 @@ class ExpenseStatementServiceTest {
     @DisplayName("Generation without an active previous statement skips the archive flush")
     void generateWithoutArchive() {
         ExpenseItem gaz = item("gaz", "Gaz", 20);
-        when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of(calculatedLine(gaz)));
+        when(lineCalculator.calculateLines(eq(COMPANY_ID), any(), any())).thenReturn(List.of(calculatedLine(gaz)));
         when(documents.signatureDataUri(null, COMPANY_ID)).thenReturn("signature");
         when(documents.templateForStatement(null)).thenReturn(new TemplateDocument());
         when(repository.findFirstByCompanyIdAndMonthAndLeaseIdIsNullOrderByVersionDesc(COMPANY_ID, "2026-10"))
@@ -276,7 +320,7 @@ class ExpenseStatementServiceTest {
         lease.setCompanyId(COMPANY_ID);
         when(leases.resolveExpenseLease(COMPANY_ID, 7L)).thenReturn(lease);
         ExpenseItem gaz = item("gaz", "Gaz", 20);
-        when(lineCalculator.calculateLines(eq(COMPANY_ID), any())).thenReturn(List.of(calculatedLine(gaz)));
+        when(lineCalculator.calculateLines(eq(COMPANY_ID), any(), any())).thenReturn(List.of(calculatedLine(gaz)));
         when(documents.signatureDataUri(null, COMPANY_ID)).thenReturn("signature");
         when(documents.templateForStatement(null)).thenReturn(new TemplateDocument());
         ExpenseStatement sameLease = new ExpenseStatement();
@@ -308,6 +352,7 @@ class ExpenseStatementServiceTest {
 
         assertThat(sameLease.getStatus()).isEqualTo(DocumentStatus.ARCHIVED);
         assertThat(otherLease.getStatus()).isEqualTo(DocumentStatus.ACTIVE);
+        verify(lineCalculator).calculateLines(eq(COMPANY_ID), eq(7L), any());
         verify(storage).storePdf("note_frais_2026-10_l7_v3.pdf", new byte[]{1});
         verify(storage).storePdf("note_frais_2026-10_l7_v3_complet.pdf", new byte[]{2});
         verify(documentDraftService).deleteActiveStatement(COMPANY_ID, "2026-10", 7L);
