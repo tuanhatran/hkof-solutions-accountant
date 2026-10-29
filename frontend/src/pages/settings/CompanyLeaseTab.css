@@ -10,19 +10,35 @@
   }
 
   .company-lease-tab-header-actions {
-    @apply flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center;
+    @apply flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3;
   }
 
   .company-lease-tab-header-search {
     @apply w-full sm:w-56;
   }
 
+  .company-lease-tab-count {
+    @apply text-xs text-ink-soft;
+  }
+
+  .company-lease-tab-mobile-sort {
+    @apply flex items-center gap-2;
+  }
+
+  .company-lease-tab-mobile-sort-direction {
+    @apply shrink-0;
+  }
+
+  .company-lease-tab-table {
+    @apply overflow-hidden rounded-lg border border-line bg-surface;
+  }
+
   .company-lease-tab-list {
-    @apply flex flex-col gap-2;
+    @apply flex flex-col;
   }
 
   .company-lease-tab-headers {
-    @apply grid-cols-[minmax(0,1fr)_6.5rem_6.5rem_13rem] items-center gap-3 border-b border-line px-4 py-1.5 text-[11px] text-ink-soft;
+    @apply grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_6.5rem_auto] items-stretch gap-0 border-b border-line bg-paper/50 px-2 text-[11px] font-medium uppercase tracking-wide text-ink-soft;
   }
 
   .company-lease-tab-headers-amount {
@@ -30,10 +46,14 @@
   }
 
   .company-lease-tab-headers-actions {
-    @apply text-right;
+    @apply px-2 py-2.5 text-right;
   }
 
-  .company-lease-tab-none {
-    @apply flex flex-col;
+  .company-lease-tab-sort {
+    @apply flex h-full w-full items-center gap-1 rounded-md px-2 py-2.5 text-left text-[11px] font-medium uppercase tracking-wide text-ink-soft transition-colors hover:bg-paper/80 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-surface;
+  }
+
+  .company-lease-tab-sort-amount {
+    @apply justify-end text-right;
   }
 }

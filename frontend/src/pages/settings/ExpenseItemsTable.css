@@ -1,0 +1,47 @@
+@reference "../../index.css";
+
+@layer components {
+  .expense-items-table-wrapper {
+    @apply overflow-x-auto rounded-xl border border-line;
+  }
+
+  .expense-table.expense-items-table th {
+    @apply h-9 px-3 py-1.5;
+  }
+
+  .expense-table.expense-items-table td {
+    @apply h-9 px-3 py-1.5 align-middle;
+  }
+
+  .expense-items-table-item {
+    @apply flex flex-wrap items-center gap-1.5;
+  }
+
+  .expense-items-table-item-label {
+    @apply font-medium text-ink;
+  }
+
+  .expense-items-table-item-code {
+    @apply rounded bg-paper-deep/60 px-1 py-0.5 font-mono text-[10.5px] text-ink-soft;
+  }
+
+  .expense-items-table-number-cell {
+    @apply text-right text-ink-soft;
+  }
+
+  .expense-items-table-periodicity-cell {
+    @apply text-xs capitalize text-ink-soft;
+  }
+
+  .expense-items-table-order-cell {
+    @apply text-right text-ink-soft;
+  }
+
+  .expense-items-table-single-line {
+    @apply text-xs text-ink-soft;
+  }
+
+  .expense-items-table-actions {
+    @apply flex justify-end gap-1;
+  }
+}

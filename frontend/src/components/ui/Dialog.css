@@ -1,0 +1,31 @@
+@reference "../../index.css";
+
+@layer components {
+  .dialog-overlay {
+    @apply fixed inset-0 z-50 flex items-end justify-center bg-ink/35 p-4 backdrop-blur-[2px] sm:items-center;
+  }
+
+  .dialog-panel {
+    @apply flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-floating outline-none;
+  }
+
+  .dialog-panel-wide {
+    @apply max-w-4xl;
+  }
+
+  .dialog-header {
+    @apply flex items-start justify-between gap-3 border-b border-line px-5 py-4 sm:px-6;
+  }
+
+  .dialog-title {
+    @apply text-xl text-ink;
+  }
+
+  .dialog-close {
+    @apply rounded-lg p-1.5 text-ink-soft transition hover:bg-paper-deep hover:text-ink;
+  }
+
+  .dialog-body {
+    @apply min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6;
+  }
+}

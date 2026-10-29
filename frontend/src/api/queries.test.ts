@@ -14,6 +14,7 @@ import {
   useEmployees,
   useExpenseItems,
   useLeases,
+  useLeaseExpenseItemPresence,
   useLlmConfig,
   useLlmModels,
   useLlmStatus,
@@ -103,6 +104,38 @@ describe("query hooks", () => {
     expect(api.expenseItems.list).toHaveBeenCalledWith(3, true, null);
     expect(api.expenseItems.list).toHaveBeenCalledWith(3, true, 7);
     expect(scoped.result.current.fetchStatus).toBe("idle");
+  });
+
+  it("reports the presence of expense items per lease from one shared cache", async () => {
+    vi.mocked(api.expenseItems.list).mockClear();
+    vi.mocked(api.expenseItems.list).mockImplementation(
+      (_companyId, _all, leaseId) =>
+        leaseId === 9
+          ? Promise.reject(new Error("boom"))
+          : Promise.resolve(leaseId === 7 ? [{ id: 1, label: "Gaz" }] : []),
+    );
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const sharedWrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client: queryClient }, children);
+
+    const presence = renderHook(
+      () => useLeaseExpenseItemPresence(3, [7, 8, 9]),
+      { wrapper: sharedWrapper },
+    );
+
+    await waitFor(() => expect(presence.result.current.get(7)).toBe(true));
+    expect(presence.result.current.get(8)).toBe(false);
+    expect(presence.result.current.get(9)).toBeUndefined();
+    expect(api.expenseItems.list).toHaveBeenCalledWith(3, true, 7);
+    expect(api.expenseItems.list).toHaveBeenCalledWith(3, true, 8);
+    expect(api.expenseItems.list).toHaveBeenCalledWith(3, true, 9);
+
+    // The row and the dialog share the same cache entry, no second request.
+    vi.mocked(api.expenseItems.list).mockClear();
+    renderHook(() => useExpenseItems(3, true, 7), { wrapper: sharedWrapper });
+    expect(api.expenseItems.list).not.toHaveBeenCalled();
   });
 
   it("loads templates and their variables for a type", async () => {

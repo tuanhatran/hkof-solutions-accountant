@@ -364,4 +364,65 @@ describe("ExpenseItemForm", () => {
     await user.click(screen.getByRole("button", { name: "Annuler" }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("renders the same fields and footer inline in embedded mode, without a modal", async () => {
+    const { onClose } = renderForm({ embedded: true });
+
+    const form = document.querySelector('[data-cy="formulaire-poste"]');
+    expect(form).not.toBeNull();
+    expect(
+      document.querySelector('[data-cy="dialogue-formulaire-poste"]'),
+    ).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByLabelText("Code")).toHaveValue("");
+    expect(screen.getByLabelText("Libellé affiché")).toBeVisible();
+    expect(screen.getByLabelText("Fournisseur")).toBeVisible();
+    expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
+      "35,71",
+    );
+    expect(screen.getByLabelText("Périodicité")).toBeVisible();
+    expect(screen.getByLabelText("Ordre d’affichage")).toBeVisible();
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Annuler" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(api.expenseItems.create).not.toHaveBeenCalled();
+  });
+
+  it("submits from the embedded form and leaves Escape to the surrounding dialog", async () => {
+    vi.mocked(api.expenseItems.create).mockResolvedValue({
+      id: 3,
+      label: "Eau",
+    });
+    const { onClose } = renderForm({ embedded: true, leaseId: 7 });
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Libellé affiché"), "Eau");
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    await waitFor(() =>
+      expect(api.expenseItems.create).toHaveBeenCalledWith(
+        expect.objectContaining({ companyId: 1, leaseId: 7, label: "Eau" }),
+      ),
+    );
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+
+    await user.keyboard("{Escape}");
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the request error inside the embedded form", async () => {
+    vi.mocked(api.expenseItems.create).mockRejectedValue(
+      new Error("Poste déjà existant"),
+    );
+    renderForm({ embedded: true });
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Poste déjà existant");
+  });
 });

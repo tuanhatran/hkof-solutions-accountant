@@ -17,14 +17,10 @@ describe("Settings", () => {
 
     waitForText('[data-cy="info-societe"]', "HKOF");
 
-    // Prorata is read-only on the Baux & Frais tab, shown once a lease row is
-    // expanded with "Afficher les frais" (the tab arrives collapsed).
+    // Prorata is read-only on the Baux & Frais tab; its lease grid is visible
+    // right away, without any expansion step.
     cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
-    cy.get('button[data-cy^="btn-afficher-frais-bail-societe-"]', {
-      timeout: 20_000,
-    })
-      .first()
-      .click();
+    cy.get('[data-cy^="bail-societe-"]', { timeout: 20_000 }).should("exist");
 
     // Identity edits go through the modal.
     cy.get('[data-cy="onglet-entreprise-identification"]').click();
@@ -39,6 +35,98 @@ describe("Settings", () => {
 
     cy.reload();
     waitForText('[data-cy="info-societe"]', "HKOF E2E");
+  });
+
+  it("sorts the company leases from the headers and filters from the section header", () => {
+    cy.visit("/configuration/entreprise");
+    cy.get('[data-cy="info-societe"]', { timeout: 20_000 }).should(
+      "be.visible",
+    );
+    cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+    cy.get('[data-cy^="bail-societe-"]', { timeout: 20_000 }).should("exist");
+
+    // No list toolbar and no company-level expenses action on this tab.
+    cy.get('[data-cy="tri-baux-societe"]').should("not.exist");
+    cy.get('[data-cy="tri-direction-baux-societe"]').should("not.exist");
+    cy.get('[data-cy="btn-frais-generaux-societe"]').should("not.exist");
+
+    // The grid exposes real table semantics, not bare `aria-sort` divs.
+    cy.get(".company-lease-tab-table").should("have.attr", "role", "table");
+    cy.get('[data-cy="entetes-baux-societe"]').should(
+      "have.attr",
+      "role",
+      "row",
+    );
+    cy.get('[data-cy="entetes-baux-societe"] [role="columnheader"]').should(
+      "have.length",
+      5,
+    );
+    cy.get('[data-cy^="bail-societe-"]')
+      .first()
+      .should("have.attr", "role", "row")
+      .find('[role="cell"]')
+      .should("have.length", 5);
+
+    // Address is the default ascending sort; the active column toggles.
+    cy.get('[data-cy="tri-adresse-baux-societe"]')
+      .parent()
+      .should("have.attr", "aria-sort", "ascending");
+    cy.get('[data-cy="tri-loyer-baux-societe"]')
+      .parent()
+      .should("have.attr", "aria-sort", "none");
+    cy.get('[data-cy="tri-loyer-baux-societe"]').click();
+    cy.get('[data-cy="tri-loyer-baux-societe"]')
+      .parent()
+      .should("have.attr", "aria-sort", "ascending");
+    cy.get('[data-cy="tri-adresse-baux-societe"]')
+      .parent()
+      .should("have.attr", "aria-sort", "none");
+    cy.get('[data-cy="tri-loyer-baux-societe"]').click();
+    cy.get('[data-cy="tri-loyer-baux-societe"]')
+      .parent()
+      .should("have.attr", "aria-sort", "descending");
+
+    // The filter and its live count stay in the section header.
+    cy.get('[data-cy="filtre-compteur-baux-societe"]').should(
+      "contain.text",
+      "1 sur 1",
+    );
+    cy.get('[data-cy="filtre-baux-societe"]').type("introuvable");
+    cy.get('[data-cy="filtre-compteur-baux-societe"]').should(
+      "contain.text",
+      "0 sur 1",
+    );
+    cy.get('[data-cy="aucun-resultat-baux-societe"]').should("be.visible");
+    cy.get('[data-cy="filtre-effacer-baux-societe"]').click();
+    cy.get('[data-cy="filtre-compteur-baux-societe"]').should(
+      "contain.text",
+      "1 sur 1",
+    );
+  });
+
+  it("keeps the lease sort reachable on mobile", () => {
+    cy.viewport(390, 844);
+    cy.visit("/configuration/entreprise");
+    cy.get('[data-cy="info-societe"]', { timeout: 20_000 }).should(
+      "be.visible",
+    );
+    cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+
+    cy.get('[data-cy="tri-compact-baux-societe"]', { timeout: 20_000 })
+      .should("be.visible")
+      .select("charges");
+    cy.get('[data-cy="tri-compact-direction-baux-societe"]')
+      .should("have.attr", "aria-label", "Tri croissant")
+      .click();
+    cy.get('[data-cy="tri-compact-direction-baux-societe"]').should(
+      "have.attr",
+      "aria-label",
+      "Tri décroissant",
+    );
+    cy.get('[data-cy="tri-compact-baux-societe"]').should(
+      "have.value",
+      "charges",
+    );
   });
 
   it("edits the seeded lease amounts in the LMNP Baux et adresses tab", () => {
@@ -149,14 +237,19 @@ describe("Settings", () => {
     );
 
     cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
-    // The tab arrives collapsed: expand the first lease to reach its postes.
-    cy.get('button[data-cy^="btn-afficher-frais-bail-societe-"]', {
+    // "Modifier les frais" opens the lease expenses dialog; the item form swaps
+    // inside that same window, never as a stacked dialog.
+    cy.get('[data-cy^="btn-modifier-frais-bail-societe-"]', {
       timeout: 20_000,
     })
       .first()
       .click();
+    cy.get('[data-cy="dialogue-frais-bail-societe"]').should("be.visible");
+    cy.get('[role="dialog"]').should("have.length", 1);
     cy.get('[data-cy="btn-ajouter-poste"]').click();
     cy.get('[data-cy="formulaire-poste"]').should("be.visible");
+    cy.get('[data-cy="dialogue-formulaire-poste"]').should("not.exist");
+    cy.get('[role="dialog"]').should("have.length", 1);
     cy.get("#poste-code").type("internet-pro");
     cy.get('[data-cy="input-poste-libelle"]').type("Internet pro");
     cy.get('[data-cy="input-poste-fournisseur"]').type("Free");
@@ -168,6 +261,7 @@ describe("Settings", () => {
     cy.contains("td", "50 %").should("be.visible");
 
     cy.get('[data-cy="btn-modifier-poste-internet_pro"]').click();
+    cy.get('[data-cy="formulaire-poste"]').should("be.visible");
     cy.get('[data-cy="input-poste-libelle"]')
       .clear()
       .type("Internet pro fibre");
@@ -186,6 +280,11 @@ describe("Settings", () => {
     cy.contains("td", "Internet pro fibre", { timeout: 15_000 }).should(
       "not.exist",
     );
+
+    cy.get(
+      '[data-cy="dialogue-frais-bail-societe"] button[aria-label="Fermer"]',
+    ).click();
+    cy.get('[data-cy="dialogue-frais-bail-societe"]').should("not.exist");
   });
 
   it("adds a signature to the seeded natural person from her form", () => {

@@ -693,9 +693,10 @@ export const fr = {
       leaseTab: {
         title: "Baux de la société",
         description:
-          "Une société peut être locataire de plusieurs baux. Dépliez un bail avec « Afficher les frais » pour voir ses postes et ses notes de frais.",
+          "Une société peut être locataire de plusieurs baux. « Modifier les frais » ouvre les postes du bail ; les postes hérités au niveau de la société restent visibles et modifiables dans chaque bail.",
         columns: {
-          lease: "Bail",
+          address: "Adresse",
+          landlord: "Bailleur",
           rent: "Loyer",
           charges: "Charges",
           actions: "Actions",
@@ -706,25 +707,10 @@ export const fr = {
         empty:
           "Aucun bail pour cette société. Ajoutez le premier bail avec « Ajouter un bail ».",
         addressFallback: "Bail sans adresse",
-        meta: "Bailleur {{landlord}}",
-        showExpenses: "Afficher les frais",
-        statement: "Générer la note de frais",
+        expenses: "Modifier les frais",
+        addExpenses: "Ajouter des frais",
+        expensesTitle: "Frais du bail",
         edit: "Modifier le bail",
-      },
-      leaseView: {
-        surfaces:
-          "Surface professionnelle {{businessArea}} m² · Surface totale {{totalArea}} m²",
-        proRata: "Quote-part professionnelle {{percentage}}",
-        empty:
-          "Aucun bail déplié : la société n’a pas de quote-part professionnelle à afficher.",
-      },
-      statementModal: {
-        title: "Note de frais",
-        closeAria: "Fermer la fenêtre",
-        tabsAria: "Volets de la note de frais",
-        input: "Saisie",
-        preview: "Aperçu",
-        close: "Fermer",
       },
     },
     lease: {
@@ -845,13 +831,6 @@ export const fr = {
         empty: "Aucune quittance générée pour ce bail.",
         count_one: "{{count}} quittance",
         count_other: "{{count}} quittances",
-      },
-      statements: {
-        title: "Notes de frais générées",
-        loading: "Chargement des notes de frais…",
-        empty: "Aucune note de frais générée pour ce bail.",
-        count_one: "{{count}} note",
-        count_other: "{{count}} notes",
       },
     },
     lmnp: {

@@ -1,10 +1,6 @@
 @reference "../../index.css";
 
 @layer components {
-  .expense-item-form {
-    @apply flex flex-col gap-3;
-  }
-
   .expense-item-form-grid {
     @apply grid gap-3 sm:grid-cols-2;
   }

@@ -10,7 +10,6 @@ import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
 import type { ExpenseItemDto, ExpenseItemRequest } from "@/api/types";
 import { FieldGroup } from "@/components/ui/FieldGroup";
-import { FormModal } from "@/components/ui/FormModal";
 import { cn } from "@/lib/cn";
 import { parsePercentage } from "@/lib/format";
 import {
@@ -19,19 +18,21 @@ import {
 } from "@/lib/validation";
 import { toast } from "@/state/toasts";
 import { ExpenseItemSwitchField } from "./ExpenseItemSwitchField";
+import { ExpenseItemFormFrame } from "./ExpenseItemFormFrame";
 import {
   decimalFormatter,
   PERIODICITIES,
   type Periodicity,
 } from "./settingsValues";
 
-/** Create/update modal of an expense item. */
+/** Create/update modal of an expense item, or its inline form inside a dialog. */
 export function ExpenseItemForm({
   item: expenseItem,
   companyId,
   leaseId,
   defaultProRata,
   defaultOrder,
+  embedded = false,
   onClose,
 }: {
   item: ExpenseItemDto | null;
@@ -39,6 +40,7 @@ export function ExpenseItemForm({
   leaseId: number | null;
   defaultProRata: string;
   defaultOrder: number;
+  embedded?: boolean;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -100,24 +102,20 @@ export function ExpenseItemForm({
   });
 
   return (
-    <FormModal
-      open
-      wide
+    <ExpenseItemFormFrame
       title={
         expenseItem
           ? t("settings.expenses.form.editTitle")
           : t("settings.expenses.form.createTitle")
       }
-      onClose={onClose}
+      embedded={embedded}
+      error={errorText}
+      pending={save.isPending}
       onSubmit={handleSubmit((values) => {
         setErrorText(null);
         save.mutate(values);
       })}
-      formDataCy="formulaire-poste"
-      submitDataCy="btn-enregistrer-poste"
-      pending={save.isPending}
-      error={errorText}
-      formClassName="expense-item-form"
+      onClose={onClose}
     >
       {expenseItem ? (
         <span className="badge badge-neutral">
@@ -239,6 +237,6 @@ export function ExpenseItemForm({
           field="multipleLinesAllowed"
         />
       </div>
-    </FormModal>
+    </ExpenseItemFormFrame>
   );
 }
