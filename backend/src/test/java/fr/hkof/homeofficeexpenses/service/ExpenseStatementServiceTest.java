@@ -45,6 +45,7 @@ import fr.hkof.homeofficeexpenses.web.dto.StatementDtos.StatementPreviewRequest;
 class ExpenseStatementServiceTest {
 
     private static final Long COMPANY_ID = 1L;
+    private static final Long OWNER = 42L;
 
     private ExpenseStatementRepository repository;
     private CompanyService companies;
@@ -56,6 +57,7 @@ class ExpenseStatementServiceTest {
     private ExpenseStatementDocumentService documents;
     private LeaseService leases;
     private DocumentDraftService documentDraftService;
+    private OwnershipContext ownership;
     private ExpenseStatementService service;
 
     @BeforeEach
@@ -70,8 +72,10 @@ class ExpenseStatementServiceTest {
         documents = mock(ExpenseStatementDocumentService.class);
         leases = mock(LeaseService.class);
         documentDraftService = mock(DocumentDraftService.class);
+        ownership = mock(OwnershipContext.class);
+        when(ownership.currentUserId()).thenReturn(OWNER);
         service = new ExpenseStatementService(repository, companies, expenseItemService, rentReceiptService,
-                templateDataService, storage, lineCalculator, documents, leases, documentDraftService);
+                templateDataService, storage, lineCalculator, documents, leases, documentDraftService, ownership);
         when(companies.entity(COMPANY_ID)).thenReturn(company());
         when(companies.find(COMPANY_ID)).thenReturn(Optional.of(company()));
         when(leases.proRata(any(), any())).thenReturn(
@@ -278,9 +282,10 @@ class ExpenseStatementServiceTest {
         existing.setVersion(5);
         ExpenseStatement archivedAlready = new ExpenseStatement();
         archivedAlready.setStatus(DocumentStatus.ARCHIVED);
-        when(repository.findFirstByCompanyIdAndMonthAndLeaseIdIsNullOrderByVersionDesc(COMPANY_ID, "2026-10"))
+        when(repository.findFirstByUserIdAndCompanyIdAndMonthAndLeaseIdIsNullOrderByVersionDesc(OWNER, COMPANY_ID,
+                "2026-10"))
                 .thenReturn(Optional.of(existing));
-        when(repository.findByCompanyIdAndMonthOrderByVersionDesc(COMPANY_ID, "2026-10"))
+        when(repository.findByUserIdAndCompanyIdAndMonthOrderByVersionDesc(OWNER, COMPANY_ID, "2026-10"))
                 .thenReturn(List.of(existing, archivedAlready));
 
         ExpenseStatement generated = new ExpenseStatement();
@@ -303,6 +308,7 @@ class ExpenseStatementServiceTest {
 
         assertThat(dto.id()).isEqualTo(20L);
         assertThat(dto.companyId()).isEqualTo(COMPANY_ID);
+        assertThat(generated.getUserId()).isEqualTo(OWNER);
         assertThat(existing.getStatus()).isEqualTo(DocumentStatus.ARCHIVED);
         verify(repository).saveAll(List.of(existing, archivedAlready));
         verify(repository).flush();
@@ -318,9 +324,10 @@ class ExpenseStatementServiceTest {
         when(lineCalculator.calculateLines(eq(COMPANY_ID), any(), any())).thenReturn(List.of(calculatedLine(gaz)));
         when(documents.signatureDataUri(null, COMPANY_ID)).thenReturn("signature");
         when(documents.templateForStatement(null)).thenReturn(new TemplateDocument());
-        when(repository.findFirstByCompanyIdAndMonthAndLeaseIdIsNullOrderByVersionDesc(COMPANY_ID, "2026-10"))
+        when(repository.findFirstByUserIdAndCompanyIdAndMonthAndLeaseIdIsNullOrderByVersionDesc(OWNER, COMPANY_ID,
+                "2026-10"))
                 .thenReturn(Optional.empty());
-        when(repository.findByCompanyIdAndMonthOrderByVersionDesc(COMPANY_ID, "2026-10")).thenReturn(List.of());
+        when(repository.findByUserIdAndCompanyIdAndMonthOrderByVersionDesc(OWNER, COMPANY_ID, "2026-10")).thenReturn(List.of());
         ExpenseStatement generated = new ExpenseStatement();
         generated.setCompanyId(COMPANY_ID);
         generated.setMonth("2026-10");
@@ -358,9 +365,10 @@ class ExpenseStatementServiceTest {
         otherLease.setLeaseId(8L);
         otherLease.setStatus(DocumentStatus.ACTIVE);
         otherLease.setVersion(1);
-        when(repository.findFirstByCompanyIdAndMonthAndLeaseIdOrderByVersionDesc(COMPANY_ID, "2026-10", 7L))
+        when(repository.findFirstByUserIdAndCompanyIdAndMonthAndLeaseIdOrderByVersionDesc(OWNER, COMPANY_ID, "2026-10",
+                7L))
                 .thenReturn(Optional.of(sameLease));
-        when(repository.findByCompanyIdAndMonthOrderByVersionDesc(COMPANY_ID, "2026-10"))
+        when(repository.findByUserIdAndCompanyIdAndMonthOrderByVersionDesc(OWNER, COMPANY_ID, "2026-10"))
                 .thenReturn(List.of(sameLease, otherLease));
         ExpenseStatement generated = new ExpenseStatement();
         generated.setCompanyId(COMPANY_ID);
@@ -392,8 +400,8 @@ class ExpenseStatementServiceTest {
         statement.setCompanyId(COMPANY_ID);
         statement.setStatus(DocumentStatus.ACTIVE);
         statement.setLines(List.of());
-        when(repository.findByCompanyIdOrderByMonthDescVersionDesc(COMPANY_ID)).thenReturn(List.of(statement));
-        when(repository.findByCompanyIdAndMonthOrderByVersionDesc(COMPANY_ID, "2026-10"))
+        when(repository.findByUserIdAndCompanyIdOrderByMonthDescVersionDesc(OWNER, COMPANY_ID)).thenReturn(List.of(statement));
+        when(repository.findByUserIdAndCompanyIdAndMonthOrderByVersionDesc(OWNER, COMPANY_ID, "2026-10"))
                 .thenReturn(List.of(statement));
 
         assertThat(service.list(COMPANY_ID, null, null)).hasSize(1);
@@ -404,7 +412,7 @@ class ExpenseStatementServiceTest {
     @Test
     @DisplayName("A missing statement is a not found in French")
     void notFound() {
-        when(repository.findWithLinesById(9L)).thenReturn(Optional.empty());
+        when(repository.findWithLinesByIdAndUserId(9L, OWNER)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.get(9L))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Note de frais introuvable.")
@@ -419,9 +427,9 @@ class ExpenseStatementServiceTest {
         statement.setCompanyId(COMPANY_ID);
         statement.setStatus(DocumentStatus.ACTIVE);
         statement.setLines(List.of());
-        when(repository.findFirstByCompanyIdAndMonthAndStatusOrderByVersionDesc(COMPANY_ID, "2026-10",
+        when(repository.findFirstByUserIdAndCompanyIdAndMonthAndStatusOrderByVersionDesc(OWNER, COMPANY_ID, "2026-10",
                 DocumentStatus.ACTIVE)).thenReturn(Optional.of(statement));
-        when(repository.findFirstByCompanyIdAndMonthAndStatusOrderByVersionDesc(COMPANY_ID, "2026-11",
+        when(repository.findFirstByUserIdAndCompanyIdAndMonthAndStatusOrderByVersionDesc(OWNER, COMPANY_ID, "2026-11",
                 DocumentStatus.ACTIVE)).thenReturn(Optional.empty());
 
         assertThat(service.activeDtoForMonth(COMPANY_ID, "2026-10", null)).isPresent();
@@ -440,8 +448,8 @@ class ExpenseStatementServiceTest {
         statement.setLeaseId(7L);
         statement.setStatus(DocumentStatus.ACTIVE);
         statement.setLines(List.of());
-        when(repository.findFirstByCompanyIdAndMonthAndLeaseIdAndStatusOrderByVersionDesc(COMPANY_ID, "2026-10",
-                7L, DocumentStatus.ACTIVE)).thenReturn(Optional.of(statement));
+        when(repository.findFirstByUserIdAndCompanyIdAndMonthAndLeaseIdAndStatusOrderByVersionDesc(OWNER, COMPANY_ID,
+                "2026-10", 7L, DocumentStatus.ACTIVE)).thenReturn(Optional.of(statement));
 
         Optional<StatementDto> active = service.activeDtoForMonth(COMPANY_ID, "2026-10", 7L);
 
@@ -455,7 +463,7 @@ class ExpenseStatementServiceTest {
         ExpenseStatement statement = new ExpenseStatement();
         statement.setStatus(DocumentStatus.ACTIVE);
         statement.setLines(List.of());
-        when(repository.findWithLinesById(9L)).thenReturn(Optional.of(statement));
+        when(repository.findWithLinesByIdAndUserId(9L, OWNER)).thenReturn(Optional.of(statement));
         when(documents.pdf(statement, true)).thenReturn(new byte[]{3});
         when(documents.zip(statement)).thenReturn(new byte[]{4});
 

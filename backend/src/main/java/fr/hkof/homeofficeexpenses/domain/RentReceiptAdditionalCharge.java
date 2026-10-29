@@ -24,6 +24,9 @@ public class RentReceiptAdditionalCharge {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "rent_receipt_id", nullable = false)
     private RentReceipt rentReceipt;
@@ -43,6 +46,14 @@ public class RentReceiptAdditionalCharge {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public RentReceipt getRentReceipt() {

@@ -14,34 +14,33 @@ import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
 public interface ExpenseStatementRepository extends JpaRepository<ExpenseStatement, Long> {
 
     @EntityGraph(attributePaths = {"lines", "lines.expenseItem", "lines.receipt"})
-    List<ExpenseStatement> findByCompanyIdAndMonthOrderByVersionDesc(Long companyId, String month);
-
-    @EntityGraph(attributePaths = {"lines", "lines.expenseItem", "lines.receipt"})
-    List<ExpenseStatement> findByCompanyIdOrderByMonthDescVersionDesc(Long companyId);
-
-    @EntityGraph(attributePaths = {"lines", "lines.expenseItem", "lines.receipt"})
-    @Query("select n from ExpenseStatement n where n.id = :id")
-    Optional<ExpenseStatement> findWithLinesById(@Param("id") Long id);
-
-    Optional<ExpenseStatement> findFirstByCompanyIdAndMonthOrderByVersionDesc(Long companyId, String month);
-
-    Optional<ExpenseStatement> findFirstByCompanyIdAndMonthAndLeaseIdOrderByVersionDesc(Long companyId, String month,
-            Long leaseId);
-
-    Optional<ExpenseStatement> findFirstByCompanyIdAndMonthAndLeaseIdIsNullOrderByVersionDesc(Long companyId,
+    List<ExpenseStatement> findByUserIdAndCompanyIdAndMonthOrderByVersionDesc(Long userId, Long companyId,
             String month);
 
     @EntityGraph(attributePaths = {"lines", "lines.expenseItem", "lines.receipt"})
-    Optional<ExpenseStatement> findFirstByCompanyIdAndMonthAndStatusOrderByVersionDesc(Long companyId, String month,
-            DocumentStatus status);
+    List<ExpenseStatement> findByUserIdAndCompanyIdOrderByMonthDescVersionDesc(Long userId, Long companyId);
 
     @EntityGraph(attributePaths = {"lines", "lines.expenseItem", "lines.receipt"})
-    Optional<ExpenseStatement> findFirstByCompanyIdAndMonthAndLeaseIdAndStatusOrderByVersionDesc(Long companyId,
-            String month, Long leaseId, DocumentStatus status);
+    @Query("select n from ExpenseStatement n where n.id = :id and n.userId = :userId")
+    Optional<ExpenseStatement> findWithLinesByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
+
+    Optional<ExpenseStatement> findFirstByUserIdAndCompanyIdAndMonthAndLeaseIdOrderByVersionDesc(Long userId,
+            Long companyId, String month, Long leaseId);
+
+    Optional<ExpenseStatement> findFirstByUserIdAndCompanyIdAndMonthAndLeaseIdIsNullOrderByVersionDesc(Long userId,
+            Long companyId, String month);
 
     @EntityGraph(attributePaths = {"lines", "lines.expenseItem", "lines.receipt"})
-    Optional<ExpenseStatement> findFirstByCompanyIdAndMonthAndLeaseIdIsNullAndStatusOrderByVersionDesc(Long companyId,
-            String month, DocumentStatus status);
+    Optional<ExpenseStatement> findFirstByUserIdAndCompanyIdAndMonthAndStatusOrderByVersionDesc(Long userId,
+            Long companyId, String month, DocumentStatus status);
+
+    @EntityGraph(attributePaths = {"lines", "lines.expenseItem", "lines.receipt"})
+    Optional<ExpenseStatement> findFirstByUserIdAndCompanyIdAndMonthAndLeaseIdAndStatusOrderByVersionDesc(
+            Long userId, Long companyId, String month, Long leaseId, DocumentStatus status);
+
+    @EntityGraph(attributePaths = {"lines", "lines.expenseItem", "lines.receipt"})
+    Optional<ExpenseStatement> findFirstByUserIdAndCompanyIdAndMonthAndLeaseIdIsNullAndStatusOrderByVersionDesc(
+            Long userId, Long companyId, String month, DocumentStatus status);
 
     boolean existsByCompanyId(Long companyId);
 }

@@ -44,12 +44,13 @@ public class ExpenseStatementService {
     private final ExpenseStatementDocumentService documents;
     private final LeaseService leases;
     private final DocumentDraftService documentDraftService;
+    private final OwnershipContext ownership;
 
     public ExpenseStatementService(ExpenseStatementRepository repository, CompanyService companies,
             ExpenseItemService expenseItemService, RentReceiptService rentReceiptService,
             TemplateDataService templateDataService, StorageService storage,
             ExpenseStatementLineCalculator lineCalculator, ExpenseStatementDocumentService documents,
-            LeaseService leases, DocumentDraftService documentDraftService) {
+            LeaseService leases, DocumentDraftService documentDraftService, OwnershipContext ownership) {
         this.repository = repository;
         this.companies = companies;
         this.expenseItemService = expenseItemService;
@@ -60,6 +61,7 @@ public class ExpenseStatementService {
         this.documents = documents;
         this.leases = leases;
         this.documentDraftService = documentDraftService;
+        this.ownership = ownership;
     }
 
     @Transactional(readOnly = true)
@@ -141,6 +143,10 @@ public class ExpenseStatementService {
         ExpenseStatementDocumentService.GeneratedStatement generated = documents.generate(
                 month, lines, version, template, signature, company, leaseId);
         ExpenseStatement statement = generated.statement();
+        // The generated root and every line belong to the account that generated them.
+        Long owner = ownership.currentUserId();
+        statement.setUserId(owner);
+        statement.getLines().forEach(line -> line.setUserId(owner));
         statement.setPdfPath(storage.storePdf(pdfName(month, leaseId, version, ""), generated.pdf()));
         statement.setFullPdfPath(storage.storePdf(pdfName(month, leaseId, version, "_complet"),
                 generated.completePdf()));
@@ -159,10 +165,12 @@ public class ExpenseStatementService {
     @Transactional(readOnly = true)
     public List<StatementDto> list(Long companyId, String month, Long leaseId) {
         companies.entity(companyId);
+        Long owner = ownership.currentUserId();
         var lease = leaseId == null ? null : leases.resolveExpenseLease(companyId, leaseId);
         List<ExpenseStatement> statements = month == null || month.isBlank()
-                ? repository.findByCompanyIdOrderByMonthDescVersionDesc(companyId)
-                : repository.findByCompanyIdAndMonthOrderByVersionDesc(companyId, Amounts.month(month).toString());
+                ? repository.findByUserIdAndCompanyIdOrderByMonthDescVersionDesc(owner, companyId)
+                : repository.findByUserIdAndCompanyIdAndMonthOrderByVersionDesc(owner, companyId,
+                        Amounts.month(month).toString());
         return statements.stream()
                 .filter(statement -> lease == null || statement.getLeaseId() == null
                         || statement.getLeaseId().equals(lease.getId()))
@@ -177,7 +185,7 @@ public class ExpenseStatementService {
 
     @Transactional(readOnly = true)
     public ExpenseStatement entity(Long id) {
-        return repository.findWithLinesById(id)
+        return repository.findWithLinesByIdAndUserId(id, ownership.currentUserId())
                 .orElseThrow(() -> new NotFoundException("STATEMENT_NOT_FOUND", "Note de frais introuvable."));
     }
 
@@ -190,14 +198,16 @@ public class ExpenseStatementService {
     @Transactional(readOnly = true)
     public Optional<StatementDto> activeDtoForMonth(Long companyId, String month, Long leaseId) {
         companies.entity(companyId);
+        Long owner = ownership.currentUserId();
         if (leaseId == null) {
             return repository
-                    .findFirstByCompanyIdAndMonthAndStatusOrderByVersionDesc(companyId, month, DocumentStatus.ACTIVE)
+                    .findFirstByUserIdAndCompanyIdAndMonthAndStatusOrderByVersionDesc(owner, companyId, month,
+                            DocumentStatus.ACTIVE)
                     .map(this::toDto);
         }
         Long effectiveLeaseId = leases.resolveExpenseLease(companyId, leaseId).getId();
         return repository
-                .findFirstByCompanyIdAndMonthAndLeaseIdAndStatusOrderByVersionDesc(companyId, month,
+                .findFirstByUserIdAndCompanyIdAndMonthAndLeaseIdAndStatusOrderByVersionDesc(owner, companyId, month,
                         effectiveLeaseId, DocumentStatus.ACTIVE)
                 .map(this::toDto);
     }
@@ -211,9 +221,12 @@ public class ExpenseStatementService {
     }
 
     private int nextVersion(Long companyId, String month, Long leaseId) {
+        Long owner = ownership.currentUserId();
         Optional<ExpenseStatement> last = leaseId == null
-                ? repository.findFirstByCompanyIdAndMonthAndLeaseIdIsNullOrderByVersionDesc(companyId, month)
-                : repository.findFirstByCompanyIdAndMonthAndLeaseIdOrderByVersionDesc(companyId, month, leaseId);
+                ? repository.findFirstByUserIdAndCompanyIdAndMonthAndLeaseIdIsNullOrderByVersionDesc(owner,
+                        companyId, month)
+                : repository.findFirstByUserIdAndCompanyIdAndMonthAndLeaseIdOrderByVersionDesc(owner, companyId,
+                        month, leaseId);
         return last.map(statement -> statement.getVersion() + 1).orElse(1);
     }
 
@@ -223,7 +236,7 @@ public class ExpenseStatementService {
 
     private void archive(Long companyId, String month, Long leaseId) {
         List<ExpenseStatement> existingStatements = repository
-                .findByCompanyIdAndMonthOrderByVersionDesc(companyId, month);
+                .findByUserIdAndCompanyIdAndMonthOrderByVersionDesc(ownership.currentUserId(), companyId, month);
         boolean modified = false;
         for (ExpenseStatement existingStatement : existingStatements) {
             boolean sameScope = leaseId == null

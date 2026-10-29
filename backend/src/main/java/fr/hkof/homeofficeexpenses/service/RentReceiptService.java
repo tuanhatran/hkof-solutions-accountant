@@ -37,13 +37,14 @@ public class RentReceiptService {
     private final DocumentDraftService documentDraftService;
     private final RentReceiptMapper mapper;
     private final RentReceiptAssembler assembler;
+    private final OwnershipContext ownership;
     private final Clock clock;
 
     public RentReceiptService(RentReceiptRepository repository, CompanyService companies, LeaseService leaseService,
             TemplateService templateService, TemplateDataService templateDataService,
             SignatureService signatureService, PdfService pdfService, StorageService storage,
             DocumentDraftService documentDraftService, RentReceiptMapper mapper,
-            RentReceiptAssembler assembler,
+            RentReceiptAssembler assembler, OwnershipContext ownership,
             Clock clock) {
         this.repository = repository;
         this.companies = companies;
@@ -56,6 +57,7 @@ public class RentReceiptService {
         this.documentDraftService = documentDraftService;
         this.mapper = mapper;
         this.assembler = assembler;
+        this.ownership = ownership;
         this.clock = clock;
     }
 
@@ -132,16 +134,18 @@ public class RentReceiptService {
     public List<RentReceiptDto> list(Long companyId, String month) {
         boolean hasMonth = month != null && !month.isBlank();
         String monthValue = hasMonth ? Amounts.month(month).toString() : null;
+        Long owner = ownership.currentUserId();
         List<RentReceipt> rentReceipts;
         if (companyId != null) {
             companies.entity(companyId);
             rentReceipts = hasMonth
-                    ? repository.findByCompanyIdAndMonthOrderByVersionDescIdDesc(companyId, monthValue)
-                    : repository.findByCompanyIdOrderByMonthDescVersionDescIdDesc(companyId);
+                    ? repository.findByUserIdAndCompanyIdAndMonthOrderByVersionDescIdDesc(owner, companyId,
+                            monthValue)
+                    : repository.findByUserIdAndCompanyIdOrderByMonthDescVersionDescIdDesc(owner, companyId);
         } else {
             rentReceipts = hasMonth
-                    ? repository.findByMonthOrderByVersionDescIdDesc(monthValue)
-                    : repository.findAllByOrderByMonthDescVersionDescIdDesc();
+                    ? repository.findByUserIdAndMonthOrderByVersionDescIdDesc(owner, monthValue)
+                    : repository.findAllByUserIdOrderByMonthDescVersionDescIdDesc(owner);
         }
         return rentReceipts.stream().map(this::toDto).toList();
     }
@@ -153,7 +157,7 @@ public class RentReceiptService {
 
     @Transactional(readOnly = true)
     public RentReceipt entity(Long id) {
-        return repository.findById(id)
+        return repository.findByIdAndUserId(id, ownership.currentUserId())
                 .orElseThrow(() -> new NotFoundException("RENT_RECEIPT_NOT_FOUND", "Quittance introuvable."));
     }
 
@@ -165,26 +169,30 @@ public class RentReceiptService {
     @Transactional(readOnly = true)
     public RentReceipt activeForMonth(Long companyId, String month, Long landlordId, Long tenantId,
             Long tenantCompanyId) {
+        Long owner = ownership.currentUserId();
+        if (companyId != null) {
+            companies.entity(companyId);
+        }
         if (landlordId != null && tenantCompanyId != null) {
             return withAdditionalCharges(repository
-                    .findFirstByMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
-                            month, landlordId, tenantCompanyId, DocumentStatus.ACTIVE)
+                    .findFirstByUserIdAndMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
+                            owner, month, landlordId, tenantCompanyId, DocumentStatus.ACTIVE)
                     .orElse(null));
         }
         if (landlordId != null && tenantId != null) {
             return withAdditionalCharges(repository
-                    .findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
-                            month, landlordId, tenantId, DocumentStatus.ACTIVE)
+                    .findFirstByUserIdAndMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
+                            owner, month, landlordId, tenantId, DocumentStatus.ACTIVE)
                     .orElse(null));
         }
         if (companyId != null) {
             return withAdditionalCharges(repository
-                    .findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
-                            companyId, month, DocumentStatus.ACTIVE)
+                    .findFirstByUserIdAndCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
+                            owner, companyId, month, DocumentStatus.ACTIVE)
                     .orElse(null));
         }
-        return withAdditionalCharges(repository.findFirstByMonthAndStatusOrderByVersionDescIdDesc(month,
-                DocumentStatus.ACTIVE).orElse(null));
+        return withAdditionalCharges(repository.findFirstByUserIdAndMonthAndStatusOrderByVersionDescIdDesc(owner,
+                month, DocumentStatus.ACTIVE).orElse(null));
     }
 
     /**

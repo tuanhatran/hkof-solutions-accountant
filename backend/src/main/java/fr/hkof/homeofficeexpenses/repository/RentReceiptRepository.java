@@ -10,30 +10,34 @@ import fr.hkof.homeofficeexpenses.domain.RentReceipt;
 
 public interface RentReceiptRepository extends JpaRepository<RentReceipt, Long> {
 
-    List<RentReceipt> findByMonthOrderByVersionDescIdDesc(String month);
+    Optional<RentReceipt> findByIdAndUserId(Long id, Long userId);
 
-    List<RentReceipt> findByCompanyIdAndMonthOrderByVersionDescIdDesc(Long companyId, String month);
+    List<RentReceipt> findByUserIdAndMonthOrderByVersionDescIdDesc(Long userId, String month);
 
-    List<RentReceipt> findByCompanyIdOrderByMonthDescVersionDescIdDesc(Long companyId);
+    List<RentReceipt> findByUserIdAndCompanyIdAndMonthOrderByVersionDescIdDesc(Long userId, Long companyId,
+            String month);
 
-    List<RentReceipt> findAllByOrderByMonthDescVersionDescIdDesc();
+    List<RentReceipt> findByUserIdAndCompanyIdOrderByMonthDescVersionDescIdDesc(Long userId, Long companyId);
 
-    Optional<RentReceipt> findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(Long companyId, String month,
+    List<RentReceipt> findAllByUserIdOrderByMonthDescVersionDescIdDesc(Long userId);
+
+    Optional<RentReceipt> findFirstByUserIdAndCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(Long userId,
+            Long companyId, String month, DocumentStatus status);
+
+    Optional<RentReceipt> findFirstByUserIdAndMonthAndStatusOrderByVersionDescIdDesc(Long userId, String month,
             DocumentStatus status);
 
-    Optional<RentReceipt> findFirstByMonthAndStatusOrderByVersionDescIdDesc(String month, DocumentStatus status);
+    Optional<RentReceipt> findFirstByUserIdAndMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
+            Long userId, String month, Long landlordId, Long tenantId, DocumentStatus status);
 
-    Optional<RentReceipt> findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
-            String month, Long landlordId, Long tenantId, DocumentStatus status);
+    Optional<RentReceipt> findFirstByUserIdAndMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
+            Long userId, String month, Long landlordId, Long tenantCompanyId, DocumentStatus status);
 
-    Optional<RentReceipt> findFirstByMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
-            String month, Long landlordId, Long tenantCompanyId, DocumentStatus status);
+    Optional<RentReceipt> findFirstByUserIdAndMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc(
+            Long userId, String month, Long landlordId, Long tenantId);
 
-    Optional<RentReceipt> findFirstByMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc(
-            String month, Long landlordId, Long tenantId);
-
-    Optional<RentReceipt> findFirstByMonthAndLandlordIdAndTenantCompanyIdOrderByVersionDescIdDesc(
-            String month, Long landlordId, Long tenantCompanyId);
+    Optional<RentReceipt> findFirstByUserIdAndMonthAndLandlordIdAndTenantCompanyIdOrderByVersionDescIdDesc(
+            Long userId, String month, Long landlordId, Long tenantCompanyId);
 
     boolean existsByCompanyId(Long companyId);
 }

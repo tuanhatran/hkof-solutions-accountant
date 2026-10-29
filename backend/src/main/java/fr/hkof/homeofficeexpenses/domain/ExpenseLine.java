@@ -22,6 +22,9 @@ public class ExpenseLine {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "statement_id", nullable = false)
     private ExpenseStatement expenseStatement;
@@ -68,6 +71,14 @@ public class ExpenseLine {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public ExpenseStatement getExpenseStatement() {

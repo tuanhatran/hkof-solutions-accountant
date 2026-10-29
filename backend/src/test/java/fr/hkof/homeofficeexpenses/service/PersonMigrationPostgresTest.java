@@ -136,14 +136,18 @@ class PersonMigrationPostgresTest {
                     """)).isEqualTo("Bailleur Société");
 
             statement.execute("""
-                    INSERT INTO rent_receipt (billing_month, landlord_id, tenant_company_id, period_start,
+                    INSERT INTO rent_receipt (user_id, billing_month, landlord_id, tenant_company_id, period_start,
                         period_end, rent_excl_charges, charges, total, version, status, created_at)
-                    VALUES ('2026-02', %d, 1, '2026-02-01', '2026-02-28', 900.00, 0.00, 900.00, 2, 'ACTIVE', NOW())
+                    VALUES ((SELECT id FROM app_user WHERE lower(email) = 'thtran@homeofficeexpenses.local'
+                        ORDER BY id LIMIT 1), '2026-02', %d, 1, '2026-02-01', '2026-02-28', 900.00, 0.00,
+                        900.00, 2, 'ACTIVE', NOW())
                     """.formatted(landlordId));
             assertThatThrownBy(() -> statement.execute("""
-                    INSERT INTO rent_receipt (billing_month, landlord_id, tenant_company_id, period_start,
+                    INSERT INTO rent_receipt (user_id, billing_month, landlord_id, tenant_company_id, period_start,
                         period_end, rent_excl_charges, charges, total, version, status, created_at)
-                    VALUES ('2026-02', %d, 1, '2026-02-01', '2026-02-28', 900.00, 0.00, 900.00, 2, 'ACTIVE', NOW())
+                    VALUES ((SELECT id FROM app_user WHERE lower(email) = 'thtran@homeofficeexpenses.local'
+                        ORDER BY id LIMIT 1), '2026-02', %d, 1, '2026-02-01', '2026-02-28', 900.00, 0.00,
+                        900.00, 2, 'ACTIVE', NOW())
                     """.formatted(landlordId)))
                     .isInstanceOf(SQLException.class);
         }
