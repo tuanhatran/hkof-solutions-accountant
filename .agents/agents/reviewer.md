@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Read-only blocker review of a HomeOfficeExpenses diff. Real bugs only, never style.
-model: Gemini 3.8 Flash (Medium)
+model: gemini-3.8-flash-medium
 mainAgent: false
 ---
 
