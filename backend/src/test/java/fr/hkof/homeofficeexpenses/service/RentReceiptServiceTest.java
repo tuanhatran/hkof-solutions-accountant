@@ -213,7 +213,7 @@ class RentReceiptServiceTest {
         assertThat(dto.periodEnd()).isEqualTo(LocalDate.of(2026, 10, 31));
         assertThat(dto.issueDate()).isEqualTo(LocalDate.of(2026, 10, 1));
         assertThat(dto.paymentDate()).isEqualTo(LocalDate.of(2026, 10, 1));
-        verify(storage).storePdf("quittance_2026-10_l1_t2_v1.pdf", new byte[]{1});
+        verify(storage).storePdf("quittance_2026-10_l1_t2_v1_u42.pdf", new byte[]{1});
         verify(documentDraftService).deleteActiveRentReceipt("2026-10", 1L, 2L, null);
         ArgumentCaptor<RentReceipt> saved = ArgumentCaptor.forClass(RentReceipt.class);
         verify(repository).save(saved.capture());
@@ -353,7 +353,7 @@ class RentReceiptServiceTest {
         assertThat(dto.tenantCompanyId()).isEqualTo(TENANT_COMPANY_ID);
         assertThat(dto.tenantName()).isEqualTo("Société Locataire");
         assertThat(dto.version()).isEqualTo(2);
-        verify(storage).storePdf("quittance_2026-10_l1_c5_v2.pdf", new byte[]{1});
+        verify(storage).storePdf("quittance_2026-10_l1_c5_v2_u42.pdf", new byte[]{1});
     }
 
     @Test

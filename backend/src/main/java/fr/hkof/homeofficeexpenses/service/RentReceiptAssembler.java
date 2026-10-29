@@ -67,11 +67,17 @@ public class RentReceiptAssembler {
         return existing.map(receipt -> receipt.getVersion() + 1).orElse(1);
     }
 
+    /**
+     * New receipts embed the owner in their stored name: versions restart per account while
+     * persons stay shared, so an owner-less name could overwrite another account's PDF. Rows
+     * generated before this rule keep their stored path untouched.
+     */
     public String fileName(YearMonth month, Lease lease, int version) {
         String tenant = lease.isCompanyLease()
                 ? "c" + lease.getCompanyId()
                 : "t" + lease.getTenant().getId();
-        return "quittance_" + month + "_l" + lease.getLandlord().getId() + "_" + tenant + "_v" + version + ".pdf";
+        return "quittance_" + month + "_l" + lease.getLandlord().getId() + "_" + tenant + "_v" + version
+                + "_u" + ownership.currentUserId() + ".pdf";
     }
 
     public TemplateDocument template(Long templateId) {

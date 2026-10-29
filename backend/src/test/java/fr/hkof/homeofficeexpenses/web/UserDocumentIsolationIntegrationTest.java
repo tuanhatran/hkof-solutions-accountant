@@ -1,6 +1,7 @@
 package fr.hkof.homeofficeexpenses.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -157,6 +158,69 @@ class UserDocumentIsolationIntegrationTest {
                         .param("companyId", String.valueOf(bDocs.companyId())).session(b.http()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(bDocs.statementId()));
+    }
+
+    @Test
+    @DisplayName("Receipts of two accounts sharing a person pair and month keep distinct stored PDFs")
+    void keepsSharedPersonReceiptsOfTwoAccountsApart() throws Exception {
+        Session a = sessionFor("documents.shared.a@example.test");
+        Session b = sessionFor("documents.shared.b@example.test");
+
+        long aCompanyId = id(created(a, "/api/companies", """
+                {"name":"Alpha Partagée","legalForm":"SARL","address":"1 rue Alpha","managerName":"Gérant",
+                 "leaseId":null,"issuePlace":"Paris"}
+                """));
+        // Persons are not account-scoped yet: both accounts see the same sender names.
+        long landlordId = id(created(a, "/api/persons",
+                "{\"name\":\"Bailleur Partagé\",\"address\":\"1 rue Bailleur\"}"));
+        long tenantId = id(created(a, "/api/persons",
+                "{\"name\":\"Locataire Partagé\",\"address\":\"2 rue Locataire\"}"));
+        long aLeaseId = id(created(a, "/api/leases",
+                leaseBody(landlordId, tenantId, aCompanyId, "12 rue Alpha, 75002 Paris")));
+        signature(a, landlordId, "Signature bailleur partagé");
+
+        long aReceiptId = id(created(a, "/api/rent-receipts", """
+                {"month":"2026-05","companyId":%d,"landlordId":%d,"tenantId":%d}
+                """.formatted(aCompanyId, landlordId, tenantId)));
+        String aPath = receiptPath(aReceiptId);
+        byte[] aPdf = receiptPdf(a, aReceiptId);
+
+        // A deletes its lease; the shared persons stay in the directory.
+        mockMvc.perform(mutation(delete("/api/leases/{id}", aLeaseId), a))
+                .andExpect(status().isNoContent());
+
+        // B creates its own lease on the very same persons and generates the same month:
+        // the per-owner version restarts at 1, so the stored name must stay owner-specific.
+        long bCompanyId = id(created(b, "/api/companies", """
+                {"name":"Bêta Partagée","legalForm":"SARL","address":"2 rue Bêta","managerName":"Gérant",
+                 "leaseId":null,"issuePlace":"Paris"}
+                """));
+        created(b, "/api/leases", leaseBody(landlordId, tenantId, bCompanyId, "14 rue Bêta, 75003 Paris"));
+        long bReceiptId = id(created(b, "/api/rent-receipts", """
+                {"month":"2026-05","companyId":%d,"landlordId":%d,"tenantId":%d}
+                """.formatted(bCompanyId, landlordId, tenantId)));
+
+        String bPath = receiptPath(bReceiptId);
+        assertThat(bPath).isNotEqualTo(aPath);
+        assertThat(receiptPath(aReceiptId)).isEqualTo(aPath);
+        assertThat(receiptPdf(a, aReceiptId)).isEqualTo(aPdf);
+    }
+
+    private static String leaseBody(long landlordId, long tenantId, long companyId, String address) {
+        return """
+                {"companyLease":false,"landlordId":%d,"tenantId":%d,"companyId":%d,
+                 "propertyAddress":"%s","rentExclCharges":"900.00","charges":"50.00"}
+                """.formatted(landlordId, tenantId, companyId, address);
+    }
+
+    private String receiptPath(long rentReceiptId) {
+        return jdbc.queryForObject("SELECT pdf_path FROM rent_receipt WHERE id = ?", String.class, rentReceiptId);
+    }
+
+    private byte[] receiptPdf(Session session, long rentReceiptId) throws Exception {
+        return mockMvc.perform(get("/api/rent-receipts/{id}/pdf", rentReceiptId).session(session.http()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsByteArray();
     }
 
     private Documents generate(Session session, String label, String month) throws Exception {

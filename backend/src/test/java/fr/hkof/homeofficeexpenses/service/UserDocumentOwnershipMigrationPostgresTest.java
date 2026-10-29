@@ -114,6 +114,51 @@ class UserDocumentOwnershipMigrationPostgresTest {
         }
     }
 
+    @Test
+    @DisplayName("V22 scopes rent receipt uniqueness to the owner while persons stay shared")
+    void scopesReceiptUniquenessPerOwner() throws Exception {
+        resetSchema();
+        migrate();
+
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            assertThat(singleLong(statement,
+                    "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'uq_rent_receipt_month_tenant_version'"))
+                    .isZero();
+            assertThat(singleLong(statement, """
+                    SELECT COUNT(*) FROM pg_indexes
+                    WHERE indexname = 'uq_rent_receipt_user_month_tenant_version'
+                    """)).isEqualTo(1);
+
+            long owner = ownerId(statement, THTRAN_EMAIL);
+            statement.execute("""
+                    INSERT INTO app_user (email, password_hash, confirmed, must_change_password, created_at,
+                        updated_at)
+                    VALUES ('other.owner@example.test', 'hash', TRUE, FALSE, NOW(), NOW())
+                    """);
+            long other = singleLong(statement,
+                    "SELECT id FROM app_user WHERE email = 'other.owner@example.test'");
+            statement.execute("INSERT INTO person (id, kind, name, deleted) VALUES (100, 'PERSON', 'Bailleur', FALSE)");
+            statement.execute("INSERT INTO person (id, kind, name, deleted) VALUES (101, 'PERSON', 'Locataire', FALSE)");
+
+            insertReceipt(statement, 10, owner, 100, 101);
+            // The same person pair, month and version belongs to another account: allowed.
+            insertReceipt(statement, 11, other, 100, 101);
+            // A duplicate inside one account is still rejected.
+            assertThatThrownBy(() -> insertReceipt(statement, 12, owner, 100, 101))
+                    .isInstanceOf(SQLException.class);
+        }
+    }
+
+    private void insertReceipt(Statement statement, long id, long owner, long landlordId, long tenantId)
+            throws SQLException {
+        statement.execute("""
+                INSERT INTO rent_receipt (id, user_id, billing_month, period_start, period_end,
+                    rent_excl_charges, charges, total, version, status, landlord_id, tenant_id, created_at)
+                VALUES (%d, %d, '2026-03', DATE '2026-03-01', DATE '2026-03-31',
+                    900.00, 50.00, 950.00, 1, 'ACTIVE', %d, %d, NOW())
+                """.formatted(id, owner, landlordId, tenantId));
+    }
+
     private void assertOwnershipColumnsAreMandatory(Statement statement) throws SQLException {
         for (String table : DOCUMENT_TABLES) {
             assertThat(singleLong(statement, """
