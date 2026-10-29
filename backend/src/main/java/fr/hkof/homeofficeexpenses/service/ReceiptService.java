@@ -18,13 +18,15 @@ public class ReceiptService {
     private final ReceiptRepository repository;
     private final ExpenseLineRepository lineRepository;
     private final StorageService storage;
+    private final OwnershipContext ownership;
     private final Clock clock;
 
     public ReceiptService(ReceiptRepository repository, ExpenseLineRepository lineRepository,
-            StorageService storage, Clock clock) {
+            StorageService storage, OwnershipContext ownership, Clock clock) {
         this.repository = repository;
         this.lineRepository = lineRepository;
         this.storage = storage;
+        this.ownership = ownership;
         this.clock = clock;
     }
 
@@ -32,6 +34,7 @@ public class ReceiptService {
     public ReceiptDto upload(MultipartFile file) {
         StorageService.StoredFile storedFile = storage.storeReceipt(file);
         Receipt receipt = new Receipt();
+        receipt.setUserId(ownership.currentUserId());
         receipt.setFileName(storedFile.fileName());
         receipt.setMimeType(storedFile.mimeType());
         receipt.setPath(storedFile.path());
@@ -44,8 +47,7 @@ public class ReceiptService {
 
     @Transactional(readOnly = true)
     public Receipt entity(Long id) {
-        return repository.findById(id)
-                .filter(receipt -> !receipt.isDeleted())
+        return repository.findByIdAndUserIdAndDeletedFalse(id, ownership.currentUserId())
                 .orElseThrow(() -> new NotFoundException("RECEIPT_NOT_FOUND", "Justificatif introuvable."));
     }
 

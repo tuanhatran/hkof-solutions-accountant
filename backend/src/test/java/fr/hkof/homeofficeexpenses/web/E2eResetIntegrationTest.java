@@ -104,6 +104,16 @@ class E2eResetIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         int receiptId = JsonPath.read(receipt, "$.id");
 
+        mockMvc.perform(mutation(put("/api/drafts/rent-receipts"), e2e)
+                        .contentType(JSON)
+                        .content("""
+                                {"month":"2026-01","landlordId":4,"tenantId":7,
+                                 "periodStart":"2026-01-01","periodEnd":"2026-01-31",
+                                 "rentExclCharges":"1300.00","charges":"50.00",
+                                 "paymentDate":"2026-01-05","issueDate":"2026-01-05","templateId":9}
+                                """))
+                .andExpect(status().isOk());
+
         mockMvc.perform(post("/api/e2e/reset")).andExpect(status().isNoContent());
         Session reset = loginE2e();
 
@@ -148,6 +158,12 @@ class E2eResetIntegrationTest {
                 .andExpect(jsonPath("$[?(@.code == 'test-e2e')]").isEmpty());
         mockMvc.perform(get("/api/receipts/" + receiptId).session(reset.session()))
                 .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/drafts/rent-receipts")
+                        .param("month", "2026-01")
+                        .param("landlordId", "4")
+                        .param("tenantId", "7")
+                        .session(reset.session()))
+                .andExpect(status().isNoContent());
     }
 
     @Test

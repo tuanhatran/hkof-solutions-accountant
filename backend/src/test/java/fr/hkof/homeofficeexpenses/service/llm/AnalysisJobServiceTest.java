@@ -40,6 +40,7 @@ import fr.hkof.homeofficeexpenses.domain.Receipt;
 import fr.hkof.homeofficeexpenses.repository.AnalysisDocumentRepository;
 import fr.hkof.homeofficeexpenses.service.BusinessException;
 import fr.hkof.homeofficeexpenses.service.NotFoundException;
+import fr.hkof.homeofficeexpenses.service.OwnershipContext;
 import fr.hkof.homeofficeexpenses.service.ReceiptService;
 import fr.hkof.homeofficeexpenses.service.extraction.DocumentTextExtractor;
 import fr.hkof.homeofficeexpenses.web.dto.ExtractionDtos.AnalysisDto;
@@ -48,6 +49,7 @@ import fr.hkof.homeofficeexpenses.web.dto.ExtractionDtos.ExtractionDto;
 class AnalysisJobServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-10-24T10:00:00Z");
+    private static final long OWNER_ID = 99L;
     private static final ExtractionDto RESULT = new ExtractionDto(
             "gaz", "EDF", "FA-1", "2026-10-05", "78.00", "65.00", "EUR", "Total TTC", "haute");
 
@@ -61,6 +63,7 @@ class AnalysisJobServiceTest {
     private ExtractionPipeline pipeline;
     private CapturingExecutor executor;
     private PlatformTransactionManager transactionManager;
+    private OwnershipContext ownership;
     private AnalysisJobService service;
     private Path receiptFile;
     private AnalysisDocument launched;
@@ -75,9 +78,11 @@ class AnalysisJobServiceTest {
         executor = new CapturingExecutor();
         transactionManager = mock(PlatformTransactionManager.class);
         when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+        ownership = mock(OwnershipContext.class);
+        when(ownership.currentUserId()).thenReturn(OWNER_ID);
         receiptFile = Files.writeString(tempDir.resolve("facture.pdf"), "contenu");
         service = new AnalysisJobService(repository, receiptService, llmConfigService, extractor, pipeline,
-                executor, transactionManager, Clock.fixed(NOW, ZoneOffset.UTC));
+                executor, transactionManager, Clock.fixed(NOW, ZoneOffset.UTC), ownership);
     }
 
     @Test
@@ -85,9 +90,9 @@ class AnalysisJobServiceTest {
     void reusesPendingAnalysis() {
         AnalysisDocument existing = analysis(AnalysisStatus.PENDING);
         when(receiptService.entity(1L)).thenReturn(existing.getReceipt());
-        when(repository.findFirstByReceiptIdAndStatusInOrderByIdDesc(eq(1L), anyList()))
+        when(repository.findFirstByUserIdAndReceiptIdAndStatusInOrderByIdDesc(eq(OWNER_ID), eq(1L), anyList()))
                 .thenReturn(Optional.of(existing));
-        when(repository.findWithReceiptById(42L)).thenReturn(Optional.of(existing));
+        when(repository.findWithReceiptByIdAndUserId(42L, OWNER_ID)).thenReturn(Optional.of(existing));
         when(pipeline.fromJson(any())).thenReturn(null);
 
         AnalysisDto dto = service.launch(1L);
@@ -99,7 +104,7 @@ class AnalysisJobServiceTest {
     }
 
     @Test
-    @DisplayName("A new launch persists a PENDING analysis and schedules the job")
+    @DisplayName("A new launch persists a PENDING analysis stamped with the owner and schedules the job")
     void launchesNewAnalysis() {
         AnalysisDocument analysis = analysis(AnalysisStatus.PENDING);
         stubNewAnalysis(analysis);
@@ -110,6 +115,7 @@ class AnalysisJobServiceTest {
         assertThat(dto.status()).isEqualTo("PENDING");
         assertThat(dto.receiptId()).isEqualTo(1L);
         assertThat(dto.fileName()).isEqualTo("facture.pdf");
+        assertThat(launched.getUserId()).isEqualTo(OWNER_ID);
         assertThat(launched.getCreatedAt()).isEqualTo(NOW);
         assertThat(launched.getUpdatedAt()).isEqualTo(NOW);
         assertThat(executor.tasks).hasSize(1);
@@ -120,7 +126,7 @@ class AnalysisJobServiceTest {
     void storesSuccessfulExtraction() {
         AnalysisDocument analysis = analysis(AnalysisStatus.PENDING);
         stubNewAnalysis(analysis);
-        when(llmConfigService.entity()).thenReturn(config(true));
+        when(llmConfigService.entityForUser(OWNER_ID)).thenReturn(config(true));
         when(extractor.extract(any(Path.class), anyString(), anyInt()))
                 .thenReturn(new DocumentTextExtractor.Extraction("texte", List.of(), false, 1));
         when(pipeline.extract(any(LlmConfig.class), anyString(), anyList())).thenReturn(RESULT);
@@ -144,7 +150,7 @@ class AnalysisJobServiceTest {
     void disabledLlmFailsAnalysis() {
         AnalysisDocument analysis = analysis(AnalysisStatus.PENDING);
         stubNewAnalysis(analysis);
-        when(llmConfigService.entity()).thenReturn(config(false));
+        when(llmConfigService.entityForUser(OWNER_ID)).thenReturn(config(false));
         when(pipeline.fromJson(any())).thenReturn(null);
 
         service.launch(1L);
@@ -158,26 +164,19 @@ class AnalysisJobServiceTest {
     }
 
     @Test
-    @DisplayName("Execution uses the authenticated owner's LLM configuration via entityForUser")
+    @DisplayName("Execution uses the analysis owner's LLM configuration via entityForUser")
     void usesOwnerLlmConfigWhenOwnershipContextAvailable() {
-        fr.hkof.homeofficeexpenses.service.OwnershipContext ownershipContext = mock(
-                fr.hkof.homeofficeexpenses.service.OwnershipContext.class);
-        when(ownershipContext.currentUserId()).thenReturn(99L);
-        AnalysisJobService contextualService = new AnalysisJobService(
-                repository, receiptService, llmConfigService, extractor, pipeline,
-                executor, transactionManager, Clock.fixed(NOW, ZoneOffset.UTC), ownershipContext);
-
         AnalysisDocument analysis = analysis(AnalysisStatus.PENDING);
         stubNewAnalysis(analysis);
-        when(llmConfigService.entityForUser(99L)).thenReturn(config(false));
+        when(llmConfigService.entityForUser(OWNER_ID)).thenReturn(config(false));
         when(pipeline.fromJson(any())).thenReturn(null);
 
-        contextualService.launch(1L);
+        service.launch(1L);
         executor.tasks.get(0).run();
 
         assertThat(launched.getStatus()).isEqualTo(AnalysisStatus.FAILED);
         assertThat(launched.getErrorMessage()).contains("désactivée");
-        verify(llmConfigService).entityForUser(99L);
+        verify(llmConfigService).entityForUser(OWNER_ID);
         verify(llmConfigService, never()).entity();
     }
 
@@ -187,7 +186,7 @@ class AnalysisJobServiceTest {
         AnalysisDocument analysis = analysis(AnalysisStatus.PENDING);
         analysis.getReceipt().setPath(tempDir.resolve("absent.pdf").toString());
         stubNewAnalysis(analysis);
-        when(llmConfigService.entity()).thenReturn(config(true));
+        when(llmConfigService.entityForUser(OWNER_ID)).thenReturn(config(true));
         when(pipeline.fromJson(any())).thenReturn(null);
 
         service.launch(1L);
@@ -204,7 +203,7 @@ class AnalysisJobServiceTest {
     void businessErrorFailsAnalysis() {
         AnalysisDocument analysis = analysis(AnalysisStatus.PENDING);
         stubNewAnalysis(analysis);
-        when(llmConfigService.entity()).thenReturn(config(true));
+        when(llmConfigService.entityForUser(OWNER_ID)).thenReturn(config(true));
         when(extractor.extract(any(Path.class), anyString(), anyInt()))
                 .thenThrow(new BusinessException("Document illisible : aucun texte exploitable."));
         when(pipeline.fromJson(any())).thenReturn(null);
@@ -222,7 +221,7 @@ class AnalysisJobServiceTest {
     void unexpectedErrorFailsAnalysis() {
         AnalysisDocument analysis = analysis(AnalysisStatus.PENDING);
         stubNewAnalysis(analysis);
-        when(llmConfigService.entity()).thenReturn(config(true));
+        when(llmConfigService.entityForUser(OWNER_ID)).thenReturn(config(true));
         when(extractor.extract(any(Path.class), anyString(), anyInt()))
                 .thenThrow(new IllegalStateException("boom"));
         when(pipeline.fromJson(any())).thenReturn(null);
@@ -241,7 +240,7 @@ class AnalysisJobServiceTest {
     void cancelledDuringExecutionIsNotOverwritten() {
         AnalysisDocument analysis = analysis(AnalysisStatus.PENDING);
         stubNewAnalysis(analysis);
-        when(llmConfigService.entity()).thenReturn(config(true));
+        when(llmConfigService.entityForUser(OWNER_ID)).thenReturn(config(true));
         when(extractor.extract(any(Path.class), anyString(), anyInt()))
                 .thenReturn(new DocumentTextExtractor.Extraction("texte", List.of(), false, 1));
         when(pipeline.extract(any(LlmConfig.class), anyString(), anyList())).thenAnswer(invocation -> {
@@ -262,7 +261,7 @@ class AnalysisJobServiceTest {
     void cancelledDuringFailureIsNotOverwritten() {
         AnalysisDocument analysis = analysis(AnalysisStatus.PENDING);
         stubNewAnalysis(analysis);
-        when(llmConfigService.entity()).thenReturn(config(true));
+        when(llmConfigService.entityForUser(OWNER_ID)).thenReturn(config(true));
         when(extractor.extract(any(Path.class), anyString(), anyInt())).thenAnswer(invocation -> {
             launched.setStatus(AnalysisStatus.CANCELLED);
             throw new BusinessException("trop tard");
@@ -287,7 +286,7 @@ class AnalysisJobServiceTest {
         when(repository.findWithReceiptById(42L)).thenReturn(Optional.empty());
 
         assertThatCode(() -> executor.tasks.get(0).run()).doesNotThrowAnyException();
-        verify(llmConfigService, never()).entity();
+        verify(llmConfigService, never()).entityForUser(anyLong());
     }
 
     @Test
@@ -302,7 +301,7 @@ class AnalysisJobServiceTest {
 
         executor.tasks.get(0).run();
 
-        verify(llmConfigService, never()).entity();
+        verify(llmConfigService, never()).entityForUser(anyLong());
         assertThat(launched.getStatus()).isEqualTo(AnalysisStatus.DONE);
     }
 
@@ -331,7 +330,7 @@ class AnalysisJobServiceTest {
         AnalysisDocument analysis = analysis(AnalysisStatus.PENDING);
         stubNewAnalysis(analysis);
         when(repository.findById(42L)).thenAnswer(invocation -> Optional.ofNullable(launched));
-        when(repository.findWithReceiptById(42L)).thenAnswer(invocation -> Optional.ofNullable(launched));
+        when(repository.findWithReceiptByIdAndUserId(42L, OWNER_ID)).thenAnswer(invocation -> Optional.ofNullable(launched));
         when(pipeline.fromJson(any())).thenReturn(null);
         executor.reject = true;
 
@@ -346,7 +345,7 @@ class AnalysisJobServiceTest {
     @DisplayName("Cancelling a running analysis stores CANCELLED")
     void cancelsRunningAnalysis() {
         AnalysisDocument analysis = analysis(AnalysisStatus.RUNNING);
-        when(repository.findWithReceiptById(42L)).thenReturn(Optional.of(analysis));
+        when(repository.findWithReceiptByIdAndUserId(42L, OWNER_ID)).thenReturn(Optional.of(analysis));
         when(repository.save(any(AnalysisDocument.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(pipeline.fromJson(any())).thenReturn(null);
 
@@ -361,7 +360,7 @@ class AnalysisJobServiceTest {
     @DisplayName("Cancelling a finished analysis is a business error")
     void cannotCancelFinishedAnalysis() {
         AnalysisDocument analysis = analysis(AnalysisStatus.DONE);
-        when(repository.findWithReceiptById(42L)).thenReturn(Optional.of(analysis));
+        when(repository.findWithReceiptByIdAndUserId(42L, OWNER_ID)).thenReturn(Optional.of(analysis));
 
         assertThatThrownBy(() -> service.cancel(42L))
                 .isInstanceOf(BusinessException.class)
@@ -371,9 +370,9 @@ class AnalysisJobServiceTest {
     }
 
     @Test
-    @DisplayName("An unknown analysis is reported in French")
+    @DisplayName("An unknown or foreign analysis is reported in French")
     void unknownAnalysis() {
-        when(repository.findWithReceiptById(42L)).thenReturn(Optional.empty());
+        when(repository.findWithReceiptByIdAndUserId(42L, OWNER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.get(42L))
                 .isInstanceOf(NotFoundException.class)
@@ -407,7 +406,7 @@ class AnalysisJobServiceTest {
     void finishWhenAnalysisDisappeared() {
         AnalysisDocument analysis = analysis(AnalysisStatus.PENDING);
         stubNewAnalysis(analysis);
-        when(llmConfigService.entity()).thenReturn(config(true));
+        when(llmConfigService.entityForUser(OWNER_ID)).thenReturn(config(true));
         when(extractor.extract(any(Path.class), anyString(), anyInt()))
                 .thenReturn(new DocumentTextExtractor.Extraction("texte", List.of(), false, 1));
         when(pipeline.extract(any(LlmConfig.class), anyString(), anyList())).thenReturn(RESULT);
@@ -429,7 +428,7 @@ class AnalysisJobServiceTest {
     void failureWhenAnalysisDisappeared() {
         AnalysisDocument analysis = analysis(AnalysisStatus.PENDING);
         stubNewAnalysis(analysis);
-        when(llmConfigService.entity()).thenReturn(config(true));
+        when(llmConfigService.entityForUser(OWNER_ID)).thenReturn(config(true));
         when(extractor.extract(any(Path.class), anyString(), anyInt()))
                 .thenThrow(new BusinessException("Document illisible."));
         when(pipeline.fromJson(any())).thenReturn(null);
@@ -451,7 +450,7 @@ class AnalysisJobServiceTest {
         AnalysisDocument analysis = analysis(AnalysisStatus.PENDING);
         stubNewAnalysis(analysis);
         when(repository.findById(42L)).thenReturn(Optional.empty());
-        when(repository.findWithReceiptById(42L)).thenAnswer(invocation -> Optional.ofNullable(launched));
+        when(repository.findWithReceiptByIdAndUserId(42L, OWNER_ID)).thenAnswer(invocation -> Optional.ofNullable(launched));
         when(pipeline.fromJson(any())).thenReturn(null);
         executor.reject = true;
 
@@ -467,7 +466,7 @@ class AnalysisJobServiceTest {
         AnalysisDocument analysis = analysis(AnalysisStatus.FAILED);
         analysis.setErrorMessage("Erreur");
         analysis.setResultJson(null);
-        when(repository.findWithReceiptById(42L)).thenReturn(Optional.of(analysis));
+        when(repository.findWithReceiptByIdAndUserId(42L, OWNER_ID)).thenReturn(Optional.of(analysis));
         when(pipeline.fromJson(null)).thenReturn(null);
 
         AnalysisDto dto = service.get(42L);
@@ -478,7 +477,7 @@ class AnalysisJobServiceTest {
 
     private void stubNewAnalysis(AnalysisDocument analysis) {
         when(receiptService.entity(1L)).thenReturn(analysis.getReceipt());
-        when(repository.findFirstByReceiptIdAndStatusInOrderByIdDesc(eq(1L), anyList()))
+        when(repository.findFirstByUserIdAndReceiptIdAndStatusInOrderByIdDesc(eq(OWNER_ID), eq(1L), anyList()))
                 .thenReturn(Optional.empty());
         AtomicReference<AnalysisDocument> saved = new AtomicReference<>();
         when(repository.save(any(AnalysisDocument.class))).thenAnswer(invocation -> {
@@ -489,11 +488,13 @@ class AnalysisJobServiceTest {
             return document;
         });
         when(repository.findWithReceiptById(42L)).thenAnswer(invocation -> Optional.ofNullable(saved.get()));
+        when(repository.findWithReceiptByIdAndUserId(42L, OWNER_ID)).thenAnswer(invocation -> Optional.ofNullable(saved.get()));
     }
 
     private AnalysisDocument analysis(AnalysisStatus status) {
         Receipt receipt = new Receipt();
         receipt.setId(1L);
+        receipt.setUserId(OWNER_ID);
         receipt.setFileName("facture.pdf");
         receipt.setMimeType("application/pdf");
         receipt.setPath(receiptFile.toString());
@@ -501,6 +502,7 @@ class AnalysisJobServiceTest {
 
         AnalysisDocument analysis = new AnalysisDocument();
         analysis.setId(42L);
+        analysis.setUserId(OWNER_ID);
         analysis.setReceipt(receipt);
         analysis.setStatus(status);
         analysis.setCreatedAt(NOW);

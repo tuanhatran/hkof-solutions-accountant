@@ -22,11 +22,14 @@ import fr.hkof.homeofficeexpenses.repository.ExpenseLineRepository;
 import fr.hkof.homeofficeexpenses.repository.ReceiptRepository;
 import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.ReceiptDto;
 
+import org.mockito.ArgumentCaptor;
+
 class ReceiptServiceTest {
 
     private ReceiptRepository repository;
     private ExpenseLineRepository lineRepository;
     private StorageService storage;
+    private OwnershipContext ownership;
     private ReceiptService service;
 
     @BeforeEach
@@ -34,13 +37,16 @@ class ReceiptServiceTest {
         repository = mock(ReceiptRepository.class);
         lineRepository = mock(ExpenseLineRepository.class);
         storage = mock(StorageService.class);
-        service = new ReceiptService(repository, lineRepository, storage,
+        ownership = mock(OwnershipContext.class);
+        when(ownership.currentUserId()).thenReturn(77L);
+        service = new ReceiptService(repository, lineRepository, storage, ownership,
                 Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
     private Receipt receipt(Long id, boolean deleted) {
         Receipt receipt = new Receipt();
         receipt.setId(id);
+        receipt.setUserId(77L);
         receipt.setFileName("facture.pdf");
         receipt.setMimeType("application/pdf");
         receipt.setPath("/tmp/facture.pdf");
@@ -50,7 +56,7 @@ class ReceiptServiceTest {
     }
 
     @Test
-    @DisplayName("Upload stores the file and maps its metadata")
+    @DisplayName("Upload stores the file, stamps the current owner and maps its metadata")
     void upload() {
         when(storage.storeReceipt(any())).thenReturn(
                 new StorageService.StoredFile("facture.pdf", "application/pdf", "/tmp/facture.pdf", 12, "hash"));
@@ -59,6 +65,9 @@ class ReceiptServiceTest {
         ReceiptDto dto = service.upload(new org.springframework.mock.web.MockMultipartFile(
                 "file", "facture.pdf", "application/pdf", new byte[]{1, 2, 3}));
 
+        ArgumentCaptor<Receipt> captor = ArgumentCaptor.forClass(Receipt.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getUserId()).isEqualTo(77L);
         assertThat(dto.fileName()).isEqualTo("facture.pdf");
         assertThat(dto.mimeType()).isEqualTo("application/pdf");
         assertThat(dto.size()).isEqualTo(12);
@@ -66,10 +75,10 @@ class ReceiptServiceTest {
     }
 
     @Test
-    @DisplayName("A deleted or missing receipt is a not found")
+    @DisplayName("A deleted, missing or foreign receipt is a not found")
     void entityNotFound() {
-        when(repository.findById(1L)).thenReturn(Optional.empty());
-        when(repository.findById(2L)).thenReturn(Optional.of(receipt(2L, true)));
+        when(repository.findByIdAndUserIdAndDeletedFalse(1L, 77L)).thenReturn(Optional.empty());
+        when(repository.findByIdAndUserIdAndDeletedFalse(2L, 77L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.entity(1L))
                 .isInstanceOf(NotFoundException.class)
@@ -78,12 +87,14 @@ class ReceiptServiceTest {
         assertThatThrownBy(() -> service.entity(2L))
                 .isInstanceOf(NotFoundException.class);
         assertThatThrownBy(() -> service.get(1L)).isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> service.file(1L)).isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> service.delete(1L)).isInstanceOf(NotFoundException.class);
     }
 
     @Test
     @DisplayName("Reading a receipt reads its stored path")
     void file() {
-        when(repository.findById(1L)).thenReturn(Optional.of(receipt(1L, false)));
+        when(repository.findByIdAndUserIdAndDeletedFalse(1L, 77L)).thenReturn(Optional.of(receipt(1L, false)));
         when(storage.read("/tmp/facture.pdf")).thenReturn(new byte[]{1, 2});
 
         assertThat(service.file(1L)).containsExactly(1, 2);
@@ -92,7 +103,7 @@ class ReceiptServiceTest {
     @Test
     @DisplayName("A receipt used by a statement cannot be deleted")
     void deleteUsedReceipt() {
-        when(repository.findById(1L)).thenReturn(Optional.of(receipt(1L, false)));
+        when(repository.findByIdAndUserIdAndDeletedFalse(1L, 77L)).thenReturn(Optional.of(receipt(1L, false)));
         when(lineRepository.existsByReceiptId(1L)).thenReturn(true);
 
         assertThatThrownBy(() -> service.delete(1L))
@@ -106,7 +117,7 @@ class ReceiptServiceTest {
     @DisplayName("Deleting an unused receipt is logical")
     void deleteUnusedReceipt() {
         Receipt receipt = receipt(1L, false);
-        when(repository.findById(1L)).thenReturn(Optional.of(receipt));
+        when(repository.findByIdAndUserIdAndDeletedFalse(1L, 77L)).thenReturn(Optional.of(receipt));
         when(lineRepository.existsByReceiptId(1L)).thenReturn(false);
         when(repository.save(any(Receipt.class))).thenAnswer(invocation -> invocation.getArgument(0));
 

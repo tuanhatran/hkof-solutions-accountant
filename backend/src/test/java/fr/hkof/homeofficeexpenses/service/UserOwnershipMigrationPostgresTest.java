@@ -134,6 +134,9 @@ class UserOwnershipMigrationPostgresTest {
             assertThat(singleLong(statement, "SELECT COUNT(*) FROM signature WHERE user_id IS NULL")).isZero();
             assertThat(singleLong(statement, "SELECT COUNT(*) FROM template_document WHERE user_id IS NULL")).isZero();
             assertThat(singleLong(statement, "SELECT COUNT(*) FROM llm_config WHERE user_id IS NULL")).isZero();
+            assertThat(singleLong(statement, "SELECT COUNT(*) FROM receipt WHERE user_id IS NULL")).isZero();
+            assertThat(singleLong(statement, "SELECT COUNT(*) FROM document_analysis WHERE user_id IS NULL")).isZero();
+            assertThat(singleLong(statement, "SELECT COUNT(*) FROM document_draft WHERE user_id IS NULL")).isZero();
         }
     }
 
@@ -298,6 +301,91 @@ class UserOwnershipMigrationPostgresTest {
             assertThatThrownBy(() -> statement.execute("""
                     INSERT INTO llm_config (user_id, active, provider, url, extraction_prompt)
                     VALUES (%d, TRUE, 'OLLAMA', 'http://localhost:11434', 'Prompt doublon')
+                    """.formatted(owner))).isInstanceOf(SQLException.class);
+        }
+    }
+
+    @Test
+    @DisplayName("V25 backfills receipts, analyses and drafts to thtran or receipt owner, and scopes draft indexes per account")
+    void backfillsReceiptsAnalysesAndDrafts() throws Exception {
+        resetSchema();
+        migrateTo("24");
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            statement.execute("""
+                    INSERT INTO receipt (id, file_name, mime_type, file_path, file_size, created_at, deleted)
+                    VALUES (10, 'facture1.pdf', 'application/pdf', '/tmp/facture1.pdf', 100, NOW(), FALSE),
+                           (11, 'facture2.pdf', 'application/pdf', '/tmp/facture2.pdf', 200, NOW(), FALSE)
+                    """);
+            statement.execute("""
+                    INSERT INTO document_analysis (id, receipt_id, status, created_at, updated_at)
+                    VALUES (20, 10, 'DONE', NOW(), NOW()),
+                           (21, 11, 'PENDING', NOW(), NOW())
+                    """);
+            statement.execute("""
+                    INSERT INTO document_draft (id, draft_type, billing_month, landlord_id, tenant_id, payload, saved_at, deleted)
+                    VALUES (30, 'RENT_RECEIPT', '2026-01', 4, 7, '{}', NOW(), FALSE)
+                    """);
+            statement.execute("""
+                    INSERT INTO document_draft (id, draft_type, billing_month, company_id, lease_id, payload, saved_at, deleted)
+                    VALUES (31, 'EXPENSE_STATEMENT', '2026-01', 3, 5, '{}', NOW(), FALSE)
+                    """);
+        }
+
+        migrate();
+
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            long owner = ownerId(statement, THTRAN_EMAIL);
+            long other = insertOtherUser(statement);
+
+            assertThat(singleLong(statement, "SELECT user_id FROM receipt WHERE id = 10")).isEqualTo(owner);
+            assertThat(singleLong(statement, "SELECT user_id FROM receipt WHERE id = 11")).isEqualTo(owner);
+            assertThat(singleLong(statement, "SELECT user_id FROM document_analysis WHERE id = 20")).isEqualTo(owner);
+            assertThat(singleLong(statement, "SELECT user_id FROM document_analysis WHERE id = 21")).isEqualTo(owner);
+            assertThat(singleLong(statement, "SELECT user_id FROM document_draft WHERE id = 30")).isEqualTo(owner);
+            assertThat(singleLong(statement, "SELECT user_id FROM document_draft WHERE id = 31")).isEqualTo(owner);
+
+            for (String table : List.of("receipt", "document_analysis", "document_draft")) {
+                assertThat(singleLong(statement, """
+                        SELECT COUNT(*) FROM information_schema.columns
+                        WHERE table_name = '%s' AND column_name = 'user_id' AND is_nullable = 'NO'
+                        """.formatted(table))).isEqualTo(1);
+            }
+
+            assertThat(singleLong(statement,
+                    "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'ix_receipt_user_deleted'"))
+                    .isEqualTo(1);
+            assertThat(singleLong(statement,
+                    "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'ix_document_analysis_user_receipt'"))
+                    .isEqualTo(1);
+            assertThat(singleLong(statement,
+                    "SELECT COUNT(*) FROM pg_indexes WHERE indexname IN ('ux_document_draft_rent_scope', 'ux_document_draft_statement_scope')"))
+                    .isZero();
+            assertThat(singleLong(statement,
+                    "SELECT COUNT(*) FROM pg_indexes WHERE indexname IN ('ux_document_draft_user_rent_scope', 'ux_document_draft_user_statement_scope')"))
+                    .isEqualTo(2);
+
+            // Other user can have an active rent receipt draft with the exact same scope:
+            statement.execute("""
+                    INSERT INTO document_draft (draft_type, billing_month, landlord_id, tenant_id, payload, saved_at, deleted, user_id)
+                    VALUES ('RENT_RECEIPT', '2026-01', 4, 7, '{}', NOW(), FALSE, %d)
+                    """.formatted(other));
+
+            // But same user cannot have duplicate active rent receipt draft:
+            assertThatThrownBy(() -> statement.execute("""
+                    INSERT INTO document_draft (draft_type, billing_month, landlord_id, tenant_id, payload, saved_at, deleted, user_id)
+                    VALUES ('RENT_RECEIPT', '2026-01', 4, 7, '{}', NOW(), FALSE, %d)
+                    """.formatted(owner))).isInstanceOf(SQLException.class);
+
+            // Other user can have an active expense statement draft with the exact same scope:
+            statement.execute("""
+                    INSERT INTO document_draft (draft_type, billing_month, company_id, lease_id, payload, saved_at, deleted, user_id)
+                    VALUES ('EXPENSE_STATEMENT', '2026-01', 3, 5, '{}', NOW(), FALSE, %d)
+                    """.formatted(other));
+
+            // But same user cannot have duplicate active expense statement draft:
+            assertThatThrownBy(() -> statement.execute("""
+                    INSERT INTO document_draft (draft_type, billing_month, company_id, lease_id, payload, saved_at, deleted, user_id)
+                    VALUES ('EXPENSE_STATEMENT', '2026-01', 3, 5, '{}', NOW(), FALSE, %d)
                     """.formatted(owner))).isInstanceOf(SQLException.class);
         }
     }

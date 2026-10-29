@@ -16,10 +16,15 @@ public interface AnalysisDocumentRepository extends JpaRepository<AnalysisDocume
     List<AnalysisDocument> findByStatusIn(List<AnalysisStatus> statuses);
 
     @EntityGraph(attributePaths = "receipt")
-    java.util.Optional<AnalysisDocument> findFirstByReceiptIdAndStatusInOrderByIdDesc(Long receiptId,
-            List<AnalysisStatus> statuses);
+    java.util.Optional<AnalysisDocument> findFirstByUserIdAndReceiptIdAndStatusInOrderByIdDesc(
+            Long userId, Long receiptId, List<AnalysisStatus> statuses);
 
     @EntityGraph(attributePaths = "receipt")
     @Query("select a from AnalysisDocument a where a.id = :id")
     java.util.Optional<AnalysisDocument> findWithReceiptById(@Param("id") Long id);
+
+    @EntityGraph(attributePaths = "receipt")
+    @Query("select a from AnalysisDocument a where a.id = :id and a.userId = :userId")
+    java.util.Optional<AnalysisDocument> findWithReceiptByIdAndUserId(
+            @Param("id") Long id, @Param("userId") Long userId);
 }

@@ -26,18 +26,18 @@ class DocumentDraftMigrationPostgresTest {
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17");
 
     private static final String RENT_PERSON = """
-            INSERT INTO document_draft (draft_type, billing_month, landlord_id, tenant_id, payload, saved_at)
-            VALUES ('RENT_RECEIPT', '2026-01', 4, 7, '{}', NOW())
+            INSERT INTO document_draft (user_id, draft_type, billing_month, landlord_id, tenant_id, payload, saved_at)
+            VALUES (1, 'RENT_RECEIPT', '2026-01', 4, 7, '{}', NOW())
             """;
 
     private static final String RENT_COMPANY = """
-            INSERT INTO document_draft (draft_type, billing_month, landlord_id, tenant_company_id, payload, saved_at)
-            VALUES ('RENT_RECEIPT', '2026-01', 4, 7, '{}', NOW())
+            INSERT INTO document_draft (user_id, draft_type, billing_month, landlord_id, tenant_company_id, payload, saved_at)
+            VALUES (1, 'RENT_RECEIPT', '2026-01', 4, 7, '{}', NOW())
             """;
 
     private static final String STATEMENT = """
-            INSERT INTO document_draft (draft_type, billing_month, company_id, payload, saved_at)
-            VALUES ('EXPENSE_STATEMENT', '2026-01', 3, '{}', NOW())
+            INSERT INTO document_draft (user_id, draft_type, billing_month, company_id, payload, saved_at)
+            VALUES (1, 'EXPENSE_STATEMENT', '2026-01', 3, '{}', NOW())
             """;
 
     @Test

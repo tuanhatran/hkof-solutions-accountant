@@ -417,6 +417,225 @@ class UserDocumentIsolationIntegrationTest {
                 .andExpect(jsonPath("$.temperature").value("0.8"));
     }
 
+    @Test
+    @DisplayName("Receipts, analyses and form drafts stay owned and isolated per account")
+    void isolatesReceiptsAnalysesAndDrafts() throws Exception {
+        Session a = sessionFor("receipts.a@example.test");
+        Session b = sessionFor("receipts.b@example.test");
+        long aOwner = ownerId("receipts.a@example.test");
+        long bOwner = ownerId("receipts.b@example.test");
+
+        long aCompanyId = id(created(a, "/api/companies", """
+                {"name":"Alpha Justificatifs","legalForm":"SARL","address":"1 rue Alpha","managerName":"Gérant",
+                 "leaseId":null,"issuePlace":"Paris"}
+                """));
+        long aLandlordId = id(created(a, "/api/persons",
+                "{\"name\":\"Bailleur Alpha Justif\",\"address\":\"1 rue Bailleur\"}"));
+        long aTenantId = id(created(a, "/api/persons",
+                "{\"name\":\"Locataire Alpha Justif\",\"address\":\"2 rue Locataire\"}"));
+        created(a, "/api/leases",
+                leaseBody(aLandlordId, aTenantId, aCompanyId, "12 rue Alpha Justif, 75002 Paris"));
+        long aEmployeeId = id(created(a, "/api/companies/" + aCompanyId + "/employees", """
+                {"firstName":"Gérant","lastName":"Alpha","title":"CEO","address":"3 rue Gérant",
+                 "issuePlace":"Paris"}
+                """));
+        signature(a, aLandlordId, "Signature bailleur Alpha Justif");
+        signature(a, aEmployeeId, "Signature gérant Alpha Justif");
+        created(a, "/api/expense-items", """
+                {"companyId":%d,"leaseId":null,"code":"gaz","label":"Gaz Alpha","supplier":"Fournisseur",
+                 "proRataPct":"35.71","periodicity":"MONTHLY","active":true,"sortOrder":10,
+                 "multipleLinesAllowed":false}
+                """.formatted(aCompanyId));
+
+        long bCompanyId = id(created(b, "/api/companies", """
+                {"name":"Bêta Justificatifs","legalForm":"SARL","address":"2 rue Bêta","managerName":"Gérant",
+                 "leaseId":null,"issuePlace":"Paris"}
+                """));
+        long bLandlordId = id(created(b, "/api/persons",
+                "{\"name\":\"Bailleur Bêta Justif\",\"address\":\"1 rue Bailleur\"}"));
+        long bTenantId = id(created(b, "/api/persons",
+                "{\"name\":\"Locataire Bêta Justif\",\"address\":\"2 rue Locataire\"}"));
+        created(b, "/api/leases",
+                leaseBody(bLandlordId, bTenantId, bCompanyId, "14 rue Bêta Justif, 75003 Paris"));
+        long bEmployeeId = id(created(b, "/api/companies/" + bCompanyId + "/employees", """
+                {"firstName":"Gérant","lastName":"Bêta","title":"CEO","address":"3 rue Gérant",
+                 "issuePlace":"Paris"}
+                """));
+        signature(b, bLandlordId, "Signature bailleur Bêta Justif");
+        signature(b, bEmployeeId, "Signature gérant Bêta Justif");
+        created(b, "/api/expense-items", """
+                {"companyId":%d,"leaseId":null,"code":"gaz","label":"Gaz Bêta","supplier":"Fournisseur",
+                 "proRataPct":"35.71","periodicity":"MONTHLY","active":true,"sortOrder":10,
+                 "multipleLinesAllowed":false}
+                """.formatted(bCompanyId));
+
+        // 1. Receipts isolation
+        MockMultipartFile fileA = new MockMultipartFile("file", "facture-a.txt", "text/plain",
+                "Facture Alpha pour un montant suffisant de test.".getBytes(StandardCharsets.UTF_8));
+        MockMultipartHttpServletRequestBuilder uploadReceiptA = multipart("/api/receipts");
+        uploadReceiptA.file(fileA).session(a.http()).cookie(a.csrf()).header(CSRF_HEADER, a.csrf().getValue());
+        long aReceiptId = id(mockMvc.perform(uploadReceiptA).andExpect(status().isCreated()).andReturn());
+
+        MockMultipartFile fileB = new MockMultipartFile("file", "facture-b.txt", "text/plain",
+                "Facture Bêta pour un montant suffisant de test.".getBytes(StandardCharsets.UTF_8));
+        MockMultipartHttpServletRequestBuilder uploadReceiptB = multipart("/api/receipts");
+        uploadReceiptB.file(fileB).session(b.http()).cookie(b.csrf()).header(CSRF_HEADER, b.csrf().getValue());
+        long bReceiptId = id(mockMvc.perform(uploadReceiptB).andExpect(status().isCreated()).andReturn());
+
+        assertThat(ownedRows("receipt", "id", aReceiptId, aOwner)).isEqualTo(1);
+        assertThat(ownedRows("receipt", "id", bReceiptId, bOwner)).isEqualTo(1);
+
+        // B cannot read, download, delete, launch analysis, or attach A's receipt in calculation/generation
+        mockMvc.perform(get("/api/receipts/{id}", aReceiptId).session(b.http()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RECEIPT_NOT_FOUND"));
+        mockMvc.perform(get("/api/receipts/{id}/file", aReceiptId).session(b.http()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RECEIPT_NOT_FOUND"));
+        mockMvc.perform(mutation(delete("/api/receipts/{id}", aReceiptId), b))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RECEIPT_NOT_FOUND"));
+        mockMvc.perform(mutation(post("/api/receipts/{id}/analysis", aReceiptId), b))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RECEIPT_NOT_FOUND"));
+        mockMvc.perform(mutation(post("/api/expense-statements/preview"), b).contentType(JSON)
+                        .content("""
+                                {"companyId":%d,"month":"2026-07",
+                                 "lines":[{"itemCode":"gaz","amountInclVat":"80.00","proRataPct":"35.71","receiptId":%d}]}
+                                """.formatted(bCompanyId, aReceiptId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RECEIPT_NOT_FOUND"));
+        mockMvc.perform(mutation(post("/api/expense-statements"), b).contentType(JSON)
+                        .content("""
+                                {"companyId":%d,"month":"2026-07",
+                                 "lines":[{"itemCode":"gaz","amountInclVat":"80.00","proRataPct":"35.71","receiptId":%d}]}
+                                """.formatted(bCompanyId, aReceiptId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RECEIPT_NOT_FOUND"));
+
+        // A can read and download its own receipt
+        mockMvc.perform(get("/api/receipts/{id}", aReceiptId).session(a.http()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(aReceiptId));
+        mockMvc.perform(get("/api/receipts/{id}/file", aReceiptId).session(a.http()))
+                .andExpect(status().isOk());
+
+        // 2. Analyses isolation
+        MvcResult analysisResA = mockMvc.perform(mutation(post("/api/receipts/{id}/analysis", aReceiptId), a))
+                .andExpect(status().isAccepted())
+                .andReturn();
+        long aAnalysisId = ((Number) JsonPath.read(analysisResA.getResponse().getContentAsString(), "$.analysisId"))
+                .longValue();
+        assertThat(ownedRows("document_analysis", "id", aAnalysisId, aOwner)).isEqualTo(1);
+
+        // B cannot read or cancel A's analysis
+        mockMvc.perform(get("/api/analyses/{id}", aAnalysisId).session(b.http()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ANALYSIS_NOT_FOUND"));
+        mockMvc.perform(mutation(delete("/api/analyses/{id}", aAnalysisId), b))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ANALYSIS_NOT_FOUND"));
+
+        // A can read its own analysis
+        mockMvc.perform(get("/api/analyses/{id}", aAnalysisId).session(a.http()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(aAnalysisId));
+
+        // Both can delete their own unused receipts
+        mockMvc.perform(mutation(delete("/api/receipts/{id}", bReceiptId), b))
+                .andExpect(status().isNoContent());
+
+        // 3. Form drafts isolation (including identical synthetic scope keys across accounts)
+        String rentDraftA = mockMvc.perform(mutation(put("/api/drafts/rent-receipts"), a).contentType(JSON)
+                        .content("""
+                                {"month":"2026-07","landlordId":4,"tenantId":7,
+                                 "periodStart":"2026-07-01","periodEnd":"2026-07-31",
+                                 "rentExclCharges":"1100.00","charges":"40.00",
+                                 "paymentDate":"2026-07-05","issueDate":"2026-07-05"}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long aRentDraftId = ((Number) JsonPath.read(rentDraftA, "$.id")).longValue();
+
+        String rentDraftB = mockMvc.perform(mutation(put("/api/drafts/rent-receipts"), b).contentType(JSON)
+                        .content("""
+                                {"month":"2026-07","landlordId":4,"tenantId":7,
+                                 "periodStart":"2026-07-01","periodEnd":"2026-07-31",
+                                 "rentExclCharges":"1400.00","charges":"60.00",
+                                 "paymentDate":"2026-07-05","issueDate":"2026-07-05"}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long bRentDraftId = ((Number) JsonPath.read(rentDraftB, "$.id")).longValue();
+
+        assertThat(ownedRows("document_draft", "id", aRentDraftId, aOwner)).isEqualTo(1);
+        assertThat(ownedRows("document_draft", "id", bRentDraftId, bOwner)).isEqualTo(1);
+
+        // Each account reloads its own rent receipt draft for the shared synthetic scope
+        mockMvc.perform(get("/api/drafts/rent-receipts")
+                        .param("month", "2026-07").param("landlordId", "4").param("tenantId", "7")
+                        .session(a.http()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(aRentDraftId))
+                .andExpect(jsonPath("$.rentExclCharges").value("1100.00"));
+        mockMvc.perform(get("/api/drafts/rent-receipts")
+                        .param("month", "2026-07").param("landlordId", "4").param("tenantId", "7")
+                        .session(b.http()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(bRentDraftId))
+                .andExpect(jsonPath("$.rentExclCharges").value("1400.00"));
+
+        // Statement drafts on identical synthetic companyId + month scope across accounts
+        String stmtDraftA = mockMvc.perform(mutation(put("/api/drafts/expense-statements"), a).contentType(JSON)
+                        .content("""
+                                {"companyId":3,"month":"2026-07","complete":true,
+                                 "lines":[{"itemCode":"gaz","amountInclVat":"75.00","proRataPct":"100"}]}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long aStmtDraftId = ((Number) JsonPath.read(stmtDraftA, "$.id")).longValue();
+
+        String stmtDraftB = mockMvc.perform(mutation(put("/api/drafts/expense-statements"), b).contentType(JSON)
+                        .content("""
+                                {"companyId":3,"month":"2026-07","complete":false,
+                                 "lines":[{"itemCode":"gaz","amountInclVat":"95.00","proRataPct":"100"}]}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long bStmtDraftId = ((Number) JsonPath.read(stmtDraftB, "$.id")).longValue();
+
+        assertThat(ownedRows("document_draft", "id", aStmtDraftId, aOwner)).isEqualTo(1);
+        assertThat(ownedRows("document_draft", "id", bStmtDraftId, bOwner)).isEqualTo(1);
+
+        mockMvc.perform(get("/api/drafts/expense-statements")
+                        .param("companyId", "3").param("month", "2026-07")
+                        .session(a.http()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(aStmtDraftId))
+                .andExpect(jsonPath("$.lines[0].amountInclVat").value("75.00"));
+        mockMvc.perform(get("/api/drafts/expense-statements")
+                        .param("companyId", "3").param("month", "2026-07")
+                        .session(b.http()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(bStmtDraftId))
+                .andExpect(jsonPath("$.lines[0].amountInclVat").value("95.00"));
+
+        // B cannot delete A's draft; A can delete its own draft
+        mockMvc.perform(mutation(delete("/api/drafts/{id}", aRentDraftId), b))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("DRAFT_NOT_FOUND"));
+        mockMvc.perform(mutation(delete("/api/drafts/{id}", aStmtDraftId), b))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("DRAFT_NOT_FOUND"));
+        mockMvc.perform(mutation(delete("/api/drafts/{id}", aRentDraftId), a))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/drafts/rent-receipts")
+                        .param("month", "2026-07").param("landlordId", "4").param("tenantId", "7")
+                        .session(b.http()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(bRentDraftId));
+    }
+
     private static String leaseBody(long landlordId, long tenantId, long companyId, String address) {
         return """
                 {"companyLease":false,"landlordId":%d,"tenantId":%d,"companyId":%d,

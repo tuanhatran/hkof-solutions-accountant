@@ -26,6 +26,7 @@ import fr.hkof.homeofficeexpenses.repository.AddressRepository;
 import fr.hkof.homeofficeexpenses.repository.AnalysisDocumentRepository;
 import fr.hkof.homeofficeexpenses.repository.AppUserRepository;
 import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
+import fr.hkof.homeofficeexpenses.repository.DocumentDraftRepository;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseLineRepository;
@@ -62,6 +63,7 @@ public class E2eResetService {
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=");
 
     private final AnalysisDocumentRepository analyses;
+    private final DocumentDraftRepository drafts;
     private final ExpenseLineRepository lines;
     private final ExpenseStatementRepository statements;
     private final RentReceiptRepository rentReceipts;
@@ -81,7 +83,8 @@ public class E2eResetService {
     private final AuthService authService;
     private final AppUserRepository appUsers;
 
-    public E2eResetService(AnalysisDocumentRepository analyses, ExpenseLineRepository lines,
+    public E2eResetService(AnalysisDocumentRepository analyses, DocumentDraftRepository drafts,
+            ExpenseLineRepository lines,
             ExpenseStatementRepository statements, RentReceiptRepository rentReceipts,
             RentReceiptAdditionalChargeRepository additionalCharges, ReceiptRepository receipts,
             TemplateDocumentRepository templates, LlmConfigRepository llmConfigs, ExpenseItemRepository items,
@@ -90,6 +93,7 @@ public class E2eResetService {
             StorageService storage, DataInitializer initializer, AuthService authService,
             AppUserRepository appUsers) {
         this.analyses = analyses;
+        this.drafts = drafts;
         this.lines = lines;
         this.statements = statements;
         this.rentReceipts = rentReceipts;
@@ -113,6 +117,7 @@ public class E2eResetService {
     @Transactional
     public void reset() {
         signatures.deleteAllInBatch();
+        drafts.deleteAllInBatch();
         analyses.deleteAllInBatch();
         lines.deleteAllInBatch();
         statements.deleteAllInBatch();
