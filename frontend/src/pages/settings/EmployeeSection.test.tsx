@@ -124,18 +124,52 @@ describe("EmployeeSection", () => {
     ).toBeVisible();
   });
 
-  it("renders dense column headers above the employee list", () => {
+  it("renders the employee list as one bordered table with sortable headers", () => {
     renderSection();
 
-    const headers = document.querySelector(
+    const table = document.querySelector(
+      '[data-cy="employee-section-list"]',
+    ) as HTMLElement;
+    expect(table).not.toBeNull();
+    expect(table).toHaveAttribute("role", "table");
+    expect(table).toHaveClass("employee-section-table");
+
+    const headers = table.querySelector(
       '[data-cy="employees-headers"]',
     ) as HTMLElement;
-    expect(headers).not.toBeNull();
-    expect(headers).toHaveClass("hidden", "md:grid");
-    expect(within(headers).getByText("Salarié")).toBeVisible();
-    expect(within(headers).getByText("Intitulé")).toBeVisible();
-    expect(within(headers).getByText("Coordonnées")).toBeVisible();
-    expect(within(headers).getByText("Signatures")).toBeVisible();
+    expect(headers).toHaveAttribute("role", "row");
+    expect(headers).toHaveClass(
+      "employee-section-headers",
+      "hidden",
+      "md:grid",
+    );
+    const columns = within(headers).getAllByRole("columnheader");
+    expect(columns).toHaveLength(5);
+    expect(columns.map((column) => column.textContent)).toEqual([
+      "Salarié",
+      "Intitulé",
+      "Coordonnées",
+      "Signatures",
+      "Actions",
+    ]);
+    expect(
+      within(headers).getByRole("button", { name: "Salarié" }),
+    ).toHaveAttribute("data-cy", "sort-employees-name");
+    expect(
+      within(headers).getByRole("button", { name: "Intitulé" }),
+    ).toHaveAttribute("data-cy", "sort-employees-title");
+    expect(
+      within(headers).getByRole("button", { name: "Coordonnées" }),
+    ).toHaveAttribute("data-cy", "sort-employees-contact");
+    expect(
+      within(headers).getByRole("button", { name: "Signatures" }),
+    ).toHaveAttribute("data-cy", "sort-employees-signatures");
+    expect(
+      within(headers).queryByRole("button", { name: "Actions" }),
+    ).toBeNull();
+    const row = table.querySelector('[data-cy="employee-3"]') as HTMLElement;
+    expect(row).toHaveAttribute("role", "row");
+    expect(table.querySelector("ul")).toHaveAttribute("role", "none");
   });
 
   it("aligns each employee row cell and its tabular signatures column", () => {
@@ -143,6 +177,8 @@ describe("EmployeeSection", () => {
 
     const row = document.querySelector('[data-cy="employee-3"]') as HTMLElement;
     expect(row).toHaveClass("employee-section-item");
+    expect(row).toHaveAttribute("role", "row");
+    expect(within(row).getAllByRole("cell")).toHaveLength(5);
     expect(row.querySelector(".employee-section-cell-name")).toHaveTextContent(
       "Camille Martin",
     );
@@ -382,6 +418,8 @@ describe("EmployeeSection", () => {
     expect(within(headers).getByText("Employee")).toBeVisible();
     expect(within(headers).getByText("Title")).toBeVisible();
     expect(within(headers).getByText("Contact details")).toBeVisible();
+    expect(within(headers).getByText("Signatures")).toBeVisible();
+    expect(within(headers).getByText("Actions")).toBeVisible();
     expect(screen.getAllByText("CEO")).toHaveLength(2);
     expect(screen.getAllByText("No address provided")).toHaveLength(2);
     expect(screen.getByText("0 signatures")).toBeVisible();
@@ -506,7 +544,7 @@ describe("EmployeeSection", () => {
     expect(document.querySelector('[data-cy="employee-4"]')).toBeNull();
   });
 
-  it("shows a no-match message instead of the headers and rows", async () => {
+  it("shows a no-match message instead of the table and rows", async () => {
     employeesState = readyQuery([CEO, CFO]);
     renderSection();
     const user = userEvent.setup();
@@ -516,6 +554,9 @@ describe("EmployeeSection", () => {
     expect(
       document.querySelector('[data-cy="no-results-employees"]'),
     ).toHaveTextContent("Aucun résultat pour « zzz ».");
+    expect(
+      document.querySelector('[data-cy="employee-section-list"]'),
+    ).toBeNull();
     expect(document.querySelector('[data-cy="employees-headers"]')).toBeNull();
     expect(employeeOrder()).toEqual([]);
     expect(
@@ -523,27 +564,139 @@ describe("EmployeeSection", () => {
     ).toHaveTextContent("0 sur 2");
   });
 
-  it("sorts the employees and toggles the direction", async () => {
+  it("sorts from the column headers: default name ascending, active toggles, inactive starts ascending", async () => {
+    employeesState = readyQuery([CFO, CEO]);
+    renderSection();
+    const user = userEvent.setup();
+    const headers = document.querySelector(
+      '[data-cy="employees-headers"]',
+    ) as HTMLElement;
+
+    expect(employeeOrder()).toEqual([3, 4]);
+    expect(
+      within(headers).getByRole("columnheader", { name: "Salarié" }),
+    ).toHaveAttribute("aria-sort", "ascending");
+    expect(
+      within(headers).getByRole("columnheader", { name: "Intitulé" }),
+    ).toHaveAttribute("aria-sort", "none");
+
+    await user.click(screen.getByRole("button", { name: "Signatures" }));
+    expect(employeeOrder()).toEqual([3, 4]);
+    expect(
+      within(headers).getByRole("columnheader", { name: "Signatures" }),
+    ).toHaveAttribute("aria-sort", "ascending");
+    expect(
+      within(headers).getByRole("columnheader", { name: "Salarié" }),
+    ).toHaveAttribute("aria-sort", "none");
+
+    await user.click(screen.getByRole("button", { name: "Signatures" }));
+    expect(employeeOrder()).toEqual([4, 3]);
+    expect(
+      within(headers).getByRole("columnheader", { name: "Signatures" }),
+    ).toHaveAttribute("aria-sort", "descending");
+
+    // An inactive column always starts ascending, even after a descending sort.
+    await user.click(screen.getByRole("button", { name: "Intitulé" }));
+    expect(employeeOrder()).toEqual([4, 3]);
+    expect(
+      within(headers).getByRole("columnheader", { name: "Intitulé" }),
+    ).toHaveAttribute("aria-sort", "ascending");
+
+    await user.click(screen.getByRole("button", { name: "Salarié" }));
+    expect(employeeOrder()).toEqual([3, 4]);
+    expect(
+      within(headers).getByRole("columnheader", { name: "Salarié" }),
+    ).toHaveAttribute("aria-sort", "ascending");
+    expect(
+      within(headers).getByRole("columnheader", { name: "Intitulé" }),
+    ).toHaveAttribute("aria-sort", "none");
+  });
+
+  it("sorts the contact column by email then address", async () => {
+    employeesState = readyQuery([
+      CFO,
+      CEO,
+      {
+        id: 5,
+        companyId: 1,
+        firstName: "Zoé",
+        lastName: "Alpha",
+        address: "2 rue de l'Église, 75005 Paris",
+        title: "EMPLOYEE",
+      },
+      {
+        id: 6,
+        companyId: 1,
+        firstName: "Alice",
+        lastName: "Omega",
+        address: "1 avenue Victor Hugo, 75016 Paris",
+        title: "EMPLOYEE",
+      },
+    ]);
+    renderSection();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Coordonnées" }));
+
+    // Empty emails collate first, then their addresses decide the tie-break.
+    expect(employeeOrder()).toEqual([6, 5, 3, 4]);
+  });
+
+  it("keeps sorting reachable on mobile with the compact control", async () => {
     employeesState = readyQuery([CFO, CEO]);
     renderSection();
     const user = userEvent.setup();
 
+    const select = document.querySelector(
+      '[data-cy="sort-employees-compact"]',
+    ) as HTMLElement;
+    const direction = document.querySelector(
+      '[data-cy="sort-employees-compact-direction"]',
+    ) as HTMLElement;
+    expect(select).toHaveAttribute("aria-label", "Trier par");
+    expect(direction).toHaveAttribute("aria-label", "Tri croissant");
     expect(
-      screen.getAllByRole("option").map((option) => option.textContent),
-    ).toEqual(["Salarié", "Intitulé", "Signatures"]);
+      within(select)
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["Salarié", "Intitulé", "Coordonnées", "Signatures"]);
+
+    await user.selectOptions(select, "signatures");
     expect(employeeOrder()).toEqual([3, 4]);
 
-    await user.selectOptions(screen.getByLabelText("Trier par"), "signatures");
-    expect(employeeOrder()).toEqual([3, 4]);
-
-    await user.click(screen.getByRole("button", { name: "Tri croissant" }));
+    await user.click(direction);
+    expect(direction).toHaveAttribute("aria-label", "Tri décroissant");
     expect(employeeOrder()).toEqual([4, 3]);
   });
 
-  it("hides the list toolbar when there is no employee", () => {
+  it("shows the search, count and compact sort in the header area", () => {
+    employeesState = readyQuery([CEO]);
+    renderSection();
+
+    expect(
+      document.querySelector('[data-cy="filter-employees"]'),
+    ).not.toBeNull();
+    expect(
+      document.querySelector('[data-cy="filter-count-employees"]'),
+    ).toHaveTextContent("1 sur 1");
+    expect(
+      document.querySelector('[data-cy="sort-employees-compact"]'),
+    ).not.toBeNull();
+  });
+
+  it("hides the search and sort controls when no company is selected or the list is empty", () => {
     employeesState = readyQuery([]);
     renderSection();
 
+    expect(document.querySelector('[data-cy="filter-employees"]')).toBeNull();
+    expect(
+      document.querySelector('[data-cy="sort-employees-compact"]'),
+    ).toBeNull();
+    expect(
+      document.querySelector('[data-cy="filter-count-employees"]'),
+    ).toBeNull();
+
+    renderSection(null);
     expect(document.querySelector('[data-cy="filter-employees"]')).toBeNull();
   });
 });
