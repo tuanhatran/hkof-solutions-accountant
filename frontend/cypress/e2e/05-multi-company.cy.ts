@@ -560,21 +560,25 @@ describe("Multi-company and employees", () => {
       // Creating a company no longer activates it globally: the note page asks
       // for an explicit company in its header.
       cy.visit("/generer/note-frais");
-      cy.get('[data-cy="select-societe-note-frais"]', { timeout: 20_000 })
+      cy.get('[data-cy="select-company-expense-statement"]', {
+        timeout: 20_000,
+      })
         .should("be.visible")
         .select(String(seeded.id));
       cy.chooseMonth(MONTHS);
-      cy.get('[data-cy="select-type-frais"]').should("not.be.disabled");
-      cy.get('[data-cy="select-type-frais"] option[value="telephone"]').should(
-        "exist",
-      );
+      cy.get('[data-cy="select-expense-type"]').should("not.be.disabled");
+      cy.get(
+        '[data-cy="select-expense-type"] option[value="telephone"]',
+      ).should("exist");
       addExpense({
         itemCode: "telephone",
         fixture: "facture-telephone.txt",
         amountInclVat: "100.00",
       });
-      waitForAmount('[data-cy="total-retenu"]', "35,71");
-      cy.get('[data-cy="btn-generer-note"]').should("not.be.disabled").click();
+      waitForAmount('[data-cy="retained-total"]', "35,71");
+      cy.get('[data-cy="btn-generate-statement"]')
+        .should("not.be.disabled")
+        .click();
       cy.contains("Note de frais générée", { timeout: 35_000 }).should(
         "be.visible",
       );
@@ -630,7 +634,9 @@ describe("Multi-company and employees", () => {
       // Back on the note page the choice is explicit again: outside History's
       // navigation state, no company is restored by default.
       cy.visit("/generer/note-frais");
-      cy.get('[data-cy="select-societe-note-frais"]', { timeout: 20_000 })
+      cy.get('[data-cy="select-company-expense-statement"]', {
+        timeout: 20_000,
+      })
         .should("be.visible")
         .and("have.value", "");
     });

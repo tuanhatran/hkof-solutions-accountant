@@ -344,7 +344,9 @@ describe("GenerateRentReceiptPage", () => {
 
     renderPage();
 
-    expect(document.querySelector('[data-cy="societe-quittance"]')).toBeNull();
+    expect(
+      document.querySelector('[data-cy="company-rent-receipt"]'),
+    ).toBeNull();
     expect(await screen.findByLabelText("Bailleur")).toHaveValue("1");
     expect(screen.getByLabelText("Locataire")).toHaveValue("person:2");
     expect(screen.getByLabelText("Loyer hors charges")).toHaveValue("1300.00");
@@ -422,7 +424,7 @@ describe("GenerateRentReceiptPage", () => {
 
     expect(await screen.findByRole("alert")).toHaveAttribute(
       "data-cy",
-      "alerte-bail-manquant",
+      "alert-missing-lease",
     );
     expect(screen.getByText(/Aucun bail actif/)).toBeInTheDocument();
     expect(
@@ -582,7 +584,7 @@ describe("GenerateRentReceiptPage", () => {
     await user.selectOptions(screen.getByLabelText("Locataire"), "person:4");
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveAttribute("data-cy", "alerte-signature-bailleur");
+    expect(alert).toHaveAttribute("data-cy", "alert-landlord-signature");
     expect(alert).toHaveTextContent(/Aucune signature pour ce bailleur/);
     expect(screen.queryByText(/Aucune signature trouvée/)).toBeNull();
     expect(
@@ -684,7 +686,7 @@ describe("GenerateRentReceiptPage", () => {
     renderPage();
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveAttribute("data-cy", "alerte-signature-bailleur");
+    expect(alert).toHaveAttribute("data-cy", "alert-landlord-signature");
     expect(alert).toHaveTextContent(/Aucune signature pour ce bailleur/);
     expect(
       screen.getByRole("link", { name: "LMNP · Personnes" }),
@@ -701,7 +703,7 @@ describe("GenerateRentReceiptPage", () => {
     renderPage();
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveAttribute("data-cy", "alerte-signatures-erreur");
+    expect(alert).toHaveAttribute("data-cy", "alert-signatures-error");
     expect(alert).toHaveTextContent(
       "Les signatures n’ont pas pu être chargées : Service indisponible",
     );
@@ -957,7 +959,7 @@ describe("GenerateRentReceiptPage", () => {
   it("keeps one header month control that updates the draft, the period and the preview", async () => {
     renderPage();
 
-    const monthInputs = document.querySelectorAll('[data-cy="select-mois"]');
+    const monthInputs = document.querySelectorAll('[data-cy="select-month"]');
     expect(monthInputs).toHaveLength(1);
     const month = screen.getByLabelText("Mois concerné");
     expect(month).toBeVisible();
@@ -1163,7 +1165,7 @@ describe("GenerateRentReceiptPage", () => {
       save.compareDocumentPosition(generate) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).not.toBe(0);
 
-    const preview = document.querySelector('[data-cy="volet-apercu"]');
+    const preview = document.querySelector('[data-cy="preview-pane"]');
     expect(preview).not.toBeNull();
     expect(
       within(preview as HTMLElement).queryByRole("button", {
@@ -1270,7 +1272,7 @@ describe("GenerateRentReceiptPage", () => {
       }),
     );
 
-    const row = document.querySelector('[data-cy="charge-supplementaire-0"]');
+    const row = document.querySelector('[data-cy="extra-charge-0"]');
     expect(row).not.toBeNull();
     expect(within(row as HTMLElement).getByText("Eau")).toBeVisible();
     expect(within(row as HTMLElement).getByText(/20,00\s?€/)).toBeVisible();
@@ -1457,20 +1459,16 @@ describe("GenerateRentReceiptPage", () => {
 
     await waitFor(() =>
       expect(
-        document.querySelector('[data-cy="charge-supplementaire-1"]'),
+        document.querySelector('[data-cy="extra-charge-1"]'),
       ).not.toBeNull(),
     );
-    const first = document.querySelector('[data-cy="charge-supplementaire-0"]');
-    const second = document.querySelector(
-      '[data-cy="charge-supplementaire-1"]',
-    );
+    const first = document.querySelector('[data-cy="extra-charge-0"]');
+    const second = document.querySelector('[data-cy="extra-charge-1"]');
     expect(within(first as HTMLElement).getByText("Gaz")).toBeVisible();
     expect(within(first as HTMLElement).getByText(/25,00\s?€/)).toBeVisible();
     expect(within(second as HTMLElement).getByText("Bois")).toBeVisible();
     expect(within(second as HTMLElement).getByText(/30,00\s?€/)).toBeVisible();
-    expect(
-      document.querySelector('[data-cy="charge-supplementaire-2"]'),
-    ).toBeNull();
+    expect(document.querySelector('[data-cy="extra-charge-2"]')).toBeNull();
     expect(screen.getByText(/1\s?355,00/)).toBeVisible();
     expect(useRentReceiptDraft.getState().additionalCharges).toEqual([
       { label: "Gaz", amount: "25.00" },
@@ -1519,8 +1517,8 @@ describe("GenerateRentReceiptPage", () => {
     renderPage();
     const user = userEvent.setup();
 
-    const inputPanel = document.querySelector('[data-cy="volet-saisie"]');
-    const previewPanel = document.querySelector('[data-cy="volet-apercu"]');
+    const inputPanel = document.querySelector('[data-cy="entry-pane"]');
+    const previewPanel = document.querySelector('[data-cy="preview-pane"]');
     expect(inputPanel).toHaveAttribute("id", "rent-receipt-input-panel");
     expect(inputPanel).toHaveAttribute("role", "tabpanel");
     expect(inputPanel).toHaveAttribute(
@@ -1537,26 +1535,26 @@ describe("GenerateRentReceiptPage", () => {
     );
 
     await user.click(previewTab);
-    expect(document.querySelector('[data-cy="volet-saisie"]')).toHaveClass(
+    expect(document.querySelector('[data-cy="entry-pane"]')).toHaveClass(
       "hidden",
     );
-    expect(document.querySelector('[data-cy="volet-apercu"]')).not.toHaveClass(
+    expect(document.querySelector('[data-cy="preview-pane"]')).not.toHaveClass(
       "hidden",
     );
-    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveAttribute(
+    expect(document.querySelector('[data-cy="preview-pane"]')).toHaveAttribute(
       "role",
       "tabpanel",
     );
-    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveAttribute(
+    expect(document.querySelector('[data-cy="preview-pane"]')).toHaveAttribute(
       "aria-labelledby",
       "rent-receipt-view-tab-apercu",
     );
 
     await user.click(screen.getByRole("tab", { name: "Saisie" }));
-    expect(document.querySelector('[data-cy="volet-saisie"]')).not.toHaveClass(
+    expect(document.querySelector('[data-cy="entry-pane"]')).not.toHaveClass(
       "hidden",
     );
-    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveClass(
+    expect(document.querySelector('[data-cy="preview-pane"]')).toHaveClass(
       "hidden",
     );
   });

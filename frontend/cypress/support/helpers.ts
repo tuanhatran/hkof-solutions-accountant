@@ -212,7 +212,7 @@ export function disableLlm(): void {
 }
 
 export function uploadReceipt(fixture: string): void {
-  cy.get('[data-cy="dropzone-fichier"]').selectFile(
+  cy.get('[data-cy="dropzone-file"]').selectFile(
     `cypress/fixtures/${fixture}`,
     {
       force: true,
@@ -232,25 +232,27 @@ export interface ManualExpense {
 }
 
 export function addExpense(expense: ManualExpense): void {
-  cy.get('[data-cy="select-type-frais"]').select(expense.itemCode);
+  cy.get('[data-cy="select-expense-type"]').select(expense.itemCode);
   if (expense.fixture) {
     uploadReceipt(expense.fixture);
     waitForSelectedFile(expense.fixture);
   }
-  cy.get('[data-cy="input-montant-ttc"]').clear().type(expense.amountInclVat);
+  cy.get('[data-cy="input-amount-incl-vat"]')
+    .clear()
+    .type(expense.amountInclVat);
   if (expense.proRataPct) {
     cy.get('[data-cy="input-prorata"]').clear().type(expense.proRataPct);
   }
-  cy.get('[data-cy="btn-ajouter-frais"]').should("not.be.disabled").click();
-  cy.get(`[data-cy="ligne-frais-${expense.itemCode}"]`).should("exist");
+  cy.get('[data-cy="btn-add-expense"]').should("not.be.disabled").click();
+  cy.get(`[data-cy="expense-line-${expense.itemCode}"]`).should("exist");
 }
 
 export function addRent(): void {
-  cy.get('[data-cy="select-type-frais"]').select("loyer");
-  waitForValue('[data-cy="input-montant-ttc"]', "950.00");
-  cy.get('[data-cy="dropzone-fichier"]').should("not.exist");
-  cy.get('[data-cy="btn-ajouter-frais"]').should("not.be.disabled").click();
-  cy.get('[data-cy="ligne-frais-loyer"]').should("exist");
+  cy.get('[data-cy="select-expense-type"]').select("loyer");
+  waitForValue('[data-cy="input-amount-incl-vat"]', "950.00");
+  cy.get('[data-cy="dropzone-file"]').should("not.exist");
+  cy.get('[data-cy="btn-add-expense"]').should("not.be.disabled").click();
+  cy.get('[data-cy="expense-line-loyer"]').should("exist");
 }
 
 export function downloadAndReadPdf(

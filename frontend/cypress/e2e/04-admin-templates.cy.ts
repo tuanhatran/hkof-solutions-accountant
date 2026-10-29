@@ -69,14 +69,14 @@ describe("AI admin and templates", () => {
 
     cy.visit("/generer/note-frais");
     cy.chooseMonth(MONTHS);
-    cy.get('[data-cy="select-type-frais"]').should("not.be.disabled");
+    cy.get('[data-cy="select-expense-type"]').should("not.be.disabled");
     addRent();
     addExpense({
       itemCode: "gaz",
       fixture: "facture-gaz.txt",
       amountInclVat: "120.00",
     });
-    waitForAmount('[data-cy="total-retenu"]', "992,85");
+    waitForAmount('[data-cy="retained-total"]', "992,85");
   });
 
   it("stays usable in manual mode when AI is disabled", () => {
@@ -88,10 +88,10 @@ describe("AI admin and templates", () => {
     cy.get('[data-cy="badge-llm-status"]', { timeout: 20_000 })
       .first()
       .should("contain.text", "IA désactivée");
-    cy.get('[data-cy="select-type-frais"]').should("not.be.disabled");
+    cy.get('[data-cy="select-expense-type"]').should("not.be.disabled");
     addRent();
 
-    cy.get('[data-cy="dropzone-fichier"]').selectFile(
+    cy.get('[data-cy="dropzone-file"]').selectFile(
       "cypress/fixtures/facture-gaz.txt",
       {
         force: true,
@@ -104,10 +104,10 @@ describe("AI admin and templates", () => {
     waitForSelectedFile("facture-gaz.txt");
 
     // The form is reset after addRent(), so the type must be selected again.
-    cy.get('[data-cy="select-type-frais"]').select("gaz");
-    cy.get('[data-cy="input-montant-ttc"]').clear().type("120.00");
-    cy.get('[data-cy="btn-ajouter-frais"]').should("not.be.disabled").click();
-    waitForAmount('[data-cy="total-retenu"]', "992,85");
+    cy.get('[data-cy="select-expense-type"]').select("gaz");
+    cy.get('[data-cy="input-amount-incl-vat"]').clear().type("120.00");
+    cy.get('[data-cy="btn-add-expense"]').should("not.be.disabled").click();
+    waitForAmount('[data-cy="retained-total"]', "992,85");
   });
 
   it("imports, previews, activates a template then reverts to the built-in model", () => {
@@ -155,8 +155,8 @@ describe("AI admin and templates", () => {
     cy.intercept("POST", "/api/rent-receipts/preview").as("preview");
     cy.visit("/generer/quittance");
     normalLease().then((lease) => {
-      cy.get('[data-cy="select-bailleur"]').select(String(lease.landlordId));
-      cy.get('[data-cy="select-locataire"]').select(`person:${lease.tenantId}`);
+      cy.get('[data-cy="select-landlord"]').select(String(lease.landlordId));
+      cy.get('[data-cy="select-tenant"]').select(`person:${lease.tenantId}`);
     });
     waitForValue("#quittance-loyer", SEED_RENT);
     cy.wait("@preview", { timeout: 30_000 });
@@ -175,13 +175,13 @@ describe("AI admin and templates", () => {
     );
 
     cy.chooseMonth(MONTHS);
-    cy.get('[data-cy="btn-generer-quittance"]')
+    cy.get('[data-cy="btn-generate-rent-receipt"]')
       .should("not.be.disabled")
       .click();
     cy.contains("Quittance générée", { timeout: 25_000 }).should("be.visible");
 
     downloadAndReadPdf(
-      '[data-cy="btn-telecharger-quittance"]',
+      '[data-cy="btn-download-rent-receipt"]',
       "quittance_2026-01.pdf",
       (text) => {
         expect(text).to.contain("QUITTANCE TEST E2E");

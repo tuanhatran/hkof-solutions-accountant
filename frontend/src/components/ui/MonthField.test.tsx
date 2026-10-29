@@ -10,13 +10,13 @@ describe("MonthField", () => {
         label="Mois concerné"
         value="2026-01"
         onChange={vi.fn()}
-        dataCy="select-mois"
+        dataCy="select-month"
       />,
     );
 
     const input = screen.getByLabelText("Mois concerné");
     expect(input).toHaveAttribute("type", "month");
-    expect(input).toHaveAttribute("data-cy", "select-mois");
+    expect(input).toHaveAttribute("data-cy", "select-month");
     expect(input).toHaveValue("2026-01");
     expect(screen.queryByText("Mois concerné")).toBeNull();
     expect(screen.queryByText("Janvier 2026")).toBeNull();

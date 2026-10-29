@@ -15,7 +15,7 @@ export function ExpenseInputPane({
 }) {
   return (
     <div
-      data-cy="volet-saisie"
+      data-cy="entry-pane"
       id={panel?.id}
       role={c.mobile && panel ? "tabpanel" : undefined}
       aria-labelledby={c.mobile && panel ? panel.labelledBy : undefined}

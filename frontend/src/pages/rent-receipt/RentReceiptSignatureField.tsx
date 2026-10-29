@@ -52,7 +52,7 @@ export function RentReceiptSignatureField({ c }: { c: RentReceiptController }) {
           className="rent-receipt-signature-field-alert"
           role="alert"
           aria-live="polite"
-          data-cy="alerte-signatures-erreur"
+          data-cy="alert-signatures-error"
         >
           {t("rentReceipt.fields.signaturesError", {
             message: errorMessage(c.signatures.error),
@@ -62,7 +62,7 @@ export function RentReceiptSignatureField({ c }: { c: RentReceiptController }) {
         <p
           className="rent-receipt-signature-field-alert"
           role="alert"
-          data-cy="alerte-signature-bailleur"
+          data-cy="alert-landlord-signature"
         >
           {t("rentReceipt.fields.missingLandlordSignatureBefore")}{" "}
           <Link to="/configuration/lmnp" className="link">

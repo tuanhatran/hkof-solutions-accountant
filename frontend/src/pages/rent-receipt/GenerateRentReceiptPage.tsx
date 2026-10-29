@@ -43,7 +43,7 @@ export function GenerateRentReceiptPage() {
               onChange={c.changeMonth}
               inputProps={c.register("month")}
               error={c.errors.month?.message}
-              dataCy="select-mois"
+              dataCy="select-month"
             />
           </>
         }
@@ -91,7 +91,7 @@ export function GenerateRentReceiptPage() {
 
       <div className="generate-rent-receipt-page-grid">
         <div
-          data-cy="volet-saisie"
+          data-cy="entry-pane"
           id="rent-receipt-input-panel"
           role={c.mobile ? "tabpanel" : undefined}
           aria-labelledby={

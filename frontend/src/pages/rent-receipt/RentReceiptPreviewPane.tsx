@@ -16,7 +16,7 @@ export function RentReceiptPreviewPane({
   const { t } = useTranslation();
   return (
     <div
-      data-cy="volet-apercu"
+      data-cy="preview-pane"
       id={panel?.id}
       role={c.mobile && panel ? "tabpanel" : undefined}
       aria-labelledby={c.mobile && panel ? panel.labelledBy : undefined}
@@ -50,7 +50,7 @@ export function RentReceiptPreviewPane({
               )
             }
             disabled={c.models.length === 0}
-            data-cy="select-template-apercu"
+            data-cy="select-preview-template"
           >
             {c.models.length === 0 ? (
               <option value="">
@@ -65,7 +65,7 @@ export function RentReceiptPreviewPane({
           </select>
         }
       />
-      <p className="hint" data-cy="brouillon-statut">
+      <p className="hint" data-cy="draft-status">
         {c.savedDraft.data
           ? t("draft.savedAt", {
               date: formatDateTime(c.savedDraft.data.savedAt),

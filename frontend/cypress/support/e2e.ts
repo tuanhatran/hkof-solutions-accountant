@@ -29,7 +29,7 @@ Cypress.Commands.add("resetState", () => {
 });
 
 Cypress.Commands.add("chooseMonth", (month: string) => {
-  cy.get('[data-cy="select-mois"]')
+  cy.get('[data-cy="select-month"]')
     .filter(":visible")
     .first()
     .then(($input) => {

@@ -64,7 +64,7 @@ export function GenerateExpenseStatementPage() {
             <Link
               to="/configuration/entreprise"
               className="btn btn-primary"
-              data-cy="lien-configurer-societe"
+              data-cy="link-configure-company"
             >
               {t("expenseStatement.page.configureCompany")}
             </Link>
@@ -80,14 +80,14 @@ export function GenerateExpenseStatementPage() {
       ) : (
         <>
           {c.leasesQuery.data !== undefined && c.companyLeases.length === 0 ? (
-            <div className="mb-4" data-cy="alerte-aucun-bail">
+            <div className="mb-4" data-cy="alert-no-lease">
               <EmptyState
                 title={t("expenseStatement.page.noLeaseTitle")}
                 description={t("expenseStatement.page.noLeaseDescription")}
               />
             </div>
           ) : c.leaseSelectionRequired ? (
-            <div className="mb-4" data-cy="prompt-bail-note-frais">
+            <div className="mb-4" data-cy="lease-expense-statement-prompt">
               <EmptyState
                 title={t("expenseStatement.page.selectLeaseTitle")}
                 description={t("expenseStatement.page.selectLeaseDescription")}

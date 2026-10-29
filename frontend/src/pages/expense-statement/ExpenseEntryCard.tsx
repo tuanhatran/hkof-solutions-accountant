@@ -73,7 +73,7 @@ export function ExpenseEntryCard({
                 (c.isRent && !c.availableRent) ||
                 c.amountConfirmationPending
               }
-              data-cy="btn-ajouter-frais"
+              data-cy="btn-add-expense"
             >
               {c.lineBeingEdited
                 ? t("expenseStatement.entry.submitEdit")

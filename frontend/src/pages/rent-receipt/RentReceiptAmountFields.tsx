@@ -85,7 +85,7 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
             icon={<Plus size={14} />}
             onClick={c.startAddAdditionalCharge}
             disabled={!c.canAddAdditionalCharge}
-            data-cy="btn-ajouter-charge-supplementaire"
+            data-cy="btn-add-extra-charge"
           >
             {t("rentReceipt.fields.addAdditionalCharge")}
           </Button>

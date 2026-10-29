@@ -41,7 +41,7 @@ export function ExpenseStatementHeader({
             {c.companies.isSuccess && companyList.length === 1 ? (
               <span
                 className="expense-statement-header-company-chip"
-                data-cy="societe-note-frais"
+                data-cy="company-expense-statement"
               >
                 <Building2 size={14} aria-hidden="true" />
                 {companyList[0]?.name}
@@ -50,8 +50,8 @@ export function ExpenseStatementHeader({
             {c.companies.isSuccess && companyList.length > 1 ? (
               <div className="expense-statement-header-company">
                 <select
-                  id="select-societe-note-frais"
-                  data-cy="select-societe-note-frais"
+                  id="select-company-expense-statement"
+                  data-cy="select-company-expense-statement"
                   aria-label={t("expenseStatement.header.companyLabel")}
                   className="field expense-statement-header-company-select"
                   value={c.activeCompanyId ?? ""}
@@ -77,7 +77,7 @@ export function ExpenseStatementHeader({
             {c.activeCompanyId !== null && c.companyLeases.length === 1 ? (
               <span
                 className="expense-statement-header-company-chip"
-                data-cy="bail-note-frais"
+                data-cy="lease-expense-statement"
                 aria-label={t("expenseStatement.header.leaseLabel")}
               >
                 <KeyRound size={14} aria-hidden="true" />
@@ -89,8 +89,8 @@ export function ExpenseStatementHeader({
             {c.activeCompanyId !== null && c.companyLeases.length > 1 ? (
               <div className="expense-statement-header-company">
                 <select
-                  id="select-bail-note-frais"
-                  data-cy="select-bail-note-frais"
+                  id="select-lease-expense-statement"
+                  data-cy="select-lease-expense-statement"
                   aria-label={t("expenseStatement.header.leaseLabel")}
                   className="field expense-statement-header-company-select"
                   value={c.selectedLeaseId ?? ""}
@@ -121,7 +121,7 @@ export function ExpenseStatementHeader({
               label={t("expenseStatement.entry.monthLabel")}
               value={c.month}
               onChange={c.changeMonth}
-              dataCy="select-mois"
+              dataCy="select-month"
             />
           </>
         }

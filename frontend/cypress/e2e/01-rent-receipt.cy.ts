@@ -24,50 +24,44 @@ describe("Rent receipt", () => {
   it("adds an additional charge to the total and the generated PDF", () => {
     normalLease().then((lease) => {
       cy.visit("/generer/quittance");
-      cy.get('[data-cy="select-bailleur"]').select(String(lease.landlordId));
-      cy.get('[data-cy="select-locataire"]').select(`person:${lease.tenantId}`);
+      cy.get('[data-cy="select-landlord"]').select(String(lease.landlordId));
+      cy.get('[data-cy="select-tenant"]').select(`person:${lease.tenantId}`);
       cy.chooseMonth(FEBRUARY);
       waitForValue("#quittance-loyer", SEED_RENT);
 
-      cy.get('[data-cy="btn-ajouter-charge-supplementaire"]').click();
-      cy.get('[data-cy="input-charge-supplementaire-libelle"]').type("Eau");
-      cy.get('[data-cy="input-charge-supplementaire-montant"]').type("20,00");
-      cy.get('[data-cy="btn-ajouter-charge-supplementaire"]').should(
-        "be.disabled",
-      );
-      cy.get('[data-cy="btn-generer-quittance"]').should("be.disabled");
+      cy.get('[data-cy="btn-add-extra-charge"]').click();
+      cy.get('[data-cy="input-extra-charge-label"]').type("Eau");
+      cy.get('[data-cy="input-extra-charge-amount"]').type("20,00");
+      cy.get('[data-cy="btn-add-extra-charge"]').should("be.disabled");
+      cy.get('[data-cy="btn-generate-rent-receipt"]').should("be.disabled");
       cy.contains("1 300,00 €").should("be.visible");
 
-      cy.get('[data-cy="btn-enregistrer-charge-supplementaire"]').click();
-      cy.get('[data-cy="charge-supplementaire-0"]')
+      cy.get('[data-cy="btn-save-extra-charge"]').click();
+      cy.get('[data-cy="extra-charge-0"]')
         .should("be.visible")
         .and("contain.text", "Eau")
         .and("contain.text", "20,00");
-      cy.get('[data-cy="input-charge-supplementaire-libelle"]').should(
-        "not.exist",
-      );
-      cy.get('[data-cy="btn-ajouter-charge-supplementaire"]').should(
-        "not.be.disabled",
-      );
+      cy.get('[data-cy="input-extra-charge-label"]').should("not.exist");
+      cy.get('[data-cy="btn-add-extra-charge"]').should("not.be.disabled");
       cy.contains("1 320,00 €").should("be.visible");
 
       // Editing keeps the saved charge effective until the new value is saved.
-      cy.get('[data-cy="btn-modifier-charge-supplementaire-0"]').click();
-      cy.get('[data-cy="input-charge-supplementaire-libelle"]').should(
+      cy.get('[data-cy="btn-edit-extra-charge-0"]').click();
+      cy.get('[data-cy="input-extra-charge-label"]').should(
         "have.value",
         "Eau",
       );
-      cy.get('[data-cy="input-charge-supplementaire-montant"]')
+      cy.get('[data-cy="input-extra-charge-amount"]')
         .should("have.value", "20.00")
         .clear()
         .type("25,00");
       cy.contains("1 320,00 €").should("be.visible");
-      cy.get('[data-cy="btn-enregistrer-charge-supplementaire"]').click();
-      cy.get('[data-cy="charge-supplementaire-0"]')
+      cy.get('[data-cy="btn-save-extra-charge"]').click();
+      cy.get('[data-cy="extra-charge-0"]')
         .should("be.visible")
         .and("contain.text", "25,00");
 
-      cy.get('[data-cy="btn-generer-quittance"]')
+      cy.get('[data-cy="btn-generate-rent-receipt"]')
         .should("not.be.disabled")
         .click();
       cy.contains("Quittance générée", { timeout: 25_000 }).should(
@@ -75,7 +69,7 @@ describe("Rent receipt", () => {
       );
 
       downloadAndReadPdf(
-        '[data-cy="btn-telecharger-quittance"]',
+        '[data-cy="btn-download-rent-receipt"]',
         "quittance_2026-02.pdf",
         (text) => {
           expect(text).to.contain("Eau");
@@ -92,16 +86,16 @@ describe("Rent receipt", () => {
 
       // The reset seeds a company lease and a normal lease: select the normal
       // pair explicitly instead of relying on a single-lease auto-selection.
-      cy.get('[data-cy="select-bailleur"]')
+      cy.get('[data-cy="select-landlord"]')
         .find("option")
         .should("have.length.greaterThan", 1);
-      cy.get('[data-cy="select-bailleur"]').select(String(lease.landlordId));
-      cy.get('[data-cy="select-locataire"]').select(`person:${lease.tenantId}`);
+      cy.get('[data-cy="select-landlord"]').select(String(lease.landlordId));
+      cy.get('[data-cy="select-tenant"]').select(`person:${lease.tenantId}`);
 
       waitForValue("#quittance-loyer", SEED_RENT);
-      waitForText('[data-cy="detail-bail"]', "12 rue de la République");
+      waitForText('[data-cy="lease-detail"]', "12 rue de la République");
       // A lease between natural persons has no company: no company chip.
-      cy.get('[data-cy="societe-quittance"]').should("not.exist");
+      cy.get('[data-cy="company-rent-receipt"]').should("not.exist");
       cy.get('[data-cy="select-signature"] option:selected').should(
         "contain.text",
         "Signature du bailleur (e2e)",
@@ -121,7 +115,7 @@ describe("Rent receipt", () => {
       cy.get("#quittance-debut").should("not.exist");
       cy.get("#quittance-fin").should("not.exist");
 
-      cy.get('[data-cy="btn-generer-quittance"]')
+      cy.get('[data-cy="btn-generate-rent-receipt"]')
         .should("not.be.disabled")
         .click();
       cy.contains("Quittance générée", { timeout: 25_000 }).should(
@@ -129,7 +123,7 @@ describe("Rent receipt", () => {
       );
 
       downloadAndReadPdf(
-        '[data-cy="btn-telecharger-quittance"]',
+        '[data-cy="btn-download-rent-receipt"]',
         "quittance_2026-01.pdf",
         (text) => {
           expect(text).to.contain("QUITTANCE DE LOYER");
@@ -151,7 +145,7 @@ describe("Rent receipt", () => {
 
       // Unlimited ACTIVE receipts: no regeneration dialog, a second click
       // generates a new active receipt immediately.
-      cy.get('[data-cy="btn-generer-quittance"]')
+      cy.get('[data-cy="btn-generate-rent-receipt"]')
         .should("not.be.disabled")
         .click();
       cy.get('[data-cy="dialogue-regeneration-quittance"]').should("not.exist");
