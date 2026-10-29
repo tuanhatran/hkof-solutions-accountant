@@ -80,6 +80,27 @@ The model cache is stored in the `ollama_data` volume. For GPU use on NVIDIA hos
 
 Previous versions of documents are never overwritten: deletion is logical.
 
+## Authentication and User Accounts
+
+The application scopes documents, templates, leases and expense statements per user account.
+
+### Default Seed Account
+
+A default account is seeded automatically on first startup:
+
+- **Email:** `thtran@homeofficeexpenses.local`
+- **Password:** `thtran`
+
+### Creating a New Account (Sign Up)
+
+1. **Sign up**: Go to `/login` (or `/confirmer-email`), switch to registration mode and enter your email and a password (not blank, at most 100 characters).
+   - Via API: `POST /api/auth/register` with `{"email":"...","password":"..."}` (returns `204 No Content`).
+2. **Confirm email**: A confirmation link with a token is sent by email.
+   - In local/Docker development (`make up` or `make dev`), incoming emails are captured by **Mailpit** at [http://localhost:8025](http://localhost:8025).
+   - Click the confirmation link in Mailpit, or open `http://localhost:5173/confirmer-email?token=<TOKEN>`.
+   - Via API: `POST /api/auth/confirm-email` with `{"token":"..."}` (returns `204 No Content`).
+3. **Log in**: Once confirmed, sign in with your email and password at `/login` or via `POST /api/auth/login`.
+
 ## Development
 
 ```bash

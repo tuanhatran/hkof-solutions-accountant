@@ -12,11 +12,11 @@ public final class AuthDtos {
     private static final String EMAIL_REQUIRED = "L'adresse e-mail est obligatoire.";
     private static final String EMAIL_INVALID = "L'adresse e-mail est invalide.";
     private static final String PASSWORD_REQUIRED = "Le mot de passe est obligatoire.";
-    private static final String PASSWORD_SIZE = "Le mot de passe doit contenir entre 8 et 100 caractères.";
+    private static final String PASSWORD_SIZE = "Le mot de passe ne peut pas dépasser 100 caractères.";
 
     public record RegisterRequest(
             @NotBlank(message = EMAIL_REQUIRED) @Email(message = EMAIL_INVALID) @Size(max = 320) String email,
-            @NotBlank(message = PASSWORD_REQUIRED) @Size(min = 8, max = 100,
+            @NotBlank(message = PASSWORD_REQUIRED) @Size(max = 100,
                     message = PASSWORD_SIZE) String password) {
     }
 
@@ -35,7 +35,7 @@ public final class AuthDtos {
 
     public record ChangePasswordRequest(
             @NotBlank(message = "Le mot de passe actuel est obligatoire.") String currentPassword,
-            @NotBlank(message = PASSWORD_REQUIRED) @Size(min = 8, max = 100,
+            @NotBlank(message = PASSWORD_REQUIRED) @Size(max = 100,
                     message = PASSWORD_SIZE) String newPassword) {
     }
 

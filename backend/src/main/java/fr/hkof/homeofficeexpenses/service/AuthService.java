@@ -33,12 +33,12 @@ public class AuthService {
     public static final String CONFIRMATION_TOKEN_INVALID = "CONFIRMATION_TOKEN_INVALID";
     public static final String INVALID_CREDENTIALS = "INVALID_CREDENTIALS";
     public static final String EMAIL_NOT_CONFIRMED = "EMAIL_NOT_CONFIRMED";
-    public static final String PASSWORD_TOO_SHORT = "PASSWORD_TOO_SHORT";
+    public static final String PASSWORD_TOO_LONG = "PASSWORD_TOO_LONG";
+    public static final String PASSWORD_REQUIRED = "PASSWORD_REQUIRED";
     public static final String INVALID_PASSWORD = "INVALID_PASSWORD";
 
     public static final Duration DEFAULT_CONFIRMATION_TTL = Duration.ofHours(24);
 
-    private static final int MIN_PASSWORD_LENGTH = 8;
     private static final int MAX_PASSWORD_LENGTH = 100;
     private static final int TOKEN_BYTES = 32;
     private static final String APP_NAME = "HomeOfficeExpenses";
@@ -157,12 +157,11 @@ public class AuthService {
     }
 
     private void validatePassword(String password) {
-        if (password == null || password.length() < MIN_PASSWORD_LENGTH) {
-            throw new BusinessException(PASSWORD_TOO_SHORT,
-                    "Le mot de passe doit contenir au moins 8 caractères.");
+        if (password == null || password.isBlank()) {
+            throw new BusinessException(PASSWORD_REQUIRED, "Le mot de passe est obligatoire.");
         }
         if (password.length() > MAX_PASSWORD_LENGTH) {
-            throw new BusinessException(PASSWORD_TOO_SHORT,
+            throw new BusinessException(PASSWORD_TOO_LONG,
                     "Le mot de passe ne peut pas dépasser 100 caractères.");
         }
     }

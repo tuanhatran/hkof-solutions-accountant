@@ -16,7 +16,7 @@ paths:
       operationId: register
       description: >-
         Crée un compte non confirmé et envoie un e-mail de confirmation. Le mot de
-        passe doit contenir au moins 8 caractères.
+        passe ne doit pas être vide et ne peut pas dépasser 100 caractères.
       security: []
       requestBody:
         content:
@@ -1848,7 +1848,6 @@ components:
         password:
           type: string
           format: password
-          minLength: 8
           maxLength: 100
     ConfirmEmailRequest:
       type: object
@@ -1890,7 +1889,6 @@ components:
         newPassword:
           type: string
           format: password
-          minLength: 8
           maxLength: 100
     CurrentUserDto:
       type: object

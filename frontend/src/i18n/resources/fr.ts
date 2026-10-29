@@ -59,8 +59,7 @@ export const fr = {
       INVALID_CREDENTIALS: "Adresse e-mail ou mot de passe incorrect.",
       EMAIL_NOT_CONFIRMED:
         "Confirmez votre adresse e-mail avant de vous connecter.",
-      PASSWORD_TOO_SHORT:
-        "Le mot de passe doit contenir au moins 8 caractères.",
+      PASSWORD_TOO_LONG: "Le mot de passe ne peut pas dépasser 100 caractères.",
       INVALID_PASSWORD: "Le mot de passe actuel est incorrect.",
       PASSWORD_CHANGE_REQUIRED:
         "Changez votre mot de passe avant de continuer.",
@@ -319,8 +318,7 @@ export const fr = {
     password: {
       eyebrow: "Sécurité",
       title: "Changer le mot de passe",
-      description:
-        "Choisissez un nouveau mot de passe d'au moins 8 caractères.",
+      description: "Choisissez un nouveau mot de passe.",
       forced:
         "Votre mot de passe provisoire doit être remplacé avant de continuer.",
       submit: "Changer le mot de passe",
@@ -337,7 +335,6 @@ export const fr = {
       emailRequired: "L'adresse e-mail est obligatoire.",
       emailInvalid: "L'adresse e-mail est invalide.",
       passwordRequired: "Le mot de passe est obligatoire.",
-      passwordTooShort: "Le mot de passe doit contenir au moins 8 caractères.",
       passwordTooLong: "Le mot de passe ne peut pas dépasser 100 caractères.",
       currentPasswordRequired: "Le mot de passe actuel est obligatoire.",
       confirmRequired: "Confirmez le mot de passe.",

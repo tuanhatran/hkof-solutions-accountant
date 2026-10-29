@@ -202,7 +202,14 @@ class AuthIntegrationTest {
         mockMvc.perform(post("/api/auth/change-password").session(session)
                         .cookie(csrf).header(CSRF_HEADER, csrf.getValue())
                         .contentType(JSON)
-                        .content("{\"currentPassword\":\"thtran\",\"newPassword\":\"court\"}"))
+                        .content("{\"currentPassword\":\"thtran\",\"newPassword\":\"   \"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+
+        mockMvc.perform(post("/api/auth/change-password").session(session)
+                        .cookie(csrf).header(CSRF_HEADER, csrf.getValue())
+                        .contentType(JSON)
+                        .content("{\"currentPassword\":\"thtran\",\"newPassword\":\"" + "x".repeat(101) + "\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 
@@ -216,7 +223,7 @@ class AuthIntegrationTest {
         mockMvc.perform(post("/api/auth/change-password").session(session)
                         .cookie(csrf).header(CSRF_HEADER, csrf.getValue())
                         .contentType(JSON)
-                        .content("{\"currentPassword\":\"thtran\",\"newPassword\":\"nouveau-mot-de-passe\"}"))
+                        .content("{\"currentPassword\":\"thtran\",\"newPassword\":\"n\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.mustChangePassword").value(false));
 
@@ -229,8 +236,23 @@ class AuthIntegrationTest {
                 .andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/api/auth/login").contentType(JSON)
-                        .content("{\"email\":\"" + SEED_EMAIL + "\",\"password\":\"nouveau-mot-de-passe\"}"))
+                        .content("{\"email\":\"" + SEED_EMAIL + "\",\"password\":\"n\"}"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Registration accepts a one-character password but still rejects a blank or too long one")
+    void registersWithoutMinimumPasswordLength() throws Exception {
+        register("gina@example.test", "a");
+
+        mockMvc.perform(post("/api/auth/register").contentType(JSON)
+                        .content("{\"email\":\"hugo@example.test\",\"password\":\"   \"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+        mockMvc.perform(post("/api/auth/register").contentType(JSON)
+                        .content("{\"email\":\"hugo@example.test\",\"password\":\"" + "x".repeat(101) + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
     }
 
     @Test

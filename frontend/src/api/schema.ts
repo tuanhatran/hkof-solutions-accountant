@@ -13,7 +13,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Crée un compte non confirmé et envoie un e-mail de confirmation. Le mot de passe doit contenir au moins 8 caractères. */
+        /** @description Crée un compte non confirmé et envoie un e-mail de confirmation. Le mot de passe ne doit pas être vide et ne peut pas dépasser 100 caractères. */
         post: operations["register"];
         delete?: never;
         options?: never;
