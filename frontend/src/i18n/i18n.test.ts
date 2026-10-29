@@ -125,8 +125,8 @@ describe("i18n", () => {
 
   it("uses the canonical French terminology for the managed entity", () => {
     expect(fr.settings.company.tabsAria).toBe("Sections de la société");
-    expect(fr.settings.company.tabs.templates).toBe("Modèles");
-    expect(fr.settings.lmnp.tabs.templates).toBe("Modèles");
+    expect(fr.navigation.links.templates).toBe("Modèles");
+    expect(fr.templates.page.title).toBe("Modèles");
     expect(fr.expenseStatement.footer.companyLink).toBe("Société");
     expect(fr.settings.expenses.title).toBe("Postes");
     expect(fr.settings.expenses.add).toBe("Ajouter un poste");
@@ -143,8 +143,8 @@ describe("i18n", () => {
   });
 
   it("mirrors the entity terminology in English", () => {
-    expect(en.settings.company.tabs.templates).toBe("Templates");
-    expect(en.settings.lmnp.tabs.templates).toBe("Templates");
+    expect(en.navigation.links.templates).toBe("Templates");
+    expect(en.templates.page.title).toBe("Templates");
     expect(en.settings.expenses.title).toBe("Expense items");
     expect(en.settings.expenses.form.editTitle).toBe("Edit the expense item");
     expect(en.settings.expenses.deleteDialog.title).toBe(

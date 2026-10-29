@@ -15,6 +15,7 @@ import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { GenerateExpenseStatementPage } from "@/pages/expense-statement/GenerateExpenseStatementPage";
 import { GenerateRentReceiptPage } from "@/pages/rent-receipt/GenerateRentReceiptPage";
 import { HistoryPage } from "@/pages/history/HistoryPage";
+import { TemplatesPage } from "@/pages/templates/TemplatesPage";
 
 export function NotFoundPage() {
   return (
@@ -95,6 +96,7 @@ export const router = createBrowserRouter([
       },
       { path: "configuration/entreprise", element: <SettingsPage /> },
       { path: "configuration/lmnp", element: <LmnpPage /> },
+      { path: "templates", element: <TemplatesPage /> },
       { path: "admin", element: <AdminLlmPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],

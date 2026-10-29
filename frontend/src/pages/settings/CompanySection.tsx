@@ -12,8 +12,6 @@ import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorState, LoadingState } from "@/components/ui/States";
 import { ViewTabs, type ViewTab } from "@/components/ui/ViewTabs";
-import { EXPENSE_STATEMENT_CONFIGURATION } from "@/pages/templates/templateTypes";
-import { TemplatesTab } from "@/pages/templates/TemplatesTab";
 import { toast } from "@/state/toasts";
 import { CompanyIdentityModal } from "./CompanyIdentityModal";
 import { CompanyIdentityView } from "./CompanyIdentityView";
@@ -40,12 +38,6 @@ export function CompanySection() {
       value: "salaries",
       label: t("settings.company.tabs.employees"),
       dataCy: "tab-company-employees",
-      panelId: "company-section-panel",
-    },
-    {
-      value: "templates",
-      label: t("settings.company.tabs.templates"),
-      dataCy: "tab-company-templates",
       panelId: "company-section-panel",
     },
   ];
@@ -169,7 +161,7 @@ export function CompanySection() {
           <div className="card-body">
             <LoadingState message={t("settings.company.loading")} />
           </div>
-        ) : list.length === 0 && tab !== "templates" ? (
+        ) : list.length === 0 ? (
           <div className="card-body">
             <EmptyState
               text={t("settings.company.empty")}
@@ -198,12 +190,6 @@ export function CompanySection() {
           ) : null}
           {selected && tab === "salaries" ? (
             <EmployeeSection companyId={selected.id as number} />
-          ) : null}
-          {tab === "templates" ? (
-            <TemplatesTab
-              configuration={EXPENSE_STATEMENT_CONFIGURATION}
-              embedded
-            />
           ) : null}
         </div>
       </section>

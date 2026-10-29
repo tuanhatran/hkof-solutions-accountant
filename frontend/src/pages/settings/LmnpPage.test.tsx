@@ -4,14 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
-import type {
-  AddressDto,
-  CompanyDto,
-  LeaseDto,
-  PersonDto,
-  TemplateDto,
-  TemplateType,
-} from "@/api/types";
+import type { AddressDto, CompanyDto, LeaseDto, PersonDto } from "@/api/types";
 import i18n from "@/i18n";
 import { useToasts } from "@/state/toasts";
 import { LmnpPage } from "./LmnpPage";
@@ -62,19 +55,6 @@ let addressesState: QueryLike<AddressDto[]>;
 let leasesState: QueryLike<LeaseDto[]>;
 let companiesState: QueryLike<CompanyDto[]>;
 
-const RENT_BUILT_IN: TemplateDto = {
-  id: 1,
-  type: "RENT_RECEIPT",
-  name: "Quittance intégrée",
-  version: 1,
-  format: "HTML",
-  active: true,
-  builtIn: true,
-  createdAt: "2026-01-01T10:00:00Z",
-};
-
-let templatesByType: Record<TemplateType, TemplateDto[]>;
-
 function readyQuery<T>(data: T): QueryLike<T> {
   return {
     data,
@@ -115,8 +95,6 @@ vi.mock("@/api/queries", async (importOriginal) => {
     useAddresses: () => addressesState,
     useLeases: () => leasesState,
     useSignatures: () => readyQuery([]),
-    useTemplates: (type: TemplateType) => readyQuery(templatesByType[type]),
-    useTemplateVariables: () => readyQuery([]),
   };
 });
 
@@ -142,10 +120,6 @@ beforeEach(() => {
   companiesState = readyQuery([COMPANY]);
   addressesState = readyQuery([ADDRESS]);
   leasesState = readyQuery([LEASE]);
-  templatesByType = {
-    RENT_RECEIPT: [RENT_BUILT_IN],
-    EXPENSE_STATEMENT: [],
-  };
   vi.mocked(api.leases.create).mockReset();
   vi.mocked(api.leases.update).mockReset();
   vi.mocked(api.leases.delete).mockReset();
@@ -187,7 +161,7 @@ describe("LmnpPage", () => {
       within(tabs).getByRole("tab", { name: "Leases and addresses" }),
     ).toHaveAttribute("aria-selected", "true");
     expect(within(tabs).getByRole("tab", { name: "People" })).toBeVisible();
-    expect(within(tabs).getByRole("tab", { name: "Templates" })).toBeVisible();
+    expect(within(tabs).queryByRole("tab", { name: "Templates" })).toBeNull();
     expect(
       screen.getByText(/natural persons acting as landlords or tenants/),
     ).toBeVisible();
@@ -198,7 +172,7 @@ describe("LmnpPage", () => {
 
     expect(screen.getByRole("tab", { name: "Baux et adresses" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Personnes" })).toBeVisible();
-    expect(screen.getByRole("tab", { name: "Modèles" })).toBeVisible();
+    expect(screen.queryByRole("tab", { name: "Modèles" })).toBeNull();
     expect(
       screen.getByRole("heading", { name: "Baux et adresses" }),
     ).toBeVisible();
@@ -226,31 +200,6 @@ describe("LmnpPage", () => {
 
     expect(screen.getByLabelText("Adresse des baux")).toHaveValue("4");
     expect(screen.queryByRole("heading", { name: "Personnes" })).toBeNull();
-  });
-
-  it("shows the rent receipt template card on the Templates tab", async () => {
-    renderPage();
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole("tab", { name: "Modèles" }));
-
-    expect(screen.getByRole("tab", { name: "Modèles" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    expect(
-      screen.getByRole("heading", { name: "Quittance de loyer" }),
-    ).toBeVisible();
-    expect(
-      document.querySelector('[data-cy="dropzone-rent-receipt-template"]'),
-    ).not.toBeNull();
-    expect(
-      screen.queryByRole("heading", { name: "Note de frais d’occupation" }),
-    ).toBeNull();
-    expect(
-      screen.getByText(/Les modèles ne peuvent exécuter aucun code/),
-    ).toBeVisible();
-    expect(screen.queryByLabelText("Adresse des baux")).toBeNull();
   });
 
   it("lists natural persons without an employee entry", async () => {

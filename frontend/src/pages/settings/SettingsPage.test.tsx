@@ -4,13 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/api/endpoints";
-import type {
-  CompanyDto,
-  EmployeeDto,
-  LeaseDto,
-  TemplateDto,
-  TemplateType,
-} from "@/api/types";
+import type { CompanyDto, EmployeeDto, LeaseDto } from "@/api/types";
 import i18n from "@/i18n";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { useToasts } from "@/state/toasts";
@@ -80,19 +74,6 @@ let companiesState: QueryLike<CompanyDto[]>;
 let employeesState: QueryLike<EmployeeDto[]>;
 let leasesState: QueryLike<LeaseDto[]>;
 
-const EXPENSE_BUILT_IN: TemplateDto = {
-  id: 3,
-  type: "EXPENSE_STATEMENT",
-  name: "Note de frais intégrée",
-  version: 1,
-  format: "HTML",
-  active: true,
-  builtIn: true,
-  createdAt: "2026-02-01T10:00:00Z",
-};
-
-let templatesByType: Record<TemplateType, TemplateDto[]>;
-
 function readyQuery<T>(data: T[]): QueryLike<T[]> {
   return {
     data,
@@ -150,8 +131,6 @@ vi.mock("@/api/queries", async (importOriginal) => {
     useAddresses: () =>
       readyQuery([{ id: 3, label: "12 rue des Lilas, 75011 Paris" }]),
     useLeases: () => leasesState,
-    useTemplates: (type: TemplateType) => readyQuery(templatesByType[type]),
-    useTemplateVariables: () => readyQuery([]),
   };
 });
 
@@ -181,10 +160,6 @@ describe("SettingsPage tabs", () => {
     companiesState = readyQuery([COMPANY]);
     leasesState = readyQuery([LEASE]);
     employeesState = readyQuery([CEO]);
-    templatesByType = {
-      RENT_RECEIPT: [],
-      EXPENSE_STATEMENT: [EXPENSE_BUILT_IN],
-    };
     vi.mocked(api.companies.update).mockReset();
     vi.mocked(api.companies.create).mockReset();
     vi.mocked(api.companies.delete).mockReset();
@@ -194,7 +169,7 @@ describe("SettingsPage tabs", () => {
     useToasts.setState({ toasts: [] });
   });
 
-  it("renders the selector, the four tabs and the read-only identity by default", () => {
+  it("renders the selector, the three tabs and the read-only identity by default", () => {
     renderPage();
 
     expect(
@@ -207,7 +182,7 @@ describe("SettingsPage tabs", () => {
     );
     expect(screen.getByRole("tab", { name: "Baux & Frais" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Salariés" })).toBeVisible();
-    expect(screen.getByRole("tab", { name: "Modèles" })).toBeVisible();
+    expect(screen.queryByRole("tab", { name: "Modèles" })).toBeNull();
     expect(queryByCy("company-information")).not.toBeNull();
     expect(queryByCy("tab-company-identification")).not.toBeNull();
     expect(queryByCy("input-legal-name")).toBeNull();
@@ -229,7 +204,7 @@ describe("SettingsPage tabs", () => {
       screen.getByRole("tab", { name: "Leases & Expenses" }),
     ).toBeVisible();
     expect(screen.getByRole("tab", { name: "Employees" })).toBeVisible();
-    expect(screen.getByRole("tab", { name: "Templates" })).toBeVisible();
+    expect(screen.queryByRole("tab", { name: "Templates" })).toBeNull();
     expect(screen.getByText("Company name")).toBeVisible();
     expect(screen.getByText("Manager")).toBeVisible();
     expect(screen.getByRole("button", { name: "New company" })).toBeVisible();
@@ -272,7 +247,7 @@ describe("SettingsPage tabs", () => {
     await waitFor(() => expect(toastMessages()).toContain("Company deleted."));
   });
 
-  it("orders the company toolbar, the four tabs and the company card like LMNP", () => {
+  it("orders the company toolbar, the three tabs and the company card like LMNP", () => {
     renderPage();
 
     const selector = screen.getByLabelText("Société à configurer");
@@ -337,36 +312,6 @@ describe("SettingsPage tabs", () => {
         .querySelector("section.employee-section")
         ?.classList.contains("card"),
     ).toBe(false);
-  });
-
-  it("renders the embedded templates tab without a nested card", async () => {
-    renderPage();
-    const user = userEvent.setup();
-
-    await user.click(queryByCy("tab-company-templates") as Element);
-
-    const templates = document.querySelector("section.templates-card");
-    expect(templates).not.toBeNull();
-    expect(templates?.classList.contains("card")).toBe(false);
-  });
-
-  it("shows only the expense statement template card on the Templates tab", async () => {
-    renderPage();
-    const user = userEvent.setup();
-
-    await user.click(queryByCy("tab-company-templates") as Element);
-
-    expect(
-      await screen.findByRole("heading", {
-        name: "Note de frais d’occupation",
-      }),
-    ).toBeVisible();
-    expect(queryByCy("dropzone-statement-template")).not.toBeNull();
-    expect(queryByCy("dropzone-rent-receipt-template")).toBeNull();
-    expect(
-      screen.getByText(/Les modèles ne peuvent exécuter aucun code/),
-    ).toBeVisible();
-    expect(queryByCy("company-information")).toBeNull();
   });
 
   it("no longer renders the legacy Quittances directories", () => {

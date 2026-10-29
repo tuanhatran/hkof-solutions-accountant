@@ -14,7 +14,7 @@ import { api } from "@/api/endpoints";
 import type { TemplateDto } from "@/api/types";
 import i18n from "@/i18n";
 import { useToasts } from "@/state/toasts";
-import { TemplatesTab } from "./TemplatesTab";
+import { TemplatesCard } from "./TemplatesCard";
 import { RENT_RECEIPT_CONFIGURATION } from "./templateTypes";
 
 let templates: TemplateDto[] = [];
@@ -104,17 +104,17 @@ const BUILT_IN: TemplateDto = {
 const createObjectURL = vi.fn();
 const revokeObjectURL = vi.fn();
 
-function renderTab() {
+function renderCard() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   const tree = () => (
     <QueryClientProvider client={queryClient}>
-      <TemplatesTab configuration={RENT_RECEIPT_CONFIGURATION} />
+      <TemplatesCard configuration={RENT_RECEIPT_CONFIGURATION} />
     </QueryClientProvider>
   );
   const view = render(tree());
-  return { ...view, rerenderTab: () => view.rerender(tree()) };
+  return { ...view, rerenderCard: () => view.rerender(tree()) };
 }
 
 function checkbox(name: string): HTMLInputElement {
@@ -163,7 +163,7 @@ beforeEach(() => {
 describe("TemplateCompare", () => {
   it("caps the comparison selection at two and keeps checked boxes toggleable", async () => {
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     const active = checkbox("Comparer Quittance 2026 v3");
     const archived = checkbox("Comparer Quittance archivée v2");
@@ -190,7 +190,7 @@ describe("TemplateCompare", () => {
 
   it("shows the selection bar with a plural count, a gated compare button and a cancel action", async () => {
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     const archived = checkbox("Comparer Quittance archivée v2");
     const builtIn = checkbox("Comparer Quittance intégrée v1");
@@ -215,7 +215,7 @@ describe("TemplateCompare", () => {
 
   it("opens a read-only comparison with metadata and both PDF panels", async () => {
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     await user.click(checkbox("Comparer Quittance 2026 v3"));
     await user.click(checkbox("Comparer Quittance archivée v2"));
@@ -287,7 +287,7 @@ describe("TemplateCompare", () => {
         }),
     );
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     await selectTwo(user);
     await user.click(screen.getByRole("button", { name: "Comparer" }));
@@ -323,7 +323,7 @@ describe("TemplateCompare", () => {
 
   it("closes by close button, Escape and backdrop, revoking both URLs", async () => {
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     const dialog = await openComparison(user);
     await user.click(
@@ -376,7 +376,7 @@ describe("TemplateCompare", () => {
         }),
     );
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     await selectTwo(user);
     await user.click(screen.getByRole("button", { name: "Comparer" }));
@@ -402,7 +402,7 @@ describe("TemplateCompare", () => {
 
   it("revokes both URLs when the card unmounts", async () => {
     const user = userEvent.setup();
-    const { unmount } = renderTab();
+    const { unmount } = renderCard();
 
     await openComparison(user);
     unmount();
@@ -420,7 +420,7 @@ describe("TemplateCompare", () => {
         }),
     );
     const user = userEvent.setup();
-    const { unmount } = renderTab();
+    const { unmount } = renderCard();
 
     await selectTwo(user);
     await user.click(screen.getByRole("button", { name: "Comparer" }));
@@ -441,7 +441,7 @@ describe("TemplateCompare", () => {
 
   it("prunes a selected version that disappears from the list", async () => {
     const user = userEvent.setup();
-    const { rerenderTab } = renderTab();
+    const { rerenderCard } = renderCard();
 
     await selectTwo(user);
     expect(
@@ -450,7 +450,7 @@ describe("TemplateCompare", () => {
 
     templates = [ACTIVE, BUILT_IN];
     await act(async () => {
-      rerenderTab();
+      rerenderCard();
     });
 
     expect(
@@ -467,7 +467,7 @@ describe("TemplateCompare", () => {
       new Error("Aperçu du modèle indisponible"),
     );
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     await selectTwo(user);
     await user.click(screen.getByRole("button", { name: "Comparer" }));
@@ -486,7 +486,7 @@ describe("TemplateCompare", () => {
   it("renders the comparison in English", async () => {
     await i18n.changeLanguage("en");
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     await user.click(checkbox("Compare Quittance archivée v2"));
     expect(

@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { NotFoundPage, routeErrorMessage, router } from "./router";
 
 describe("router", () => {
-  it("no longer exposes a /templates route", () => {
+  it("exposes the dedicated /templates route", () => {
     const paths = (router.routes[0]?.children ?? []).map((route) => route.path);
 
-    expect(paths).not.toContain("templates");
+    expect(paths).toContain("templates");
     expect(paths).toContain("configuration/entreprise");
     expect(paths).toContain("configuration/lmnp");
   });

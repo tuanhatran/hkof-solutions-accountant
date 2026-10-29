@@ -96,8 +96,8 @@ describe("AppShell", () => {
     expect(adminLink.querySelector(".app-nav-icon-active")).toBeNull();
 
     expect(
-      within(navigation).queryByRole("link", { name: /Templates/ }),
-    ).toBeNull();
+      within(navigation).getByRole("link", { name: /Modèles/ }),
+    ).toHaveAttribute("href", "/templates");
 
     expect(screen.getByText("Contenu de la page")).toBeVisible();
     expect(screen.getByText("Quittances & frais d’occupation")).toBeVisible();
@@ -137,6 +137,7 @@ describe("AppShell", () => {
       "Quittance",
       "Note de frais",
       "Historique",
+      "Modèles",
       "Société",
       "LMNP",
       "Analyse IA",
@@ -300,6 +301,7 @@ describe("AppShell", () => {
       "Rent receipt",
       "Expense statement",
       "History",
+      "Templates",
       "Company",
       "LMNP",
       "AI analysis",
