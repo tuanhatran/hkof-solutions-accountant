@@ -1,14 +1,7 @@
 import "./ExpenseStatementHeader.css";
 import { useTranslation } from "react-i18next";
-import {
-  Building2,
-  ExternalLink,
-  FileCheck2,
-  KeyRound,
-  ReceiptText,
-} from "lucide-react";
+import { Building2, ExternalLink, FileCheck2, KeyRound } from "lucide-react";
 import { api } from "@/api/endpoints";
-import { Button } from "@/components/ui/Button";
 import { MonthField } from "@/components/ui/MonthField";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { formatEUR, formatMonth } from "@/lib/format";
@@ -31,13 +24,6 @@ export function ExpenseStatementHeader({
         description={t("expenseStatement.page.description")}
         actions={
           <>
-            <Button
-              variant="secondary"
-              icon={<ReceiptText size={15} />}
-              onClick={c.goToRentReceipt}
-            >
-              {t("expenseStatement.page.rentReceiptButton")}
-            </Button>
             {c.companies.isSuccess && companyList.length === 1 ? (
               <span
                 className="expense-statement-header-company-chip"

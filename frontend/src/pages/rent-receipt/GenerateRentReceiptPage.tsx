@@ -1,14 +1,12 @@
-import "./GenerateRentReceiptPage.css";
-import { ReceiptText } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
-import { Button } from "@/components/ui/Button";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { MonthField } from "@/components/ui/MonthField";
 import { ErrorState } from "@/components/ui/States";
 import { ViewTabs } from "@/components/ui/ViewTabs";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { cn } from "@/lib/cn";
+import { useTranslation } from "react-i18next";
 import { ActiveRentReceiptBanner } from "./ActiveRentReceiptBanner";
+import "./GenerateRentReceiptPage.css";
 import { RentReceiptForm } from "./RentReceiptForm";
 import { RentReceiptPreviewPane } from "./RentReceiptPreviewPane";
 import { RentReceiptResultCard } from "./RentReceiptResultCard";
@@ -29,13 +27,6 @@ export function GenerateRentReceiptPage() {
         description={t("rentReceipt.page.description")}
         actions={
           <>
-            <Button
-              variant="secondary"
-              icon={<ReceiptText size={15} />}
-              onClick={() => c.navigate("/generer/note-frais")}
-            >
-              {t("rentReceipt.page.statementButton")}
-            </Button>
             <MonthField
               id="quittance-mois"
               label={t("rentReceipt.fields.month")}

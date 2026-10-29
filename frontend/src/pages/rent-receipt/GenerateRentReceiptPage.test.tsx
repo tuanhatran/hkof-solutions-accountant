@@ -929,9 +929,6 @@ describe("GenerateRentReceiptPage", () => {
 
     expect(screen.getByText("Generate · Rent receipt")).toBeInTheDocument();
     expect(screen.getByText("Rent receipt")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Monthly expense statement" }),
-    ).toBeInTheDocument();
     expect(await screen.findByLabelText("Landlord")).toHaveValue("1");
     expect(
       screen.getByText("Editable for a one-off adjustment."),

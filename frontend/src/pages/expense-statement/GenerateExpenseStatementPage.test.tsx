@@ -1080,9 +1080,6 @@ describe("GenerateExpenseStatementPage signatures", () => {
     const user = userEvent.setup();
 
     expect(screen.getByText("Home-office expense statement")).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "This month's rent receipt" }),
-    ).toBeVisible();
     expect(screen.getByRole("tab", { name: "Input" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Preview" })).toBeVisible();
     expect(screen.getByText("Added expenses")).toBeVisible();
