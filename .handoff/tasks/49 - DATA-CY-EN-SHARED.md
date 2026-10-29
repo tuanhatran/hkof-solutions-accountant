@@ -1,6 +1,6 @@
 # 49 - DATA-CY-EN-SHARED
 
-Status: CHANGES_REQUESTED
+Status: DONE
 Branch: feat/49-data-cy-en-shared
 Base: cec060d
 Size: M
@@ -46,3 +46,7 @@ Contract: none · Money: none · UI text stays French, hooks English · no `any`
 - Out of scope, left untouched: `product_prompt.md:354` still mentions `btn-confirmer-montant` in prose (outside the `data-cy` bullet).
 - Commit: 249df29 19 files +54/-40. Contract: none.
 - 2026-10-29 lead: `VERDICT: BLOCKERS (1)` (reviewer, round 1) — `product_prompt.md:354` still documents `btn-confirmer-montant` while the hook is now `btn-confirm-amount` (spec names a selector that no longer exists; the old-literal grep was scoped to `frontend/src frontend/cypress`, so it missed this). Fix already exists as an uncommitted working-tree edit to that line: builder commits it (explicit path only).
+- 2026-10-29 builder: round-2 docs fix — verified `git diff HEAD -- product_prompt.md` was exactly 1 hunk (line 354 `btn-confirmer-montant` → `btn-confirm-amount`); `git diff --check` exit 0; `grep btn-confirmer-montant product_prompt.md` → no match (exit 1); `grep btn-confirm-amount product_prompt.md` → lines 354, 425.
+- 2026-10-29 builder: DEVIATION, no builder commit — while this round ran, a concurrent commit `85dfa4c "Change model for Qoder"` (8 files, +109/-8) captured the same one-line hunk plus the previously dirty/staged `.handoff/*`, `.qoder/agents/*.md`, `.opencode/README.md`, and was pushed to origin (HEAD == origin). The working tree is clean, so a 1-file +1/-1 commit is impossible without history rewrite (forbidden). Docs gate `git diff --check HEAD` exit 0. Contract: none.
+- 2026-10-29 lead: `VERDICT: PASS` (reviewer, round 2) — round-1 blocker resolved: `product_prompt.md:354` now `btn-confirm-amount`, old literal gone, 5 entries intact; no other FR literal reintroduced. Fix shipped inside the concurrent pushed commit `85dfa4c` rather than a builder-made 1-file commit (recorded above); task-49 app code unchanged since `249df29`.
+- 2026-10-29 lead: `DONE — user accepted`
