@@ -499,7 +499,7 @@ describe("CompanyLeaseTab", () => {
     expect(queryByCy("btn-note-frais-company-lease-5")).toBeNull();
     expect(queryByCy("notes-frais-bail-5")).toBeNull();
     expect(queryByCy("company-lease-lie")).toBeNull();
-    expect(queryByCy("no-lease-societe")).toBeNull();
+    expect(queryByCy("no-company-lease")).toBeNull();
     expect(document.querySelector(".company-lease-tab-none")).toBeNull();
   });
 
