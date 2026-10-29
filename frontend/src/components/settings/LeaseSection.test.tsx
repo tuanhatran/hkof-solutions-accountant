@@ -231,52 +231,14 @@ describe("LeaseSection rent receipt", () => {
     expect(row.querySelector(".lease-section-cell-actions")).not.toBeNull();
   });
 
-  it("opens the rent receipt modal from the Quittance button of a lease row", async () => {
+  it("does not render a rent receipt button in the row actions column", () => {
     renderSection();
-    const user = userEvent.setup();
-
-    const button = screen.getByRole("button", {
-      name: "Quittance du bail 10",
-    });
-    expect(button).toBeEnabled();
-    await user.click(button);
-
-    const dialog = screen.getByRole("dialog", { name: "Quittance de loyer" });
-    expect(within(dialog).getByText("M. Bailleur")).toBeVisible();
-    expect(within(dialog).getByText("Mme Locataire")).toBeVisible();
-
-    await user.click(within(dialog).getByRole("button", { name: "Fermer" }));
     expect(
-      screen.queryByRole("dialog", { name: "Quittance de loyer" }),
+      screen.queryByRole("button", { name: /quittance du bail/i }),
     ).toBeNull();
-  });
-
-  it("disables the Quittance button and explains the missing signature", () => {
-    signatureRows = [];
-    renderSection();
-
-    const button = screen.getByRole("button", {
-      name: "Quittance du bail 10",
-    });
-    expect(button).toBeDisabled();
-    expect(button.parentElement).toHaveAttribute(
-      "title",
-      expect.stringContaining("Personnes"),
-    );
-  });
-
-  it("waits for the signature query before enabling the Quittance button", () => {
-    signaturesPending = true;
-    renderSection();
-
-    const button = screen.getByRole("button", {
-      name: "Quittance du bail 10",
-    });
-    expect(button).toBeDisabled();
-    expect(button.parentElement).toHaveAttribute(
-      "title",
-      "Vérification des signatures…",
-    );
+    expect(
+      document.querySelector('[data-cy^="btn-lease-rent-receipt-"]'),
+    ).toBeNull();
   });
 
   it("renders the lease section and its rows in English", async () => {
@@ -300,9 +262,6 @@ describe("LeaseSection rent receipt", () => {
     expect(
       document.querySelector('[data-cy="lease-total-10"]'),
     ).toHaveTextContent("1 350,00 €");
-    expect(
-      screen.getByRole("button", { name: "Rent receipt for lease 10" }),
-    ).toHaveTextContent("Rent receipt");
     expect(
       screen.getByRole("button", { name: "Edit lease 10" }),
     ).toHaveTextContent("Edit");
@@ -565,7 +524,7 @@ describe("LeaseSection receipt history", () => {
     expect(history?.textContent).toContain("Impossible de charger les données");
     expect(history?.textContent).toContain("historique indisponible");
     expect(
-      screen.getByRole("button", { name: "Quittance du bail 10" }),
+      screen.getByRole("button", { name: "Modifier le bail 10" }),
     ).toBeEnabled();
 
     await userEvent.click(screen.getByRole("button", { name: "Réessayer" }));

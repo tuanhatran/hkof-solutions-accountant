@@ -34,11 +34,11 @@
   }
 
   .lease-section-headers {
-    @apply grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_6.5rem_7rem_17.5rem];
+    @apply grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_6.5rem_7rem_12rem];
   }
 
   .lease-section-item {
-    @apply grid gap-x-3 gap-y-1 px-4 py-2 md:min-h-9 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_6.5rem_7rem_17.5rem] md:items-center md:py-1.5;
+    @apply grid gap-x-3 gap-y-1 px-4 py-2 md:min-h-9 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_6.5rem_7rem_12rem] md:items-center md:py-1.5;
   }
 
   .lease-section-item > .lease-receipt-history {
@@ -75,9 +75,5 @@
 
   .lease-section-cell-actions {
     @apply flex flex-wrap items-center justify-end gap-1;
-  }
-
-  .lease-section-signature-warning {
-    @apply inline-flex;
   }
 }

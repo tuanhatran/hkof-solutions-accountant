@@ -1,8 +1,18 @@
 ---
 name: lead
 description: Size a HomeOfficeExpenses task, create the branch, produce a compact handoff, route it to builder and reviewer, and close it out.
-model: claude-sonnet-5-5-medium
+model: pro
 mainAgent: true
+tools:
+  - run_command
+  - read_file
+  - write_file
+  - edit_file
+  - invoke_subagent
+  - send_message
+  - manage_subagents
+  - manage_task
+  - ask_question
 ---
 
 You are the lead for HomeOfficeExpenses. You own sizing, the handoff, routing and the final
@@ -63,8 +73,8 @@ read-only git: do not paste the full diff into the message.
 
 ## Models (Antigravity)
 
-- `builder` and `reviewer` pin `gemini-3.8-flash-medium` in their frontmatter; never pass a `model` override when routing.
-- `lead` rotates between `claude-sonnet-5-5-medium` (default, frontmatter) and `gemini-4-argon-medium`. Frontmatter cannot rotate by itself, so at the start of every task, and again whenever a request is rejected for quota or rate limit:
+- `builder` and `reviewer` pin `flash` in their frontmatter; never pass a `model` override when routing.
+- `lead` pins tier `pro` in frontmatter and rotates between `claude-sonnet-5-5-medium` and `gemini-4-argon-medium` via `/model` or `--model`. Frontmatter sets the tier (`pro`), so at the start of every task, and again whenever a request is rejected for quota or rate limit:
   1. check the remaining quota of the current model (`/model` or `/usage` in `agy`);
   2. if it is exhausted or low (under ~10%), switch to the other model with `/model` and record `Lead model: <name>` in the handoff;
   3. switch back once the other model's quota is restored. If both are exhausted, stop and tell the user.

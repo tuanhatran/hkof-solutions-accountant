@@ -394,18 +394,53 @@ async function confirmStatementReload() {
 }
 
 describe("HistoryPage", () => {
-  it("asks to configure a company when none exists", () => {
+  it("shows the empty state without requiring a company when none exists", () => {
     companiesState = readyQuery([] as CompanyDto[]);
     receiptsState = readyQuery([]);
     statementsState = readyQuery([]);
 
     renderPage();
 
-    expect(screen.getByText("Aucune société configurée")).toBeInTheDocument();
     expect(
-      screen.queryByText("Aucun document pour le moment"),
+      screen.queryByText("Aucune société configurée"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Aucun document pour le moment"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Générer une quittance" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Générer une note de frais" }),
     ).not.toBeInTheDocument();
     expect(statementsCompanyIds.at(-1)).toEqual([]);
+  });
+
+  it("displays rent receipt history in 1 column when no company is configured", async () => {
+    companiesState = readyQuery([] as CompanyDto[]);
+    receiptsState = readyQuery([RENT_FEB]);
+    statementsState = readyQuery([]);
+
+    renderPage();
+
+    expect(await screen.findByText("1 mois suivi")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Aucune société configurée"),
+    ).not.toBeInTheDocument();
+    expect(
+      document.querySelector('[data-cy="history-column-rent-receipt-2026-02"]'),
+    ).not.toBeNull();
+    expect(
+      document.querySelector('[data-cy="history-column-statement-2026-02"]'),
+    ).toBeNull();
+    expect(
+      document.querySelector(".history-month-section-columns-single"),
+    ).not.toBeNull();
+    expect(screen.getByText("Quittance (1)")).toBeInTheDocument();
+    expect(screen.queryByText("Note manquante")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Générer une note de frais" }),
+    ).not.toBeInTheDocument();
   });
 
   it("lists the documents of every company without an active company", async () => {

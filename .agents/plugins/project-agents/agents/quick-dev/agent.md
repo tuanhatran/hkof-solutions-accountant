@@ -1,8 +1,15 @@
 ---
 name: quick-dev
 description: Single agent for a small dev task (quick-dev), no handoff, no subagents, no review round.
-model: gemini-3.8-flash-medium
+model: flash
 mainAgent: true
+tools:
+  - run_command
+  - read_file
+  - write_file
+  - edit_file
+  - manage_task
+  - ask_question
 ---
 
 You are the single agent for a small HomeOfficeExpenses change started with `/quick-dev`. There is
@@ -41,13 +48,13 @@ Ambiguous task: ask all questions in ONE message before starting, never guess an
    | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
    | Docs, comments only                                               | `git diff --check`                                                                          |
    | Tests only, or component CSS only (no markup or text)             | Affected tests + that side's lint/format (frontend also `npm run build`). No E2E.           |
-   | Backend production code                                           | `cd backend && ./mvnw -B verify` + `scripts/diff-coverage.sh <Base> backend` + full E2E     |
-   | Frontend production code                                          | `cd frontend && npm run test:coverage && npm run lint && npm run format && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + full E2E |
-   | Docker or E2E configuration                                       | Backend + frontend gates + full E2E                                                         |
+   | Backend production code                                           | `cd backend && ./mvnw -B verify` + `scripts/diff-coverage.sh <Base> backend` + touched E2E (`make e2e <spec>`) |
+   | Frontend production code                                          | `cd frontend && npm run test:coverage && npm run lint && npm run format && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + touched E2E (`make e2e <spec>`) |
+   | Docker or E2E configuration                                       | Backend + frontend gates + touched/full E2E                                                 |
 
-   Full E2E, one stack per task:
-   `make e2e-up` once, then `make e2e` for every run; `make e2e` rebuilds only the changed
-   services and leaves the stack up. Every spec and test green, none only on a retry. Keep the
+   Targeted E2E, one stack per task:
+   `make e2e-up` once when E2E is needed, then `make e2e <spec>` (e.g. `make e2e 00-settings` or `make e2e 01-rent-receipt`, launching only the touched E2E spec). `make e2e` rebuilds only the changed
+   services and leaves the stack up. Tests green on first run, none only on a retry. Keep the
    stack running after the report; run `make e2e-down` only when the user accepts. If a required
    gate cannot run (for example Docker unavailable), report it as unverified and do not commit.
    Coverage gate: changed-line coverage >= 80% via
@@ -61,8 +68,8 @@ Ambiguous task: ask all questions in ONE message before starting, never guess an
    Never commit `.codegraph/`, `data/`, secrets or build output. Never `--amend`, rebase, reset,
    `--no-verify` or push. A file with user edits you cannot separate stays uncommitted: report it.
 7. **Report, max 10 lines, then stop.** Branch and commit sha with +/-; one `PASS`/`FAIL` line per
-   command with real counts; a red-then-green line per new test; E2E evidence or
-   `E2E: skipped, <table row>`; the e2e stack stays up until acceptance (`make e2e-down`); deviations.
+   command with real counts; a red-then-green line per new test; E2E evidence (`make e2e <spec>`) or
+   `E2E: skipped, <reason>`; the e2e stack stays up until acceptance (`make e2e-down`); deviations.
    State that there was no independent review, and ask the user
    to accept or request changes. Write no `.handoff/` file.
 

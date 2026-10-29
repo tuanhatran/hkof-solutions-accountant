@@ -13,7 +13,7 @@ import {
 import type { StatementDto } from "@/api/types";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ui/States";
+import { ErrorState, LoadingState } from "@/components/ui/States";
 import { formatMonth } from "@/lib/format";
 import { useStatementDraft } from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
@@ -37,6 +37,7 @@ export function HistoryPage() {
         .filter((id): id is number => typeof id === "number"),
     [companies.data],
   );
+  const hasCompany = companyIds.length > 0;
   // History spans every company: rent receipts are global, statements are
   // fetched once per company.
   const rentReceiptsQuery = useAllRentReceipts();
@@ -136,14 +137,16 @@ export function HistoryPage() {
               >
                 {t("history.empty.createRentReceipt")}
               </Button>
-              <Button
-                variant="secondary"
-                icon={<ReceiptText size={14} aria-hidden="true" />}
-                onClick={() => navigate("/generer/note-frais")}
-                data-cy="btn-new-expense-statement"
-              >
-                {t("history.empty.createStatement")}
-              </Button>
+              {hasCompany ? (
+                <Button
+                  variant="secondary"
+                  icon={<ReceiptText size={14} aria-hidden="true" />}
+                  onClick={() => navigate("/generer/note-frais")}
+                  data-cy="btn-new-expense-statement"
+                >
+                  {t("history.empty.createStatement")}
+                </Button>
+              ) : null}
               <span className="badge badge-neutral">
                 <History size={12} aria-hidden="true" />
                 {t("history.page.monthCount", { count: groups.length })}
@@ -161,15 +164,12 @@ export function HistoryPage() {
 
       {loading && groups.length === 0 ? (
         <LoadingState message={t("history.page.loading")} />
-      ) : companyIds.length === 0 ? (
-        <EmptyState
-          title={t("history.page.noCompanyTitle")}
-          description={t("history.page.noCompanyDescription")}
-        />
       ) : groups.length === 0 && !errorText ? (
         <HistoryEmptyState
           onCreateRentReceipt={() => navigate("/generer/quittance")}
-          onCreateStatement={() => navigate("/generer/note-frais")}
+          onCreateStatement={
+            hasCompany ? () => navigate("/generer/note-frais") : undefined
+          }
         />
       ) : (
         <div className="history-page-months" data-cy="history">
@@ -177,6 +177,7 @@ export function HistoryPage() {
             <HistoryMonthSection
               key={group.month}
               group={group}
+              hasCompany={hasCompany}
               onReloadStatement={setStatementToReload}
             />
           ))}

@@ -21,6 +21,10 @@
     @apply grid divide-y divide-line lg:grid-cols-2 lg:divide-x lg:divide-y-0;
   }
 
+  .history-month-section-columns-single {
+    @apply divide-y-0 lg:grid-cols-1 lg:divide-x-0;
+  }
+
   .history-month-section-column-title {
     @apply flex items-center gap-2.5 border-b border-line bg-paper/30 px-5 py-3 text-base font-semibold text-ink sm:px-6;
   }

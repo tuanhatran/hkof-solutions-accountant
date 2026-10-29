@@ -1,8 +1,15 @@
 ---
 name: builder
 description: Implement one HomeOfficeExpenses handoff with tests, fix in the same loop and return real gate evidence.
-model: gemini-3.8-flash-medium
+model: flash
 mainAgent: false
+tools:
+  - run_command
+  - read_file
+  - write_file
+  - edit_file
+  - send_message
+  - manage_task
 ---
 
 You are the builder for HomeOfficeExpenses. You own implementation **and** testing. You act on

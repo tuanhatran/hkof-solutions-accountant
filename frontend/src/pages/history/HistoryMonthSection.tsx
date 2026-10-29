@@ -14,9 +14,11 @@ import {
 /** Month card: one Quittance column and one Note de frais column. */
 export function HistoryMonthSection({
   group,
+  hasCompany = true,
   onReloadStatement,
 }: {
   group: MonthGroup;
+  hasCompany?: boolean;
   onReloadStatement: (statement: StatementDto) => void;
 }) {
   const { t } = useTranslation();
@@ -71,17 +73,27 @@ export function HistoryMonthSection({
                 })
               : t("history.month.rentReceiptMissing")}
           </span>
-          <span
-            className={statement ? "badge badge-accent" : "badge badge-neutral"}
-          >
-            {noteCount > 0
-              ? t("history.month.statementCount", { count: noteCount })
-              : t("history.month.statementMissing")}
-          </span>
+          {hasCompany ? (
+            <span
+              className={
+                statement ? "badge badge-accent" : "badge badge-neutral"
+              }
+            >
+              {noteCount > 0
+                ? t("history.month.statementCount", { count: noteCount })
+                : t("history.month.statementMissing")}
+            </span>
+          ) : null}
         </div>
       </div>
 
-      <div className="history-month-section-columns">
+      <div
+        className={
+          hasCompany
+            ? "history-month-section-columns"
+            : "history-month-section-columns history-month-section-columns-single"
+        }
+      >
         <section
           className="history-month-section-column"
           data-cy={`history-column-rent-receipt-${group.month}`}
@@ -112,35 +124,37 @@ export function HistoryMonthSection({
           )}
         </section>
 
-        <section
-          className="history-month-section-column"
-          data-cy={`history-column-statement-${group.month}`}
-        >
-          <h3 className="history-month-section-column-title">
-            <span className="history-month-section-column-icon history-month-section-column-icon-note">
-              <FileCheck2 size={15} aria-hidden="true" />
-            </span>
-            {t("history.month.statementColumn")}
-          </h3>
-          {statementAddresses.length === 0 ? (
-            <p className="history-month-section-empty">
-              {t("history.month.emptyStatements")}
-            </p>
-          ) : (
-            <>
-              {statementAddresses.map((address) => (
-                <HistoryAddressRow
-                  key={`statement-${address.addressKey}`}
-                  month={group.month}
-                  address={address}
-                  suffix={suffixOf(address)}
-                  documentType="statement"
-                  onReloadStatement={onReloadStatement}
-                />
-              ))}
-            </>
-          )}
-        </section>
+        {hasCompany ? (
+          <section
+            className="history-month-section-column"
+            data-cy={`history-column-statement-${group.month}`}
+          >
+            <h3 className="history-month-section-column-title">
+              <span className="history-month-section-column-icon history-month-section-column-icon-note">
+                <FileCheck2 size={15} aria-hidden="true" />
+              </span>
+              {t("history.month.statementColumn")}
+            </h3>
+            {statementAddresses.length === 0 ? (
+              <p className="history-month-section-empty">
+                {t("history.month.emptyStatements")}
+              </p>
+            ) : (
+              <>
+                {statementAddresses.map((address) => (
+                  <HistoryAddressRow
+                    key={`statement-${address.addressKey}`}
+                    month={group.month}
+                    address={address}
+                    suffix={suffixOf(address)}
+                    documentType="statement"
+                    onReloadStatement={onReloadStatement}
+                  />
+                ))}
+              </>
+            )}
+          </section>
+        ) : null}
       </div>
     </section>
   );
