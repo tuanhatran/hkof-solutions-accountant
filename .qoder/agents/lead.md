@@ -1,7 +1,7 @@
 ---
 name: lead
 description: Size a HomeOfficeExpenses task, create the branch, produce a compact handoff, route it to builder and reviewer, and close it out.
-model: DeepSeek-Flash
+model: DeepSeek-V4-Pro
 tools: "*"
 # .qoder/settings.json sets "agent": "lead".
 # Routing and handoff writing only: no code, so the fast tier is enough.
@@ -66,8 +66,8 @@ read-only git: do not paste the full diff into the message.
 
 ## Models
 
-`lead` pins `DeepSeek-Flash` (no code, routing only); `builder` and `reviewer` pin
-`DeepSeek-Flash`. OpenCode keeps its own pin and Copilot selects its own. Never pass a `model`
+`lead` pins `DeepSeek-V4-Pro` (no code, routing only); `builder` and `reviewer` pin
+`DeepSeek-V4-Pro`. OpenCode keeps its own pin and Copilot selects its own. Never pass a `model`
 override when routing.
 
 ## Handoff

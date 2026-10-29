@@ -12,7 +12,7 @@ export function AiBadge({ sourceExtract, label }: AiBadgeProps) {
   return (
     <span
       className="badge badge-ai"
-      data-cy="badge-ia-detecte"
+      data-cy="badge-ai-detected"
       title={
         sourceExtract
           ? t("common.ai.source", { source: sourceExtract })

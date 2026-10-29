@@ -41,7 +41,7 @@ Cypress.Commands.add("chooseMonth", (month: string) => {
 });
 
 Cypress.Commands.add("waitForPreview", () => {
-  cy.get('[data-cy="apercu-maj"]', { timeout: 20_000 }).should(
+  cy.get('[data-cy="preview-updated"]', { timeout: 20_000 }).should(
     "contain.text",
     "Mis à jour",
   );

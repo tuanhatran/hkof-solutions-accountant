@@ -108,7 +108,9 @@ describe("PdfViewer", () => {
       "data-file",
       "blob:preview",
     );
-    expect(document.querySelector('[data-cy="apercu-maj"]')).toHaveTextContent(
+    expect(
+      document.querySelector('[data-cy="preview-updated"]'),
+    ).toHaveTextContent(
       `Mis à jour à ${formatDateTime(updatedAt.toISOString())}`,
     );
     expect(screen.getByTestId("page")).toHaveAttribute("data-page", "1");
@@ -207,7 +209,7 @@ describe("PdfViewer", () => {
         url="blob:preview"
         onDownload={onDownload}
         actions={<span>Action</span>}
-        dataCy="apercu-personnalise"
+        dataCy="preview-custom"
         className="custom-class"
       />,
     );
@@ -216,7 +218,7 @@ describe("PdfViewer", () => {
     expect(screen.getByText("Aperçu du document")).toBeVisible();
     const section = screen
       .getByText("Aperçu du document")
-      .closest('[data-cy="apercu-personnalise"]');
+      .closest('[data-cy="preview-custom"]');
     expect(section).not.toBeNull();
     expect((section as HTMLElement).className).toContain("custom-class");
 

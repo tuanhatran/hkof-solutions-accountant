@@ -1,7 +1,7 @@
 ---
 name: quick-dev
 description: Single agent for a small dev task (/quick-dev), no handoff, no subagents, no review round.
-model: DeepSeek-Flash
+model: DeepSeek-V4-Pro
 disallowedTools: [Agent]
 # Select with "agent": "quick-dev" in .qoder/settings.local.json, or let /quick-dev read this file.
 ---

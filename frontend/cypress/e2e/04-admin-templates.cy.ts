@@ -97,7 +97,7 @@ describe("AI admin and templates", () => {
         force: true,
       },
     );
-    cy.get('[data-cy="analyse-statut"]', { timeout: 25_000 }).should(
+    cy.get('[data-cy="analysis-status"]', { timeout: 25_000 }).should(
       "contain.text",
       "désactivée",
     );
@@ -166,7 +166,7 @@ describe("AI admin and templates", () => {
     }).should("contain.text", "Quittance E2E");
 
     downloadAndReadPdf(
-      '[data-cy="btn-telecharger-apercu"]',
+      '[data-cy="btn-download-preview"]',
       "quittance_apercu.pdf",
       (text) => {
         expect(text).to.contain("QUITTANCE TEST E2E");

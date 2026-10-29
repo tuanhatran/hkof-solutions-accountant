@@ -188,7 +188,7 @@ export function SelectedFile({
           disabled={inProgress}
           className="file-dropzone-remove"
           aria-label={t("expenseStatement.dropzone.remove", { name })}
-          data-cy="btn-retirer-fichier"
+          data-cy="btn-remove-file"
         >
           <X size={16} />
         </button>

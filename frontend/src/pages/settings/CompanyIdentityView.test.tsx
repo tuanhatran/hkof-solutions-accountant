@@ -35,7 +35,9 @@ describe("CompanyIdentityView", () => {
     const onEdit = vi.fn();
     render(<CompanyIdentityView company={COMPANY} onEdit={onEdit} />);
 
-    expect(document.querySelector('[data-cy="company-information"]')).not.toBeNull();
+    expect(
+      document.querySelector('[data-cy="company-information"]'),
+    ).not.toBeNull();
     expect(rowValue("Raison sociale")).toBe("HKOF");
     expect(rowValue("Forme juridique")).toBe("EURL");
     expect(rowValue("SIREN")).toBe("123 456 789");
@@ -59,7 +61,9 @@ describe("CompanyIdentityView", () => {
 
     expect(rowValue("SIREN")).toBe("—");
     expect(rowValue("Gérant")).toBe("—");
-    expect(document.querySelector('[data-cy="company-information"] input')).toBeNull();
+    expect(
+      document.querySelector('[data-cy="company-information"] input'),
+    ).toBeNull();
   });
 
   it("renders every identity field in English and relabels without a reload", async () => {

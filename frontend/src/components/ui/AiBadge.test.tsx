@@ -7,7 +7,7 @@ describe("AiBadge", () => {
   it("shows the default label without a title", () => {
     render(<AiBadge />);
     const badge = screen.getByText("Détecté par IA");
-    expect(badge).toHaveAttribute("data-cy", "badge-ia-detecte");
+    expect(badge).toHaveAttribute("data-cy", "badge-ai-detected");
     expect(badge).not.toHaveAttribute("title");
   });
 
