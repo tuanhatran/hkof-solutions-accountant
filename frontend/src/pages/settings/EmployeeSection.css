@@ -9,20 +9,56 @@
     @apply space-y-4;
   }
 
+  .employee-section-header-actions {
+    @apply flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3;
+  }
+
+  .employee-section-header-search {
+    @apply w-full sm:w-56;
+  }
+
+  .employee-section-count {
+    @apply text-xs text-ink-soft;
+  }
+
+  .employee-section-mobile-sort {
+    @apply flex items-center gap-2;
+  }
+
+  .employee-section-mobile-sort-direction {
+    @apply shrink-0;
+  }
+
+  .employee-section-table {
+    @apply overflow-hidden rounded-lg border border-line bg-surface;
+  }
+
   .employee-section-list {
-    @apply divide-y divide-line overflow-hidden rounded-xl border border-line bg-paper/40;
+    @apply flex flex-col divide-y divide-line;
   }
 
   .employee-section-headers {
-    @apply grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1.8fr)_6.5rem_12rem] items-center gap-3 border-b border-line px-3 py-1.5 text-[11px] text-ink-soft;
+    @apply grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1.8fr)_6.5rem_12rem] items-stretch gap-3 border-b border-line bg-paper/50 px-4 text-[11px] font-medium uppercase tracking-wide text-ink-soft;
   }
 
   .employee-section-headers-signatures {
     @apply text-right;
   }
 
+  .employee-section-headers-actions {
+    @apply py-2.5 text-right;
+  }
+
+  .employee-section-sort {
+    @apply flex h-full w-full items-center gap-1 rounded-md py-2.5 text-left text-[11px] font-medium uppercase tracking-wide text-ink-soft transition-colors hover:bg-paper/80 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-surface;
+  }
+
+  .employee-section-sort-amount {
+    @apply justify-end text-right;
+  }
+
   .employee-section-item {
-    @apply grid gap-x-3 gap-y-1 px-3 py-2 md:min-h-9 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1.8fr)_6.5rem_12rem] md:items-center md:py-1.5;
+    @apply grid gap-x-3 gap-y-1 px-4 py-2 md:min-h-11 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1.8fr)_6.5rem_12rem] md:items-center md:py-1.5;
   }
 
   .employee-section-cell {

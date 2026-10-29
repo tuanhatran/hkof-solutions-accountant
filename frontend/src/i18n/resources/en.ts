@@ -830,6 +830,7 @@ export const en = {
         title: "Title",
         contact: "Contact details",
         signatures: "Signatures",
+        actions: "Actions",
       },
       add: "Add an employee",
       filterPlaceholder: "Filter employees…",

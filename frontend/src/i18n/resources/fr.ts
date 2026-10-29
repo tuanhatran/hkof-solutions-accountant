@@ -854,6 +854,7 @@ export const fr = {
         title: "Intitulé",
         contact: "Coordonnées",
         signatures: "Signatures",
+        actions: "Actions",
       },
       add: "Ajouter un salarié",
       filterPlaceholder: "Filtrer les salariés…",
