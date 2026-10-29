@@ -302,7 +302,7 @@ describe("EmployeeSection", () => {
     );
     expect(
       document.querySelector(
-        '[data-cy="dialogue-employee-form"] [data-cy="employee-form"]',
+        '[data-cy="dialog-employee-form"] [data-cy="employee-form"]',
       ),
     ).not.toBeNull();
 
@@ -310,7 +310,7 @@ describe("EmployeeSection", () => {
     await user.click(screen.getByRole("button", { name: "Annuler" }));
     expect(api.employees.create).not.toHaveBeenCalled();
     expect(
-      document.querySelector('[data-cy="dialogue-employee-form"]'),
+      document.querySelector('[data-cy="dialog-employee-form"]'),
     ).toBeNull();
 
     await user.click(
@@ -319,7 +319,7 @@ describe("EmployeeSection", () => {
     await user.keyboard("{Escape}");
     expect(api.employees.create).not.toHaveBeenCalled();
     expect(
-      document.querySelector('[data-cy="dialogue-employee-form"]'),
+      document.querySelector('[data-cy="dialog-employee-form"]'),
     ).toBeNull();
   });
 

@@ -248,8 +248,8 @@ describe("CompanyLeaseTab", () => {
 
     await user.click(queryByCy("company-lease-5") as HTMLElement);
 
-    expect(queryByCy("dialogue-frais-bail-societe")).toBeNull();
-    expect(queryByCy("dialogue-frais-generaux-societe")).toBeNull();
+    expect(queryByCy("dialog-company-lease-expenses")).toBeNull();
+    expect(queryByCy("dialog-company-general-expenses")).toBeNull();
     expect(api.companies.update).not.toHaveBeenCalled();
   });
 
@@ -263,7 +263,7 @@ describe("CompanyLeaseTab", () => {
 
     await user.click(opener);
 
-    const dialog = queryByCy("dialogue-frais-bail-societe") as HTMLElement;
+    const dialog = queryByCy("dialog-company-lease-expenses") as HTMLElement;
     expect(dialog).not.toBeNull();
     expect(
       within(dialog).getByRole("heading", { name: "Frais du bail" }),
@@ -276,7 +276,7 @@ describe("CompanyLeaseTab", () => {
 
     await user.keyboard("{Escape}");
 
-    expect(queryByCy("dialogue-frais-bail-societe")).toBeNull();
+    expect(queryByCy("dialog-company-lease-expenses")).toBeNull();
     expect(opener).toHaveFocus();
   });
 
@@ -336,7 +336,7 @@ describe("CompanyLeaseTab", () => {
     await waitFor(() =>
       expect(document.querySelector('[data-cy="item-form"]')).toBeNull(),
     );
-    expect(queryByCy("dialogue-frais-bail-societe")).not.toBeNull();
+    expect(queryByCy("dialog-company-lease-expenses")).not.toBeNull();
   });
 
   it("sorts from the column headers: inactive starts ascending, active toggles", async () => {
@@ -510,7 +510,7 @@ describe("CompanyLeaseTab", () => {
 
     await user.click(queryByCy("btn-add-company-lease") as HTMLElement);
 
-    expect(queryByCy("dialogue-lease-form")).not.toBeNull();
+    expect(queryByCy("dialog-lease-form")).not.toBeNull();
     expect(queryByCy("input-company-lease-type")).toBeChecked();
     expect(queryByCy("select-lease-company-tenant")).toHaveValue("1");
   });
@@ -565,7 +565,7 @@ describe("CompanyLeaseTab", () => {
 
     await user.click(queryByCy("btn-edit-company-lease-6") as HTMLElement);
 
-    expect(queryByCy("dialogue-lease-form")).not.toBeNull();
+    expect(queryByCy("dialog-lease-form")).not.toBeNull();
     expect(queryByCy("input-lease-address")).toHaveValue(
       "8 impasse des Acacias, 69003 Lyon",
     );
@@ -606,7 +606,7 @@ describe("CompanyLeaseTab", () => {
         }),
       ),
     );
-    await waitFor(() => expect(queryByCy("dialogue-lease-form")).toBeNull());
+    await waitFor(() => expect(queryByCy("dialog-lease-form")).toBeNull());
     await waitFor(() =>
       expect(queryByCy("company-lease-6")).toHaveTextContent(
         "9 rue Modifiée, 69003 Lyon",
@@ -620,10 +620,10 @@ describe("CompanyLeaseTab", () => {
     await waitFor(() => expect(queryByCy("company-lease-6")).not.toBeNull());
 
     await user.click(queryByCy("btn-edit-company-lease-6") as HTMLElement);
-    expect(queryByCy("dialogue-lease-form")).not.toBeNull();
+    expect(queryByCy("dialog-lease-form")).not.toBeNull();
     await user.click(screen.getByRole("button", { name: "Annuler" }));
 
-    expect(queryByCy("dialogue-lease-form")).toBeNull();
+    expect(queryByCy("dialog-lease-form")).toBeNull();
     expect(api.leases.update).not.toHaveBeenCalled();
     expect(api.companies.update).not.toHaveBeenCalled();
   });

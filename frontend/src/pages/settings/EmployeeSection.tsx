@@ -271,7 +271,7 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
           }
         }}
         onCancel={() => setToDelete(null)}
-        dataCy="dialogue-supprimer-salarie"
+        dataCy="dialog-delete-employee"
       />
     </section>
   );

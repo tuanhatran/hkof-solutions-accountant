@@ -120,7 +120,7 @@ export function TemplatesCard({
           }
         }}
         onCancel={() => c.setToDelete(null)}
-        dataCy="dialogue-supprimer-template"
+        dataCy="dialog-delete-template"
       />
 
       <ConfirmDialog
@@ -137,7 +137,7 @@ export function TemplatesCard({
         confirmLabel={t("templates.card.resetDialog.confirm")}
         onConfirm={() => c.resetMutation.mutate()}
         onCancel={() => c.setResetDialogOpen(false)}
-        dataCy="dialogue-modele-defaut"
+        dataCy="dialog-default-template"
       />
 
       {preview ? (

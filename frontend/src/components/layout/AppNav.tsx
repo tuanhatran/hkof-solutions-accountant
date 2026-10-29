@@ -37,13 +37,13 @@ export const SECTIONS: NavigationSection[] = [
         to: "/generer/quittance",
         labelKey: "navigation.links.rentReceipt",
         icon: FileText,
-        dataCy: "tab-quittance",
+        dataCy: "tab-rent-receipt",
       },
       {
         to: "/generer/note-frais",
         labelKey: "navigation.links.expenseStatement",
         icon: ReceiptText,
-        dataCy: "tab-note-frais",
+        dataCy: "tab-expense-statement",
       },
     ],
   },
@@ -54,7 +54,7 @@ export const SECTIONS: NavigationSection[] = [
         to: "/historique",
         labelKey: "navigation.links.history",
         icon: History,
-        dataCy: "tab-historique",
+        dataCy: "tab-history",
       },
     ],
   },
@@ -136,7 +136,7 @@ export function SideNavigation() {
             ))}
           </div>
           {section.groups?.map((group) => (
-            <div key={group.titleKey} data-cy={`groupe-${group.titleKey}`}>
+            <div key={group.titleKey} data-cy={`group-${group.titleKey}`}>
               <p className="app-nav-group">{t(group.titleKey)}</p>
               <div className="app-nav-links">
                 {group.links.map((link) => (

@@ -52,7 +52,7 @@ export function LeaseReceiptModal({
         aria-modal="true"
         aria-labelledby="lease-receipt-modal-title"
         className="animation-fade lease-receipt-modal-panel"
-        data-cy="dialogue-quittance-bail"
+        data-cy="dialog-lease-rent-receipt"
       >
         <div className="lease-receipt-modal-header">
           <div>

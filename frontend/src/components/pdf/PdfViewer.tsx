@@ -38,7 +38,7 @@ export function PdfViewer({
   updatedAt = null,
   onDownload,
   actions,
-  dataCy = "apercu-pdf",
+  dataCy = "pdf-preview",
   className,
 }: PdfViewerProps) {
   const { t } = useTranslation();

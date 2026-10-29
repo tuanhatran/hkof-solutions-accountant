@@ -216,7 +216,7 @@ describe("ExpenseItemsManager", () => {
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(
-      document.querySelector('[data-cy="dialogue-item-form"]'),
+      document.querySelector('[data-cy="dialog-item-form"]'),
     ).not.toBeNull();
     expect(
       screen.getByRole("heading", { name: "Ajouter un poste" }),
@@ -458,7 +458,7 @@ describe("ExpenseItemsManager", () => {
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(document.querySelector('[data-cy="item-form"]')).not.toBeNull();
-    expect(document.querySelector('[data-cy="dialogue-item-form"]')).toBeNull();
+    expect(document.querySelector('[data-cy="dialog-item-form"]')).toBeNull();
     expect(document.querySelector("table.expense-items-table")).toBeNull();
     expect(screen.queryByText("Loyer")).toBeNull();
 

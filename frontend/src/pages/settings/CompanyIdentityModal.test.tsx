@@ -69,7 +69,7 @@ describe("CompanyIdentityModal", () => {
     renderModal({ open: false });
 
     expect(
-      document.querySelector('[data-cy="dialogue-company-form"]'),
+      document.querySelector('[data-cy="dialog-company-form"]'),
     ).toBeNull();
   });
 

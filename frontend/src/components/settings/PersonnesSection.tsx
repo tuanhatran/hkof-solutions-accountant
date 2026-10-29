@@ -217,7 +217,7 @@ export function PersonnesSection() {
           }
         }}
         onCancel={() => setToDelete(null)}
-        dataCy="dialogue-supprimer-personne"
+        dataCy="dialog-delete-person"
       />
     </section>
   );

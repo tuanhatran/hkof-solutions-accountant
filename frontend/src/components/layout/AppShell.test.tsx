@@ -66,13 +66,13 @@ describe("AppShell", () => {
     ).toHaveAttribute("href", "/generer/quittance");
     expect(
       within(navigation).getByRole("link", { name: /Quittance/ }),
-    ).toHaveAttribute("data-cy", "tab-quittance");
+    ).toHaveAttribute("data-cy", "tab-rent-receipt");
     expect(
       within(navigation).getByRole("link", { name: /Note de frais/ }),
     ).toHaveAttribute("href", "/generer/note-frais");
     expect(
       within(navigation).getByRole("link", { name: /Note de frais/ }),
-    ).toHaveAttribute("data-cy", "tab-note-frais");
+    ).toHaveAttribute("data-cy", "tab-expense-statement");
     expect(
       within(navigation).getByRole("link", { name: /Société/ }),
     ).toHaveAttribute("href", "/configuration/entreprise");
@@ -84,7 +84,7 @@ describe("AppShell", () => {
       name: /Historique/,
     });
     expect(historyLink).toHaveAttribute("href", "/historique");
-    expect(historyLink).toHaveAttribute("data-cy", "tab-historique");
+    expect(historyLink).toHaveAttribute("data-cy", "tab-history");
     expect(historyLink.className).toContain("app-nav-link-active");
     expect(historyLink.querySelector(".app-nav-icon-active")).not.toBeNull();
 
@@ -156,7 +156,7 @@ describe("AppShell", () => {
     renderShell("/generer/quittance");
 
     const dialog = screen.getByRole("dialog");
-    expect(dialog).toHaveAttribute("data-cy", "dialogue-quitter");
+    expect(dialog).toHaveAttribute("data-cy", "dialog-leave");
     expect(screen.getByText("Modifications non enregistrées")).toBeVisible();
     expect(screen.getByText(/Des modifications de ce brouillon/)).toBeVisible();
     expect(
@@ -280,7 +280,7 @@ describe("AppShell", () => {
     ).toHaveAttribute("href", "/generer/note-frais");
     expect(
       within(navigation).getByRole("link", { name: /History/ }),
-    ).toHaveAttribute("data-cy", "tab-historique");
+    ).toHaveAttribute("data-cy", "tab-history");
     expect(
       within(navigation).getByRole("link", { name: /Company/ }),
     ).toHaveAttribute("href", "/configuration/entreprise");

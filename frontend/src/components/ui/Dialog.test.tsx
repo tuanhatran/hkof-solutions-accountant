@@ -13,7 +13,7 @@ function renderDialog(overrides: Partial<Parameters<typeof Dialog>[0]> = {}) {
       open
       title="Frais du bail"
       onClose={onClose}
-      dataCy="dialogue-frais"
+      dataCy="dialog-expense"
       {...overrides}
     >
       <button type="button">Ajouter un poste</button>
@@ -28,7 +28,7 @@ describe("Dialog", () => {
     const dialog = screen.getByRole("dialog");
 
     expect(dialog).toHaveAttribute("aria-modal", "true");
-    expect(dialog).toHaveAttribute("data-cy", "dialogue-frais");
+    expect(dialog).toHaveAttribute("data-cy", "dialog-expense");
     expect(
       screen.getByRole("heading", { name: "Frais du bail" }),
     ).toBeVisible();
@@ -69,7 +69,7 @@ describe("Dialog", () => {
     render(
       <>
         <button type="button">Hors dialogue</button>
-        <Dialog open title="Frais" onClose={vi.fn()} dataCy="dialogue-frais">
+        <Dialog open title="Frais" onClose={vi.fn()} dataCy="dialog-expense">
           <button type="button">Premier</button>
           <button type="button">Dernier</button>
         </Dialog>
@@ -107,7 +107,7 @@ describe("Dialog", () => {
             open={open}
             title="Frais"
             onClose={() => setOpen(false)}
-            dataCy="dialogue-frais"
+            dataCy="dialog-expense"
           >
             <button type="button">Annuler</button>
           </Dialog>
@@ -132,7 +132,7 @@ describe("Dialog", () => {
     const onCancel = vi.fn();
     render(
       <>
-        <Dialog open title="Frais" onClose={onClose} dataCy="dialogue-frais">
+        <Dialog open title="Frais" onClose={onClose} dataCy="dialog-expense">
           <button type="button">Interne</button>
         </Dialog>
         <ConfirmDialog
@@ -140,7 +140,7 @@ describe("Dialog", () => {
           title="Retirer ce poste ?"
           onConfirm={vi.fn()}
           onCancel={onCancel}
-          dataCy="dialogue-supprimer-poste"
+          dataCy="dialog-delete-item"
         />
       </>,
     );
@@ -158,7 +158,7 @@ describe("Dialog", () => {
         open={false}
         title="Frais"
         onClose={onClose}
-        dataCy="dialogue-frais"
+        dataCy="dialog-expense"
       >
         <button type="button">Interne</button>
       </Dialog>,
@@ -166,7 +166,7 @@ describe("Dialog", () => {
     expect(container).toBeEmptyDOMElement();
 
     rerender(
-      <Dialog open title="Frais" onClose={onClose} dataCy="dialogue-frais">
+      <Dialog open title="Frais" onClose={onClose} dataCy="dialog-expense">
         <button type="button">Interne</button>
       </Dialog>,
     );
@@ -177,7 +177,7 @@ describe("Dialog", () => {
         open={false}
         title="Frais"
         onClose={onClose}
-        dataCy="dialogue-frais"
+        dataCy="dialog-expense"
       >
         <button type="button">Interne</button>
       </Dialog>,

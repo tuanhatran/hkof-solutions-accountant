@@ -94,7 +94,7 @@ describe("Expense statement — finalization", () => {
       },
     );
 
-    cy.get('[data-cy="tab-historique"]').click();
+    cy.get('[data-cy="tab-history"]').click();
 
     cy.visit("/generer/note-frais");
     cy.contains("note version 1 déjà active", { timeout: 20_000 }).should(
@@ -103,10 +103,10 @@ describe("Expense statement — finalization", () => {
     cy.get('[data-cy="btn-generate-statement"]')
       .should("not.be.disabled")
       .click();
-    cy.get('[data-cy="dialogue-regeneration-note"]').should("be.visible");
-    cy.get('[data-cy="dialogue-confirmer"]').click();
+    cy.get('[data-cy="dialog-statement-regeneration"]').should("be.visible");
+    cy.get('[data-cy="dialog-confirm"]').click();
     cy.contains("version 2", { timeout: 35_000 }).should("be.visible");
 
-    cy.get('[data-cy="tab-historique"]').click();
+    cy.get('[data-cy="tab-history"]').click();
   });
 });

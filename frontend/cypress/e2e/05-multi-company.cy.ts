@@ -75,15 +75,15 @@ function openFirstLeaseExpenses(): void {
   cy.get('[data-cy^="btn-edit-company-lease-expenses-"]', { timeout: 20_000 })
     .first()
     .click();
-  cy.get('[data-cy="dialogue-frais-bail-societe"]').should("be.visible");
+  cy.get('[data-cy="dialog-company-lease-expenses"]').should("be.visible");
 }
 
 /** Closes the lease expenses dialog through its header close button. */
 function closeLeaseExpenses(): void {
   cy.get(
-    '[data-cy="dialogue-frais-bail-societe"] button[aria-label="Fermer"]',
+    '[data-cy="dialog-company-lease-expenses"] button[aria-label="Fermer"]',
   ).click();
-  cy.get('[data-cy="dialogue-frais-bail-societe"]').should("not.exist");
+  cy.get('[data-cy="dialog-company-lease-expenses"]').should("not.exist");
 }
 
 function companies(): Cypress.Chainable<CompanySummary[]> {
@@ -246,7 +246,7 @@ function createAnnexeCompany(): void {
   waitForText('[data-cy="company-information"]', SEEDED_COMPANY);
 
   cy.get('[data-cy="btn-new-company"]').click();
-  cy.get('[data-cy="dialogue-company-form"]').should("be.visible");
+  cy.get('[data-cy="dialog-company-form"]').should("be.visible");
   cy.get('[data-cy="select-company"]').should("be.visible");
   cy.get('[data-cy="input-legal-name"]').clear().type(ANNEXE_COMPANY.name);
   cy.get('[data-cy="input-siren"]').clear().type(ANNEXE_COMPANY.siren);
@@ -277,7 +277,7 @@ function createAnnexeCompany(): void {
     createAnnexeLease(annexe.id).then((leaseId) => {
       cy.get('[data-cy="tab-configuration"]').click();
       cy.get('[data-cy="select-company"]').select(String(annexe.id));
-      cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+      cy.get('[data-cy="tab-company-lease-expenses"]').click();
 
       // The Baux & Frais tab is a five-column grid; the row is inert and
       // carries no active-lease state.
@@ -287,13 +287,13 @@ function createAnnexeCompany(): void {
         .and("not.have.attr", "aria-expanded");
       cy.intercept("PUT", "/api/companies/*").as("updateCompany");
       cy.get(`[data-cy="company-lease-${leaseId}"]`).click();
-      cy.get('[data-cy="dialogue-frais-bail-societe"]').should("not.exist");
+      cy.get('[data-cy="dialog-company-lease-expenses"]').should("not.exist");
       cy.get("@updateCompany.all").should("have.length", 0);
 
       // "Modifier les frais" opens the expenses dialog scoped to the lease,
       // still without persisting the lease on the company.
       cy.get(`[data-cy="btn-edit-company-lease-expenses-${leaseId}"]`).click();
-      cy.get('[data-cy="dialogue-frais-bail-societe"]')
+      cy.get('[data-cy="dialog-company-lease-expenses"]')
         .should("be.visible")
         .and("contain.text", ANNEXE_LEASE.propertyAddress);
       cy.get('[role="dialog"]').should("have.length", 1);
@@ -306,7 +306,7 @@ function createAnnexeCompany(): void {
         cy.reload();
         cy.get('[data-cy="tab-configuration"]').click();
         cy.get('[data-cy="select-company"]').select(String(annexe.id));
-        cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+        cy.get('[data-cy="tab-company-lease-expenses"]').click();
 
         // "Ajouter un bail": the LMNP form opens with "Bail société" checked
         // and the company prefilled as tenant.
@@ -401,7 +401,7 @@ function createAnnexeCompany(): void {
           cy.get(
             `[data-cy="btn-edit-company-lease-expenses-${secondLeaseId}"]`,
           ).click();
-          cy.get('[data-cy="dialogue-frais-bail-societe"]')
+          cy.get('[data-cy="dialog-company-lease-expenses"]')
             .should("be.visible")
             .and("contain.text", ANNEXE_SECOND_LEASE.propertyAddress)
             .and("not.contain.text", ANNEXE_LEASE.propertyAddress);
@@ -411,7 +411,9 @@ function createAnnexeCompany(): void {
 
           // The row stays inert: a click never opens the dialog.
           cy.get(`[data-cy="company-lease-${secondLeaseId}"]`).click();
-          cy.get('[data-cy="dialogue-frais-bail-societe"]').should("not.exist");
+          cy.get('[data-cy="dialog-company-lease-expenses"]').should(
+            "not.exist",
+          );
           cy.get("@updateCompany.all").should("have.length", 0);
         });
       });
@@ -423,7 +425,7 @@ function createAnnexeCompany(): void {
 function createAnnexeEmployee(companyId: number): void {
   cy.get('[data-cy="tab-configuration"]').click();
   cy.get('[data-cy="select-company"]').should("have.value", String(companyId));
-  cy.get('[data-cy="onglet-entreprise-salaries"]').click();
+  cy.get('[data-cy="tab-company-employees"]').click();
   cy.get('[data-cy="no-employee"]').should("be.visible");
 
   cy.get('[data-cy="btn-add-employee"]').click();
@@ -470,10 +472,10 @@ function createAnnexeEmployee(companyId: number): void {
 function createAnnexeExpenseItem(companyId: number): void {
   // The employee modal stays open after creation for signatures; close it here.
   cy.contains("button", "Annuler").click();
-  cy.get('[data-cy="dialogue-employee-form"]').should("not.exist");
+  cy.get('[data-cy="dialog-employee-form"]').should("not.exist");
   cy.get('[data-cy="tab-configuration"]').click();
   cy.get('[data-cy="select-company"]').should("have.value", String(companyId));
-  cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+  cy.get('[data-cy="tab-company-lease-expenses"]').click();
   // Every lease row exposes its expenses through the scoped dialog.
   openFirstLeaseExpenses();
   cy.contains("Aucun poste configuré.", { timeout: 20_000 }).should(
@@ -482,7 +484,7 @@ function createAnnexeExpenseItem(companyId: number): void {
 
   cy.get('[data-cy="btn-add-item"]').click();
   cy.get('[data-cy="item-form"]').should("be.visible");
-  cy.get('[data-cy="dialogue-item-form"]').should("not.exist");
+  cy.get('[data-cy="dialog-item-form"]').should("not.exist");
   cy.get("#item-code").type("gaz");
   cy.get('[data-cy="input-item-label"]').type("Gaz annexe");
   cy.get('[data-cy="input-item-supplier"]').type("EDF");
@@ -507,7 +509,7 @@ function assertSettingsIsolation(
 ): void {
   cy.get('[data-cy="select-company"]').select(String(seededCompanyId));
   waitForText('[data-cy="company-information"]', SEEDED_COMPANY);
-  cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+  cy.get('[data-cy="tab-company-lease-expenses"]').click();
   openFirstLeaseExpenses();
   cy.contains("td", "Téléphone", { timeout: 20_000 }).should("be.visible");
   cy.contains("td", "Gaz annexe").should("not.exist");
@@ -515,7 +517,7 @@ function assertSettingsIsolation(
 
   cy.get('[data-cy="select-company"]').select(String(annexeCompanyId));
   waitForText('[data-cy="company-information"]', ANNEXE_COMPANY.name);
-  cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+  cy.get('[data-cy="tab-company-lease-expenses"]').click();
   openFirstLeaseExpenses();
   cy.contains("td", "Gaz annexe", { timeout: 20_000 }).should("be.visible");
   cy.contains("td", "Téléphone").should("not.exist");
@@ -528,14 +530,14 @@ function assertEmployeeIsolation(
 ): void {
   cy.get('[data-cy="tab-configuration"]').click();
   cy.get('[data-cy="select-company"]').select(String(seededCompanyId));
-  cy.get('[data-cy="onglet-entreprise-salaries"]').click();
+  cy.get('[data-cy="tab-company-employees"]').click();
   cy.contains('[data-cy^="employee-"]', "Gérant", { timeout: 20_000 }).should(
     "be.visible",
   );
   cy.contains('[data-cy^="employee-"]', "Alice Martin").should("not.exist");
 
   cy.get('[data-cy="select-company"]').select(String(annexeCompanyId));
-  cy.get('[data-cy="onglet-entreprise-salaries"]').click();
+  cy.get('[data-cy="tab-company-employees"]').click();
   cy.contains('[data-cy^="employee-"]', "Alice Martin", {
     timeout: 20_000,
   }).should("be.visible");
@@ -621,7 +623,7 @@ describe("Multi-company and employees", () => {
 
       // History fans out one statement query per company: both notes show up
       // with their own lease address, without any global company switch.
-      cy.get('[data-cy="tab-historique"]').click();
+      cy.get('[data-cy="tab-history"]').click();
       cy.get('[data-cy="history-month-2026-01"]', {
         timeout: 20_000,
       }).should("be.visible");

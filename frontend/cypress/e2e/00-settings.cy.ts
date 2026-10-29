@@ -19,11 +19,11 @@ describe("Settings", () => {
 
     // Prorata is read-only on the Baux & Frais tab; its lease grid is visible
     // right away, without any expansion step.
-    cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+    cy.get('[data-cy="tab-company-lease-expenses"]').click();
     cy.get('[data-cy^="company-lease-"]', { timeout: 20_000 }).should("exist");
 
     // Identity edits go through the modal.
-    cy.get('[data-cy="onglet-entreprise-identification"]').click();
+    cy.get('[data-cy="tab-company-identification"]').click();
     cy.get('[data-cy="btn-edit-company"]').click();
     waitForValue('[data-cy="input-legal-name"]', "HKOF");
     cy.get('[data-cy="input-legal-name"]').clear().type("HKOF E2E");
@@ -31,7 +31,7 @@ describe("Settings", () => {
     cy.contains("Société enregistrée.", { timeout: 15_000 }).should(
       "be.visible",
     );
-    cy.get('[data-cy="dialogue-company-form"]').should("not.exist");
+    cy.get('[data-cy="dialog-company-form"]').should("not.exist");
 
     cy.reload();
     waitForText('[data-cy="company-information"]', "HKOF E2E");
@@ -42,7 +42,7 @@ describe("Settings", () => {
     cy.get('[data-cy="company-information"]', { timeout: 20_000 }).should(
       "be.visible",
     );
-    cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+    cy.get('[data-cy="tab-company-lease-expenses"]').click();
     cy.get('[data-cy^="company-lease-"]', { timeout: 20_000 }).should("exist");
 
     // No list toolbar and no company-level expenses action on this tab.
@@ -110,7 +110,7 @@ describe("Settings", () => {
     cy.get('[data-cy="company-information"]', { timeout: 20_000 }).should(
       "be.visible",
     );
-    cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+    cy.get('[data-cy="tab-company-lease-expenses"]').click();
 
     cy.get('[data-cy="sort-company-leases-compact"]', { timeout: 20_000 })
       .should("be.visible")
@@ -131,7 +131,7 @@ describe("Settings", () => {
 
   it("edits the seeded lease amounts in the LMNP Baux et adresses tab", () => {
     cy.visit("/configuration/lmnp");
-    cy.get('[data-cy="onglet-baux"]').should(
+    cy.get('[data-cy="tab-leases"]').should(
       "have.attr",
       "aria-selected",
       "true",
@@ -164,7 +164,7 @@ describe("Settings", () => {
 
   it("adds, edits then removes a natural person in the Personnes tab", () => {
     cy.visit("/configuration/lmnp");
-    cy.get('[data-cy="onglet-personnes"]').click();
+    cy.get('[data-cy="tab-persons"]').click();
 
     cy.get('[data-cy="btn-add-person"]').click();
     cy.get('[data-cy="person-form"]').should("be.visible");
@@ -186,7 +186,7 @@ describe("Settings", () => {
     personByName("Personne E2E").then((person) => {
       expect(person.issuePlace, "issue place persisted").to.eq("Lyon");
       cy.get(
-        '[data-cy="dialogue-person-form"] button[aria-label="Fermer"]',
+        '[data-cy="dialog-person-form"] button[aria-label="Fermer"]',
       ).click();
       cy.get('[data-cy="person-form"]').should("not.exist");
       cy.get(`[data-cy="person-${person.id}"]`)
@@ -208,7 +208,7 @@ describe("Settings", () => {
         .should("eq", "Marseille");
 
       cy.get(
-        '[data-cy="dialogue-person-form"] button[aria-label="Fermer"]',
+        '[data-cy="dialog-person-form"] button[aria-label="Fermer"]',
       ).click();
       cy.get(`[data-cy="person-${person.id}"]`).should(
         "contain.text",
@@ -216,8 +216,8 @@ describe("Settings", () => {
       );
 
       cy.get(`[data-cy="btn-delete-person-${person.id}"]`).click();
-      cy.get('[data-cy="dialogue-supprimer-personne"]').should("be.visible");
-      cy.get('[data-cy="dialogue-confirmer"]').click();
+      cy.get('[data-cy="dialog-delete-person"]').should("be.visible");
+      cy.get('[data-cy="dialog-confirm"]').click();
 
       cy.contains("Personne supprimée.", { timeout: 15_000 }).should(
         "be.visible",
@@ -236,7 +236,7 @@ describe("Settings", () => {
       "be.visible",
     );
 
-    cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+    cy.get('[data-cy="tab-company-lease-expenses"]').click();
     // "Modifier les frais" opens the lease expenses dialog; the item form swaps
     // inside that same window, never as a stacked dialog.
     cy.get('[data-cy^="btn-edit-company-lease-expenses-"]', {
@@ -244,11 +244,11 @@ describe("Settings", () => {
     })
       .first()
       .click();
-    cy.get('[data-cy="dialogue-frais-bail-societe"]').should("be.visible");
+    cy.get('[data-cy="dialog-company-lease-expenses"]').should("be.visible");
     cy.get('[role="dialog"]').should("have.length", 1);
     cy.get('[data-cy="btn-add-item"]').click();
     cy.get('[data-cy="item-form"]').should("be.visible");
-    cy.get('[data-cy="dialogue-item-form"]').should("not.exist");
+    cy.get('[data-cy="dialog-item-form"]').should("not.exist");
     cy.get('[role="dialog"]').should("have.length", 1);
     cy.get("#item-code").type("internet-pro");
     cy.get('[data-cy="input-item-label"]').type("Internet pro");
@@ -272,22 +272,22 @@ describe("Settings", () => {
     cy.contains("td", "60 %").should("be.visible");
 
     cy.get('[data-cy="btn-delete-item-internet_pro"]').click();
-    cy.get('[data-cy="dialogue-supprimer-poste"]').should("be.visible");
-    cy.get('[data-cy="dialogue-confirmer"]').click();
+    cy.get('[data-cy="dialog-delete-item"]').should("be.visible");
+    cy.get('[data-cy="dialog-confirm"]').click();
 
     cy.contains("td", "Internet pro fibre", { timeout: 15_000 }).should(
       "not.exist",
     );
 
     cy.get(
-      '[data-cy="dialogue-frais-bail-societe"] button[aria-label="Fermer"]',
+      '[data-cy="dialog-company-lease-expenses"] button[aria-label="Fermer"]',
     ).click();
-    cy.get('[data-cy="dialogue-frais-bail-societe"]').should("not.exist");
+    cy.get('[data-cy="dialog-company-lease-expenses"]').should("not.exist");
   });
 
   it("adds a signature to the seeded natural person from her form", () => {
     cy.visit("/configuration/lmnp");
-    cy.get('[data-cy="onglet-personnes"]').click();
+    cy.get('[data-cy="tab-persons"]').click();
 
     personByName(SEEDED_LANDLORD).then((landlord) => {
       cy.get(`[data-cy="btn-edit-person-${landlord.id}"]`).click();

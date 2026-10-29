@@ -62,7 +62,7 @@ describe("AI admin and templates", () => {
     configureLlm({ url: "http://127.0.0.1:11499" });
     createRentReceipt();
     cy.visit("/admin");
-    cy.get('[data-cy="badge-llm-status"]', { timeout: 30_000 })
+    cy.get('[data-cy="llm-status-badge"]', { timeout: 30_000 })
       .first()
       .should("contain.text", "IA injoignable");
     cy.get('[data-cy="llm-status"]').should("contain.text", "Injoignable");
@@ -85,7 +85,7 @@ describe("AI admin and templates", () => {
     cy.visit("/generer/note-frais");
     cy.chooseMonth(MONTHS);
 
-    cy.get('[data-cy="badge-llm-status"]', { timeout: 20_000 })
+    cy.get('[data-cy="llm-status-badge"]', { timeout: 20_000 })
       .first()
       .should("contain.text", "IA désactivée");
     cy.get('[data-cy="select-expense-type"]').should("not.be.disabled");
@@ -112,7 +112,7 @@ describe("AI admin and templates", () => {
 
   it("imports, previews, activates a template then reverts to the built-in model", () => {
     cy.visit("/configuration/lmnp");
-    cy.get('[data-cy="onglet-lmnp-templates"]').click();
+    cy.get('[data-cy="tab-lmnp-templates"]').click();
     cy.get('[data-cy="dropzone-rent-receipt-template"]', {
       timeout: 20_000,
     }).should("exist");
@@ -194,7 +194,7 @@ describe("AI admin and templates", () => {
     );
 
     cy.visit("/configuration/lmnp");
-    cy.get('[data-cy="onglet-lmnp-templates"]').click();
+    cy.get('[data-cy="tab-lmnp-templates"]').click();
     cy.get('[data-cy="input-template-name"]', { timeout: 20_000 })
       .first()
       .clear()
@@ -209,8 +209,8 @@ describe("AI admin and templates", () => {
     }).should("be.visible");
 
     cy.get('[data-cy="btn-default-template"]').first().click();
-    cy.get('[data-cy="dialogue-modele-defaut"]').should("be.visible");
-    cy.get('[data-cy="dialogue-confirmer"]').click();
+    cy.get('[data-cy="dialog-default-template"]').should("be.visible");
+    cy.get('[data-cy="dialog-confirm"]').click();
     cy.contains("li", "Quittance — modèle intégré", { timeout: 20_000 }).should(
       "contain.text",
       "active",

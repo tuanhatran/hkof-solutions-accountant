@@ -264,7 +264,7 @@ export function ExpenseItemsManager({
           }
         }}
         onCancel={() => setToDelete(null)}
-        dataCy="dialogue-supprimer-poste"
+        dataCy="dialog-delete-item"
       />
     </section>
   );

@@ -91,7 +91,7 @@ describe("CompanyLeaseExpensesModal", () => {
     renderModal();
 
     const dialog = screen.getByRole("dialog", { name: "Frais du bail" });
-    expect(dialog).toHaveAttribute("data-cy", "dialogue-frais-bail-societe");
+    expect(dialog).toHaveAttribute("data-cy", "dialog-company-lease-expenses");
     expect(dialog).toHaveTextContent("8 impasse des Acacias, 69003 Lyon");
     await waitFor(() =>
       expect(api.expenseItems.list).toHaveBeenCalledWith(1, true, 6),
@@ -106,10 +106,10 @@ describe("CompanyLeaseExpensesModal", () => {
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(
-      document.querySelector('[data-cy="dialogue-frais-bail-societe"]'),
+      document.querySelector('[data-cy="dialog-company-lease-expenses"]'),
     ).not.toBeNull();
     expect(document.querySelector('[data-cy="item-form"]')).not.toBeNull();
-    expect(document.querySelector('[data-cy="dialogue-item-form"]')).toBeNull();
+    expect(document.querySelector('[data-cy="dialog-item-form"]')).toBeNull();
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
       "25,00",

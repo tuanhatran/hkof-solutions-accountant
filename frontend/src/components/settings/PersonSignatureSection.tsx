@@ -253,7 +253,7 @@ export function PersonSignatureSection({ personId }: { personId: number }) {
           }
         }}
         onCancel={() => setToDelete(null)}
-        dataCy="dialogue-supprimer-signature-personne"
+        dataCy="dialog-delete-person-signature"
       />
     </div>
   );

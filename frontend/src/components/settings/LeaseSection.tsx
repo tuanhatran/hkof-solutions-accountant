@@ -300,7 +300,7 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
           }
         }}
         onCancel={() => c.setLeaseToDelete(null)}
-        dataCy="dialogue-supprimer-bail"
+        dataCy="dialog-delete-lease"
       />
 
       {receiptLease ? (

@@ -366,8 +366,8 @@ describe("Expense statement — entry and preview", () => {
     cy.get('[data-cy="expense-line-gaz"]').should("contain.text", "35,71 %");
 
     cy.get('[data-cy="btn-delete-gaz"]').click();
-    cy.get('[data-cy="dialogue-suppression-frais"]').should("be.visible");
-    cy.get('[data-cy="dialogue-confirmer"]').click();
+    cy.get('[data-cy="dialog-expense-deletion"]').should("be.visible");
+    cy.get('[data-cy="dialog-confirm"]').click();
     cy.get('[data-cy="expense-line-gaz"]').should("not.exist");
     cy.wait("@preview", { timeout: 30_000 });
     cy.waitForPreview();

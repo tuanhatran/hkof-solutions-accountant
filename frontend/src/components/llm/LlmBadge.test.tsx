@@ -48,7 +48,7 @@ describe("LlmBadge", () => {
     renderBadge();
 
     const badge = screen.getByText(label);
-    expect(badge).toHaveAttribute("data-cy", "badge-llm-status");
+    expect(badge).toHaveAttribute("data-cy", "llm-status-badge");
     expect(badge).toHaveAttribute("title", "Message du statut");
   });
 

@@ -619,7 +619,7 @@ describe("GenerateRentReceiptPage", () => {
       expect(api.rentReceipts.create).toHaveBeenCalledTimes(1),
     );
     expect(
-      document.querySelector('[data-cy="dialogue-regeneration-quittance"]'),
+      document.querySelector('[data-cy="dialog-rent-receipt-regeneration"]'),
     ).toBeNull();
   });
 

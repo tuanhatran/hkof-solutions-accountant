@@ -94,7 +94,7 @@ describe("ExpenseItemForm", () => {
 
     expect(
       document.querySelector(
-        '[data-cy="dialogue-item-form"] [data-cy="item-form"]',
+        '[data-cy="dialog-item-form"] [data-cy="item-form"]',
       ),
     ).not.toBeNull();
 
@@ -370,7 +370,7 @@ describe("ExpenseItemForm", () => {
 
     const form = document.querySelector('[data-cy="item-form"]');
     expect(form).not.toBeNull();
-    expect(document.querySelector('[data-cy="dialogue-item-form"]')).toBeNull();
+    expect(document.querySelector('[data-cy="dialog-item-form"]')).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.getByLabelText("Code")).toHaveValue("");
     expect(screen.getByLabelText("Libellé affiché")).toBeVisible();

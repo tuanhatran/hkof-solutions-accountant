@@ -154,7 +154,7 @@ export function GenerateExpenseStatementPage() {
         variant="danger"
         onConfirm={c.removeLine}
         onCancel={() => c.setLineToRemove(null)}
-        dataCy="dialogue-suppression-frais"
+        dataCy="dialog-expense-deletion"
       />
 
       <ConfirmDialog
@@ -171,7 +171,7 @@ export function GenerateExpenseStatementPage() {
           void c.generateStatement();
         }}
         onCancel={() => c.setRegenerationDialog(false)}
-        dataCy="dialogue-regeneration-note"
+        dataCy="dialog-statement-regeneration"
       />
     </>
   );

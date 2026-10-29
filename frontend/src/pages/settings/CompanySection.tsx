@@ -27,25 +27,25 @@ export function CompanySection() {
     {
       value: "identification",
       label: t("settings.company.tabs.identification"),
-      dataCy: "onglet-entreprise-identification",
+      dataCy: "tab-company-identification",
       panelId: "company-section-panel",
     },
     {
       value: "bail-frais",
       label: t("settings.company.tabs.leaseExpenses"),
-      dataCy: "onglet-entreprise-bail-frais",
+      dataCy: "tab-company-lease-expenses",
       panelId: "company-section-panel",
     },
     {
       value: "salaries",
       label: t("settings.company.tabs.employees"),
-      dataCy: "onglet-entreprise-salaries",
+      dataCy: "tab-company-employees",
       panelId: "company-section-panel",
     },
     {
       value: "templates",
       label: t("settings.company.tabs.templates"),
-      dataCy: "onglet-entreprise-templates",
+      dataCy: "tab-company-templates",
       panelId: "company-section-panel",
     },
   ];
@@ -248,7 +248,7 @@ export function CompanySection() {
           }
         }}
         onCancel={() => setToDelete(null)}
-        dataCy="dialogue-supprimer-societe"
+        dataCy="dialog-delete-company"
       />
     </div>
   );

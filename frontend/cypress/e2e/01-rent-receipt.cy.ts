@@ -148,7 +148,9 @@ describe("Rent receipt", () => {
       cy.get('[data-cy="btn-generate-rent-receipt"]')
         .should("not.be.disabled")
         .click();
-      cy.get('[data-cy="dialogue-regeneration-quittance"]').should("not.exist");
+      cy.get('[data-cy="dialog-rent-receipt-regeneration"]').should(
+        "not.exist",
+      );
       cy.contains("version 2", { timeout: 25_000 }).should("be.visible");
 
       cy.request<RentReceiptSummary[]>(
@@ -174,7 +176,7 @@ describe("Rent receipt", () => {
         });
       });
 
-      cy.get('[data-cy="tab-historique"]').click();
+      cy.get('[data-cy="tab-history"]').click();
       const group = '[data-cy="history-month-2026-01"]';
       cy.get(group, { timeout: 20_000 }).should(
         "contain.text",
