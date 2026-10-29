@@ -36,8 +36,8 @@ export function CompanyIdentityModal({
       onSubmit={form.handleSubmit((values) => {
         saveCompany(values, onSaved);
       })}
-      formDataCy="formulaire-societe"
-      submitDataCy="btn-enregistrer-configuration-bas"
+      formDataCy="company-form"
+      submitDataCy="btn-save-basic-configuration"
       pending={save.isPending}
       error={save.isError ? errorMessage(save.error) : null}
       formClassName="settings-page-form"

@@ -69,7 +69,7 @@ describe("CompanyIdentityModal", () => {
     renderModal({ open: false });
 
     expect(
-      document.querySelector('[data-cy="dialogue-formulaire-societe"]'),
+      document.querySelector('[data-cy="dialogue-company-form"]'),
     ).toBeNull();
   });
 
@@ -84,7 +84,7 @@ describe("CompanyIdentityModal", () => {
     ).toBeVisible();
     expect(screen.getByLabelText("Raison sociale")).toHaveValue("");
     expect(
-      document.querySelector('[data-cy="select-bail-societe"]'),
+      document.querySelector('[data-cy="select-company-lease"]'),
     ).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Valider" }));
@@ -120,9 +120,7 @@ describe("CompanyIdentityModal", () => {
     expect(
       screen.getByRole("heading", { name: "Modifier la société" }),
     ).toBeVisible();
-    expect(
-      document.querySelector('[data-cy="formulaire-societe"]'),
-    ).not.toBeNull();
+    expect(document.querySelector('[data-cy="company-form"]')).not.toBeNull();
     expect(screen.getByLabelText("Raison sociale")).toHaveValue("HKOF");
 
     await user.click(screen.getByRole("button", { name: "Valider" }));

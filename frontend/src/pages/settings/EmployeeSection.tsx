@@ -101,7 +101,7 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
             icon={<Plus size={14} />}
             onClick={() => setEmployeeForm("new")}
             disabled={companyId === null || employeeForm === "new"}
-            data-cy="btn-ajouter-salarie"
+            data-cy="btn-add-employee"
           >
             {t("settings.employees.add")}
           </Button>
@@ -111,7 +111,7 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
         {companyId === null ? (
           <EmptyState
             text={t("settings.employees.selectCompany")}
-            dataCy="aucun-salarie-societe"
+            dataCy="no-company-employee"
           />
         ) : employeeForm !== null ? (
           <EmployeeForm
@@ -132,12 +132,12 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
         ) : list.length === 0 ? (
           <EmptyState
             text={t("settings.employees.empty")}
-            dataCy="aucun-salarie"
+            dataCy="no-employee"
           />
         ) : (
           <>
             <ListToolbar
-              list="salaries"
+              list="employees"
               placeholder={t("settings.employees.filterPlaceholder")}
               query={listQuery.query}
               onQueryChange={listQuery.setQuery}
@@ -167,13 +167,13 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
                 text={t("settings.list.noMatch", {
                   query: listQuery.query.trim(),
                 })}
-                dataCy="aucun-resultat-salaries"
+                dataCy="no-results-employees"
               />
             ) : (
               <>
                 <div
                   className="employee-section-headers hidden md:grid"
-                  data-cy="entetes-salaries"
+                  data-cy="employees-headers"
                 >
                   <span>{t("settings.employees.columns.employee")}</span>
                   <span>{t("settings.employees.columns.title")}</span>
@@ -188,7 +188,7 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
                     <li
                       key={employee.id}
                       className="employee-section-item"
-                      data-cy={`salarie-${employee.id}`}
+                      data-cy={`employee-${employee.id}`}
                     >
                       <p className="employee-section-cell employee-section-cell-name employee-section-item-title">
                         {employee.firstName} {employee.lastName}
@@ -211,7 +211,7 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
                       </div>
                       <p
                         className="employee-section-cell employee-section-cell-signatures employee-section-item-signatures number text-right"
-                        data-cy={`signatures-salarie-${employee.id}`}
+                        data-cy={`employee-signatures-${employee.id}`}
                       >
                         {t("settings.employees.signatureCount", {
                           count: employee.signatureCount ?? 0,
@@ -226,7 +226,7 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
                           aria-label={t("settings.employees.editAria", {
                             name: `${employee.firstName ?? ""} ${employee.lastName ?? ""}`,
                           })}
-                          data-cy={`btn-modifier-salarie-${employee.id}`}
+                          data-cy={`btn-edit-employee-${employee.id}`}
                         >
                           {t("settings.employees.edit")}
                         </Button>
@@ -239,7 +239,7 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
                           aria-label={t("settings.employees.removeAria", {
                             name: `${employee.firstName ?? ""} ${employee.lastName ?? ""}`,
                           })}
-                          data-cy={`btn-supprimer-salarie-${employee.id}`}
+                          data-cy={`btn-delete-employee-${employee.id}`}
                         >
                           {t("settings.employees.remove")}
                         </Button>

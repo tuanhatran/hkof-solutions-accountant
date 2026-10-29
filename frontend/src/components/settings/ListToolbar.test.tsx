@@ -26,7 +26,7 @@ const SORT_OPTIONS = [
 
 function renderToolbar(overrides: Partial<ListToolbarTestProps> = {}) {
   const props: ListToolbarTestProps = {
-    list: "salaries",
+    list: "employees",
     placeholder: "Filtrer les salariés…",
     query: "",
     onQueryChange: vi.fn(),
@@ -51,28 +51,26 @@ describe("ListToolbar", () => {
       name: "Filtrer la liste",
     });
     expect(search).toHaveAttribute("placeholder", "Filtrer les salariés…");
-    expect(document.querySelector('[data-cy="filtre-salaries"]')).toBe(search);
+    expect(document.querySelector('[data-cy="filter-employees"]')).toBe(search);
 
     const sort = screen.getByRole("combobox", { name: "Trier par" });
     expect(sort).toHaveValue("name");
-    expect(document.querySelector('[data-cy="tri-salaries"]')).toBe(sort);
+    expect(document.querySelector('[data-cy="sort-employees"]')).toBe(sort);
     expect(
       screen.getAllByRole("option").map((option) => option.textContent),
     ).toEqual(["Salarié", "Signatures"]);
 
     const direction = screen.getByRole("button", { name: "Tri croissant" });
-    expect(document.querySelector('[data-cy="tri-direction-salaries"]')).toBe(
+    expect(document.querySelector('[data-cy="sort-direction-employees"]')).toBe(
       direction,
     );
 
-    const count = document.querySelector(
-      '[data-cy="filtre-compteur-salaries"]',
-    );
+    const count = document.querySelector('[data-cy="filter-count-employees"]');
     expect(count).toHaveTextContent("2 sur 3");
     expect(count).toHaveAttribute("aria-live", "polite");
 
     expect(
-      document.querySelector('[data-cy="filtre-effacer-salaries"]'),
+      document.querySelector('[data-cy="filter-clear-employees"]'),
     ).toBeNull();
   });
 
@@ -85,7 +83,7 @@ describe("ListToolbar", () => {
     expect(props.onQueryChange).toHaveBeenCalledWith("zoe");
 
     const clear = document.querySelector(
-      '[data-cy="filtre-effacer-salaries"]',
+      '[data-cy="filter-clear-employees"]',
     ) as HTMLElement;
     expect(clear).toHaveAttribute("aria-label", "Effacer le filtre");
     fireEvent.click(clear);
@@ -113,7 +111,7 @@ describe("ListToolbar", () => {
       screen.getByRole("button", { name: "Tri décroissant" }),
     ).toBeVisible();
     expect(
-      document.querySelector('[data-cy="tri-direction-salaries"]'),
+      document.querySelector('[data-cy="sort-direction-employees"]'),
     ).not.toBeNull();
   });
 
@@ -121,14 +119,14 @@ describe("ListToolbar", () => {
     renderToolbar({ showSearch: false });
 
     expect(screen.queryByRole("searchbox")).toBeNull();
-    expect(document.querySelector('[data-cy="filtre-salaries"]')).toBeNull();
+    expect(document.querySelector('[data-cy="filter-employees"]')).toBeNull();
     expect(
-      document.querySelector('[data-cy="filtre-effacer-salaries"]'),
+      document.querySelector('[data-cy="filter-clear-employees"]'),
     ).toBeNull();
     expect(screen.getByRole("combobox", { name: "Trier par" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Tri croissant" })).toBeVisible();
     expect(
-      document.querySelector('[data-cy="filtre-compteur-salaries"]'),
+      document.querySelector('[data-cy="filter-count-employees"]'),
     ).toHaveTextContent("2 sur 3");
   });
 });

@@ -47,7 +47,7 @@ export function SignatureImageField({
               src={previewUrl}
               alt={t("settings.signatures.previewAlt", { name: file.name })}
               className="signature-image-field-preview-image"
-              data-cy="apercu-signature"
+              data-cy="signature-preview"
             />
           ) : null}
           <div className="signature-image-field-preview-body">
@@ -64,7 +64,7 @@ export function SignatureImageField({
             disabled={pending}
             className="signature-image-field-remove"
             aria-label={t("settings.signatures.removeImageAria")}
-            data-cy="btn-retirer-signature-image"
+            data-cy="btn-remove-signature-image"
           >
             <X size={16} />
           </button>

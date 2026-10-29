@@ -99,7 +99,7 @@ export function LeaseReceiptModal({
             </dt>
             <dd
               className="lease-receipt-modal-identity-value"
-              data-cy="societe-quittance-bail"
+              data-cy="company-lease-rent-receipt"
             >
               {c.companyName ?? t("settings.lease.receiptModal.noCompany")}
             </dd>
@@ -145,7 +145,7 @@ export function LeaseReceiptModal({
               <span className="lease-receipt-modal-identity-label">
                 {t("settings.lease.receiptModal.period")}{" "}
               </span>
-              <span data-cy="periode-quittance-bail">
+              <span data-cy="lease-rent-receipt-period">
                 {formatPeriod(c.values.periodStart, c.values.periodEnd)}
               </span>
             </div>
@@ -198,7 +198,7 @@ export function LeaseReceiptModal({
             loading={c.preview.loading}
             error={c.preview.error}
             updatedAt={c.preview.updatedAt}
-            dataCy="apercu-quittance-bail"
+            dataCy="lease-rent-receipt-preview"
           />
 
           {result ? (
@@ -208,7 +208,7 @@ export function LeaseReceiptModal({
               </p>
               <p
                 className="lease-receipt-modal-result-meta"
-                data-cy="resultat-quittance-bail"
+                data-cy="lease-rent-receipt-result"
               >
                 {t("settings.lease.receiptModal.resultMeta", {
                   month: formatMonth(result.month),
@@ -221,7 +221,7 @@ export function LeaseReceiptModal({
                 small
                 icon={<Download size={14} />}
                 onClick={() => void c.download(result)}
-                data-cy="btn-telecharger-quittance-bail"
+                data-cy="btn-download-lease-rent-receipt"
               >
                 {t("settings.lease.receiptModal.download")}
               </Button>
@@ -238,7 +238,7 @@ export function LeaseReceiptModal({
               type="submit"
               loading={c.generate.isPending}
               disabled={c.generationDisabled}
-              data-cy="btn-generer-quittance-bail"
+              data-cy="btn-generate-lease-rent-receipt"
             >
               {t("settings.lease.receiptModal.generate")}
             </Button>

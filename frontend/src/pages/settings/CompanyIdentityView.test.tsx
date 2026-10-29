@@ -46,7 +46,7 @@ describe("CompanyIdentityView", () => {
     expect(rowValue("Lieu d’émission")).toBe("Paris");
 
     const edit = screen.getByRole("button", { name: "Modifier" });
-    expect(edit).toHaveAttribute("data-cy", "btn-modifier-societe");
+    expect(edit).toHaveAttribute("data-cy", "btn-edit-company");
     await userEvent.setup().click(edit);
     expect(onEdit).toHaveBeenCalledTimes(1);
   });
@@ -90,7 +90,7 @@ describe("CompanyIdentityView", () => {
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Edit" })).toHaveAttribute(
       "data-cy",
-      "btn-modifier-societe",
+      "btn-edit-company",
     );
   });
 });

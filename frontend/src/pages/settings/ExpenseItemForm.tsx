@@ -126,7 +126,7 @@ export function ExpenseItemForm({
 
       <div className="expense-item-form-grid">
         <FieldGroup
-          id="poste-code"
+          id="item-code"
           label={t("settings.expenses.form.code")}
           error={errors.code?.message}
           help={
@@ -136,7 +136,7 @@ export function ExpenseItemForm({
           }
         >
           <input
-            id="poste-code"
+            id="item-code"
             className={cn(
               "field expense-item-form-code",
               errors.code && "field-error",
@@ -148,53 +148,53 @@ export function ExpenseItemForm({
           />
         </FieldGroup>
         <FieldGroup
-          id="poste-libelle"
+          id="item-label"
           label={t("settings.expenses.form.label")}
           error={errors.label?.message}
         >
           <input
-            id="poste-libelle"
+            id="item-label"
             className={cn("field", errors.label && "field-error")}
             placeholder="Gaz"
             {...register("label")}
-            data-cy="input-poste-libelle"
+            data-cy="input-item-label"
           />
         </FieldGroup>
         <FieldGroup
-          id="poste-fournisseur"
+          id="item-supplier"
           label={t("settings.expenses.form.supplier")}
           error={errors.supplier?.message}
         >
           <input
-            id="poste-fournisseur"
+            id="item-supplier"
             className="field"
             placeholder="EDF"
             {...register("supplier")}
-            data-cy="input-poste-fournisseur"
+            data-cy="input-item-supplier"
           />
         </FieldGroup>
         <FieldGroup
-          id="poste-prorata"
+          id="item-prorata"
           label={t("settings.expenses.form.proRata")}
           error={errors.proRataPct?.message}
           help={t("settings.expenses.form.proRataHelp")}
         >
           <input
-            id="poste-prorata"
+            id="item-prorata"
             className={cn("field", errors.proRataPct && "field-error")}
             inputMode="decimal"
             placeholder="35,71"
             {...register("proRataPct")}
-            data-cy="input-poste-prorata"
+            data-cy="input-item-prorata"
           />
         </FieldGroup>
         <FieldGroup
-          id="poste-periodicite"
+          id="item-periodicity"
           label={t("settings.expenses.form.periodicity")}
           error={errors.periodicity?.message}
         >
           <select
-            id="poste-periodicite"
+            id="item-periodicity"
             className="field"
             {...register("periodicity")}
           >
@@ -206,12 +206,12 @@ export function ExpenseItemForm({
           </select>
         </FieldGroup>
         <FieldGroup
-          id="poste-ordre"
+          id="item-order"
           label={t("settings.expenses.form.order")}
           error={errors.sortOrder?.message}
         >
           <input
-            id="poste-ordre"
+            id="item-order"
             type="number"
             min={0}
             step={1}
@@ -223,14 +223,14 @@ export function ExpenseItemForm({
 
       <div className="expense-item-form-switches">
         <ExpenseItemSwitchField
-          id="poste-actif"
+          id="item-active"
           label={t("settings.expenses.form.active")}
           description={t("settings.expenses.form.activeDescription")}
           register={register}
           field="active"
         />
         <ExpenseItemSwitchField
-          id="poste-plusieurs-lignes"
+          id="item-multiple-lines"
           label={t("settings.expenses.form.multipleLines")}
           description={t("settings.expenses.form.multipleLinesDescription")}
           register={register}

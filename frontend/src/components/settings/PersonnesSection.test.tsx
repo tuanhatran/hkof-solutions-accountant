@@ -41,12 +41,13 @@ const ACCENTED: PersonDto = {
 
 /** Person ids in DOM order, read on the row items. */
 function personOrder(): number[] {
-  return [...document.querySelectorAll('[data-cy^="personne-"]')].map(
-    (element) =>
+  return [...document.querySelectorAll('[data-cy^="person-"]')]
+    .map((element) =>
       Number(
-        (element as HTMLElement).dataset.cy?.replace("personne-", "") ?? NaN,
+        (element as HTMLElement).dataset.cy?.replace("person-", "") ?? NaN,
       ),
-  );
+    )
+    .filter((id) => Number.isInteger(id));
 }
 
 function readyQuery(data: PersonDto[]): QueryLike<PersonDto[]> {
@@ -128,7 +129,7 @@ describe("PersonnesSection", () => {
     renderSection();
 
     const headers = document.querySelector(
-      '[data-cy="entetes-personnes"]',
+      '[data-cy="persons-headers"]',
     ) as HTMLElement;
     expect(headers).not.toBeNull();
     expect(headers).toHaveClass("hidden", "md:grid");
@@ -140,7 +141,7 @@ describe("PersonnesSection", () => {
   it("aligns each person row cell and its tabular signatures column", () => {
     renderSection();
 
-    const row = document.querySelector('[data-cy="personne-1"]') as HTMLElement;
+    const row = document.querySelector('[data-cy="person-1"]') as HTMLElement;
     expect(row).toHaveClass("personnes-section-item");
     expect(row.querySelector(".personnes-section-cell-name")).toHaveTextContent(
       "M. Bailleur",
@@ -148,7 +149,7 @@ describe("PersonnesSection", () => {
     expect(
       row.querySelector(".personnes-section-cell-address"),
     ).toHaveTextContent("1 avenue du Parc, 75011 Paris");
-    const signatures = row.querySelector('[data-cy="signatures-personne-1"]');
+    const signatures = row.querySelector('[data-cy="person-signatures-1"]');
     expect(signatures).toHaveClass(
       "personnes-section-cell",
       "number",
@@ -235,9 +236,7 @@ describe("PersonnesSection", () => {
     ).toBeVisible();
     expect(
       within(
-        document.querySelector(
-          '[data-cy="formulaire-personne"]',
-        ) as HTMLElement,
+        document.querySelector('[data-cy="person-form"]') as HTMLElement,
       ).getByText("Signatures"),
     ).toBeVisible();
     expect(
@@ -279,9 +278,7 @@ describe("PersonnesSection", () => {
     );
     expect(
       within(
-        document.querySelector(
-          '[data-cy="formulaire-personne"]',
-        ) as HTMLElement,
+        document.querySelector('[data-cy="person-form"]') as HTMLElement,
       ).getByText("Signatures"),
     ).toBeVisible();
   });
@@ -319,7 +316,7 @@ describe("PersonnesSection", () => {
 
     expect(screen.getByRole("heading", { name: "People" })).toBeVisible();
     const headers = document.querySelector(
-      '[data-cy="entetes-personnes"]',
+      '[data-cy="persons-headers"]',
     ) as HTMLElement;
     expect(within(headers).getByText("Person")).toBeVisible();
     expect(within(headers).getByText("Address")).toBeVisible();
@@ -400,19 +397,17 @@ describe("PersonnesSection", () => {
     const user = userEvent.setup();
 
     expect(
-      document.querySelector('[data-cy="filtre-compteur-personnes"]'),
+      document.querySelector('[data-cy="filter-count-persons"]'),
     ).toHaveTextContent("3 sur 3");
 
     await user.type(screen.getByLabelText("Filtrer la liste"), "elodie");
     expect(personOrder()).toEqual([3]);
     expect(
-      document.querySelector('[data-cy="filtre-compteur-personnes"]'),
+      document.querySelector('[data-cy="filter-count-persons"]'),
     ).toHaveTextContent("1 sur 3");
 
     await user.click(
-      document.querySelector(
-        '[data-cy="filtre-effacer-personnes"]',
-      ) as HTMLElement,
+      document.querySelector('[data-cy="filter-clear-persons"]') as HTMLElement,
     );
     await user.type(screen.getByLabelText("Filtrer la liste"), "parc");
     expect(personOrder()).toEqual([1]);
@@ -426,9 +421,9 @@ describe("PersonnesSection", () => {
     await user.type(screen.getByLabelText("Filtrer la liste"), "zzz");
 
     expect(
-      document.querySelector('[data-cy="aucun-resultat-personnes"]'),
+      document.querySelector('[data-cy="no-results-persons"]'),
     ).toHaveTextContent("Aucun résultat pour « zzz ».");
-    expect(document.querySelector('[data-cy="entetes-personnes"]')).toBeNull();
+    expect(document.querySelector('[data-cy="persons-headers"]')).toBeNull();
     expect(personOrder()).toEqual([]);
   });
 
@@ -453,6 +448,6 @@ describe("PersonnesSection", () => {
     personsState = readyQuery([]);
     renderSection();
 
-    expect(document.querySelector('[data-cy="filtre-personnes"]')).toBeNull();
+    expect(document.querySelector('[data-cy="filter-persons"]')).toBeNull();
   });
 });

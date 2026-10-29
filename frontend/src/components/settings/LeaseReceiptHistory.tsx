@@ -103,7 +103,7 @@ function MonthList({
         <details
           key={group.month}
           className="lease-receipt-history-month"
-          data-cy={`lease-receipt-history-mois-${lease.id}-${group.month}`}
+          data-cy={`lease-receipt-history-month-${lease.id}-${group.month}`}
         >
           <summary className="lease-receipt-history-summary">
             <span>{formatMonth(group.month)}</span>
@@ -132,7 +132,7 @@ function MonthList({
                   <PdfActionLink
                     href={api.rentReceipts.pdfUrl(version.id)}
                     label={t("history.actions.downloadPdf")}
-                    dataCy={`telecharger-quittance-bail-${version.id}`}
+                    dataCy={`download-lease-rent-receipt-${version.id}`}
                   />
                 ) : null}
               </li>

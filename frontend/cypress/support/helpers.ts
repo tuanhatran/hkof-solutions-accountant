@@ -86,7 +86,7 @@ export function selectAddressForLease(lease: LeaseSummary): void {
   if (lease.addressId === undefined) {
     throw new Error("seeded lease has no addressId");
   }
-  cy.get('[data-cy="select-adresse-quittances"]').select(
+  cy.get('[data-cy="select-rent-receipts-address"]').select(
     String(lease.addressId),
   );
 }

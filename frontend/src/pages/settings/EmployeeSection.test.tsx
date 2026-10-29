@@ -66,12 +66,13 @@ const CFO: EmployeeDto = {
 
 /** Employee ids in DOM order, read on the row items. */
 function employeeOrder(): number[] {
-  return [...document.querySelectorAll('[data-cy^="salarie-"]')].map(
-    (element) =>
+  return [...document.querySelectorAll('[data-cy^="employee-"]')]
+    .map((element) =>
       Number(
-        (element as HTMLElement).dataset.cy?.replace("salarie-", "") ?? NaN,
+        (element as HTMLElement).dataset.cy?.replace("employee-", "") ?? NaN,
       ),
-  );
+    )
+    .filter((id) => Number.isInteger(id));
 }
 
 function readyQuery(data: EmployeeDto[]): QueryLike<EmployeeDto[]> {
@@ -127,7 +128,7 @@ describe("EmployeeSection", () => {
     renderSection();
 
     const headers = document.querySelector(
-      '[data-cy="entetes-salaries"]',
+      '[data-cy="employees-headers"]',
     ) as HTMLElement;
     expect(headers).not.toBeNull();
     expect(headers).toHaveClass("hidden", "md:grid");
@@ -140,7 +141,7 @@ describe("EmployeeSection", () => {
   it("aligns each employee row cell and its tabular signatures column", () => {
     renderSection();
 
-    const row = document.querySelector('[data-cy="salarie-3"]') as HTMLElement;
+    const row = document.querySelector('[data-cy="employee-3"]') as HTMLElement;
     expect(row).toHaveClass("employee-section-item");
     expect(row.querySelector(".employee-section-cell-name")).toHaveTextContent(
       "Camille Martin",
@@ -151,7 +152,7 @@ describe("EmployeeSection", () => {
     expect(
       row.querySelector(".employee-section-cell-contact"),
     ).toHaveTextContent("camille.martin@exemple.fr");
-    const signatures = row.querySelector('[data-cy="signatures-salarie-3"]');
+    const signatures = row.querySelector('[data-cy="employee-signatures-3"]');
     expect(signatures).toHaveClass(
       "employee-section-cell",
       "number",
@@ -249,7 +250,7 @@ describe("EmployeeSection", () => {
     ).toBeVisible();
     expect(
       within(
-        document.querySelector('[data-cy="formulaire-salarie"]') as HTMLElement,
+        document.querySelector('[data-cy="employee-form"]') as HTMLElement,
       ).getByText("Signatures"),
     ).toBeVisible();
   });
@@ -301,7 +302,7 @@ describe("EmployeeSection", () => {
     );
     expect(
       document.querySelector(
-        '[data-cy="dialogue-formulaire-salarie"] [data-cy="formulaire-salarie"]',
+        '[data-cy="dialogue-employee-form"] [data-cy="employee-form"]',
       ),
     ).not.toBeNull();
 
@@ -309,7 +310,7 @@ describe("EmployeeSection", () => {
     await user.click(screen.getByRole("button", { name: "Annuler" }));
     expect(api.employees.create).not.toHaveBeenCalled();
     expect(
-      document.querySelector('[data-cy="dialogue-formulaire-salarie"]'),
+      document.querySelector('[data-cy="dialogue-employee-form"]'),
     ).toBeNull();
 
     await user.click(
@@ -318,7 +319,7 @@ describe("EmployeeSection", () => {
     await user.keyboard("{Escape}");
     expect(api.employees.create).not.toHaveBeenCalled();
     expect(
-      document.querySelector('[data-cy="dialogue-formulaire-salarie"]'),
+      document.querySelector('[data-cy="dialogue-employee-form"]'),
     ).toBeNull();
   });
 
@@ -376,7 +377,7 @@ describe("EmployeeSection", () => {
 
     expect(screen.getByRole("heading", { name: "Employees" })).toBeVisible();
     const headers = document.querySelector(
-      '[data-cy="entetes-salaries"]',
+      '[data-cy="employees-headers"]',
     ) as HTMLElement;
     expect(within(headers).getByText("Employee")).toBeVisible();
     expect(within(headers).getByText("Title")).toBeVisible();
@@ -482,27 +483,27 @@ describe("EmployeeSection", () => {
     const user = userEvent.setup();
 
     expect(
-      document.querySelector('[data-cy="filtre-compteur-salaries"]'),
+      document.querySelector('[data-cy="filter-count-employees"]'),
     ).toHaveTextContent("2 sur 2");
 
     await user.type(screen.getByLabelText("Filtrer la liste"), "elodie");
 
-    expect(document.querySelector('[data-cy="salarie-4"]')).not.toBeNull();
-    expect(document.querySelector('[data-cy="salarie-3"]')).toBeNull();
+    expect(document.querySelector('[data-cy="employee-4"]')).not.toBeNull();
+    expect(document.querySelector('[data-cy="employee-3"]')).toBeNull();
     expect(
-      document.querySelector('[data-cy="filtre-compteur-salaries"]'),
+      document.querySelector('[data-cy="filter-count-employees"]'),
     ).toHaveTextContent("1 sur 2");
 
     await user.click(
       document.querySelector(
-        '[data-cy="filtre-effacer-salaries"]',
+        '[data-cy="filter-clear-employees"]',
       ) as HTMLElement,
     );
     expect(employeeOrder()).toEqual([3, 4]);
 
     await user.type(screen.getByLabelText("Filtrer la liste"), "pdg");
-    expect(document.querySelector('[data-cy="salarie-3"]')).not.toBeNull();
-    expect(document.querySelector('[data-cy="salarie-4"]')).toBeNull();
+    expect(document.querySelector('[data-cy="employee-3"]')).not.toBeNull();
+    expect(document.querySelector('[data-cy="employee-4"]')).toBeNull();
   });
 
   it("shows a no-match message instead of the headers and rows", async () => {
@@ -513,12 +514,12 @@ describe("EmployeeSection", () => {
     await user.type(screen.getByLabelText("Filtrer la liste"), "zzz");
 
     expect(
-      document.querySelector('[data-cy="aucun-resultat-salaries"]'),
+      document.querySelector('[data-cy="no-results-employees"]'),
     ).toHaveTextContent("Aucun résultat pour « zzz ».");
-    expect(document.querySelector('[data-cy="entetes-salaries"]')).toBeNull();
+    expect(document.querySelector('[data-cy="employees-headers"]')).toBeNull();
     expect(employeeOrder()).toEqual([]);
     expect(
-      document.querySelector('[data-cy="filtre-compteur-salaries"]'),
+      document.querySelector('[data-cy="filter-count-employees"]'),
     ).toHaveTextContent("0 sur 2");
   });
 
@@ -543,6 +544,6 @@ describe("EmployeeSection", () => {
     employeesState = readyQuery([]);
     renderSection();
 
-    expect(document.querySelector('[data-cy="filtre-salaries"]')).toBeNull();
+    expect(document.querySelector('[data-cy="filter-employees"]')).toBeNull();
   });
 });

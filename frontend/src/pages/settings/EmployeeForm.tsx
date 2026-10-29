@@ -94,8 +94,8 @@ export function EmployeeForm({
       }
       onClose={onClose}
       onSubmit={handleSubmit((values) => save.mutate(values))}
-      formDataCy="formulaire-salarie"
-      submitDataCy="btn-enregistrer-salarie"
+      formDataCy="employee-form"
+      submitDataCy="btn-save-employee"
       pending={save.isPending}
       error={save.isError ? errorMessage(save.error) : null}
       formClassName="employee-form"
@@ -110,7 +110,7 @@ export function EmployeeForm({
             id="salarie-prenom"
             className={cn("field", errors.firstName && "field-error")}
             {...register("firstName")}
-            data-cy="input-salarie-prenom"
+            data-cy="input-employee-first-name"
           />
         </FieldGroup>
         <FieldGroup
@@ -122,7 +122,7 @@ export function EmployeeForm({
             id="salarie-nom"
             className={cn("field", errors.lastName && "field-error")}
             {...register("lastName")}
-            data-cy="input-salarie-nom"
+            data-cy="input-employee-name"
           />
         </FieldGroup>
         <FieldGroup
@@ -137,7 +137,7 @@ export function EmployeeForm({
             className={cn("field", errors.email && "field-error")}
             placeholder="prenom.nom@exemple.fr"
             {...register("email")}
-            data-cy="input-salarie-email"
+            data-cy="input-employee-email"
           />
         </FieldGroup>
         <FieldGroup
@@ -150,7 +150,7 @@ export function EmployeeForm({
             id="salarie-titre"
             className={cn("field", errors.title && "field-error")}
             {...register("title")}
-            data-cy="select-salarie-titre"
+            data-cy="select-employee-title"
           >
             {EMPLOYEE_TITLES.map((title) => (
               <option key={title.value} value={title.value}>
@@ -170,7 +170,7 @@ export function EmployeeForm({
             className={cn("field", errors.issuePlace && "field-error")}
             placeholder="Paris"
             {...register("issuePlace")}
-            data-cy="input-salarie-lieu-emission"
+            data-cy="input-employee-issue-place"
           />
         </FieldGroup>
         <FieldGroup
@@ -185,7 +185,7 @@ export function EmployeeForm({
             className="field"
             placeholder="1 avenue du Parc, 75011 Paris"
             {...register("address")}
-            data-cy="input-salarie-adresse"
+            data-cy="input-employee-address"
           />
         </FieldGroup>
       </div>

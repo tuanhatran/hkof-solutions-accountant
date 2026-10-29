@@ -123,7 +123,7 @@ export function ExpenseItemsManager({
       icon={<Plus size={14} />}
       onClick={openCreate}
       disabled={formOpen && editedItem === null}
-      data-cy="btn-ajouter-poste"
+      data-cy="btn-add-item"
     >
       {t("settings.expenses.add")}
     </Button>
@@ -155,7 +155,7 @@ export function ExpenseItemsManager({
   ) : (
     <>
       <ListToolbar
-        list="postes"
+        list="items"
         placeholder={t("settings.expenses.filterPlaceholder")}
         query={listQuery.query}
         onQueryChange={listQuery.setQuery}
@@ -189,7 +189,7 @@ export function ExpenseItemsManager({
           text={t("settings.list.noMatch", {
             query: listQuery.query.trim(),
           })}
-          dataCy="aucun-resultat-postes"
+          dataCy="no-results-items"
         />
       ) : (
         <ExpenseItemsTable

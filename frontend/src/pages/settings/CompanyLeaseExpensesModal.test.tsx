@@ -108,12 +108,8 @@ describe("CompanyLeaseExpensesModal", () => {
     expect(
       document.querySelector('[data-cy="dialogue-frais-bail-societe"]'),
     ).not.toBeNull();
-    expect(
-      document.querySelector('[data-cy="formulaire-poste"]'),
-    ).not.toBeNull();
-    expect(
-      document.querySelector('[data-cy="dialogue-formulaire-poste"]'),
-    ).toBeNull();
+    expect(document.querySelector('[data-cy="item-form"]')).not.toBeNull();
+    expect(document.querySelector('[data-cy="dialogue-item-form"]')).toBeNull();
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
       "25,00",
@@ -121,7 +117,7 @@ describe("CompanyLeaseExpensesModal", () => {
 
     await user.click(screen.getByRole("button", { name: "Annuler" }));
 
-    expect(document.querySelector('[data-cy="formulaire-poste"]')).toBeNull();
+    expect(document.querySelector('[data-cy="item-form"]')).toBeNull();
     expect(document.querySelector("table.expense-items-table")).not.toBeNull();
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
   });
@@ -144,7 +140,7 @@ describe("CompanyLeaseExpensesModal", () => {
       ),
     );
     await waitFor(() =>
-      expect(document.querySelector('[data-cy="formulaire-poste"]')).toBeNull(),
+      expect(document.querySelector('[data-cy="item-form"]')).toBeNull(),
     );
 
     fireEvent.keyDown(document, { key: "Escape" });
@@ -156,9 +152,7 @@ describe("CompanyLeaseExpensesModal", () => {
     const user = userEvent.setup();
 
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
-    expect(
-      document.querySelector('[data-cy="formulaire-poste"]'),
-    ).not.toBeNull();
+    expect(document.querySelector('[data-cy="item-form"]')).not.toBeNull();
 
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onClose).toHaveBeenCalledTimes(1);

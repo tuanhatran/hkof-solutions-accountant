@@ -67,9 +67,11 @@ const OTHER_LEASE: LeaseDto = {
 
 /** Lease ids in DOM order, read on the row items. */
 function leaseOrder(): number[] {
-  return [...document.querySelectorAll('[data-cy^="bail-"]')].map((element) =>
-    Number((element as HTMLElement).dataset.cy?.replace("bail-", "") ?? NaN),
-  );
+  return [...document.querySelectorAll('[data-cy^="lease-"]')]
+    .map((element) =>
+      Number((element as HTMLElement).dataset.cy?.replace("lease-", "") ?? NaN),
+    )
+    .filter((id) => Number.isInteger(id));
 }
 const TEMPLATE: TemplateDto = {
   id: 5,
@@ -98,7 +100,7 @@ let allRentReceiptsRefetch = vi.fn();
 let leaseRows: LeaseDto[] = [LEASE];
 
 vi.mock("@/components/pdf/PdfViewer", () => ({
-  PdfViewer: () => <div data-cy="apercu-quittance-bail" />,
+  PdfViewer: () => <div data-cy="lease-rent-receipt-preview" />,
 }));
 
 vi.mock("@/api/endpoints", () => ({
@@ -187,7 +189,7 @@ describe("LeaseSection rent receipt", () => {
     renderSection();
 
     const headers = document.querySelector(
-      '[data-cy="entetes-baux"]',
+      '[data-cy="leases-headers"]',
     ) as HTMLElement;
     expect(headers).not.toBeNull();
     expect(headers).toHaveClass("hidden", "md:grid");
@@ -201,12 +203,12 @@ describe("LeaseSection rent receipt", () => {
   it("splits each lease row into aligned company and amount cells", () => {
     renderSection();
 
-    const row = document.querySelector('[data-cy="bail-10"]') as HTMLElement;
+    const row = document.querySelector('[data-cy="lease-10"]') as HTMLElement;
     expect(row.querySelector(".lease-section-cell-title")).toHaveTextContent(
       "M. Bailleur → Mme Locataire",
     );
     expect(
-      row.querySelector('[data-cy="societe-bail-10"]')?.textContent?.trim(),
+      row.querySelector('[data-cy="company-lease-10"]')?.textContent?.trim(),
     ).toBe("Aucune société");
     expect(row.querySelector(".lease-section-cell-rent")).toHaveTextContent(
       "1 300,00 €",
@@ -214,7 +216,7 @@ describe("LeaseSection rent receipt", () => {
     expect(row.querySelector(".lease-section-cell-charges")).toHaveTextContent(
       "50,00 €",
     );
-    const total = row.querySelector('[data-cy="total-bail-10"]');
+    const total = row.querySelector('[data-cy="lease-total-10"]');
     expect(total).toHaveTextContent("1 350,00 €");
     expect(total).toHaveClass("number", "text-right");
     expect(row.querySelector(".lease-section-cell-actions")).not.toBeNull();
@@ -278,7 +280,7 @@ describe("LeaseSection rent receipt", () => {
     expect(screen.getByRole("button", { name: "Add a lease" })).toBeVisible();
     expect(screen.getByLabelText("Lease addresses")).toBeVisible();
     expect(
-      document.querySelector('[data-cy="societe-bail-10"]'),
+      document.querySelector('[data-cy="company-lease-10"]'),
     ).toHaveTextContent("No company");
     expect(
       document.querySelector(".lease-section-cell-rent"),
@@ -287,7 +289,7 @@ describe("LeaseSection rent receipt", () => {
       document.querySelector(".lease-section-cell-charges"),
     ).toHaveTextContent("50,00 €");
     expect(
-      document.querySelector('[data-cy="total-bail-10"]'),
+      document.querySelector('[data-cy="lease-total-10"]'),
     ).toHaveTextContent("1 350,00 €");
     expect(
       screen.getByRole("button", { name: "Rent receipt for lease 10" }),
@@ -330,23 +332,23 @@ describe("LeaseSection rent receipt", () => {
     const user = userEvent.setup();
 
     expect(
-      document.querySelector('[data-cy="filtre-compteur-baux"]'),
+      document.querySelector('[data-cy="filter-count-leases"]'),
     ).toHaveTextContent("2 sur 2");
 
     await user.type(screen.getByLabelText("Filtrer la liste"), "acacias");
     expect(leaseOrder()).toEqual([11]);
     expect(
-      document.querySelector('[data-cy="filtre-compteur-baux"]'),
+      document.querySelector('[data-cy="filter-count-leases"]'),
     ).toHaveTextContent("1 sur 2");
 
     await user.click(
-      document.querySelector('[data-cy="filtre-effacer-baux"]') as HTMLElement,
+      document.querySelector('[data-cy="filter-clear-leases"]') as HTMLElement,
     );
     await user.type(screen.getByLabelText("Filtrer la liste"), "locataire");
     expect(leaseOrder()).toEqual([10]);
 
     await user.click(
-      document.querySelector('[data-cy="filtre-effacer-baux"]') as HTMLElement,
+      document.querySelector('[data-cy="filter-clear-leases"]') as HTMLElement,
     );
     await user.type(screen.getByLabelText("Filtrer la liste"), "alpha");
     expect(leaseOrder()).toEqual([11]);
@@ -360,9 +362,9 @@ describe("LeaseSection rent receipt", () => {
     await user.type(screen.getByLabelText("Filtrer la liste"), "zzz");
 
     expect(
-      document.querySelector('[data-cy="aucun-resultat-baux"]'),
+      document.querySelector('[data-cy="no-results-leases"]'),
     ).toHaveTextContent("Aucun résultat pour « zzz ».");
-    expect(document.querySelector('[data-cy="entetes-baux"]')).toBeNull();
+    expect(document.querySelector('[data-cy="leases-headers"]')).toBeNull();
     expect(leaseOrder()).toEqual([]);
   });
 
@@ -389,7 +391,7 @@ describe("LeaseSection rent receipt", () => {
     leaseRows = [];
     renderSection();
 
-    expect(document.querySelector('[data-cy="filtre-baux"]')).toBeNull();
+    expect(document.querySelector('[data-cy="filter-leases"]')).toBeNull();
   });
 });
 
@@ -415,7 +417,7 @@ describe("LeaseSection receipt history", () => {
     allRentReceiptRows = [MATCHING_RECEIPT, OTHER_TENANT_RECEIPT];
     renderSection();
 
-    const row = document.querySelector('[data-cy="bail-10"]');
+    const row = document.querySelector('[data-cy="lease-10"]');
     const history = document.querySelector(
       '[data-cy="lease-receipt-history-10"]',
     );
@@ -424,10 +426,10 @@ describe("LeaseSection receipt history", () => {
     expect(row?.lastElementChild).toBe(history);
     expect(history?.textContent).toContain(formatMonth("2026-09"));
     expect(
-      document.querySelector('[data-cy="telecharger-quittance-bail-101"]'),
+      document.querySelector('[data-cy="download-lease-rent-receipt-101"]'),
     ).not.toBeNull();
     expect(
-      document.querySelector('[data-cy="telecharger-quittance-bail-202"]'),
+      document.querySelector('[data-cy="download-lease-rent-receipt-202"]'),
     ).toBeNull();
   });
 

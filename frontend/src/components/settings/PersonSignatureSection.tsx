@@ -117,19 +117,19 @@ export function PersonSignatureSection({ personId }: { personId: number }) {
 
       <div className="person-signature-section-grid">
         <FieldGroup
-          id="signature-personne-nom"
+          id="person-signature-name"
           label={t("settings.signatures.nameLabel")}
           error={nameError ?? undefined}
           help={t("settings.signatures.nameHelp")}
         >
           <input
-            id="signature-personne-nom"
+            id="person-signature-name"
             className={nameError ? "field field-error" : "field"}
             value={name}
             onChange={(event) => setName(event.target.value)}
             maxLength={255}
             placeholder={t("settings.signatures.namePlaceholder")}
-            data-cy="input-signature-personne-nom"
+            data-cy="input-person-signature-name"
           />
         </FieldGroup>
       </div>
@@ -160,7 +160,7 @@ export function PersonSignatureSection({ personId }: { personId: number }) {
           icon={<Check size={14} />}
           loading={create.isPending}
           onClick={add}
-          data-cy="btn-ajouter-signature-personne"
+          data-cy="btn-add-person-signature"
         >
           {t("settings.signatures.add")}
         </Button>
@@ -176,7 +176,7 @@ export function PersonSignatureSection({ personId }: { personId: number }) {
       ) : list.length === 0 ? (
         <p
           className="person-signature-section-empty"
-          data-cy="aucune-signature-personne"
+          data-cy="no-person-signature"
         >
           {t("settings.signatures.empty")}
         </p>
@@ -186,7 +186,7 @@ export function PersonSignatureSection({ personId }: { personId: number }) {
             <li
               key={signature.id}
               className="person-signature-section-item"
-              data-cy={`signature-personne-${signature.id}`}
+              data-cy={`person-signature-${signature.id}`}
             >
               {signature.id !== undefined ? (
                 <img
@@ -219,7 +219,7 @@ export function PersonSignatureSection({ personId }: { personId: number }) {
                     signature.name ??
                     t("settings.signatures.removeFallbackName"),
                 })}
-                data-cy={`btn-supprimer-signature-personne-${signature.id}`}
+                data-cy={`btn-delete-person-signature-${signature.id}`}
               >
                 {t("settings.signatures.remove")}
               </Button>

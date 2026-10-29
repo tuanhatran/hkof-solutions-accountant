@@ -109,8 +109,8 @@ export function LeaseForm({
         setRequestError(null);
         save.mutate(values);
       })}
-      formDataCy="formulaire-bail"
-      submitDataCy="btn-enregistrer-bail"
+      formDataCy="lease-form"
+      submitDataCy="btn-save-lease"
       formClassName="lease-form"
       pending={save.isPending}
       error={requestError}
@@ -149,7 +149,7 @@ export function LeaseForm({
             id="bail-bailleur"
             className={cn("field", errors.landlordId && "field-error")}
             {...register("landlordId")}
-            data-cy="select-bail-bailleur"
+            data-cy="select-lease-landlord"
           >
             <option value="">
               {t("settings.lease.form.landlordPlaceholder")}
@@ -172,7 +172,7 @@ export function LeaseForm({
               id="bail-locataire-societe"
               className={cn("field", errors.companyId && "field-error")}
               {...register("companyId")}
-              data-cy="select-bail-locataire-societe"
+              data-cy="select-lease-company-tenant"
             >
               <option value="">
                 {t("settings.lease.form.companyPlaceholder")}
@@ -194,7 +194,7 @@ export function LeaseForm({
               id="bail-locataire"
               className={cn("field", errors.tenantId && "field-error")}
               {...register("tenantId")}
-              data-cy="select-bail-locataire"
+              data-cy="select-lease-tenant"
             >
               <option value="">
                 {t("settings.lease.form.tenantPlaceholder")}
@@ -219,7 +219,7 @@ export function LeaseForm({
             className={cn("field", errors.propertyAddress && "field-error")}
             placeholder={t("settings.lease.form.addressPlaceholder")}
             {...register("propertyAddress")}
-            data-cy="input-bail-adresse"
+            data-cy="input-lease-address"
           />
         </FieldGroup>
         <FieldGroup
@@ -233,7 +233,7 @@ export function LeaseForm({
             className={cn("field", errors.rentExclCharges && "field-error")}
             placeholder={t("settings.lease.form.rentExclChargesPlaceholder")}
             {...register("rentExclCharges")}
-            data-cy="input-bail-loyer"
+            data-cy="input-lease-rent"
           />
         </FieldGroup>
         <FieldGroup
@@ -247,7 +247,7 @@ export function LeaseForm({
             className={cn("field", errors.charges && "field-error")}
             placeholder={t("settings.lease.form.chargesPlaceholder")}
             {...register("charges")}
-            data-cy="input-bail-charges"
+            data-cy="input-lease-charges"
           />
         </FieldGroup>
         {isCompanyLease ? (
@@ -259,7 +259,7 @@ export function LeaseForm({
           </p>
           <p
             className="lease-form-total-value"
-            data-cy="total-quittance-config"
+            data-cy="rent-receipt-config-total"
           >
             {total}
           </p>

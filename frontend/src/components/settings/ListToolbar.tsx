@@ -49,7 +49,7 @@ export function ListSearch({
         onChange={(event) => onQueryChange(event.target.value)}
         placeholder={placeholder}
         aria-label={t("settings.list.filterLabel")}
-        data-cy={`filtre-${list}`}
+        data-cy={`filter-${list}`}
       />
       {query.length > 0 ? (
         <Button
@@ -59,7 +59,7 @@ export function ListSearch({
           icon={<X size={13} />}
           aria-label={t("settings.list.clear")}
           onClick={() => onQueryChange("")}
-          data-cy={`filtre-effacer-${list}`}
+          data-cy={`filter-clear-${list}`}
         />
       ) : null}
     </div>
@@ -100,7 +100,7 @@ export function ListToolbar({
           value={sort}
           onChange={(event) => onSortChange(event.target.value)}
           aria-label={t("settings.list.sortLabel")}
-          data-cy={`tri-${list}`}
+          data-cy={`sort-${list}`}
         >
           {sortOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -118,12 +118,12 @@ export function ListToolbar({
               : t("settings.list.descending")
           }
           onClick={onToggleDirection}
-          data-cy={`tri-direction-${list}`}
+          data-cy={`sort-direction-${list}`}
         />
         <span
           className="list-toolbar-count"
           aria-live="polite"
-          data-cy={`filtre-compteur-${list}`}
+          data-cy={`filter-count-${list}`}
         >
           {t("settings.list.count", { visible, total })}
         </span>

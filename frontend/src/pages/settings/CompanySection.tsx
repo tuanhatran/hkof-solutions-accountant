@@ -116,7 +116,7 @@ export function CompanySection() {
               closeModals();
               setSelectedId(nextId);
             }}
-            data-cy="select-societe"
+            data-cy="select-company"
           >
             {list.map((company) => (
               <option key={company.id} value={company.id}>
@@ -131,7 +131,7 @@ export function CompanySection() {
           icon={<Plus size={14} />}
           onClick={() => setIdentityTarget("new")}
           disabled={identityTarget !== null}
-          data-cy="btn-nouvelle-societe"
+          data-cy="btn-new-company"
         >
           {t("settings.company.newCompany")}
         </Button>
@@ -142,7 +142,7 @@ export function CompanySection() {
             icon={<Trash2 size={13} />}
             className="text-danger hover:bg-danger-soft"
             onClick={() => setToDelete(selected)}
-            data-cy="btn-supprimer-societe"
+            data-cy="btn-delete-company"
           >
             {t("settings.company.deleteButton")}
           </Button>
@@ -173,7 +173,7 @@ export function CompanySection() {
           <div className="card-body">
             <EmptyState
               text={t("settings.company.empty")}
-              dataCy="aucune-societe"
+              dataCy="no-company"
             />
           </div>
         ) : null}

@@ -86,8 +86,8 @@ export function PersonForm({
         setRequestError(null);
         save.mutate(values);
       })}
-      formDataCy="formulaire-personne"
-      submitDataCy="btn-enregistrer-personne"
+      formDataCy="person-form"
+      submitDataCy="btn-save-person"
       formClassName="person-form"
       pending={save.isPending}
       error={requestError}
@@ -103,7 +103,7 @@ export function PersonForm({
             className={cn("field", errors.name && "field-error")}
             placeholder="M. Dupont"
             {...register("name")}
-            data-cy="input-personne-nom"
+            data-cy="input-person-name"
           />
         </FieldGroup>
         <FieldGroup
@@ -117,7 +117,7 @@ export function PersonForm({
             className="field"
             placeholder="1 avenue du Parc, 75011 Paris"
             {...register("address")}
-            data-cy="input-personne-adresse"
+            data-cy="input-person-address"
           />
         </FieldGroup>
         <FieldGroup
@@ -131,7 +131,7 @@ export function PersonForm({
             className="field"
             placeholder="Paris"
             {...register("issuePlace")}
-            data-cy="input-personne-emission"
+            data-cy="input-person-issue-place"
           />
         </FieldGroup>
       </div>
@@ -140,7 +140,7 @@ export function PersonForm({
         <p className="person-form-hint">{t("settings.people.form.hint")}</p>
       ) : (
         <>
-          <p className="person-form-hint" data-cy="personne-enregistree">
+          <p className="person-form-hint" data-cy="person-saved">
             {t("settings.people.form.saved")}
           </p>
           <PersonSignatureSection personId={savedId} />
