@@ -60,6 +60,7 @@ class AnalysisJobServiceTest {
     private DocumentTextExtractor extractor;
     private ExtractionPipeline pipeline;
     private CapturingExecutor executor;
+    private PlatformTransactionManager transactionManager;
     private AnalysisJobService service;
     private Path receiptFile;
     private AnalysisDocument launched;
@@ -72,7 +73,7 @@ class AnalysisJobServiceTest {
         extractor = mock(DocumentTextExtractor.class);
         pipeline = mock(ExtractionPipeline.class);
         executor = new CapturingExecutor();
-        PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
+        transactionManager = mock(PlatformTransactionManager.class);
         when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
         receiptFile = Files.writeString(tempDir.resolve("facture.pdf"), "contenu");
         service = new AnalysisJobService(repository, receiptService, llmConfigService, extractor, pipeline,
@@ -154,6 +155,30 @@ class AnalysisJobServiceTest {
                 .isEqualTo("L'analyse IA est désactivée. Saisissez le montant manuellement.");
         assertThat(launched.getDurationMs()).isZero();
         verify(extractor, never()).extract(any(Path.class), anyString(), anyInt());
+    }
+
+    @Test
+    @DisplayName("Execution uses the authenticated owner's LLM configuration via entityForUser")
+    void usesOwnerLlmConfigWhenOwnershipContextAvailable() {
+        fr.hkof.homeofficeexpenses.service.OwnershipContext ownershipContext = mock(
+                fr.hkof.homeofficeexpenses.service.OwnershipContext.class);
+        when(ownershipContext.currentUserId()).thenReturn(99L);
+        AnalysisJobService contextualService = new AnalysisJobService(
+                repository, receiptService, llmConfigService, extractor, pipeline,
+                executor, transactionManager, Clock.fixed(NOW, ZoneOffset.UTC), ownershipContext);
+
+        AnalysisDocument analysis = analysis(AnalysisStatus.PENDING);
+        stubNewAnalysis(analysis);
+        when(llmConfigService.entityForUser(99L)).thenReturn(config(false));
+        when(pipeline.fromJson(any())).thenReturn(null);
+
+        contextualService.launch(1L);
+        executor.tasks.get(0).run();
+
+        assertThat(launched.getStatus()).isEqualTo(AnalysisStatus.FAILED);
+        assertThat(launched.getErrorMessage()).contains("désactivée");
+        verify(llmConfigService).entityForUser(99L);
+        verify(llmConfigService, never()).entity();
     }
 
     @Test

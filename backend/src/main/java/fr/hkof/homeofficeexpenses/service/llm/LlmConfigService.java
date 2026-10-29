@@ -12,11 +12,13 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import fr.hkof.homeofficeexpenses.config.AppProperties;
 import fr.hkof.homeofficeexpenses.domain.LlmProvider;
 import fr.hkof.homeofficeexpenses.domain.LlmConfig;
 import fr.hkof.homeofficeexpenses.repository.LlmConfigRepository;
 import fr.hkof.homeofficeexpenses.service.BusinessException;
 import fr.hkof.homeofficeexpenses.service.NotFoundException;
+import fr.hkof.homeofficeexpenses.service.OwnershipContext;
 import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.LlmConfigDto;
 import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.LlmConfigRequest;
 import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.LlmModelDto;
@@ -34,23 +36,50 @@ public class LlmConfigService {
     private final LlmConfigRepository repository;
     private final OllamaClient ollamaClient;
     private final ExtractionPipeline extractionPipeline;
+    private final OwnershipContext ownership;
+    private final AppProperties properties;
     private final Clock clock;
 
     public LlmConfigService(LlmConfigRepository repository, OllamaClient ollamaClient,
-            ExtractionPipeline extractionPipeline, Clock clock) {
+            ExtractionPipeline extractionPipeline, OwnershipContext ownership,
+            AppProperties properties, Clock clock) {
         this.repository = repository;
         this.ollamaClient = ollamaClient;
         this.extractionPipeline = extractionPipeline;
+        this.ownership = ownership;
+        this.properties = properties;
         this.clock = clock;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public LlmConfig entity() {
-        return repository.findById(1L)
-                .orElseThrow(() -> new NotFoundException("LLM_CONFIG_NOT_FOUND", "Configuration LLM introuvable."));
+        return entityForUser(ownership.currentUserId());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
+    public LlmConfig entityForUser(Long userId) {
+        return repository.findByUserId(userId).orElseGet(() -> createDefaultConfig(userId));
+    }
+
+    private LlmConfig createDefaultConfig(Long userId) {
+        LlmConfig config = new LlmConfig();
+        config.setUserId(userId);
+        config.setActive(true);
+        config.setSupplier(LlmProvider.OLLAMA);
+        config.setUrl(properties.llm() != null && properties.llm().defaultUrl() != null
+                ? properties.llm().defaultUrl() : "http://localhost:11434");
+        config.setModel(properties.llm() != null ? properties.llm().defaultModel() : null);
+        config.setTimeoutSeconds(120);
+        config.setTemperature(BigDecimal.ZERO);
+        config.setNumCtx(8192);
+        config.setMaxPages(5);
+        config.setOcrActive(false);
+        config.setExtractionPrompt(DefaultPrompt.SYSTEM);
+        config.setUpdatedAt(Instant.now(clock));
+        return repository.save(config);
+    }
+
+    @Transactional
     public LlmConfigDto get() {
         return toDto(entity());
     }
@@ -58,6 +87,7 @@ public class LlmConfigService {
     @Transactional
     public LlmConfigDto update(LlmConfigRequest request) {
         LlmConfig config = entity();
+        config.setUserId(ownership.currentUserId());
         if (request.active() != null) {
             config.setActive(request.active());
         }

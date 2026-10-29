@@ -19,11 +19,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import fr.hkof.homeofficeexpenses.config.AppProperties;
 import fr.hkof.homeofficeexpenses.domain.LlmConfig;
 import fr.hkof.homeofficeexpenses.domain.LlmProvider;
 import fr.hkof.homeofficeexpenses.repository.LlmConfigRepository;
 import fr.hkof.homeofficeexpenses.service.BusinessException;
 import fr.hkof.homeofficeexpenses.service.NotFoundException;
+import fr.hkof.homeofficeexpenses.service.OwnershipContext;
 import fr.hkof.homeofficeexpenses.web.dto.ExtractionDtos.ExtractionDto;
 import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.LlmConfigDto;
 import fr.hkof.homeofficeexpenses.web.dto.LlmDtos.LlmConfigRequest;
@@ -39,6 +41,8 @@ class LlmConfigServiceTest {
     private LlmConfigRepository repository;
     private OllamaClient ollamaClient;
     private ExtractionPipeline extractionPipeline;
+    private OwnershipContext ownership;
+    private AppProperties properties;
     private LlmConfigService service;
     private LlmConfig config;
 
@@ -47,8 +51,12 @@ class LlmConfigServiceTest {
         repository = mock(LlmConfigRepository.class);
         ollamaClient = mock(OllamaClient.class);
         extractionPipeline = mock(ExtractionPipeline.class);
+        ownership = mock(OwnershipContext.class);
+        properties = new AppProperties("data", List.of(),
+                new AppProperties.Llm("http://localhost:8089", "default-model"));
         config = new LlmConfig();
         config.setId(1L);
+        config.setUserId(10L);
         config.setActive(true);
         config.setSupplier(LlmProvider.OLLAMA);
         config.setUrl("http://localhost:11434");
@@ -59,9 +67,10 @@ class LlmConfigServiceTest {
         config.setMaxPages(5);
         config.setOcrActive(false);
         config.setExtractionPrompt("Prompt");
-        when(repository.findById(1L)).thenReturn(Optional.of(config));
+        when(ownership.currentUserId()).thenReturn(10L);
+        when(repository.findByUserId(10L)).thenReturn(Optional.of(config));
         when(repository.save(any(LlmConfig.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        service = new LlmConfigService(repository, ollamaClient, extractionPipeline, CLOCK);
+        service = new LlmConfigService(repository, ollamaClient, extractionPipeline, ownership, properties, CLOCK);
     }
 
     @Test
@@ -92,17 +101,18 @@ class LlmConfigServiceTest {
     }
 
     @Test
-    @DisplayName("A missing configuration is reported in French")
-    void missingConfiguration() {
-        when(repository.findById(1L)).thenReturn(Optional.empty());
+    @DisplayName("Lazily creates a default configuration when absent for an account")
+    void lazilyCreatesDefaultConfigurationWhenAbsent() {
+        when(repository.findByUserId(20L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.get())
-                .isInstanceOf(NotFoundException.class)
-                .hasMessage("Configuration LLM introuvable.")
-                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("LLM_CONFIG_NOT_FOUND"));
-        assertThatThrownBy(() -> service.entity())
-                .isInstanceOf(NotFoundException.class)
-                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("LLM_CONFIG_NOT_FOUND"));
+        LlmConfig created = service.entityForUser(20L);
+
+        assertThat(created.getUserId()).isEqualTo(20L);
+        assertThat(created.isActive()).isTrue();
+        assertThat(created.getUrl()).isEqualTo("http://localhost:8089");
+        assertThat(created.getModel()).isEqualTo("default-model");
+        assertThat(created.getExtractionPrompt()).isEqualTo(DefaultPrompt.SYSTEM);
+        verify(repository).save(created);
     }
 
     @Test

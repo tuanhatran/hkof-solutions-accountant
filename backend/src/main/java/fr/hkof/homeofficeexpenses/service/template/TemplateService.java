@@ -21,6 +21,7 @@ import fr.hkof.homeofficeexpenses.repository.TemplateDocumentRepository;
 import fr.hkof.homeofficeexpenses.service.BusinessException;
 import fr.hkof.homeofficeexpenses.service.FileTypeDetector;
 import fr.hkof.homeofficeexpenses.service.NotFoundException;
+import fr.hkof.homeofficeexpenses.service.OwnershipContext;
 import fr.hkof.homeofficeexpenses.service.PdfService;
 import fr.hkof.homeofficeexpenses.service.StorageService;
 import fr.hkof.homeofficeexpenses.web.dto.TemplateDtos.TemplateDto;
@@ -36,37 +37,44 @@ public class TemplateService {
     private final PdfService pdfService;
     private final FileTypeDetector detector;
     private final ObjectMapper objectMapper;
+    private final OwnershipContext ownership;
     private final Clock clock;
     private final TemplateValidator validator = new TemplateValidator();
 
     public TemplateService(TemplateDocumentRepository repository, StorageService storage, PdfService pdfService,
-            FileTypeDetector detector, ObjectMapper objectMapper, Clock clock) {
+            FileTypeDetector detector, ObjectMapper objectMapper, OwnershipContext ownership, Clock clock) {
         this.repository = repository;
         this.storage = storage;
         this.pdfService = pdfService;
         this.detector = detector;
         this.objectMapper = objectMapper;
+        this.ownership = ownership;
         this.clock = clock;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<TemplateDto> list(TemplateType type) {
-        return repository.findByTypeAndDeletedFalseOrderByVersionDesc(type).stream()
+        Long owner = ownership.currentUserId();
+        ensureBuiltIn(owner, type);
+        return repository.findByUserIdAndTypeAndDeletedFalseOrderByVersionDesc(owner, type).stream()
                 .map(this::toDto)
                 .toList();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public TemplateDocument active(TemplateType type) {
-        return repository.findFirstByTypeAndActiveTrueAndDeletedFalse(type)
-                .or(() -> repository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(type))
+        Long owner = ownership.currentUserId();
+        ensureBuiltIn(owner, type);
+        return repository.findFirstByUserIdAndTypeAndActiveTrueAndDeletedFalse(owner, type)
+                .or(() -> repository.findFirstByUserIdAndTypeAndBuiltInTrueAndDeletedFalse(owner, type))
                 .orElseThrow(() -> new NotFoundException("TEMPLATE_ACTIVE_NOT_FOUND",
                         "Aucun template actif pour " + type, Map.of("type", type.name())));
     }
 
     @Transactional(readOnly = true)
     public TemplateDocument byId(Long id) {
-        return repository.findById(id)
+        Long owner = ownership.currentUserId();
+        return repository.findByIdAndUserId(id, owner)
                 .filter(template -> !template.isDeleted())
                 .orElseThrow(() -> new NotFoundException("TEMPLATE_NOT_FOUND", "Template introuvable."));
     }
@@ -107,9 +115,13 @@ public class TemplateService {
         if (!report.structureValid()) {
             throw new BusinessException("TEMPLATE_INVALID", String.join(" ; ", report.errors()));
         }
-        int version = repository.findTopByTypeOrderByVersionDesc(type).map(template -> template.getVersion() + 1).orElse(1);
-        String path = storage.storeTemplate(content, type.name(), version);
+        Long owner = ownership.currentUserId();
+        ensureBuiltIn(owner, type);
+        int version = repository.findTopByUserIdAndTypeOrderByVersionDesc(owner, type)
+                .map(template -> template.getVersion() + 1).orElse(1);
+        String path = storage.storeTemplate(owner, content, type.name(), version);
         TemplateDocument template = new TemplateDocument();
+        template.setUserId(owner);
         template.setType(type);
         template.setName(name.trim());
         template.setVersion(version);
@@ -125,14 +137,16 @@ public class TemplateService {
 
     @Transactional
     public TemplateDto activate(Long id) {
+        Long owner = ownership.currentUserId();
         TemplateDocument template = byId(id);
-        List<TemplateDocument> activeTemplates = repository.findByTypeAndActiveTrueAndDeletedFalse(template.getType());
+        List<TemplateDocument> activeTemplates = repository
+                .findByUserIdAndTypeAndActiveTrueAndDeletedFalse(owner, template.getType());
         for (TemplateDocument other : activeTemplates) {
             other.setActive(false);
         }
         if (!activeTemplates.isEmpty()) {
             // Flush the deactivation before activating the new version: the PostgreSQL partial
-            // unique index ux_template_active rejects two active rows for the same type, even
+            // unique index ux_template_user_active rejects two active rows for the same type, even
             // within a single transaction.
             repository.saveAll(activeTemplates);
             repository.flush();
@@ -157,9 +171,33 @@ public class TemplateService {
 
     @Transactional
     public TemplateDto reset(TemplateType type) {
-        TemplateDocument builtIn = repository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(type)
+        Long owner = ownership.currentUserId();
+        ensureBuiltIn(owner, type);
+        TemplateDocument builtIn = repository.findFirstByUserIdAndTypeAndBuiltInTrueAndDeletedFalse(owner, type)
                 .orElseThrow(() -> new NotFoundException("TEMPLATE_BUILT_IN_NOT_FOUND", "Modèle intégré introuvable."));
         return activate(builtIn.getId());
+    }
+
+    private void ensureBuiltIn(Long ownerId, TemplateType type) {
+        if (repository.findFirstByUserIdAndTypeAndBuiltInTrueAndDeletedFalse(ownerId, type).isPresent()) {
+            return;
+        }
+        TemplateDocument template = new TemplateDocument();
+        template.setUserId(ownerId);
+        template.setType(type);
+        template.setName(type == TemplateType.RENT_RECEIPT
+                ? "Quittance — modèle intégré"
+                : "Note de frais — modèle intégré");
+        template.setVersion(1);
+        template.setFormat(TemplateFormat.HTML);
+        template.setPath(type == TemplateType.RENT_RECEIPT
+                ? "classpath:templates/defaut/quittance.html"
+                : "classpath:templates/defaut/note-frais.html");
+        template.setBuiltIn(true);
+        template.setDeleted(false);
+        template.setActive(true);
+        template.setCreatedAt(Instant.now(clock));
+        repository.save(template);
     }
 
     public byte[] file(Long id) {

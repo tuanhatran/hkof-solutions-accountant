@@ -132,6 +132,8 @@ class UserOwnershipMigrationPostgresTest {
             assertThat(singleLong(statement, "SELECT COUNT(*) FROM person WHERE user_id = " + owner))
                     .isEqualTo(singleLong(statement, "SELECT COUNT(*) FROM person"));
             assertThat(singleLong(statement, "SELECT COUNT(*) FROM signature WHERE user_id IS NULL")).isZero();
+            assertThat(singleLong(statement, "SELECT COUNT(*) FROM template_document WHERE user_id IS NULL")).isZero();
+            assertThat(singleLong(statement, "SELECT COUNT(*) FROM llm_config WHERE user_id IS NULL")).isZero();
         }
     }
 
@@ -225,6 +227,77 @@ class UserOwnershipMigrationPostgresTest {
                     INSERT INTO lease (id, user_id, landlord_id, company_id, company_lease, address_id,
                         rent_excl_charges, charges, total_area, business_area, deleted, created_at)
                     VALUES (25, %d, 200, 1, TRUE, 20, 900.00, 0.00, 70.00, 25.00, FALSE, NOW())
+                    """.formatted(owner))).isInstanceOf(SQLException.class);
+        }
+    }
+
+    @Test
+    @DisplayName("V24 backfills template documents and LLM configs to thtran, scopes unique indexes, and sets identity")
+    void backfillsTemplatesAndLlmConfig() throws Exception {
+        resetSchema();
+        migrateTo("23");
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            statement.execute("""
+                    INSERT INTO template_document (id, type, name, version, format, file_path, active, built_in, deleted, created_at)
+                    VALUES (10, 'RENT_RECEIPT', 'Modèle legacy', 1, 'HTML', '/legacy/quittance.html', TRUE, TRUE, FALSE, NOW())
+                    """);
+            statement.execute("""
+                    INSERT INTO llm_config (id, active, provider, url, model, extraction_prompt, updated_at)
+                    VALUES (1, TRUE, 'OLLAMA', 'http://localhost:11434', 'legacy-model', 'Prompt', NOW())
+                    """);
+        }
+
+        migrate();
+
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            long owner = ownerId(statement, THTRAN_EMAIL);
+            long other = insertOtherUser(statement);
+
+            assertThat(singleLong(statement, "SELECT user_id FROM template_document WHERE id = 10")).isEqualTo(owner);
+            assertThat(singleLong(statement, "SELECT user_id FROM llm_config WHERE id = 1")).isEqualTo(owner);
+
+            for (String table : List.of("template_document", "llm_config")) {
+                assertThat(singleLong(statement, """
+                        SELECT COUNT(*) FROM information_schema.columns
+                        WHERE table_name = '%s' AND column_name = 'user_id' AND is_nullable = 'NO'
+                        """.formatted(table))).isEqualTo(1);
+            }
+
+            assertThat(singleLong(statement,
+                    "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'ux_template_active'"))
+                    .isZero();
+            assertThat(singleLong(statement,
+                    "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'ux_template_user_active'"))
+                    .isEqualTo(1);
+            assertThat(singleLong(statement,
+                    "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'ix_template_user_type'"))
+                    .isEqualTo(1);
+            assertThat(singleLong(statement,
+                    "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'ux_llm_config_user'"))
+                    .isEqualTo(1);
+
+            // Other user can also have an active RENT_RECEIPT template:
+            statement.execute("""
+                    INSERT INTO template_document (type, name, version, format, file_path, active, built_in, deleted, created_at, user_id)
+                    VALUES ('RENT_RECEIPT', 'Modèle autre', 1, 'HTML', '/other/quittance.html', TRUE, TRUE, FALSE, NOW(), %d)
+                    """.formatted(other));
+
+            // But same user cannot have two active templates of the same type:
+            assertThatThrownBy(() -> statement.execute("""
+                    INSERT INTO template_document (type, name, version, format, file_path, active, built_in, deleted, created_at, user_id)
+                    VALUES ('RENT_RECEIPT', 'Modèle doublon', 2, 'HTML', '/owner/quittance2.html', TRUE, FALSE, FALSE, NOW(), %d)
+                    """.formatted(owner))).isInstanceOf(SQLException.class);
+
+            // Other user gets their own LLM config:
+            statement.execute("""
+                    INSERT INTO llm_config (user_id, active, provider, url, extraction_prompt)
+                    VALUES (%d, TRUE, 'OLLAMA', 'http://localhost:11434', 'Prompt autre')
+                    """.formatted(other));
+
+            // Same user cannot have two LLM configs:
+            assertThatThrownBy(() -> statement.execute("""
+                    INSERT INTO llm_config (user_id, active, provider, url, extraction_prompt)
+                    VALUES (%d, TRUE, 'OLLAMA', 'http://localhost:11434', 'Prompt doublon')
                     """.formatted(owner))).isInstanceOf(SQLException.class);
         }
     }

@@ -29,6 +29,7 @@ import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.Employee;
 import fr.hkof.homeofficeexpenses.domain.EmployeeTitle;
 import fr.hkof.homeofficeexpenses.domain.Lease;
+import fr.hkof.homeofficeexpenses.domain.LlmConfig;
 import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
@@ -118,10 +119,10 @@ class DataInitializerTest {
             return address;
         });
         when(expenseItemRepository.findFirstByUserIdAndCompanyIdAndCode(eq(1L), any(), any())).thenReturn(Optional.empty());
-        when(templateRepository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(any())).thenReturn(Optional.empty());
+        when(templateRepository.findFirstByUserIdAndTypeAndBuiltInTrueAndDeletedFalse(eq(1L), any())).thenReturn(Optional.empty());
         when(templateRepository.save(any(TemplateDocument.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(templateRepository.findFirstByTypeAndActiveTrueAndDeletedFalse(any())).thenReturn(Optional.empty());
-        when(llmConfigRepository.existsById(1L)).thenReturn(false);
+        when(templateRepository.findFirstByUserIdAndTypeAndActiveTrueAndDeletedFalse(eq(1L), any())).thenReturn(Optional.empty());
+        when(llmConfigRepository.findByUserId(1L)).thenReturn(Optional.empty());
         when(appUserRepository.existsByEmailIgnoreCase(any())).thenReturn(false);
 
         initializer.run(mock(ApplicationArguments.class));
@@ -154,7 +155,9 @@ class DataInitializerTest {
         assertThat(companies.getValue().getHomeAddress()).isNull();
         assertThat(companies.getValue().getTotalArea()).isNull();
         verify(expenseItemRepository, times(6)).save(any());
-        verify(llmConfigRepository).save(any());
+        ArgumentCaptor<LlmConfig> llmConfigs = ArgumentCaptor.forClass(LlmConfig.class);
+        verify(llmConfigRepository).save(llmConfigs.capture());
+        assertThat(llmConfigs.getValue().getUserId()).isEqualTo(1L);
 
         ArgumentCaptor<AppUser> appUsers = ArgumentCaptor.forClass(AppUser.class);
         verify(appUserRepository).save(appUsers.capture());
@@ -168,6 +171,7 @@ class DataInitializerTest {
         assertThat(templates.getAllValues()).extracting(TemplateDocument::getType)
                 .contains(TemplateType.RENT_RECEIPT, TemplateType.EXPENSE_STATEMENT);
         assertThat(templates.getAllValues()).anyMatch(TemplateDocument::isActive);
+        assertThat(templates.getAllValues()).allMatch(t -> Long.valueOf(1L).equals(t.getUserId()));
     }
 
     @Test
@@ -180,11 +184,11 @@ class DataInitializerTest {
         when(leaseRepository.findFirstByUserIdAndDeletedFalseOrderByIdAsc(1L)).thenReturn(Optional.of(new Lease()));
         when(expenseItemRepository.findFirstByUserIdAndCompanyIdAndCode(eq(1L), eq(1L), any()))
                 .thenReturn(Optional.of(new fr.hkof.homeofficeexpenses.domain.ExpenseItem()));
-        when(templateRepository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(any()))
+        when(templateRepository.findFirstByUserIdAndTypeAndBuiltInTrueAndDeletedFalse(eq(1L), any()))
                 .thenReturn(Optional.of(new TemplateDocument()));
-        when(templateRepository.findFirstByTypeAndActiveTrueAndDeletedFalse(any()))
+        when(templateRepository.findFirstByUserIdAndTypeAndActiveTrueAndDeletedFalse(eq(1L), any()))
                 .thenReturn(Optional.of(new TemplateDocument()));
-        when(llmConfigRepository.existsById(1L)).thenReturn(true);
+        when(llmConfigRepository.findByUserId(1L)).thenReturn(Optional.of(new LlmConfig()));
         when(appUserRepository.existsByEmailIgnoreCase(any())).thenReturn(true);
 
         initializer.run(mock(ApplicationArguments.class));
@@ -209,11 +213,11 @@ class DataInitializerTest {
         when(leaseRepository.findFirstByUserIdAndDeletedFalseOrderByIdAsc(1L)).thenReturn(Optional.of(new Lease()));
         when(expenseItemRepository.findFirstByUserIdAndCompanyIdAndCode(eq(1L), eq(1L), any()))
                 .thenReturn(Optional.of(new fr.hkof.homeofficeexpenses.domain.ExpenseItem()));
-        when(templateRepository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(any()))
+        when(templateRepository.findFirstByUserIdAndTypeAndBuiltInTrueAndDeletedFalse(eq(1L), any()))
                 .thenReturn(Optional.of(new TemplateDocument()));
-        when(templateRepository.findFirstByTypeAndActiveTrueAndDeletedFalse(any()))
+        when(templateRepository.findFirstByUserIdAndTypeAndActiveTrueAndDeletedFalse(eq(1L), any()))
                 .thenReturn(Optional.of(new TemplateDocument()));
-        when(llmConfigRepository.existsById(1L)).thenReturn(true);
+        when(llmConfigRepository.findByUserId(1L)).thenReturn(Optional.of(new LlmConfig()));
         when(appUserRepository.existsByEmailIgnoreCase(any())).thenReturn(false);
         when(environment.matchesProfiles("e2e")).thenReturn(true);
 

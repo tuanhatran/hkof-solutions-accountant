@@ -106,6 +106,17 @@ class StorageServiceEdgeCasesTest {
     }
 
     @Test
+    @DisplayName("User-scoped templates embed the owner ID in the file name")
+    void storeTemplateWithUserId() {
+        StorageService storage = storage(tempDir.resolve("data"));
+
+        String template = storage.storeTemplate(42L, "<html></html>".getBytes(StandardCharsets.UTF_8), "RENT_RECEIPT", 2);
+
+        assertThat(Path.of(template)).hasFileName("u42_rent_receipt_v2.html");
+        assertThat(Path.of(template)).exists();
+    }
+
+    @Test
     @DisplayName("Storage failures are wrapped in French messages")
     void storeTemplateAndPdfFailures() throws IOException {
         Path root = tempDir.resolve("data");

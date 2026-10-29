@@ -5,10 +5,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
@@ -251,6 +254,167 @@ class UserDocumentIsolationIntegrationTest {
         // B sees only its own signature on its landlord.
         assertThat(listedIds(b, "/api/signatures?personId=" + bLandlordId)).containsExactly(bLandlordSig);
         assertThat(listedIds(b, "/api/signatures?personId=" + bEmployeeId)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Templates stay isolated per account: uploads, activation, reset, delete, distinct files, and 404 on foreign template")
+    void isolatesTemplatesAndUploads() throws Exception {
+        Session a = sessionFor("templates.a@example.test");
+        Session b = sessionFor("templates.b@example.test");
+        long aOwner = ownerId("templates.a@example.test");
+        long bOwner = ownerId("templates.b@example.test");
+
+        created(a, "/api/companies", """
+                {"name":"Alpha Templates","legalForm":"SARL","address":"1 rue Alpha","managerName":"Gérant",
+                 "leaseId":null,"issuePlace":"Paris"}
+                """);
+
+        byte[] validHtmlA = ("<!DOCTYPE html><html><body><h1>Quittance A</h1>"
+                + "<p>{{bailleur.nom}}</p><p>{{locataire.nom}}</p><p>{{total}}</p></body></html>")
+                .getBytes(StandardCharsets.UTF_8);
+        MockMultipartFile fileA = new MockMultipartFile("file", "modele-a.html", "text/html", validHtmlA);
+        MockMultipartHttpServletRequestBuilder uploadA = multipart("/api/templates");
+        uploadA.file(fileA)
+                .param("type", "RENT_RECEIPT")
+                .param("name", "Modèle Alpha")
+                .session(a.http())
+                .cookie(a.csrf())
+                .header(CSRF_HEADER, a.csrf().getValue());
+        MvcResult resA = mockMvc.perform(uploadA).andExpect(status().isCreated()).andReturn();
+        long aTemplateId = id(resA);
+        int aVersion = JsonPath.read(resA.getResponse().getContentAsString(), "$.version");
+        assertThat(aVersion).isEqualTo(2);
+
+        byte[] validHtmlB = ("<!DOCTYPE html><html><body><h1>Quittance B</h1>"
+                + "<p>{{bailleur.nom}}</p><p>{{locataire.nom}}</p><p>{{total}}</p></body></html>")
+                .getBytes(StandardCharsets.UTF_8);
+        MockMultipartFile fileB = new MockMultipartFile("file", "modele-b.html", "text/html", validHtmlB);
+        MockMultipartHttpServletRequestBuilder uploadB = multipart("/api/templates");
+        uploadB.file(fileB)
+                .param("type", "RENT_RECEIPT")
+                .param("name", "Modèle Bêta")
+                .session(b.http())
+                .cookie(b.csrf())
+                .header(CSRF_HEADER, b.csrf().getValue());
+        MvcResult resB = mockMvc.perform(uploadB).andExpect(status().isCreated()).andReturn();
+        long bTemplateId = id(resB);
+        int bVersion = JsonPath.read(resB.getResponse().getContentAsString(), "$.version");
+        assertThat(bVersion).isEqualTo(2);
+
+        String aFilePath = jdbc.queryForObject("SELECT file_path FROM template_document WHERE id = ?", String.class, aTemplateId);
+        String bFilePath = jdbc.queryForObject("SELECT file_path FROM template_document WHERE id = ?", String.class, bTemplateId);
+        assertThat(aFilePath).isNotEqualTo(bFilePath);
+        assertThat(Path.of(aFilePath)).hasFileName("u" + aOwner + "_rent_receipt_v2.html").exists();
+        assertThat(Path.of(bFilePath)).hasFileName("u" + bOwner + "_rent_receipt_v2.html").exists();
+
+        assertThat(listedIds(a, "/api/templates?type=RENT_RECEIPT")).contains(aTemplateId).doesNotContain(bTemplateId);
+        assertThat(listedIds(b, "/api/templates?type=RENT_RECEIPT")).contains(bTemplateId).doesNotContain(aTemplateId);
+
+        mockMvc.perform(get("/api/templates/{id}/file", aTemplateId).session(b.http()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_NOT_FOUND"));
+        mockMvc.perform(mutation(post("/api/templates/{id}/preview", aTemplateId), b))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_NOT_FOUND"));
+        mockMvc.perform(mutation(post("/api/templates/{id}/activate", aTemplateId), b))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_NOT_FOUND"));
+        mockMvc.perform(mutation(delete("/api/templates/{id}", aTemplateId), b))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_NOT_FOUND"));
+
+        long bCompanyId = id(created(b, "/api/companies", """
+                {"name":"Bêta Templates","legalForm":"SARL","address":"1 rue Bêta","managerName":"Gérant",
+                 "leaseId":null,"issuePlace":"Paris"}
+                """));
+        long bLandlordId = id(created(b, "/api/persons", "{\"name\":\"Bailleur Bêta\",\"address\":\"1 rue B\"}"));
+        long bTenantId = id(created(b, "/api/persons", "{\"name\":\"Locataire Bêta\",\"address\":\"2 rue B\"}"));
+        created(b, "/api/leases", leaseBody(bLandlordId, bTenantId, bCompanyId, "1 rue Bêta, 75001 Paris"));
+        long bEmployeeId = id(created(b, "/api/companies/" + bCompanyId + "/employees", """
+                {"firstName":"Gérant","lastName":"Bêta","title":"CEO","address":"3 rue Gérant",
+                 "issuePlace":"Paris"}
+                """));
+        signature(b, bLandlordId, "Signature bailleur B");
+        signature(b, bEmployeeId, "Signature gérant B");
+        created(b, "/api/expense-items", """
+                {"companyId":%d,"leaseId":null,"code":"gaz","label":"Gaz Bêta","supplier":"Fournisseur",
+                 "proRataPct":"35.71","periodicity":"MONTHLY","active":true,"sortOrder":10,
+                 "multipleLinesAllowed":false}
+                """.formatted(bCompanyId));
+
+        mockMvc.perform(mutation(post("/api/rent-receipts"), b).contentType(JSON)
+                        .content("""
+                                {"month":"2026-06","companyId":%d,"landlordId":%d,"tenantId":%d,"templateId":%d}
+                                """.formatted(bCompanyId, bLandlordId, bTenantId, aTemplateId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_NOT_FOUND"));
+
+        mockMvc.perform(mutation(post("/api/rent-receipts/preview"), b).contentType(JSON)
+                        .content("""
+                                {"month":"2026-06","companyId":%d,"landlordId":%d,"tenantId":%d,"templateId":%d}
+                                """.formatted(bCompanyId, bLandlordId, bTenantId, aTemplateId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_NOT_FOUND"));
+
+        mockMvc.perform(mutation(post("/api/expense-statements"), b).contentType(JSON)
+                        .content("""
+                                {"companyId":%d,"month":"2026-06","templateId":%d,
+                                 "lines":[{"itemCode":"gaz","amountInclVat":"50.00","proRataPct":"35.71"}]}
+                                """.formatted(bCompanyId, aTemplateId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_NOT_FOUND"));
+
+        mockMvc.perform(mutation(post("/api/expense-statements/preview"), b).contentType(JSON)
+                        .content("""
+                                {"companyId":%d,"month":"2026-06","templateId":%d}
+                                """.formatted(bCompanyId, aTemplateId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_NOT_FOUND"));
+
+        mockMvc.perform(get("/api/templates/{id}/file", aTemplateId).session(a.http()))
+                .andExpect(status().isOk());
+        mockMvc.perform(mutation(post("/api/templates/{id}/preview", aTemplateId), a))
+                .andExpect(status().isOk());
+        mockMvc.perform(mutation(post("/api/templates/{id}/activate", aTemplateId), a))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(true));
+        mockMvc.perform(mutation(post("/api/templates/default/RENT_RECEIPT"), a))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(true));
+        mockMvc.perform(mutation(delete("/api/templates/{id}", aTemplateId), a))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("Two accounts configure and read their LLM config independently")
+    void isolatesLlmConfiguration() throws Exception {
+        Session a = sessionFor("llm.a@example.test");
+        Session b = sessionFor("llm.b@example.test");
+
+        mockMvc.perform(mutation(put("/api/admin/llm"), a).contentType(JSON)
+                        .content("""
+                                {"model":"model-alpha","temperature":"0.8","active":true}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.model").value("model-alpha"))
+                .andExpect(jsonPath("$.temperature").value("0.8"));
+
+        mockMvc.perform(get("/api/admin/llm").session(b.http()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.model").value(org.hamcrest.Matchers.not("model-alpha")));
+
+        mockMvc.perform(mutation(put("/api/admin/llm"), b).contentType(JSON)
+                        .content("""
+                                {"model":"model-beta","temperature":"1.2","active":true}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.model").value("model-beta"))
+                .andExpect(jsonPath("$.temperature").value("1.2"));
+
+        mockMvc.perform(get("/api/admin/llm").session(a.http()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.model").value("model-alpha"))
+                .andExpect(jsonPath("$.temperature").value("0.8"));
     }
 
     private static String leaseBody(long landlordId, long tenantId, long companyId, String address) {

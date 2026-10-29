@@ -18,7 +18,7 @@ import fr.hkof.homeofficeexpenses.web.dto.TemplateDtos.ValidationReportDto;
 
 class TemplateServiceValidationTest {
 
-    private final TemplateService service = new TemplateService(null, null, null, null, null, Clock.systemUTC());
+    private final TemplateService service = new TemplateService(null, null, null, null, null, null, Clock.systemUTC());
 
     private String resource(String path) throws IOException {
         try (InputStream in = new ClassPathResource(path).getInputStream()) {
