@@ -1,10 +1,10 @@
 # 67 - DATA-CY-EN-SETTINGS
 
-Status: CHANGES_REQUESTED
+Status: USER_REVIEW
 Branch: feat/67-data-cy-en-settings
 Base: 5c802ed
 Size: L
-Round: 1/2
+Round: 2/2
 
 ## Goal
 
@@ -48,3 +48,10 @@ Contract: none · Money: none · UI text stays French, hooks English · no `any`
 - Deviations: (1) 3 consumer test files outside the writable list updated per rule 5 + composed consequence: `LeaseReceiptHistory.test.tsx`, `CompanyLeaseExpensesModal.test.tsx`, `CompanyIdentityView.test.tsx`. (2) `id=` attributes aligned with renamed data-cy counterparts for a clean acceptance grep (task 66 precedent): ExpenseItemForm.tsx (`poste-code/libelle/fournisseur/prorata/periodicite/ordre/actif/plusieurs-lignes` → `item-*`), PersonSignatureSection.tsx (`signature-personne-nom` → `person-signature-name`), plus the 2 cypress `#poste-code` → `#item-code` selectors. (3) Row-order test helpers (LeaseSection/PersonnesSection/EmployeeSection .test.tsx) gained `.filter((id) => Number.isInteger(id))` because renamed cell hooks (lease-total-N, person-signatures-N, employee-signatures-N) now share the row prefix with the `[data-cy^=…]` selectors; assertions unchanged. (4) Stale negative literal `dialogue-formulaire-bail-societe` (no supplier since 5fdf216) → `dialogue-company-lease-form` per compounds (bail-societe→company-lease, formulaire→form); polarity kept.
 - Commit: 6cea911 40 files +560/-594 · Contract: none.
 - 2026-10-29 lead: `VERDICT: BLOCKERS (1)` (reviewer, round 1/2) — `CompanyLeaseTab.test.tsx:502`: `aucun-bail-societe` became `no-lease-societe` (untranslated FR segment in an EN hook, not in the handoff pairs, undisclosed). Fix: rename to `no-company-lease` (compound `bail-societe`→`company-lease`), same consumer, polarity kept.
+- 2026-10-29 builder (round 2) · Fix: single reviewer blocker — `CompanyLeaseTab.test.tsx:502` `no-lease-societe` → `no-company-lease`. Scope check: `aucun-bail-societe` 0 occurrences repo-wide (at base 5c802ed it existed only in this test line; no production supplier to align — production empty-state hooks are `empty-company-leases-list`/`no-results-company-leases`); `no-lease-societe` exactly 1 occurrence (this line). Polarity kept (`toBeNull`), test-only value, no behaviour change. Tests-only round: targeted test + lint/format/build/diff-check, no coverage/E2E per gate table.
+- PASS `npx vitest run src/pages/settings/CompanyLeaseTab.test.tsx` exit 0 — 1 file / 29 tests passed (literal rename: negative assertion holds before and after, so no red phase exists; no other test file touched).
+- PASS `npm run lint` exit 0 · PASS `npm run format:check` exit 0 (all matched files use Prettier code style) · PASS `npm run build` exit 0 (chunk-size warning only) · PASS `git diff --check` exit 0.
+- Acceptance grep: `aucun-bail-societe` and `no-lease-societe` absent from frontend/src and frontend/cypress (and repo-wide); `no-company-lease` present in the consumer at `CompanyLeaseTab.test.tsx:502`.
+- Deviations: none (single-line, single-file rename). Note: infra-only commit `3b5af13` (handoffs + agent docs) sits on top of `6cea911`; left untouched.
+- Commit: db0d15c 1 file +1/-1 · Contract: none.
+- 2026-10-29 lead: `VERDICT: PASS` (reviewer, round 2/2) — fix commit `db0d15c` is exactly the required single-line rename, polarity kept, no leak. Task 67 accepted into the series; continues to 68.
