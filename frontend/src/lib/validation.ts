@@ -380,3 +380,58 @@ export const llmSchema = z.object({
 });
 
 export type LlmFormValues = z.infer<typeof llmSchema>;
+
+function authMessage(key: string): string {
+  return i18n.t(`auth.validation.${key}`);
+}
+
+const authEmail = z
+  .string()
+  .trim()
+  .min(1, { error: () => authMessage("emailRequired") })
+  .email({ error: () => authMessage("emailInvalid") });
+
+export const loginSchema = z.object({
+  email: authEmail,
+  password: z.string().min(1, { error: () => authMessage("passwordRequired") }),
+});
+
+export type LoginFormValues = z.infer<typeof loginSchema>;
+
+export const registerSchema = z
+  .object({
+    email: authEmail,
+    password: z
+      .string()
+      .min(8, { error: () => authMessage("passwordTooShort") })
+      .max(100, { error: () => authMessage("passwordTooLong") }),
+    confirmPassword: z
+      .string()
+      .min(1, { error: () => authMessage("confirmRequired") }),
+  })
+  .refine((values) => values.password === values.confirmPassword, {
+    path: ["confirmPassword"],
+    error: () => authMessage("confirmMismatch"),
+  });
+
+export type RegisterFormValues = z.infer<typeof registerSchema>;
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z
+      .string()
+      .min(1, { error: () => authMessage("currentPasswordRequired") }),
+    newPassword: z
+      .string()
+      .min(8, { error: () => authMessage("passwordTooShort") })
+      .max(100, { error: () => authMessage("passwordTooLong") }),
+    confirmPassword: z
+      .string()
+      .min(1, { error: () => authMessage("confirmRequired") }),
+  })
+  .refine((values) => values.newPassword === values.confirmPassword, {
+    path: ["confirmPassword"],
+    error: () => authMessage("confirmMismatch"),
+  });
+
+export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;

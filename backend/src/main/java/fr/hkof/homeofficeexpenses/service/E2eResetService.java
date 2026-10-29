@@ -52,6 +52,10 @@ public class E2eResetService {
     private static final String DEFAULT_LANDLORD_ISSUE_PLACE = "Paris";
     private static final String DEFAULT_RENT_EXCL_CHARGES = "1300.00";
     private static final String DEFAULT_CHARGES = "0.00";
+    private static final String SEED_USER_EMAIL = "thtran@homeofficeexpenses.local";
+    private static final String SEED_USER_PASSWORD = "thtran";
+    private static final String E2E_USER_EMAIL = "e2e@homeofficeexpenses.local";
+    private static final String E2E_USER_PASSWORD = "e2e-password";
 
     /** Synthetic 1x1 PNG, never a real personal signature. */
     private static final byte[] DEFAULT_SIGNATURE_PNG = Base64.getDecoder().decode(
@@ -74,6 +78,7 @@ public class E2eResetService {
     private final SignatureRepository signatures;
     private final StorageService storage;
     private final DataInitializer initializer;
+    private final AuthService authService;
 
     public E2eResetService(AnalysisDocumentRepository analyses, ExpenseLineRepository lines,
             ExpenseStatementRepository statements, RentReceiptRepository rentReceipts,
@@ -81,7 +86,7 @@ public class E2eResetService {
             TemplateDocumentRepository templates, LlmConfigRepository llmConfigs, ExpenseItemRepository items,
             CompanyRepository companies, EmployeeRepository employees, LeaseRepository leases,
             AddressRepository addresses, PersonRepository persons, SignatureRepository signatures,
-            StorageService storage, DataInitializer initializer) {
+            StorageService storage, DataInitializer initializer, AuthService authService) {
         this.analyses = analyses;
         this.lines = lines;
         this.statements = statements;
@@ -99,6 +104,7 @@ public class E2eResetService {
         this.signatures = signatures;
         this.storage = storage;
         this.initializer = initializer;
+        this.authService = authService;
     }
 
     @Transactional
@@ -120,6 +126,8 @@ public class E2eResetService {
         companies.deleteAllInBatch();
         cleanFiles();
         initializer.run(new DefaultApplicationArguments(new String[0]));
+        authService.restoreSeedUser(SEED_USER_EMAIL, SEED_USER_PASSWORD, true);
+        authService.restoreSeedUser(E2E_USER_EMAIL, E2E_USER_PASSWORD, false);
         Person landlord = naturalPerson(DEFAULT_LANDLORD_NAME);
         // Synthetic issue place so a person lease still renders "Fait à" in e2e.
         if (landlord != null) {

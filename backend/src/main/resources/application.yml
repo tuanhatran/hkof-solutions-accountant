@@ -23,13 +23,32 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
 
 server:
   port: ${SERVER_PORT:8080}
   error:
     include-message: always
+  servlet:
+    session:
+      timeout: 12h
+      cookie:
+        http-only: true
+        same-site: lax
+        secure: false
 
 management:
+  health:
+    mail:
+      enabled: false
   endpoints:
     web:
       exposure:
@@ -49,6 +68,11 @@ springdoc:
 app:
   data-dir: ${APP_DATA_DIR:./data}
   cors-allowed-origins: ${APP_CORS_ORIGINS:http://localhost:5173,http://localhost:8080}
+  security:
+    enabled: ${APP_SECURITY_ENABLED:true}
+  auth:
+    confirmation-url: ${APP_AUTH_CONFIRMATION_URL:http://localhost:5173/confirmer-email}
+    confirmation-ttl: 24h
   llm:
     default-url: ${OLLAMA_BASE_URL:http://localhost:11434}
     default-model: ${OLLAMA_MODEL:qwen2.5:7b}

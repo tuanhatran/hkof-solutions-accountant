@@ -1,11 +1,13 @@
 import "./AppShell.css";
-import { ShieldCheck } from "lucide-react";
+import { LogOut, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
+import { logoutSession, useAuthState } from "@/api/queries";
 import { MobileNavigation, SideNavigation } from "@/components/layout/AppNav";
 import { LanguageSelector } from "@/components/layout/LanguageSelector";
 import { LlmBadge } from "@/components/llm/LlmBadge";
+import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ToastHost } from "@/components/ui/ToastHost";
 import { useDraftBlock } from "@/hooks/useDraftBlock";
@@ -49,8 +51,15 @@ function Brand({ compact = false }: { compact?: boolean }) {
 
 export function AppShell() {
   const { t } = useTranslation();
+  const { user } = useAuthState();
+  const navigate = useNavigate();
   const blocker = useDraftBlock();
   const [savingDraft, setSavingDraft] = useState(false);
+
+  async function logout() {
+    await logoutSession();
+    navigate("/connexion", { replace: true });
+  }
 
   async function saveAndLeave() {
     if (blocker.state !== "blocked") {
@@ -101,6 +110,28 @@ export function AppShell() {
           <div className="app-shell-topbar-actions ml-auto">
             <LlmBadge />
             <LanguageSelector />
+            {user ? (
+              <div
+                className="flex min-w-0 items-center gap-2"
+                aria-label={t("shell.accountAria")}
+              >
+                <span
+                  className="hidden max-w-[14rem] truncate text-xs text-ink-soft sm:inline"
+                  title={user.email}
+                >
+                  {user.email}
+                </span>
+                <Button
+                  variant="ghost"
+                  small
+                  icon={<LogOut size={14} aria-hidden="true" />}
+                  onClick={() => void logout()}
+                  data-cy="logout"
+                >
+                  {t("shell.logout")}
+                </Button>
+              </div>
+            ) : null}
           </div>
         </div>
 

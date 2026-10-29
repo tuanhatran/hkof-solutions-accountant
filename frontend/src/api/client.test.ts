@@ -434,3 +434,58 @@ describe("errorMessage translations", () => {
     expect(errorMessage("texte")).toBe("An unexpected error occurred.");
   });
 });
+
+describe("session requests", () => {
+  it("sends the CSRF cookie value in the X-XSRF-TOKEN header on mutations", async () => {
+    document.cookie = "XSRF-TOKEN=jeton%2Bcsrf; path=/";
+    fetchMock.mockResolvedValue(jsonResponse({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await request("/api/companies", { method: "POST", body: "{}" });
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const headers = new Headers(init.headers);
+    expect(headers.get("X-XSRF-TOKEN")).toBe("jeton+csrf");
+    expect(init.credentials).toBe("same-origin");
+    document.cookie =
+      "XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+  });
+
+  it("does not add a CSRF header to a read request", async () => {
+    document.cookie = "XSRF-TOKEN=jeton-csrf; path=/";
+    fetchMock.mockResolvedValue(jsonResponse([]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await request("/api/companies");
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/companies", undefined);
+    document.cookie =
+      "XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+  });
+
+  it("notifies listeners when an authenticated call loses its session", async () => {
+    const listener = vi.fn();
+    window.addEventListener("auth:unauthorized", listener);
+    fetchMock.mockResolvedValue(jsonResponse({ code: "UNAUTHENTICATED" }, 401));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(request("/api/companies")).rejects.toBeInstanceOf(ApiError);
+    expect(listener).toHaveBeenCalledTimes(1);
+    window.removeEventListener("auth:unauthorized", listener);
+  });
+
+  it("does not notify listeners when the login itself is refused", async () => {
+    const listener = vi.fn();
+    window.addEventListener("auth:unauthorized", listener);
+    fetchMock.mockResolvedValue(
+      jsonResponse({ code: "INVALID_CREDENTIALS" }, 401),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      request("/api/auth/login", { method: "POST", body: "{}" }),
+    ).rejects.toBeInstanceOf(ApiError);
+    expect(listener).not.toHaveBeenCalled();
+    window.removeEventListener("auth:unauthorized", listener);
+  });
+});

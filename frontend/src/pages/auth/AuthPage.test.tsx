@@ -1,0 +1,260 @@
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import i18n from "@/i18n";
+import { setAuthUser } from "@/api/queries";
+import { AuthPage, type AuthMode } from "./AuthPage";
+
+function jsonResponse(payload: unknown, status = 200): Response {
+  return {
+    ok: status < 400,
+    status,
+    headers: new Headers({ "content-type": "application/json" }),
+    json: async () => payload,
+    text: async () => JSON.stringify(payload),
+  } as unknown as Response;
+}
+
+function emptyResponse(status = 204): Response {
+  return {
+    ok: true,
+    status,
+    headers: new Headers(),
+    text: async () => "",
+  } as unknown as Response;
+}
+
+const fetchMock = vi.fn();
+
+function renderPage(mode: AuthMode, entry: string) {
+  return render(
+    <MemoryRouter initialEntries={[entry]}>
+      <Routes>
+        <Route path="/connexion" element={<AuthPage mode="login" />} />
+        <Route path="/inscription" element={<AuthPage mode="register" />} />
+        <Route path="/confirmer-email" element={<AuthPage mode="confirm" />} />
+        <Route path="/mot-de-passe" element={<AuthPage mode="password" />} />
+        <Route path="/generer/quittance" element={<p>Espace protégé</p>} />
+        <Route path="/accueil" element={<AuthPage mode={mode} />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+beforeEach(async () => {
+  await i18n.changeLanguage("fr");
+  setAuthUser(null);
+  fetchMock.mockReset();
+  vi.stubGlobal("fetch", fetchMock);
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  setAuthUser(null);
+});
+
+describe("AuthPage login", () => {
+  it("labels the fields in French and opens the session", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        email: "alice@example.test",
+        mustChangePassword: false,
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage("login", "/connexion");
+
+    expect(screen.getByRole("heading", { name: "Connexion" })).toBeVisible();
+    await user.type(
+      screen.getByLabelText("Adresse e-mail"),
+      "alice@example.test",
+    );
+    await user.type(screen.getByLabelText("Mot de passe"), "motdepasse");
+    await user.click(screen.getByRole("button", { name: "Se connecter" }));
+
+    expect(await screen.findByText("Espace protégé")).toBeVisible();
+    const [path, init] = fetchMock.mock.calls.at(-1) ?? [];
+    expect(path).toBe("/api/auth/login");
+    expect(init).toMatchObject({
+      method: "POST",
+      body: JSON.stringify({
+        email: "alice@example.test",
+        password: "motdepasse",
+      }),
+    });
+  });
+
+  it("shows French inline validation errors without calling the API", async () => {
+    const user = userEvent.setup();
+    renderPage("login", "/connexion");
+
+    await user.click(screen.getByRole("button", { name: "Se connecter" }));
+
+    expect(screen.getByText("L'adresse e-mail est obligatoire.")).toBeVisible();
+    expect(screen.getByText("Le mot de passe est obligatoire.")).toBeVisible();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("shows the French API error for wrong credentials", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(
+        {
+          code: "INVALID_CREDENTIALS",
+          detail: "Adresse e-mail ou mot de passe incorrect.",
+        },
+        401,
+      ),
+    );
+    const user = userEvent.setup();
+    renderPage("login", "/connexion");
+
+    await user.type(
+      screen.getByLabelText("Adresse e-mail"),
+      "alice@example.test",
+    );
+    await user.type(screen.getByLabelText("Mot de passe"), "mauvais");
+    await user.click(screen.getByRole("button", { name: "Se connecter" }));
+
+    expect(
+      await screen.findByText("Adresse e-mail ou mot de passe incorrect."),
+    ).toBeVisible();
+  });
+});
+
+describe("AuthPage register", () => {
+  it("rejects a mismatched confirmation before registering", async () => {
+    const user = userEvent.setup();
+    renderPage("register", "/inscription");
+
+    await user.type(
+      screen.getByLabelText("Adresse e-mail"),
+      "alice@example.test",
+    );
+    await user.type(screen.getByLabelText("Mot de passe"), "motdepasse");
+    await user.type(
+      screen.getByLabelText("Confirmer le mot de passe"),
+      "autre-mot-de-passe",
+    );
+    await user.click(screen.getByRole("button", { name: "Créer le compte" }));
+
+    expect(
+      screen.getByText("Les mots de passe ne correspondent pas."),
+    ).toBeVisible();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("registers, shows the confirmation message and can resend it", async () => {
+    fetchMock.mockResolvedValue(emptyResponse());
+    const user = userEvent.setup();
+    renderPage("register", "/inscription");
+
+    await user.type(
+      screen.getByLabelText("Adresse e-mail"),
+      "alice@example.test",
+    );
+    await user.type(screen.getByLabelText("Mot de passe"), "motdepasse");
+    await user.type(
+      screen.getByLabelText("Confirmer le mot de passe"),
+      "motdepasse",
+    );
+    await user.click(screen.getByRole("button", { name: "Créer le compte" }));
+
+    expect(
+      await screen.findByText(
+        /Un e-mail de confirmation vient de vous être envoyé/,
+      ),
+    ).toBeVisible();
+    expect(fetchMock.mock.calls.at(-1)?.[0]).toBe("/api/auth/register");
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Renvoyer l'e-mail de confirmation",
+      }),
+    );
+    expect(fetchMock.mock.calls.at(-1)?.[0]).toBe(
+      "/api/auth/resend-confirmation",
+    );
+    expect(
+      await screen.findByText("E-mail de confirmation renvoyé."),
+    ).toBeVisible();
+  });
+});
+
+describe("AuthPage confirmation", () => {
+  it("confirms the e-mail token from the link", async () => {
+    fetchMock.mockResolvedValue(emptyResponse());
+    renderPage("confirm", "/confirmer-email?token=jeton-de-test");
+
+    expect(
+      await screen.findByRole("heading", { name: "Adresse confirmée" }),
+    ).toBeVisible();
+    const [path, init] = fetchMock.mock.calls.at(-1) ?? [];
+    expect(path).toBe("/api/auth/confirm-email");
+    expect(init).toMatchObject({
+      body: JSON.stringify({ token: "jeton-de-test" }),
+    });
+  });
+
+  it("shows a French error for an invalid token", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(
+        {
+          code: "CONFIRMATION_TOKEN_INVALID",
+          detail: "Ce lien de confirmation est invalide ou a expiré.",
+        },
+        400,
+      ),
+    );
+    renderPage("confirm", "/confirmer-email?token=invalide");
+
+    expect(
+      await screen.findByText(
+        "Ce lien de confirmation est invalide ou a expiré.",
+      ),
+    ).toBeVisible();
+  });
+});
+
+describe("AuthPage forced password change", () => {
+  it("changes the password and opens the application", async () => {
+    setAuthUser({
+      email: "thtran@homeofficeexpenses.local",
+      mustChangePassword: true,
+    });
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        email: "thtran@homeofficeexpenses.local",
+        mustChangePassword: false,
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage("password", "/mot-de-passe");
+
+    expect(
+      screen.getByText(/Votre mot de passe provisoire doit être remplacé/),
+    ).toBeVisible();
+    await user.type(screen.getByLabelText("Mot de passe actuel"), "thtran");
+    await user.type(
+      screen.getByLabelText("Nouveau mot de passe"),
+      "nouveau-mot-de-passe",
+    );
+    await user.type(
+      screen.getByLabelText("Confirmer le mot de passe"),
+      "nouveau-mot-de-passe",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Changer le mot de passe" }),
+    );
+
+    expect(await screen.findByText("Espace protégé")).toBeVisible();
+    const [path, init] = fetchMock.mock.calls.at(-1) ?? [];
+    expect(path).toBe("/api/auth/change-password");
+    expect(init).toMatchObject({
+      body: JSON.stringify({
+        currentPassword: "thtran",
+        newPassword: "nouveau-mot-de-passe",
+      }),
+    });
+  });
+});

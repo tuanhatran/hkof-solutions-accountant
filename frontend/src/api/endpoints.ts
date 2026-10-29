@@ -6,6 +6,12 @@ export type RentReceiptDraftRequest = Schemas["RentReceiptDraftRequest"];
 export type RentReceiptDraftDto = Schemas["RentReceiptDraftDto"];
 export type StatementDraftRequest = Schemas["StatementDraftRequest"];
 export type StatementDraftDto = Schemas["StatementDraftDto"];
+export type CurrentUserDto = Schemas["CurrentUserDto"];
+export type LoginRequest = Schemas["LoginRequest"];
+export type RegisterRequest = Schemas["RegisterRequest"];
+export type ConfirmEmailRequest = Schemas["ConfirmEmailRequest"];
+export type ResendConfirmationRequest = Schemas["ResendConfirmationRequest"];
+export type ChangePasswordRequest = Schemas["ChangePasswordRequest"];
 import type {
   AnalysisDto,
   AnalysisStartResponse,
@@ -60,6 +66,36 @@ function query(
 }
 
 export const api = {
+  auth: {
+    me: () => request<CurrentUserDto>("/api/auth/me"),
+    login: (body: LoginRequest) =>
+      request<CurrentUserDto>(
+        "/api/auth/login",
+        json({ method: "POST", body: JSON.stringify(body) }),
+      ),
+    register: (body: RegisterRequest) =>
+      request<void>(
+        "/api/auth/register",
+        json({ method: "POST", body: JSON.stringify(body) }),
+      ),
+    confirmEmail: (body: ConfirmEmailRequest) =>
+      request<void>(
+        "/api/auth/confirm-email",
+        json({ method: "POST", body: JSON.stringify(body) }),
+      ),
+    resendConfirmation: (body: ResendConfirmationRequest) =>
+      request<void>(
+        "/api/auth/resend-confirmation",
+        json({ method: "POST", body: JSON.stringify(body) }),
+      ),
+    changePassword: (body: ChangePasswordRequest) =>
+      request<CurrentUserDto>(
+        "/api/auth/change-password",
+        json({ method: "POST", body: JSON.stringify(body) }),
+      ),
+    logout: () => request<void>("/api/auth/logout", { method: "POST" }),
+  },
+
   companies: {
     list: () => request<CompanyDto[]>("/api/companies"),
     get: (id: number) => request<CompanyDto>(`/api/companies/${id}`),

@@ -1,8 +1,9 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "@/i18n";
+import { setAuthUser } from "@/api/queries";
 import { AppShell } from "./AppShell";
 
 type Blocker = {
@@ -35,6 +36,7 @@ function renderShell(path = "/historique") {
         <Route element={<AppShell />}>
           <Route path="*" element={<p>Contenu de la page</p>} />
         </Route>
+        <Route path="/connexion" element={<p>Page de connexion</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -42,6 +44,7 @@ function renderShell(path = "/historique") {
 
 beforeEach(() => {
   localStorage.clear();
+  setAuthUser(null);
   saveActiveDraftMock.mockReset();
   saveActiveDraftMock.mockResolvedValue(true);
   blockerState = {
@@ -49,6 +52,11 @@ beforeEach(() => {
     proceed: vi.fn(),
     reset: vi.fn(),
   };
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  setAuthUser(null);
 });
 
 describe("AppShell", () => {
@@ -223,6 +231,29 @@ describe("AppShell", () => {
   it("hides the dialog when navigation is not blocked", () => {
     renderShell();
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("shows the signed-in account and logs out", async () => {
+    setAuthUser({ email: "alice@example.test", mustChangePassword: false });
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 204,
+      headers: new Headers(),
+      text: async () => "",
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderShell();
+
+    expect(screen.getByText("alice@example.test")).toBeVisible();
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Se déconnecter" }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/auth/logout",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(await screen.findByText("Page de connexion")).toBeVisible();
   });
 
   it("renders the actions on the right without a global company selector", () => {

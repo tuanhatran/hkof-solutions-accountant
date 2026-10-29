@@ -6,7 +6,186 @@ info:
 servers:
   - url: http://localhost:8080
     description: Generated server url
+security:
+  - cookieAuth: []
 paths:
+  /api/auth/register:
+    post:
+      tags:
+        - auth-controller
+      operationId: register
+      description: >-
+        Crée un compte non confirmé et envoie un e-mail de confirmation. Le mot de
+        passe doit contenir au moins 8 caractères.
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/auth/confirm-email:
+    post:
+      tags:
+        - auth-controller
+      operationId: confirmEmail
+      description: Confirme l'adresse e-mail à partir du jeton reçu par e-mail.
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmEmailRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/auth/resend-confirmation:
+    post:
+      tags:
+        - auth-controller
+      operationId: resendConfirmation
+      description: >-
+        Renvoie l'e-mail de confirmation si un compte non confirmé existe. La
+        réponse ne révèle jamais l'existence du compte.
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResendConfirmationRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/auth/login:
+    post:
+      tags:
+        - auth-controller
+      operationId: login
+      description: >-
+        Ouvre une session (cookie JSESSIONID) pour un compte confirmé. Le jeton CSRF
+        XSRF-TOKEN est déposé en cookie pour les requêtes authentifiées.
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/CurrentUserDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Identifiants incorrects
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Adresse e-mail non confirmée
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/auth/logout:
+    post:
+      tags:
+        - auth-controller
+      operationId: logout
+      description: Ferme la session courante.
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Non authentifié
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/auth/change-password:
+    post:
+      tags:
+        - auth-controller
+      operationId: changePassword
+      description: >-
+        Change le mot de passe du compte connecté. Obligatoire au premier accès
+        quand un changement de mot de passe est imposé.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/CurrentUserDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Non authentifié
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/auth/me:
+    get:
+      tags:
+        - auth-controller
+      operationId: currentUser
+      description: Retourne le compte connecté et l'état du changement de mot de passe imposé.
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/CurrentUserDto"
+        "401":
+          description: Non authentifié
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/companies:
     get:
       tags:
@@ -1647,7 +1826,81 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+      description: >-
+        Session ouverte par POST /api/auth/login. Les mutations authentifiées
+        exigent aussi le cookie XSRF-TOKEN recopié dans l'en-tête X-XSRF-TOKEN.
   schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: Adresse e-mail normalisée en minuscules.
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 100
+    ConfirmEmailRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: Jeton reçu par e-mail, valable 24 heures et à usage unique.
+    ResendConfirmationRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    ChangePasswordRequest:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      properties:
+        currentPassword:
+          type: string
+          format: password
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 100
+    CurrentUserDto:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        mustChangePassword:
+          type: boolean
+          description: Vrai tant que le changement de mot de passe imposé n'est pas fait.
     SignatureDto:
       type: object
       properties:
