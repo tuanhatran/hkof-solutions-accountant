@@ -35,18 +35,22 @@ class DocumentDraftServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-10-05T09:30:00Z");
     private static final Clock CLOCK = Clock.fixed(NOW, ZoneOffset.UTC);
+    private static final long OWNER_ID = 55L;
 
     private DocumentDraftRepository repository;
     private LeaseService leases;
+    private OwnershipContext ownership;
     private DocumentDraftService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(DocumentDraftRepository.class);
         leases = mock(LeaseService.class);
+        ownership = mock(OwnershipContext.class);
+        when(ownership.currentUserId()).thenReturn(OWNER_ID);
         when(repository.save(any(DocumentDraft.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(repository.saveAndFlush(any(DocumentDraft.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        service = new DocumentDraftService(repository, leases, new ObjectMapper(), CLOCK);
+        service = new DocumentDraftService(repository, leases, ownership, new ObjectMapper(), CLOCK);
     }
 
     private static RentReceiptDraftRequest rentReceiptRequest() {
@@ -62,13 +66,14 @@ class DocumentDraftServiceTest {
     }
 
     @Test
-    @DisplayName("Saves a rent receipt draft, normalising amounts and dates")
+    @DisplayName("Saves a rent receipt draft stamped with the owner, normalising amounts and dates")
     void savesRentReceiptDraft() {
         RentReceiptDraftDto dto = service.saveRentReceipt(rentReceiptRequest());
 
         ArgumentCaptor<DocumentDraft> captor = ArgumentCaptor.forClass(DocumentDraft.class);
         verify(repository).save(captor.capture());
         DocumentDraft saved = captor.getValue();
+        assertThat(saved.getUserId()).isEqualTo(OWNER_ID);
         assertThat(saved.getType()).isEqualTo(DocumentDraft.Type.RENT_RECEIPT);
         assertThat(saved.getMonth()).isEqualTo("2026-01");
         assertThat(saved.getLandlordId()).isEqualTo(4L);
@@ -102,8 +107,8 @@ class DocumentDraftServiceTest {
         stored.setId(21L);
         stored.setSavedAt(NOW);
         assertThat(stored.getPayload()).contains("\"amount\":\"15.50\"");
-        when(repository.findFirstByTypeAndMonthAndLandlordIdAndTenantIdAndDeletedFalseOrderByIdDesc(
-                DocumentDraft.Type.RENT_RECEIPT, "2026-01", 4L, 7L)).thenReturn(Optional.of(stored));
+        when(repository.findFirstByUserIdAndTypeAndMonthAndLandlordIdAndTenantIdAndDeletedFalseOrderByIdDesc(
+                OWNER_ID, DocumentDraft.Type.RENT_RECEIPT, "2026-01", 4L, 7L)).thenReturn(Optional.of(stored));
 
         RentReceiptDraftDto found = service.findRentReceipt("2026-01", 4L, 7L, null).orElseThrow();
 
@@ -133,16 +138,17 @@ class DocumentDraftServiceTest {
     void replacesThePreviousActiveDraft() {
         DocumentDraft previous = new DocumentDraft();
         previous.setId(11L);
+        previous.setUserId(OWNER_ID);
         previous.setType(DocumentDraft.Type.RENT_RECEIPT);
-        when(repository.findFirstByTypeAndMonthAndLandlordIdAndTenantIdAndDeletedFalseOrderByIdDesc(
-                DocumentDraft.Type.RENT_RECEIPT, "2026-01", 4L, 7L)).thenReturn(Optional.of(previous));
+        when(repository.findFirstByUserIdAndTypeAndMonthAndLandlordIdAndTenantIdAndDeletedFalseOrderByIdDesc(
+                OWNER_ID, DocumentDraft.Type.RENT_RECEIPT, "2026-01", 4L, 7L)).thenReturn(Optional.of(previous));
 
         service.saveRentReceipt(rentReceiptRequest());
 
         assertThat(previous.isDeleted()).isTrue();
         verify(repository).saveAndFlush(previous);
         verify(repository).save(org.mockito.ArgumentMatchers.argThat(
-                saved -> saved != previous && !saved.isDeleted()));
+                saved -> saved != previous && !saved.isDeleted() && OWNER_ID == saved.getUserId()));
     }
 
     @Test
@@ -150,11 +156,12 @@ class DocumentDraftServiceTest {
     void findsRentReceiptDraft() {
         DocumentDraft stored = new DocumentDraft();
         stored.setId(12L);
+        stored.setUserId(OWNER_ID);
         stored.setType(DocumentDraft.Type.RENT_RECEIPT);
         stored.setPayload(service.write(rentReceiptRequest()));
         stored.setSavedAt(NOW);
-        when(repository.findFirstByTypeAndMonthAndLandlordIdAndTenantIdAndDeletedFalseOrderByIdDesc(
-                DocumentDraft.Type.RENT_RECEIPT, "2026-01", 4L, 7L)).thenReturn(Optional.of(stored));
+        when(repository.findFirstByUserIdAndTypeAndMonthAndLandlordIdAndTenantIdAndDeletedFalseOrderByIdDesc(
+                OWNER_ID, DocumentDraft.Type.RENT_RECEIPT, "2026-01", 4L, 7L)).thenReturn(Optional.of(stored));
 
         Optional<RentReceiptDraftDto> found = service.findRentReceipt("2026-01", 4L, 7L, null);
 
@@ -209,8 +216,8 @@ class DocumentDraftServiceTest {
     void savesStatementDraft() {
         DocumentDraft previous = new DocumentDraft();
         previous.setId(20L);
-        when(repository.findFirstByTypeAndMonthAndCompanyIdAndLeaseIdIsNullAndDeletedFalseOrderByIdDesc(
-                DocumentDraft.Type.EXPENSE_STATEMENT, "2026-01", 3L)).thenReturn(Optional.of(previous));
+        when(repository.findFirstByUserIdAndTypeAndMonthAndCompanyIdAndLeaseIdIsNullAndDeletedFalseOrderByIdDesc(
+                OWNER_ID, DocumentDraft.Type.EXPENSE_STATEMENT, "2026-01", 3L)).thenReturn(Optional.of(previous));
 
         StatementDraftDto dto = service.saveStatement(statementRequest());
 
@@ -227,8 +234,8 @@ class DocumentDraftServiceTest {
     void savesStatementDraftPerLease() {
         DocumentDraft previous = new DocumentDraft();
         previous.setId(21L);
-        when(repository.findFirstByTypeAndMonthAndCompanyIdAndLeaseIdAndDeletedFalseOrderByIdDesc(
-                DocumentDraft.Type.EXPENSE_STATEMENT, "2026-01", 3L, 7L)).thenReturn(Optional.of(previous));
+        when(repository.findFirstByUserIdAndTypeAndMonthAndCompanyIdAndLeaseIdAndDeletedFalseOrderByIdDesc(
+                OWNER_ID, DocumentDraft.Type.EXPENSE_STATEMENT, "2026-01", 3L, 7L)).thenReturn(Optional.of(previous));
         Lease lease = new Lease();
         lease.setId(7L);
         lease.setCompanyId(3L);
@@ -242,6 +249,7 @@ class DocumentDraftServiceTest {
         assertThat(dto.leaseId()).isEqualTo(7L);
         ArgumentCaptor<DocumentDraft> captor = ArgumentCaptor.forClass(DocumentDraft.class);
         verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getUserId()).isEqualTo(OWNER_ID);
         assertThat(captor.getValue().getLeaseId()).isEqualTo(7L);
     }
 
@@ -275,11 +283,12 @@ class DocumentDraftServiceTest {
     }
 
     @Test
-    @DisplayName("Logically deletes a draft by id")
+    @DisplayName("Logically deletes a draft by id scoped to the owner")
     void deletesDraft() {
         DocumentDraft draft = new DocumentDraft();
         draft.setId(5L);
-        when(repository.findById(5L)).thenReturn(Optional.of(draft));
+        draft.setUserId(OWNER_ID);
+        when(repository.findByIdAndUserIdAndDeletedFalse(5L, OWNER_ID)).thenReturn(Optional.of(draft));
 
         service.delete(5L);
 
@@ -292,8 +301,8 @@ class DocumentDraftServiceTest {
     void clearsActiveRentReceiptDraft() {
         DocumentDraft previous = new DocumentDraft();
         previous.setId(31L);
-        when(repository.findFirstByTypeAndMonthAndLandlordIdAndTenantIdAndDeletedFalseOrderByIdDesc(
-                DocumentDraft.Type.RENT_RECEIPT, "2026-01", 4L, 7L)).thenReturn(Optional.of(previous));
+        when(repository.findFirstByUserIdAndTypeAndMonthAndLandlordIdAndTenantIdAndDeletedFalseOrderByIdDesc(
+                OWNER_ID, DocumentDraft.Type.RENT_RECEIPT, "2026-01", 4L, 7L)).thenReturn(Optional.of(previous));
 
         service.deleteActiveRentReceipt("2026-01", 4L, 7L, null);
 
@@ -304,8 +313,8 @@ class DocumentDraftServiceTest {
     @Test
     @DisplayName("Clears nothing when the generation scope holds no rent receipt draft")
     void ignoresMissingRentReceiptDraft() {
-        when(repository.findFirstByTypeAndMonthAndLandlordIdAndTenantCompanyIdAndDeletedFalseOrderByIdDesc(
-                DocumentDraft.Type.RENT_RECEIPT, "2026-01", 4L, 9L)).thenReturn(Optional.empty());
+        when(repository.findFirstByUserIdAndTypeAndMonthAndLandlordIdAndTenantCompanyIdAndDeletedFalseOrderByIdDesc(
+                OWNER_ID, DocumentDraft.Type.RENT_RECEIPT, "2026-01", 4L, 9L)).thenReturn(Optional.empty());
 
         service.deleteActiveRentReceipt("2026-01", 4L, null, 9L);
 
@@ -318,8 +327,8 @@ class DocumentDraftServiceTest {
     void clearsActiveStatementDraft() {
         DocumentDraft previous = new DocumentDraft();
         previous.setId(32L);
-        when(repository.findFirstByTypeAndMonthAndCompanyIdAndLeaseIdIsNullAndDeletedFalseOrderByIdDesc(
-                DocumentDraft.Type.EXPENSE_STATEMENT, "2026-01", 3L)).thenReturn(Optional.of(previous));
+        when(repository.findFirstByUserIdAndTypeAndMonthAndCompanyIdAndLeaseIdIsNullAndDeletedFalseOrderByIdDesc(
+                OWNER_ID, DocumentDraft.Type.EXPENSE_STATEMENT, "2026-01", 3L)).thenReturn(Optional.of(previous));
 
         service.deleteActiveStatement(3L, "2026-01", null);
 
@@ -328,9 +337,9 @@ class DocumentDraftServiceTest {
     }
 
     @Test
-    @DisplayName("Rejects deleting an unknown draft")
+    @DisplayName("Rejects deleting an unknown or foreign draft")
     void rejectsUnknownDraft() {
-        when(repository.findById(5L)).thenReturn(Optional.empty());
+        when(repository.findByIdAndUserIdAndDeletedFalse(5L, OWNER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.delete(5L)).isInstanceOf(NotFoundException.class);
     }

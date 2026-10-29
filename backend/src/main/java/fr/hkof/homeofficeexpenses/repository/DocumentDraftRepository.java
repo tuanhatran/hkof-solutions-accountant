@@ -8,18 +8,17 @@ import fr.hkof.homeofficeexpenses.domain.DocumentDraft;
 
 public interface DocumentDraftRepository extends JpaRepository<DocumentDraft, Long> {
 
-    Optional<DocumentDraft> findFirstByTypeAndMonthAndLandlordIdAndTenantIdAndDeletedFalseOrderByIdDesc(
-            DocumentDraft.Type type, String month, Long landlordId, Long tenantId);
+    Optional<DocumentDraft> findByIdAndUserIdAndDeletedFalse(Long id, Long userId);
 
-    Optional<DocumentDraft> findFirstByTypeAndMonthAndLandlordIdAndTenantCompanyIdAndDeletedFalseOrderByIdDesc(
-            DocumentDraft.Type type, String month, Long landlordId, Long tenantCompanyId);
+    Optional<DocumentDraft> findFirstByUserIdAndTypeAndMonthAndLandlordIdAndTenantIdAndDeletedFalseOrderByIdDesc(
+            Long userId, DocumentDraft.Type type, String month, Long landlordId, Long tenantId);
 
-    Optional<DocumentDraft> findFirstByTypeAndMonthAndCompanyIdAndDeletedFalseOrderByIdDesc(
-            DocumentDraft.Type type, String month, Long companyId);
+    Optional<DocumentDraft> findFirstByUserIdAndTypeAndMonthAndLandlordIdAndTenantCompanyIdAndDeletedFalseOrderByIdDesc(
+            Long userId, DocumentDraft.Type type, String month, Long landlordId, Long tenantCompanyId);
 
-    Optional<DocumentDraft> findFirstByTypeAndMonthAndCompanyIdAndLeaseIdAndDeletedFalseOrderByIdDesc(
-            DocumentDraft.Type type, String month, Long companyId, Long leaseId);
+    Optional<DocumentDraft> findFirstByUserIdAndTypeAndMonthAndCompanyIdAndLeaseIdAndDeletedFalseOrderByIdDesc(
+            Long userId, DocumentDraft.Type type, String month, Long companyId, Long leaseId);
 
-    Optional<DocumentDraft> findFirstByTypeAndMonthAndCompanyIdAndLeaseIdIsNullAndDeletedFalseOrderByIdDesc(
-            DocumentDraft.Type type, String month, Long companyId);
+    Optional<DocumentDraft> findFirstByUserIdAndTypeAndMonthAndCompanyIdAndLeaseIdIsNullAndDeletedFalseOrderByIdDesc(
+            Long userId, DocumentDraft.Type type, String month, Long companyId);
 }

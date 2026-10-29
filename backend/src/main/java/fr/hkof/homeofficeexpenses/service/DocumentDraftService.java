@@ -30,13 +30,15 @@ public class DocumentDraftService {
 
     private final DocumentDraftRepository repository;
     private final LeaseService leases;
+    private final OwnershipContext ownership;
     private final ObjectMapper mapper;
     private final Clock clock;
 
-    public DocumentDraftService(DocumentDraftRepository repository, LeaseService leases, ObjectMapper mapper,
-            Clock clock) {
+    public DocumentDraftService(DocumentDraftRepository repository, LeaseService leases,
+            OwnershipContext ownership, ObjectMapper mapper, Clock clock) {
         this.repository = repository;
         this.leases = leases;
+        this.ownership = ownership;
         this.mapper = mapper;
         this.clock = clock;
     }
@@ -87,8 +89,7 @@ public class DocumentDraftService {
 
     @Transactional
     public void delete(Long id) {
-        DocumentDraft draft = repository.findById(id)
-                .filter(candidate -> !candidate.isDeleted())
+        DocumentDraft draft = repository.findByIdAndUserIdAndDeletedFalse(id, ownership.currentUserId())
                 .orElseThrow(() -> new NotFoundException("DRAFT_NOT_FOUND", "Brouillon introuvable."));
         softDelete(draft);
     }
@@ -130,19 +131,21 @@ public class DocumentDraftService {
 
     private Optional<DocumentDraft> findActiveRentReceipt(String month, Long landlordId, Long tenantId,
             Long tenantCompanyId) {
+        Long ownerId = ownership.currentUserId();
         return tenantId != null
-                ? repository.findFirstByTypeAndMonthAndLandlordIdAndTenantIdAndDeletedFalseOrderByIdDesc(
-                        DocumentDraft.Type.RENT_RECEIPT, month, landlordId, tenantId)
-                : repository.findFirstByTypeAndMonthAndLandlordIdAndTenantCompanyIdAndDeletedFalseOrderByIdDesc(
-                        DocumentDraft.Type.RENT_RECEIPT, month, landlordId, tenantCompanyId);
+                ? repository.findFirstByUserIdAndTypeAndMonthAndLandlordIdAndTenantIdAndDeletedFalseOrderByIdDesc(
+                        ownerId, DocumentDraft.Type.RENT_RECEIPT, month, landlordId, tenantId)
+                : repository.findFirstByUserIdAndTypeAndMonthAndLandlordIdAndTenantCompanyIdAndDeletedFalseOrderByIdDesc(
+                        ownerId, DocumentDraft.Type.RENT_RECEIPT, month, landlordId, tenantCompanyId);
     }
 
     private Optional<DocumentDraft> findActiveStatement(String month, Long companyId, Long leaseId) {
+        Long ownerId = ownership.currentUserId();
         return leaseId == null
-                ? repository.findFirstByTypeAndMonthAndCompanyIdAndLeaseIdIsNullAndDeletedFalseOrderByIdDesc(
-                        DocumentDraft.Type.EXPENSE_STATEMENT, month, companyId)
-                : repository.findFirstByTypeAndMonthAndCompanyIdAndLeaseIdAndDeletedFalseOrderByIdDesc(
-                        DocumentDraft.Type.EXPENSE_STATEMENT, month, companyId, leaseId);
+                ? repository.findFirstByUserIdAndTypeAndMonthAndCompanyIdAndLeaseIdIsNullAndDeletedFalseOrderByIdDesc(
+                        ownerId, DocumentDraft.Type.EXPENSE_STATEMENT, month, companyId)
+                : repository.findFirstByUserIdAndTypeAndMonthAndCompanyIdAndLeaseIdAndDeletedFalseOrderByIdDesc(
+                        ownerId, DocumentDraft.Type.EXPENSE_STATEMENT, month, companyId, leaseId);
     }
 
     /** Rejects a lease of another company so a draft can never leak across companies. */
@@ -164,6 +167,7 @@ public class DocumentDraftService {
 
     private DocumentDraft newEntity(DocumentDraft.Type type, String month, Object payload) {
         DocumentDraft entity = new DocumentDraft();
+        entity.setUserId(ownership.currentUserId());
         entity.setType(type);
         entity.setMonth(month);
         entity.setPayload(write(payload));

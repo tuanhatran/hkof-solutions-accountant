@@ -8,7 +8,6 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -44,22 +43,13 @@ public class AnalysisJobService {
     private final ThreadPoolTaskExecutor executor;
     private final TransactionTemplate transactions;
     private final Clock clock;
-    private final OwnershipContext ownershipContext;
+    private final OwnershipContext ownership;
 
-    public AnalysisJobService(AnalysisDocumentRepository repository, ReceiptService receiptService,
-            LlmConfigService llmConfigService, DocumentTextExtractor extractor, ExtractionPipeline pipeline,
-            @Qualifier("analysisExecutor") ThreadPoolTaskExecutor executor,
-            PlatformTransactionManager transactionManager, Clock clock) {
-        this(repository, receiptService, llmConfigService, extractor, pipeline, executor, transactionManager, clock,
-                null);
-    }
-
-    @Autowired
     public AnalysisJobService(AnalysisDocumentRepository repository, ReceiptService receiptService,
             LlmConfigService llmConfigService, DocumentTextExtractor extractor, ExtractionPipeline pipeline,
             @Qualifier("analysisExecutor") ThreadPoolTaskExecutor executor,
             PlatformTransactionManager transactionManager, Clock clock,
-            OwnershipContext ownershipContext) {
+            OwnershipContext ownership) {
         this.repository = repository;
         this.receiptService = receiptService;
         this.llmConfigService = llmConfigService;
@@ -68,19 +58,22 @@ public class AnalysisJobService {
         this.executor = executor;
         this.transactions = new TransactionTemplate(transactionManager);
         this.clock = clock;
-        this.ownershipContext = ownershipContext;
+        this.ownership = ownership;
     }
 
     public AnalysisDto launch(Long receiptId) {
-        Long ownerId = ownershipContext != null ? ownershipContext.currentUserId() : null;
+        Long ownerId = ownership.currentUserId();
         Launch launch = transactions.execute(status -> {
             Receipt receipt = receiptService.entity(receiptId);
-            AnalysisDocument existingAnalysis = repository.findFirstByReceiptIdAndStatusInOrderByIdDesc(
-                    receiptId, List.of(AnalysisStatus.PENDING, AnalysisStatus.RUNNING)).orElse(null);
+            AnalysisDocument existingAnalysis = repository
+                    .findFirstByUserIdAndReceiptIdAndStatusInOrderByIdDesc(
+                            ownerId, receiptId, List.of(AnalysisStatus.PENDING, AnalysisStatus.RUNNING))
+                    .orElse(null);
             if (existingAnalysis != null) {
                 return new Launch(existingAnalysis.getId(), false);
             }
             AnalysisDocument analysis = new AnalysisDocument();
+            analysis.setUserId(ownerId);
             analysis.setReceipt(receipt);
             analysis.setStatus(AnalysisStatus.PENDING);
             analysis.setCreatedAt(Instant.now(clock));
@@ -92,7 +85,7 @@ public class AnalysisJobService {
         }
         if (launch.created()) {
             try {
-                executor.execute(() -> execute(launch.id(), ownerId));
+                executor.execute(() -> execute(launch.id()));
             } catch (RuntimeException ex) {
                 transaction(() -> {
                     AnalysisDocument reloaded = repository.findById(launch.id()).orElse(null);
@@ -108,7 +101,7 @@ public class AnalysisJobService {
         return get(launch.id());
     }
 
-    private void execute(Long analysisId, Long ownerId) {
+    private void execute(Long analysisId) {
         long startedAt = System.currentTimeMillis();
         ExtractionContext context;
         try {
@@ -117,9 +110,7 @@ public class AnalysisJobService {
                 if (analysis == null || analysis.getStatus() != AnalysisStatus.PENDING) {
                     return null;
                 }
-                LlmConfig config = ownerId != null
-                        ? llmConfigService.entityForUser(ownerId)
-                        : llmConfigService.entity();
+                LlmConfig config = llmConfigService.entityForUser(analysis.getUserId());
                 if (!config.isActive()) {
                     analysis.setStatus(AnalysisStatus.FAILED);
                     analysis.setErrorMessage("L'analyse IA est désactivée. Saisissez le montant manuellement.");
@@ -193,14 +184,14 @@ public class AnalysisJobService {
 
     @Transactional(readOnly = true)
     public AnalysisDto get(Long id) {
-        AnalysisDocument analysis = repository.findWithReceiptById(id)
+        AnalysisDocument analysis = repository.findWithReceiptByIdAndUserId(id, ownership.currentUserId())
                 .orElseThrow(() -> new NotFoundException("ANALYSIS_NOT_FOUND", "Analyse introuvable."));
         return toDto(analysis);
     }
 
     @Transactional
     public AnalysisDto cancel(Long id) {
-        AnalysisDocument analysis = repository.findWithReceiptById(id)
+        AnalysisDocument analysis = repository.findWithReceiptByIdAndUserId(id, ownership.currentUserId())
                 .orElseThrow(() -> new NotFoundException("ANALYSIS_NOT_FOUND", "Analyse introuvable."));
         if (analysis.getStatus().isFinished()) {
             throw new BusinessException("ANALYSIS_ALREADY_FINISHED", "Cette analyse est déjà terminée.");

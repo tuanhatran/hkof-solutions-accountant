@@ -2,6 +2,7 @@ package fr.hkof.homeofficeexpenses.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -10,11 +11,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.reset;
+
+import fr.hkof.homeofficeexpenses.domain.AppUser;
 import fr.hkof.homeofficeexpenses.domain.DocumentDraft;
+import fr.hkof.homeofficeexpenses.repository.AppUserRepository;
 import fr.hkof.homeofficeexpenses.repository.DocumentDraftRepository;
 import fr.hkof.homeofficeexpenses.web.dto.DocumentDraftDtos.RentReceiptDraftDto;
 import fr.hkof.homeofficeexpenses.web.dto.DocumentDraftDtos.RentReceiptDraftRequest;
@@ -48,6 +55,12 @@ class DocumentDraftPersistencePostgresTest {
 
     @Autowired
     private DocumentDraftRepository repository;
+
+    @Autowired
+    private AppUserRepository users;
+
+    @MockitoSpyBean
+    private OwnershipContext ownership;
 
     private static RentReceiptDraftRequest rentReceipt(String month, String rentExclCharges) {
         return new RentReceiptDraftRequest(
@@ -121,5 +134,43 @@ class DocumentDraftPersistencePostgresTest {
                 .toList())
                 .singleElement()
                 .satisfies(draft -> assertThat(draft.isDeleted()).isTrue());
+    }
+
+    @Test
+    @DisplayName("Two accounts can each hold an active draft on the same scope on PostgreSQL")
+    void allowsTwoAccountsSameScopeOnPostgres() {
+        AppUser other = users.findByEmailIgnoreCase("draft.other@example.test").orElseGet(() -> {
+            AppUser user = new AppUser();
+            Instant now = Instant.now();
+            user.setEmail("draft.other@example.test");
+            user.setPasswordHash("seed");
+            user.setConfirmed(true);
+            user.setMustChangePassword(false);
+            user.setCreatedAt(now);
+            user.setUpdatedAt(now);
+            return users.save(user);
+        });
+
+        try {
+            reset(ownership);
+            RentReceiptDraftDto ownerDraft = service.saveRentReceipt(rentReceipt("2026-08", "1 300,00"));
+
+            doReturn(other.getId()).when(ownership).currentUserId();
+            RentReceiptDraftDto otherDraft = service.saveRentReceipt(rentReceipt("2026-08", "1 550,00"));
+
+            assertThat(otherDraft.id()).isNotEqualTo(ownerDraft.id());
+            assertThat(service.findRentReceipt("2026-08", 4L, 7L, null))
+                    .isPresent()
+                    .get()
+                    .satisfies(found -> assertThat(found.rentExclCharges()).isEqualTo("1550.00"));
+
+            reset(ownership);
+            assertThat(service.findRentReceipt("2026-08", 4L, 7L, null))
+                    .isPresent()
+                    .get()
+                    .satisfies(found -> assertThat(found.rentExclCharges()).isEqualTo("1300.00"));
+        } finally {
+            reset(ownership);
+        }
     }
 }
