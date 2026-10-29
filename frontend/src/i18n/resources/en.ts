@@ -710,7 +710,6 @@ export const en = {
         add: "Add a lease",
         filterPlaceholder: "Filter leases…",
         addressLabel: "Lease addresses",
-        addressHelp: "Only the leases of the selected address are displayed.",
         loadingAddresses: "Loading addresses…",
         noAddress: "No address configured",
         loading: "Loading leases…",

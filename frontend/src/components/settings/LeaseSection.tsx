@@ -8,7 +8,6 @@ import type { LeaseDto } from "@/api/types";
 import { ListSearch } from "@/components/settings/ListToolbar";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { FieldGroup } from "@/components/ui/FieldGroup";
 import { ErrorState, LoadingState } from "@/components/ui/States";
 import { useListQuery } from "@/hooks/useListQuery";
 import { formatEUR } from "@/lib/format";
@@ -142,6 +141,31 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
             >
               {t("settings.lease.section.add")}
             </Button>
+            <select
+              className="field mt-0 lease-section-address-select"
+              value={c.activeAddressId ?? ""}
+              onChange={(event) =>
+                c.selectAddress(
+                  event.target.value === "" ? null : Number(event.target.value),
+                )
+              }
+              disabled={c.addressList.length === 0}
+              aria-label={t("settings.lease.section.addressLabel")}
+              data-cy="select-rent-receipts-address"
+            >
+              {c.addressList.length === 0 ? (
+                <option value="">
+                  {c.addresses.isPending
+                    ? t("settings.lease.section.loadingAddresses")
+                    : t("settings.lease.section.noAddress")}
+                </option>
+              ) : null}
+              {c.addressList.map((address) => (
+                <option key={address.id} value={address.id}>
+                  {address.label}
+                </option>
+              ))}
+            </select>
             {c.leaseList.length > 0 ? (
               <>
                 <div className="lease-section-header-search">
@@ -177,40 +201,6 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
         }
       />
       <div className="card-body lease-section-body">
-        <div className="lease-section-address">
-          <FieldGroup
-            id="baux-adresse"
-            label={t("settings.lease.section.addressLabel")}
-            help={t("settings.lease.section.addressHelp")}
-          >
-            <select
-              id="baux-adresse"
-              className="field"
-              value={c.activeAddressId ?? ""}
-              onChange={(event) =>
-                c.selectAddress(
-                  event.target.value === "" ? null : Number(event.target.value),
-                )
-              }
-              disabled={c.addressList.length === 0}
-              data-cy="select-rent-receipts-address"
-            >
-              {c.addressList.length === 0 ? (
-                <option value="">
-                  {c.addresses.isPending
-                    ? t("settings.lease.section.loadingAddresses")
-                    : t("settings.lease.section.noAddress")}
-                </option>
-              ) : null}
-              {c.addressList.map((address) => (
-                <option key={address.id} value={address.id}>
-                  {address.label}
-                </option>
-              ))}
-            </select>
-          </FieldGroup>
-        </div>
-
         {c.leaseForm !== null ? (
           <LeaseForm
             key={c.leaseForm === "new" ? "new" : c.leaseForm.id}

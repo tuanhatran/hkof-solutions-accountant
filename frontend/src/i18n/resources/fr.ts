@@ -732,7 +732,6 @@ export const fr = {
         add: "Ajouter un bail",
         filterPlaceholder: "Filtrer les baux…",
         addressLabel: "Adresse des baux",
-        addressHelp: "Seuls les baux de l’adresse sélectionnée sont affichés.",
         loadingAddresses: "Chargement des adresses…",
         noAddress: "Aucune adresse configurée",
         loading: "Chargement des baux…",

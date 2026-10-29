@@ -21,8 +21,8 @@
     @apply text-xs text-ink-soft;
   }
 
-  .lease-section-address {
-    @apply rounded-xl border border-line bg-paper/40 p-3 sm:max-w-md;
+  .lease-section-address-select {
+    @apply shrink-0 sm:w-64;
   }
 
   .lease-section-table {

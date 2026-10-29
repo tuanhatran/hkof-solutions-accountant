@@ -450,6 +450,52 @@ describe("LeaseSection rent receipt", () => {
     expect(leaseOrder()).toEqual([10, 11]);
   });
 
+  it("keeps only the address select in the card header before the search box", async () => {
+    leaseRows = [LEASE, OTHER_LEASE];
+    renderSection();
+
+    const header = document.querySelector(".card-header") as HTMLElement;
+    const select = header.querySelector(
+      '[data-cy="select-rent-receipts-address"]',
+    ) as HTMLSelectElement;
+    expect(select).not.toBeNull();
+    expect(select.tagName).toBe("SELECT");
+    expect(select).toHaveAccessibleName("Adresse des baux");
+    expect(select).toHaveAttribute("aria-label", "Adresse des baux");
+    expect(header.querySelector("label")).toBeNull();
+    expect(
+      screen.queryByText(
+        "Seuls les baux de l’adresse sélectionnée sont affichés.",
+      ),
+    ).toBeNull();
+    expect(document.querySelector(".lease-section-address")).toBeNull();
+    expect(
+      document.querySelector(
+        ".card-body [data-cy='select-rent-receipts-address']",
+      ),
+    ).toBeNull();
+
+    const ordered = [
+      ...header.querySelectorAll<HTMLElement>(
+        '[data-cy="btn-add-lease"], [data-cy="select-rent-receipts-address"], [data-cy="filter-leases"]',
+      ),
+    ].map((element) => element.dataset.cy);
+    expect(ordered).toEqual([
+      "btn-add-lease",
+      "select-rent-receipts-address",
+      "filter-leases",
+    ]);
+    expect(
+      header.querySelector('[data-cy="filter-count-leases"]'),
+    ).not.toBeNull();
+    expect(
+      header.querySelector('[data-cy="sort-leases-compact"]'),
+    ).not.toBeNull();
+
+    await userEvent.selectOptions(select, "4");
+    expect(select).toHaveValue("4");
+  });
+
   it("hides the list toolbar when there is no lease", () => {
     leaseRows = [];
     renderSection();
