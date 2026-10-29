@@ -30,27 +30,30 @@ public class EmployeeService {
     private final EmployeeRepository repository;
     private final SignatureRepository signatures;
     private final CompanyService companies;
+    private final OwnershipContext ownership;
     private final Clock clock;
 
     public EmployeeService(EmployeeRepository repository, SignatureRepository signatures, CompanyService companies,
-            Clock clock) {
+            OwnershipContext ownership, Clock clock) {
         this.repository = repository;
         this.signatures = signatures;
         this.companies = companies;
+        this.ownership = ownership;
         this.clock = clock;
     }
 
     @Transactional(readOnly = true)
     public List<EmployeeDto> list(Long companyId) {
         companies.entity(companyId);
-        return repository.findAllByCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(companyId)
-                .stream().map(this::toDto).toList();
+        return repository.findAllByUserIdAndCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(
+                ownership.currentUserId(), companyId).stream().map(this::toDto).toList();
     }
 
     @Transactional
     public EmployeeDto create(Long companyId, EmployeeRequest request) {
         companies.entity(companyId);
         Employee employee = new Employee();
+        employee.setUserId(ownership.currentUserId());
         employee.setCompanyId(companyId);
         apply(employee, request, companyId, null);
         employee.setDeleted(false);
@@ -86,7 +89,7 @@ public class EmployeeService {
 
     @Transactional(readOnly = true)
     public Employee entity(Long id) {
-        return repository.findByIdAndDeletedFalse(id)
+        return repository.findByIdAndUserIdAndDeletedFalse(id, ownership.currentUserId())
                 .orElseThrow(() -> new NotFoundException("EMPLOYEE_NOT_FOUND", "Salarié introuvable."));
     }
 
@@ -100,7 +103,8 @@ public class EmployeeService {
         if (companyId == null) {
             return Optional.empty();
         }
-        return repository.findAllByCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(companyId).stream()
+        return repository.findAllByUserIdAndCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(
+                ownership.currentUserId(), companyId).stream()
                 .filter(employee -> employee.getTitle() == EmployeeTitle.CEO)
                 .map(Employee::getIssuePlace)
                 .filter(place -> place != null && !place.isBlank())

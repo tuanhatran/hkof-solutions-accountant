@@ -42,11 +42,13 @@ public class CompanyService {
     private final LeaseRepository leases;
     private final SignatureRepository signatures;
     private final RentReceiptRepository rentReceipts;
+    private final OwnershipContext ownership;
     private final Clock clock;
 
     public CompanyService(CompanyRepository repository, ExpenseItemRepository expenseItems,
             ExpenseStatementRepository statements, EmployeeRepository employees, LeaseRepository leases,
-            SignatureRepository signatures, RentReceiptRepository rentReceipts, Clock clock) {
+            SignatureRepository signatures, RentReceiptRepository rentReceipts, OwnershipContext ownership,
+            Clock clock) {
         this.repository = repository;
         this.expenseItems = expenseItems;
         this.statements = statements;
@@ -54,12 +56,14 @@ public class CompanyService {
         this.leases = leases;
         this.signatures = signatures;
         this.rentReceipts = rentReceipts;
+        this.ownership = ownership;
         this.clock = clock;
     }
 
     @Transactional(readOnly = true)
     public List<CompanyDto> list() {
-        return repository.findAllByDeletedFalseOrderByNameAscIdAsc().stream().map(this::toDto).toList();
+        return repository.findAllByUserIdAndDeletedFalseOrderByNameAscIdAsc(ownership.currentUserId()).stream()
+                .map(this::toDto).toList();
     }
 
     @Transactional(readOnly = true)
@@ -71,6 +75,7 @@ public class CompanyService {
     public CompanyDto create(CompanyRequest request) {
         Company company = new Company();
         apply(company, request, null);
+        company.setUserId(ownership.currentUserId());
         company.setDeleted(false);
         company.setCreatedAt(Instant.now(clock));
         company.setUpdatedAt(Instant.now(clock));
@@ -107,7 +112,7 @@ public class CompanyService {
             setActiveLease(company, leaseId);
             return;
         }
-        Lease target = leases.findByIdAndDeletedFalse(leaseId)
+        Lease target = leases.findByIdAndUserIdAndDeletedFalse(leaseId, ownership.currentUserId())
                 .orElseThrow(() -> new NotFoundException("LEASE_NOT_FOUND", "Bail introuvable."));
         if (target.getCompanyId() != null && !target.getCompanyId().equals(company.getId())) {
             throw new BusinessException("LEASE_ALREADY_LINKED", "Ce bail est déjà lié à une autre société.");
@@ -141,13 +146,14 @@ public class CompanyService {
             throw new BusinessException("COMPANY_IN_USE",
                     "Cette société est utilisée par des données et ne peut pas être supprimée.");
         }
-        if (leases.existsByCompanyIdAndCompanyLeaseTrueAndDeletedFalse(id)) {
+        if (leases.existsByUserIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalse(ownership.currentUserId(), id)) {
             throw new BusinessException("COMPANY_ACTIVE_LEASE_TENANT",
                     "Cette société est locataire d'un bail actif et ne peut pas être supprimée.");
         }
         Instant now = Instant.now(clock);
-        List<Employee> companyEmployees =
-                employees.findAllByCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(id);
+        List<Employee> companyEmployees = employees
+                .findAllByUserIdAndCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(
+                        ownership.currentUserId(), id);
         for (Employee employee : companyEmployees) {
             employee.setDeleted(true);
             employee.setUpdatedAt(now);
@@ -165,7 +171,7 @@ public class CompanyService {
         if (!companySignatures.isEmpty()) {
             signatures.saveAll(companySignatures);
         }
-        for (Lease lease : leases.findAllByCompanyIdAndDeletedFalse(id)) {
+        for (Lease lease : leases.findAllByUserIdAndCompanyIdAndDeletedFalse(ownership.currentUserId(), id)) {
             unlink(lease);
         }
         company.setActiveLeaseId(null);
@@ -184,7 +190,7 @@ public class CompanyService {
         if (id == null) {
             throw new BusinessException("COMPANY_REQUIRED", "Sélectionnez une société.");
         }
-        return repository.findByIdAndDeletedFalse(id)
+        return repository.findByIdAndUserIdAndDeletedFalse(id, ownership.currentUserId())
                 .orElseThrow(() -> new NotFoundException("COMPANY_NOT_FOUND", "Société introuvable."));
     }
 
@@ -229,11 +235,13 @@ public class CompanyService {
         if (company.getId() == null) {
             return Optional.empty();
         }
+        Long owner = ownership.currentUserId();
         Optional<Lease> active = company.getActiveLeaseId() == null
                 ? Optional.empty()
-                : leases.findByIdAndDeletedFalse(company.getActiveLeaseId())
+                : leases.findByIdAndUserIdAndDeletedFalse(company.getActiveLeaseId(), owner)
                         .filter(lease -> company.getId().equals(lease.getCompanyId()));
-        return active.or(() -> leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(company.getId()));
+        return active.or(() -> leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(owner,
+                company.getId()));
     }
 
     private void setActiveLease(Company company, Long leaseId) {
@@ -252,9 +260,10 @@ public class CompanyService {
         company.setLegalForm(optionalText(request.legalForm()));
         String siren = optionalText(request.siren());
         if (siren != null) {
+            Long owner = ownership.currentUserId();
             boolean duplicate = currentId == null
-                    ? repository.existsBySirenAndDeletedFalse(siren)
-                    : repository.existsBySirenAndDeletedFalseAndIdNot(siren, currentId);
+                    ? repository.existsByUserIdAndSirenAndDeletedFalse(owner, siren)
+                    : repository.existsByUserIdAndSirenAndDeletedFalseAndIdNot(owner, siren, currentId);
             if (duplicate) {
                 throw new BusinessException("COMPANY_SIREN_DUPLICATE", "Une société avec ce SIREN existe déjà.");
             }

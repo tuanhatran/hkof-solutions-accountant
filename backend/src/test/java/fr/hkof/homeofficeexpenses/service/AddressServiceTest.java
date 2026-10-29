@@ -24,13 +24,18 @@ import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.AddressDto;
 
 class AddressServiceTest {
 
+    private static final Long USER_ID = 42L;
+
     private AddressRepository addresses;
+    private OwnershipContext ownership;
     private AddressService service;
 
     @BeforeEach
     void setUp() {
         addresses = mock(AddressRepository.class);
-        service = new AddressService(addresses,
+        ownership = mock(OwnershipContext.class);
+        when(ownership.currentUserId()).thenReturn(USER_ID);
+        service = new AddressService(addresses, ownership,
                 Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
@@ -44,7 +49,7 @@ class AddressServiceTest {
     @Test
     @DisplayName("The address list maps every non deleted label")
     void lists() {
-        when(addresses.findAllByDeletedFalseOrderByLabelAsc())
+        when(addresses.findAllByUserIdAndDeletedFalseOrderByLabelAsc(USER_ID))
                 .thenReturn(List.of(address(1L, "12 rue de la République"), address(2L, "8 rue du Test")));
 
         assertThat(service.list())
@@ -55,7 +60,7 @@ class AddressServiceTest {
     @DisplayName("An existing address is reused with a trimmed, case-insensitive label")
     void reusesExistingAddress() {
         Address existing = address(4L, "12 rue de la République");
-        when(addresses.findFirstByDeletedFalseAndLabelIgnoreCase("12 rue de la République"))
+        when(addresses.findFirstByUserIdAndDeletedFalseAndLabelIgnoreCase(USER_ID, "12 rue de la République"))
                 .thenReturn(Optional.of(existing));
 
         assertThat(service.findOrCreate("  12 rue de la République  ")).isSameAs(existing);
@@ -65,7 +70,7 @@ class AddressServiceTest {
     @Test
     @DisplayName("A new address is created with the trimmed label and the current instant")
     void createsAddress() {
-        when(addresses.findFirstByDeletedFalseAndLabelIgnoreCase("8 rue du Test")).thenReturn(Optional.empty());
+        when(addresses.findFirstByUserIdAndDeletedFalseAndLabelIgnoreCase(USER_ID, "8 rue du Test")).thenReturn(Optional.empty());
         when(addresses.save(any(Address.class))).thenAnswer(invocation -> {
             Address saved = invocation.getArgument(0);
             saved.setId(5L);

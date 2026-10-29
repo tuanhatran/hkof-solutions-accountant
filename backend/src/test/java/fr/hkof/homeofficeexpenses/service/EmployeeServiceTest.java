@@ -28,9 +28,12 @@ import fr.hkof.homeofficeexpenses.web.dto.EmployeeDtos.EmployeeRequest;
 
 class EmployeeServiceTest {
 
+    private static final Long USER_ID = 42L;
+
     private EmployeeRepository repository;
     private SignatureRepository signatures;
     private CompanyService companies;
+    private OwnershipContext ownership;
     private EmployeeService service;
 
     @BeforeEach
@@ -38,7 +41,9 @@ class EmployeeServiceTest {
         repository = mock(EmployeeRepository.class);
         signatures = mock(SignatureRepository.class);
         companies = mock(CompanyService.class);
-        service = new EmployeeService(repository, signatures, companies,
+        ownership = mock(OwnershipContext.class);
+        when(ownership.currentUserId()).thenReturn(USER_ID);
+        service = new EmployeeService(repository, signatures, companies, ownership,
                 Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
@@ -69,7 +74,7 @@ class EmployeeServiceTest {
     @DisplayName("Listing a company maps its employees")
     void lists() {
         when(companies.entity(1L)).thenReturn(company(1L));
-        when(repository.findAllByCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(1L))
+        when(repository.findAllByUserIdAndCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(USER_ID, 1L))
                 .thenReturn(List.of(employee()));
 
         List<EmployeeDto> employees = service.list(1L);
@@ -115,7 +120,7 @@ class EmployeeServiceTest {
         ceo.setId(9L);
         ceo.setTitle(EmployeeTitle.CEO);
         ceo.setIssuePlace("  Lyon  ");
-        when(repository.findAllByCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(1L))
+        when(repository.findAllByUserIdAndCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(USER_ID, 1L))
                 .thenReturn(List.of(blankCeo, cfo, ceo));
 
         assertThat(service.ceoIssuePlace(1L)).contains("Lyon");
@@ -168,7 +173,7 @@ class EmployeeServiceTest {
                 .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
                         .isEqualTo("EMPLOYEE_EMAIL_DUPLICATE"));
 
-        when(repository.findByIdAndDeletedFalse(7L)).thenReturn(Optional.of(employee()));
+        when(repository.findByIdAndUserIdAndDeletedFalse(7L, USER_ID)).thenReturn(Optional.of(employee()));
         when(repository.existsByCompanyIdAndEmailIgnoreCaseAndDeletedFalseAndIdNot(1L, "camille@example.fr", 7L))
                 .thenReturn(true);
         assertThatThrownBy(() -> service.update(7L,
@@ -181,7 +186,7 @@ class EmployeeServiceTest {
     @DisplayName("Updating keeps the company unless another one is selected")
     void updates() {
         Employee existing = employee();
-        when(repository.findByIdAndDeletedFalse(7L)).thenReturn(Optional.of(existing));
+        when(repository.findByIdAndUserIdAndDeletedFalse(7L, USER_ID)).thenReturn(Optional.of(existing));
         when(repository.save(any(Employee.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         EmployeeDto sameCompany = service.update(7L, request(null, "Camille", "Martin", null, "CFO"));
@@ -199,7 +204,7 @@ class EmployeeServiceTest {
     @DisplayName("Deleting is logical and blocked while signatures reference the employee")
     void deletes() {
         Employee existing = employee();
-        when(repository.findByIdAndDeletedFalse(7L)).thenReturn(Optional.of(existing));
+        when(repository.findByIdAndUserIdAndDeletedFalse(7L, USER_ID)).thenReturn(Optional.of(existing));
         when(signatures.existsByPersonIdAndDeletedFalse(7L)).thenReturn(true);
         assertThatThrownBy(() -> service.delete(7L))
                 .isInstanceOf(BusinessException.class)
@@ -218,7 +223,7 @@ class EmployeeServiceTest {
     @Test
     @DisplayName("A missing employee is not found in French")
     void missingEmployee() {
-        when(repository.findByIdAndDeletedFalse(9L)).thenReturn(Optional.empty());
+        when(repository.findByIdAndUserIdAndDeletedFalse(9L, USER_ID)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.entity(9L))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Salarié introuvable.")

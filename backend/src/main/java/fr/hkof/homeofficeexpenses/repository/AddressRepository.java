@@ -11,5 +11,9 @@ public interface AddressRepository extends JpaRepository<Address, Long> {
 
     List<Address> findAllByDeletedFalseOrderByLabelAsc();
 
+    List<Address> findAllByUserIdAndDeletedFalseOrderByLabelAsc(Long userId);
+
     Optional<Address> findFirstByDeletedFalseAndLabelIgnoreCase(String label);
+
+    Optional<Address> findFirstByUserIdAndDeletedFalseAndLabelIgnoreCase(Long userId, String label);
 }

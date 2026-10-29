@@ -29,6 +29,10 @@ public class Person {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Owner of an employee row; natural persons stay null until person scoping lands. */
+    @Column(name = "user_id")
+    private Long userId;
+
     @Column(name = "name")
     private String name;
 
@@ -54,6 +58,14 @@ public class Person {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public String getName() {

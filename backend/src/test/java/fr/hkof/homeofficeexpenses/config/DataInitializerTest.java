@@ -74,6 +74,10 @@ class DataInitializerTest {
                 new AppProperties.Llm("http://localhost:11434", "qwen2.5vl"));
         when(passwordEncoder.encode(any())).thenAnswer(invocation -> "hash:" + invocation.getArgument(0));
         when(environment.matchesProfiles("e2e")).thenReturn(false);
+        AppUser owner = new AppUser();
+        owner.setId(1L);
+        when(appUserRepository.findByEmailIgnoreCase("thtran@homeofficeexpenses.local"))
+                .thenReturn(Optional.of(owner));
         initializer = new DataInitializer(companyRepository, employeeRepository, personRepository,
                 leaseRepository, addressRepository, expenseItemRepository, templateRepository, llmConfigRepository,
                 appUserRepository, passwordEncoder, environment,
@@ -91,28 +95,29 @@ class DataInitializerTest {
     @Test
     @DisplayName("An empty database is seeded with a company, its CEO, a person, a company lease, items, templates and LLM")
     void seedsEmptyDatabase() {
-        when(companyRepository.findFirstByDeletedFalseOrderByIdAsc()).thenReturn(Optional.empty());
+        when(companyRepository.findFirstByUserIdAndDeletedFalseOrderByIdAsc(1L)).thenReturn(Optional.empty());
         when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
             Company saved = invocation.getArgument(0);
             saved.setId(1L);
             return saved;
         });
-        when(employeeRepository.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(1L)).thenReturn(Optional.empty());
+        when(employeeRepository.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(1L, 1L)).thenReturn(Optional.empty());
         when(personRepository.findAllNaturalPersons()).thenReturn(List.of());
         when(personRepository.save(any(Person.class))).thenAnswer(invocation -> {
             Person person = invocation.getArgument(0);
             person.setId(1L);
             return person;
         });
-        when(leaseRepository.findFirstByDeletedFalseOrderByIdAsc()).thenReturn(Optional.empty());
-        when(addressRepository.findFirstByDeletedFalseAndLabelIgnoreCase("12 rue de la République, 75000 Paris"))
+        when(leaseRepository.findFirstByUserIdAndDeletedFalseOrderByIdAsc(1L)).thenReturn(Optional.empty());
+        when(addressRepository.findFirstByUserIdAndDeletedFalseAndLabelIgnoreCase(1L,
+                        "12 rue de la République, 75000 Paris"))
                 .thenReturn(Optional.empty());
         when(addressRepository.save(any(Address.class))).thenAnswer(invocation -> {
             Address address = invocation.getArgument(0);
             address.setId(1L);
             return address;
         });
-        when(expenseItemRepository.findFirstByCompanyIdAndCode(any(), any())).thenReturn(Optional.empty());
+        when(expenseItemRepository.findFirstByUserIdAndCompanyIdAndCode(eq(1L), any(), any())).thenReturn(Optional.empty());
         when(templateRepository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(any())).thenReturn(Optional.empty());
         when(templateRepository.save(any(TemplateDocument.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(templateRepository.findFirstByTypeAndActiveTrueAndDeletedFalse(any())).thenReturn(Optional.empty());
@@ -167,12 +172,12 @@ class DataInitializerTest {
     @Test
     @DisplayName("An already seeded database is left untouched")
     void keepsExistingData() {
-        when(companyRepository.findFirstByDeletedFalseOrderByIdAsc()).thenReturn(Optional.of(company()));
-        when(employeeRepository.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(1L))
+        when(companyRepository.findFirstByUserIdAndDeletedFalseOrderByIdAsc(1L)).thenReturn(Optional.of(company()));
+        when(employeeRepository.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(1L, 1L))
                 .thenReturn(Optional.of(new Employee()));
         when(personRepository.findAllNaturalPersons()).thenReturn(List.of(new Person()));
-        when(leaseRepository.findFirstByDeletedFalseOrderByIdAsc()).thenReturn(Optional.of(new Lease()));
-        when(expenseItemRepository.findFirstByCompanyIdAndCode(eq(1L), any()))
+        when(leaseRepository.findFirstByUserIdAndDeletedFalseOrderByIdAsc(1L)).thenReturn(Optional.of(new Lease()));
+        when(expenseItemRepository.findFirstByUserIdAndCompanyIdAndCode(eq(1L), eq(1L), any()))
                 .thenReturn(Optional.of(new fr.hkof.homeofficeexpenses.domain.ExpenseItem()));
         when(templateRepository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(any()))
                 .thenReturn(Optional.of(new TemplateDocument()));
@@ -196,12 +201,12 @@ class DataInitializerTest {
     @Test
     @DisplayName("The e2e profile seeds its own confirmed account without a forced password change")
     void seedsE2eUserUnderE2eProfile() {
-        when(companyRepository.findFirstByDeletedFalseOrderByIdAsc()).thenReturn(Optional.of(company()));
-        when(employeeRepository.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(1L))
+        when(companyRepository.findFirstByUserIdAndDeletedFalseOrderByIdAsc(1L)).thenReturn(Optional.of(company()));
+        when(employeeRepository.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(1L, 1L))
                 .thenReturn(Optional.of(new Employee()));
         when(personRepository.findAllNaturalPersons()).thenReturn(List.of(new Person()));
-        when(leaseRepository.findFirstByDeletedFalseOrderByIdAsc()).thenReturn(Optional.of(new Lease()));
-        when(expenseItemRepository.findFirstByCompanyIdAndCode(eq(1L), any()))
+        when(leaseRepository.findFirstByUserIdAndDeletedFalseOrderByIdAsc(1L)).thenReturn(Optional.of(new Lease()));
+        when(expenseItemRepository.findFirstByUserIdAndCompanyIdAndCode(eq(1L), eq(1L), any()))
                 .thenReturn(Optional.of(new fr.hkof.homeofficeexpenses.domain.ExpenseItem()));
         when(templateRepository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(any()))
                 .thenReturn(Optional.of(new TemplateDocument()));

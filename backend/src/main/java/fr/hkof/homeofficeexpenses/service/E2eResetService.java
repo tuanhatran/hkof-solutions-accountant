@@ -10,7 +10,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +24,7 @@ import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.domain.Signature;
 import fr.hkof.homeofficeexpenses.repository.AddressRepository;
 import fr.hkof.homeofficeexpenses.repository.AnalysisDocumentRepository;
+import fr.hkof.homeofficeexpenses.repository.AppUserRepository;
 import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
@@ -79,6 +79,7 @@ public class E2eResetService {
     private final StorageService storage;
     private final DataInitializer initializer;
     private final AuthService authService;
+    private final AppUserRepository appUsers;
 
     public E2eResetService(AnalysisDocumentRepository analyses, ExpenseLineRepository lines,
             ExpenseStatementRepository statements, RentReceiptRepository rentReceipts,
@@ -86,7 +87,8 @@ public class E2eResetService {
             TemplateDocumentRepository templates, LlmConfigRepository llmConfigs, ExpenseItemRepository items,
             CompanyRepository companies, EmployeeRepository employees, LeaseRepository leases,
             AddressRepository addresses, PersonRepository persons, SignatureRepository signatures,
-            StorageService storage, DataInitializer initializer, AuthService authService) {
+            StorageService storage, DataInitializer initializer, AuthService authService,
+            AppUserRepository appUsers) {
         this.analyses = analyses;
         this.lines = lines;
         this.statements = statements;
@@ -105,6 +107,7 @@ public class E2eResetService {
         this.storage = storage;
         this.initializer = initializer;
         this.authService = authService;
+        this.appUsers = appUsers;
     }
 
     @Transactional
@@ -125,7 +128,8 @@ public class E2eResetService {
         persons.deleteAllInBatch();
         companies.deleteAllInBatch();
         cleanFiles();
-        initializer.run(new DefaultApplicationArguments(new String[0]));
+        Long e2eOwner = appUsers.findByEmailIgnoreCase(E2E_USER_EMAIL).orElseThrow().getId();
+        initializer.seed(e2eOwner);
         authService.restoreSeedUser(SEED_USER_EMAIL, SEED_USER_PASSWORD, true);
         authService.restoreSeedUser(E2E_USER_EMAIL, E2E_USER_PASSWORD, false);
         Person landlord = naturalPerson(DEFAULT_LANDLORD_NAME);
@@ -135,7 +139,7 @@ public class E2eResetService {
             persons.save(landlord);
         }
         Person tenant = seedTenant();
-        seedNormalLease(landlord, tenant);
+        seedNormalLease(e2eOwner, landlord, tenant);
         seedSignatures(landlord, tenant);
     }
 
@@ -156,15 +160,16 @@ public class E2eResetService {
     }
 
     /** Adds a normal lease next to the base company lease, so both shapes are available in e2e. */
-    private void seedNormalLease(Person landlord, Person tenant) {
+    private void seedNormalLease(Long ownerId, Person landlord, Person tenant) {
         if (landlord == null || tenant == null
                 || leases.findFirstByLandlordIdAndTenantIdAndDeletedFalse(landlord.getId(), tenant.getId())
                         .isPresent()) {
             return;
         }
         Address address = addresses.findFirstByDeletedFalseAndLabelIgnoreCase(DEFAULT_LEASE_ADDRESS)
-                .orElseGet(this::createLeaseAddress);
+                .orElseGet(() -> createLeaseAddress(ownerId));
         Lease lease = new Lease();
+        lease.setUserId(ownerId);
         lease.setLandlord(landlord);
         lease.setTenant(tenant);
         lease.setCompanyLease(false);
@@ -176,8 +181,9 @@ public class E2eResetService {
         leases.save(lease);
     }
 
-    private Address createLeaseAddress() {
+    private Address createLeaseAddress(Long ownerId) {
         Address address = new Address();
+        address.setUserId(ownerId);
         address.setLabel(DEFAULT_LEASE_ADDRESS);
         address.setDeleted(false);
         address.setCreatedAt(Instant.now());
