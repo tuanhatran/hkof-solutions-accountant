@@ -19,6 +19,9 @@ public class ExpenseItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
     @Column(name = "company_id", nullable = false)
     private Long companyId;
 
@@ -60,6 +63,14 @@ public class ExpenseItem {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public Long getCompanyId() {

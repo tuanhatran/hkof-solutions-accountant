@@ -33,11 +33,14 @@ import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.LeaseRequest;
 
 class LeaseServiceTest {
 
+    private static final Long USER_ID = 42L;
+
     private PersonRepository persons;
     private EmployeeRepository employees;
     private LeaseRepository leases;
     private CompanyService companies;
     private AddressService addresses;
+    private OwnershipContext ownership;
     private LeaseService service;
 
     @BeforeEach
@@ -47,8 +50,10 @@ class LeaseServiceTest {
         leases = mock(LeaseRepository.class);
         companies = mock(CompanyService.class);
         addresses = mock(AddressService.class);
+        ownership = mock(OwnershipContext.class);
+        when(ownership.currentUserId()).thenReturn(USER_ID);
         when(addresses.findOrCreate(anyString())).thenAnswer(invocation -> address(4L, invocation.getArgument(0)));
-        service = new LeaseService(persons, employees, leases, companies, addresses,
+        service = new LeaseService(persons, employees, leases, companies, addresses, ownership,
                 Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
@@ -104,7 +109,7 @@ class LeaseServiceTest {
     void listsLeases() {
         Lease normal = normalLease();
         normal.setCompanyId(9L);
-        when(leases.findAllByDeletedFalseOrderByIdAsc()).thenReturn(List.of(normal, companyLease()));
+        when(leases.findAllByUserIdAndDeletedFalseOrderByIdAsc(USER_ID)).thenReturn(List.of(normal, companyLease()));
         when(companies.find(7L)).thenReturn(Optional.of(company(7L, "Société locataire")));
         when(companies.find(9L)).thenReturn(Optional.of(company(9L, "Société pro-rata")));
 
@@ -127,16 +132,16 @@ class LeaseServiceTest {
     @Test
     @DisplayName("The expense lease resolves the requested or the first active lease")
     void resolvesExpenseLease() {
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(7L))
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, 7L))
                 .thenReturn(Optional.of(companyLease()));
         assertThat(service.resolveExpenseLease(7L, null).getId()).isEqualTo(5L);
-        when(leases.findByIdAndDeletedFalse(5L)).thenReturn(Optional.of(companyLease()));
+        when(leases.findByIdAndUserIdAndDeletedFalse(5L, USER_ID)).thenReturn(Optional.of(companyLease()));
         assertThat(service.resolveExpenseLease(7L, 5L).getId()).isEqualTo(5L);
 
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(8L)).thenReturn(Optional.empty());
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, 8L)).thenReturn(Optional.empty());
         assertThat(service.resolveExpenseLease(8L, null)).isNull();
 
-        when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.empty());
+        when(leases.findByIdAndUserIdAndDeletedFalse(6L, USER_ID)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.resolveExpenseLease(7L, 6L))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Bail introuvable.")
@@ -144,7 +149,7 @@ class LeaseServiceTest {
 
         Lease foreign = companyLease();
         foreign.setId(6L);
-        when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.of(foreign));
+        when(leases.findByIdAndUserIdAndDeletedFalse(6L, USER_ID)).thenReturn(Optional.of(foreign));
         assertThatThrownBy(() -> service.resolveExpenseLease(9L, 6L))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Ce bail n'appartient pas à la société.")
@@ -154,13 +159,13 @@ class LeaseServiceTest {
     @Test
     @DisplayName("The lease pro-rata is computed by CalculationService with scale 2")
     void computesLeaseProRata() {
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(7L))
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, 7L))
                 .thenReturn(Optional.of(companyLease()));
         LeaseService.ProRata proRata = service.proRata(7L, null);
         assertThat(proRata.base()).isEqualByComparingTo("35.71");
         assertThat(proRata.detail()).isEqualTo("Surface pro 25,00 m² / 70,00 m² = 35,71\u00A0%");
 
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(8L)).thenReturn(Optional.empty());
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, 8L)).thenReturn(Optional.empty());
         LeaseService.ProRata withoutLease = service.proRata(8L, null);
         assertThat(withoutLease.base()).isEqualByComparingTo("0.00");
         assertThat(withoutLease.detail()).isEqualTo("Surfaces non configurées");
@@ -197,7 +202,7 @@ class LeaseServiceTest {
 
         Lease existing = normalLease();
         existing.setCompanyId(9L);
-        when(leases.findByIdAndDeletedFalse(3L)).thenReturn(Optional.of(existing));
+        when(leases.findByIdAndUserIdAndDeletedFalse(3L, USER_ID)).thenReturn(Optional.of(existing));
         LeaseDto updated = service.updateLease(3L,
                 new LeaseRequest(false, 1L, null, 2L, "13 rue", "950", "60", "80", "20"));
         assertThat(updated.propertyAddress()).isEqualTo("13 rue");
@@ -242,16 +247,16 @@ class LeaseServiceTest {
     @Test
     @DisplayName("Employees can never be lease parties")
     void employeesRejected() {
-        when(employees.existsByIdAndDeletedFalse(1L)).thenReturn(true);
+        when(employees.existsByIdAndUserIdAndDeletedFalse(1L, USER_ID)).thenReturn(true);
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Un salarié ne peut pas être partie à un bail.")
                 .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_EMPLOYEE_PARTY"));
 
-        when(employees.existsByIdAndDeletedFalse(1L)).thenReturn(false);
+        when(employees.existsByIdAndUserIdAndDeletedFalse(1L, USER_ID)).thenReturn(false);
         when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
-        when(employees.existsByIdAndDeletedFalse(2L)).thenReturn(true);
+        when(employees.existsByIdAndUserIdAndDeletedFalse(2L, USER_ID)).thenReturn(true);
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
@@ -323,22 +328,22 @@ class LeaseServiceTest {
     void duplicateLease() {
         when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
         when(persons.findNaturalPersonById(2L)).thenReturn(Optional.of(person(2L, "Locataire")));
-        when(leases.existsByLandlordIdAndTenantIdAndDeletedFalse(1L, 2L)).thenReturn(true);
+        when(leases.existsByUserIdAndLandlordIdAndTenantIdAndDeletedFalse(USER_ID, 1L, 2L)).thenReturn(true);
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Un bail actif existe déjà pour ce bailleur et ce locataire.")
                 .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_ALREADY_EXISTS"));
 
-        when(leases.findByIdAndDeletedFalse(3L)).thenReturn(Optional.of(normalLease()));
-        when(leases.existsByLandlordIdAndTenantIdAndDeletedFalseAndIdNot(1L, 2L, 3L)).thenReturn(true);
+        when(leases.findByIdAndUserIdAndDeletedFalse(3L, USER_ID)).thenReturn(Optional.of(normalLease()));
+        when(leases.existsByUserIdAndLandlordIdAndTenantIdAndDeletedFalseAndIdNot(USER_ID, 1L, 2L, 3L)).thenReturn(true);
         assertThatThrownBy(() -> service.updateLease(3L,
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_ALREADY_EXISTS"));
 
         when(companies.entity(7L)).thenReturn(company(7L, "Société"));
-        when(leases.existsByLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalse(1L, 7L)).thenReturn(true);
+        when(leases.existsByUserIdAndLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalse(USER_ID, 1L, 7L)).thenReturn(true);
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(true, 1L, 7L, null, "12 rue", "900", null, "70", "25")))
                 .isInstanceOf(BusinessException.class)
@@ -366,7 +371,7 @@ class LeaseServiceTest {
         when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
         when(persons.findNaturalPersonById(2L)).thenReturn(Optional.of(person(2L, "Locataire")));
         when(companies.entity(7L)).thenReturn(company(7L, "Société"));
-        when(leases.existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalse(7L)).thenReturn(true);
+        when(leases.existsByUserIdAndCompanyIdAndCompanyLeaseFalseAndDeletedFalse(USER_ID, 7L)).thenReturn(true);
 
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, 7L, 2L, "12 rue", "900", null, null, null)))
@@ -375,13 +380,13 @@ class LeaseServiceTest {
                 .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
                         .isEqualTo("LEASE_COMPANY_ALREADY_LINKED"));
 
-        when(leases.existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalseAndIdNot(7L, 5L)).thenReturn(true);
+        when(leases.existsByUserIdAndCompanyIdAndCompanyLeaseFalseAndDeletedFalseAndIdNot(USER_ID, 7L, 5L)).thenReturn(true);
         Lease existing = companyLease();
         existing.setCompanyLease(false);
         existing.setTenant(person(8L, "Locataire 8"));
         existing.setTotalArea(null);
         existing.setBusinessArea(null);
-        when(leases.findByIdAndDeletedFalse(5L)).thenReturn(Optional.of(existing));
+        when(leases.findByIdAndUserIdAndDeletedFalse(5L, USER_ID)).thenReturn(Optional.of(existing));
         assertThatThrownBy(() -> service.updateLease(5L,
                 new LeaseRequest(false, 1L, 7L, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
@@ -401,24 +406,24 @@ class LeaseServiceTest {
 
         Lease existing = normalLease();
         existing.setCompanyId(9L);
-        when(leases.findByIdAndDeletedFalse(3L)).thenReturn(Optional.of(existing));
-        when(leases.existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalseAndIdNot(9L, 3L)).thenReturn(false);
+        when(leases.findByIdAndUserIdAndDeletedFalse(3L, USER_ID)).thenReturn(Optional.of(existing));
+        when(leases.existsByUserIdAndCompanyIdAndCompanyLeaseFalseAndDeletedFalseAndIdNot(USER_ID, 9L, 3L)).thenReturn(false);
 
         LeaseDto updated = service.updateLease(3L,
                 new LeaseRequest(false, 1L, 9L, 2L, "13 rue", "950", null, null, null));
         assertThat(updated.companyId()).isEqualTo(9L);
-        verify(leases).existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalseAndIdNot(9L, 3L);
+        verify(leases).existsByUserIdAndCompanyIdAndCompanyLeaseFalseAndDeletedFalseAndIdNot(USER_ID, 9L, 3L);
 
         LeaseDto withoutCompany = service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null));
         assertThat(withoutCompany.companyId()).isNull();
-        verify(leases, never()).existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalse(anyLong());
+        verify(leases, never()).existsByUserIdAndCompanyIdAndCompanyLeaseFalseAndDeletedFalse(anyLong(), anyLong());
     }
 
     @Test
     @DisplayName("Missing entities are not found in French")
     void notFound() {
-        when(leases.findByIdAndDeletedFalse(9L)).thenReturn(Optional.empty());
+        when(leases.findByIdAndUserIdAndDeletedFalse(9L, USER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.updateLease(9L,
                 new LeaseRequest(false, 1L, null, 2L, "x", "1", null, null, null)))
@@ -444,15 +449,15 @@ class LeaseServiceTest {
                 .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
                         .isEqualTo("LEASE_SINGLE_TENANT_REQUIRED"));
 
-        when(leases.findFirstByLandlordIdAndTenantIdAndDeletedFalse(1L, 2L))
+        when(leases.findFirstByUserIdAndLandlordIdAndTenantIdAndDeletedFalse(USER_ID, 1L, 2L))
                 .thenReturn(Optional.of(normalLease()));
         assertThat(service.resolveLease(1L, 2L, null).getId()).isEqualTo(3L);
 
-        when(leases.findFirstByLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalse(1L, 7L))
+        when(leases.findFirstByUserIdAndLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalse(USER_ID, 1L, 7L))
                 .thenReturn(Optional.of(companyLease()));
         assertThat(service.resolveLease(1L, null, 7L).getId()).isEqualTo(5L);
 
-        when(leases.findFirstByLandlordIdAndTenantIdAndDeletedFalse(4L, 5L)).thenReturn(Optional.empty());
+        when(leases.findFirstByUserIdAndLandlordIdAndTenantIdAndDeletedFalse(USER_ID, 4L, 5L)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.resolveLease(4L, 5L, null))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Aucun bail actif")
@@ -463,9 +468,9 @@ class LeaseServiceTest {
     @Test
     @DisplayName("The example lease is the first non deleted lease or null")
     void exampleLease() {
-        when(leases.findFirstByDeletedFalseOrderByIdAsc()).thenReturn(Optional.of(normalLease()));
+        when(leases.findFirstByUserIdAndDeletedFalseOrderByIdAsc(USER_ID)).thenReturn(Optional.of(normalLease()));
         assertThat(service.exampleLease()).isNotNull();
-        when(leases.findFirstByDeletedFalseOrderByIdAsc()).thenReturn(Optional.empty());
+        when(leases.findFirstByUserIdAndDeletedFalseOrderByIdAsc(USER_ID)).thenReturn(Optional.empty());
         assertThat(service.exampleLease()).isNull();
     }
 }

@@ -36,6 +36,7 @@ class CompanyServiceTest {
 
     private static final Long COMPANY_ID = 1L;
     private static final Long LEASE_ID = 5L;
+    private static final Long USER_ID = 42L;
 
     private CompanyRepository repository;
     private ExpenseItemRepository expenseItems;
@@ -44,6 +45,7 @@ class CompanyServiceTest {
     private LeaseRepository leases;
     private SignatureRepository signatures;
     private RentReceiptRepository rentReceipts;
+    private OwnershipContext ownership;
     private CompanyService service;
 
     @BeforeEach
@@ -55,8 +57,10 @@ class CompanyServiceTest {
         leases = mock(LeaseRepository.class);
         signatures = mock(SignatureRepository.class);
         rentReceipts = mock(RentReceiptRepository.class);
+        ownership = mock(OwnershipContext.class);
+        when(ownership.currentUserId()).thenReturn(USER_ID);
         service = new CompanyService(repository, expenseItems, statements, employees, leases, signatures,
-                rentReceipts, Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
+                rentReceipts, ownership, Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
     private Company company() {
@@ -106,10 +110,10 @@ class CompanyServiceTest {
     @Test
     @DisplayName("Listing and mapping expose the linked lease and the pro-rata of that lease")
     void listsAndMaps() {
-        when(repository.findAllByDeletedFalseOrderByNameAscIdAsc()).thenReturn(List.of(company()));
-        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(company()));
+        when(repository.findAllByUserIdAndDeletedFalseOrderByNameAscIdAsc(USER_ID)).thenReturn(List.of(company()));
+        when(repository.findByIdAndUserIdAndDeletedFalse(COMPANY_ID, USER_ID)).thenReturn(Optional.of(company()));
         when(repository.findById(COMPANY_ID)).thenReturn(Optional.of(company()));
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID))
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID))
                 .thenReturn(Optional.of(lease(LEASE_ID, COMPANY_ID)));
 
         List<CompanyDto> list = service.list();
@@ -126,7 +130,7 @@ class CompanyServiceTest {
     @Test
     @DisplayName("A company without lease maps a zero base and an explicit detail")
     void mapsWithoutLease() {
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.empty());
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID)).thenReturn(Optional.empty());
 
         CompanyDto dto = service.toDto(company());
 
@@ -141,7 +145,7 @@ class CompanyServiceTest {
         Lease lease = lease(LEASE_ID, COMPANY_ID);
         lease.setTotalArea(null);
         lease.setBusinessArea(null);
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.of(lease));
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID)).thenReturn(Optional.of(lease));
 
         CompanyDto dto = service.toDto(company());
 
@@ -153,14 +157,14 @@ class CompanyServiceTest {
     @DisplayName("Creating a company trims optional values and rejects a duplicate SIREN")
     void createsAndRejectsDuplicateSiren() {
         stubSave();
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.empty());
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID)).thenReturn(Optional.empty());
 
         CompanyDto created = service.create(request("  HKOF  ", " 123 456 789 ", null));
 
         assertThat(created.name()).isEqualTo("HKOF");
         assertThat(created.siren()).isEqualTo("123 456 789");
 
-        when(repository.existsBySirenAndDeletedFalse("123 456 789")).thenReturn(true);
+        when(repository.existsByUserIdAndSirenAndDeletedFalse(USER_ID, "123 456 789")).thenReturn(true);
         assertThatThrownBy(() -> service.create(request("Autre", "123 456 789", null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Une société avec ce SIREN existe déjà.")
@@ -181,11 +185,11 @@ class CompanyServiceTest {
     @DisplayName("Updating a company ignores its own SIREN and rejects another one")
     void updatesSiren() {
         Company existing = company();
-        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
+        when(repository.findByIdAndUserIdAndDeletedFalse(COMPANY_ID, USER_ID)).thenReturn(Optional.of(existing));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.empty());
-        when(repository.existsBySirenAndDeletedFalseAndIdNot("000 000 000", COMPANY_ID)).thenReturn(false);
-        when(repository.existsBySirenAndDeletedFalseAndIdNot("999 999 999", COMPANY_ID)).thenReturn(true);
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID)).thenReturn(Optional.empty());
+        when(repository.existsByUserIdAndSirenAndDeletedFalseAndIdNot(USER_ID, "000 000 000", COMPANY_ID)).thenReturn(false);
+        when(repository.existsByUserIdAndSirenAndDeletedFalseAndIdNot(USER_ID, "999 999 999", COMPANY_ID)).thenReturn(true);
 
         assertThat(service.update(COMPANY_ID, request("HKOF 2", "000 000 000", null)).name())
                 .isEqualTo("HKOF 2");
@@ -200,10 +204,10 @@ class CompanyServiceTest {
     void linksLeaseOnCreate() {
         stubSave();
         Lease lease = lease(LEASE_ID, null);
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID))
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID))
                 .thenReturn(Optional.empty())
                 .thenReturn(Optional.of(lease));
-        when(leases.findByIdAndDeletedFalse(LEASE_ID)).thenReturn(Optional.of(lease));
+        when(leases.findByIdAndUserIdAndDeletedFalse(LEASE_ID, USER_ID)).thenReturn(Optional.of(lease));
 
         CompanyDto created = service.create(request("HKOF", null, LEASE_ID));
 
@@ -218,10 +222,10 @@ class CompanyServiceTest {
         Company existing = company();
         Lease previous = normalLease(LEASE_ID, COMPANY_ID);
         Lease selected = lease(6L, null);
-        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
+        when(repository.findByIdAndUserIdAndDeletedFalse(COMPANY_ID, USER_ID)).thenReturn(Optional.of(existing));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.of(previous));
-        when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.of(selected));
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID)).thenReturn(Optional.of(previous));
+        when(leases.findByIdAndUserIdAndDeletedFalse(6L, USER_ID)).thenReturn(Optional.of(selected));
 
         service.update(COMPANY_ID, request("HKOF", null, 6L));
 
@@ -236,9 +240,9 @@ class CompanyServiceTest {
     void unlinksWhenNoLeaseSelected() {
         Company existing = company();
         Lease previous = normalLease(LEASE_ID, COMPANY_ID);
-        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
+        when(repository.findByIdAndUserIdAndDeletedFalse(COMPANY_ID, USER_ID)).thenReturn(Optional.of(existing));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.of(previous));
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID)).thenReturn(Optional.of(previous));
 
         service.update(COMPANY_ID, request("HKOF", null, null));
 
@@ -251,9 +255,9 @@ class CompanyServiceTest {
     void rejectsUnlinkingCompanyLease() {
         Company existing = company();
         Lease previous = lease(LEASE_ID, COMPANY_ID);
-        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
+        when(repository.findByIdAndUserIdAndDeletedFalse(COMPANY_ID, USER_ID)).thenReturn(Optional.of(existing));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.of(previous));
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID)).thenReturn(Optional.of(previous));
 
         assertThatThrownBy(() -> service.update(COMPANY_ID, request("HKOF", null, null)))
                 .isInstanceOf(BusinessException.class)
@@ -271,10 +275,10 @@ class CompanyServiceTest {
         Company existing = company();
         Lease previous = lease(LEASE_ID, COMPANY_ID);
         Lease next = lease(6L, COMPANY_ID);
-        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
+        when(repository.findByIdAndUserIdAndDeletedFalse(COMPANY_ID, USER_ID)).thenReturn(Optional.of(existing));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.of(previous));
-        when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.of(next));
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID)).thenReturn(Optional.of(previous));
+        when(leases.findByIdAndUserIdAndDeletedFalse(6L, USER_ID)).thenReturn(Optional.of(next));
 
         CompanyDto updated = service.update(COMPANY_ID, request("HKOF", null, 6L));
 
@@ -289,11 +293,11 @@ class CompanyServiceTest {
     void persistsPointerWhenReselectingTheActiveLease() {
         Company existing = company();
         Lease currentLease = lease(LEASE_ID, COMPANY_ID);
-        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
+        when(repository.findByIdAndUserIdAndDeletedFalse(COMPANY_ID, USER_ID)).thenReturn(Optional.of(existing));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID))
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID))
                 .thenReturn(Optional.of(currentLease));
-        when(leases.findByIdAndDeletedFalse(LEASE_ID)).thenReturn(Optional.of(currentLease));
+        when(leases.findByIdAndUserIdAndDeletedFalse(LEASE_ID, USER_ID)).thenReturn(Optional.of(currentLease));
 
         CompanyDto updated = service.update(COMPANY_ID, request("HKOF", null, LEASE_ID));
 
@@ -310,7 +314,7 @@ class CompanyServiceTest {
         Lease newer = lease(6L, COMPANY_ID);
         newer.setTotalArea(new java.math.BigDecimal("60.00"));
         newer.setBusinessArea(new java.math.BigDecimal("30.00"));
-        when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.of(newer));
+        when(leases.findByIdAndUserIdAndDeletedFalse(6L, USER_ID)).thenReturn(Optional.of(newer));
 
         CompanyDto dto = service.toDto(existing);
 
@@ -323,8 +327,8 @@ class CompanyServiceTest {
     void fallsBackToOldestLeaseWhenActiveLeaseIsGone() {
         Company existing = company();
         existing.setActiveLeaseId(6L);
-        when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.empty());
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID))
+        when(leases.findByIdAndUserIdAndDeletedFalse(6L, USER_ID)).thenReturn(Optional.empty());
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID))
                 .thenReturn(Optional.of(lease(LEASE_ID, COMPANY_ID)));
 
         CompanyDto dto = service.toDto(existing);
@@ -337,8 +341,8 @@ class CompanyServiceTest {
     void ignoresActiveLeaseOwnedByAnotherCompany() {
         Company existing = company();
         existing.setActiveLeaseId(6L);
-        when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.of(lease(6L, 2L)));
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID))
+        when(leases.findByIdAndUserIdAndDeletedFalse(6L, USER_ID)).thenReturn(Optional.of(lease(6L, 2L)));
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID))
                 .thenReturn(Optional.of(lease(LEASE_ID, COMPANY_ID)));
 
         CompanyDto dto = service.toDto(existing);
@@ -351,10 +355,10 @@ class CompanyServiceTest {
     void rejectsLeaseLinkedToAnotherCompany() {
         Company existing = company();
         Lease foreign = lease(6L, 2L);
-        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(existing));
+        when(repository.findByIdAndUserIdAndDeletedFalse(COMPANY_ID, USER_ID)).thenReturn(Optional.of(existing));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.empty());
-        when(leases.findByIdAndDeletedFalse(6L)).thenReturn(Optional.of(foreign));
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID)).thenReturn(Optional.empty());
+        when(leases.findByIdAndUserIdAndDeletedFalse(6L, USER_ID)).thenReturn(Optional.of(foreign));
 
         assertThatThrownBy(() -> service.update(COMPANY_ID, request("HKOF", null, 6L)))
                 .isInstanceOf(BusinessException.class)
@@ -367,10 +371,10 @@ class CompanyServiceTest {
     @Test
     @DisplayName("An unknown lease is reported in French")
     void rejectsUnknownLease() {
-        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(company()));
+        when(repository.findByIdAndUserIdAndDeletedFalse(COMPANY_ID, USER_ID)).thenReturn(Optional.of(company()));
         when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(COMPANY_ID)).thenReturn(Optional.empty());
-        when(leases.findByIdAndDeletedFalse(9L)).thenReturn(Optional.empty());
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID)).thenReturn(Optional.empty());
+        when(leases.findByIdAndUserIdAndDeletedFalse(9L, USER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.update(COMPANY_ID, request("HKOF", null, 9L)))
                 .isInstanceOf(NotFoundException.class)
@@ -382,7 +386,7 @@ class CompanyServiceTest {
     @DisplayName("Deleting is blocked only while the company owns items, statements or receipts")
     void deletesLogically() {
         Company managed = company();
-        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(managed));
+        when(repository.findByIdAndUserIdAndDeletedFalse(COMPANY_ID, USER_ID)).thenReturn(Optional.of(managed));
 
         when(expenseItems.existsByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(true);
         assertThatThrownBy(() -> service.delete(COMPANY_ID)).isInstanceOf(BusinessException.class)
@@ -405,10 +409,10 @@ class CompanyServiceTest {
         signature.setId(8L);
         signature.setPersonId(7L);
         Lease linked = lease(LEASE_ID, COMPANY_ID);
-        when(employees.findAllByCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(COMPANY_ID))
+        when(employees.findAllByUserIdAndCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(USER_ID, COMPANY_ID))
                 .thenReturn(List.of(employee));
         when(signatures.findAllByPersonIdInAndDeletedFalse(List.of(7L))).thenReturn(List.of(signature));
-        when(leases.findAllByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(List.of(linked));
+        when(leases.findAllByUserIdAndCompanyIdAndDeletedFalse(USER_ID, COMPANY_ID)).thenReturn(List.of(linked));
 
         service.delete(COMPANY_ID);
 
@@ -426,11 +430,11 @@ class CompanyServiceTest {
     @DisplayName("A company with no data is deleted without touching unrelated rows")
     void deletesEmptyCompany() {
         Company managed = company();
-        when(repository.findByIdAndDeletedFalse(COMPANY_ID)).thenReturn(Optional.of(managed));
-        when(employees.findAllByCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(COMPANY_ID))
+        when(repository.findByIdAndUserIdAndDeletedFalse(COMPANY_ID, USER_ID)).thenReturn(Optional.of(managed));
+        when(employees.findAllByUserIdAndCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(USER_ID, COMPANY_ID))
                 .thenReturn(List.of());
         when(signatures.findAllByPersonIdInAndDeletedFalse(List.of())).thenReturn(List.of());
-        when(leases.findAllByCompanyIdAndDeletedFalse(COMPANY_ID)).thenReturn(List.of());
+        when(leases.findAllByUserIdAndCompanyIdAndDeletedFalse(USER_ID, COMPANY_ID)).thenReturn(List.of());
 
         service.delete(COMPANY_ID);
 
@@ -445,7 +449,7 @@ class CompanyServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Sélectionnez une société.")
                 .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("COMPANY_REQUIRED"));
-        when(repository.findByIdAndDeletedFalse(9L)).thenReturn(Optional.empty());
+        when(repository.findByIdAndUserIdAndDeletedFalse(9L, USER_ID)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.entity(9L))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Société introuvable.")

@@ -32,27 +32,31 @@ public class LeaseService {
     private final LeaseRepository leases;
     private final CompanyService companies;
     private final AddressService addresses;
+    private final OwnershipContext ownership;
     private final Clock clock;
 
     public LeaseService(PersonRepository persons, EmployeeRepository employees, LeaseRepository leases,
-            CompanyService companies, AddressService addresses, Clock clock) {
+            CompanyService companies, AddressService addresses, OwnershipContext ownership, Clock clock) {
         this.persons = persons;
         this.employees = employees;
         this.leases = leases;
         this.companies = companies;
         this.addresses = addresses;
+        this.ownership = ownership;
         this.clock = clock;
     }
 
     @Transactional(readOnly = true)
     public List<LeaseDto> listLeases() {
-        return leases.findAllByDeletedFalseOrderByIdAsc().stream().map(this::toDto).toList();
+        return leases.findAllByUserIdAndDeletedFalseOrderByIdAsc(ownership.currentUserId()).stream()
+                .map(this::toDto).toList();
     }
 
     @Transactional
     public LeaseDto createLease(LeaseRequest request) {
         Lease lease = new Lease();
         apply(lease, request, null, null);
+        lease.setUserId(ownership.currentUserId());
         lease.setDeleted(false);
         lease.setCreatedAt(Instant.now(clock));
         return toDto(leases.save(lease));
@@ -83,10 +87,11 @@ public class LeaseService {
         if (tenantId != null && tenantCompanyId != null) {
             throw new BusinessException("LEASE_SINGLE_TENANT_REQUIRED", "Sélectionnez un seul locataire.");
         }
+        Long owner = ownership.currentUserId();
         return (tenantCompanyId != null
-                ? leases.findFirstByLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalse(landlordId,
-                        tenantCompanyId)
-                : leases.findFirstByLandlordIdAndTenantIdAndDeletedFalse(landlordId, tenantId))
+                ? leases.findFirstByUserIdAndLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalse(owner,
+                        landlordId, tenantCompanyId)
+                : leases.findFirstByUserIdAndLandlordIdAndTenantIdAndDeletedFalse(owner, landlordId, tenantId))
                 .orElseThrow(() -> new BusinessException("LEASE_ACTIVE_NOT_FOUND",
                         "Aucun bail actif pour ce bailleur et ce locataire. Créez un bail dans la page LMNP."));
     }
@@ -94,7 +99,7 @@ public class LeaseService {
     /** Lease used by the admin template preview; never persisted. */
     @Transactional(readOnly = true)
     public Lease exampleLease() {
-        return leases.findFirstByDeletedFalseOrderByIdAsc().orElse(null);
+        return leases.findFirstByUserIdAndDeletedFalseOrderByIdAsc(ownership.currentUserId()).orElse(null);
     }
 
     /**
@@ -103,10 +108,11 @@ public class LeaseService {
      */
     @Transactional(readOnly = true)
     public Lease resolveExpenseLease(Long companyId, Long leaseId) {
+        Long owner = ownership.currentUserId();
         if (leaseId == null) {
-            return leases.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(companyId).orElse(null);
+            return leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(owner, companyId).orElse(null);
         }
-        Lease lease = leases.findByIdAndDeletedFalse(leaseId)
+        Lease lease = leases.findByIdAndUserIdAndDeletedFalse(leaseId, owner)
                 .orElseThrow(() -> new NotFoundException("LEASE_NOT_FOUND", "Bail introuvable."));
         if (lease.getCompanyId() == null || !lease.getCompanyId().equals(companyId)) {
             throw new BusinessException("LEASE_NOT_IN_COMPANY", "Ce bail n'appartient pas à la société.");
@@ -156,6 +162,7 @@ public class LeaseService {
     }
 
     private void apply(Lease lease, LeaseRequest request, Long currentId, Long currentCompanyId) {
+        Long owner = ownership.currentUserId();
         if (request.landlordId() == null) {
             throw new BusinessException("LEASE_LANDLORD_REQUIRED", "Sélectionnez un bailleur.");
         }
@@ -174,9 +181,9 @@ public class LeaseService {
             Company company = companies.entity(request.companyId());
             companyId = company.getId();
             boolean pairTaken = currentId == null
-                    ? leases.existsByLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalse(landlord.getId(),
-                            companyId)
-                    : leases.existsByLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalseAndIdNot(
+                    ? leases.existsByUserIdAndLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalse(owner,
+                            landlord.getId(), companyId)
+                    : leases.existsByUserIdAndLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalseAndIdNot(owner,
                             landlord.getId(), companyId, currentId);
             if (pairTaken) {
                 throw new BusinessException("LEASE_ALREADY_EXISTS",
@@ -192,9 +199,10 @@ public class LeaseService {
                         "Le bailleur et le locataire doivent être deux personnes distinctes.");
             }
             boolean pairTaken = currentId == null
-                    ? leases.existsByLandlordIdAndTenantIdAndDeletedFalse(landlord.getId(), tenant.getId())
-                    : leases.existsByLandlordIdAndTenantIdAndDeletedFalseAndIdNot(landlord.getId(), tenant.getId(),
-                            currentId);
+                    ? leases.existsByUserIdAndLandlordIdAndTenantIdAndDeletedFalse(owner, landlord.getId(),
+                            tenant.getId())
+                    : leases.existsByUserIdAndLandlordIdAndTenantIdAndDeletedFalseAndIdNot(owner, landlord.getId(),
+                            tenant.getId(), currentId);
             if (pairTaken) {
                 throw new BusinessException("LEASE_ALREADY_EXISTS",
                         "Un bail actif existe déjà pour ce bailleur et ce locataire.");
@@ -204,8 +212,9 @@ public class LeaseService {
         }
         if (companyId != null && !companyLease) {
             boolean companyTaken = currentId == null
-                    ? leases.existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalse(companyId)
-                    : leases.existsByCompanyIdAndCompanyLeaseFalseAndDeletedFalseAndIdNot(companyId, currentId);
+                    ? leases.existsByUserIdAndCompanyIdAndCompanyLeaseFalseAndDeletedFalse(owner, companyId)
+                    : leases.existsByUserIdAndCompanyIdAndCompanyLeaseFalseAndDeletedFalseAndIdNot(owner, companyId,
+                            currentId);
             if (companyTaken) {
                 throw new BusinessException("LEASE_COMPANY_ALREADY_LINKED", "Cette société est déjà liée à un bail actif.");
             }
@@ -237,7 +246,7 @@ public class LeaseService {
     }
 
     private Person party(Long id, String code, String notFound) {
-        if (employees.existsByIdAndDeletedFalse(id)) {
+        if (employees.existsByIdAndUserIdAndDeletedFalse(id, ownership.currentUserId())) {
             throw new BusinessException("LEASE_EMPLOYEE_PARTY", "Un salarié ne peut pas être partie à un bail.");
         }
         return persons.findNaturalPersonById(id)
@@ -245,7 +254,7 @@ public class LeaseService {
     }
 
     private Lease lease(Long id) {
-        return leases.findByIdAndDeletedFalse(id)
+        return leases.findByIdAndUserIdAndDeletedFalse(id, ownership.currentUserId())
                 .orElseThrow(() -> new NotFoundException("LEASE_NOT_FOUND", "Bail introuvable."));
     }
 

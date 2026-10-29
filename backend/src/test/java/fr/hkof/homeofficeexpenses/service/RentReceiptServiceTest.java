@@ -45,6 +45,7 @@ class RentReceiptServiceTest {
 
     private static final Long COMPANY_ID = 1L;
     private static final Long TENANT_COMPANY_ID = 5L;
+    private static final Long OWNER = 42L;
 
     private RentReceiptRepository repository;
     private CompanyService companies;
@@ -56,6 +57,7 @@ class RentReceiptServiceTest {
     private PdfService pdfService;
     private StorageService storage;
     private DocumentDraftService documentDraftService;
+    private OwnershipContext ownership;
     private RentReceiptService service;
 
     @BeforeEach
@@ -70,10 +72,12 @@ class RentReceiptServiceTest {
         pdfService = mock(PdfService.class);
         storage = mock(StorageService.class);
         documentDraftService = mock(DocumentDraftService.class);
+        ownership = mock(OwnershipContext.class);
+        when(ownership.currentUserId()).thenReturn(OWNER);
         service = new RentReceiptService(repository, companies, leaseService, templateService,
                 templateDataService, signatureService, pdfService, storage, documentDraftService,
                 new RentReceiptMapper(persons, companies),
-                new RentReceiptAssembler(repository, templateService),
+                new RentReceiptAssembler(repository, templateService, ownership), ownership,
                 Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
@@ -188,7 +192,8 @@ class RentReceiptServiceTest {
     void generateWithDefaults() {
         TemplateDocument template = template(4L, TemplateType.RENT_RECEIPT, "Quittance", 2);
         stubGenerationDependencies(template);
-        when(repository.findFirstByMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc("2026-10", 1L, 2L))
+        when(repository.findFirstByUserIdAndMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc(
+                        OWNER, "2026-10", 1L, 2L))
                 .thenReturn(Optional.empty());
 
         RentReceiptDto dto = service.generate(request("2026-10", null, null, null, null, null, null));
@@ -208,8 +213,11 @@ class RentReceiptServiceTest {
         assertThat(dto.periodEnd()).isEqualTo(LocalDate.of(2026, 10, 31));
         assertThat(dto.issueDate()).isEqualTo(LocalDate.of(2026, 10, 1));
         assertThat(dto.paymentDate()).isEqualTo(LocalDate.of(2026, 10, 1));
-        verify(storage).storePdf("quittance_2026-10_l1_t2_v1.pdf", new byte[]{1});
+        verify(storage).storePdf("quittance_2026-10_l1_t2_v1_u42.pdf", new byte[]{1});
         verify(documentDraftService).deleteActiveRentReceipt("2026-10", 1L, 2L, null);
+        ArgumentCaptor<RentReceipt> saved = ArgumentCaptor.forClass(RentReceipt.class);
+        verify(repository).save(saved.capture());
+        assertThat(saved.getValue().getUserId()).isEqualTo(OWNER);
     }
 
     @Test
@@ -217,7 +225,8 @@ class RentReceiptServiceTest {
     void generateWithAdditionalCharges() {
         TemplateDocument template = template(4L, TemplateType.RENT_RECEIPT, "Quittance", 2);
         stubGenerationDependencies(template);
-        when(repository.findFirstByMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc("2026-10", 1L, 2L))
+        when(repository.findFirstByUserIdAndMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc(
+                        OWNER, "2026-10", 1L, 2L))
                 .thenReturn(Optional.empty());
 
         RentReceiptDto dto = service.generate(requestWithCharges("2026-10", List.of(
@@ -237,6 +246,7 @@ class RentReceiptServiceTest {
         assertThat(rows.get(0).getAmount()).isEqualByComparingTo("15.50");
         assertThat(rows.get(0).getPosition()).isZero();
         assertThat(rows.get(1).getPosition()).isEqualTo(1);
+        assertThat(rows).allSatisfy(row -> assertThat(row.getUserId()).isEqualTo(OWNER));
     }
 
     @Test
@@ -293,8 +303,8 @@ class RentReceiptServiceTest {
         when(companies.entity(TENANT_COMPANY_ID)).thenReturn(company(TENANT_COMPANY_ID, "Société Locataire"));
         when(companies.find(TENANT_COMPANY_ID)).thenReturn(Optional.of(company(TENANT_COMPANY_ID, "Société Locataire")));
         when(leaseService.resolveLease(1L, null, TENANT_COMPANY_ID)).thenReturn(companyLease());
-        when(repository.findFirstByMonthAndLandlordIdAndTenantCompanyIdOrderByVersionDescIdDesc(
-                "2026-10", 1L, TENANT_COMPANY_ID)).thenReturn(Optional.empty());
+        when(repository.findFirstByUserIdAndMonthAndLandlordIdAndTenantCompanyIdOrderByVersionDescIdDesc(
+                OWNER, "2026-10", 1L, TENANT_COMPANY_ID)).thenReturn(Optional.empty());
 
         service.generate(companyRequest("2026-10", null, null));
 
@@ -309,7 +319,8 @@ class RentReceiptServiceTest {
         when(templateService.byId(4L)).thenReturn(template);
         RentReceipt existing = new RentReceipt();
         existing.setVersion(3);
-        when(repository.findFirstByMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc("2026-10", 1L, 2L))
+        when(repository.findFirstByUserIdAndMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc(
+                        OWNER, "2026-10", 1L, 2L))
                 .thenReturn(Optional.of(existing));
 
         RentReceiptDto dto = service.generate(request("2026-10", "2026-10-03", "2026-10-28", "800,50", "  ", 4L, 7L));
@@ -330,8 +341,8 @@ class RentReceiptServiceTest {
         when(leaseService.resolveLease(1L, null, TENANT_COMPANY_ID)).thenReturn(companyLease());
         RentReceipt existing = new RentReceipt();
         existing.setVersion(1);
-        when(repository.findFirstByMonthAndLandlordIdAndTenantCompanyIdOrderByVersionDescIdDesc(
-                "2026-10", 1L, TENANT_COMPANY_ID)).thenReturn(Optional.of(existing));
+        when(repository.findFirstByUserIdAndMonthAndLandlordIdAndTenantCompanyIdOrderByVersionDescIdDesc(
+                OWNER, "2026-10", 1L, TENANT_COMPANY_ID)).thenReturn(Optional.of(existing));
 
         RentReceiptDto dto = service.generate(companyRequest("2026-10", null, null));
 
@@ -342,7 +353,7 @@ class RentReceiptServiceTest {
         assertThat(dto.tenantCompanyId()).isEqualTo(TENANT_COMPANY_ID);
         assertThat(dto.tenantName()).isEqualTo("Société Locataire");
         assertThat(dto.version()).isEqualTo(2);
-        verify(storage).storePdf("quittance_2026-10_l1_c5_v2.pdf", new byte[]{1});
+        verify(storage).storePdf("quittance_2026-10_l1_c5_v2_u42.pdf", new byte[]{1});
     }
 
     @Test
@@ -351,7 +362,8 @@ class RentReceiptServiceTest {
         TemplateDocument template = template(4L, TemplateType.RENT_RECEIPT, "Quittance", 2);
         stubGenerationDependencies(template);
         when(leaseService.resolveLease(1L, 2L, null)).thenReturn(personLeaseWithoutCompany());
-        when(repository.findFirstByMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc("2026-10", 1L, 2L))
+        when(repository.findFirstByUserIdAndMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc(
+                        OWNER, "2026-10", 1L, 2L))
                 .thenReturn(Optional.empty());
 
         RentReceiptDto dto = service.generate(personRequest("2026-10", null, null));
@@ -447,11 +459,11 @@ class RentReceiptServiceTest {
         receipt.setMonth("2026-10");
         receipt.setStatus(DocumentStatus.ACTIVE);
         receipt.setVersion(1);
-        when(repository.findByCompanyIdOrderByMonthDescVersionDescIdDesc(COMPANY_ID)).thenReturn(List.of(receipt));
-        when(repository.findByCompanyIdAndMonthOrderByVersionDescIdDesc(COMPANY_ID, "2026-10"))
+        when(repository.findByUserIdAndCompanyIdOrderByMonthDescVersionDescIdDesc(OWNER, COMPANY_ID)).thenReturn(List.of(receipt));
+        when(repository.findByUserIdAndCompanyIdAndMonthOrderByVersionDescIdDesc(OWNER, COMPANY_ID, "2026-10"))
                 .thenReturn(List.of(receipt));
-        when(repository.findAllByOrderByMonthDescVersionDescIdDesc()).thenReturn(List.of(receipt));
-        when(repository.findByMonthOrderByVersionDescIdDesc("2026-10")).thenReturn(List.of(receipt));
+        when(repository.findAllByUserIdOrderByMonthDescVersionDescIdDesc(OWNER)).thenReturn(List.of(receipt));
+        when(repository.findByUserIdAndMonthOrderByVersionDescIdDesc(OWNER, "2026-10")).thenReturn(List.of(receipt));
 
         assertThat(service.list(COMPANY_ID, null)).hasSize(1);
         assertThat(service.list(COMPANY_ID, " ")).hasSize(1);
@@ -463,7 +475,7 @@ class RentReceiptServiceTest {
     @Test
     @DisplayName("A missing receipt is a not found in French")
     void getMissing() {
-        when(repository.findById(9L)).thenReturn(Optional.empty());
+        when(repository.findByIdAndUserId(9L, OWNER)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.get(9L))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Quittance introuvable.")
@@ -478,29 +490,31 @@ class RentReceiptServiceTest {
         RentReceipt receipt = new RentReceipt();
         receipt.setId(10L);
         receipt.setStatus(DocumentStatus.ACTIVE);
-        when(repository.findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
-                "2026-10", 1L, 2L, DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
-        when(repository.findFirstByMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
-                "2026-10", 1L, TENANT_COMPANY_ID, DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
+        when(repository.findFirstByUserIdAndMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
+                OWNER, "2026-10", 1L, 2L, DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
+        when(repository.findFirstByUserIdAndMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
+                OWNER, "2026-10", 1L, TENANT_COMPANY_ID, DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
         assertThat(service.activeForMonth(COMPANY_ID, "2026-10", 1L, 2L, null)).isSameAs(receipt);
         assertThat(service.activeForMonth(COMPANY_ID, "2026-10", 1L, null, TENANT_COMPANY_ID)).isSameAs(receipt);
 
-        when(repository.findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
-                COMPANY_ID, "2026-10", DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
-        when(repository.findFirstByMonthAndStatusOrderByVersionDescIdDesc("2026-10", DocumentStatus.ACTIVE))
+        when(repository.findFirstByUserIdAndCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
+                OWNER, COMPANY_ID, "2026-10", DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
+        when(repository.findFirstByUserIdAndMonthAndStatusOrderByVersionDescIdDesc(OWNER, "2026-10",
+                DocumentStatus.ACTIVE))
                 .thenReturn(Optional.of(receipt));
         assertThat(service.activeForMonth(COMPANY_ID, "2026-10", null, 2L, null)).isSameAs(receipt);
         assertThat(service.activeForMonth(COMPANY_ID, "2026-10", 1L, null, null)).isSameAs(receipt);
         assertThat(service.activeForMonth(COMPANY_ID, "2026-10", null, null, null)).isSameAs(receipt);
         assertThat(service.activeForMonth(null, "2026-10", null, null, null)).isSameAs(receipt);
 
-        when(repository.findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
-                "2026-10", 3L, 4L, DocumentStatus.ACTIVE)).thenReturn(Optional.empty());
+        when(repository.findFirstByUserIdAndMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
+                OWNER, "2026-10", 3L, 4L, DocumentStatus.ACTIVE)).thenReturn(Optional.empty());
         assertThat(service.activeForMonth(COMPANY_ID, "2026-10", 3L, 4L, null)).isNull();
-        when(repository.findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
-                COMPANY_ID, "2026-11", DocumentStatus.ACTIVE)).thenReturn(Optional.empty());
+        when(repository.findFirstByUserIdAndCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
+                OWNER, COMPANY_ID, "2026-11", DocumentStatus.ACTIVE)).thenReturn(Optional.empty());
         assertThat(service.activeForMonth(COMPANY_ID, "2026-11", null, null, null)).isNull();
-        when(repository.findFirstByMonthAndStatusOrderByVersionDescIdDesc("2026-11", DocumentStatus.ACTIVE))
+        when(repository.findFirstByUserIdAndMonthAndStatusOrderByVersionDescIdDesc(OWNER, "2026-11",
+                DocumentStatus.ACTIVE))
                 .thenReturn(Optional.empty());
         assertThat(service.activeForMonth(null, "2026-11", null, null, null)).isNull();
     }
@@ -512,16 +526,17 @@ class RentReceiptServiceTest {
         lease.setCompanyId(COMPANY_ID);
         when(leaseService.resolveExpenseLease(COMPANY_ID, 3L)).thenReturn(lease);
         RentReceipt receipt = new RentReceipt();
-        when(repository.findFirstByMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
-                "2026-10", 1L, COMPANY_ID, DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
+        when(repository.findFirstByUserIdAndMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
+                OWNER, "2026-10", 1L, COMPANY_ID, DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
 
         assertThat(service.activeForLease(COMPANY_ID, "2026-10", 3L)).isSameAs(receipt);
 
-        verify(repository).findFirstByMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
-                "2026-10", 1L, COMPANY_ID, DocumentStatus.ACTIVE);
-        verify(repository, never()).findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
+        verify(repository).findFirstByUserIdAndMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
+                OWNER, "2026-10", 1L, COMPANY_ID, DocumentStatus.ACTIVE);
+        verify(repository, never()).findFirstByUserIdAndMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
+                any(), any(), any(), any(), any());
+        verify(repository, never()).findFirstByUserIdAndCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
                 any(), any(), any(), any());
-        verify(repository, never()).findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(any(), any(), any());
     }
 
     @Test
@@ -529,34 +544,37 @@ class RentReceiptServiceTest {
     void activeForLeasePersonLease() {
         when(leaseService.resolveExpenseLease(COMPANY_ID, 3L)).thenReturn(normalLease());
         RentReceipt receipt = new RentReceipt();
-        when(repository.findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
-                "2026-10", 1L, 2L, DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
+        when(repository.findFirstByUserIdAndMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
+                OWNER, "2026-10", 1L, 2L, DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
 
         assertThat(service.activeForLease(COMPANY_ID, "2026-10", 3L)).isSameAs(receipt);
 
-        verify(repository).findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
-                "2026-10", 1L, 2L, DocumentStatus.ACTIVE);
-        verify(repository, never()).findFirstByMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
+        verify(repository).findFirstByUserIdAndMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
+                OWNER, "2026-10", 1L, 2L, DocumentStatus.ACTIVE);
+        verify(repository, never())
+                .findFirstByUserIdAndMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
+                        any(), any(), any(), any(), any());
+        verify(repository, never()).findFirstByUserIdAndCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
                 any(), any(), any(), any());
-        verify(repository, never()).findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(any(), any(), any());
     }
 
     @Test
     @DisplayName("A null expense lease keeps the legacy company and month rent receipt scope")
     void activeForLeaseNullLease() {
         RentReceipt receipt = new RentReceipt();
-        when(repository.findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
-                COMPANY_ID, "2026-10", DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
+        when(repository.findFirstByUserIdAndCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
+                OWNER, COMPANY_ID, "2026-10", DocumentStatus.ACTIVE)).thenReturn(Optional.of(receipt));
 
         assertThat(service.activeForLease(COMPANY_ID, "2026-10", null)).isSameAs(receipt);
 
-        verify(repository).findFirstByCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
-                COMPANY_ID, "2026-10", DocumentStatus.ACTIVE);
+        verify(repository).findFirstByUserIdAndCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
+                OWNER, COMPANY_ID, "2026-10", DocumentStatus.ACTIVE);
         verify(leaseService, never()).resolveExpenseLease(any(), any());
-        verify(repository, never()).findFirstByMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
-                any(), any(), any(), any());
-        verify(repository, never()).findFirstByMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
-                any(), any(), any(), any());
+        verify(repository, never()).findFirstByUserIdAndMonthAndLandlordIdAndTenantIdAndStatusOrderByVersionDescIdDesc(
+                any(), any(), any(), any(), any());
+        verify(repository, never())
+                .findFirstByUserIdAndMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
+                        any(), any(), any(), any(), any());
     }
 
     @Test
@@ -565,7 +583,7 @@ class RentReceiptServiceTest {
         RentReceipt receipt = new RentReceipt();
         receipt.setId(10L);
         receipt.setPdfPath("/data/out/quittance.pdf");
-        when(repository.findById(10L)).thenReturn(Optional.of(receipt));
+        when(repository.findByIdAndUserId(10L, OWNER)).thenReturn(Optional.of(receipt));
         when(storage.read("/data/out/quittance.pdf")).thenReturn(new byte[]{3});
         assertThat(service.pdf(10L)).containsExactly(3);
 

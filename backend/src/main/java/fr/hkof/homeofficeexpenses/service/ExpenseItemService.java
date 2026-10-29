@@ -26,20 +26,25 @@ public class ExpenseItemService {
     private final ExpenseItemRepository repository;
     private final CompanyService companies;
     private final LeaseService leases;
+    private final OwnershipContext ownership;
 
-    public ExpenseItemService(ExpenseItemRepository repository, CompanyService companies, LeaseService leases) {
+    public ExpenseItemService(ExpenseItemRepository repository, CompanyService companies, LeaseService leases,
+            OwnershipContext ownership) {
         this.repository = repository;
         this.companies = companies;
         this.leases = leases;
+        this.ownership = ownership;
     }
 
     @Transactional(readOnly = true)
     public List<ExpenseItemDto> list(Long companyId, Long leaseId, boolean includeDeleted) {
         companies.entity(companyId);
         var lease = leaseId == null ? null : leases.resolveExpenseLease(companyId, leaseId);
+        Long owner = ownership.currentUserId();
         List<ExpenseItem> items = includeDeleted
-                ? repository.findByCompanyIdAndDeletedFalseOrderBySortOrderAscIdAsc(companyId)
-                : repository.findByCompanyIdAndDeletedFalseAndActiveTrueOrderBySortOrderAscIdAsc(companyId);
+                ? repository.findByUserIdAndCompanyIdAndDeletedFalseOrderBySortOrderAscIdAsc(owner, companyId)
+                : repository.findByUserIdAndCompanyIdAndDeletedFalseAndActiveTrueOrderBySortOrderAscIdAsc(owner,
+                        companyId);
         return items.stream()
                 .filter(item -> lease == null || item.getLeaseId() == null
                         || item.getLeaseId().equals(lease.getId()))
@@ -52,10 +57,13 @@ public class ExpenseItemService {
      */
     @Transactional(readOnly = true)
     public ExpenseItem entity(Long companyId, Long leaseId, String code) {
+        Long owner = ownership.currentUserId();
         Optional<ExpenseItem> exact = leaseId == null
                 ? Optional.empty()
-                : repository.findFirstByCompanyIdAndLeaseIdAndCodeAndDeletedFalse(companyId, leaseId, code);
-        return exact.or(() -> repository.findFirstByCompanyIdAndLeaseIdIsNullAndCodeAndDeletedFalse(companyId, code))
+                : repository.findFirstByUserIdAndCompanyIdAndLeaseIdAndCodeAndDeletedFalse(owner, companyId, leaseId,
+                        code);
+        return exact.or(() -> repository.findFirstByUserIdAndCompanyIdAndLeaseIdIsNullAndCodeAndDeletedFalse(owner,
+                companyId, code))
                 .orElseThrow(() -> new BusinessException("EXPENSE_ITEM_UNKNOWN_CODE",
                         "Type de frais inconnu : " + code, Map.of("code", code)));
     }
@@ -77,6 +85,7 @@ public class ExpenseItemService {
                 : normalizeCode(request.code());
         rejectDuplicate(request.companyId(), request.leaseId(), code, null);
         ExpenseItem expenseItem = new ExpenseItem();
+        expenseItem.setUserId(ownership.currentUserId());
         expenseItem.setCompanyId(request.companyId());
         expenseItem.setLeaseId(request.leaseId());
         expenseItem.setCode(code);
@@ -111,7 +120,8 @@ public class ExpenseItemService {
      * the inherited scope of its company. Deleted rows keep reserving their code.
      */
     private void rejectDuplicate(Long companyId, Long leaseId, String code, Long excludedId) {
-        boolean duplicate = repository.findByCompanyIdAndCode(companyId, code).stream()
+        boolean duplicate = repository.findByUserIdAndCompanyIdAndCode(ownership.currentUserId(), companyId, code)
+                .stream()
                 .filter(item -> excludedId == null || !excludedId.equals(item.getId()))
                 .anyMatch(item -> visibleFrom(item, leaseId));
         if (duplicate) {
@@ -128,7 +138,7 @@ public class ExpenseItemService {
     }
 
     private ExpenseItem activeItem(Long id) {
-        return repository.findById(id)
+        return repository.findByIdAndUserId(id, ownership.currentUserId())
                 .filter(item -> !item.isDeleted())
                 .orElseThrow(() -> new NotFoundException("EXPENSE_ITEM_NOT_FOUND", "Poste introuvable."));
     }

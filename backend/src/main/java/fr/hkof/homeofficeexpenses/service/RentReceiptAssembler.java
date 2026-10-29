@@ -26,15 +26,20 @@ public class RentReceiptAssembler {
 
     private final RentReceiptRepository repository;
     private final TemplateService templateService;
+    private final OwnershipContext ownership;
 
-    public RentReceiptAssembler(RentReceiptRepository repository, TemplateService templateService) {
+    public RentReceiptAssembler(RentReceiptRepository repository, TemplateService templateService,
+            OwnershipContext ownership) {
         this.repository = repository;
         this.templateService = templateService;
+        this.ownership = ownership;
     }
 
     public void fill(RentReceipt rentReceipt, Company company, Lease lease, YearMonth month,
             LocalDate periodStart, LocalDate periodEnd, BigDecimal rentExclCharges, BigDecimal charges,
             BigDecimal total, List<AdditionalCharge> additionalCharges) {
+        Long owner = ownership.currentUserId();
+        rentReceipt.setUserId(owner);
         rentReceipt.setCompanyId(company == null ? null : company.getId());
         rentReceipt.setMonth(month.toString());
         rentReceipt.setLandlordId(lease.getLandlord().getId());
@@ -46,23 +51,33 @@ public class RentReceiptAssembler {
         rentReceipt.setRentExclCharges(rentExclCharges);
         rentReceipt.setCharges(charges);
         rentReceipt.setTotal(total);
-        RentReceiptAdditionalCharges.entities(additionalCharges).forEach(rentReceipt::addAdditionalCharge);
+        RentReceiptAdditionalCharges.entities(additionalCharges).forEach(charge -> {
+            charge.setUserId(owner);
+            rentReceipt.addAdditionalCharge(charge);
+        });
     }
 
     public int nextVersion(YearMonth month, Lease lease) {
+        Long owner = ownership.currentUserId();
         var existing = lease.isCompanyLease()
-                ? repository.findFirstByMonthAndLandlordIdAndTenantCompanyIdOrderByVersionDescIdDesc(
-                        month.toString(), lease.getLandlord().getId(), lease.getCompanyId())
-                : repository.findFirstByMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc(
-                        month.toString(), lease.getLandlord().getId(), lease.getTenant().getId());
+                ? repository.findFirstByUserIdAndMonthAndLandlordIdAndTenantCompanyIdOrderByVersionDescIdDesc(
+                        owner, month.toString(), lease.getLandlord().getId(), lease.getCompanyId())
+                : repository.findFirstByUserIdAndMonthAndLandlordIdAndTenantIdOrderByVersionDescIdDesc(
+                        owner, month.toString(), lease.getLandlord().getId(), lease.getTenant().getId());
         return existing.map(receipt -> receipt.getVersion() + 1).orElse(1);
     }
 
+    /**
+     * New receipts embed the owner in their stored name: versions restart per account while
+     * persons stay shared, so an owner-less name could overwrite another account's PDF. Rows
+     * generated before this rule keep their stored path untouched.
+     */
     public String fileName(YearMonth month, Lease lease, int version) {
         String tenant = lease.isCompanyLease()
                 ? "c" + lease.getCompanyId()
                 : "t" + lease.getTenant().getId();
-        return "quittance_" + month + "_l" + lease.getLandlord().getId() + "_" + tenant + "_v" + version + ".pdf";
+        return "quittance_" + month + "_l" + lease.getLandlord().getId() + "_" + tenant + "_v" + version
+                + "_u" + ownership.currentUserId() + ".pdf";
     }
 
     public TemplateDocument template(Long templateId) {

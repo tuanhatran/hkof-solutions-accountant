@@ -87,12 +87,29 @@ public class DataInitializer implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         initUsers();
-        Company company = initCompany();
-        initEmployees(company);
-        initRentConfiguration(company);
-        initItems(company);
+        seedData(seedOwnerId());
+    }
+
+    /** Seeds the documented configuration owned by the given account; used by the e2e reset. */
+    @Transactional
+    public void seed(Long ownerId) {
+        initUsers();
+        seedData(ownerId);
+    }
+
+    private void seedData(Long ownerId) {
+        Company company = initCompany(ownerId);
+        initEmployees(ownerId, company);
+        initRentConfiguration(ownerId, company);
+        initItems(ownerId, company);
         initTemplates();
         initLlm();
+    }
+
+    private Long seedOwnerId() {
+        return appUserRepository.findByEmailIgnoreCase(SEED_USER_EMAIL)
+                .orElseThrow(() -> new IllegalStateException("Seeded owner account is missing"))
+                .getId();
     }
 
     private void initUsers() {
@@ -117,13 +134,14 @@ public class DataInitializer implements ApplicationRunner {
         appUserRepository.save(user);
     }
 
-    private Company initCompany() {
-        return companyRepository.findFirstByDeletedFalseOrderByIdAsc()
-                .orElseGet(this::createDefaultCompany);
+    private Company initCompany(Long ownerId) {
+        return companyRepository.findFirstByUserIdAndDeletedFalseOrderByIdAsc(ownerId)
+                .orElseGet(() -> createDefaultCompany(ownerId));
     }
 
-    private Company createDefaultCompany() {
+    private Company createDefaultCompany(Long ownerId) {
         Company company = new Company();
+        company.setUserId(ownerId);
         company.setName(DEFAULT_COMPANY_NAME);
         company.setLegalForm("EURL");
         company.setSiren("000 000 000");
@@ -136,11 +154,14 @@ public class DataInitializer implements ApplicationRunner {
         return companyRepository.save(company);
     }
 
-    private void initEmployees(Company company) {
-        if (employeeRepository.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(company.getId()).isPresent()) {
+    private void initEmployees(Long ownerId, Company company) {
+        if (employeeRepository
+                .findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(ownerId, company.getId())
+                .isPresent()) {
             return;
         }
         Employee ceo = new Employee();
+        ceo.setUserId(ownerId);
         ceo.setCompanyId(company.getId());
         ceo.setFirstName(company.getManagerName() == null || company.getManagerName().isBlank()
                 ? "Gérant"
@@ -152,15 +173,17 @@ public class DataInitializer implements ApplicationRunner {
         employeeRepository.save(ceo);
     }
 
-    private void initRentConfiguration(Company company) {
+    private void initRentConfiguration(Long ownerId, Company company) {
         Person landlord = personRepository.findAllNaturalPersons().stream().findFirst()
                 .orElseGet(this::createDefaultPerson);
-        if (leaseRepository.findFirstByDeletedFalseOrderByIdAsc().isPresent()) {
+        if (leaseRepository.findFirstByUserIdAndDeletedFalseOrderByIdAsc(ownerId).isPresent()) {
             return;
         }
-        Address address = addressRepository.findFirstByDeletedFalseAndLabelIgnoreCase(DEFAULT_HOME_ADDRESS)
-                .orElseGet(this::createDefaultAddress);
+        Address address = addressRepository
+                .findFirstByUserIdAndDeletedFalseAndLabelIgnoreCase(ownerId, DEFAULT_HOME_ADDRESS)
+                .orElseGet(() -> createDefaultAddress(ownerId));
         Lease lease = new Lease();
+        lease.setUserId(ownerId);
         lease.setLandlord(landlord);
         lease.setTenant(null);
         lease.setCompanyId(company.getId());
@@ -185,29 +208,31 @@ public class DataInitializer implements ApplicationRunner {
         return personRepository.save(person);
     }
 
-    private Address createDefaultAddress() {
+    private Address createDefaultAddress(Long ownerId) {
         Address address = new Address();
+        address.setUserId(ownerId);
         address.setLabel(DEFAULT_HOME_ADDRESS);
         address.setDeleted(false);
         address.setCreatedAt(Instant.now(clock));
         return addressRepository.save(address);
     }
 
-    private void initItems(Company company) {
-        createExpenseItemIfAbsent(company, "loyer", "Quittance de loyer", null, "100.00", "MONTHLY", 10);
-        createExpenseItemIfAbsent(company, "gaz", "Gaz", "EDF", "35.71", "MONTHLY", 20);
-        createExpenseItemIfAbsent(company, "electricite", "Électricité", "Primeo", "35.71", "MONTHLY", 30);
-        createExpenseItemIfAbsent(company, "assurance", "Assurance habitation", null, "35.71", "ANNUAL", 40);
-        createExpenseItemIfAbsent(company, "telephone", "Téléphone", null, "35.71", "MONTHLY", 50);
-        createExpenseItemIfAbsent(company, "fibre", "Fibre internet", null, "35.71", "MONTHLY", 60);
+    private void initItems(Long ownerId, Company company) {
+        createExpenseItemIfAbsent(ownerId, company, "loyer", "Quittance de loyer", null, "100.00", "MONTHLY", 10);
+        createExpenseItemIfAbsent(ownerId, company, "gaz", "Gaz", "EDF", "35.71", "MONTHLY", 20);
+        createExpenseItemIfAbsent(ownerId, company, "electricite", "Électricité", "Primeo", "35.71", "MONTHLY", 30);
+        createExpenseItemIfAbsent(ownerId, company, "assurance", "Assurance habitation", null, "35.71", "ANNUAL", 40);
+        createExpenseItemIfAbsent(ownerId, company, "telephone", "Téléphone", null, "35.71", "MONTHLY", 50);
+        createExpenseItemIfAbsent(ownerId, company, "fibre", "Fibre internet", null, "35.71", "MONTHLY", 60);
     }
 
-    private void createExpenseItemIfAbsent(Company company, String code, String label, String supplier,
-            String proRataPct, String periodicity, int sortOrder) {
-        if (expenseItemRepository.findFirstByCompanyIdAndCode(company.getId(), code).isPresent()) {
+    private void createExpenseItemIfAbsent(Long ownerId, Company company, String code, String label,
+            String supplier, String proRataPct, String periodicity, int sortOrder) {
+        if (expenseItemRepository.findFirstByUserIdAndCompanyIdAndCode(ownerId, company.getId(), code).isPresent()) {
             return;
         }
         ExpenseItem expenseItem = new ExpenseItem();
+        expenseItem.setUserId(ownerId);
         expenseItem.setCompanyId(company.getId());
         expenseItem.setCode(code);
         expenseItem.setLabel(label);
