@@ -20,7 +20,7 @@ export const RENT_RECEIPT_CONFIGURATION: ConfigurationType = {
   get description() {
     return i18n.t("templates.types.rentReceipt.description");
   },
-  dataCy: "dropzone-template-quittance",
+  dataCy: "dropzone-rent-receipt-template",
   icon: ReceiptText,
 };
 
@@ -32,7 +32,7 @@ export const EXPENSE_STATEMENT_CONFIGURATION: ConfigurationType = {
   get description() {
     return i18n.t("templates.types.expenseStatement.description");
   },
-  dataCy: "dropzone-template-note",
+  dataCy: "dropzone-statement-template",
   icon: FileText,
 };
 

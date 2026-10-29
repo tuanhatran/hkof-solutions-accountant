@@ -16,7 +16,7 @@ export function LlmStatusCard({ c }: { c: AdminLlmController }) {
   const info = key ? STATUSES[key] : null;
 
   return (
-    <section className="card llm-status-card" data-cy="llm-statut">
+    <section className="card llm-status-card" data-cy="llm-status">
       <div className="llm-status-card-header">
         <div className="llm-status-card-main">
           <span
@@ -45,7 +45,7 @@ export function LlmStatusCard({ c }: { c: AdminLlmController }) {
               </h2>
               <span
                 className={cn("badge", info?.className ?? "badge-neutral")}
-                data-cy="badge-llm-statut-admin"
+                data-cy="admin-llm-status-badge"
               >
                 <span
                   className={cn(

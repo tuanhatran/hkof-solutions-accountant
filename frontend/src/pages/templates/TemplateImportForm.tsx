@@ -42,7 +42,7 @@ export function TemplateImportForm({ c }: { c: TemplatesCardController }) {
             maxLength={120}
             placeholder={t("templates.import.namePlaceholder")}
             onChange={(event) => c.setName(event.target.value)}
-            data-cy="input-template-nom"
+            data-cy="input-template-name"
           />
         </div>
 
@@ -87,7 +87,7 @@ export function TemplateImportForm({ c }: { c: TemplatesCardController }) {
                 });
               }
             }}
-            data-cy="btn-televerser-template"
+            data-cy="btn-upload-template"
           >
             {t("templates.import.submit")}
           </Button>

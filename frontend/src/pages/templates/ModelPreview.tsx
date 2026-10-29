@@ -45,12 +45,12 @@ export function ModelPreview({
         className="animation-fade model-preview"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="apercu-template-titre"
-        data-cy="apercu-template"
+        aria-labelledby="template-preview-title"
+        data-cy="template-preview"
       >
         <div className="model-preview-bar">
           <div className="model-preview-heading">
-            <h2 id="apercu-template-titre" className="model-preview-title">
+            <h2 id="template-preview-title" className="model-preview-title">
               {t("templates.preview.title", {
                 name: template.name,
                 version: template.version,
@@ -84,7 +84,7 @@ export function ModelPreview({
         </div>
         <PdfViewer
           url={url}
-          dataCy="apercu-template-pdf"
+          dataCy="template-pdf-preview"
           className="min-h-0 flex-1"
         />
       </div>

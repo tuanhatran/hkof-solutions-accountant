@@ -33,8 +33,8 @@ export function HistoryAddressRow({
       className="history-address-row"
       data-cy={
         documentType === "receipt"
-          ? `historique-adresse-${month}-${address.addressKey}`
-          : `historique-adresse-note-${month}-${address.addressKey}`
+          ? `history-address-${month}-${address.addressKey}`
+          : `history-address-statement-${month}-${address.addressKey}`
       }
     >
       <p className="history-address-row-label">{label}</p>

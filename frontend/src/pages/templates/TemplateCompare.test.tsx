@@ -169,8 +169,8 @@ describe("TemplateCompare", () => {
     const archived = checkbox("Comparer Quittance archivée v2");
     const builtIn = checkbox("Comparer Quittance intégrée v1");
 
-    expect(archived).toHaveAttribute("data-cy", "comparer-modele-2");
-    expect(builtIn).toHaveAttribute("data-cy", "comparer-modele-4");
+    expect(archived).toHaveAttribute("data-cy", "compare-template-2");
+    expect(builtIn).toHaveAttribute("data-cy", "compare-template-4");
 
     await user.click(archived);
     await user.click(builtIn);
@@ -196,11 +196,11 @@ describe("TemplateCompare", () => {
     const builtIn = checkbox("Comparer Quittance intégrée v1");
 
     await user.click(archived);
-    const bar = document.querySelector('[data-cy="barre-comparaison"]');
+    const bar = document.querySelector('[data-cy="comparison-bar"]');
     expect(bar).not.toBeNull();
     expect(bar).toHaveTextContent("1 version sélectionnée");
     const compareButton = screen.getByRole("button", { name: "Comparer" });
-    expect(compareButton).toHaveAttribute("data-cy", "btn-comparer-versions");
+    expect(compareButton).toHaveAttribute("data-cy", "btn-compare-versions");
     expect(compareButton).toBeDisabled();
 
     await user.click(builtIn);
@@ -208,7 +208,7 @@ describe("TemplateCompare", () => {
     expect(compareButton).toBeEnabled();
 
     await user.click(screen.getByRole("button", { name: "Annuler" }));
-    expect(document.querySelector('[data-cy="barre-comparaison"]')).toBeNull();
+    expect(document.querySelector('[data-cy="comparison-bar"]')).toBeNull();
     expect(archived).not.toBeChecked();
     expect(builtIn).not.toBeChecked();
   });
@@ -225,7 +225,7 @@ describe("TemplateCompare", () => {
       name: "Comparer les versions",
     });
     expect(dialog).toHaveAttribute("aria-modal", "true");
-    expect(dialog).toHaveAttribute("data-cy", "comparaison-modeles");
+    expect(dialog).toHaveAttribute("data-cy", "templates-comparison");
     expect(
       within(dialog).getByText(
         "Aperçu côte à côte de deux versions du modèle.",
@@ -235,8 +235,8 @@ describe("TemplateCompare", () => {
     expect(api.templates.preview).toHaveBeenCalledWith(1);
     expect(api.templates.preview).toHaveBeenCalledWith(2);
 
-    const left = dialog.querySelector('[data-cy="comparaison-modele-gauche"]');
-    const right = dialog.querySelector('[data-cy="comparaison-modele-droite"]');
+    const left = dialog.querySelector('[data-cy="template-comparison-left"]');
+    const right = dialog.querySelector('[data-cy="template-comparison-right"]');
     expect(left).toHaveAttribute("data-url", "blob:compare-1");
     expect(right).toHaveAttribute("data-url", "blob:compare-2");
     expect(dialog.querySelector(".template-compare-panels")).not.toBeNull();
@@ -308,7 +308,7 @@ describe("TemplateCompare", () => {
       expect(screen.queryByText("Préparation des aperçus…")).toBeNull(),
     );
     const builtInPanel = dialog
-      .querySelector('[data-cy="comparaison-modele-droite"]')
+      .querySelector('[data-cy="template-comparison-right"]')
       ?.closest(".template-compare-panel");
     if (!builtInPanel) {
       throw new Error("Built-in comparison panel not found");
@@ -445,7 +445,7 @@ describe("TemplateCompare", () => {
 
     await selectTwo(user);
     expect(
-      document.querySelector('[data-cy="barre-comparaison"]'),
+      document.querySelector('[data-cy="comparison-bar"]'),
     ).toHaveTextContent("2 versions sélectionnées");
 
     templates = [ACTIVE, BUILT_IN];
@@ -454,7 +454,7 @@ describe("TemplateCompare", () => {
     });
 
     expect(
-      document.querySelector('[data-cy="barre-comparaison"]'),
+      document.querySelector('[data-cy="comparison-bar"]'),
     ).toHaveTextContent("1 version sélectionnée");
     expect(checkbox("Comparer Quittance intégrée v1")).toBeChecked();
     expect(screen.getByRole("button", { name: "Comparer" })).toBeDisabled();
@@ -490,14 +490,14 @@ describe("TemplateCompare", () => {
 
     await user.click(checkbox("Compare Quittance archivée v2"));
     expect(
-      document.querySelector('[data-cy="barre-comparaison"]'),
+      document.querySelector('[data-cy="comparison-bar"]'),
     ).toHaveTextContent("1 version selected");
     const compareButton = screen.getByRole("button", { name: "Compare" });
     expect(compareButton).toBeDisabled();
 
     await user.click(checkbox("Compare Quittance intégrée v1"));
     expect(
-      document.querySelector('[data-cy="barre-comparaison"]'),
+      document.querySelector('[data-cy="comparison-bar"]'),
     ).toHaveTextContent("2 versions selected");
     await user.click(compareButton);
 

@@ -361,8 +361,8 @@ describe("SettingsPage tabs", () => {
         name: "Note de frais d’occupation",
       }),
     ).toBeVisible();
-    expect(queryByCy("dropzone-template-note")).not.toBeNull();
-    expect(queryByCy("dropzone-template-quittance")).toBeNull();
+    expect(queryByCy("dropzone-statement-template")).not.toBeNull();
+    expect(queryByCy("dropzone-rent-receipt-template")).toBeNull();
     expect(
       screen.getByText(/Les modèles ne peuvent exécuter aucun code/),
     ).toBeVisible();

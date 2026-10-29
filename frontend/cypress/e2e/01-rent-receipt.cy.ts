@@ -175,7 +175,7 @@ describe("Rent receipt", () => {
       });
 
       cy.get('[data-cy="tab-historique"]').click();
-      const group = '[data-cy="historique-mois-2026-01"]';
+      const group = '[data-cy="history-month-2026-01"]';
       cy.get(group, { timeout: 20_000 }).should(
         "contain.text",
         "Quittance (2)",

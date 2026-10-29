@@ -78,7 +78,7 @@ export function TemplatesCard({
                     ? t("templates.card.resetDefaultBlocked")
                     : undefined
                 }
-                data-cy="btn-modele-defaut"
+                data-cy="btn-default-template"
               >
                 {t("templates.card.resetDefault")}
               </Button>

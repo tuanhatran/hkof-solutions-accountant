@@ -60,7 +60,7 @@ function RentReceiptHistoryItem({ version }: { version: RentReceiptDto }) {
   return (
     <li
       className="history-versions-grid history-versions-grid-quittance rent-receipt-month-panel-history-item"
-      data-cy={`historique-quittance-${version.id}`}
+      data-cy={`history-rent-receipt-${version.id}`}
     >
       <span className="justify-self-start">
         <VersionBadge

@@ -242,7 +242,7 @@ describe("LmnpPage", () => {
       screen.getByRole("heading", { name: "Quittance de loyer" }),
     ).toBeVisible();
     expect(
-      document.querySelector('[data-cy="dropzone-template-quittance"]'),
+      document.querySelector('[data-cy="dropzone-rent-receipt-template"]'),
     ).not.toBeNull();
     expect(
       screen.queryByRole("heading", { name: "Note de frais d’occupation" }),

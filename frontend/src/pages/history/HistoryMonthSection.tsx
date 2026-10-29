@@ -50,7 +50,7 @@ export function HistoryMonthSection({
   return (
     <section
       className="card history-month-section"
-      data-cy={`historique-mois-${group.month}`}
+      data-cy={`history-month-${group.month}`}
     >
       <div className="history-month-section-header">
         <div>
@@ -84,7 +84,7 @@ export function HistoryMonthSection({
       <div className="history-month-section-columns">
         <section
           className="history-month-section-column"
-          data-cy={`historique-colonne-quittance-${group.month}`}
+          data-cy={`history-column-rent-receipt-${group.month}`}
         >
           <h3 className="history-month-section-column-title">
             <span className="history-month-section-column-icon history-month-section-column-icon-quittance">
@@ -114,7 +114,7 @@ export function HistoryMonthSection({
 
         <section
           className="history-month-section-column"
-          data-cy={`historique-colonne-note-${group.month}`}
+          data-cy={`history-column-statement-${group.month}`}
         >
           <h3 className="history-month-section-column-title">
             <span className="history-month-section-column-icon history-month-section-column-icon-note">

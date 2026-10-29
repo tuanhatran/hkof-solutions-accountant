@@ -28,14 +28,14 @@ describe("AI admin and templates", () => {
       '[data-cy="select-llm-model"] option[value="mock-vision:latest"]',
     ).should("exist");
     cy.get('[data-cy="select-llm-model"]').select("mock-extract:latest");
-    cy.get('[data-cy="alerte-llm-distante"]').should("not.exist");
+    cy.get('[data-cy="alert-remote-llm"]').should("not.exist");
 
     cy.get('[data-cy="btn-test-llm"]').click();
-    cy.get('[data-cy="resultat-test-llm"]', { timeout: 30_000 }).should(
+    cy.get('[data-cy="llm-test-result"]', { timeout: 30_000 }).should(
       "contain.text",
       "Connexion réussie",
     );
-    cy.get('[data-cy="badge-llm-statut-admin"]', { timeout: 20_000 }).should(
+    cy.get('[data-cy="admin-llm-status-badge"]', { timeout: 20_000 }).should(
       "contain.text",
       "Connecté",
     );
@@ -47,12 +47,12 @@ describe("AI admin and templates", () => {
       "be.visible",
     );
 
-    cy.get('[data-cy="alerte-llm-distante"]').should("not.exist");
+    cy.get('[data-cy="alert-remote-llm"]').should("not.exist");
     cy.get('[data-cy="input-llm-url"]')
       .clear()
       .type("http://ollama-distant.invalid:11434");
-    cy.get('[data-cy="alerte-llm-distante"]').should("be.visible");
-    cy.get('[data-cy="alerte-llm-distante"]').should(
+    cy.get('[data-cy="alert-remote-llm"]').should("be.visible");
+    cy.get('[data-cy="alert-remote-llm"]').should(
       "contain.text",
       "Les justificatifs seront envoyés à un serveur distant.",
     );
@@ -65,7 +65,7 @@ describe("AI admin and templates", () => {
     cy.get('[data-cy="badge-llm-status"]', { timeout: 30_000 })
       .first()
       .should("contain.text", "IA injoignable");
-    cy.get('[data-cy="llm-statut"]').should("contain.text", "Injoignable");
+    cy.get('[data-cy="llm-status"]').should("contain.text", "Injoignable");
 
     cy.visit("/generer/note-frais");
     cy.chooseMonth(MONTHS);
@@ -113,44 +113,46 @@ describe("AI admin and templates", () => {
   it("imports, previews, activates a template then reverts to the built-in model", () => {
     cy.visit("/configuration/lmnp");
     cy.get('[data-cy="onglet-lmnp-templates"]').click();
-    cy.get('[data-cy="dropzone-template-quittance"]', {
+    cy.get('[data-cy="dropzone-rent-receipt-template"]', {
       timeout: 20_000,
     }).should("exist");
 
-    cy.get('[data-cy="input-template-nom"]')
+    cy.get('[data-cy="input-template-name"]')
       .first()
       .clear()
       .type("Quittance E2E");
-    cy.get('[data-cy="dropzone-template-quittance"]').selectFile(
+    cy.get('[data-cy="dropzone-rent-receipt-template"]').selectFile(
       "cypress/fixtures/template-quittance-valide.html",
       { force: true },
     );
-    cy.get('[data-cy="btn-televerser-template"]').first().click();
+    cy.get('[data-cy="btn-upload-template"]').first().click();
 
-    cy.get('[data-cy="rapport-validation-template"]', { timeout: 20_000 })
+    cy.get('[data-cy="template-validation-report"]', { timeout: 20_000 })
       .first()
       .should("contain.text", "Structure valide");
-    cy.get('[data-cy="rapport-validation-template"]')
+    cy.get('[data-cy="template-validation-report"]')
       .first()
       .should("contain.text", "Variables reconnues");
 
     cy.contains("button", "Aperçu de la version v2").click();
-    cy.get('[data-cy="apercu-template"]', { timeout: 20_000 }).should(
+    cy.get('[data-cy="template-preview"]', { timeout: 20_000 }).should(
       "be.visible",
     );
-    cy.get('[data-cy="apercu-template"]')
+    cy.get('[data-cy="template-preview"]')
       .find('button[aria-label="Fermer l’aperçu"]')
       .click();
-    cy.get('[data-cy="apercu-template"]').should("not.exist");
+    cy.get('[data-cy="template-preview"]').should("not.exist");
 
-    cy.get('[data-cy="btn-activer-template"]', { timeout: 20_000 })
+    cy.get('[data-cy="btn-activate-template"]', { timeout: 20_000 })
       .first()
       .click();
     cy.contains("li", "Quittance E2E", { timeout: 20_000 }).should(
       "contain.text",
       "active",
     );
-    cy.get('[data-cy="btn-modele-defaut"]').first().should("not.be.disabled");
+    cy.get('[data-cy="btn-default-template"]')
+      .first()
+      .should("not.be.disabled");
 
     cy.intercept("POST", "/api/rent-receipts/preview").as("preview");
     cy.visit("/generer/quittance");
@@ -193,26 +195,26 @@ describe("AI admin and templates", () => {
 
     cy.visit("/configuration/lmnp");
     cy.get('[data-cy="onglet-lmnp-templates"]').click();
-    cy.get('[data-cy="input-template-nom"]', { timeout: 20_000 })
+    cy.get('[data-cy="input-template-name"]', { timeout: 20_000 })
       .first()
       .clear()
       .type("Quittance invalide");
-    cy.get('[data-cy="dropzone-template-quittance"]').selectFile(
+    cy.get('[data-cy="dropzone-rent-receipt-template"]').selectFile(
       "cypress/fixtures/template-quittance-invalide.html",
       { force: true },
     );
-    cy.get('[data-cy="btn-televerser-template"]').first().click();
+    cy.get('[data-cy="btn-upload-template"]').first().click();
     cy.contains("Variables inconnues : variable_inconnue", {
       timeout: 20_000,
     }).should("be.visible");
 
-    cy.get('[data-cy="btn-modele-defaut"]').first().click();
+    cy.get('[data-cy="btn-default-template"]').first().click();
     cy.get('[data-cy="dialogue-modele-defaut"]').should("be.visible");
     cy.get('[data-cy="dialogue-confirmer"]').click();
     cy.contains("li", "Quittance — modèle intégré", { timeout: 20_000 }).should(
       "contain.text",
       "active",
     );
-    cy.get('[data-cy="btn-modele-defaut"]').first().should("be.disabled");
+    cy.get('[data-cy="btn-default-template"]').first().should("be.disabled");
   });
 });

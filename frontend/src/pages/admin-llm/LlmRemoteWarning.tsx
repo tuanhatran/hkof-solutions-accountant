@@ -7,11 +7,7 @@ export function LlmRemoteWarning() {
   const { t } = useTranslation();
 
   return (
-    <div
-      className="llm-remote-warning"
-      role="alert"
-      data-cy="alerte-llm-distante"
-    >
+    <div className="llm-remote-warning" role="alert" data-cy="alert-remote-llm">
       <ShieldAlert
         size={18}
         className="llm-remote-warning-icon"

@@ -19,7 +19,7 @@ export function LlmToggle({
       aria-checked={active}
       aria-label={t("adminLlm.connection.toggleAria")}
       onClick={onChange}
-      data-cy="switch-llm-actif"
+      data-cy="switch-active-llm"
       className={cn("llm-toggle", active ? "llm-toggle-on" : "llm-toggle-off")}
     >
       <span

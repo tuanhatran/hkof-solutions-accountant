@@ -622,19 +622,19 @@ describe("Multi-company and employees", () => {
       // History fans out one statement query per company: both notes show up
       // with their own lease address, without any global company switch.
       cy.get('[data-cy="tab-historique"]').click();
-      cy.get('[data-cy="historique-mois-2026-01"]', {
+      cy.get('[data-cy="history-month-2026-01"]', {
         timeout: 20_000,
       }).should("be.visible");
-      cy.get('[data-cy^="historique-adresse-note-2026-01"]').should(
+      cy.get('[data-cy^="history-address-statement-2026-01"]').should(
         "have.length",
         2,
       );
       cy.contains(
-        '[data-cy^="historique-adresse-note-2026-01"]',
+        '[data-cy^="history-address-statement-2026-01"]',
         "12 rue de la République, 75000 Paris",
       ).should("be.visible");
       cy.contains(
-        '[data-cy^="historique-adresse-note-2026-01"]',
+        '[data-cy^="history-address-statement-2026-01"]',
         ANNEXE_LEASE.propertyAddress,
       ).should("be.visible");
 

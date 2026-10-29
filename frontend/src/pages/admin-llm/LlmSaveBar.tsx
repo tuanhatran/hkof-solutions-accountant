@@ -18,7 +18,7 @@ export function LlmSaveBar({ c }: { c: AdminLlmController }) {
         type="submit"
         icon={<Save size={15} />}
         loading={c.save.isPending}
-        data-cy="btn-enregistrer-llm-bas"
+        data-cy="btn-save-basic-llm"
       >
         {t("adminLlm.saveBar.save")}
       </Button>
