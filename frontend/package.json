@@ -16,7 +16,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "cypress:open": "cypress open",
-    "e2e:local": "cypress run --config baseUrl=http://localhost:5173"
+    "e2e:local": "cypress run --config baseUrl=http://localhost:5173",
+    "check:all": "npm run typecheck && npm run lint && npm run format && npm run test:coverage"
   },
   "dependencies": {
     "@hookform/resolvers": "5.9.2",
