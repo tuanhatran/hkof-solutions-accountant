@@ -18,6 +18,8 @@ frontend/cypress/videos/
 frontend/cypress/downloads/
 frontend/npm-debug.log*
 
+__pycache__/
+
 # Mock Ollama
 mock-ollama/node_modules/
 
