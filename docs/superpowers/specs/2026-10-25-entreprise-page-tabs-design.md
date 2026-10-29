@@ -74,7 +74,7 @@ already do.
 ### Info générale tab
 
 - Read-only display of: `name`, `legalForm`, `siren`, `address`, `managerName`,
-  `issuePlace` (card/dl layout, `data-cy="info-societe"`).
+  `issuePlace` (card/dl layout, `data-cy="company-information"`).
 - "Modifier" button (`data-cy="btn-modifier-societe"`) opens `CompanyIdentityModal` —
   a `FormModal` with the identity fields, Zod-validated via `useCompanyForm`, footer
   Annuler/Valider; same save mutation and query invalidations as today's `CompanyForm`.
@@ -108,7 +108,7 @@ already do.
 - `data-cy` contract: names of existing field hooks (`input-raison-sociale`,
   `select-bail-societe`, `btn-ajouter-poste`, `btn-ajouter-salarie`…) are kept, and
   they live only inside their modal. Read-only tab views get new hooks
-  (`info-societe`, `bail-societe-lie`); `prorata-indicatif` / `bail-selectionne` are
+  (`company-information`, `company-lease-lie`); `prorata-indicatif` / `bail-selectionne` are
   renamed in the read-only view so no two DOM elements ever share a hook. Rewriting
   E2E interaction sequences (tab click → Modifier → Valider) is the required migration;
   selector renames follow it and are reported in the handoff.

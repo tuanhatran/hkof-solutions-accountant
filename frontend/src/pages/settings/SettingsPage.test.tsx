@@ -208,7 +208,7 @@ describe("SettingsPage tabs", () => {
     expect(screen.getByRole("tab", { name: "Baux & Frais" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Salariés" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Modèles" })).toBeVisible();
-    expect(queryByCy("info-societe")).not.toBeNull();
+    expect(queryByCy("company-information")).not.toBeNull();
     expect(queryByCy("onglet-entreprise-identification")).not.toBeNull();
     expect(queryByCy("input-raison-sociale")).toBeNull();
   });
@@ -234,7 +234,7 @@ describe("SettingsPage tabs", () => {
     expect(screen.getByText("Manager")).toBeVisible();
     expect(screen.getByRole("button", { name: "New company" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Delete" })).toBeVisible();
-    expect(queryByCy("info-societe")).toHaveTextContent("HKOF");
+    expect(queryByCy("company-information")).toHaveTextContent("HKOF");
   });
 
   it("relabels the tabs without a reload when the language switches", async () => {
@@ -306,7 +306,7 @@ describe("SettingsPage tabs", () => {
     );
     expect(panel?.closest("section.card.company-section")).not.toBeNull();
 
-    const identity = queryByCy("info-societe");
+    const identity = queryByCy("company-information");
     expect(identity?.closest("section")?.classList.contains("card")).toBe(
       false,
     );
@@ -323,7 +323,7 @@ describe("SettingsPage tabs", () => {
         ?.classList.contains("card"),
     ).toBe(false);
 
-    await user.click(queryByCy("btn-modifier-frais-bail-societe-5") as Element);
+    await user.click(queryByCy("btn-modifier-frais-company-lease-5") as Element);
     expect(
       document
         .querySelector("section.expense-items-manager")
@@ -366,7 +366,7 @@ describe("SettingsPage tabs", () => {
     expect(
       screen.getByText(/Les modèles ne peuvent exécuter aucun code/),
     ).toBeVisible();
-    expect(queryByCy("info-societe")).toBeNull();
+    expect(queryByCy("company-information")).toBeNull();
   });
 
   it("no longer renders the legacy Quittances directories", () => {
@@ -375,7 +375,7 @@ describe("SettingsPage tabs", () => {
     expect(screen.queryByRole("heading", { name: "Bailleurs" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "Locataires" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "Signatures" })).toBeNull();
-    expect(queryByCy("info-societe")).toHaveTextContent("HKOF");
+    expect(queryByCy("company-information")).toHaveTextContent("HKOF");
     expect(
       screen.queryByRole("button", { name: "Enregistrer" }),
     ).not.toBeInTheDocument();
@@ -387,22 +387,22 @@ describe("SettingsPage tabs", () => {
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
 
-    expect(queryByCy("bail-societe-5")).toHaveTextContent(
+    expect(queryByCy("company-lease-5")).toHaveTextContent(
       "12 rue des Lilas, 75011 Paris",
     );
-    expect(queryByCy("bail-societe-5")).not.toHaveAttribute("aria-expanded");
+    expect(queryByCy("company-lease-5")).not.toHaveAttribute("aria-expanded");
     expect(queryByCy("btn-frais-generaux-societe")).toBeNull();
     await waitFor(() =>
-      expect(queryByCy("btn-modifier-frais-bail-societe-5")).toHaveTextContent(
+      expect(queryByCy("btn-modifier-frais-company-lease-5")).toHaveTextContent(
         "Ajouter des frais",
       ),
     );
 
     // The row itself is inert: only "Modifier les frais" opens the dialog.
-    await user.click(queryByCy("bail-societe-5") as Element);
+    await user.click(queryByCy("company-lease-5") as Element);
     expect(queryByCy("dialogue-frais-bail-societe")).toBeNull();
 
-    await user.click(queryByCy("btn-modifier-frais-bail-societe-5") as Element);
+    await user.click(queryByCy("btn-modifier-frais-company-lease-5") as Element);
 
     expect(queryByCy("dialogue-frais-bail-societe")).not.toBeNull();
     expect(
@@ -593,7 +593,7 @@ describe("SettingsPage tabs", () => {
       "aria-selected",
       "true",
     );
-    expect(queryByCy("info-societe")).toHaveTextContent("Autre SARL");
+    expect(queryByCy("company-information")).toHaveTextContent("Autre SARL");
   });
 
   it("closes the identity modal when the selected company is deleted", async () => {
@@ -650,10 +650,10 @@ describe("SettingsPage tabs", () => {
 
     expect(queryByCy("select-bail-actif")).toBeNull();
     expect(queryByCy("dialogue-formulaire-bail-societe")).toBeNull();
-    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toBeNull();
-    expect(queryByCy("btn-note-frais-bail-societe-5")).toBeNull();
-    expect(queryByCy("btn-modifier-frais-bail-societe-5")).not.toBeNull();
-    expect(queryByCy("btn-modifier-bail-societe-5")).not.toBeNull();
+    expect(queryByCy("btn-afficher-frais-company-lease-5")).toBeNull();
+    expect(queryByCy("btn-note-frais-company-lease-5")).toBeNull();
+    expect(queryByCy("btn-modifier-frais-company-lease-5")).not.toBeNull();
+    expect(queryByCy("btn-modifier-company-lease-5")).not.toBeNull();
     expect(screen.queryByText("Bail actif")).toBeNull();
   });
 
@@ -670,7 +670,7 @@ describe("SettingsPage tabs", () => {
     expect(screen.queryByRole("button", { name: "Rendre active" })).toBeNull();
     expect(queryByCy("btn-rendre-active")).toBeNull();
     expect(screen.getByLabelText("Société à configurer")).toHaveValue("2");
-    expect(queryByCy("info-societe")).toHaveTextContent("Autre SARL");
+    expect(queryByCy("company-information")).toHaveTextContent("Autre SARL");
   });
 
   it("shows the loading then error states of the companies", async () => {
@@ -734,7 +734,7 @@ describe("SettingsPage tabs", () => {
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
-    await user.click(queryByCy("btn-modifier-frais-bail-societe-5") as Element);
+    await user.click(queryByCy("btn-modifier-frais-company-lease-5") as Element);
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
@@ -749,7 +749,7 @@ describe("SettingsPage tabs", () => {
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
-    await user.click(queryByCy("btn-modifier-frais-bail-societe-5") as Element);
+    await user.click(queryByCy("btn-modifier-frais-company-lease-5") as Element);
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(

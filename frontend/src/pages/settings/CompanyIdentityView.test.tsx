@@ -19,7 +19,7 @@ const COMPANY: CompanyDto = {
 
 function rowValue(label: string): string {
   const rows = document.querySelectorAll(
-    '[data-cy="info-societe"] .company-identity-view-row',
+    '[data-cy="company-information"] .company-identity-view-row',
   );
   for (const row of rows) {
     const dt = row.querySelector("dt");
@@ -31,11 +31,11 @@ function rowValue(label: string): string {
 }
 
 describe("CompanyIdentityView", () => {
-  it("renders every identity field under info-societe with a Modifier button", async () => {
+  it("renders every identity field under company-information with a Modifier button", async () => {
     const onEdit = vi.fn();
     render(<CompanyIdentityView company={COMPANY} onEdit={onEdit} />);
 
-    expect(document.querySelector('[data-cy="info-societe"]')).not.toBeNull();
+    expect(document.querySelector('[data-cy="company-information"]')).not.toBeNull();
     expect(rowValue("Raison sociale")).toBe("HKOF");
     expect(rowValue("Forme juridique")).toBe("EURL");
     expect(rowValue("SIREN")).toBe("123 456 789");
@@ -59,7 +59,7 @@ describe("CompanyIdentityView", () => {
 
     expect(rowValue("SIREN")).toBe("—");
     expect(rowValue("Gérant")).toBe("—");
-    expect(document.querySelector('[data-cy="info-societe"] input')).toBeNull();
+    expect(document.querySelector('[data-cy="company-information"] input')).toBeNull();
   });
 
   it("renders every identity field in English and relabels without a reload", async () => {

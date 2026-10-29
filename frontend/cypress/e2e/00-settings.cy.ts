@@ -15,12 +15,12 @@ describe("Settings", () => {
     cy.visit("/configuration");
     cy.location("pathname").should("eq", "/configuration/entreprise");
 
-    waitForText('[data-cy="info-societe"]', "HKOF");
+    waitForText('[data-cy="company-information"]', "HKOF");
 
     // Prorata is read-only on the Baux & Frais tab; its lease grid is visible
     // right away, without any expansion step.
     cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
-    cy.get('[data-cy^="bail-societe-"]', { timeout: 20_000 }).should("exist");
+    cy.get('[data-cy^="company-lease-"]', { timeout: 20_000 }).should("exist");
 
     // Identity edits go through the modal.
     cy.get('[data-cy="onglet-entreprise-identification"]').click();
@@ -34,16 +34,16 @@ describe("Settings", () => {
     cy.get('[data-cy="dialogue-formulaire-societe"]').should("not.exist");
 
     cy.reload();
-    waitForText('[data-cy="info-societe"]', "HKOF E2E");
+    waitForText('[data-cy="company-information"]', "HKOF E2E");
   });
 
   it("sorts the company leases from the headers and filters from the section header", () => {
     cy.visit("/configuration/entreprise");
-    cy.get('[data-cy="info-societe"]', { timeout: 20_000 }).should(
+    cy.get('[data-cy="company-information"]', { timeout: 20_000 }).should(
       "be.visible",
     );
     cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
-    cy.get('[data-cy^="bail-societe-"]', { timeout: 20_000 }).should("exist");
+    cy.get('[data-cy^="company-lease-"]', { timeout: 20_000 }).should("exist");
 
     // No list toolbar and no company-level expenses action on this tab.
     cy.get('[data-cy="tri-baux-societe"]').should("not.exist");
@@ -61,7 +61,7 @@ describe("Settings", () => {
       "have.length",
       5,
     );
-    cy.get('[data-cy^="bail-societe-"]')
+    cy.get('[data-cy^="company-lease-"]')
       .first()
       .should("have.attr", "role", "row")
       .find('[role="cell"]')
@@ -107,7 +107,7 @@ describe("Settings", () => {
   it("keeps the lease sort reachable on mobile", () => {
     cy.viewport(390, 844);
     cy.visit("/configuration/entreprise");
-    cy.get('[data-cy="info-societe"]', { timeout: 20_000 }).should(
+    cy.get('[data-cy="company-information"]', { timeout: 20_000 }).should(
       "be.visible",
     );
     cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
@@ -232,14 +232,14 @@ describe("Settings", () => {
     // Wait for the companies query and the effect that selects the first
     // company: it resets the active tab to "identification" when selectedId
     // resolves, so clicking the tab before that would be undone.
-    cy.get('[data-cy="info-societe"]', { timeout: 20_000 }).should(
+    cy.get('[data-cy="company-information"]', { timeout: 20_000 }).should(
       "be.visible",
     );
 
     cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
     // "Modifier les frais" opens the lease expenses dialog; the item form swaps
     // inside that same window, never as a stacked dialog.
-    cy.get('[data-cy^="btn-modifier-frais-bail-societe-"]', {
+    cy.get('[data-cy^="btn-modifier-frais-company-lease-"]', {
       timeout: 20_000,
     })
       .first()
