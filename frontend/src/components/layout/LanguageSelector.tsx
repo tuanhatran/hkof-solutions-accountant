@@ -22,7 +22,7 @@ export function LanguageSelector() {
       className="language-selector-root"
       role="group"
       aria-label={t("common.language")}
-      data-cy="select-langue"
+      data-cy="select-language"
     >
       {SUPPORTED_LANGUAGES.map((language) => (
         <button

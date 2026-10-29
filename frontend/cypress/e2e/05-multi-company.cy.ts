@@ -625,7 +625,7 @@ describe("Multi-company and employees", () => {
       ).should("be.visible");
 
       // The topbar no longer carries a global company switch.
-      cy.get('[data-cy="select-societe-active"]').should("not.exist");
+      cy.get('[data-cy="select-active-company"]').should("not.exist");
 
       // Back on the note page the choice is explicit again: outside History's
       // navigation state, no company is restored by default.

@@ -289,7 +289,7 @@ export function waitForAnalysisText(
   text: string | RegExp,
   timeout = 35_000,
 ): void {
-  cy.get('[data-cy="analyse-statut"]', { timeout }).should(($element) => {
+  cy.get('[data-cy="analysis-status"]', { timeout }).should(($element) => {
     expect(normalize($element.text())).to.match(
       text instanceof RegExp
         ? text
