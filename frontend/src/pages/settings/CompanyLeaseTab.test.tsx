@@ -157,7 +157,7 @@ describe("CompanyLeaseTab", () => {
   it("renders the five grid column headers above the company lease rows", async () => {
     renderTab();
 
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
     const table = screen.getByRole("table");
     const headers = queryByCy("entetes-baux-societe") as HTMLElement;
     expect(headers).not.toBeNull();
@@ -181,7 +181,7 @@ describe("CompanyLeaseTab", () => {
   it("exposes valid table semantics: one header row and five cells per data row", async () => {
     renderTab();
 
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
     const table = screen.getByRole("table");
     const rows = within(table).getAllByRole("row");
     expect(rows).toHaveLength(3);
@@ -200,21 +200,21 @@ describe("CompanyLeaseTab", () => {
   it("renders each lease as five aligned cells without an active badge", async () => {
     renderTab();
 
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
-    const row = queryByCy("bail-societe-5") as HTMLElement;
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
+    const row = queryByCy("company-lease-5") as HTMLElement;
     expect(row).toHaveTextContent("12 rue des Lilas, 75011 Paris");
     expect(row).toHaveTextContent("M. Bailleur");
-    expect(queryByCy("loyer-bail-societe-5")).toHaveTextContent("900,00 €");
-    expect(queryByCy("charges-bail-societe-5")).toHaveTextContent("50,00 €");
-    expect(queryByCy("loyer-bail-societe-5")).toHaveClass(
+    expect(queryByCy("loyer-company-lease-5")).toHaveTextContent("900,00 €");
+    expect(queryByCy("charges-company-lease-5")).toHaveTextContent("50,00 €");
+    expect(queryByCy("loyer-company-lease-5")).toHaveClass(
       "number",
       "text-right",
     );
-    expect(queryByCy("charges-bail-societe-5")).toHaveClass(
+    expect(queryByCy("charges-company-lease-5")).toHaveClass(
       "number",
       "text-right",
     );
-    expect(queryByCy("actions-bail-societe-5")).not.toBeNull();
+    expect(queryByCy("actions-company-lease-5")).not.toBeNull();
     expect(within(row as HTMLElement).queryByText("Bail actif")).toBeNull();
     expect(row).toHaveAttribute("role", "row");
     expect(row.closest("li")).toHaveAttribute("role", "none");
@@ -228,25 +228,25 @@ describe("CompanyLeaseTab", () => {
     ]);
     renderTab();
 
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
-    expect(queryByCy("bail-societe-5")).toHaveTextContent("—");
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
+    expect(queryByCy("company-lease-5")).toHaveTextContent("—");
   });
 
   it("lists only the leases of the company, without a dropdown", async () => {
     renderTab();
 
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
-    expect(queryByCy("bail-societe-6")).not.toBeNull();
-    expect(queryByCy("bail-societe-7")).toBeNull();
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
+    expect(queryByCy("company-lease-6")).not.toBeNull();
+    expect(queryByCy("company-lease-7")).toBeNull();
     expect(queryByCy("select-bail-actif")).toBeNull();
   });
 
   it("keeps the row inert: a click opens no dialog and persists nothing", async () => {
     renderTab();
     const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
 
-    await user.click(queryByCy("bail-societe-5") as HTMLElement);
+    await user.click(queryByCy("company-lease-5") as HTMLElement);
 
     expect(queryByCy("dialogue-frais-bail-societe")).toBeNull();
     expect(queryByCy("dialogue-frais-generaux-societe")).toBeNull();
@@ -256,9 +256,9 @@ describe("CompanyLeaseTab", () => {
   it("opens the expenses dialog scoped to the lease and restores focus on Escape", async () => {
     renderTab();
     const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-6")).not.toBeNull());
     const opener = queryByCy(
-      "btn-modifier-frais-bail-societe-6",
+      "btn-modifier-frais-company-lease-6",
     ) as HTMLElement;
 
     await user.click(opener);
@@ -283,10 +283,10 @@ describe("CompanyLeaseTab", () => {
   it("uses the lease then company then 100 % pro-rata in the dialog", async () => {
     renderTab();
     const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-6")).not.toBeNull());
 
     await user.click(
-      queryByCy("btn-modifier-frais-bail-societe-6") as HTMLElement,
+      queryByCy("btn-modifier-frais-company-lease-6") as HTMLElement,
     );
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
@@ -300,10 +300,10 @@ describe("CompanyLeaseTab", () => {
     ]);
     renderTab();
     const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-6")).not.toBeNull());
 
     await user.click(
-      queryByCy("btn-modifier-frais-bail-societe-6") as HTMLElement,
+      queryByCy("btn-modifier-frais-company-lease-6") as HTMLElement,
     );
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
@@ -319,10 +319,10 @@ describe("CompanyLeaseTab", () => {
     });
     renderTab();
     const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-6")).not.toBeNull());
 
     await user.click(
-      queryByCy("btn-modifier-frais-bail-societe-6") as HTMLElement,
+      queryByCy("btn-modifier-frais-company-lease-6") as HTMLElement,
     );
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
     await user.type(screen.getByLabelText("Libellé affiché"), "Gaz");
@@ -342,7 +342,7 @@ describe("CompanyLeaseTab", () => {
   it("sorts from the column headers: inactive starts ascending, active toggles", async () => {
     renderTab();
     const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
 
     expect(rowOrder()).toEqual([5, 6]);
 
@@ -387,7 +387,7 @@ describe("CompanyLeaseTab", () => {
     ]);
     renderTab();
     const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
 
     await user.click(screen.getByRole("button", { name: "Bailleur" }));
 
@@ -396,7 +396,7 @@ describe("CompanyLeaseTab", () => {
 
   it("marks the sorted column with aria-sort and a hidden direction icon", async () => {
     renderTab();
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
     const headers = queryByCy("entetes-baux-societe") as HTMLElement;
 
     expect(
@@ -422,7 +422,7 @@ describe("CompanyLeaseTab", () => {
   it("keeps sorting reachable on mobile with the compact control", async () => {
     renderTab();
     const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
 
     const select = queryByCy("tri-compact-baux-societe") as HTMLElement;
     const direction = queryByCy(
@@ -447,12 +447,12 @@ describe("CompanyLeaseTab", () => {
     renderTab();
 
     await waitFor(() =>
-      expect(queryByCy("btn-modifier-frais-bail-societe-5")).toHaveTextContent(
+      expect(queryByCy("btn-modifier-frais-company-lease-5")).toHaveTextContent(
         "Modifier les frais",
       ),
     );
     await waitFor(() =>
-      expect(queryByCy("btn-modifier-frais-bail-societe-6")).toHaveTextContent(
+      expect(queryByCy("btn-modifier-frais-company-lease-6")).toHaveTextContent(
         "Ajouter des frais",
       ),
     );
@@ -465,8 +465,8 @@ describe("CompanyLeaseTab", () => {
       () => new Promise(() => {}),
     );
     renderTab();
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
-    expect(queryByCy("btn-modifier-frais-bail-societe-5")).toHaveTextContent(
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
+    expect(queryByCy("btn-modifier-frais-company-lease-5")).toHaveTextContent(
       "Modifier les frais",
     );
   });
@@ -474,10 +474,10 @@ describe("CompanyLeaseTab", () => {
   it("keeps Modifier les frais when the expense query fails", async () => {
     vi.mocked(api.expenseItems.list).mockRejectedValue(new Error("boom"));
     renderTab();
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
 
     await waitFor(() =>
-      expect(queryByCy("btn-modifier-frais-bail-societe-5")).toHaveTextContent(
+      expect(queryByCy("btn-modifier-frais-company-lease-5")).toHaveTextContent(
         "Modifier les frais",
       ),
     );
@@ -486,7 +486,7 @@ describe("CompanyLeaseTab", () => {
   it("does not read the linked company.leaseId", async () => {
     renderTab({ ...COMPANY, leaseId: 6 });
 
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
     expect(rowOrder()).toEqual([5, 6]);
     expect(screen.queryByText("Bail actif")).toBeNull();
   });
@@ -494,11 +494,11 @@ describe("CompanyLeaseTab", () => {
   it("does not render the accordion, statement actions or history anymore", async () => {
     renderTab();
 
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
-    expect(queryByCy("btn-afficher-frais-bail-societe-5")).toBeNull();
-    expect(queryByCy("btn-note-frais-bail-societe-5")).toBeNull();
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
+    expect(queryByCy("btn-afficher-frais-company-lease-5")).toBeNull();
+    expect(queryByCy("btn-note-frais-company-lease-5")).toBeNull();
     expect(queryByCy("notes-frais-bail-5")).toBeNull();
-    expect(queryByCy("bail-societe-lie")).toBeNull();
+    expect(queryByCy("company-lease-lie")).toBeNull();
     expect(queryByCy("aucun-bail-societe")).toBeNull();
     expect(document.querySelector(".company-lease-tab-none")).toBeNull();
   });
@@ -506,12 +506,12 @@ describe("CompanyLeaseTab", () => {
   it("opens the shared LMNP lease modal with the company lease preset", async () => {
     renderTab();
     const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
 
     await user.click(queryByCy("btn-ajouter-bail-societe") as HTMLElement);
 
     expect(queryByCy("dialogue-formulaire-bail")).not.toBeNull();
-    expect(queryByCy("input-bail-societe-type")).toBeChecked();
+    expect(queryByCy("input-company-lease-type")).toBeChecked();
     expect(queryByCy("select-bail-locataire-societe")).toHaveValue("1");
   });
 
@@ -519,7 +519,7 @@ describe("CompanyLeaseTab", () => {
     vi.mocked(api.leases.create).mockResolvedValue(LEASE6);
     renderTab();
     const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-6")).not.toBeNull());
     vi.mocked(api.leases.list).mockResolvedValue([
       LEASE5,
       LEASE6,
@@ -555,15 +555,15 @@ describe("CompanyLeaseTab", () => {
         }),
       ),
     );
-    await waitFor(() => expect(queryByCy("bail-societe-8")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-8")).not.toBeNull());
   });
 
   it("opens the edit modal prefilled with the unchanged LeaseForm", async () => {
     renderTab();
     const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-6")).not.toBeNull());
 
-    await user.click(queryByCy("btn-modifier-bail-societe-6") as HTMLElement);
+    await user.click(queryByCy("btn-modifier-company-lease-6") as HTMLElement);
 
     expect(queryByCy("dialogue-formulaire-bail")).not.toBeNull();
     expect(queryByCy("input-bail-adresse")).toHaveValue(
@@ -581,14 +581,14 @@ describe("CompanyLeaseTab", () => {
     });
     renderTab();
     const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-6")).not.toBeNull());
     vi.mocked(api.leases.list).mockResolvedValue([
       LEASE5,
       { ...LEASE6, propertyAddress: "9 rue Modifiée, 69003 Lyon" },
       LEASE7,
     ]);
 
-    await user.click(queryByCy("btn-modifier-bail-societe-6") as HTMLElement);
+    await user.click(queryByCy("btn-modifier-company-lease-6") as HTMLElement);
     await user.clear(queryByCy("input-bail-adresse") as HTMLElement);
     await user.type(
       queryByCy("input-bail-adresse") as HTMLElement,
@@ -610,7 +610,7 @@ describe("CompanyLeaseTab", () => {
       expect(queryByCy("dialogue-formulaire-bail")).toBeNull(),
     );
     await waitFor(() =>
-      expect(queryByCy("bail-societe-6")).toHaveTextContent(
+      expect(queryByCy("company-lease-6")).toHaveTextContent(
         "9 rue Modifiée, 69003 Lyon",
       ),
     );
@@ -619,9 +619,9 @@ describe("CompanyLeaseTab", () => {
   it("closes the edit modal with Annuler without saving", async () => {
     renderTab();
     const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-6")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-6")).not.toBeNull());
 
-    await user.click(queryByCy("btn-modifier-bail-societe-6") as HTMLElement);
+    await user.click(queryByCy("btn-modifier-company-lease-6") as HTMLElement);
     expect(queryByCy("dialogue-formulaire-bail")).not.toBeNull();
     await user.click(screen.getByRole("button", { name: "Annuler" }));
 
@@ -638,7 +638,7 @@ describe("CompanyLeaseTab", () => {
     );
     renderTab();
 
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
     expect(
       screen.getByRole("heading", { name: "Company leases" }),
     ).toBeVisible();
@@ -651,9 +651,9 @@ describe("CompanyLeaseTab", () => {
     expect(
       screen.queryByRole("button", { name: "General expenses" }),
     ).toBeNull();
-    expect(queryByCy("bail-societe-5")).toHaveTextContent("M. Bailleur");
-    expect(queryByCy("loyer-bail-societe-5")).toHaveTextContent("900,00 €");
-    expect(queryByCy("charges-bail-societe-5")).toHaveTextContent("50,00 €");
+    expect(queryByCy("company-lease-5")).toHaveTextContent("M. Bailleur");
+    expect(queryByCy("loyer-company-lease-5")).toHaveTextContent("900,00 €");
+    expect(queryByCy("charges-company-lease-5")).toHaveTextContent("50,00 €");
     const headers = queryByCy("entetes-baux-societe") as HTMLElement;
     expect(within(headers).getByText("Address")).toBeVisible();
     expect(within(headers).getByText("Landlord")).toBeVisible();
@@ -661,16 +661,16 @@ describe("CompanyLeaseTab", () => {
     expect(within(headers).getByText("Charges")).toBeVisible();
     expect(within(headers).getByText("Actions")).toBeVisible();
     await waitFor(() =>
-      expect(queryByCy("btn-modifier-frais-bail-societe-5")).toHaveTextContent(
+      expect(queryByCy("btn-modifier-frais-company-lease-5")).toHaveTextContent(
         "Edit expenses",
       ),
     );
     await waitFor(() =>
-      expect(queryByCy("btn-modifier-frais-bail-societe-6")).toHaveTextContent(
+      expect(queryByCy("btn-modifier-frais-company-lease-6")).toHaveTextContent(
         "Add expenses",
       ),
     );
-    expect(queryByCy("btn-modifier-bail-societe-5")).toHaveTextContent(
+    expect(queryByCy("btn-modifier-company-lease-5")).toHaveTextContent(
       "Edit lease",
     );
   });
@@ -693,7 +693,7 @@ describe("CompanyLeaseTab", () => {
   it("filters the company leases by address with a live count and no-match state", async () => {
     renderTab();
     const user = userEvent.setup();
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
 
     expect(queryByCy("filtre-compteur-baux-societe")).toHaveTextContent(
       "2 sur 2",
@@ -701,8 +701,8 @@ describe("CompanyLeaseTab", () => {
 
     await user.type(queryByCy("filtre-baux-societe") as HTMLElement, "acacias");
 
-    expect(queryByCy("bail-societe-6")).not.toBeNull();
-    expect(queryByCy("bail-societe-5")).toBeNull();
+    expect(queryByCy("company-lease-6")).not.toBeNull();
+    expect(queryByCy("company-lease-5")).toBeNull();
     expect(queryByCy("filtre-compteur-baux-societe")).toHaveTextContent(
       "1 sur 2",
     );
@@ -721,7 +721,7 @@ describe("CompanyLeaseTab", () => {
 
   it("keeps the filter, its live count and the add action in the section header", async () => {
     renderTab();
-    await waitFor(() => expect(queryByCy("bail-societe-5")).not.toBeNull());
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
 
     const search = queryByCy("filtre-baux-societe") as HTMLElement;
     const count = queryByCy("filtre-compteur-baux-societe") as HTMLElement;
@@ -760,7 +760,7 @@ function rowOrder(): number[] {
   return [...document.querySelectorAll(".company-lease-tab-item")].map(
     (element) =>
       Number(
-        (element as HTMLElement).dataset.cy?.replace("bail-societe-", "") ??
+        (element as HTMLElement).dataset.cy?.replace("company-lease-", "") ??
           NaN,
       ),
   );

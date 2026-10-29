@@ -61,7 +61,7 @@ export function CompanyIdentityView({
       />
       <dl
         className="card-body company-identity-view-body"
-        data-cy="info-societe"
+        data-cy="company-information"
       >
         {rows.map((row) => (
           <div key={row.label} className="company-identity-view-row">

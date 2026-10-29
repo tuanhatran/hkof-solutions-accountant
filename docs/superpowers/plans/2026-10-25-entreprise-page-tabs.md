@@ -136,17 +136,17 @@ Form hooks kept verbatim from `SettingsCompanySection`: `formDataCy="formulaire-
 
 ```tsx
 <CompanyIdentityView company={CompanyDto} onEdit={() => …} />
-// data-cy="info-societe", one row per field, "—" for empty values
+// data-cy="company-information", one row per field, "—" for empty values
 // bouton "Modifier" data-cy="btn-modifier-societe"
 
 <CompanyLeaseView lease={LeaseDto | null} proRataBase={string | null} onEdit={() => …} />
-// data-cy="bail-societe-lie"; prorata read-only hook prorata-bail-societe (renamed from prorata-indicatif)
+// data-cy="company-lease-lie"; prorata read-only hook prorata-bail-societe (renamed from prorata-indicatif)
 // lease null ⇒ "Aucun bail sélectionné : la société n’a pas de quote-part professionnelle."
 // data-cy="aucun-bail-societe" kept on this empty message
 // bouton "Modifier" data-cy="btn-modifier-bail-societe"
 ```
 
-- [ ] **Step 1: Write the failing tests** — `CompanyIdentityView`: renders name, legalForm, siren, address, managerName, issuePlace under `info-societe`; empty `siren` renders "—"; onEdit fires on `btn-modifier-societe`. `CompanyLeaseView`: with a lease renders propertyAddress, "Loyer … € · Charges … €", surfaces and `proRataBase` via `prorata-bail-societe`; with `lease={null}` renders the French no-lease sentence (Review Focus 1); lease with `businessArea`/`totalArea` null shows "—" and never NaN.
+- [ ] **Step 1: Write the failing tests** — `CompanyIdentityView`: renders name, legalForm, siren, address, managerName, issuePlace under `company-information`; empty `siren` renders "—"; onEdit fires on `btn-modifier-societe`. `CompanyLeaseView`: with a lease renders propertyAddress, "Loyer … € · Charges … €", surfaces and `proRataBase` via `prorata-bail-societe`; with `lease={null}` renders the French no-lease sentence (Review Focus 1); lease with `businessArea`/`totalArea` null shows "—" and never NaN.
 
 - [ ] **Step 2: Verify fail** — `cd frontend && npm run test -- src/pages/settings/CompanyIdentityView.test.tsx src/pages/settings/CompanyLeaseView.test.tsx` → FAIL.
 
@@ -200,7 +200,7 @@ Save builds the full `CompanyRequest` from the **current `company` DTO** (name/l
 - Consumes: Task 1 `ViewTabs` with `dataCy`; Task 3 `CompanyIdentityModal`; Task 4 views; Task 5 `CompanyLeaseModal`; existing `ExpenseItemsManager`, `EmployeeSection`.
 - Produces: tab values `"identification" | "bail-frais" | "salaries"`, hooks `onglet-entreprise-identification`, `onglet-entreprise-bail-frais`, `onglet-entreprise-salaries`; default tab `identification`; selector block (`select-societe`, `btn-nouvelle-societe`, `btn-rendre-active`, `btn-supprimer-societe`, `dialogue-supprimer-societe`) unchanged and always rendered.
 
-- [ ] **Step 1: Rewrite the failing tests** — in `SettingsPage.test.tsx`: selector visible with tabs below; default tab shows `info-societe` (not the old form inputs); clicking `onglet-entreprise-bail-frais` shows `bail-societe-lie` + `Types de frais` table; clicking `onglet-entreprise-salaries` shows the employees list; `btn-nouvelle-societe` opens the identity modal prefilled-empty, and its save (mocked) reproduces today's post-create behaviour exactly (`CompanySection.tsx:164-179`: select the created company and `setActiveCompany(created.id)`) — no new active-company behaviour; `btn-modifier-societe` opens `formulaire-societe`; deleting the selected company while a modal is open closes modals and shows empty states (Review Focus 2).
+- [ ] **Step 1: Rewrite the failing tests** — in `SettingsPage.test.tsx`: selector visible with tabs below; default tab shows `company-information` (not the old form inputs); clicking `onglet-entreprise-bail-frais` shows `company-lease-lie` + `Types de frais` table; clicking `onglet-entreprise-salaries` shows the employees list; `btn-nouvelle-societe` opens the identity modal prefilled-empty, and its save (mocked) reproduces today's post-create behaviour exactly (`CompanySection.tsx:164-179`: select the created company and `setActiveCompany(created.id)`) — no new active-company behaviour; `btn-modifier-societe` opens `formulaire-societe`; deleting the selected company while a modal is open closes modals and shows empty states (Review Focus 2).
 
 - [ ] **Step 2: Verify fail** — `cd frontend && npm run test -- src/pages/settings/SettingsPage.test.tsx` → FAIL.
 

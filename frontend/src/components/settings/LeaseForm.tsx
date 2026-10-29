@@ -129,7 +129,7 @@ export function LeaseForm({
                 }
               },
             })}
-            data-cy="input-bail-societe-type"
+            data-cy="input-company-lease-type"
           />
           <span>
             <span className="lease-form-company-lease-title">
