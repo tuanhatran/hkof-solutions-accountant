@@ -40,7 +40,7 @@ or touches the database. Batch reads in parallel. No polling.
 6. `any`, swallowed error, skipped/disabled/weakened test, or a false green.
 7. User-facing English text, wrong amount or date formatting.
 8. Gate evidence missing for the change type, using the gate table in `builder.md`. Where E2E is
-   required: no single full-suite run, or any failing test, or a test green only on a retry. A
+   required: no run of the touched spec (`make e2e <spec>`), or any failing test, or a test green only on a retry. A
    skipped gate is fine only if the diff matches the table's exempt rows (docs, tests-only,
    CSS-only). "Docker unavailable" is never a pass where E2E is required.
 9. Coverage: where the table requires it, changed-line coverage under 80%

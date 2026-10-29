@@ -48,13 +48,13 @@ Cheap checks only inside the loop: never run a full gate here.
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | Docs, `.handoff/`, comments only                                       | `git diff --check`. No coverage, no E2E.                                                          |
 | Tests only, or component CSS only (no markup/text)                     | Affected tests, plus the side's lint/format (frontend: also `npm run build`). No coverage run, no E2E.                             |
-| Backend production code                                                | `cd backend && ./mvnw -B verify` + `scripts/diff-coverage.sh <Base> backend` + full E2E           |
-| Frontend production code                                               | `cd frontend && npm run test:coverage && npm run lint && npm run format && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + full E2E |
-| `openapi/`, Flyway migration, Docker/E2E config, or both sides changed | Backend + frontend gates + full E2E                                                               |
+| Backend production code                                                | `cd backend && ./mvnw -B verify` + `scripts/diff-coverage.sh <Base> backend` + touched E2E (`make e2e <spec>`) |
+| Frontend production code                                               | `cd frontend && npm run test:coverage && npm run lint && npm run format && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + touched E2E (`make e2e <spec>`) |
+| `openapi/`, Flyway migration, Docker/E2E config, or both sides changed | Backend + frontend gates + touched/full E2E                                                       |
 
-Full E2E, one stack per task:
-`make e2e-up` once when the task first needs E2E, then `make e2e` for every run; `make e2e`
-rebuilds only the changed services and leaves the stack up. All specs and tests green, none only
+Targeted E2E, one stack per task:
+`make e2e-up` once when the task first needs E2E, then `make e2e <spec>` (e.g. `make e2e 00-settings` or `make e2e 01-rent-receipt`, launching only the touched E2E spec). `make e2e`
+rebuilds only the changed services and leaves the stack up. Tests green on first run, none only
 on a retry. Keep the stack running after the report; `make e2e-down` runs only after the user
 accepts, when the lead sets `DONE`. If a required gate cannot run (for example Docker
 unavailable), report it as a blocker so the task stays `BLOCKED`; never done on partial evidence.
