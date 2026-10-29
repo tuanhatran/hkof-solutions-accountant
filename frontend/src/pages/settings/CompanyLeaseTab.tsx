@@ -194,7 +194,7 @@ export function CompanyLeaseTab({
                     direction={listQuery.direction}
                     onSort={sortBy}
                   />
-                  <ul className="company-lease-tab-list" role="rowgroup">
+                  <ul className="company-lease-tab-list" role="none">
                     {listQuery.visible.map((lease) => (
                       <CompanyLeaseRow
                         key={lease.id}

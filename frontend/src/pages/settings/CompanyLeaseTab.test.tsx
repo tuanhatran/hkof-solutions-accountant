@@ -167,10 +167,15 @@ describe("CompanyLeaseTab", () => {
     expect(within(headers).getByText("Loyer")).toBeVisible();
     expect(within(headers).getByText("Charges")).toBeVisible();
     expect(within(headers).getByText("Actions")).toBeVisible();
-    expect(table.querySelector('[role="rowgroup"]')).not.toBeNull();
+    expect(table.querySelector('[role="rowgroup"]')).toBeNull();
     const rows = within(table).getAllByRole("row");
     expect(rows).toHaveLength(3);
     expect(rows[0]).toBe(headers);
+    // The header row and every data row are owned directly by the table: the
+    // presentational `ul`/`li` wrappers stay out of the accessibility tree.
+    for (const row of rows) {
+      expect(accessibilityOwnerRole(row)).toBe("table");
+    }
   });
 
   it("exposes valid table semantics: one header row and five cells per data row", async () => {
@@ -759,4 +764,21 @@ function rowOrder(): number[] {
           NaN,
       ),
   );
+}
+
+/**
+ * Role of the closest ancestor that stays in the accessibility tree, i.e. the
+ * element that owns `element` for assistive technology. `role="none"` and
+ * `role="presentation"` wrappers are skipped, as browsers do.
+ */
+function accessibilityOwnerRole(element: Element): string | null {
+  let parent = element.parentElement;
+  while (parent) {
+    const role = parent.getAttribute("role");
+    if (role !== null && role !== "none" && role !== "presentation") {
+      return role;
+    }
+    parent = parent.parentElement;
+  }
+  return null;
 }
