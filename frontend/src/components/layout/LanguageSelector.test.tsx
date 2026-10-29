@@ -13,7 +13,7 @@ describe("LanguageSelector", () => {
     render(<LanguageSelector />);
 
     const group = screen.getByRole("group", { name: "Langue" });
-    expect(group).toHaveAttribute("data-cy", "select-langue");
+    expect(group).toHaveAttribute("data-cy", "select-language");
     expect(screen.queryByRole("combobox")).toBeNull();
     expect(
       within(group).getByRole("button", { name: "Français" }),

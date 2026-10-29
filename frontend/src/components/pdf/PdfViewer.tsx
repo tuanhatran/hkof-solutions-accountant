@@ -101,7 +101,7 @@ export function PdfViewer({
           {url ? (
             <span
               className="pdf-viewer-updated"
-              data-cy="apercu-maj"
+              data-cy="preview-updated"
               aria-live="polite"
             >
               {updatedAt
@@ -247,7 +247,7 @@ export function PdfViewer({
             icon={<Download size={14} />}
             onClick={onDownload}
             disabled={!url}
-            data-cy="btn-telecharger-apercu"
+            data-cy="btn-download-preview"
           >
             {t("pdfViewer.download")}
           </Button>

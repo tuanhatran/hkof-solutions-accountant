@@ -14,7 +14,7 @@ describe("AmountConfirmButton", () => {
       name: "Confirmer le montant détecté par IA",
     });
 
-    expect(button).toHaveAttribute("data-cy", "btn-confirmer-montant");
+    expect(button).toHaveAttribute("data-cy", "btn-confirm-amount");
     expect(button).toHaveAttribute("type", "button");
     expect(button).toHaveAttribute("aria-pressed", "false");
     expect(

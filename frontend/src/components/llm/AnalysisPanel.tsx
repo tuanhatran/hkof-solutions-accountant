@@ -29,7 +29,7 @@ export function AnalysisPanel({
 
   return (
     <div
-      data-cy="analyse-statut"
+      data-cy="analysis-status"
       aria-live="polite"
       className={cn(
         "analysis-panel",
@@ -54,7 +54,7 @@ export function AnalysisPanel({
             variant="ghost"
             small
             onClick={onCancel}
-            data-cy="btn-annuler-analyse"
+            data-cy="btn-cancel-analysis"
           >
             <X size={13} aria-hidden="true" />
             {t("expenseStatement.analysis.cancel")}

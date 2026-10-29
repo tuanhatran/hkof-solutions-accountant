@@ -18,7 +18,7 @@ function verifyPreview(total: string): void {
     .then((text) => {
       const displayedTotal = normalize(text);
       downloadAndReadPdf(
-        '[data-cy="btn-telecharger-apercu"]',
+        '[data-cy="btn-download-preview"]',
         "note_frais_apercu.pdf",
         (pdf) => {
           expect(pdf).to.contain("APERÇU");
@@ -207,7 +207,7 @@ describe("Expense statement — entry and preview", () => {
     addRent();
 
     uploadReceipt("facture-gaz.txt");
-    cy.get('[data-cy="analyse-statut"]', { timeout: 35_000 }).should(
+    cy.get('[data-cy="analysis-status"]', { timeout: 35_000 }).should(
       "contain.text",
       "Analyse terminée",
     );
@@ -219,18 +219,18 @@ describe("Expense statement — entry and preview", () => {
     cy.get('[data-cy="input-periode-debut"]').should("not.exist");
     cy.get('[data-cy="input-periode-fin"]').should("not.exist");
     cy.contains("Fournisseur détecté : EDF").should("be.visible");
-    cy.get('[data-cy="badge-ia-detecte"]').should(($badges) => {
+    cy.get('[data-cy="badge-ai-detected"]').should(($badges) => {
       expect($badges.length).to.be.at.least(2);
     });
 
     cy.get('[data-cy="btn-ajouter-frais"]').should("be.disabled");
-    cy.get('[data-cy="btn-confirmer-montant"]')
+    cy.get('[data-cy="btn-confirm-amount"]')
       .should("be.visible")
       .should("have.attr", "aria-pressed", "false");
     cy.contains(
       "Montant détecté par IA — confirmez-le pour ajouter le frais.",
     ).should("be.visible");
-    cy.get('[data-cy="btn-confirmer-montant"]').click();
+    cy.get('[data-cy="btn-confirm-amount"]').click();
     cy.contains("Montant confirmé.").should("be.visible");
     cy.get('[data-cy="btn-ajouter-frais"]').should("not.be.disabled");
 
@@ -249,14 +249,14 @@ describe("Expense statement — entry and preview", () => {
     addRent();
 
     uploadReceipt("facture-fibre-74-6.txt");
-    cy.get('[data-cy="analyse-statut"]', { timeout: 35_000 }).should(
+    cy.get('[data-cy="analysis-status"]', { timeout: 35_000 }).should(
       "contain.text",
       "Analyse terminée",
     );
     waitForSelectedFile("facture-fibre-74-6.txt");
 
     waitForValue('[data-cy="input-montant-ttc"]', "74.60");
-    cy.get('[data-cy="btn-confirmer-montant"]').should("be.visible");
+    cy.get('[data-cy="btn-confirm-amount"]').should("be.visible");
   });
 
   it("overwrites a typed amount with the AI proposal and requires confirmation", () => {
@@ -270,7 +270,7 @@ describe("Expense statement — entry and preview", () => {
     cy.get('[data-cy="input-montant-ttc"]').clear().type("999.99");
 
     uploadReceipt("facture-gaz.txt");
-    cy.get('[data-cy="analyse-statut"]', { timeout: 35_000 }).should(
+    cy.get('[data-cy="analysis-status"]', { timeout: 35_000 }).should(
       "contain.text",
       "Analyse terminée",
     );
@@ -278,7 +278,7 @@ describe("Expense statement — entry and preview", () => {
 
     waitForValue('[data-cy="input-montant-ttc"]', "120.00");
     cy.get('[data-cy="btn-ajouter-frais"]').should("be.disabled");
-    cy.get('[data-cy="btn-confirmer-montant"]').click();
+    cy.get('[data-cy="btn-confirm-amount"]').click();
     cy.get('[data-cy="btn-ajouter-frais"]').should("not.be.disabled").click();
 
     waitForAmount('[data-cy="ligne-frais-gaz"]', "120,00");
@@ -297,7 +297,7 @@ describe("Expense statement — entry and preview", () => {
     addRent();
 
     uploadReceipt("facture-illisible.txt");
-    cy.get('[data-cy="analyse-statut"]', { timeout: 40_000 }).should(
+    cy.get('[data-cy="analysis-status"]', { timeout: 40_000 }).should(
       "contain.text",
       "saisie manuelle",
     );
@@ -318,13 +318,13 @@ describe("Expense statement — entry and preview", () => {
     cy.get('[data-cy="select-type-frais"]').should("not.be.disabled");
 
     uploadReceipt("facture-lente.txt");
-    cy.get('[data-cy="analyse-statut"]', { timeout: 20_000 }).should(
+    cy.get('[data-cy="analysis-status"]', { timeout: 20_000 }).should(
       "contain.text",
       "Analyse IA en cours",
     );
-    cy.get('[data-cy="btn-annuler-analyse"]').click();
+    cy.get('[data-cy="btn-cancel-analysis"]').click();
 
-    cy.get('[data-cy="analyse-statut"]', { timeout: 20_000 }).should(
+    cy.get('[data-cy="analysis-status"]', { timeout: 20_000 }).should(
       "contain.text",
       "Analyse annulée.",
     );

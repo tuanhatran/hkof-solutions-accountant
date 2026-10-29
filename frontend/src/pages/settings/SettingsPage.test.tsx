@@ -323,7 +323,9 @@ describe("SettingsPage tabs", () => {
         ?.classList.contains("card"),
     ).toBe(false);
 
-    await user.click(queryByCy("btn-modifier-frais-company-lease-5") as Element);
+    await user.click(
+      queryByCy("btn-modifier-frais-company-lease-5") as Element,
+    );
     expect(
       document
         .querySelector("section.expense-items-manager")
@@ -402,7 +404,9 @@ describe("SettingsPage tabs", () => {
     await user.click(queryByCy("company-lease-5") as Element);
     expect(queryByCy("dialogue-frais-bail-societe")).toBeNull();
 
-    await user.click(queryByCy("btn-modifier-frais-company-lease-5") as Element);
+    await user.click(
+      queryByCy("btn-modifier-frais-company-lease-5") as Element,
+    );
 
     expect(queryByCy("dialogue-frais-bail-societe")).not.toBeNull();
     expect(
@@ -734,7 +738,9 @@ describe("SettingsPage tabs", () => {
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
-    await user.click(queryByCy("btn-modifier-frais-company-lease-5") as Element);
+    await user.click(
+      queryByCy("btn-modifier-frais-company-lease-5") as Element,
+    );
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
@@ -749,7 +755,9 @@ describe("SettingsPage tabs", () => {
     const user = userEvent.setup();
 
     await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
-    await user.click(queryByCy("btn-modifier-frais-company-lease-5") as Element);
+    await user.click(
+      queryByCy("btn-modifier-frais-company-lease-5") as Element,
+    );
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(

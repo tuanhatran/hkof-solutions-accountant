@@ -230,7 +230,7 @@ describe("AppShell", () => {
     const topbar = document.querySelector(".app-shell-topbar");
     expect(topbar).not.toBeNull();
     expect(
-      topbar?.querySelector('[data-cy="select-societe-active"]'),
+      topbar?.querySelector('[data-cy="select-active-company"]'),
     ).toBeNull();
     expect(
       screen.queryByRole("combobox", { name: /Société active/ }),

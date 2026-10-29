@@ -18,7 +18,7 @@ export function AmountConfirmButton({
     <div className="amount-confirm-button-root">
       <button
         type="button"
-        data-cy="btn-confirmer-montant"
+        data-cy="btn-confirm-amount"
         aria-label={
           confirmed
             ? t("common.amount.confirmedAria")
