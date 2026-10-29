@@ -36,7 +36,7 @@ export function ExpenseAmountFields({
                 c.errors.amountInclVat && "field-error",
                 c.lowConfidenceError && c.ai.amount && "field-warning",
               )}
-              data-cy="input-montant-ttc"
+              data-cy="input-amount-incl-vat"
               aria-invalid={Boolean(c.errors.amountInclVat)}
               aria-readonly={c.isRent && c.availableRent}
               readOnly={c.isRent && c.availableRent}

@@ -16,7 +16,7 @@ export interface MonthGroup {
   addresses: AddressGroup[];
 }
 
-export const UNKNOWN_ADDRESS_KEY = "inconnue";
+export const UNKNOWN_ADDRESS_KEY = "unknown";
 
 /** Localized unknown-address label, resolved at call time so a language switch applies. */
 export function unknownAddressLabel(language?: string): string {

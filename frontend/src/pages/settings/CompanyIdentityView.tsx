@@ -53,7 +53,7 @@ export function CompanyIdentityView({
             variant="secondary"
             small
             onClick={onEdit}
-            data-cy="btn-modifier-societe"
+            data-cy="btn-edit-company"
           >
             {t("settings.company.identity.edit")}
           </Button>

@@ -24,17 +24,17 @@ export function LmnpPage() {
     {
       value: "baux",
       label: t("settings.lmnp.tabs.leases"),
-      dataCy: "onglet-baux",
+      dataCy: "tab-leases",
     },
     {
       value: "personnes",
       label: t("settings.lmnp.tabs.persons"),
-      dataCy: "onglet-personnes",
+      dataCy: "tab-persons",
     },
     {
       value: "templates",
       label: t("settings.lmnp.tabs.templates"),
-      dataCy: "onglet-lmnp-templates",
+      dataCy: "tab-lmnp-templates",
     },
   ] as const;
 

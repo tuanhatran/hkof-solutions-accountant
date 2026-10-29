@@ -72,18 +72,18 @@ const ANNEXE_LANDLORD = "Bailleur annexe";
  * grid, every lease is reachable without an expansion step.
  */
 function openFirstLeaseExpenses(): void {
-  cy.get('[data-cy^="btn-modifier-frais-company-lease-"]', { timeout: 20_000 })
+  cy.get('[data-cy^="btn-edit-company-lease-expenses-"]', { timeout: 20_000 })
     .first()
     .click();
-  cy.get('[data-cy="dialogue-frais-bail-societe"]').should("be.visible");
+  cy.get('[data-cy="dialog-company-lease-expenses"]').should("be.visible");
 }
 
 /** Closes the lease expenses dialog through its header close button. */
 function closeLeaseExpenses(): void {
   cy.get(
-    '[data-cy="dialogue-frais-bail-societe"] button[aria-label="Fermer"]',
+    '[data-cy="dialog-company-lease-expenses"] button[aria-label="Fermer"]',
   ).click();
-  cy.get('[data-cy="dialogue-frais-bail-societe"]').should("not.exist");
+  cy.get('[data-cy="dialog-company-lease-expenses"]').should("not.exist");
 }
 
 function companies(): Cypress.Chainable<CompanySummary[]> {
@@ -139,19 +139,23 @@ function createPerson(name: string): Cypress.Chainable<number> {
 function createAnnexeLease(annexeCompanyId: number): Cypress.Chainable<number> {
   return createPerson(ANNEXE_LANDLORD).then((landlordId) => {
     cy.get('[data-cy="tab-lmnp"]').click();
-    cy.get('[data-cy="btn-ajouter-bail"]').click();
-    cy.get('[data-cy="formulaire-bail"]').should("be.visible");
-    cy.get('[data-cy="select-bail-bailleur"]').select(String(landlordId));
+    cy.get('[data-cy="btn-add-lease"]').click();
+    cy.get('[data-cy="lease-form"]').should("be.visible");
+    cy.get('[data-cy="select-lease-landlord"]').select(String(landlordId));
     cy.get('[data-cy="input-company-lease-type"]').check();
-    cy.get('[data-cy="select-bail-locataire-societe"]').select(
+    cy.get('[data-cy="select-lease-company-tenant"]').select(
       String(annexeCompanyId),
     );
-    cy.get('[data-cy="input-bail-adresse"]').type(ANNEXE_LEASE.propertyAddress);
-    cy.get('[data-cy="input-bail-loyer"]').clear().type(ANNEXE_LEASE.rent);
-    cy.get('[data-cy="input-bail-charges"]').clear().type(ANNEXE_LEASE.charges);
-    cy.get('[data-cy="input-surface-totale"]').type(ANNEXE_LEASE.totalArea);
-    cy.get('[data-cy="input-surface-pro"]').type(ANNEXE_LEASE.businessArea);
-    cy.get('[data-cy="btn-enregistrer-bail"]').click();
+    cy.get('[data-cy="input-lease-address"]').type(
+      ANNEXE_LEASE.propertyAddress,
+    );
+    cy.get('[data-cy="input-lease-rent"]').clear().type(ANNEXE_LEASE.rent);
+    cy.get('[data-cy="input-lease-charges"]')
+      .clear()
+      .type(ANNEXE_LEASE.charges);
+    cy.get('[data-cy="input-total-area"]').type(ANNEXE_LEASE.totalArea);
+    cy.get('[data-cy="input-business-area"]').type(ANNEXE_LEASE.businessArea);
+    cy.get('[data-cy="btn-save-lease"]').click();
     cy.contains("Bail ajouté.", { timeout: 20_000 }).should("be.visible");
 
     cy.request<{ id: number; label: string }[]>("/api/addresses").then(
@@ -162,7 +166,7 @@ function createAnnexeLease(annexeCompanyId: number): Cypress.Chainable<number> {
         if (!address) {
           throw new Error("Annexe address was not created.");
         }
-        cy.get('[data-cy="select-adresse-quittances"]', {
+        cy.get('[data-cy="select-rent-receipts-address"]', {
           timeout: 20_000,
         }).should("have.value", String(address.id));
       },
@@ -241,29 +245,29 @@ function createAnnexeCompany(): void {
   cy.visit("/configuration");
   waitForText('[data-cy="company-information"]', SEEDED_COMPANY);
 
-  cy.get('[data-cy="btn-nouvelle-societe"]').click();
-  cy.get('[data-cy="dialogue-formulaire-societe"]').should("be.visible");
-  cy.get('[data-cy="select-societe"]').should("be.visible");
-  cy.get('[data-cy="input-raison-sociale"]').clear().type(ANNEXE_COMPANY.name);
+  cy.get('[data-cy="btn-new-company"]').click();
+  cy.get('[data-cy="dialog-company-form"]').should("be.visible");
+  cy.get('[data-cy="select-company"]').should("be.visible");
+  cy.get('[data-cy="input-legal-name"]').clear().type(ANNEXE_COMPANY.name);
   cy.get('[data-cy="input-siren"]').clear().type(ANNEXE_COMPANY.siren);
   cy.get('[data-cy="input-managerName"]')
     .clear()
     .type(ANNEXE_COMPANY.managerName);
-  cy.get('[data-cy="input-societe-adresse"]')
+  cy.get('[data-cy="input-company-address"]')
     .clear()
     .type(ANNEXE_COMPANY.address);
-  cy.get('[data-cy="input-lieu-emission"]')
+  cy.get('[data-cy="input-issue-place"]')
     .clear()
     .type(ANNEXE_COMPANY.issuePlace);
-  cy.get('[data-cy="btn-enregistrer-configuration-bas"]').click();
+  cy.get('[data-cy="btn-save-basic-configuration"]').click();
 
   cy.contains("Société créée.", { timeout: 20_000 }).should("be.visible");
   companyIds().then(({ annexe }) => {
-    cy.get('[data-cy="select-societe"]').should(
+    cy.get('[data-cy="select-company"]').should(
       "have.value",
       String(annexe.id),
     );
-    cy.get('[data-cy="select-societe"] option').should(($options) => {
+    cy.get('[data-cy="select-company"] option').should(($options) => {
       const labels = [...$options].map((option) =>
         (option.textContent ?? "").trim(),
       );
@@ -272,8 +276,8 @@ function createAnnexeCompany(): void {
 
     createAnnexeLease(annexe.id).then((leaseId) => {
       cy.get('[data-cy="tab-configuration"]').click();
-      cy.get('[data-cy="select-societe"]').select(String(annexe.id));
-      cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+      cy.get('[data-cy="select-company"]').select(String(annexe.id));
+      cy.get('[data-cy="tab-company-lease-expenses"]').click();
 
       // The Baux & Frais tab is a five-column grid; the row is inert and
       // carries no active-lease state.
@@ -283,13 +287,13 @@ function createAnnexeCompany(): void {
         .and("not.have.attr", "aria-expanded");
       cy.intercept("PUT", "/api/companies/*").as("updateCompany");
       cy.get(`[data-cy="company-lease-${leaseId}"]`).click();
-      cy.get('[data-cy="dialogue-frais-bail-societe"]').should("not.exist");
+      cy.get('[data-cy="dialog-company-lease-expenses"]').should("not.exist");
       cy.get("@updateCompany.all").should("have.length", 0);
 
       // "Modifier les frais" opens the expenses dialog scoped to the lease,
       // still without persisting the lease on the company.
-      cy.get(`[data-cy="btn-modifier-frais-company-lease-${leaseId}"]`).click();
-      cy.get('[data-cy="dialogue-frais-bail-societe"]')
+      cy.get(`[data-cy="btn-edit-company-lease-expenses-${leaseId}"]`).click();
+      cy.get('[data-cy="dialog-company-lease-expenses"]')
         .should("be.visible")
         .and("contain.text", ANNEXE_LEASE.propertyAddress);
       cy.get('[role="dialog"]').should("have.length", 1);
@@ -301,39 +305,39 @@ function createAnnexeCompany(): void {
       createPerson(ANNEXE_SECOND_LANDLORD).then((landlordId) => {
         cy.reload();
         cy.get('[data-cy="tab-configuration"]').click();
-        cy.get('[data-cy="select-societe"]').select(String(annexe.id));
-        cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+        cy.get('[data-cy="select-company"]').select(String(annexe.id));
+        cy.get('[data-cy="tab-company-lease-expenses"]').click();
 
         // "Ajouter un bail": the LMNP form opens with "Bail société" checked
         // and the company prefilled as tenant.
-        cy.get('[data-cy="btn-ajouter-bail-societe"]', {
+        cy.get('[data-cy="btn-add-company-lease"]', {
           timeout: 20_000,
         }).click();
-        cy.get('[data-cy="formulaire-bail"]').should("be.visible");
+        cy.get('[data-cy="lease-form"]').should("be.visible");
         cy.get('[data-cy="input-company-lease-type"]').should("be.checked");
-        cy.get('[data-cy="select-bail-locataire-societe"]').should(
+        cy.get('[data-cy="select-lease-company-tenant"]').should(
           "have.value",
           String(annexe.id),
         );
-        cy.get('[data-cy="select-bail-bailleur"]').select(String(landlordId));
-        cy.get('[data-cy="input-bail-adresse"]').type(
+        cy.get('[data-cy="select-lease-landlord"]').select(String(landlordId));
+        cy.get('[data-cy="input-lease-address"]').type(
           ANNEXE_SECOND_LEASE.propertyAddress,
         );
-        cy.get('[data-cy="input-bail-loyer"]')
+        cy.get('[data-cy="input-lease-rent"]')
           .clear()
           .type(ANNEXE_SECOND_LEASE.rent);
-        cy.get('[data-cy="input-bail-charges"]')
+        cy.get('[data-cy="input-lease-charges"]')
           .clear()
           .type(ANNEXE_SECOND_LEASE.charges);
-        cy.get('[data-cy="input-surface-totale"]').type(
+        cy.get('[data-cy="input-total-area"]').type(
           ANNEXE_SECOND_LEASE.totalArea,
         );
-        cy.get('[data-cy="input-surface-pro"]').type(
+        cy.get('[data-cy="input-business-area"]').type(
           ANNEXE_SECOND_LEASE.businessArea,
         );
-        cy.get('[data-cy="btn-enregistrer-bail"]').click();
+        cy.get('[data-cy="btn-save-lease"]').click();
         cy.contains("Bail ajouté.", { timeout: 20_000 }).should("be.visible");
-        cy.get('[data-cy="formulaire-bail"]').should("not.exist");
+        cy.get('[data-cy="lease-form"]').should("not.exist");
 
         secondAnnexeLease(annexe.id, leaseId).then((secondLeaseId) => {
           // Both leases render as grid rows, with no active-lease state.
@@ -354,46 +358,50 @@ function createAnnexeCompany(): void {
             .should("have.attr", "data-cy", `company-lease-${leaseId}`);
 
           // No list toolbar and no company-level expenses action remain.
-          cy.get('[data-cy="tri-baux-societe"]').should("not.exist");
-          cy.get('[data-cy="tri-direction-baux-societe"]').should("not.exist");
-          cy.get('[data-cy="btn-frais-generaux-societe"]').should("not.exist");
+          cy.get('[data-cy="sort-company-leases"]').should("not.exist");
+          cy.get('[data-cy="sort-direction-company-leases"]').should(
+            "not.exist",
+          );
+          cy.get('[data-cy="btn-company-general-expenses"]').should(
+            "not.exist",
+          );
 
           // Address is the default ascending sort; an inactive column starts
           // ascending, the active column toggles.
-          cy.get('[data-cy="tri-adresse-baux-societe"]')
+          cy.get('[data-cy="sort-company-leases-address"]')
             .parent()
             .should("have.attr", "aria-sort", "ascending");
-          cy.get('[data-cy="tri-loyer-baux-societe"]').click();
-          cy.get('[data-cy="tri-loyer-baux-societe"]')
+          cy.get('[data-cy="sort-company-leases-rent"]').click();
+          cy.get('[data-cy="sort-company-leases-rent"]')
             .parent()
             .should("have.attr", "aria-sort", "ascending");
           cy.get(".company-lease-tab-item")
             .first()
             .should("have.attr", "data-cy", `company-lease-${secondLeaseId}`);
-          cy.get('[data-cy="tri-loyer-baux-societe"]').click();
-          cy.get('[data-cy="tri-loyer-baux-societe"]')
+          cy.get('[data-cy="sort-company-leases-rent"]').click();
+          cy.get('[data-cy="sort-company-leases-rent"]')
             .parent()
             .should("have.attr", "aria-sort", "descending");
           cy.get(".company-lease-tab-item")
             .first()
             .should("have.attr", "data-cy", `company-lease-${leaseId}`);
-          cy.get('[data-cy="tri-adresse-baux-societe"]').click();
+          cy.get('[data-cy="sort-company-leases-address"]').click();
 
           // Both fresh leases have no expense item yet.
           cy.get(
-            `[data-cy="btn-modifier-frais-company-lease-${leaseId}"]`,
+            `[data-cy="btn-edit-company-lease-expenses-${leaseId}"]`,
           ).should("contain.text", "Ajouter des frais");
           cy.get(
-            `[data-cy="btn-modifier-frais-company-lease-${secondLeaseId}"]`,
+            `[data-cy="btn-edit-company-lease-expenses-${secondLeaseId}"]`,
           ).should("contain.text", "Ajouter des frais");
 
           // "Modifier les frais" scopes the dialog to the clicked lease,
           // without writing the lease on the company.
           cy.intercept("PUT", "/api/companies/*").as("updateCompany");
           cy.get(
-            `[data-cy="btn-modifier-frais-company-lease-${secondLeaseId}"]`,
+            `[data-cy="btn-edit-company-lease-expenses-${secondLeaseId}"]`,
           ).click();
-          cy.get('[data-cy="dialogue-frais-bail-societe"]')
+          cy.get('[data-cy="dialog-company-lease-expenses"]')
             .should("be.visible")
             .and("contain.text", ANNEXE_SECOND_LEASE.propertyAddress)
             .and("not.contain.text", ANNEXE_LEASE.propertyAddress);
@@ -403,7 +411,9 @@ function createAnnexeCompany(): void {
 
           // The row stays inert: a click never opens the dialog.
           cy.get(`[data-cy="company-lease-${secondLeaseId}"]`).click();
-          cy.get('[data-cy="dialogue-frais-bail-societe"]').should("not.exist");
+          cy.get('[data-cy="dialog-company-lease-expenses"]').should(
+            "not.exist",
+          );
           cy.get("@updateCompany.all").should("have.length", 0);
         });
       });
@@ -414,43 +424,45 @@ function createAnnexeCompany(): void {
 /** Adds the annexe CEO and one signature from the same employee form. */
 function createAnnexeEmployee(companyId: number): void {
   cy.get('[data-cy="tab-configuration"]').click();
-  cy.get('[data-cy="select-societe"]').should("have.value", String(companyId));
-  cy.get('[data-cy="onglet-entreprise-salaries"]').click();
-  cy.get('[data-cy="aucun-salarie"]').should("be.visible");
+  cy.get('[data-cy="select-company"]').should("have.value", String(companyId));
+  cy.get('[data-cy="tab-company-employees"]').click();
+  cy.get('[data-cy="no-employee"]').should("be.visible");
 
-  cy.get('[data-cy="btn-ajouter-salarie"]').click();
-  cy.get('[data-cy="formulaire-salarie"]').should("be.visible");
-  cy.get('[data-cy="input-salarie-prenom"]').type(ANNEXE_EMPLOYEE.firstName);
-  cy.get('[data-cy="input-salarie-nom"]').type(ANNEXE_EMPLOYEE.lastName);
-  cy.get('[data-cy="input-salarie-email"]').type(ANNEXE_EMPLOYEE.email);
-  cy.get('[data-cy="select-salarie-titre"]').select("CEO");
-  cy.get('[data-cy="btn-enregistrer-salarie"]').click();
+  cy.get('[data-cy="btn-add-employee"]').click();
+  cy.get('[data-cy="employee-form"]').should("be.visible");
+  cy.get('[data-cy="input-employee-first-name"]').type(
+    ANNEXE_EMPLOYEE.firstName,
+  );
+  cy.get('[data-cy="input-employee-name"]').type(ANNEXE_EMPLOYEE.lastName);
+  cy.get('[data-cy="input-employee-email"]').type(ANNEXE_EMPLOYEE.email);
+  cy.get('[data-cy="select-employee-title"]').select("CEO");
+  cy.get('[data-cy="btn-save-employee"]').click();
 
   cy.contains("Salarié ajouté.", { timeout: 20_000 }).should("be.visible");
   employeeByName(companyId, ANNEXE_EMPLOYEE.firstName).then((employee) => {
-    cy.get(`[data-cy="salarie-${employee.id}"]`)
+    cy.get(`[data-cy="employee-${employee.id}"]`)
       .should("contain.text", "Alice Martin")
       .and("contain.text", "PDG");
 
     // The employee form stays open after creation so signatures can be added.
-    cy.get('[data-cy="input-signature-personne-nom"]').type(
+    cy.get('[data-cy="input-person-signature-name"]').type(
       "Signature E2E Alice",
     );
     cy.get('[data-cy="input-signature-image"]').selectFile(
       "cypress/fixtures/signature-e2e.png",
       { force: true },
     );
-    cy.get('[data-cy="btn-ajouter-signature-personne"]').click();
+    cy.get('[data-cy="btn-add-person-signature"]').click();
 
     cy.contains("Signature « Signature E2E Alice » ajoutée.", {
       timeout: 20_000,
     }).should("be.visible");
-    cy.contains('[data-cy^="signature-personne-"]', "Signature E2E Alice", {
+    cy.contains('[data-cy^="person-signature-"]', "Signature E2E Alice", {
       timeout: 20_000,
     })
       .should("be.visible")
       .and("contain.text", "Ajoutée le");
-    cy.get(`[data-cy="signatures-salarie-${employee.id}"]`).should(
+    cy.get(`[data-cy="employee-signatures-${employee.id}"]`).should(
       "contain.text",
       "1 signature",
     );
@@ -460,33 +472,33 @@ function createAnnexeEmployee(companyId: number): void {
 function createAnnexeExpenseItem(companyId: number): void {
   // The employee modal stays open after creation for signatures; close it here.
   cy.contains("button", "Annuler").click();
-  cy.get('[data-cy="dialogue-formulaire-salarie"]').should("not.exist");
+  cy.get('[data-cy="dialog-employee-form"]').should("not.exist");
   cy.get('[data-cy="tab-configuration"]').click();
-  cy.get('[data-cy="select-societe"]').should("have.value", String(companyId));
-  cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+  cy.get('[data-cy="select-company"]').should("have.value", String(companyId));
+  cy.get('[data-cy="tab-company-lease-expenses"]').click();
   // Every lease row exposes its expenses through the scoped dialog.
   openFirstLeaseExpenses();
   cy.contains("Aucun poste configuré.", { timeout: 20_000 }).should(
     "be.visible",
   );
 
-  cy.get('[data-cy="btn-ajouter-poste"]').click();
-  cy.get('[data-cy="formulaire-poste"]').should("be.visible");
-  cy.get('[data-cy="dialogue-formulaire-poste"]').should("not.exist");
-  cy.get("#poste-code").type("gaz");
-  cy.get('[data-cy="input-poste-libelle"]').type("Gaz annexe");
-  cy.get('[data-cy="input-poste-fournisseur"]').type("EDF");
-  cy.get('[data-cy="input-poste-prorata"]').clear().type("25");
-  cy.get('[data-cy="btn-enregistrer-poste"]').click();
+  cy.get('[data-cy="btn-add-item"]').click();
+  cy.get('[data-cy="item-form"]').should("be.visible");
+  cy.get('[data-cy="dialog-item-form"]').should("not.exist");
+  cy.get("#item-code").type("gaz");
+  cy.get('[data-cy="input-item-label"]').type("Gaz annexe");
+  cy.get('[data-cy="input-item-supplier"]').type("EDF");
+  cy.get('[data-cy="input-item-prorata"]').clear().type("25");
+  cy.get('[data-cy="btn-save-item"]').click();
   cy.contains("td", "Gaz annexe", { timeout: 20_000 }).should("be.visible");
   closeLeaseExpenses();
 
   // The decorated lease now offers "Modifier les frais"; its itemless
   // sibling still offers "Ajouter des frais".
-  cy.get('[data-cy^="btn-modifier-frais-company-lease-"]')
+  cy.get('[data-cy^="btn-edit-company-lease-expenses-"]')
     .eq(0)
     .should("contain.text", "Modifier les frais");
-  cy.get('[data-cy^="btn-modifier-frais-company-lease-"]')
+  cy.get('[data-cy^="btn-edit-company-lease-expenses-"]')
     .eq(1)
     .should("contain.text", "Ajouter des frais");
 }
@@ -495,17 +507,17 @@ function assertSettingsIsolation(
   seededCompanyId: number,
   annexeCompanyId: number,
 ): void {
-  cy.get('[data-cy="select-societe"]').select(String(seededCompanyId));
+  cy.get('[data-cy="select-company"]').select(String(seededCompanyId));
   waitForText('[data-cy="company-information"]', SEEDED_COMPANY);
-  cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+  cy.get('[data-cy="tab-company-lease-expenses"]').click();
   openFirstLeaseExpenses();
   cy.contains("td", "Téléphone", { timeout: 20_000 }).should("be.visible");
   cy.contains("td", "Gaz annexe").should("not.exist");
   closeLeaseExpenses();
 
-  cy.get('[data-cy="select-societe"]').select(String(annexeCompanyId));
+  cy.get('[data-cy="select-company"]').select(String(annexeCompanyId));
   waitForText('[data-cy="company-information"]', ANNEXE_COMPANY.name);
-  cy.get('[data-cy="onglet-entreprise-bail-frais"]').click();
+  cy.get('[data-cy="tab-company-lease-expenses"]').click();
   openFirstLeaseExpenses();
   cy.contains("td", "Gaz annexe", { timeout: 20_000 }).should("be.visible");
   cy.contains("td", "Téléphone").should("not.exist");
@@ -517,19 +529,19 @@ function assertEmployeeIsolation(
   annexeCompanyId: number,
 ): void {
   cy.get('[data-cy="tab-configuration"]').click();
-  cy.get('[data-cy="select-societe"]').select(String(seededCompanyId));
-  cy.get('[data-cy="onglet-entreprise-salaries"]').click();
-  cy.contains('[data-cy^="salarie-"]', "Gérant", { timeout: 20_000 }).should(
+  cy.get('[data-cy="select-company"]').select(String(seededCompanyId));
+  cy.get('[data-cy="tab-company-employees"]').click();
+  cy.contains('[data-cy^="employee-"]', "Gérant", { timeout: 20_000 }).should(
     "be.visible",
   );
-  cy.contains('[data-cy^="salarie-"]', "Alice Martin").should("not.exist");
+  cy.contains('[data-cy^="employee-"]', "Alice Martin").should("not.exist");
 
-  cy.get('[data-cy="select-societe"]').select(String(annexeCompanyId));
-  cy.get('[data-cy="onglet-entreprise-salaries"]').click();
-  cy.contains('[data-cy^="salarie-"]', "Alice Martin", {
+  cy.get('[data-cy="select-company"]').select(String(annexeCompanyId));
+  cy.get('[data-cy="tab-company-employees"]').click();
+  cy.contains('[data-cy^="employee-"]', "Alice Martin", {
     timeout: 20_000,
   }).should("be.visible");
-  cy.contains('[data-cy^="salarie-"]', "Gérant").should("not.exist");
+  cy.contains('[data-cy^="employee-"]', "Gérant").should("not.exist");
 }
 
 describe("Multi-company and employees", () => {
@@ -560,21 +572,25 @@ describe("Multi-company and employees", () => {
       // Creating a company no longer activates it globally: the note page asks
       // for an explicit company in its header.
       cy.visit("/generer/note-frais");
-      cy.get('[data-cy="select-societe-note-frais"]', { timeout: 20_000 })
+      cy.get('[data-cy="select-company-expense-statement"]', {
+        timeout: 20_000,
+      })
         .should("be.visible")
         .select(String(seeded.id));
       cy.chooseMonth(MONTHS);
-      cy.get('[data-cy="select-type-frais"]').should("not.be.disabled");
-      cy.get('[data-cy="select-type-frais"] option[value="telephone"]').should(
-        "exist",
-      );
+      cy.get('[data-cy="select-expense-type"]').should("not.be.disabled");
+      cy.get(
+        '[data-cy="select-expense-type"] option[value="telephone"]',
+      ).should("exist");
       addExpense({
         itemCode: "telephone",
         fixture: "facture-telephone.txt",
         amountInclVat: "100.00",
       });
-      waitForAmount('[data-cy="total-retenu"]', "35,71");
-      cy.get('[data-cy="btn-generer-note"]').should("not.be.disabled").click();
+      waitForAmount('[data-cy="retained-total"]', "35,71");
+      cy.get('[data-cy="btn-generate-statement"]')
+        .should("not.be.disabled")
+        .click();
       cy.contains("Note de frais générée", { timeout: 35_000 }).should(
         "be.visible",
       );
@@ -607,20 +623,20 @@ describe("Multi-company and employees", () => {
 
       // History fans out one statement query per company: both notes show up
       // with their own lease address, without any global company switch.
-      cy.get('[data-cy="tab-historique"]').click();
-      cy.get('[data-cy="historique-mois-2026-01"]', {
+      cy.get('[data-cy="tab-history"]').click();
+      cy.get('[data-cy="history-month-2026-01"]', {
         timeout: 20_000,
       }).should("be.visible");
-      cy.get('[data-cy^="historique-adresse-note-2026-01"]').should(
+      cy.get('[data-cy^="history-address-statement-2026-01"]').should(
         "have.length",
         2,
       );
       cy.contains(
-        '[data-cy^="historique-adresse-note-2026-01"]',
+        '[data-cy^="history-address-statement-2026-01"]',
         "12 rue de la République, 75000 Paris",
       ).should("be.visible");
       cy.contains(
-        '[data-cy^="historique-adresse-note-2026-01"]',
+        '[data-cy^="history-address-statement-2026-01"]',
         ANNEXE_LEASE.propertyAddress,
       ).should("be.visible");
 
@@ -630,7 +646,9 @@ describe("Multi-company and employees", () => {
       // Back on the note page the choice is explicit again: outside History's
       // navigation state, no company is restored by default.
       cy.visit("/generer/note-frais");
-      cy.get('[data-cy="select-societe-note-frais"]', { timeout: 20_000 })
+      cy.get('[data-cy="select-company-expense-statement"]', {
+        timeout: 20_000,
+      })
         .should("be.visible")
         .and("have.value", "");
     });

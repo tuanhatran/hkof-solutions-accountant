@@ -35,7 +35,7 @@ export function RentReceiptForm({ c }: { c: RentReceiptController }) {
               loading={c.draftSaving}
               onClick={() => void c.saveDraft()}
               disabled={!c.draftScopeReady || c.draftSaving}
-              data-cy="btn-enregistrer-brouillon"
+              data-cy="btn-save-draft"
             >
               {t("draft.save")}
             </Button>
@@ -53,7 +53,7 @@ export function RentReceiptForm({ c }: { c: RentReceiptController }) {
                 !c.signatureAvailable ||
                 c.hasUnsavedAdditionalCharge
               }
-              data-cy="btn-generer-quittance"
+              data-cy="btn-generate-rent-receipt"
             >
               {t("rentReceipt.form.generate")}
             </Button>

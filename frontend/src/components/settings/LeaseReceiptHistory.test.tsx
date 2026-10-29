@@ -118,10 +118,10 @@ describe("LeaseReceiptHistory", () => {
     expect(months[1]).toHaveTextContent(formatMonth("2026-09"));
     expect(months[1]).toHaveTextContent("2 quittances");
     expect(
-      screen.getByTestId("lease-receipt-history-mois-10-2026-10"),
+      screen.getByTestId("lease-receipt-history-month-10-2026-10"),
     ).toBeInTheDocument();
     expect(
-      screen.getByTestId("lease-receipt-history-mois-10-2026-09"),
+      screen.getByTestId("lease-receipt-history-month-10-2026-09"),
     ).toBeInTheDocument();
   });
 
@@ -145,7 +145,7 @@ describe("LeaseReceiptHistory", () => {
       ],
     });
 
-    const month = screen.getByTestId("lease-receipt-history-mois-10-2026-09");
+    const month = screen.getByTestId("lease-receipt-history-month-10-2026-09");
     const summary = month.querySelector("summary");
     expect(summary).not.toBeNull();
     summary?.focus();
@@ -163,21 +163,21 @@ describe("LeaseReceiptHistory", () => {
     expect(items[1]).toHaveTextContent("v1");
     expect(items[1]).toHaveTextContent(collapsed(formatEUR("1350.00")));
 
-    const download = screen.getByTestId("telecharger-quittance-bail-103");
+    const download = screen.getByTestId("download-lease-rent-receipt-103");
     expect(download).toHaveAttribute("href", "/api/rent-receipts/103/pdf");
     expect(
-      screen.getByTestId("telecharger-quittance-bail-101"),
+      screen.getByTestId("download-lease-rent-receipt-101"),
     ).toHaveAttribute("href", "/api/rent-receipts/101/pdf");
   });
 
   it("shows the month and its single version even when there is only one receipt", () => {
     renderHistory({ receipts: [receipt({ id: 101 })] });
 
-    const month = screen.getByTestId("lease-receipt-history-mois-10-2026-09");
+    const month = screen.getByTestId("lease-receipt-history-month-10-2026-09");
     expect(month).toBeInTheDocument();
     expect(within(month).getAllByRole("listitem")).toHaveLength(1);
     expect(
-      screen.getByTestId("telecharger-quittance-bail-101"),
+      screen.getByTestId("download-lease-rent-receipt-101"),
     ).toBeInTheDocument();
   });
 
@@ -192,11 +192,11 @@ describe("LeaseReceiptHistory", () => {
     });
 
     expect(
-      screen.getByTestId("telecharger-quittance-bail-101"),
+      screen.getByTestId("download-lease-rent-receipt-101"),
     ).toBeInTheDocument();
-    expect(screen.queryByTestId("telecharger-quittance-bail-201")).toBeNull();
-    expect(screen.queryByTestId("telecharger-quittance-bail-202")).toBeNull();
-    expect(screen.queryByTestId("telecharger-quittance-bail-203")).toBeNull();
+    expect(screen.queryByTestId("download-lease-rent-receipt-201")).toBeNull();
+    expect(screen.queryByTestId("download-lease-rent-receipt-202")).toBeNull();
+    expect(screen.queryByTestId("download-lease-rent-receipt-203")).toBeNull();
   });
 
   it("keeps only the company-tenant receipts of a company lease", () => {
@@ -216,11 +216,11 @@ describe("LeaseReceiptHistory", () => {
     });
 
     expect(
-      screen.getByTestId("telecharger-quittance-bail-301"),
+      screen.getByTestId("download-lease-rent-receipt-301"),
     ).toBeInTheDocument();
-    expect(screen.queryByTestId("telecharger-quittance-bail-302")).toBeNull();
-    expect(screen.queryByTestId("telecharger-quittance-bail-303")).toBeNull();
-    expect(screen.queryByTestId("telecharger-quittance-bail-304")).toBeNull();
+    expect(screen.queryByTestId("download-lease-rent-receipt-302")).toBeNull();
+    expect(screen.queryByTestId("download-lease-rent-receipt-303")).toBeNull();
+    expect(screen.queryByTestId("download-lease-rent-receipt-304")).toBeNull();
   });
 
   it("shows a French empty state when the lease has no receipt", () => {
@@ -271,7 +271,7 @@ describe("LeaseReceiptHistory", () => {
       ],
     });
 
-    const month = screen.getByTestId("lease-receipt-history-mois-10-");
+    const month = screen.getByTestId("lease-receipt-history-month-10-");
     const items = within(month).getAllByRole("listitem");
     expect(items).toHaveLength(1);
     expect(items[0]).toHaveTextContent("v1");
@@ -286,7 +286,7 @@ describe("LeaseReceiptHistory", () => {
     });
 
     expect(
-      screen.getByTestId("telecharger-quittance-bail-401"),
+      screen.getByTestId("download-lease-rent-receipt-401"),
     ).toBeInTheDocument();
   });
 
@@ -314,11 +314,11 @@ describe("LeaseReceiptHistory", () => {
     });
 
     expect(screen.getByText("Generated rent receipts")).toBeInTheDocument();
-    const month = screen.getByTestId("lease-receipt-history-mois-10-2026-09");
+    const month = screen.getByTestId("lease-receipt-history-month-10-2026-09");
     expect(month).toHaveTextContent("September 2026");
     expect(month).toHaveTextContent("2 rent receipts");
     expect(
-      screen.getByTestId("telecharger-quittance-bail-101"),
+      screen.getByTestId("download-lease-rent-receipt-101"),
     ).toHaveTextContent("Download the PDF");
   });
 
@@ -326,7 +326,7 @@ describe("LeaseReceiptHistory", () => {
     await i18n.changeLanguage("en");
     const single = renderHistory({ receipts: [receipt({ id: 101 })] });
     expect(
-      screen.getByTestId("lease-receipt-history-mois-10-2026-09"),
+      screen.getByTestId("lease-receipt-history-month-10-2026-09"),
     ).toHaveTextContent("1 rent receipt");
     single.unmount();
 

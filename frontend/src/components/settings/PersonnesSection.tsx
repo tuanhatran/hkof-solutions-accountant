@@ -70,7 +70,7 @@ export function PersonnesSection() {
             icon={<Plus size={14} />}
             onClick={() => setForm("new")}
             disabled={form === "new"}
-            data-cy="btn-ajouter-personne"
+            data-cy="btn-add-person"
           >
             {t("settings.people.add")}
           </Button>
@@ -93,14 +93,11 @@ export function PersonnesSection() {
         ) : persons.isPending ? (
           <LoadingState message={t("settings.people.loading")} />
         ) : list.length === 0 ? (
-          <EmptyState
-            text={t("settings.people.empty")}
-            dataCy="aucune-personne"
-          />
+          <EmptyState text={t("settings.people.empty")} dataCy="no-person" />
         ) : (
           <>
             <ListToolbar
-              list="personnes"
+              list="persons"
               placeholder={t("settings.people.filterPlaceholder")}
               query={listQuery.query}
               onQueryChange={listQuery.setQuery}
@@ -126,13 +123,13 @@ export function PersonnesSection() {
                 text={t("settings.list.noMatch", {
                   query: listQuery.query.trim(),
                 })}
-                dataCy="aucun-resultat-personnes"
+                dataCy="no-results-persons"
               />
             ) : (
               <>
                 <div
                   className="personnes-section-headers hidden md:grid"
-                  data-cy="entetes-personnes"
+                  data-cy="persons-headers"
                 >
                   <span>{t("settings.people.columns.person")}</span>
                   <span>{t("settings.people.columns.address")}</span>
@@ -146,7 +143,7 @@ export function PersonnesSection() {
                     <li
                       key={person.id}
                       className="personnes-section-item"
-                      data-cy={`personne-${person.id}`}
+                      data-cy={`person-${person.id}`}
                     >
                       <p className="personnes-section-cell personnes-section-cell-name personnes-section-item-name">
                         {person.name ?? t("settings.people.nameFallback")}
@@ -156,7 +153,7 @@ export function PersonnesSection() {
                       </p>
                       <p
                         className="personnes-section-cell personnes-section-cell-signatures personnes-section-item-meta number text-right"
-                        data-cy={`signatures-personne-${person.id}`}
+                        data-cy={`person-signatures-${person.id}`}
                       >
                         {t("settings.people.signatureCount", {
                           count: person.signatureCount ?? 0,
@@ -172,7 +169,7 @@ export function PersonnesSection() {
                             name:
                               person.name ?? t("settings.people.editFallback"),
                           })}
-                          data-cy={`btn-modifier-personne-${person.id}`}
+                          data-cy={`btn-edit-person-${person.id}`}
                         >
                           {t("settings.people.edit")}
                         </Button>
@@ -186,7 +183,7 @@ export function PersonnesSection() {
                             name:
                               person.name ?? t("settings.people.editFallback"),
                           })}
-                          data-cy={`btn-supprimer-personne-${person.id}`}
+                          data-cy={`btn-delete-person-${person.id}`}
                         >
                           {t("settings.people.remove")}
                         </Button>
@@ -220,7 +217,7 @@ export function PersonnesSection() {
           }
         }}
         onCancel={() => setToDelete(null)}
-        dataCy="dialogue-supprimer-personne"
+        dataCy="dialog-delete-person"
       />
     </section>
   );

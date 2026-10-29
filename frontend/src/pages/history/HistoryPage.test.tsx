@@ -10,7 +10,7 @@ import type {
 } from "@/api/types";
 import i18n from "@/i18n";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
-import { useStatementDraft } from "@/state/statementDraft";
+import { draftScopeKey, useStatementDraft } from "@/state/statementDraft";
 import { useToasts } from "@/state/toasts";
 import { HistoryPage } from "./HistoryPage";
 
@@ -297,7 +297,7 @@ function LocationProbe() {
     ?.companyId;
   return (
     <div
-      data-cy="location"
+      data-cy="rental"
       data-company-id={companyId === undefined ? "" : String(companyId)}
     >
       {location.pathname}
@@ -315,20 +315,23 @@ function renderPage() {
 }
 
 function currentPath(): string | null {
-  return document.querySelector('[data-cy="location"]')?.textContent ?? null;
+  return document.querySelector('[data-cy="rental"]')?.textContent ?? null;
 }
 
 function reloadedCompanyId(): string | null {
   return (
     document
-      .querySelector('[data-cy="location"]')
+      .querySelector('[data-cy="rental"]')
       ?.getAttribute("data-company-id") ?? null
   );
 }
 
-function columnOf(month: string, kind: "quittance" | "note"): HTMLElement {
+function columnOf(
+  month: string,
+  kind: "rent-receipt" | "statement",
+): HTMLElement {
   const column = document.querySelector(
-    `[data-cy="historique-colonne-${kind}-${month}"]`,
+    `[data-cy="history-column-${kind}-${month}"]`,
   );
   if (!(column instanceof HTMLElement)) {
     throw new Error(`Column ${kind} of ${month} not found`);
@@ -419,13 +422,11 @@ describe("HistoryPage", () => {
     expect(await screen.findByText("1 mois suivi")).toBeInTheDocument();
     expect(statementsCompanyIds.at(-1)).toEqual([1, 2]);
     expect(
-      document.querySelector(
-        '[data-cy="historique-adresse-2026-01-address-51"]',
-      ),
+      document.querySelector('[data-cy="history-address-2026-01-address-51"]'),
     ).not.toBeNull();
     expect(
       document.querySelector(
-        '[data-cy="historique-adresse-note-2026-01-address-61"]',
+        '[data-cy="history-address-statement-2026-01-address-61"]',
       ),
     ).not.toBeNull();
     expect(screen.getByText("1 avenue Alpha")).toBeInTheDocument();
@@ -540,12 +541,12 @@ describe("HistoryPage", () => {
       throw new Error("January section not found");
     }
     expect(
-      Array.from(jan.querySelectorAll('[data-cy^="historique-colonne-"]')).map(
+      Array.from(jan.querySelectorAll('[data-cy^="history-column-"]')).map(
         (column) => column.getAttribute("data-cy"),
       ),
     ).toEqual([
-      "historique-colonne-quittance-2026-01",
-      "historique-colonne-note-2026-01",
+      "history-column-rent-receipt-2026-01",
+      "history-column-statement-2026-01",
     ]);
     expect(
       within(jan).getByRole("heading", { name: "Quittance de loyer" }),
@@ -593,7 +594,7 @@ describe("HistoryPage", () => {
     }
     expect(within(jan).getByText("Note (5)")).toBeInTheDocument();
     expect(
-      within(columnOf("2026-01", "note")).getAllByText("Charger"),
+      within(columnOf("2026-01", "statement")).getAllByText("Charger"),
     ).toHaveLength(5);
   });
 
@@ -605,7 +606,7 @@ describe("HistoryPage", () => {
     const receiptButton = screen.getByRole("button", {
       name: "Générer une quittance",
     });
-    expect(receiptButton).toHaveAttribute("data-cy", "btn-nouvelle-quittance");
+    expect(receiptButton).toHaveAttribute("data-cy", "btn-new-rent-receipt");
     await user.click(receiptButton);
     expect(currentPath()).toBe("/generer/quittance");
 
@@ -614,7 +615,7 @@ describe("HistoryPage", () => {
     });
     expect(statementButton).toHaveAttribute(
       "data-cy",
-      "btn-nouvelle-note-frais",
+      "btn-new-expense-statement",
     );
     await user.click(statementButton);
     expect(currentPath()).toBe("/generer/note-frais");
@@ -633,10 +634,10 @@ describe("HistoryPage", () => {
     await screen.findByText("2 mois suivis");
 
     expect(
-      document.querySelector('[data-cy="historique-quittance-11"]'),
+      document.querySelector('[data-cy="history-rent-receipt-11"]'),
     ).toBeInTheDocument();
     const janReceipt = document.querySelector(
-      '[data-cy="historique-quittance-10"]',
+      '[data-cy="history-rent-receipt-10"]',
     );
     if (!janReceipt) {
       throw new Error("Archived rent receipt row not found");
@@ -648,11 +649,11 @@ describe("HistoryPage", () => {
       within(janReceipt as HTMLElement).getByRole("link", { name: "PDF" }),
     ).toHaveAttribute("href", "/api/rent-receipts/10/pdf");
 
-    const februaryNote = columnOf("2026-02", "note");
+    const februaryNote = columnOf("2026-02", "statement");
     expect(
       februaryNote.querySelectorAll("li.statement-month-panel-history-item"),
     ).toHaveLength(1);
-    const januaryNote = columnOf("2026-01", "note");
+    const januaryNote = columnOf("2026-01", "statement");
     const loadButtons = within(januaryNote).getAllByRole("button", {
       name: "Charger",
     });
@@ -673,23 +674,25 @@ describe("HistoryPage", () => {
     renderPage();
     await screen.findByText("2 mois suivis");
 
+    const januaryNote = columnOf("2026-01", "statement");
+    const loadButtons = within(januaryNote).getAllByRole("button", {
+      name: "Charger",
+    });
+    expect(loadButtons).toHaveLength(2);
+    await user.click(loadButtons[0]);
+
+    const dialog = screen.getByRole("dialog", { name: "Rouvrir cette note ?" });
     await user.click(
-      document.querySelector(
-        '[data-cy="btn-rouvrir-note-2026-01"]',
-      ) as HTMLElement,
+      within(dialog).getByRole("button", { name: "Charger les lignes" }),
     );
 
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-
-    await user.click(
-      document.querySelector(
-        '[data-cy="btn-rouvrir-note-2026-01"]',
-      ) as HTMLElement,
-    );
-
-    await waitFor(() => expect(currentPath()).toBe("/historique"));
+    await waitFor(() => expect(currentPath()).toBe("/generer/note-frais"));
     const draft = useStatementDraft.getState();
-    expect(draft.month).toBe("2025-12");
+    const scope = draftScopeKey(1, "2026-01");
+    expect(draft.month).toBe("2026-01");
+    expect(draft.primedReceiptByMonth[scope]).toBe(11);
+    expect(draft.linesByMonth[scope]).toHaveLength(1);
+    expect(draft.linesByMonth[scope][0].itemCode).toBe("gaz");
   });
 
   it("carries the statement company to the generation page", async () => {
@@ -749,7 +752,7 @@ describe("HistoryPage", () => {
     renderPage();
     await screen.findByText("2 mois suivis");
 
-    const februaryNote = columnOf("2026-02", "note");
+    const februaryNote = columnOf("2026-02", "statement");
     expect(
       within(februaryNote).getByText(
         "Aucune note de frais générée pour ce mois.",
@@ -757,18 +760,18 @@ describe("HistoryPage", () => {
     ).toBeInTheDocument();
     expect(
       februaryNote.querySelector(
-        '[data-cy^="historique-adresse-note-2026-02"]',
+        '[data-cy^="history-address-statement-2026-02"]',
       ),
     ).toBeNull();
 
-    const januaryReceipt = columnOf("2026-01", "quittance");
+    const januaryReceipt = columnOf("2026-01", "rent-receipt");
     expect(
       within(januaryReceipt).getByText(
         "Aucune quittance générée pour ce mois.",
       ),
     ).toBeInTheDocument();
     expect(
-      januaryReceipt.querySelector('[data-cy^="historique-adresse-2026-01"]'),
+      januaryReceipt.querySelector('[data-cy^="history-address-2026-01"]'),
     ).toBeNull();
 
     expect(
@@ -792,21 +795,21 @@ describe("HistoryPage", () => {
 
     await screen.findByText("Quittance (3)");
     const receiptRows = Array.from(
-      document.querySelectorAll('[data-cy^="historique-adresse-2026-01-"]'),
+      document.querySelectorAll('[data-cy^="history-address-2026-01-"]'),
     ) as HTMLElement[];
     expect(receiptRows.map((row) => row.getAttribute("data-cy"))).toEqual([
-      "historique-adresse-2026-01-address-51",
-      "historique-adresse-2026-01-address-61",
-      "historique-adresse-2026-01-inconnue",
+      "history-address-2026-01-address-51",
+      "history-address-2026-01-address-61",
+      "history-address-2026-01-unknown",
     ]);
 
     const statementRows = Array.from(
       document.querySelectorAll(
-        '[data-cy^="historique-adresse-note-2026-01-"]',
+        '[data-cy^="history-address-statement-2026-01-"]',
       ),
     ) as HTMLElement[];
     expect(statementRows.map((row) => row.getAttribute("data-cy"))).toEqual([
-      "historique-adresse-note-2026-01-address-61",
+      "history-address-statement-2026-01-address-61",
     ]);
 
     const [alpha, zulu, unknown] = receiptRows;
@@ -823,11 +826,13 @@ describe("HistoryPage", () => {
 
     expect(within(unknown).getByText("Adresse inconnue")).toBeInTheDocument();
 
-    await user.click(
-      document.querySelector(
-        '[data-cy="btn-rouvrir-note-2026-01-address-61"]',
-      ) as HTMLElement,
-    );
+    const [loadZuluNote] = within(zuluNote).getAllByRole("button", {
+      name: "Charger",
+    });
+    await user.click(loadZuluNote);
+    const dialog = screen.getByRole("dialog", { name: "Rouvrir cette note ?" });
+    expect(dialog).toHaveTextContent(/version 1 de Janvier 2026/);
+    await user.click(within(dialog).getByRole("button", { name: "Annuler" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
@@ -842,10 +847,10 @@ describe("HistoryPage", () => {
 
     await screen.findByText("1 mois suivi");
     const receiptRow = document.querySelector(
-      '[data-cy="historique-adresse-2026-01-address-61"]',
+      '[data-cy="history-address-2026-01-address-61"]',
     );
     const noteRow = document.querySelector(
-      '[data-cy="historique-adresse-note-2026-01-address-61"]',
+      '[data-cy="history-address-statement-2026-01-address-61"]',
     );
     if (
       !(receiptRow instanceof HTMLElement) ||
@@ -880,14 +885,14 @@ describe("HistoryPage", () => {
 
     await screen.findByText("1 mois suivi");
     const panel = document.querySelector(
-      '[data-cy="historique-adresse-2026-03-inconnue"] .rent-receipt-month-panel',
+      '[data-cy="history-address-2026-03-unknown"] .rent-receipt-month-panel',
     );
     if (!(panel instanceof HTMLElement)) {
       throw new Error("March receipt panel not found");
     }
 
     const abadie = document.querySelector(
-      '[data-cy="historique-quittance-60"]',
+      '[data-cy="history-rent-receipt-60"]',
     );
     expect(abadie?.closest("details")).toBeNull();
     expect(abadie?.parentElement).toHaveClass(
@@ -904,12 +909,12 @@ describe("HistoryPage", () => {
     expect(await screen.findByText("1 avenue Alpha")).toBeInTheDocument();
     expect(
       document.querySelectorAll(
-        '[data-cy="historique-adresse-2026-01-address-51"]',
+        '[data-cy="history-address-2026-01-address-51"]',
       ),
     ).toHaveLength(1);
     expect(
       document.querySelector(
-        '[data-cy="btn-telecharger-quittance-2026-01-address-51"]',
+        '[data-cy="btn-download-rent-receipt-2026-01-address-51"]',
       ),
     ).toBeNull();
     expect(
@@ -1036,7 +1041,7 @@ describe("HistoryPage", () => {
     renderPage();
     await screen.findByText("2 months tracked");
 
-    const januaryNote = columnOf("2026-01", "note");
+    const januaryNote = columnOf("2026-01", "statement");
     await user.click(
       within(januaryNote).getAllByRole("button", { name: "Load" })[1],
     );
@@ -1061,7 +1066,7 @@ describe("HistoryPage", () => {
     await screen.findByText("2 mois suivis");
 
     const receiptRow = document.querySelector(
-      '[data-cy="historique-quittance-10"]',
+      '[data-cy="history-rent-receipt-10"]',
     );
     if (!(receiptRow instanceof HTMLElement)) {
       throw new Error("Archived rent receipt row not found");
@@ -1077,7 +1082,7 @@ describe("HistoryPage", () => {
       receiptRow.querySelector(".rent-receipt-month-panel-history-amount"),
     ).toHaveClass("number", "history-versions-number");
 
-    const noteColumn = columnOf("2026-01", "note");
+    const noteColumn = columnOf("2026-01", "statement");
     const noteRow = noteColumn.querySelector(
       "li.statement-month-panel-history-item",
     );

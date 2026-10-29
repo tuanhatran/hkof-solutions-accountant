@@ -48,7 +48,7 @@ export function TemplateActiveModel({ c }: { c: TemplatesCardController }) {
               icon={<Eye size={14} />}
               loading={c.previewInProgress === active.id}
               onClick={() => void c.openPreview(active)}
-              data-cy="btn-apercu-template-actif"
+              data-cy="btn-active-template-preview"
             >
               {t("templates.actions.preview")}
             </Button>

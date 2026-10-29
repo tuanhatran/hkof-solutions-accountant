@@ -31,7 +31,7 @@ OpenCode project setup for HomeOfficeExpenses: instructions, agents and commands
   `builder` and `reviewer` one after the other, inline, never as nested subagents; `builder` has
   full edit and shell; `reviewer` is read-only (`edit` denied).
 - Models pinned in frontmatter: `lead`, `builder` and `reviewer`
-  `opencode/deepseek-v4.1-flash-free`. Qoder pins `DeepSeek-V4-Pro` (lead) and `DeepSeek-V4-Pro`
+  `opencode/deepseek-v4.1-flash-free`. Qoder pins `DeepSeek-Flash` (lead) and `DeepSeek-Flash`
   (builder, reviewer); Copilot selects its own model.
 - Sizing: `S` = up to 15 files, builder only; `M` = up to 25 files, builder then one review; `L` = up to 40
   files or a risk area, builder then at most two review rounds. Above 40 files the lead asks to split the

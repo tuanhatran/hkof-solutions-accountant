@@ -132,7 +132,7 @@ export function AppShell() {
             blocker.reset();
           }
         }}
-        dataCy="dialogue-quitter"
+        dataCy="dialog-leave"
       />
     </div>
   );

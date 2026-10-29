@@ -28,7 +28,7 @@ export function CompanyLeaseExpensesModal({
       wide
       title={t("settings.company.leaseTab.expensesTitle")}
       onClose={onClose}
-      dataCy="dialogue-frais-bail-societe"
+      dataCy="dialog-company-lease-expenses"
     >
       {lease.propertyAddress ? (
         <p className="company-lease-expenses-address">

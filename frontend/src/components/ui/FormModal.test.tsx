@@ -13,8 +13,8 @@ function renderModal(overrides: Partial<Parameters<typeof FormModal>[0]> = {}) {
       title="Ajouter un bail"
       onClose={onClose}
       onSubmit={onSubmit}
-      formDataCy="formulaire-bail"
-      submitDataCy="btn-enregistrer-bail"
+      formDataCy="lease-form"
+      submitDataCy="btn-save-lease"
       {...overrides}
     >
       <label htmlFor="champ-test">Nom du bail</label>
@@ -34,12 +34,9 @@ describe("FormModal", () => {
     expect(screen.getByRole("button", { name: "Annuler" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Valider" })).toHaveAttribute(
       "data-cy",
-      "btn-enregistrer-bail",
+      "btn-save-lease",
     );
-    expect(screen.getByRole("form")).toHaveAttribute(
-      "data-cy",
-      "formulaire-bail",
-    );
+    expect(screen.getByRole("form")).toHaveAttribute("data-cy", "lease-form");
     expect(dialog).toHaveFocus();
   });
 

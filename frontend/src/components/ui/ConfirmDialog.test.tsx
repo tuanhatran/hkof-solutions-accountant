@@ -28,7 +28,7 @@ describe("ConfirmDialog", () => {
     const { onConfirm } = renderDialog();
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveAttribute("aria-modal", "true");
-    expect(dialog).toHaveAttribute("data-cy", "dialogue-confirmation");
+    expect(dialog).toHaveAttribute("data-cy", "dialog-confirmation");
     expect(
       screen.getByRole("heading", { name: "Quitter la page ?" }),
     ).toBeVisible();
@@ -55,11 +55,11 @@ describe("ConfirmDialog", () => {
       confirmLabel: "Quitter",
       cancelLabel: "Rester",
       variant: "danger",
-      dataCy: "dialogue-quitter",
+      dataCy: "dialog-leave",
     });
 
     const dialog = screen.getByRole("dialog");
-    expect(dialog).toHaveAttribute("data-cy", "dialogue-quitter");
+    expect(dialog).toHaveAttribute("data-cy", "dialog-leave");
     expect(screen.getByText("Le brouillon sera conservé.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Quitter" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Rester" })).toBeVisible();

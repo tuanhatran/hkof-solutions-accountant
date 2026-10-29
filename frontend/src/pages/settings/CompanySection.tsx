@@ -27,25 +27,25 @@ export function CompanySection() {
     {
       value: "identification",
       label: t("settings.company.tabs.identification"),
-      dataCy: "onglet-entreprise-identification",
+      dataCy: "tab-company-identification",
       panelId: "company-section-panel",
     },
     {
       value: "bail-frais",
       label: t("settings.company.tabs.leaseExpenses"),
-      dataCy: "onglet-entreprise-bail-frais",
+      dataCy: "tab-company-lease-expenses",
       panelId: "company-section-panel",
     },
     {
       value: "salaries",
       label: t("settings.company.tabs.employees"),
-      dataCy: "onglet-entreprise-salaries",
+      dataCy: "tab-company-employees",
       panelId: "company-section-panel",
     },
     {
       value: "templates",
       label: t("settings.company.tabs.templates"),
-      dataCy: "onglet-entreprise-templates",
+      dataCy: "tab-company-templates",
       panelId: "company-section-panel",
     },
   ];
@@ -116,7 +116,7 @@ export function CompanySection() {
               closeModals();
               setSelectedId(nextId);
             }}
-            data-cy="select-societe"
+            data-cy="select-company"
           >
             {list.map((company) => (
               <option key={company.id} value={company.id}>
@@ -131,7 +131,7 @@ export function CompanySection() {
           icon={<Plus size={14} />}
           onClick={() => setIdentityTarget("new")}
           disabled={identityTarget !== null}
-          data-cy="btn-nouvelle-societe"
+          data-cy="btn-new-company"
         >
           {t("settings.company.newCompany")}
         </Button>
@@ -142,7 +142,7 @@ export function CompanySection() {
             icon={<Trash2 size={13} />}
             className="text-danger hover:bg-danger-soft"
             onClick={() => setToDelete(selected)}
-            data-cy="btn-supprimer-societe"
+            data-cy="btn-delete-company"
           >
             {t("settings.company.deleteButton")}
           </Button>
@@ -173,7 +173,7 @@ export function CompanySection() {
           <div className="card-body">
             <EmptyState
               text={t("settings.company.empty")}
-              dataCy="aucune-societe"
+              dataCy="no-company"
             />
           </div>
         ) : null}
@@ -248,7 +248,7 @@ export function CompanySection() {
           }
         }}
         onCancel={() => setToDelete(null)}
-        dataCy="dialogue-supprimer-societe"
+        dataCy="dialog-delete-company"
       />
     </div>
   );

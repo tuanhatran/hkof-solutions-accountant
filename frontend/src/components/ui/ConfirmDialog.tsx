@@ -45,7 +45,7 @@ export function ConfirmDialog({
   variant = "primary",
   onConfirm,
   onCancel,
-  dataCy = "dialogue-confirmation",
+  dataCy = "dialog-confirmation",
   extraAction,
 }: ConfirmDialogProps) {
   const { t } = useTranslation();
@@ -164,7 +164,7 @@ export function ConfirmDialog({
           <Button
             variant={variant === "danger" ? "danger" : "primary"}
             onClick={onConfirm}
-            data-cy="dialogue-confirmer"
+            data-cy="dialog-confirm"
           >
             {confirmLabel ?? t("common.confirm")}
           </Button>
@@ -174,7 +174,7 @@ export function ConfirmDialog({
               onClick={extraAction.onClick}
               loading={extraAction.loading}
               disabled={extraAction.disabled}
-              data-cy="dialogue-extra"
+              data-cy="dialog-extra"
             >
               {extraAction.label}
             </Button>

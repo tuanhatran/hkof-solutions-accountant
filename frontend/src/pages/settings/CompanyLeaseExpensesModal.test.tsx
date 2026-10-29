@@ -91,7 +91,7 @@ describe("CompanyLeaseExpensesModal", () => {
     renderModal();
 
     const dialog = screen.getByRole("dialog", { name: "Frais du bail" });
-    expect(dialog).toHaveAttribute("data-cy", "dialogue-frais-bail-societe");
+    expect(dialog).toHaveAttribute("data-cy", "dialog-company-lease-expenses");
     expect(dialog).toHaveTextContent("8 impasse des Acacias, 69003 Lyon");
     await waitFor(() =>
       expect(api.expenseItems.list).toHaveBeenCalledWith(1, true, 6),
@@ -106,14 +106,10 @@ describe("CompanyLeaseExpensesModal", () => {
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(
-      document.querySelector('[data-cy="dialogue-frais-bail-societe"]'),
+      document.querySelector('[data-cy="dialog-company-lease-expenses"]'),
     ).not.toBeNull();
-    expect(
-      document.querySelector('[data-cy="formulaire-poste"]'),
-    ).not.toBeNull();
-    expect(
-      document.querySelector('[data-cy="dialogue-formulaire-poste"]'),
-    ).toBeNull();
+    expect(document.querySelector('[data-cy="item-form"]')).not.toBeNull();
+    expect(document.querySelector('[data-cy="dialog-item-form"]')).toBeNull();
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
       "25,00",
@@ -121,7 +117,7 @@ describe("CompanyLeaseExpensesModal", () => {
 
     await user.click(screen.getByRole("button", { name: "Annuler" }));
 
-    expect(document.querySelector('[data-cy="formulaire-poste"]')).toBeNull();
+    expect(document.querySelector('[data-cy="item-form"]')).toBeNull();
     expect(document.querySelector("table.expense-items-table")).not.toBeNull();
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
   });
@@ -144,7 +140,7 @@ describe("CompanyLeaseExpensesModal", () => {
       ),
     );
     await waitFor(() =>
-      expect(document.querySelector('[data-cy="formulaire-poste"]')).toBeNull(),
+      expect(document.querySelector('[data-cy="item-form"]')).toBeNull(),
     );
 
     fireEvent.keyDown(document, { key: "Escape" });
@@ -156,9 +152,7 @@ describe("CompanyLeaseExpensesModal", () => {
     const user = userEvent.setup();
 
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
-    expect(
-      document.querySelector('[data-cy="formulaire-poste"]'),
-    ).not.toBeNull();
+    expect(document.querySelector('[data-cy="item-form"]')).not.toBeNull();
 
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onClose).toHaveBeenCalledTimes(1);

@@ -25,7 +25,7 @@ export function LlmTestFeedback({ c }: { c: AdminLlmController }) {
               : "llm-test-feedback-result-failure",
           )}
           role={c.testResult.success ? "status" : "alert"}
-          data-cy="resultat-test-llm"
+          data-cy="llm-test-result"
         >
           <div className="llm-test-feedback-heading">
             {c.testResult.success ? (

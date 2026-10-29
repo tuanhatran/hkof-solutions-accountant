@@ -49,7 +49,7 @@ export function RentReceiptNotice({
                   aria-expanded={pickerOpen}
                   aria-controls="quittance-choix"
                   onClick={() => setPickerOpen((open) => !open)}
-                  data-cy="btn-modifier-quittance"
+                  data-cy="btn-edit-rent-receipt"
                 >
                   {t("expenseStatement.notice.modify")}
                 </Button>
@@ -79,7 +79,7 @@ export function RentReceiptNotice({
                 onChange={(event) =>
                   c.selectRentReceipt(Number(event.target.value))
                 }
-                data-cy="select-quittance"
+                data-cy="select-rent-receipt"
               >
                 {c.rentReceiptCandidates.map((receipt) => (
                   <option key={receipt.id} value={receipt.id}>
@@ -98,7 +98,7 @@ export function RentReceiptNotice({
       ) : (
         <div
           className="rent-receipt-notice-row"
-          data-cy="alerte-quittance-manquante"
+          data-cy="alert-missing-rent-receipt"
           role="alert"
         >
           <div className="rent-receipt-notice-alert">

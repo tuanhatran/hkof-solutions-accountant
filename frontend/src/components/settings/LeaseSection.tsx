@@ -77,7 +77,7 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
             icon={<Plus size={14} />}
             onClick={() => c.setLeaseForm("new")}
             disabled={c.leaseForm === "new"}
-            data-cy="btn-ajouter-bail"
+            data-cy="btn-add-lease"
           >
             {t("settings.lease.section.add")}
           </Button>
@@ -100,7 +100,7 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
                 )
               }
               disabled={c.addressList.length === 0}
-              data-cy="select-adresse-quittances"
+              data-cy="select-rent-receipts-address"
             >
               {c.addressList.length === 0 ? (
                 <option value="">
@@ -139,12 +139,12 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
         ) : c.leaseList.length === 0 ? (
           <EmptyState
             text={t("settings.lease.section.empty")}
-            dataCy="aucun-bail"
+            dataCy="no-lease"
           />
         ) : (
           <>
             <ListToolbar
-              list="baux"
+              list="leases"
               placeholder={t("settings.lease.section.filterPlaceholder")}
               query={listQuery.query}
               onQueryChange={listQuery.setQuery}
@@ -174,13 +174,13 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
                 text={t("settings.list.noMatch", {
                   query: listQuery.query.trim(),
                 })}
-                dataCy="aucun-resultat-baux"
+                dataCy="no-results-leases"
               />
             ) : (
               <>
                 <div
                   className="lease-section-headers hidden md:grid"
-                  data-cy="entetes-baux"
+                  data-cy="leases-headers"
                 >
                   <span>{t("settings.lease.section.columns.lease")}</span>
                   <span>{t("settings.lease.section.columns.company")}</span>
@@ -200,7 +200,7 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
                     <li
                       key={lease.id}
                       className="lease-section-item"
-                      data-cy={`bail-${lease.id}`}
+                      data-cy={`lease-${lease.id}`}
                     >
                       <div className="lease-section-cell lease-section-cell-title">
                         <p className="lease-section-item-title">
@@ -212,7 +212,7 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
                       </div>
                       <p
                         className="lease-section-cell lease-section-cell-company"
-                        data-cy={`societe-bail-${lease.id}`}
+                        data-cy={`company-lease-${lease.id}`}
                       >
                         {lease.companyName ??
                           t("settings.lease.section.noCompany")}
@@ -225,7 +225,7 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
                       </span>
                       <span
                         className="lease-section-cell lease-section-cell-total lease-section-item-total number text-right"
-                        data-cy={`total-bail-${lease.id}`}
+                        data-cy={`lease-total-${lease.id}`}
                       >
                         {formatEUR(
                           Number(lease.rentExclCharges ?? 0) +
@@ -245,7 +245,7 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
                           aria-label={t("settings.lease.section.editAria", {
                             id: lease.id,
                           })}
-                          data-cy={`btn-modifier-bail-${lease.id}`}
+                          data-cy={`btn-edit-lease-${lease.id}`}
                         >
                           {t("settings.lease.section.edit")}
                         </Button>
@@ -258,7 +258,7 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
                           aria-label={t("settings.lease.section.removeAria", {
                             id: lease.id,
                           })}
-                          data-cy={`btn-supprimer-bail-${lease.id}`}
+                          data-cy={`btn-delete-lease-${lease.id}`}
                         >
                           {t("settings.lease.section.remove")}
                         </Button>
@@ -300,7 +300,7 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
           }
         }}
         onCancel={() => c.setLeaseToDelete(null)}
-        dataCy="dialogue-supprimer-bail"
+        dataCy="dialog-delete-lease"
       />
 
       {receiptLease ? (
@@ -337,7 +337,7 @@ function LeaseReceiptButton({
       onClick={onOpen}
       disabled={!hasSignature}
       aria-label={t("settings.lease.section.receiptAria", { id: leaseRow.id })}
-      data-cy={`btn-quittance-bail-${leaseRow.id}`}
+      data-cy={`btn-lease-rent-receipt-${leaseRow.id}`}
     >
       {t("settings.lease.section.receipt")}
     </Button>

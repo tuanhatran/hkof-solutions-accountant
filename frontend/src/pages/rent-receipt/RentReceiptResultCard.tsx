@@ -45,7 +45,7 @@ export function RentReceiptResultCard({ c }: { c: RentReceiptController }) {
           small
           icon={<Download size={14} />}
           onClick={() => void c.downloadRentReceipt(result)}
-          data-cy="btn-telecharger-quittance"
+          data-cy="btn-download-rent-receipt"
         >
           {t("rentReceipt.result.download")}
         </Button>

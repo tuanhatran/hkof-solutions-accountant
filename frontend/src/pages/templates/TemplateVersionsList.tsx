@@ -21,7 +21,7 @@ export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
       </div>
       <div
         className="template-versions-grid template-versions-header hidden xl:grid"
-        data-cy="entetes-versions-modele"
+        data-cy="template-versions-headers"
       >
         <span className="template-versions-check" aria-hidden="true" />
         <span>{t("templates.versions.name")}</span>
@@ -32,10 +32,7 @@ export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
         <span>{t("templates.versions.actions")}</span>
       </div>
       {c.compareSelection.length > 0 ? (
-        <div
-          className="template-versions-selection"
-          data-cy="barre-comparaison"
-        >
+        <div className="template-versions-selection" data-cy="comparison-bar">
           <span className="template-versions-selection-count">
             {t("templates.compare.selection", {
               count: c.compareSelection.length,
@@ -48,7 +45,7 @@ export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
               loading={c.compareInProgress}
               disabled={c.compareSelection.length < 2 || c.compareInProgress}
               onClick={() => void c.openCompare()}
-              data-cy="btn-comparer-versions"
+              data-cy="btn-compare-versions"
             >
               {t("templates.compare.action")}
             </Button>
@@ -56,7 +53,7 @@ export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
               variant="ghost"
               small
               onClick={c.clearCompareSelection}
-              data-cy="btn-annuler-comparaison"
+              data-cy="btn-cancel-comparison"
             >
               {t("templates.compare.clear")}
             </Button>
@@ -83,7 +80,7 @@ export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
                     name: template.name,
                     version: template.version,
                   })}
-                  data-cy={`comparer-modele-${template.id}`}
+                  data-cy={`compare-template-${template.id}`}
                   checked={isSelected}
                   disabled={!isSelected && c.compareSelection.length >= 2}
                   onChange={() => c.toggleCompareSelection(template)}
@@ -154,7 +151,7 @@ export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
                       c.activate.variables?.id === template.id
                     }
                     onClick={() => c.activate.mutate(template)}
-                    data-cy="btn-activer-template"
+                    data-cy="btn-activate-template"
                   >
                     {t("templates.actions.activate")}
                   </Button>

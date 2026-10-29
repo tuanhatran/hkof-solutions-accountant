@@ -1,7 +1,7 @@
 ---
 name: builder
 description: Implement one HomeOfficeExpenses handoff with tests, fix in the same loop and return real gate evidence.
-model: DeepSeek-V4-Pro
+model: DeepSeek-Flash
 tools: "*"
 # OpenCode keeps its own model pin.
 ---

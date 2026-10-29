@@ -54,7 +54,7 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
           <select
             id="quittance-bailleur"
             className={cn("field", c.errors.landlordId && "field-error")}
-            data-cy="select-bailleur"
+            data-cy="select-landlord"
             aria-invalid={Boolean(c.errors.landlordId)}
             disabled={c.persons.isPending}
             {...c.register("landlordId", {
@@ -82,7 +82,7 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
           <select
             id="quittance-locataire"
             className={cn("field", c.errors.tenantKey && "field-error")}
-            data-cy="select-locataire"
+            data-cy="select-tenant"
             aria-invalid={Boolean(c.errors.tenantKey)}
             disabled={c.persons.isPending || c.companies.isPending}
             {...c.register("tenantKey", {
@@ -122,7 +122,7 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
         <p
           className="rent-receipt-party-fields-alert"
           role="alert"
-          data-cy="alerte-bail-manquant"
+          data-cy="alert-missing-lease"
         >
           {t("rentReceipt.fields.missingLeaseBefore")}{" "}
           <Link to="/configuration/lmnp" className="link">
@@ -133,7 +133,7 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
       ) : null}
 
       {c.selectedLease ? (
-        <div className="rent-receipt-party-fields-lease" data-cy="detail-bail">
+        <div className="rent-receipt-party-fields-lease" data-cy="lease-detail">
           <p className="eyebrow text-accent">
             {c.selectedLease.companyLease
               ? t("rentReceipt.fields.companyLeaseSelected")

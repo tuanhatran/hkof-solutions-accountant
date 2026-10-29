@@ -94,7 +94,7 @@ describe("ExpenseItemForm", () => {
 
     expect(
       document.querySelector(
-        '[data-cy="dialogue-formulaire-poste"] [data-cy="formulaire-poste"]',
+        '[data-cy="dialog-item-form"] [data-cy="item-form"]',
       ),
     ).not.toBeNull();
 
@@ -368,11 +368,9 @@ describe("ExpenseItemForm", () => {
   it("renders the same fields and footer inline in embedded mode, without a modal", async () => {
     const { onClose } = renderForm({ embedded: true });
 
-    const form = document.querySelector('[data-cy="formulaire-poste"]');
+    const form = document.querySelector('[data-cy="item-form"]');
     expect(form).not.toBeNull();
-    expect(
-      document.querySelector('[data-cy="dialogue-formulaire-poste"]'),
-    ).toBeNull();
+    expect(document.querySelector('[data-cy="dialog-item-form"]')).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.getByLabelText("Code")).toHaveValue("");
     expect(screen.getByLabelText("Libellé affiché")).toBeVisible();

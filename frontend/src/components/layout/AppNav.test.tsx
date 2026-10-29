@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import i18n from "@/i18n";
-import { MobileNavigation, SideNavigation } from "./AppNav";
+import { MobileNavigation, SECTIONS, SideNavigation } from "./AppNav";
 
 function renderAt(ui: ReactElement, path = "/historique") {
   return render(<MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>);
@@ -30,7 +30,7 @@ describe("SideNavigation", () => {
       name: /Historique/,
     });
     expect(historyLink).toHaveAttribute("href", "/historique");
-    expect(historyLink).toHaveAttribute("data-cy", "tab-historique");
+    expect(historyLink).toHaveAttribute("data-cy", "tab-history");
     expect(historyLink.className).toContain("app-nav-link-active");
     expect(historyLink.querySelector(".app-nav-icon-active")).not.toBeNull();
 
@@ -46,12 +46,12 @@ describe("SideNavigation", () => {
       name: /Quittance/,
     });
     expect(receiptLink).toHaveAttribute("href", "/generer/quittance");
-    expect(receiptLink).toHaveAttribute("data-cy", "tab-quittance");
+    expect(receiptLink).toHaveAttribute("data-cy", "tab-rent-receipt");
     const statementLink = within(navigation).getByRole("link", {
       name: /Note de frais/,
     });
     expect(statementLink).toHaveAttribute("href", "/generer/note-frais");
-    expect(statementLink).toHaveAttribute("data-cy", "tab-note-frais");
+    expect(statementLink).toHaveAttribute("data-cy", "tab-expense-statement");
 
     expect(
       within(navigation).queryByRole("link", { name: /Templates/ }),
@@ -94,7 +94,7 @@ describe("SideNavigation", () => {
     ).toHaveAttribute("href", "/historique");
     expect(
       within(navigation).getByRole("link", { name: /History/ }),
-    ).toHaveAttribute("data-cy", "tab-historique");
+    ).toHaveAttribute("data-cy", "tab-history");
     expect(
       within(navigation).getByRole("link", { name: /Company/ }),
     ).toHaveAttribute("href", "/configuration/entreprise");
@@ -107,6 +107,25 @@ describe("SideNavigation", () => {
 });
 
 describe("navigation selectors", () => {
+  it("renders navigation groups with the group data-cy prefix", () => {
+    const documents = SECTIONS[0];
+    documents.groups = [{ titleKey: "navigation.links.history", links: [] }];
+
+    try {
+      renderAt(<SideNavigation />);
+
+      const group = document.querySelector(
+        '[data-cy="group-navigation.links.history"]',
+      );
+      expect(group).not.toBeNull();
+      expect(
+        within(group as HTMLElement).getByText("Historique"),
+      ).toBeVisible();
+    } finally {
+      delete documents.groups;
+    }
+  });
+
   it("keeps every data-cy selector unique when both navigations are mounted", () => {
     const { container } = renderAt(
       <>
@@ -116,9 +135,9 @@ describe("navigation selectors", () => {
     );
 
     for (const dataCy of [
-      "tab-quittance",
-      "tab-note-frais",
-      "tab-historique",
+      "tab-rent-receipt",
+      "tab-expense-statement",
+      "tab-history",
       "tab-configuration",
       "tab-lmnp",
       "tab-admin",

@@ -181,7 +181,7 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
                   autoComplete="off"
                   spellCheck={false}
                   {...c.register("model")}
-                  data-cy="input-llm-modele"
+                  data-cy="input-llm-model"
                 />
                 {c.models.data && c.models.data.length > 0 ? (
                   <button
@@ -246,7 +246,7 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
               icon={<Activity size={14} />}
               loading={c.testInProgress}
               onClick={() => void c.runTest()}
-              data-cy="btn-test-llm-bas"
+              data-cy="btn-test-basic-llm"
             >
               {t("adminLlm.connection.testConnection")}
             </Button>

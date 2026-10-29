@@ -44,7 +44,7 @@ export function ExpenseLinesCard({
         </div>
       </div>
 
-      <div data-cy="liste-frais">
+      <div data-cy="expense-list">
         {c.orderedLines.length === 0 ? (
           <div className="expense-lines-card-empty">
             <span className="expense-lines-card-empty-icon">

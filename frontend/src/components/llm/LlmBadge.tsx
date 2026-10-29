@@ -65,7 +65,7 @@ export function LlmBadge({ dark = false, withLink = true }: LlmBadgeProps) {
         "badge",
         dark ? "llm-badge-dark" : (configuration?.className ?? "badge-neutral"),
       )}
-      data-cy="badge-llm-status"
+      data-cy="llm-status-badge"
       title={message}
     >
       <span

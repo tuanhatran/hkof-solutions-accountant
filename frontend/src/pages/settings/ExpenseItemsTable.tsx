@@ -42,7 +42,7 @@ export function ExpenseItemsTable({
             <tr
               key={expenseItem.id}
               className={cn(!expenseItem.active && "opacity-60")}
-              data-cy={`poste-${expenseItem.code}`}
+              data-cy={`item-${expenseItem.code}`}
             >
               <td>
                 <div className="expense-items-table-item">
@@ -87,7 +87,7 @@ export function ExpenseItemsTable({
                     small
                     icon={<PencilLine size={13} />}
                     onClick={() => onEdit(expenseItem)}
-                    data-cy={`btn-modifier-poste-${expenseItem.code}`}
+                    data-cy={`btn-edit-item-${expenseItem.code}`}
                   >
                     {t("settings.expenses.edit")}
                   </Button>
@@ -97,7 +97,7 @@ export function ExpenseItemsTable({
                     icon={<Trash2 size={13} />}
                     className="text-danger hover:bg-danger-soft"
                     onClick={() => onRemove(expenseItem)}
-                    data-cy={`btn-supprimer-poste-${expenseItem.code}`}
+                    data-cy={`btn-delete-item-${expenseItem.code}`}
                   >
                     {t("settings.expenses.remove")}
                   </Button>

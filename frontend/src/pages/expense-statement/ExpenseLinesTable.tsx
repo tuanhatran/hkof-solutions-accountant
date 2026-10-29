@@ -41,7 +41,7 @@ export function ExpenseLinesTable({
               ? c.calculation?.lines?.[index]
               : undefined;
             return (
-              <tr key={line.key} data-cy={`ligne-frais-${line.itemCode}`}>
+              <tr key={line.key} data-cy={`expense-line-${line.itemCode}`}>
                 <td>
                   <p className="expense-lines-table-item">
                     {expenseItem?.label ?? dto?.itemLabel ?? line.itemCode}
@@ -98,7 +98,7 @@ export function ExpenseLinesTable({
                             item: expenseItem?.label ?? line.itemCode,
                           },
                         )}
-                        data-cy={`btn-voir-justificatif-${line.itemCode}`}
+                        data-cy={`btn-view-supporting-document-${line.itemCode}`}
                       >
                         <FileText size={15} />
                       </a>
@@ -110,7 +110,7 @@ export function ExpenseLinesTable({
                       aria-label={t("expenseStatement.lines.table.edit", {
                         item: expenseItem?.label ?? line.itemCode,
                       })}
-                      data-cy={`btn-modifier-${line.itemCode}`}
+                      data-cy={`btn-edit-${line.itemCode}`}
                     >
                       <Pencil size={15} />
                     </button>
@@ -121,7 +121,7 @@ export function ExpenseLinesTable({
                       aria-label={t("expenseStatement.lines.table.remove", {
                         item: expenseItem?.label ?? line.itemCode,
                       })}
-                      data-cy={`btn-supprimer-${line.itemCode}`}
+                      data-cy={`btn-delete-${line.itemCode}`}
                     >
                       <Trash2 size={15} />
                     </button>

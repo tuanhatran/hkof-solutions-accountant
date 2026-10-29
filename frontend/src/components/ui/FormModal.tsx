@@ -75,7 +75,7 @@ export function FormModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        data-cy={`dialogue-${formDataCy}`}
+        data-cy={`dialog-${formDataCy}`}
       >
         <div className="form-modal-header">
           <h2 id={titleId} className="form-modal-title">

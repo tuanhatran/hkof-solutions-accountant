@@ -49,15 +49,15 @@ describe("ViewTabs", () => {
         active="a"
         onChange={onChange}
         tabs={[
-          { value: "a", label: "Section A", dataCy: "onglet-a" },
-          { value: "b", label: "Section B", dataCy: "onglet-b" },
+          { value: "a", label: "Section A", dataCy: "tab-a" },
+          { value: "b", label: "Section B", dataCy: "tab-b" },
           { value: "c", label: "Section C" },
         ]}
       />,
     );
 
-    const tabA = document.querySelector('[data-cy="onglet-a"]');
-    const tabB = document.querySelector('[data-cy="onglet-b"]');
+    const tabA = document.querySelector('[data-cy="tab-a"]');
+    const tabB = document.querySelector('[data-cy="tab-b"]');
     expect(tabA).not.toBeNull();
     expect(tabB).not.toBeNull();
     expect(tabA).toHaveAttribute("role", "tab");

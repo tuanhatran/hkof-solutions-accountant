@@ -8,25 +8,25 @@ export const SORT_COLUMNS = [
   {
     key: "address",
     labelKey: "settings.company.leaseTab.columns.address",
-    dataCy: "tri-adresse-baux-societe",
+    dataCy: "sort-company-leases-address",
     numeric: false,
   },
   {
     key: "landlord",
     labelKey: "settings.company.leaseTab.columns.landlord",
-    dataCy: "tri-bailleur-baux-societe",
+    dataCy: "sort-company-leases-landlord",
     numeric: false,
   },
   {
     key: "rent",
     labelKey: "settings.company.leaseTab.columns.rent",
-    dataCy: "tri-loyer-baux-societe",
+    dataCy: "sort-company-leases-rent",
     numeric: true,
   },
   {
     key: "charges",
     labelKey: "settings.company.leaseTab.columns.charges",
-    dataCy: "tri-charges-baux-societe",
+    dataCy: "sort-company-leases-charges",
     numeric: true,
   },
 ] as const;
@@ -48,7 +48,7 @@ export function CompanyLeaseSortHeader({
     <div
       className="company-lease-tab-headers hidden md:grid"
       role="row"
-      data-cy="entetes-baux-societe"
+      data-cy="company-leases-headers"
     >
       {SORT_COLUMNS.map((column) => {
         const active = sort === column.key;
@@ -115,7 +115,7 @@ export function CompanyLeaseMobileSort({
         value={sort}
         onChange={(event) => onSort(event.target.value)}
         aria-label={t("settings.list.sortLabel")}
-        data-cy="tri-compact-baux-societe"
+        data-cy="sort-company-leases-compact"
       >
         {SORT_COLUMNS.map((column) => (
           <option key={column.key} value={column.key}>
@@ -134,7 +134,7 @@ export function CompanyLeaseMobileSort({
             : t("settings.list.descending")
         }
         onClick={onToggleDirection}
-        data-cy="tri-compact-direction-baux-societe"
+        data-cy="sort-company-leases-compact-direction"
       />
     </div>
   );

@@ -123,7 +123,7 @@ export function LlmAdvancedSection({ c }: { c: AdminLlmController }) {
               icon={<RotateCcw size={13} />}
               loading={c.promptInProgress}
               onClick={() => void c.resetPrompt()}
-              data-cy="btn-reinitialiser-prompt"
+              data-cy="btn-reset-prompt"
             >
               {t("adminLlm.advanced.resetPrompt")}
             </Button>

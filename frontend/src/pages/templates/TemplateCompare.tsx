@@ -78,13 +78,13 @@ export function TemplateCompare({
         className="animation-fade template-compare"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="comparaison-modeles-titre"
-        data-cy="comparaison-modeles"
+        aria-labelledby="templates-comparison-title"
+        data-cy="templates-comparison"
       >
         <div className="template-compare-bar">
           <div className="template-compare-heading">
             <h2
-              id="comparaison-modeles-titre"
+              id="templates-comparison-title"
               className="template-compare-title"
             >
               {t("templates.compare.title")}
@@ -112,12 +112,12 @@ export function TemplateCompare({
             <ComparisonPanel
               template={compare.left.template}
               url={compare.left.url}
-              dataCy="comparaison-modele-gauche"
+              dataCy="template-comparison-left"
             />
             <ComparisonPanel
               template={compare.right.template}
               url={compare.right.url}
-              dataCy="comparaison-modele-droite"
+              dataCy="template-comparison-right"
             />
           </div>
         )}

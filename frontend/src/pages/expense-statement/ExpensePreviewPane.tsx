@@ -16,7 +16,7 @@ export function ExpensePreviewPane({
   const { t } = useTranslation();
   return (
     <div
-      data-cy="volet-apercu"
+      data-cy="preview-pane"
       id={panel?.id}
       role={c.mobile && panel ? "tabpanel" : undefined}
       aria-labelledby={c.mobile && panel ? panel.labelledBy : undefined}
@@ -70,14 +70,14 @@ export function ExpensePreviewPane({
                 className="expense-preview-pane-checkbox"
                 checked={c.complete}
                 onChange={(event) => c.draft.setComplete(event.target.checked)}
-                data-cy="toggle-apercu-complet"
+                data-cy="toggle-full-preview"
               />
               {t("expenseStatement.preview.withAttachments")}
             </label>
           </>
         }
       />
-      <p className="hint" data-cy="brouillon-statut">
+      <p className="hint" data-cy="draft-status">
         {c.savedDraft.data
           ? t("draft.savedAt", {
               date: formatDateTime(c.savedDraft.data.savedAt),

@@ -35,7 +35,7 @@ export function ExpenseTypeAndProRata({
           id="frais-type"
           ref={c.typeRef}
           className={cn("field", c.errors.itemCode && "field-error")}
-          data-cy="select-type-frais"
+          data-cy="select-expense-type"
           value={c.values.itemCode}
           onChange={(event) => c.changeType(event.target.value)}
           aria-invalid={Boolean(c.errors.itemCode)}

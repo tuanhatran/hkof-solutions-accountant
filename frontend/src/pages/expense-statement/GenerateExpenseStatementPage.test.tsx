@@ -405,7 +405,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     renderPage();
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveAttribute("data-cy", "alerte-signature-manquante");
+    expect(alert).toHaveAttribute("data-cy", "alert-missing-signature");
     expect(alert).toHaveTextContent(/Aucune signature pour le PDG/);
     expect(screen.getByRole("link", { name: "Société" })).toHaveAttribute(
       "href",
@@ -428,7 +428,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     renderPage();
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveAttribute("data-cy", "alerte-signatures-erreur");
+    expect(alert).toHaveAttribute("data-cy", "alert-signatures-error");
     expect(alert).toHaveTextContent(
       "Les signatures n’ont pas pu être chargées : Service indisponible",
     );
@@ -735,7 +735,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     renderPage();
 
     expect(
-      document.querySelector('[data-cy="societe-note-frais"]'),
+      document.querySelector('[data-cy="company-expense-statement"]'),
     ).toHaveTextContent("HKOF");
     expect(
       screen.queryByRole("combobox", { name: "Société concernée" }),
@@ -747,11 +747,11 @@ describe("GenerateExpenseStatementPage signatures", () => {
     renderPage();
 
     await waitFor(() => expect(useStatementDraft.getState().leaseId).toBe(5));
-    const chip = document.querySelector('[data-cy="bail-note-frais"]');
+    const chip = document.querySelector('[data-cy="lease-expense-statement"]');
     expect(chip).not.toBeNull();
     expect(chip).toHaveTextContent("Bail M. Bailleur");
     expect(
-      document.querySelector('[data-cy="select-bail-note-frais"]'),
+      document.querySelector('[data-cy="select-lease-expense-statement"]'),
     ).toBeNull();
     expect(
       screen.queryByRole("combobox", { name: "Bail concerné" }),
@@ -832,7 +832,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
       "Mme Propriétaire",
     ]);
     expect(
-      document.querySelector('[data-cy="prompt-bail-note-frais"]'),
+      document.querySelector('[data-cy="lease-expense-statement-prompt"]'),
     ).not.toBeNull();
     expect(
       screen.getByRole("heading", { name: "Choisir un bail" }),
@@ -854,7 +854,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     await user.selectOptions(select, "6");
     expect(select).toHaveValue("6");
     expect(
-      document.querySelector('[data-cy="prompt-bail-note-frais"]'),
+      document.querySelector('[data-cy="lease-expense-statement-prompt"]'),
     ).toBeNull();
     expect(useStatementDraft.getState().leaseId).toBe(6);
     expect(screen.getByText(/Quittance de Janvier 2026 \(v2\)/)).toBeVisible();
@@ -1004,7 +1004,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
   it("keeps one header month control that updates the month", () => {
     renderPage();
 
-    const monthInputs = document.querySelectorAll('[data-cy="select-mois"]');
+    const monthInputs = document.querySelectorAll('[data-cy="select-month"]');
     expect(monthInputs).toHaveLength(1);
     const month = screen.getByLabelText("Mois concerné");
     expect(month).toBeVisible();
@@ -1047,22 +1047,22 @@ describe("GenerateExpenseStatementPage signatures", () => {
       "aria-controls",
       "expense-preview-panel",
     );
-    expect(document.querySelector('[data-cy="volet-saisie"]')).toHaveAttribute(
+    expect(document.querySelector('[data-cy="entry-pane"]')).toHaveAttribute(
       "id",
       "expense-input-panel",
     );
-    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveAttribute(
+    expect(document.querySelector('[data-cy="preview-pane"]')).toHaveAttribute(
       "id",
       "expense-preview-panel",
     );
 
     await user.click(previewTab);
     expect(previewTab).toHaveAttribute("aria-selected", "true");
-    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveAttribute(
+    expect(document.querySelector('[data-cy="preview-pane"]')).toHaveAttribute(
       "role",
       "tabpanel",
     );
-    expect(document.querySelector('[data-cy="volet-apercu"]')).toHaveAttribute(
+    expect(document.querySelector('[data-cy="preview-pane"]')).toHaveAttribute(
       "aria-labelledby",
       "expense-view-tab-preview",
     );
@@ -1199,7 +1199,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
       save.compareDocumentPosition(generate) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).not.toBe(0);
 
-    const preview = document.querySelector('[data-cy="volet-apercu"]');
+    const preview = document.querySelector('[data-cy="preview-pane"]');
     expect(preview).not.toBeNull();
     expect(
       within(preview as HTMLElement).queryByRole("button", {

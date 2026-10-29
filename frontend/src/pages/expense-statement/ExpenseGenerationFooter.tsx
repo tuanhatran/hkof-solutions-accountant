@@ -22,7 +22,7 @@ export function ExpenseGenerationFooter({
         <div>
           <p className="eyebrow">{t("expenseStatement.footer.total")}</p>
           <p className="expense-generation-footer-total">
-            <span className="number" data-cy="total-retenu">
+            <span className="number" data-cy="retained-total">
               {formatEUR(c.displayedTotal)}
             </span>
             {c.calculationInProgress ? <Spinner size={15} /> : null}
@@ -109,7 +109,7 @@ export function ExpenseGenerationFooter({
             className="expense-generation-footer-alert"
             role="alert"
             aria-live="polite"
-            data-cy="alerte-signatures-erreur"
+            data-cy="alert-signatures-error"
           >
             {t("expenseStatement.footer.signaturesError", {
               message: errorMessage(c.signatures.error),
@@ -119,7 +119,7 @@ export function ExpenseGenerationFooter({
           <p
             className="expense-generation-footer-alert"
             role="alert"
-            data-cy="alerte-pdg-manquant"
+            data-cy="alert-missing-ceo"
           >
             {t("expenseStatement.footer.missingCeoBefore")}{" "}
             <Link to="/configuration/entreprise" className="link">
@@ -131,7 +131,7 @@ export function ExpenseGenerationFooter({
           <p
             className="expense-generation-footer-alert"
             role="alert"
-            data-cy="alerte-signature-manquante"
+            data-cy="alert-missing-signature"
           >
             {t("expenseStatement.footer.missingSignatureBefore")}{" "}
             <Link to="/configuration/entreprise" className="link">
@@ -154,7 +154,7 @@ export function ExpenseGenerationFooter({
               c.selectedLeaseId === null ||
               c.draftSaving
             }
-            data-cy="btn-enregistrer-brouillon"
+            data-cy="btn-save-draft"
           >
             {t("draft.save")}
           </Button>
@@ -169,7 +169,7 @@ export function ExpenseGenerationFooter({
               !c.signatureAvailable
             }
             onClick={c.requestGeneration}
-            data-cy="btn-generer-note"
+            data-cy="btn-generate-statement"
           >
             {t("expenseStatement.footer.generate")}
           </Button>

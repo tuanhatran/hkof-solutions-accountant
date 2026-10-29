@@ -132,7 +132,7 @@ export function HistoryPage() {
                 variant="primary"
                 icon={<FileText size={14} aria-hidden="true" />}
                 onClick={() => navigate("/generer/quittance")}
-                data-cy="btn-nouvelle-quittance"
+                data-cy="btn-new-rent-receipt"
               >
                 {t("history.empty.createRentReceipt")}
               </Button>
@@ -140,7 +140,7 @@ export function HistoryPage() {
                 variant="secondary"
                 icon={<ReceiptText size={14} aria-hidden="true" />}
                 onClick={() => navigate("/generer/note-frais")}
-                data-cy="btn-nouvelle-note-frais"
+                data-cy="btn-new-expense-statement"
               >
                 {t("history.empty.createStatement")}
               </Button>
@@ -172,7 +172,7 @@ export function HistoryPage() {
           onCreateStatement={() => navigate("/generer/note-frais")}
         />
       ) : (
-        <div className="history-page-months" data-cy="historique">
+        <div className="history-page-months" data-cy="history">
           {groups.map((group) => (
             <HistoryMonthSection
               key={group.month}

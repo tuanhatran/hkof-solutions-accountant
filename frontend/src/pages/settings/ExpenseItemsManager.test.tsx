@@ -216,7 +216,7 @@ describe("ExpenseItemsManager", () => {
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(
-      document.querySelector('[data-cy="dialogue-formulaire-poste"]'),
+      document.querySelector('[data-cy="dialog-item-form"]'),
     ).not.toBeNull();
     expect(
       screen.getByRole("heading", { name: "Ajouter un poste" }),
@@ -370,9 +370,9 @@ describe("ExpenseItemsManager", () => {
   it("tags every expense item row with its poste code", () => {
     renderManager();
 
-    expect(document.querySelector('[data-cy="poste-loyer"]')).not.toBeNull();
-    expect(document.querySelector('[data-cy="poste-eau"]')).not.toBeNull();
-    expect(document.querySelector('[data-cy="poste-divers"]')).not.toBeNull();
+    expect(document.querySelector('[data-cy="item-loyer"]')).not.toBeNull();
+    expect(document.querySelector('[data-cy="item-eau"]')).not.toBeNull();
+    expect(document.querySelector('[data-cy="item-divers"]')).not.toBeNull();
   });
 
   it("filters the expense items on label, code and supplier with a live count", async () => {
@@ -380,27 +380,23 @@ describe("ExpenseItemsManager", () => {
     const user = userEvent.setup();
 
     expect(
-      document.querySelector('[data-cy="filtre-compteur-postes"]'),
+      document.querySelector('[data-cy="filter-count-items"]'),
     ).toHaveTextContent("3 sur 3");
 
     await user.type(screen.getByLabelText("Filtrer la liste"), "eau");
     expect(itemOrder()).toEqual(["eau"]);
     expect(
-      document.querySelector('[data-cy="filtre-compteur-postes"]'),
+      document.querySelector('[data-cy="filter-count-items"]'),
     ).toHaveTextContent("1 sur 3");
 
     await user.click(
-      document.querySelector(
-        '[data-cy="filtre-effacer-postes"]',
-      ) as HTMLElement,
+      document.querySelector('[data-cy="filter-clear-items"]') as HTMLElement,
     );
     await user.type(screen.getByLabelText("Filtrer la liste"), "agence");
     expect(itemOrder()).toEqual(["loyer"]);
 
     await user.click(
-      document.querySelector(
-        '[data-cy="filtre-effacer-postes"]',
-      ) as HTMLElement,
+      document.querySelector('[data-cy="filter-clear-items"]') as HTMLElement,
     );
     await user.type(screen.getByLabelText("Filtrer la liste"), "divers");
     expect(itemOrder()).toEqual(["divers"]);
@@ -413,7 +409,7 @@ describe("ExpenseItemsManager", () => {
     await user.type(screen.getByLabelText("Filtrer la liste"), "zzz");
 
     expect(
-      document.querySelector('[data-cy="aucun-resultat-postes"]'),
+      document.querySelector('[data-cy="no-results-items"]'),
     ).toHaveTextContent("Aucun résultat pour « zzz ».");
     expect(document.querySelector("table.expense-items-table")).toBeNull();
     expect(itemOrder()).toEqual([]);
@@ -439,7 +435,7 @@ describe("ExpenseItemsManager", () => {
     itemsState = readyState([]);
     renderManager();
 
-    expect(document.querySelector('[data-cy="filtre-postes"]')).toBeNull();
+    expect(document.querySelector('[data-cy="filter-items"]')).toBeNull();
   });
 
   it("renders the embedded manager without the section heading", () => {
@@ -461,18 +457,14 @@ describe("ExpenseItemsManager", () => {
 
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
-    expect(
-      document.querySelector('[data-cy="formulaire-poste"]'),
-    ).not.toBeNull();
-    expect(
-      document.querySelector('[data-cy="dialogue-formulaire-poste"]'),
-    ).toBeNull();
+    expect(document.querySelector('[data-cy="item-form"]')).not.toBeNull();
+    expect(document.querySelector('[data-cy="dialog-item-form"]')).toBeNull();
     expect(document.querySelector("table.expense-items-table")).toBeNull();
     expect(screen.queryByText("Loyer")).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Annuler" }));
 
-    expect(document.querySelector('[data-cy="formulaire-poste"]')).toBeNull();
+    expect(document.querySelector('[data-cy="item-form"]')).toBeNull();
     expect(document.querySelector("table.expense-items-table")).not.toBeNull();
     expect(screen.getByText("Loyer")).toBeVisible();
   });
@@ -495,7 +487,7 @@ describe("ExpenseItemsManager", () => {
       ),
     );
     await waitFor(() =>
-      expect(document.querySelector('[data-cy="formulaire-poste"]')).toBeNull(),
+      expect(document.querySelector('[data-cy="item-form"]')).toBeNull(),
     );
     expect(document.querySelector("table.expense-items-table")).not.toBeNull();
   });
@@ -506,9 +498,7 @@ describe("ExpenseItemsManager", () => {
 
     await user.click(screen.getAllByRole("button", { name: "Modifier" })[0]);
 
-    expect(
-      document.querySelector('[data-cy="formulaire-poste"]'),
-    ).not.toBeNull();
+    expect(document.querySelector('[data-cy="item-form"]')).not.toBeNull();
     expect(screen.getByLabelText("Code")).toHaveValue("loyer");
     expect(screen.getByLabelText("Code")).toBeDisabled();
     expect(document.querySelector("table.expense-items-table")).toBeNull();
@@ -517,8 +507,8 @@ describe("ExpenseItemsManager", () => {
 
 /** Expense item codes in DOM order, read on the row items. */
 function itemOrder(): string[] {
-  return [...document.querySelectorAll('[data-cy^="poste-"]')].map(
+  return [...document.querySelectorAll('[data-cy^="item-"]')].map(
     (element) =>
-      (element as HTMLElement).dataset.cy?.replace("poste-", "") ?? "",
+      (element as HTMLElement).dataset.cy?.replace("item-", "") ?? "",
   );
 }

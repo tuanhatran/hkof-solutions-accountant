@@ -27,7 +27,7 @@ export function LeaseAreaFields({
           className={cn("field", errors.totalArea && "field-error")}
           placeholder={t("settings.lease.form.totalAreaPlaceholder")}
           {...register("totalArea")}
-          data-cy="input-surface-totale"
+          data-cy="input-total-area"
         />
       </FieldGroup>
       <FieldGroup
@@ -41,7 +41,7 @@ export function LeaseAreaFields({
           className={cn("field", errors.businessArea && "field-error")}
           placeholder={t("settings.lease.form.businessAreaPlaceholder")}
           {...register("businessArea")}
-          data-cy="input-surface-pro"
+          data-cy="input-business-area"
         />
       </FieldGroup>
     </>

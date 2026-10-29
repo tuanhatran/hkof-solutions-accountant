@@ -38,7 +38,7 @@ export function ExpenseItemFormFrame({
         }}
         noValidate
         aria-label={title}
-        data-cy="formulaire-poste"
+        data-cy="item-form"
       >
         {error ? (
           <p className="expense-item-form-error" role="alert">
@@ -60,7 +60,7 @@ export function ExpenseItemFormFrame({
             small
             type="submit"
             loading={pending}
-            data-cy="btn-enregistrer-poste"
+            data-cy="btn-save-item"
           >
             {t("common.validate")}
           </Button>
@@ -76,8 +76,8 @@ export function ExpenseItemFormFrame({
       title={title}
       onClose={onClose}
       onSubmit={onSubmit}
-      formDataCy="formulaire-poste"
-      submitDataCy="btn-enregistrer-poste"
+      formDataCy="item-form"
+      submitDataCy="btn-save-item"
       pending={pending}
       error={error}
       formClassName="expense-item-form"

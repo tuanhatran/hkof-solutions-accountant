@@ -33,7 +33,7 @@ export function SettingsCompanySection({
           id="param-raison-sociale"
           className={cn("field", errors.name && "field-error")}
           {...register("name")}
-          data-cy="input-raison-sociale"
+          data-cy="input-legal-name"
         />
       </FieldGroup>
       <FieldGroup
@@ -91,7 +91,7 @@ export function SettingsCompanySection({
             errors.address && "field-error",
           )}
           {...register("address")}
-          data-cy="input-societe-adresse"
+          data-cy="input-company-address"
         />
       </FieldGroup>
       <FieldGroup
@@ -104,7 +104,7 @@ export function SettingsCompanySection({
           className={cn("field", errors.issuePlace && "field-error")}
           placeholder="Paris"
           {...register("issuePlace")}
-          data-cy="input-lieu-emission"
+          data-cy="input-issue-place"
         />
       </FieldGroup>
     </SettingsCardSection>

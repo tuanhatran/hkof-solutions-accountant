@@ -36,7 +36,7 @@ export function RentReceiptAdditionalChargeRow({
             id={`quittance-charge-libelle-${fieldId}`}
             className={cn("field", editing.errors.label && "field-error")}
             aria-invalid={Boolean(editing.errors.label)}
-            data-cy="input-charge-supplementaire-libelle"
+            data-cy="input-extra-charge-label"
             value={editing.label}
             onChange={(event) =>
               c.changeEditingAdditionalCharge({ label: event.target.value })
@@ -57,7 +57,7 @@ export function RentReceiptAdditionalChargeRow({
                 editing.errors.amount && "field-error",
               )}
               aria-invalid={Boolean(editing.errors.amount)}
-              data-cy="input-charge-supplementaire-montant"
+              data-cy="input-extra-charge-amount"
               value={editing.amount}
               onChange={(event) =>
                 c.changeEditingAdditionalCharge({ amount: event.target.value })
@@ -71,14 +71,14 @@ export function RentReceiptAdditionalChargeRow({
             variant="primary"
             icon={<Save size={14} />}
             aria-label={t("rentReceipt.fields.saveAdditionalCharge")}
-            data-cy="btn-enregistrer-charge-supplementaire"
+            data-cy="btn-save-extra-charge"
             onClick={c.saveAdditionalCharge}
           />
           <Button
             variant="ghost"
             small
             onClick={c.cancelAdditionalCharge}
-            data-cy="btn-annuler-charge-supplementaire"
+            data-cy="btn-cancel-extra-charge"
           >
             {t("rentReceipt.fields.cancelAdditionalCharge")}
           </Button>
@@ -95,7 +95,7 @@ export function RentReceiptAdditionalChargeRow({
     <li className="rent-receipt-amount-fields-charge rent-receipt-amount-fields-charge-readonly">
       <p
         className="rent-receipt-amount-fields-charge-text"
-        data-cy={`charge-supplementaire-${index}`}
+        data-cy={`extra-charge-${index}`}
       >
         <span className="rent-receipt-amount-fields-charge-label">
           {charge.label}
@@ -112,7 +112,7 @@ export function RentReceiptAdditionalChargeRow({
           aria-label={t("rentReceipt.fields.editAdditionalCharge", {
             index: index + 1,
           })}
-          data-cy={`btn-modifier-charge-supplementaire-${index}`}
+          data-cy={`btn-edit-extra-charge-${index}`}
           onClick={() => c.startEditAdditionalCharge(index)}
         />
         <Button
@@ -122,7 +122,7 @@ export function RentReceiptAdditionalChargeRow({
           aria-label={t("rentReceipt.fields.removeAdditionalCharge", {
             index: index + 1,
           })}
-          data-cy={`btn-retirer-charge-supplementaire-${index}`}
+          data-cy={`btn-remove-extra-charge-${index}`}
           onClick={() => c.removeAdditionalCharge(index)}
         />
       </div>

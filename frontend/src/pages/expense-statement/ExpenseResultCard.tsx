@@ -49,7 +49,7 @@ export function ExpenseResultCard({
           small
           icon={<Download size={14} />}
           onClick={() => void c.downloadStatement(result, false)}
-          data-cy="btn-telecharger-note"
+          data-cy="btn-download-statement"
         >
           {t("expenseStatement.result.download")}
         </Button>
@@ -58,7 +58,7 @@ export function ExpenseResultCard({
           small
           icon={<Download size={14} />}
           onClick={() => void c.downloadStatement(result, true)}
-          data-cy="btn-telecharger-note-complete"
+          data-cy="btn-download-full-statement"
         >
           {t("expenseStatement.result.downloadComplete")}
         </Button>

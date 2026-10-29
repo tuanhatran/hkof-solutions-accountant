@@ -188,7 +188,7 @@ beforeEach(() => {
   vi.mocked(downloadBlob).mockReset();
   createObjectURL.mockReset();
   revokeObjectURL.mockReset();
-  createObjectURL.mockReturnValue("blob:apercu-template");
+  createObjectURL.mockReturnValue("blob:template-preview");
   Object.defineProperty(URL, "createObjectURL", {
     value: createObjectURL,
     configurable: true,
@@ -221,7 +221,7 @@ describe("TemplatesTab", () => {
       screen.getByText(/Mustache sans logique, HTML assaini/),
     ).toBeVisible();
     expect(
-      document.querySelector('[data-cy="dropzone-template-quittance"]'),
+      document.querySelector('[data-cy="dropzone-rent-receipt-template"]'),
     ).not.toBeNull();
   });
 
@@ -246,7 +246,7 @@ describe("TemplatesTab", () => {
     renderTab();
 
     const header = document.querySelector(
-      '[data-cy="entetes-versions-modele"]',
+      '[data-cy="template-versions-headers"]',
     );
     if (!(header instanceof HTMLElement)) {
       throw new Error("Version header not found");
@@ -293,7 +293,7 @@ describe("TemplatesTab", () => {
       name: "Comparer Quittance archivée v2",
     });
     expect(archived).not.toBeChecked();
-    expect(archived).toHaveAttribute("data-cy", "comparer-modele-2");
+    expect(archived).toHaveAttribute("data-cy", "compare-template-2");
 
     const rows = within(card()).getAllByRole("listitem");
     for (const row of rows) {
@@ -326,7 +326,7 @@ describe("TemplatesTab", () => {
     ).toBeInTheDocument();
     expect(within(expense).getByText("1 version")).toBeInTheDocument();
     expect(
-      document.querySelector('[data-cy="dropzone-template-note"]'),
+      document.querySelector('[data-cy="dropzone-statement-template"]'),
     ).not.toBeNull();
   });
 
@@ -841,7 +841,7 @@ describe("TemplatesTab", () => {
 
     const rent = card();
     expect(within(rent).getByText("Active template")).toBeVisible();
-    const header = rent.querySelector('[data-cy="entetes-versions-modele"]');
+    const header = rent.querySelector('[data-cy="template-versions-headers"]');
     if (!(header instanceof HTMLElement)) {
       throw new Error("English version header not found");
     }

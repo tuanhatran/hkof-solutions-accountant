@@ -50,7 +50,7 @@ export function CompanyLeaseRow({
           </span>
           <span
             className="company-lease-tab-item-amount number text-right"
-            data-cy={`loyer-company-lease-${lease.id}`}
+            data-cy={`company-lease-rent-${lease.id}`}
           >
             {formatEUR(lease.rentExclCharges ?? "0.00")}
           </span>
@@ -61,7 +61,7 @@ export function CompanyLeaseRow({
           </span>
           <span
             className="company-lease-tab-item-amount number text-right"
-            data-cy={`charges-company-lease-${lease.id}`}
+            data-cy={`company-lease-charges-${lease.id}`}
           >
             {formatEUR(lease.charges ?? "0.00")}
           </span>
@@ -76,7 +76,7 @@ export function CompanyLeaseRow({
             small
             icon={<ReceiptText size={13} />}
             onClick={onExpenses}
-            data-cy={`btn-modifier-frais-company-lease-${lease.id}`}
+            data-cy={`btn-edit-company-lease-expenses-${lease.id}`}
           >
             {showAddExpenses
               ? t("settings.company.leaseTab.addExpenses")
@@ -87,7 +87,7 @@ export function CompanyLeaseRow({
             small
             icon={<PencilLine size={13} />}
             onClick={onEdit}
-            data-cy={`btn-modifier-company-lease-${lease.id}`}
+            data-cy={`btn-edit-company-lease-${lease.id}`}
           >
             {t("settings.company.leaseTab.edit")}
           </Button>

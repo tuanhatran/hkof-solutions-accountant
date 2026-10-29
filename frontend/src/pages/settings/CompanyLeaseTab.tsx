@@ -127,7 +127,7 @@ export function CompanyLeaseTab({
                 icon={<Plus size={14} />}
                 onClick={() => setAddingLease(true)}
                 disabled={addingLease}
-                data-cy="btn-ajouter-bail-societe"
+                data-cy="btn-add-company-lease"
               >
                 {t("settings.company.leaseTab.add")}
               </Button>
@@ -135,7 +135,7 @@ export function CompanyLeaseTab({
                 <>
                   <div className="company-lease-tab-header-search">
                     <ListSearch
-                      list="baux-societe"
+                      list="company-leases"
                       placeholder={t(
                         "settings.company.leaseTab.filterPlaceholder",
                       )}
@@ -146,7 +146,7 @@ export function CompanyLeaseTab({
                   <span
                     className="company-lease-tab-count"
                     aria-live="polite"
-                    data-cy="filtre-compteur-baux-societe"
+                    data-cy="filter-count-company-leases"
                   >
                     {t("settings.list.count", {
                       visible: listQuery.visible.length,
@@ -175,7 +175,7 @@ export function CompanyLeaseTab({
           ) : companyLeases.length === 0 ? (
             <EmptyState
               text={t("settings.company.leaseTab.empty")}
-              dataCy="liste-baux-societe-vide"
+              dataCy="empty-company-leases-list"
             />
           ) : (
             <>
@@ -184,7 +184,7 @@ export function CompanyLeaseTab({
                   text={t("settings.list.noMatch", {
                     query: listQuery.query.trim(),
                   })}
-                  dataCy="aucun-resultat-baux-societe"
+                  dataCy="no-results-company-leases"
                 />
               ) : (
                 <div className="company-lease-tab-table" role="table">

@@ -17,6 +17,17 @@ five diffs compose into one coherent set of hooks.
 5. A task renames only the literals its handoff lists; a literal belongs to the task that owns
    its producing component, and every file mentioning that literal is updated in the same task.
 
+## Word order (tasks 66-69)
+
+Semantic English: adjectives before nouns (`societe-active`→`active-company`,
+`total-retenu`→`retained-total`); possessor before possessed (`quittance-bail`→`lease-rent-receipt`,
+`apercu-template`→`template-preview`, `liste-frais`→`expense-list`, `entetes-versions-modele`→
+`template-versions-headers`, `rapport-validation-template`→`template-validation-report`).
+Kept segments (rule 2) participate in ordering only when another segment in the literal changes.
+Plural where English reads better: `aucun-resultat-X`→`no-results-X`. LLM exception: in
+`pages/admin-llm` only, `modele` means the LLM model → `model` (never `template`); `template`
+suffixes in `pages/templates` keep the dictionary `modele`→`template`.
+
 ## Compounds (applied on the whole literal, before the word list)
 
 `note-frais`→`expense-statement`, `bail-societe`→`company-lease`, `baux-societe`→`company-leases`,
@@ -44,10 +55,10 @@ locataire→tenant, location→rental, loyer→rent, maj→updated, manquant→m
 manquante→missing, modele→template, modeles→templates, modifier→edit, mois→month,
 montant→amount, nom→name, note→statement, nouvelle→new, onglet→tab, pdg→ceo, periode→period,
 personnalise→custom, personne→person, personnes→persons, poste→item, postes→items,
-prenom→first-name, pro→pro, prompt→prompt, quittance→rent-receipt, quittances→rent-receipts,
+prenom→first-name, pro→pro, prompt→prompt, quitter→leave, quittance→rent-receipt, quittances→rent-receipts,
 raison→legal, rapport→report, regeneration→regeneration, reinitialiser→reset, resultat→result,
 retenu→retained, retirer→remove, rouvrir→reopen, saisie→entry, salarie→employee,
 salaries→employees, signature→signature, signatures→signatures, sociale→name, societe→company,
 statut→status, supplementaire→extra, suppression→deletion, supprimer→delete, surface→area,
 telecharger→download, telephone→phone, televerser→upload, titre→title, total→total,
-totale→total, tri→sort, ttc→incl-vat, voir→view, volet→pane
+totale→total, tri→sort, ttc→incl-vat, vide→empty, voir→view, volet→pane

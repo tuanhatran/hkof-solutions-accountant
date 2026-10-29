@@ -37,7 +37,7 @@ export function ReceiptAttachment({
       ) : (
         <FileDropzone
           onFile={(file) => void c.upload(file)}
-          dataCy="dropzone-fichier"
+          dataCy="dropzone-file"
           disabled={c.expenseItemsQuery.isPending}
         />
       )}

@@ -209,8 +209,8 @@ describe("SettingsPage tabs", () => {
     expect(screen.getByRole("tab", { name: "Salariés" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Modèles" })).toBeVisible();
     expect(queryByCy("company-information")).not.toBeNull();
-    expect(queryByCy("onglet-entreprise-identification")).not.toBeNull();
-    expect(queryByCy("input-raison-sociale")).toBeNull();
+    expect(queryByCy("tab-company-identification")).not.toBeNull();
+    expect(queryByCy("input-legal-name")).toBeNull();
   });
 
   it("renders the settings page, toolbar, tabs and identity in English", async () => {
@@ -316,16 +316,14 @@ describe("SettingsPage tabs", () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
+    await user.click(queryByCy("tab-company-lease-expenses") as Element);
     expect(
       document
         .querySelector("section.company-lease-tab-leases")
         ?.classList.contains("card"),
     ).toBe(false);
 
-    await user.click(
-      queryByCy("btn-modifier-frais-company-lease-5") as Element,
-    );
+    await user.click(queryByCy("btn-edit-company-lease-expenses-5") as Element);
     expect(
       document
         .querySelector("section.expense-items-manager")
@@ -333,7 +331,7 @@ describe("SettingsPage tabs", () => {
     ).toBe(false);
     await user.click(screen.getByRole("button", { name: "Fermer" }));
 
-    await user.click(queryByCy("onglet-entreprise-salaries") as Element);
+    await user.click(queryByCy("tab-company-employees") as Element);
     expect(
       document
         .querySelector("section.employee-section")
@@ -345,7 +343,7 @@ describe("SettingsPage tabs", () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(queryByCy("onglet-entreprise-templates") as Element);
+    await user.click(queryByCy("tab-company-templates") as Element);
 
     const templates = document.querySelector("section.templates-card");
     expect(templates).not.toBeNull();
@@ -356,15 +354,15 @@ describe("SettingsPage tabs", () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(queryByCy("onglet-entreprise-templates") as Element);
+    await user.click(queryByCy("tab-company-templates") as Element);
 
     expect(
       await screen.findByRole("heading", {
         name: "Note de frais d’occupation",
       }),
     ).toBeVisible();
-    expect(queryByCy("dropzone-template-note")).not.toBeNull();
-    expect(queryByCy("dropzone-template-quittance")).toBeNull();
+    expect(queryByCy("dropzone-statement-template")).not.toBeNull();
+    expect(queryByCy("dropzone-rent-receipt-template")).toBeNull();
     expect(
       screen.getByText(/Les modèles ne peuvent exécuter aucun code/),
     ).toBeVisible();
@@ -387,28 +385,26 @@ describe("SettingsPage tabs", () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
+    await user.click(queryByCy("tab-company-lease-expenses") as Element);
 
     expect(queryByCy("company-lease-5")).toHaveTextContent(
       "12 rue des Lilas, 75011 Paris",
     );
     expect(queryByCy("company-lease-5")).not.toHaveAttribute("aria-expanded");
-    expect(queryByCy("btn-frais-generaux-societe")).toBeNull();
+    expect(queryByCy("btn-company-general-expenses")).toBeNull();
     await waitFor(() =>
-      expect(queryByCy("btn-modifier-frais-company-lease-5")).toHaveTextContent(
+      expect(queryByCy("btn-edit-company-lease-expenses-5")).toHaveTextContent(
         "Ajouter des frais",
       ),
     );
 
     // The row itself is inert: only "Modifier les frais" opens the dialog.
     await user.click(queryByCy("company-lease-5") as Element);
-    expect(queryByCy("dialogue-frais-bail-societe")).toBeNull();
+    expect(queryByCy("dialog-company-lease-expenses")).toBeNull();
 
-    await user.click(
-      queryByCy("btn-modifier-frais-company-lease-5") as Element,
-    );
+    await user.click(queryByCy("btn-edit-company-lease-expenses-5") as Element);
 
-    expect(queryByCy("dialogue-frais-bail-societe")).not.toBeNull();
+    expect(queryByCy("dialog-company-lease-expenses")).not.toBeNull();
     expect(
       screen.getByRole("heading", { name: "Frais du bail" }),
     ).toBeVisible();
@@ -421,33 +417,33 @@ describe("SettingsPage tabs", () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
+    await user.click(queryByCy("tab-company-lease-expenses") as Element);
 
     const header = (name: string) =>
       document.querySelector(
-        `[data-cy="entetes-baux-societe"] [role="columnheader"] [data-cy="${name}"]`,
+        `[data-cy="company-leases-headers"] [role="columnheader"] [data-cy="${name}"]`,
       )?.parentElement;
-    expect(header("tri-adresse-baux-societe")).toHaveAttribute(
+    expect(header("sort-company-leases-address")).toHaveAttribute(
       "aria-sort",
       "ascending",
     );
-    expect(header("tri-loyer-baux-societe")).toHaveAttribute(
+    expect(header("sort-company-leases-rent")).toHaveAttribute(
       "aria-sort",
       "none",
     );
 
-    await user.click(queryByCy("tri-loyer-baux-societe") as Element);
-    expect(header("tri-loyer-baux-societe")).toHaveAttribute(
+    await user.click(queryByCy("sort-company-leases-rent") as Element);
+    expect(header("sort-company-leases-rent")).toHaveAttribute(
       "aria-sort",
       "ascending",
     );
-    expect(header("tri-adresse-baux-societe")).toHaveAttribute(
+    expect(header("sort-company-leases-address")).toHaveAttribute(
       "aria-sort",
       "none",
     );
 
-    await user.click(queryByCy("tri-loyer-baux-societe") as Element);
-    expect(header("tri-loyer-baux-societe")).toHaveAttribute(
+    await user.click(queryByCy("sort-company-leases-rent") as Element);
+    expect(header("sort-company-leases-rent")).toHaveAttribute(
       "aria-sort",
       "descending",
     );
@@ -458,7 +454,7 @@ describe("SettingsPage tabs", () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(queryByCy("onglet-entreprise-salaries") as Element);
+    await user.click(queryByCy("tab-company-employees") as Element);
 
     expect(
       await screen.findByRole("heading", { name: "Salariés", level: 2 }),
@@ -472,18 +468,18 @@ describe("SettingsPage tabs", () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(queryByCy("onglet-entreprise-salaries") as Element);
+    await user.click(queryByCy("tab-company-employees") as Element);
     expect(await screen.findByText("Camille Martin")).toBeVisible();
 
     await user.selectOptions(
       screen.getByLabelText("Société à configurer"),
       "2",
     );
-    expect(queryByCy("onglet-entreprise-identification")).toHaveAttribute(
+    expect(queryByCy("tab-company-identification")).toHaveAttribute(
       "aria-selected",
       "true",
     );
-    await user.click(queryByCy("onglet-entreprise-salaries") as Element);
+    await user.click(queryByCy("tab-company-employees") as Element);
 
     expect(
       await screen.findByText(
@@ -498,12 +494,12 @@ describe("SettingsPage tabs", () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(queryByCy("btn-modifier-societe") as HTMLElement);
-    expect(queryByCy("dialogue-formulaire-societe")).not.toBeNull();
-    expect(queryByCy("input-raison-sociale")).toHaveValue("HKOF");
+    await user.click(queryByCy("btn-edit-company") as HTMLElement);
+    expect(queryByCy("dialog-company-form")).not.toBeNull();
+    expect(queryByCy("input-legal-name")).toHaveValue("HKOF");
 
-    await user.clear(queryByCy("input-raison-sociale") as HTMLElement);
-    await user.type(queryByCy("input-raison-sociale") as HTMLElement, "HKOF 2");
+    await user.clear(queryByCy("input-legal-name") as HTMLElement);
+    await user.type(queryByCy("input-legal-name") as HTMLElement, "HKOF 2");
     await user.click(screen.getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
@@ -522,17 +518,15 @@ describe("SettingsPage tabs", () => {
         "Société enregistrée. Les prochains documents utiliseront ces valeurs.",
       ),
     );
-    await waitFor(() =>
-      expect(queryByCy("dialogue-formulaire-societe")).toBeNull(),
-    );
+    await waitFor(() => expect(queryByCy("dialog-company-form")).toBeNull());
   });
 
   it("blocks the identity modal save while the name is empty", async () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(queryByCy("btn-modifier-societe") as HTMLElement);
-    await user.clear(queryByCy("input-raison-sociale") as HTMLElement);
+    await user.click(queryByCy("btn-edit-company") as HTMLElement);
+    await user.clear(queryByCy("input-legal-name") as HTMLElement);
     await user.click(screen.getByRole("button", { name: "Valider" }));
 
     expect(
@@ -549,11 +543,11 @@ describe("SettingsPage tabs", () => {
 
     await user.click(screen.getByRole("button", { name: "Nouvelle société" }));
 
-    expect(queryByCy("dialogue-formulaire-societe")).not.toBeNull();
-    expect(queryByCy("input-raison-sociale")).toHaveValue("");
-    expect(queryByCy("select-societe")).not.toBeNull();
+    expect(queryByCy("dialog-company-form")).not.toBeNull();
+    expect(queryByCy("input-legal-name")).toHaveValue("");
+    expect(queryByCy("select-company")).not.toBeNull();
 
-    await user.type(queryByCy("input-raison-sociale") as HTMLElement, "HKOF");
+    await user.type(queryByCy("input-legal-name") as HTMLElement, "HKOF");
     // The create mutation invalidates the companies query: the refetched list
     // contains the new company before the modal closes.
     companiesState = readyQuery([COMPANY, OTHER]);
@@ -574,9 +568,7 @@ describe("SettingsPage tabs", () => {
     await waitFor(() =>
       expect(screen.getByLabelText("Société à configurer")).toHaveValue("1"),
     );
-    await waitFor(() =>
-      expect(queryByCy("dialogue-formulaire-societe")).toBeNull(),
-    );
+    await waitFor(() => expect(queryByCy("dialog-company-form")).toBeNull());
   });
 
   it("closes modals and resets the tab when switching company", async () => {
@@ -584,16 +576,16 @@ describe("SettingsPage tabs", () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(queryByCy("btn-modifier-societe") as HTMLElement);
-    expect(queryByCy("dialogue-formulaire-societe")).not.toBeNull();
+    await user.click(queryByCy("btn-edit-company") as HTMLElement);
+    expect(queryByCy("dialog-company-form")).not.toBeNull();
 
     await user.selectOptions(
       screen.getByLabelText("Société à configurer"),
       "2",
     );
 
-    expect(queryByCy("dialogue-formulaire-societe")).toBeNull();
-    expect(queryByCy("onglet-entreprise-identification")).toHaveAttribute(
+    expect(queryByCy("dialog-company-form")).toBeNull();
+    expect(queryByCy("tab-company-identification")).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -605,8 +597,8 @@ describe("SettingsPage tabs", () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(queryByCy("btn-modifier-societe") as HTMLElement);
-    expect(queryByCy("dialogue-formulaire-societe")).not.toBeNull();
+    await user.click(queryByCy("btn-edit-company") as HTMLElement);
+    expect(queryByCy("dialog-company-form")).not.toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Supprimer" }));
     // The delete mutation invalidates the companies query: the refetched list is
@@ -620,8 +612,8 @@ describe("SettingsPage tabs", () => {
     await waitFor(() =>
       expect(toastMessages()).toContain("Société supprimée."),
     );
-    expect(queryByCy("dialogue-formulaire-societe")).toBeNull();
-    expect(queryByCy("select-societe")).toBeNull();
+    expect(queryByCy("dialog-company-form")).toBeNull();
+    expect(queryByCy("select-company")).toBeNull();
   });
 
   it("shows the empty lease state without a filter or an expenses header action", async () => {
@@ -636,28 +628,28 @@ describe("SettingsPage tabs", () => {
       screen.getByLabelText("Société à configurer"),
       "2",
     );
-    await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
+    await user.click(queryByCy("tab-company-lease-expenses") as Element);
 
-    expect(queryByCy("liste-baux-societe-vide")).not.toBeNull();
-    expect(queryByCy("filtre-baux-societe")).toBeNull();
-    expect(queryByCy("filtre-compteur-baux-societe")).toBeNull();
-    expect(queryByCy("tri-compact-baux-societe")).toBeNull();
-    expect(queryByCy("btn-frais-generaux-societe")).toBeNull();
-    expect(queryByCy("dialogue-frais-generaux-societe")).toBeNull();
+    expect(queryByCy("empty-company-leases-list")).not.toBeNull();
+    expect(queryByCy("filter-company-leases")).toBeNull();
+    expect(queryByCy("filter-count-company-leases")).toBeNull();
+    expect(queryByCy("sort-company-leases-compact")).toBeNull();
+    expect(queryByCy("btn-company-general-expenses")).toBeNull();
+    expect(queryByCy("dialog-company-general-expenses")).toBeNull();
   });
 
   it("lists the company's leases with edit-expenses and edit-lease actions only", async () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
+    await user.click(queryByCy("tab-company-lease-expenses") as Element);
 
     expect(queryByCy("select-bail-actif")).toBeNull();
-    expect(queryByCy("dialogue-formulaire-bail-societe")).toBeNull();
+    expect(queryByCy("dialog-company-lease-form")).toBeNull();
     expect(queryByCy("btn-afficher-frais-company-lease-5")).toBeNull();
     expect(queryByCy("btn-note-frais-company-lease-5")).toBeNull();
-    expect(queryByCy("btn-modifier-frais-company-lease-5")).not.toBeNull();
-    expect(queryByCy("btn-modifier-company-lease-5")).not.toBeNull();
+    expect(queryByCy("btn-edit-company-lease-expenses-5")).not.toBeNull();
+    expect(queryByCy("btn-edit-company-lease-5")).not.toBeNull();
     expect(screen.queryByText("Bail actif")).toBeNull();
   });
 
@@ -722,7 +714,7 @@ describe("SettingsPage tabs", () => {
     ).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "Nouvelle société" }));
-    await user.type(queryByCy("input-raison-sociale") as HTMLElement, "HKOF");
+    await user.type(queryByCy("input-legal-name") as HTMLElement, "HKOF");
     await user.click(screen.getByRole("button", { name: "Valider" }));
 
     await waitFor(() =>
@@ -737,10 +729,8 @@ describe("SettingsPage tabs", () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
-    await user.click(
-      queryByCy("btn-modifier-frais-company-lease-5") as Element,
-    );
+    await user.click(queryByCy("tab-company-lease-expenses") as Element);
+    await user.click(queryByCy("btn-edit-company-lease-expenses-5") as Element);
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
@@ -754,10 +744,8 @@ describe("SettingsPage tabs", () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(queryByCy("onglet-entreprise-bail-frais") as Element);
-    await user.click(
-      queryByCy("btn-modifier-frais-company-lease-5") as Element,
-    );
+    await user.click(queryByCy("tab-company-lease-expenses") as Element);
+    await user.click(queryByCy("btn-edit-company-lease-expenses-5") as Element);
     await user.click(screen.getByRole("button", { name: "Ajouter un poste" }));
 
     expect(screen.getByLabelText("Prorata par défaut (%)")).toHaveValue(
@@ -776,13 +764,16 @@ describe("SettingsPage tabs", () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(queryByCy("onglet-entreprise-salaries") as Element);
+    await user.click(queryByCy("tab-company-employees") as Element);
     await user.click(
       screen.getByRole("button", { name: "Ajouter un salarié" }),
     );
-    await user.type(queryByCy("input-salarie-prenom") as HTMLElement, "Alex");
-    await user.type(queryByCy("input-salarie-nom") as HTMLElement, "Durand");
-    await user.click(queryByCy("btn-enregistrer-salarie") as HTMLElement);
+    await user.type(
+      queryByCy("input-employee-first-name") as HTMLElement,
+      "Alex",
+    );
+    await user.type(queryByCy("input-employee-name") as HTMLElement, "Durand");
+    await user.click(queryByCy("btn-save-employee") as HTMLElement);
 
     await waitFor(() =>
       expect(api.employees.create).toHaveBeenCalledWith(1, {

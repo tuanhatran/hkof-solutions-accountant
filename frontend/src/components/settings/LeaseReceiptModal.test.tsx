@@ -80,7 +80,7 @@ vi.mock("@/components/pdf/PdfViewer", () => ({
     error: string | null;
   }) => (
     <div
-      data-cy="apercu-quittance-bail"
+      data-cy="lease-rent-receipt-preview"
       data-url={url ?? ""}
       data-loading={loading ? "true" : "false"}
     >
@@ -168,7 +168,7 @@ describe("LeaseReceiptModal", () => {
     expect(screen.getByText("M. Bailleur")).toBeVisible();
     expect(screen.getByText("Mme Locataire")).toBeVisible();
     expect(
-      document.querySelector('[data-cy="societe-quittance-bail"]'),
+      document.querySelector('[data-cy="company-lease-rent-receipt"]'),
     ).toHaveTextContent("Aucune société");
     expect(screen.getByLabelText("Loyer hors charges")).toHaveValue("1300,00");
     expect(screen.getByLabelText("Provision pour charges")).toHaveValue(
@@ -201,7 +201,7 @@ describe("LeaseReceiptModal", () => {
     expect(previewBody.companyId).toBeUndefined();
     await waitFor(() =>
       expect(
-        document.querySelector('[data-cy="apercu-quittance-bail"]'),
+        document.querySelector('[data-cy="lease-rent-receipt-preview"]'),
       ).toHaveAttribute("data-url", "blob:apercu"),
     );
   });
@@ -215,7 +215,7 @@ describe("LeaseReceiptModal", () => {
     renderModal(companyLease);
 
     expect(
-      document.querySelector('[data-cy="societe-quittance-bail"]'),
+      document.querySelector('[data-cy="company-lease-rent-receipt"]'),
     ).toHaveTextContent("MARTIN");
     await waitFor(() =>
       expect(api.rentReceipts.preview).toHaveBeenCalledWith(
@@ -272,7 +272,7 @@ describe("LeaseReceiptModal", () => {
     renderModal(companyLease);
 
     expect(
-      document.querySelector('[data-cy="societe-quittance-bail"]'),
+      document.querySelector('[data-cy="company-lease-rent-receipt"]'),
     ).toHaveTextContent("HKOF");
     await waitFor(() =>
       expect(api.rentReceipts.preview).toHaveBeenCalledWith(

@@ -30,7 +30,7 @@ export function HistoryReloadDialog({
       confirmLabel={t("history.reloadDialog.confirm")}
       onConfirm={onConfirm}
       onCancel={onCancel}
-      dataCy="dialogue-rouvrir-note"
+      dataCy="dialog-reopen-statement"
     />
   );
 }

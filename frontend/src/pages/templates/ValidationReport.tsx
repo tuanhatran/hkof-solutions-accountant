@@ -65,7 +65,7 @@ export function ValidationReport({ report }: { report: ValidationReportDto }) {
   const errorList = report.errors ?? [];
 
   return (
-    <div className="validation-report" data-cy="rapport-validation-template">
+    <div className="validation-report" data-cy="template-validation-report">
       <div className="validation-report-header">
         <p className="validation-report-title">{t("templates.report.title")}</p>
         <BadgeStructure valid={Boolean(report.structureValid)} />

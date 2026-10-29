@@ -56,7 +56,7 @@ export function LlmApiKeyField({ c }: { c: AdminLlmController }) {
             }
             disabled={c.removeKey}
             {...c.register("apiKey")}
-            data-cy="input-llm-cle-api"
+            data-cy="input-llm-api-key"
           />
         </FieldGroup>
         {c.config.data?.apiKeyConfigured ? (
@@ -65,7 +65,7 @@ export function LlmApiKeyField({ c }: { c: AdminLlmController }) {
               type="checkbox"
               className="llm-api-key-field-checkbox"
               {...c.register("deleteApiKey")}
-              data-cy="checkbox-supprimer-cle"
+              data-cy="checkbox-delete-key"
             />
             <span>
               <span className="llm-api-key-field-delete-title">

@@ -35,26 +35,28 @@ describe("Expense statement — finalization", () => {
     createRentReceipt();
     cy.visit("/generer/note-frais");
     cy.chooseMonth(MONTHS);
-    cy.get('[data-cy="select-type-frais"]').should("not.be.disabled");
+    cy.get('[data-cy="select-expense-type"]').should("not.be.disabled");
 
     addRent();
     for (const line of LINES) {
       addExpense(line);
     }
 
-    cy.get('[data-cy="select-type-frais"] option[value="gaz"]')
+    cy.get('[data-cy="select-expense-type"] option[value="gaz"]')
       .should("be.disabled")
       .and("contain.text", "déjà ajouté");
-    cy.get('[data-cy="liste-frais"] tbody tr').should("have.length", 6);
-    waitForAmount('[data-cy="total-retenu"]', "1 124,33");
+    cy.get('[data-cy="expense-list"] tbody tr').should("have.length", 6);
+    waitForAmount('[data-cy="retained-total"]', "1 124,33");
 
-    cy.get('[data-cy="btn-generer-note"]').should("not.be.disabled").click();
+    cy.get('[data-cy="btn-generate-statement"]')
+      .should("not.be.disabled")
+      .click();
     cy.contains("Note de frais générée", { timeout: 35_000 }).should(
       "be.visible",
     );
 
     downloadAndReadPdf(
-      '[data-cy="btn-telecharger-note"]',
+      '[data-cy="btn-download-statement"]',
       "note_frais_2026-01.pdf",
       (text) => {
         expect(text).to.contain("NOTE DE FRAIS D'OCCUPATION");
@@ -67,7 +69,7 @@ describe("Expense statement — finalization", () => {
     );
 
     downloadAndReadZip(
-      '[data-cy="btn-telecharger-note-complete"]',
+      '[data-cy="btn-download-full-statement"]',
       "note_frais_2026-01_complet.zip",
       (entries) => {
         const names = Object.keys(entries);
@@ -92,17 +94,19 @@ describe("Expense statement — finalization", () => {
       },
     );
 
-    cy.get('[data-cy="tab-historique"]').click();
+    cy.get('[data-cy="tab-history"]').click();
 
     cy.visit("/generer/note-frais");
     cy.contains("note version 1 déjà active", { timeout: 20_000 }).should(
       "be.visible",
     );
-    cy.get('[data-cy="btn-generer-note"]').should("not.be.disabled").click();
-    cy.get('[data-cy="dialogue-regeneration-note"]').should("be.visible");
-    cy.get('[data-cy="dialogue-confirmer"]').click();
+    cy.get('[data-cy="btn-generate-statement"]')
+      .should("not.be.disabled")
+      .click();
+    cy.get('[data-cy="dialog-statement-regeneration"]').should("be.visible");
+    cy.get('[data-cy="dialog-confirm"]').click();
     cy.contains("version 2", { timeout: 35_000 }).should("be.visible");
 
-    cy.get('[data-cy="tab-historique"]').click();
+    cy.get('[data-cy="tab-history"]').click();
   });
 });
