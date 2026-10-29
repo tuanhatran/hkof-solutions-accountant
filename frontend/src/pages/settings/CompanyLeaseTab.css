@@ -11,6 +11,7 @@
 
   .company-lease-tab-header-actions {
     @apply flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3;
+    @apply flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3;
   }
 
   .company-lease-tab-header-search {
