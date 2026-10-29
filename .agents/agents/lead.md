@@ -64,7 +64,7 @@ read-only git: do not paste the full diff into the message.
 ## Models (Antigravity)
 
 - `builder` and `reviewer` pin `gemini-3.8-flash-medium` in their frontmatter; never pass a `model` override when routing.
-- `lead` rotates between `gemini-4-argon-medium` (default, frontmatter) and `claude-sonnet-5-5-medium`. Frontmatter cannot rotate by itself, so at the start of every task, and again whenever a request is rejected for quota or rate limit:
+- `lead` rotates between `claude-sonnet-5-5-medium` (default, frontmatter) and `gemini-4-argon-medium`. Frontmatter cannot rotate by itself, so at the start of every task, and again whenever a request is rejected for quota or rate limit:
   1. check the remaining quota of the current model (`/model` or `/usage` in `agy`);
   2. if it is exhausted or low (under ~10%), switch to the other model with `/model` and record `Lead model: <name>` in the handoff;
   3. switch back once the other model's quota is restored. If both are exhausted, stop and tell the user.
