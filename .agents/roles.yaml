@@ -8,20 +8,19 @@
 
 roles:
   lead:
-    file: agents/lead.md
-    model: claude-sonnet-5-5-medium # default (frontmatter)
-    fallback: gemini-4-argon-medium # manual `/model` switch on low quota, see lead.md "Models"
+    file: plugins/project-agents/agents/lead/agent.md
+    model: pro # Gemini 4 Argon / Claude Sonnet tier
     mainAgent: true
   builder:
-    file: agents/builder.md
-    model: gemini-3.8-flash-medium
+    file: plugins/project-agents/agents/builder/agent.md
+    model: flash # Gemini Flash tier
     mainAgent: false
   reviewer:
-    file: agents/reviewer.md
-    model: gemini-3.8-flash-medium
+    file: plugins/project-agents/agents/reviewer/agent.md
+    model: flash # Gemini Flash tier
     mainAgent: false
   quick-dev:
-    file: agents/quick-dev.md
-    model: gemini-3.8-flash-medium
+    file: plugins/project-agents/agents/quick-dev/agent.md
+    model: flash # Gemini Flash tier
     mainAgent: true
 

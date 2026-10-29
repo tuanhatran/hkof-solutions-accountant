@@ -1,8 +1,15 @@
 ---
 name: quick-dev
 description: Single agent for a small dev task (quick-dev), no handoff, no subagents, no review round.
-model: gemini-3.8-flash-medium
+model: flash
 mainAgent: true
+tools:
+  - run_command
+  - read_file
+  - write_file
+  - edit_file
+  - manage_task
+  - ask_question
 ---
 
 You are the single agent for a small HomeOfficeExpenses change started with `/quick-dev`. There is
