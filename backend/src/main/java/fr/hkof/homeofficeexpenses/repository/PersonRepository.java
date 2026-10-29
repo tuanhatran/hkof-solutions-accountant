@@ -14,18 +14,20 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
     /** Natural persons only: employees share the table but are never lease parties. */
     @Query(value = """
             select * from person
-            where kind = 'PERSON' and deleted = false
+            where user_id = :userId and kind = 'PERSON' and deleted = false
             order by name asc, id asc
             """, nativeQuery = true)
-    List<Person> findAllNaturalPersons();
+    List<Person> findAllNaturalPersons(@Param("userId") Long userId);
 
     @Query(value = """
             select * from person
-            where id = :id and kind = 'PERSON' and deleted = false
+            where id = :id and user_id = :userId and kind = 'PERSON' and deleted = false
             """, nativeQuery = true)
-    Optional<Person> findNaturalPersonById(@Param("id") Long id);
+    Optional<Person> findNaturalPersonById(@Param("id") Long id, @Param("userId") Long userId);
 
-    Optional<Person> findByIdAndDeletedFalse(Long id);
+    Optional<Person> findByIdAndUserId(Long id, Long userId);
 
-    boolean existsByIdAndDeletedFalse(Long id);
+    Optional<Person> findByIdAndUserIdAndDeletedFalse(Long id, Long userId);
+
+    boolean existsByIdAndUserIdAndDeletedFalse(Long id, Long userId);
 }

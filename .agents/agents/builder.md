@@ -1,7 +1,7 @@
 ---
 name: builder
 description: Implement one HomeOfficeExpenses handoff with tests, fix in the same loop and return real gate evidence.
-model: Gemini 3.8 Flash (Medium)
+model: gemini-3.8-flash-medium
 mainAgent: false
 ---
 

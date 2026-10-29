@@ -21,17 +21,20 @@ public class RentReceiptMapper {
 
     private final PersonRepository persons;
     private final CompanyService companies;
+    private final OwnershipContext ownership;
 
-    public RentReceiptMapper(PersonRepository persons, CompanyService companies) {
+    public RentReceiptMapper(PersonRepository persons, CompanyService companies, OwnershipContext ownership) {
         this.persons = persons;
         this.companies = companies;
+        this.ownership = ownership;
     }
 
     public RentReceiptDto toDto(RentReceipt rentReceipt) {
+        Long owner = ownership.currentUserId();
         Person landlord = rentReceipt.getLandlordId() == null ? null
-                : persons.findById(rentReceipt.getLandlordId()).orElse(null);
+                : persons.findByIdAndUserId(rentReceipt.getLandlordId(), owner).orElse(null);
         Person tenant = rentReceipt.getTenantId() == null ? null
-                : persons.findById(rentReceipt.getTenantId()).orElse(null);
+                : persons.findByIdAndUserId(rentReceipt.getTenantId(), owner).orElse(null);
         String companyName = rentReceipt.getCompanyId() == null ? null
                 : companies.find(rentReceipt.getCompanyId()).map(Company::getName).orElse(null);
         String tenantCompanyName = rentReceipt.getTenantCompanyId() == null ? null

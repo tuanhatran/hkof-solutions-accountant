@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -23,6 +24,7 @@ import fr.hkof.homeofficeexpenses.domain.LlmConfig;
 import fr.hkof.homeofficeexpenses.domain.AnalysisStatus;
 import fr.hkof.homeofficeexpenses.repository.AnalysisDocumentRepository;
 import fr.hkof.homeofficeexpenses.service.BusinessException;
+import fr.hkof.homeofficeexpenses.service.OwnershipContext;
 import fr.hkof.homeofficeexpenses.service.ReceiptService;
 import fr.hkof.homeofficeexpenses.service.NotFoundException;
 import fr.hkof.homeofficeexpenses.service.extraction.DocumentTextExtractor;
@@ -42,11 +44,22 @@ public class AnalysisJobService {
     private final ThreadPoolTaskExecutor executor;
     private final TransactionTemplate transactions;
     private final Clock clock;
+    private final OwnershipContext ownershipContext;
 
     public AnalysisJobService(AnalysisDocumentRepository repository, ReceiptService receiptService,
             LlmConfigService llmConfigService, DocumentTextExtractor extractor, ExtractionPipeline pipeline,
             @Qualifier("analysisExecutor") ThreadPoolTaskExecutor executor,
             PlatformTransactionManager transactionManager, Clock clock) {
+        this(repository, receiptService, llmConfigService, extractor, pipeline, executor, transactionManager, clock,
+                null);
+    }
+
+    @Autowired
+    public AnalysisJobService(AnalysisDocumentRepository repository, ReceiptService receiptService,
+            LlmConfigService llmConfigService, DocumentTextExtractor extractor, ExtractionPipeline pipeline,
+            @Qualifier("analysisExecutor") ThreadPoolTaskExecutor executor,
+            PlatformTransactionManager transactionManager, Clock clock,
+            OwnershipContext ownershipContext) {
         this.repository = repository;
         this.receiptService = receiptService;
         this.llmConfigService = llmConfigService;
@@ -55,9 +68,11 @@ public class AnalysisJobService {
         this.executor = executor;
         this.transactions = new TransactionTemplate(transactionManager);
         this.clock = clock;
+        this.ownershipContext = ownershipContext;
     }
 
     public AnalysisDto launch(Long receiptId) {
+        Long ownerId = ownershipContext != null ? ownershipContext.currentUserId() : null;
         Launch launch = transactions.execute(status -> {
             Receipt receipt = receiptService.entity(receiptId);
             AnalysisDocument existingAnalysis = repository.findFirstByReceiptIdAndStatusInOrderByIdDesc(
@@ -77,7 +92,7 @@ public class AnalysisJobService {
         }
         if (launch.created()) {
             try {
-                executor.execute(() -> execute(launch.id()));
+                executor.execute(() -> execute(launch.id(), ownerId));
             } catch (RuntimeException ex) {
                 transaction(() -> {
                     AnalysisDocument reloaded = repository.findById(launch.id()).orElse(null);
@@ -93,7 +108,7 @@ public class AnalysisJobService {
         return get(launch.id());
     }
 
-    private void execute(Long analysisId) {
+    private void execute(Long analysisId, Long ownerId) {
         long startedAt = System.currentTimeMillis();
         ExtractionContext context;
         try {
@@ -102,7 +117,9 @@ public class AnalysisJobService {
                 if (analysis == null || analysis.getStatus() != AnalysisStatus.PENDING) {
                     return null;
                 }
-                LlmConfig config = llmConfigService.entity();
+                LlmConfig config = ownerId != null
+                        ? llmConfigService.entityForUser(ownerId)
+                        : llmConfigService.entity();
                 if (!config.isActive()) {
                     analysis.setStatus(AnalysisStatus.FAILED);
                     analysis.setErrorMessage("L'analyse IA est désactivée. Saisissez le montant manuellement.");

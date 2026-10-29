@@ -35,6 +35,7 @@ class SignatureServiceTest {
     private static final Long COMPANY_ID = 1L;
     private static final Long PERSON_ID = 3L;
     private static final Long EMPLOYEE_ID = 7L;
+    private static final Long USER_ID = 42L;
     private static final String SAMPLE_PNG =
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=";
     private static final byte[] PNG = Base64.getDecoder().decode(SAMPLE_PNG);
@@ -43,6 +44,7 @@ class SignatureServiceTest {
     private SignatureRepository repository;
     private PersonRepository persons;
     private EmployeeRepository employees;
+    private OwnershipContext ownership;
     private SignatureService service;
 
     @BeforeEach
@@ -50,12 +52,16 @@ class SignatureServiceTest {
         repository = mock(SignatureRepository.class);
         persons = mock(PersonRepository.class);
         employees = mock(EmployeeRepository.class);
-        service = new SignatureService(repository, persons, employees, new FileTypeDetector(), Clock.systemUTC());
+        ownership = mock(OwnershipContext.class);
+        when(ownership.currentUserId()).thenReturn(USER_ID);
+        service = new SignatureService(repository, persons, employees, new FileTypeDetector(), ownership,
+                Clock.systemUTC());
     }
 
     private Person person(Long id, String name) {
         Person person = new Person();
         person.setId(id);
+        person.setUserId(USER_ID);
         person.setName(name);
         return person;
     }
@@ -63,6 +69,7 @@ class SignatureServiceTest {
     private Employee employee(Long id, EmployeeTitle title, String firstName, String lastName) {
         Employee employee = new Employee();
         employee.setId(id);
+        employee.setUserId(USER_ID);
         employee.setCompanyId(COMPANY_ID);
         employee.setTitle(title);
         employee.setFirstName(firstName);
@@ -73,6 +80,7 @@ class SignatureServiceTest {
     private Signature signature(Long id, Long personId, String name, boolean deleted) {
         Signature signature = new Signature();
         signature.setId(id);
+        signature.setUserId(USER_ID);
         signature.setPersonId(personId);
         signature.setName(name);
         signature.setMimeType("image/png");
@@ -94,8 +102,9 @@ class SignatureServiceTest {
     @Test
     @DisplayName("Creates a PNG signature linked to its person")
     void createsSignatureForPerson() {
-        when(persons.findByIdAndDeletedFalse(PERSON_ID)).thenReturn(Optional.of(person(PERSON_ID, "M. Bailleur")));
-        when(persons.findById(PERSON_ID)).thenReturn(Optional.of(person(PERSON_ID, "M. Bailleur")));
+        when(persons.findByIdAndUserIdAndDeletedFalse(PERSON_ID, USER_ID))
+                .thenReturn(Optional.of(person(PERSON_ID, "M. Bailleur")));
+        when(persons.findByIdAndUserId(PERSON_ID, USER_ID)).thenReturn(Optional.of(person(PERSON_ID, "M. Bailleur")));
         stubSavedSignature();
 
         SignatureDto dto = service.create(PERSON_ID, "  Bailleur  ", file("signature.png", PNG));
@@ -109,14 +118,15 @@ class SignatureServiceTest {
         ArgumentCaptor<Signature> saved = ArgumentCaptor.forClass(Signature.class);
         verify(repository).save(saved.capture());
         assertThat(saved.getValue().getPersonId()).isEqualTo(PERSON_ID);
+        assertThat(saved.getValue().getUserId()).isEqualTo(USER_ID);
     }
 
     @Test
     @DisplayName("An employee signature maps the full employee name")
     void createsSignatureForEmployee() {
-        when(persons.findByIdAndDeletedFalse(EMPLOYEE_ID))
+        when(persons.findByIdAndUserIdAndDeletedFalse(EMPLOYEE_ID, USER_ID))
                 .thenReturn(Optional.of(employee(EMPLOYEE_ID, EmployeeTitle.CEO, "Gérant", "HKOF")));
-        when(persons.findById(EMPLOYEE_ID))
+        when(persons.findByIdAndUserId(EMPLOYEE_ID, USER_ID))
                 .thenReturn(Optional.of(employee(EMPLOYEE_ID, EmployeeTitle.CEO, "Gérant", "HKOF")));
         stubSavedSignature();
 
@@ -134,7 +144,7 @@ class SignatureServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("La personne de la signature est obligatoire.")
                 .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PERSON_REQUIRED"));
-        when(persons.findByIdAndDeletedFalse(99L)).thenReturn(Optional.empty());
+        when(persons.findByIdAndUserIdAndDeletedFalse(99L, USER_ID)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.create(99L, "Bailleur", file("signature.png", PNG)))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Personne introuvable.")
@@ -145,7 +155,8 @@ class SignatureServiceTest {
     @Test
     @DisplayName("Rejects invalid image types and oversized images")
     void rejectsInvalidImages() {
-        when(persons.findByIdAndDeletedFalse(PERSON_ID)).thenReturn(Optional.of(person(PERSON_ID, "Bailleur")));
+        when(persons.findByIdAndUserIdAndDeletedFalse(PERSON_ID, USER_ID))
+                .thenReturn(Optional.of(person(PERSON_ID, "Bailleur")));
 
         assertThatThrownBy(() -> service.create(PERSON_ID, "Bailleur", file("signature.gif", PNG)))
                 .isInstanceOf(BusinessException.class)
@@ -163,7 +174,8 @@ class SignatureServiceTest {
     @Test
     @DisplayName("Requires a name, a file and a bounded name")
     void requiresNameAndFile() {
-        when(persons.findByIdAndDeletedFalse(PERSON_ID)).thenReturn(Optional.of(person(PERSON_ID, "Bailleur")));
+        when(persons.findByIdAndUserIdAndDeletedFalse(PERSON_ID, USER_ID))
+                .thenReturn(Optional.of(person(PERSON_ID, "Bailleur")));
 
         assertThatThrownBy(() -> service.create(PERSON_ID, "  ", file("signature.png", PNG)))
                 .isInstanceOf(BusinessException.class)
@@ -187,19 +199,21 @@ class SignatureServiceTest {
     @DisplayName("Logical delete hides the signature and makes it unusable")
     void logicalDelete() {
         Signature stored = signature(4L, PERSON_ID, "Bailleur", false);
-        when(repository.findById(4L)).thenReturn(Optional.of(stored));
+        when(repository.findByIdAndUserIdAndDeletedFalse(4L, USER_ID)).thenReturn(Optional.of(stored));
 
         service.delete(4L);
 
         assertThat(stored.isDeleted()).isTrue();
         verify(repository).save(stored);
+        when(repository.findByIdAndUserIdAndDeletedFalse(4L, USER_ID)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.dataUri(4L)).isInstanceOf(NotFoundException.class);
     }
 
     @Test
     @DisplayName("Builds a data URI from the stored bytes")
     void buildsDataUri() {
-        when(repository.findById(5L)).thenReturn(Optional.of(signature(5L, PERSON_ID, "Bailleur", false)));
+        when(repository.findByIdAndUserIdAndDeletedFalse(5L, USER_ID))
+                .thenReturn(Optional.of(signature(5L, PERSON_ID, "Bailleur", false)));
 
         assertThat(service.dataUri(5L))
                 .isEqualTo("data:image/png;base64," + Base64.getEncoder().encodeToString(PNG));
@@ -208,13 +222,13 @@ class SignatureServiceTest {
     @Test
     @DisplayName("A missing or deleted signature is not readable")
     void missingSignatureIsNotReadable() {
-        when(repository.findById(99L)).thenReturn(Optional.empty());
+        when(repository.findByIdAndUserIdAndDeletedFalse(99L, USER_ID)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.dataUri(99L))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Signature introuvable.")
                 .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("SIGNATURE_NOT_FOUND"));
 
-        when(repository.findById(6L)).thenReturn(Optional.of(signature(6L, PERSON_ID, "Bailleur", true)));
+        when(repository.findByIdAndUserIdAndDeletedFalse(6L, USER_ID)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.image(6L))
                 .isInstanceOf(NotFoundException.class);
     }
@@ -224,9 +238,10 @@ class SignatureServiceTest {
     void resolvesForPerson() {
         Signature linked = signature(10L, PERSON_ID, "Bailleur 1", false);
         Signature other = signature(11L, 9L, "Autre", false);
-        when(persons.findByIdAndDeletedFalse(PERSON_ID)).thenReturn(Optional.of(person(PERSON_ID, "Bailleur")));
-        when(repository.findById(10L)).thenReturn(Optional.of(linked));
-        when(repository.findById(11L)).thenReturn(Optional.of(other));
+        when(persons.findByIdAndUserIdAndDeletedFalse(PERSON_ID, USER_ID))
+                .thenReturn(Optional.of(person(PERSON_ID, "Bailleur")));
+        when(repository.findByIdAndUserIdAndDeletedFalse(10L, USER_ID)).thenReturn(Optional.of(linked));
+        when(repository.findByIdAndUserIdAndDeletedFalse(11L, USER_ID)).thenReturn(Optional.of(other));
 
         assertThat(service.resolveForPerson(10L, PERSON_ID)).contains(linked);
         assertThatThrownBy(() -> service.resolveForPerson(11L, PERSON_ID))
@@ -234,10 +249,10 @@ class SignatureServiceTest {
                 .hasMessage("La signature sélectionnée n'appartient pas à cette personne.")
                 .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("SIGNATURE_NOT_OWNED"));
 
-        when(repository.findFirstByPersonIdAndDeletedFalseOrderByNameAscIdAsc(PERSON_ID))
+        when(repository.findFirstByUserIdAndPersonIdAndDeletedFalseOrderByNameAscIdAsc(USER_ID, PERSON_ID))
                 .thenReturn(Optional.of(linked));
         assertThat(service.resolveForPerson(null, PERSON_ID)).contains(linked);
-        when(repository.findFirstByPersonIdAndDeletedFalseOrderByNameAscIdAsc(PERSON_ID))
+        when(repository.findFirstByUserIdAndPersonIdAndDeletedFalseOrderByNameAscIdAsc(USER_ID, PERSON_ID))
                 .thenReturn(Optional.empty());
         assertThat(service.resolveForPerson(null, PERSON_ID)).isEmpty();
     }
@@ -247,9 +262,10 @@ class SignatureServiceTest {
     void resolvesForCompanyCeo() {
         Signature ceoSignature = signature(30L, EMPLOYEE_ID, "Gérant", false);
         Signature other = signature(31L, PERSON_ID, "Bailleur", false);
-        when(repository.findById(30L)).thenReturn(Optional.of(ceoSignature));
-        when(repository.findById(31L)).thenReturn(Optional.of(other));
-        when(employees.findFirstByCompanyIdAndTitleAndDeletedFalseOrderByIdAsc(COMPANY_ID, EmployeeTitle.CEO))
+        when(repository.findByIdAndUserIdAndDeletedFalse(30L, USER_ID)).thenReturn(Optional.of(ceoSignature));
+        when(repository.findByIdAndUserIdAndDeletedFalse(31L, USER_ID)).thenReturn(Optional.of(other));
+        when(employees.findFirstByUserIdAndCompanyIdAndTitleAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID,
+                EmployeeTitle.CEO))
                 .thenReturn(Optional.of(employee(EMPLOYEE_ID, EmployeeTitle.CEO, "Gérant", "")));
 
         assertThat(service.resolveForCompanyCeo(COMPANY_ID, 30L)).contains(ceoSignature);
@@ -258,15 +274,16 @@ class SignatureServiceTest {
                 .hasMessage("La signature sélectionnée n'appartient pas au gérant de cette société.")
                 .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("SIGNATURE_NOT_CEO"));
 
-        when(repository.findFirstByPersonIdAndDeletedFalseOrderByNameAscIdAsc(EMPLOYEE_ID))
+        when(repository.findFirstByUserIdAndPersonIdAndDeletedFalseOrderByNameAscIdAsc(USER_ID, EMPLOYEE_ID))
                 .thenReturn(Optional.of(ceoSignature));
         assertThat(service.resolveForCompanyCeo(COMPANY_ID, null)).contains(ceoSignature);
 
-        when(repository.findFirstByPersonIdAndDeletedFalseOrderByNameAscIdAsc(EMPLOYEE_ID))
+        when(repository.findFirstByUserIdAndPersonIdAndDeletedFalseOrderByNameAscIdAsc(USER_ID, EMPLOYEE_ID))
                 .thenReturn(Optional.empty());
         assertThat(service.resolveForCompanyCeo(COMPANY_ID, null)).isEmpty();
 
-        when(employees.findFirstByCompanyIdAndTitleAndDeletedFalseOrderByIdAsc(COMPANY_ID, EmployeeTitle.CEO))
+        when(employees.findFirstByUserIdAndCompanyIdAndTitleAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID,
+                EmployeeTitle.CEO))
                 .thenReturn(Optional.empty());
         assertThat(service.resolveForCompanyCeo(COMPANY_ID, null)).isEmpty();
 
@@ -281,9 +298,11 @@ class SignatureServiceTest {
     @DisplayName("Lists the non deleted signatures of one person only")
     void listsSignatures() {
         Signature first = signature(1L, PERSON_ID, "Bailleur", false);
-        when(persons.findByIdAndDeletedFalse(PERSON_ID)).thenReturn(Optional.of(person(PERSON_ID, "Bailleur")));
-        when(persons.findById(PERSON_ID)).thenReturn(Optional.of(person(PERSON_ID, "Bailleur")));
-        when(repository.findByPersonIdAndDeletedFalseOrderByNameAscIdAsc(PERSON_ID)).thenReturn(List.of(first));
+        when(persons.findByIdAndUserIdAndDeletedFalse(PERSON_ID, USER_ID))
+                .thenReturn(Optional.of(person(PERSON_ID, "Bailleur")));
+        when(persons.findByIdAndUserId(PERSON_ID, USER_ID)).thenReturn(Optional.of(person(PERSON_ID, "Bailleur")));
+        when(repository.findByUserIdAndPersonIdAndDeletedFalseOrderByNameAscIdAsc(USER_ID, PERSON_ID))
+                .thenReturn(List.of(first));
 
         assertThat(service.list(PERSON_ID)).extracting(SignatureDto::personName).containsExactly("Bailleur");
 
@@ -292,7 +311,7 @@ class SignatureServiceTest {
                 .hasMessage("La personne de la signature est obligatoire.")
                 .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("PERSON_REQUIRED"));
 
-        when(persons.findByIdAndDeletedFalse(EMPLOYEE_ID)).thenReturn(Optional.empty());
+        when(persons.findByIdAndUserIdAndDeletedFalse(EMPLOYEE_ID, USER_ID)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.list(EMPLOYEE_ID))
                 .isInstanceOf(NotFoundException.class)
                 .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("PERSON_NOT_FOUND"));
@@ -302,7 +321,7 @@ class SignatureServiceTest {
     @DisplayName("Missing person records map null names")
     void toDtoWithMissingPerson() {
         Signature signature = signature(1L, 5L, "Bailleur", false);
-        when(persons.findById(5L)).thenReturn(Optional.empty());
+        when(persons.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.empty());
 
         assertThat(service.toDto(signature).personName()).isNull();
         assertThat(service.toDto(signature).personId()).isEqualTo(5L);
@@ -312,7 +331,7 @@ class SignatureServiceTest {
     @DisplayName("An unnamed employee maps a null name and a null person maps null")
     void toDtoWithBlankEmployeeNames() {
         Signature signature = signature(2L, EMPLOYEE_ID, "Gérant", false);
-        when(persons.findById(EMPLOYEE_ID))
+        when(persons.findByIdAndUserId(EMPLOYEE_ID, USER_ID))
                 .thenReturn(Optional.of(employee(EMPLOYEE_ID, EmployeeTitle.EMPLOYEE, " ", null)));
         assertThat(service.toDto(signature).personName()).isNull();
 

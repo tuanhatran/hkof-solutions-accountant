@@ -102,8 +102,8 @@ public class DataInitializer implements ApplicationRunner {
         initEmployees(ownerId, company);
         initRentConfiguration(ownerId, company);
         initItems(ownerId, company);
-        initTemplates();
-        initLlm();
+        initTemplates(ownerId);
+        initLlm(ownerId);
     }
 
     private Long seedOwnerId() {
@@ -174,8 +174,8 @@ public class DataInitializer implements ApplicationRunner {
     }
 
     private void initRentConfiguration(Long ownerId, Company company) {
-        Person landlord = personRepository.findAllNaturalPersons().stream().findFirst()
-                .orElseGet(this::createDefaultPerson);
+        Person landlord = personRepository.findAllNaturalPersons(ownerId).stream().findFirst()
+                .orElseGet(() -> createDefaultPerson(ownerId));
         if (leaseRepository.findFirstByUserIdAndDeletedFalseOrderByIdAsc(ownerId).isPresent()) {
             return;
         }
@@ -198,8 +198,9 @@ public class DataInitializer implements ApplicationRunner {
         leaseRepository.save(lease);
     }
 
-    private Person createDefaultPerson() {
+    private Person createDefaultPerson(Long ownerId) {
         Person person = new Person();
+        person.setUserId(ownerId);
         person.setName(DEFAULT_LANDLORD_NAME);
         person.setAddress(DEFAULT_LANDLORD_ADDRESS);
         person.setDeleted(false);
@@ -246,11 +247,13 @@ public class DataInitializer implements ApplicationRunner {
         expenseItemRepository.save(expenseItem);
     }
 
-    private void initTemplates() {
+    public void initTemplates(Long ownerId) {
         for (TemplateType type : TemplateType.values()) {
-            TemplateDocument builtIn = templateRepository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(type)
+            TemplateDocument builtIn = templateRepository
+                    .findFirstByUserIdAndTypeAndBuiltInTrueAndDeletedFalse(ownerId, type)
                     .orElseGet(() -> {
                         TemplateDocument template = new TemplateDocument();
+                        template.setUserId(ownerId);
                         template.setType(type);
                         template.setName(type == TemplateType.RENT_RECEIPT
                                 ? "Quittance — modèle intégré"
@@ -266,19 +269,19 @@ public class DataInitializer implements ApplicationRunner {
                         template.setCreatedAt(Instant.now(clock));
                         return templateRepository.save(template);
                     });
-            if (templateRepository.findFirstByTypeAndActiveTrueAndDeletedFalse(type).isEmpty()) {
+            if (templateRepository.findFirstByUserIdAndTypeAndActiveTrueAndDeletedFalse(ownerId, type).isEmpty()) {
                 builtIn.setActive(true);
                 templateRepository.save(builtIn);
             }
         }
     }
 
-    private void initLlm() {
-        if (llmConfigRepository.existsById(1L)) {
+    private void initLlm(Long ownerId) {
+        if (llmConfigRepository.findByUserId(ownerId).isPresent()) {
             return;
         }
         LlmConfig config = new LlmConfig();
-        config.setId(1L);
+        config.setUserId(ownerId);
         config.setActive(true);
         config.setSupplier(LlmProvider.OLLAMA);
         config.setUrl(properties.llm().defaultUrl());

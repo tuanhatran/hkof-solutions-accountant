@@ -24,24 +24,29 @@ import fr.hkof.homeofficeexpenses.repository.SignatureRepository;
 class SignatureServiceEdgeCasesTest {
 
     private static final Long PERSON_ID = 3L;
+    private static final Long USER_ID = 42L;
     private static final byte[] PNG = Base64.getDecoder().decode(
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=");
 
     private SignatureRepository repository;
     private PersonRepository persons;
+    private OwnershipContext ownership;
     private SignatureService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(SignatureRepository.class);
         persons = mock(PersonRepository.class);
+        ownership = mock(OwnershipContext.class);
+        when(ownership.currentUserId()).thenReturn(USER_ID);
         service = new SignatureService(repository, persons, mock(EmployeeRepository.class), new FileTypeDetector(),
-                Clock.systemUTC());
+                ownership, Clock.systemUTC());
     }
 
     private Person person() {
         Person person = new Person();
         person.setId(PERSON_ID);
+        person.setUserId(USER_ID);
         person.setName("Bailleur");
         return person;
     }
@@ -49,6 +54,7 @@ class SignatureServiceEdgeCasesTest {
     private Signature signature(Long id, String fileName) {
         Signature signature = new Signature();
         signature.setId(id);
+        signature.setUserId(USER_ID);
         signature.setPersonId(PERSON_ID);
         signature.setName("Signature");
         signature.setMimeType("image/png");
@@ -60,7 +66,7 @@ class SignatureServiceEdgeCasesTest {
     @Test
     @DisplayName("A file read failure is reported in French")
     void createReadFailure() throws IOException {
-        when(persons.findByIdAndDeletedFalse(PERSON_ID)).thenReturn(Optional.of(person()));
+        when(persons.findByIdAndUserIdAndDeletedFalse(PERSON_ID, USER_ID)).thenReturn(Optional.of(person()));
         MultipartFile file = mock(MultipartFile.class);
         when(file.isEmpty()).thenReturn(false);
         when(file.getBytes()).thenThrow(new IOException("boom"));
@@ -75,10 +81,10 @@ class SignatureServiceEdgeCasesTest {
     @Test
     @DisplayName("An image without a file name gets a default name")
     void imageWithoutFileName() {
-        when(repository.findById(1L)).thenReturn(Optional.of(signature(1L, null)));
+        when(repository.findByIdAndUserIdAndDeletedFalse(1L, USER_ID)).thenReturn(Optional.of(signature(1L, null)));
         assertThat(service.image(1L).fileName()).isEqualTo("signature");
 
-        when(repository.findById(2L)).thenReturn(Optional.of(signature(2L, " ")));
+        when(repository.findByIdAndUserIdAndDeletedFalse(2L, USER_ID)).thenReturn(Optional.of(signature(2L, " ")));
         assertThat(service.image(2L).fileName()).isEqualTo("signature");
     }
 
@@ -94,8 +100,8 @@ class SignatureServiceEdgeCasesTest {
     @Test
     @DisplayName("Resolving without a requested signature or default is empty")
     void resolveWithoutDefault() {
-        when(persons.findByIdAndDeletedFalse(PERSON_ID)).thenReturn(Optional.of(person()));
-        when(repository.findFirstByPersonIdAndDeletedFalseOrderByNameAscIdAsc(PERSON_ID))
+        when(persons.findByIdAndUserIdAndDeletedFalse(PERSON_ID, USER_ID)).thenReturn(Optional.of(person()));
+        when(repository.findFirstByUserIdAndPersonIdAndDeletedFalseOrderByNameAscIdAsc(USER_ID, PERSON_ID))
                 .thenReturn(Optional.empty());
         assertThat(service.resolveForPerson(null, PERSON_ID)).isEmpty();
     }

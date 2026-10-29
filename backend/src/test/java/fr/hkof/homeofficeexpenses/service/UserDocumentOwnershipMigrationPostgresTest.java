@@ -137,8 +137,11 @@ class UserDocumentOwnershipMigrationPostgresTest {
                     """);
             long other = singleLong(statement,
                     "SELECT id FROM app_user WHERE email = 'other.owner@example.test'");
-            statement.execute("INSERT INTO person (id, kind, name, deleted) VALUES (100, 'PERSON', 'Bailleur', FALSE)");
-            statement.execute("INSERT INTO person (id, kind, name, deleted) VALUES (101, 'PERSON', 'Locataire', FALSE)");
+            statement.execute("""
+                    INSERT INTO person (id, user_id, kind, name, deleted)
+                    VALUES (100, %d, 'PERSON', 'Bailleur', FALSE),
+                           (101, %d, 'PERSON', 'Locataire', FALSE)
+                    """.formatted(owner, owner));
 
             insertReceipt(statement, 10, owner, 100, 101);
             // The same person pair, month and version belongs to another account: allowed.

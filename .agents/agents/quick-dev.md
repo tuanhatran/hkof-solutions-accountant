@@ -1,7 +1,7 @@
 ---
 name: quick-dev
 description: Single agent for a small dev task (quick-dev), no handoff, no subagents, no review round.
-model: Gemini 3.8 Flash (Medium)
+model: gemini-3.8-flash-medium
 mainAgent: true
 ---
 

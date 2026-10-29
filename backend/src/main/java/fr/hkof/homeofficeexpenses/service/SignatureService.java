@@ -34,21 +34,24 @@ public class SignatureService {
     private final PersonRepository persons;
     private final EmployeeRepository employees;
     private final FileTypeDetector detector;
+    private final OwnershipContext ownership;
     private final Clock clock;
 
     public SignatureService(SignatureRepository repository, PersonRepository persons, EmployeeRepository employees,
-            FileTypeDetector detector, Clock clock) {
+            FileTypeDetector detector, OwnershipContext ownership, Clock clock) {
         this.repository = repository;
         this.persons = persons;
         this.employees = employees;
         this.detector = detector;
+        this.ownership = ownership;
         this.clock = clock;
     }
 
     @Transactional(readOnly = true)
     public List<SignatureDto> list(Long personId) {
         requirePerson(personId);
-        return repository.findByPersonIdAndDeletedFalseOrderByNameAscIdAsc(personId).stream()
+        return repository.findByUserIdAndPersonIdAndDeletedFalseOrderByNameAscIdAsc(
+                ownership.currentUserId(), personId).stream()
                 .map(this::toDto)
                 .toList();
     }
@@ -75,6 +78,7 @@ public class SignatureService {
         }
         FileTypeDetector.DetectedFile detected = detector.detectSignature(file.getOriginalFilename(), content);
         Signature signature = new Signature();
+        signature.setUserId(ownership.currentUserId());
         signature.setPersonId(person.getId());
         signature.setName(trimmedName);
         signature.setMimeType(detected.mimeType());
@@ -127,7 +131,8 @@ public class SignatureService {
             }
             return Optional.of(requested);
         }
-        return repository.findFirstByPersonIdAndDeletedFalseOrderByNameAscIdAsc(personId);
+        return repository.findFirstByUserIdAndPersonIdAndDeletedFalseOrderByNameAscIdAsc(
+                ownership.currentUserId(), personId);
     }
 
     /**
@@ -139,8 +144,9 @@ public class SignatureService {
         if (companyId == null) {
             throw new BusinessException("SIGNATURE_COMPANY_REQUIRED", "La société de la signature est obligatoire.");
         }
+        Long owner = ownership.currentUserId();
         Optional<Employee> ceo = employees
-                .findFirstByCompanyIdAndTitleAndDeletedFalseOrderByIdAsc(companyId, EmployeeTitle.CEO);
+                .findFirstByUserIdAndCompanyIdAndTitleAndDeletedFalseOrderByIdAsc(owner, companyId, EmployeeTitle.CEO);
         if (ceo.isEmpty()) {
             return Optional.empty();
         }
@@ -153,19 +159,18 @@ public class SignatureService {
             }
             return Optional.of(requested);
         }
-        return repository.findFirstByPersonIdAndDeletedFalseOrderByNameAscIdAsc(ceoId);
+        return repository.findFirstByUserIdAndPersonIdAndDeletedFalseOrderByNameAscIdAsc(owner, ceoId);
     }
 
     @Transactional(readOnly = true)
     public Signature entity(Long id) {
-        return repository.findById(id)
-                .filter(signature -> !signature.isDeleted())
+        return repository.findByIdAndUserIdAndDeletedFalse(id, ownership.currentUserId())
                 .orElseThrow(() -> new NotFoundException("SIGNATURE_NOT_FOUND", "Signature introuvable."));
     }
 
     public SignatureDto toDto(Signature signature) {
         Person person = signature.getPersonId() == null ? null
-                : persons.findById(signature.getPersonId()).orElse(null);
+                : persons.findByIdAndUserId(signature.getPersonId(), ownership.currentUserId()).orElse(null);
         return new SignatureDto(
                 signature.getId(),
                 signature.getPersonId(),
@@ -179,7 +184,7 @@ public class SignatureService {
         if (personId == null) {
             throw new BusinessException("PERSON_REQUIRED", "La personne de la signature est obligatoire.");
         }
-        return persons.findByIdAndDeletedFalse(personId)
+        return persons.findByIdAndUserIdAndDeletedFalse(personId, ownership.currentUserId())
                 .orElseThrow(() -> new NotFoundException("PERSON_NOT_FOUND", "Personne introuvable."));
     }
 

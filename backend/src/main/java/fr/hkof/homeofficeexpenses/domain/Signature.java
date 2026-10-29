@@ -24,6 +24,9 @@ public class Signature {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
     /** Person owning the signature; null only on logically deleted legacy rows. */
     @Column(name = "person_id")
     private Long personId;
@@ -56,6 +59,14 @@ public class Signature {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public Long getPersonId() {

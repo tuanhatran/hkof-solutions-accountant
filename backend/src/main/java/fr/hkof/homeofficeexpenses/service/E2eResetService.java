@@ -132,25 +132,26 @@ public class E2eResetService {
         initializer.seed(e2eOwner);
         authService.restoreSeedUser(SEED_USER_EMAIL, SEED_USER_PASSWORD, true);
         authService.restoreSeedUser(E2E_USER_EMAIL, E2E_USER_PASSWORD, false);
-        Person landlord = naturalPerson(DEFAULT_LANDLORD_NAME);
+        Person landlord = naturalPerson(e2eOwner, DEFAULT_LANDLORD_NAME);
         // Synthetic issue place so a person lease still renders "Fait à" in e2e.
         if (landlord != null) {
             landlord.setIssuePlace(DEFAULT_LANDLORD_ISSUE_PLACE);
             persons.save(landlord);
         }
-        Person tenant = seedTenant();
+        Person tenant = seedTenant(e2eOwner);
         seedNormalLease(e2eOwner, landlord, tenant);
-        seedSignatures(landlord, tenant);
+        seedSignatures(e2eOwner, landlord, tenant);
     }
 
     /** Adds the natural person tenant missing from the base seed. */
-    private Person seedTenant() {
-        Person existing = naturalPerson(DEFAULT_TENANT_NAME);
+    private Person seedTenant(Long ownerId) {
+        Person existing = naturalPerson(ownerId, DEFAULT_TENANT_NAME);
         if (existing != null) {
             return existing;
         }
         Instant now = Instant.now();
         Person tenant = new Person();
+        tenant.setUserId(ownerId);
         tenant.setName(DEFAULT_TENANT_NAME);
         tenant.setAddress(DEFAULT_TENANT_ADDRESS);
         tenant.setDeleted(false);
@@ -162,11 +163,12 @@ public class E2eResetService {
     /** Adds a normal lease next to the base company lease, so both shapes are available in e2e. */
     private void seedNormalLease(Long ownerId, Person landlord, Person tenant) {
         if (landlord == null || tenant == null
-                || leases.findFirstByLandlordIdAndTenantIdAndDeletedFalse(landlord.getId(), tenant.getId())
-                        .isPresent()) {
+                || leases.findFirstByUserIdAndLandlordIdAndTenantIdAndDeletedFalse(
+                        ownerId, landlord.getId(), tenant.getId()).isPresent()) {
             return;
         }
-        Address address = addresses.findFirstByDeletedFalseAndLabelIgnoreCase(DEFAULT_LEASE_ADDRESS)
+        Address address = addresses
+                .findFirstByUserIdAndDeletedFalseAndLabelIgnoreCase(ownerId, DEFAULT_LEASE_ADDRESS)
                 .orElseGet(() -> createLeaseAddress(ownerId));
         Lease lease = new Lease();
         lease.setUserId(ownerId);
@@ -190,33 +192,34 @@ public class E2eResetService {
         return addresses.save(address);
     }
 
-    private Person naturalPerson(String name) {
-        return persons.findAllNaturalPersons().stream()
+    private Person naturalPerson(Long ownerId, String name) {
+        return persons.findAllNaturalPersons(ownerId).stream()
                 .filter(person -> name.equals(person.getName()))
                 .findFirst()
                 .orElse(null);
     }
 
-    private void seedSignatures(Person landlord, Person tenant) {
+    private void seedSignatures(Long ownerId, Person landlord, Person tenant) {
         Instant now = Instant.now();
-        Company company = companies.findFirstByDeletedFalseOrderByIdAsc().orElse(null);
+        Company company = companies.findFirstByUserIdAndDeletedFalseOrderByIdAsc(ownerId).orElse(null);
         Long companyId = company == null ? null : company.getId();
         Employee ceo = company == null ? null
-                : employees.findFirstByCompanyIdAndTitleAndDeletedFalseOrderByIdAsc(companyId, EmployeeTitle.CEO)
-                        .orElse(null);
-        saveSignature(landlord == null ? null : landlord.getId(), "Signature du bailleur (e2e)",
+                : employees.findFirstByUserIdAndCompanyIdAndTitleAndDeletedFalseOrderByIdAsc(
+                        ownerId, companyId, EmployeeTitle.CEO).orElse(null);
+        saveSignature(ownerId, landlord == null ? null : landlord.getId(), "Signature du bailleur (e2e)",
                 "signature-bailleur-e2e.png", now);
-        saveSignature(tenant == null ? null : tenant.getId(), "Signature du locataire (e2e)",
+        saveSignature(ownerId, tenant == null ? null : tenant.getId(), "Signature du locataire (e2e)",
                 "signature-locataire-e2e.png", now);
-        saveSignature(ceo == null ? null : ceo.getId(), "Signature du gérant (e2e)", "signature-gerant-e2e.png",
-                now);
+        saveSignature(ownerId, ceo == null ? null : ceo.getId(), "Signature du gérant (e2e)",
+                "signature-gerant-e2e.png", now);
     }
 
-    private void saveSignature(Long personId, String name, String fileName, Instant createdAt) {
+    private void saveSignature(Long ownerId, Long personId, String name, String fileName, Instant createdAt) {
         if (personId == null) {
             return;
         }
         Signature signature = new Signature();
+        signature.setUserId(ownerId);
         signature.setPersonId(personId);
         signature.setName(name);
         signature.setMimeType("image/png");

@@ -12,7 +12,7 @@ import fr.hkof.homeofficeexpenses.web.dto.TemplateDtos.ValidationReportDto;
 
 class TemplateValidatorSecurityTest {
 
-    private final TemplateService service = new TemplateService(null, null, null, null, null, Clock.systemUTC());
+    private final TemplateService service = new TemplateService(null, null, null, null, null, null, Clock.systemUTC());
 
     private ValidationReportDto validate(String content) {
         return service.validate(TemplateType.RENT_RECEIPT, content);

@@ -22,6 +22,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,6 +33,7 @@ import fr.hkof.homeofficeexpenses.repository.TemplateDocumentRepository;
 import fr.hkof.homeofficeexpenses.service.BusinessException;
 import fr.hkof.homeofficeexpenses.service.FileTypeDetector;
 import fr.hkof.homeofficeexpenses.service.NotFoundException;
+import fr.hkof.homeofficeexpenses.service.OwnershipContext;
 import fr.hkof.homeofficeexpenses.service.PdfService;
 import fr.hkof.homeofficeexpenses.service.StorageService;
 import fr.hkof.homeofficeexpenses.web.dto.TemplateDtos.TemplateDto;
@@ -43,6 +45,7 @@ class TemplateServiceTest {
     private StorageService storage;
     private PdfService pdfService;
     private FileTypeDetector detector;
+    private OwnershipContext ownership;
     private TemplateService service;
 
     @BeforeEach
@@ -51,7 +54,9 @@ class TemplateServiceTest {
         storage = mock(StorageService.class);
         pdfService = mock(PdfService.class);
         detector = mock(FileTypeDetector.class);
-        service = new TemplateService(repository, storage, pdfService, detector, new ObjectMapper(),
+        ownership = mock(OwnershipContext.class);
+        when(ownership.currentUserId()).thenReturn(1L);
+        service = new TemplateService(repository, storage, pdfService, detector, new ObjectMapper(), ownership,
                 Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
@@ -59,6 +64,7 @@ class TemplateServiceTest {
             boolean builtIn, boolean deleted) {
         TemplateDocument template = new TemplateDocument();
         template.setId(id);
+        template.setUserId(1L);
         template.setType(type);
         template.setName(name);
         template.setVersion(version);
@@ -78,7 +84,9 @@ class TemplateServiceTest {
     @Test
     @DisplayName("Lists every non deleted template of a type")
     void list() {
-        when(repository.findByTypeAndDeletedFalseOrderByVersionDesc(TemplateType.RENT_RECEIPT))
+        when(repository.findFirstByUserIdAndTypeAndBuiltInTrueAndDeletedFalse(1L, TemplateType.RENT_RECEIPT))
+                .thenReturn(Optional.of(template(10L, TemplateType.RENT_RECEIPT, "Intégré", 1, true, true, false)));
+        when(repository.findByUserIdAndTypeAndDeletedFalseOrderByVersionDesc(1L, TemplateType.RENT_RECEIPT))
                 .thenReturn(List.of(template(1L, TemplateType.RENT_RECEIPT, "Quittance", 2, true, false, false)));
 
         assertThat(service.list(TemplateType.RENT_RECEIPT)).extracting(TemplateDto::name).containsExactly("Quittance");
@@ -88,20 +96,22 @@ class TemplateServiceTest {
     @DisplayName("The active template falls back to the built-in one then fails")
     void active() {
         TemplateDocument active = template(1L, TemplateType.RENT_RECEIPT, "Actif", 2, true, false, false);
-        when(repository.findFirstByTypeAndActiveTrueAndDeletedFalse(TemplateType.RENT_RECEIPT))
+        TemplateDocument builtIn = template(2L, TemplateType.RENT_RECEIPT, "Intégré", 1, false, true, false);
+        when(repository.findFirstByUserIdAndTypeAndBuiltInTrueAndDeletedFalse(any(), any()))
+                .thenReturn(Optional.of(builtIn));
+        when(repository.findFirstByUserIdAndTypeAndActiveTrueAndDeletedFalse(1L, TemplateType.RENT_RECEIPT))
                 .thenReturn(Optional.of(active));
         assertThat(service.active(TemplateType.RENT_RECEIPT)).isSameAs(active);
 
-        TemplateDocument builtIn = template(2L, TemplateType.RENT_RECEIPT, "Intégré", 1, false, true, false);
-        when(repository.findFirstByTypeAndActiveTrueAndDeletedFalse(TemplateType.EXPENSE_STATEMENT))
+        when(repository.findFirstByUserIdAndTypeAndActiveTrueAndDeletedFalse(1L, TemplateType.EXPENSE_STATEMENT))
                 .thenReturn(Optional.empty());
-        when(repository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(TemplateType.EXPENSE_STATEMENT))
+        when(repository.findFirstByUserIdAndTypeAndBuiltInTrueAndDeletedFalse(1L, TemplateType.EXPENSE_STATEMENT))
                 .thenReturn(Optional.of(builtIn));
         assertThat(service.active(TemplateType.EXPENSE_STATEMENT)).isSameAs(builtIn);
 
-        when(repository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(TemplateType.RENT_RECEIPT))
+        when(repository.findFirstByUserIdAndTypeAndBuiltInTrueAndDeletedFalse(1L, TemplateType.RENT_RECEIPT))
                 .thenReturn(Optional.empty());
-        when(repository.findFirstByTypeAndActiveTrueAndDeletedFalse(TemplateType.RENT_RECEIPT))
+        when(repository.findFirstByUserIdAndTypeAndActiveTrueAndDeletedFalse(1L, TemplateType.RENT_RECEIPT))
                 .thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.active(TemplateType.RENT_RECEIPT))
                 .isInstanceOf(NotFoundException.class)
@@ -115,8 +125,8 @@ class TemplateServiceTest {
     @Test
     @DisplayName("A deleted or missing template is a not found")
     void byId() {
-        when(repository.findById(1L)).thenReturn(Optional.empty());
-        when(repository.findById(2L)).thenReturn(Optional.of(template(2L, TemplateType.RENT_RECEIPT, "Supprimé", 1,
+        when(repository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.empty());
+        when(repository.findByIdAndUserId(2L, 1L)).thenReturn(Optional.of(template(2L, TemplateType.RENT_RECEIPT, "Supprimé", 1,
                 false, false, true)));
 
         assertThatThrownBy(() -> service.byId(1L)).isInstanceOf(NotFoundException.class)
@@ -124,6 +134,36 @@ class TemplateServiceTest {
                 .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("TEMPLATE_NOT_FOUND"));
         assertThatThrownBy(() -> service.byId(2L)).isInstanceOf(NotFoundException.class)
                 .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("TEMPLATE_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("A foreign template id returns 404 TEMPLATE_NOT_FOUND")
+    void foreignTemplateIdNotFound() {
+        when(repository.findByIdAndUserId(999L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.byId(999L))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Template introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("TEMPLATE_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("Lazily creates built-in template when absent for the user")
+    void lazilyCreatesBuiltInTemplate() {
+        when(repository.findFirstByUserIdAndTypeAndBuiltInTrueAndDeletedFalse(1L, TemplateType.RENT_RECEIPT))
+                .thenReturn(Optional.empty());
+        when(repository.findByUserIdAndTypeAndDeletedFalseOrderByVersionDesc(1L, TemplateType.RENT_RECEIPT))
+                .thenReturn(List.of());
+
+        service.list(TemplateType.RENT_RECEIPT);
+
+        ArgumentCaptor<TemplateDocument> captor = ArgumentCaptor.forClass(TemplateDocument.class);
+        verify(repository).save(captor.capture());
+        TemplateDocument created = captor.getValue();
+        assertThat(created.getUserId()).isEqualTo(1L);
+        assertThat(created.isBuiltIn()).isTrue();
+        assertThat(created.isActive()).isTrue();
+        assertThat(created.getType()).isEqualTo(TemplateType.RENT_RECEIPT);
     }
 
     @Test
@@ -197,9 +237,11 @@ class TemplateServiceTest {
     @Test
     @DisplayName("Upload stores version 1 or increments the latest version")
     void uploadVersions() {
+        when(repository.findFirstByUserIdAndTypeAndBuiltInTrueAndDeletedFalse(any(), any()))
+                .thenReturn(Optional.of(template(99L, TemplateType.RENT_RECEIPT, "Intégré", 1, true, true, false)));
         when(repository.save(any(TemplateDocument.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(storage.storeTemplate(any(), eq("RENT_RECEIPT"), eq(1))).thenReturn("/data/templates/1.html");
-        when(repository.findTopByTypeOrderByVersionDesc(TemplateType.RENT_RECEIPT)).thenReturn(Optional.empty());
+        when(storage.storeTemplate(eq(1L), any(), eq("RENT_RECEIPT"), eq(1))).thenReturn("/data/templates/u1_1.html");
+        when(repository.findTopByUserIdAndTypeOrderByVersionDesc(1L, TemplateType.RENT_RECEIPT)).thenReturn(Optional.empty());
 
         TemplateDto first = service.upload(TemplateType.RENT_RECEIPT, " Modèle ",
                 htmlFile("<html><body>{{bailleur.nom}}{{locataire.nom}}{{total}}</body></html>"));
@@ -209,9 +251,9 @@ class TemplateServiceTest {
         assertThat(first.builtIn()).isFalse();
         assertThat(first.report()).isNotNull();
 
-        when(repository.findTopByTypeOrderByVersionDesc(TemplateType.RENT_RECEIPT))
+        when(repository.findTopByUserIdAndTypeOrderByVersionDesc(1L, TemplateType.RENT_RECEIPT))
                 .thenReturn(Optional.of(template(1L, TemplateType.RENT_RECEIPT, "Ancien", 4, true, false, false)));
-        when(storage.storeTemplate(any(), eq("RENT_RECEIPT"), eq(5))).thenReturn("/data/templates/5.html");
+        when(storage.storeTemplate(eq(1L), any(), eq("RENT_RECEIPT"), eq(5))).thenReturn("/data/templates/u1_5.html");
         TemplateDto next = service.upload(TemplateType.RENT_RECEIPT, "Modèle",
                 htmlFile("<html><body>{{bailleur.nom}}{{locataire.nom}}{{total}}</body></html>"));
         assertThat(next.version()).isEqualTo(5);
@@ -222,8 +264,8 @@ class TemplateServiceTest {
     void activate() {
         TemplateDocument current = template(1L, TemplateType.RENT_RECEIPT, "Nouveau", 2, false, false, false);
         TemplateDocument previous = template(2L, TemplateType.RENT_RECEIPT, "Ancien", 1, true, false, false);
-        when(repository.findById(1L)).thenReturn(Optional.of(current));
-        when(repository.findByTypeAndActiveTrueAndDeletedFalse(TemplateType.RENT_RECEIPT))
+        when(repository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(current));
+        when(repository.findByUserIdAndTypeAndActiveTrueAndDeletedFalse(1L, TemplateType.RENT_RECEIPT))
                 .thenReturn(List.of(previous));
         when(repository.save(any(TemplateDocument.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -239,8 +281,8 @@ class TemplateServiceTest {
     @DisplayName("Activation without previous active version skips the flush")
     void activateWithoutPrevious() {
         TemplateDocument current = template(1L, TemplateType.RENT_RECEIPT, "Nouveau", 1, false, false, false);
-        when(repository.findById(1L)).thenReturn(Optional.of(current));
-        when(repository.findByTypeAndActiveTrueAndDeletedFalse(TemplateType.RENT_RECEIPT)).thenReturn(List.of());
+        when(repository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(current));
+        when(repository.findByUserIdAndTypeAndActiveTrueAndDeletedFalse(1L, TemplateType.RENT_RECEIPT)).thenReturn(List.of());
         when(repository.save(any(TemplateDocument.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         service.activate(1L);
@@ -252,9 +294,9 @@ class TemplateServiceTest {
     @Test
     @DisplayName("Built-in and active templates cannot be deleted")
     void deleteRules() {
-        when(repository.findById(1L)).thenReturn(Optional.of(
+        when(repository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(
                 template(1L, TemplateType.RENT_RECEIPT, "Intégré", 1, false, true, false)));
-        when(repository.findById(2L)).thenReturn(Optional.of(
+        when(repository.findByIdAndUserId(2L, 1L)).thenReturn(Optional.of(
                 template(2L, TemplateType.RENT_RECEIPT, "Actif", 1, true, false, false)));
 
         assertThatThrownBy(() -> service.delete(1L))
@@ -273,7 +315,7 @@ class TemplateServiceTest {
     @DisplayName("Deleting an inactive custom template is logical")
     void deleteCustom() {
         TemplateDocument custom = template(1L, TemplateType.RENT_RECEIPT, "Perso", 1, false, false, false);
-        when(repository.findById(1L)).thenReturn(Optional.of(custom));
+        when(repository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(custom));
         when(repository.save(any(TemplateDocument.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         service.delete(1L);
@@ -284,7 +326,7 @@ class TemplateServiceTest {
     @Test
     @DisplayName("Reset activates the built-in template or fails")
     void reset() {
-        when(repository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(TemplateType.RENT_RECEIPT))
+        when(repository.findFirstByUserIdAndTypeAndBuiltInTrueAndDeletedFalse(1L, TemplateType.RENT_RECEIPT))
                 .thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.reset(TemplateType.RENT_RECEIPT))
                 .isInstanceOf(NotFoundException.class)
@@ -293,10 +335,10 @@ class TemplateServiceTest {
                         .isEqualTo("TEMPLATE_BUILT_IN_NOT_FOUND"));
 
         TemplateDocument builtIn = template(1L, TemplateType.RENT_RECEIPT, "Intégré", 1, false, true, false);
-        when(repository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(TemplateType.RENT_RECEIPT))
+        when(repository.findFirstByUserIdAndTypeAndBuiltInTrueAndDeletedFalse(1L, TemplateType.RENT_RECEIPT))
                 .thenReturn(Optional.of(builtIn));
-        when(repository.findById(1L)).thenReturn(Optional.of(builtIn));
-        when(repository.findByTypeAndActiveTrueAndDeletedFalse(TemplateType.RENT_RECEIPT)).thenReturn(List.of());
+        when(repository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(builtIn));
+        when(repository.findByUserIdAndTypeAndActiveTrueAndDeletedFalse(1L, TemplateType.RENT_RECEIPT)).thenReturn(List.of());
         when(repository.save(any(TemplateDocument.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         assertThat(service.reset(TemplateType.RENT_RECEIPT).active()).isTrue();
@@ -306,7 +348,7 @@ class TemplateServiceTest {
     @DisplayName("File and default file read the stored templates")
     void files() {
         TemplateDocument custom = template(1L, TemplateType.RENT_RECEIPT, "Perso", 1, false, false, false);
-        when(repository.findById(1L)).thenReturn(Optional.of(custom));
+        when(repository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(custom));
         when(storage.read(custom.getPath())).thenReturn(new byte[]{1});
         when(storage.read("classpath:templates/defaut/quittance.html")).thenReturn(new byte[]{2});
         when(storage.read("classpath:templates/defaut/note-frais.html")).thenReturn(new byte[]{3});
@@ -327,7 +369,7 @@ class TemplateServiceTest {
     @DisplayName("Preview renders and watermarks the PDF")
     void preview() {
         TemplateDocument custom = template(1L, TemplateType.RENT_RECEIPT, "Perso", 1, false, false, false);
-        when(repository.findById(1L)).thenReturn(Optional.of(custom));
+        when(repository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(custom));
         when(storage.read(custom.getPath())).thenReturn("<p>{{nom}}</p>".getBytes(StandardCharsets.UTF_8));
         when(pdfService.renderHtmlToPdf("<p>Jean</p>")).thenReturn(new byte[]{4});
         when(pdfService.addWatermark(new byte[]{4})).thenReturn(new byte[]{5});

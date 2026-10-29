@@ -112,7 +112,7 @@ class CompanyServiceTest {
     void listsAndMaps() {
         when(repository.findAllByUserIdAndDeletedFalseOrderByNameAscIdAsc(USER_ID)).thenReturn(List.of(company()));
         when(repository.findByIdAndUserIdAndDeletedFalse(COMPANY_ID, USER_ID)).thenReturn(Optional.of(company()));
-        when(repository.findById(COMPANY_ID)).thenReturn(Optional.of(company()));
+        when(repository.findByIdAndUserId(COMPANY_ID, USER_ID)).thenReturn(Optional.of(company()));
         when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID))
                 .thenReturn(Optional.of(lease(LEASE_ID, COMPANY_ID)));
 
@@ -411,7 +411,7 @@ class CompanyServiceTest {
         Lease linked = lease(LEASE_ID, COMPANY_ID);
         when(employees.findAllByUserIdAndCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(USER_ID, COMPANY_ID))
                 .thenReturn(List.of(employee));
-        when(signatures.findAllByPersonIdInAndDeletedFalse(List.of(7L))).thenReturn(List.of(signature));
+        when(signatures.findAllByUserIdAndPersonIdInAndDeletedFalse(USER_ID, List.of(7L))).thenReturn(List.of(signature));
         when(leases.findAllByUserIdAndCompanyIdAndDeletedFalse(USER_ID, COMPANY_ID)).thenReturn(List.of(linked));
 
         service.delete(COMPANY_ID);
@@ -433,7 +433,7 @@ class CompanyServiceTest {
         when(repository.findByIdAndUserIdAndDeletedFalse(COMPANY_ID, USER_ID)).thenReturn(Optional.of(managed));
         when(employees.findAllByUserIdAndCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(USER_ID, COMPANY_ID))
                 .thenReturn(List.of());
-        when(signatures.findAllByPersonIdInAndDeletedFalse(List.of())).thenReturn(List.of());
+        when(signatures.findAllByUserIdAndPersonIdInAndDeletedFalse(USER_ID, List.of())).thenReturn(List.of());
         when(leases.findAllByUserIdAndCompanyIdAndDeletedFalse(USER_ID, COMPANY_ID)).thenReturn(List.of());
 
         service.delete(COMPANY_ID);

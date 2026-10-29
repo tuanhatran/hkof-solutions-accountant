@@ -62,16 +62,21 @@ public class StorageService {
         }
     }
 
-    public String storeTemplate(byte[] content, String type, int version) {
+    public String storeTemplate(Long userId, byte[] content, String type, int version) {
         try {
+            String prefix = userId != null ? "u" + userId + "_" : "";
             Path target = root.resolve("templates")
-                    .resolve(type.toLowerCase() + "_v" + version + ".html")
+                    .resolve(prefix + type.toLowerCase(Locale.ROOT) + "_v" + version + ".html")
                     .normalize();
             Files.write(target, content);
             return target.toString();
         } catch (IOException ex) {
             throw new IllegalStateException("Impossible d'enregistrer le template.", ex);
         }
+    }
+
+    public String storeTemplate(byte[] content, String type, int version) {
+        return storeTemplate(null, content, type, version);
     }
 
     public String storePdf(String relativeName, byte[] content) {

@@ -79,9 +79,10 @@ class UserOwnershipMigrationPostgresTest {
             assertThat(singleLong(statement, "SELECT user_id FROM expense_item WHERE id = 1")).isEqualTo(owner);
             assertThat(singleLong(statement, "SELECT user_id FROM address WHERE id = 1")).isEqualTo(owner);
             assertThat(singleLong(statement, "SELECT user_id FROM person WHERE id = 101")).isEqualTo(owner);
-            assertThat(singleNull(statement, "SELECT user_id FROM person WHERE kind = 'PERSON' LIMIT 1")).isNull();
+            assertThat(singleLong(statement, "SELECT user_id FROM person WHERE id = 100")).isEqualTo(owner);
+            assertThat(singleLong(statement, "SELECT COUNT(*) FROM person WHERE user_id IS NULL")).isZero();
 
-            for (String table : List.of("company", "lease", "expense_item", "address")) {
+            for (String table : List.of("company", "lease", "expense_item", "address", "person", "signature")) {
                 assertThat(singleLong(statement, """
                         SELECT COUNT(*) FROM information_schema.columns
                         WHERE table_name = '%s' AND column_name = 'user_id' AND is_nullable = 'NO'
@@ -127,6 +128,177 @@ class UserOwnershipMigrationPostgresTest {
                     .isEqualTo(singleLong(statement, """
                             SELECT COUNT(*) FROM person WHERE kind = 'EMPLOYEE' AND user_id = %d
                             """.formatted(owner)));
+            assertThat(singleLong(statement, "SELECT COUNT(*) FROM person WHERE user_id IS NULL")).isZero();
+            assertThat(singleLong(statement, "SELECT COUNT(*) FROM person WHERE user_id = " + owner))
+                    .isEqualTo(singleLong(statement, "SELECT COUNT(*) FROM person"));
+            assertThat(singleLong(statement, "SELECT COUNT(*) FROM signature WHERE user_id IS NULL")).isZero();
+            assertThat(singleLong(statement, "SELECT COUNT(*) FROM template_document WHERE user_id IS NULL")).isZero();
+            assertThat(singleLong(statement, "SELECT COUNT(*) FROM llm_config WHERE user_id IS NULL")).isZero();
+        }
+    }
+
+    @Test
+    @DisplayName("V23 backfills persons and signatures to their owner or thtran, and scopes lease unique indexes per account")
+    void backfillsPersonsAndSignaturesAndScopesLeaseIndexes() throws Exception {
+        resetSchema();
+        migrateTo("22");
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            long owner = ownerId(statement, THTRAN_EMAIL);
+            long other = insertOtherUser(statement);
+            statement.execute("""
+                    INSERT INTO company (id, name, user_id, deleted, created_at)
+                    VALUES (10, 'Société Autre', %d, FALSE, NOW())
+                    """.formatted(other));
+            statement.execute("""
+                    INSERT INTO person (id, kind, name, deleted, created_at)
+                    VALUES (200, 'PERSON', 'Bailleur pré-V23', FALSE, NOW())
+                    """);
+            statement.execute("""
+                    INSERT INTO person (id, kind, user_id, company_id, first_name, last_name, title, deleted, created_at)
+                    VALUES (201, 'EMPLOYEE', %d, 10, 'Salarié', 'Autre', 'CEO', FALSE, NOW())
+                    """.formatted(other));
+            statement.execute("""
+                    INSERT INTO signature (id, person_id, name, mime_type, image, deleted, created_at)
+                    VALUES (300, 200, 'Sig bailleur', 'image/png', '\\x89504e47'::bytea, FALSE, NOW()),
+                           (301, 201, 'Sig salarié autre', 'image/png', '\\x89504e47'::bytea, FALSE, NOW()),
+                           (302, NULL, 'Sig orpheline supprimée', 'image/png', '\\x89504e47'::bytea, TRUE, NOW())
+                    """);
+        }
+
+        migrate();
+
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            long owner = ownerId(statement, THTRAN_EMAIL);
+            long other = ownerId(statement, "autre@homeofficeexpenses.local");
+            assertThat(singleLong(statement, "SELECT user_id FROM person WHERE id = 200")).isEqualTo(owner);
+            assertThat(singleLong(statement, "SELECT user_id FROM person WHERE id = 201")).isEqualTo(other);
+            assertThat(singleLong(statement, "SELECT user_id FROM signature WHERE id = 300")).isEqualTo(owner);
+            assertThat(singleLong(statement, "SELECT user_id FROM signature WHERE id = 301")).isEqualTo(other);
+            assertThat(singleLong(statement, "SELECT user_id FROM signature WHERE id = 302")).isEqualTo(owner);
+
+            assertThat(singleLong(statement,
+                    "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'ix_signature_user_person_deleted'"))
+                    .isEqualTo(1);
+            assertThat(singleLong(statement,
+                    "SELECT COUNT(*) FROM pg_indexes WHERE indexname IN ('ux_lease_active_pair', 'ux_lease_active_company')"))
+                    .isZero();
+            assertThat(singleLong(statement,
+                    "SELECT COUNT(*) FROM pg_indexes WHERE indexname IN ('ux_lease_user_active_pair', 'ux_lease_user_active_company')"))
+                    .isEqualTo(2);
+
+            statement.execute("""
+                    INSERT INTO person (id, user_id, kind, name, deleted, created_at)
+                    VALUES (202, %d, 'PERSON', 'Locataire pré-V23', FALSE, NOW())
+                    """.formatted(owner));
+            statement.execute("""
+                    INSERT INTO address (id, user_id, label, deleted, created_at)
+                    VALUES (20, %d, '20 rue Bail', FALSE, NOW())
+                    """.formatted(owner));
+            statement.execute("""
+                    INSERT INTO lease (id, user_id, landlord_id, tenant_id, company_lease, address_id,
+                        rent_excl_charges, charges, deleted, created_at)
+                    VALUES (20, %d, 200, 202, FALSE, 20, 900.00, 0.00, FALSE, NOW())
+                    """.formatted(owner));
+            // Same active landlord/tenant pair under another account is allowed by ux_lease_user_active_pair:
+            statement.execute("""
+                    INSERT INTO lease (id, user_id, landlord_id, tenant_id, company_lease, address_id,
+                        rent_excl_charges, charges, deleted, created_at)
+                    VALUES (21, %d, 200, 202, FALSE, 20, 900.00, 0.00, FALSE, NOW())
+                    """.formatted(other));
+            // Duplicate inside the same account is rejected:
+            assertThatThrownBy(() -> statement.execute("""
+                    INSERT INTO lease (id, user_id, landlord_id, tenant_id, company_lease, address_id,
+                        rent_excl_charges, charges, deleted, created_at)
+                    VALUES (22, %d, 200, 202, FALSE, 20, 900.00, 0.00, FALSE, NOW())
+                    """.formatted(owner))).isInstanceOf(SQLException.class);
+
+            // Company lease active pair is also per account:
+            statement.execute("""
+                    INSERT INTO lease (id, user_id, landlord_id, company_id, company_lease, address_id,
+                        rent_excl_charges, charges, total_area, business_area, deleted, created_at)
+                    VALUES (23, %d, 200, 1, TRUE, 20, 900.00, 0.00, 70.00, 25.00, FALSE, NOW())
+                    """.formatted(owner));
+            statement.execute("""
+                    INSERT INTO lease (id, user_id, landlord_id, company_id, company_lease, address_id,
+                        rent_excl_charges, charges, total_area, business_area, deleted, created_at)
+                    VALUES (24, %d, 200, 1, TRUE, 20, 900.00, 0.00, 70.00, 25.00, FALSE, NOW())
+                    """.formatted(other));
+            assertThatThrownBy(() -> statement.execute("""
+                    INSERT INTO lease (id, user_id, landlord_id, company_id, company_lease, address_id,
+                        rent_excl_charges, charges, total_area, business_area, deleted, created_at)
+                    VALUES (25, %d, 200, 1, TRUE, 20, 900.00, 0.00, 70.00, 25.00, FALSE, NOW())
+                    """.formatted(owner))).isInstanceOf(SQLException.class);
+        }
+    }
+
+    @Test
+    @DisplayName("V24 backfills template documents and LLM configs to thtran, scopes unique indexes, and sets identity")
+    void backfillsTemplatesAndLlmConfig() throws Exception {
+        resetSchema();
+        migrateTo("23");
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            statement.execute("""
+                    INSERT INTO template_document (id, type, name, version, format, file_path, active, built_in, deleted, created_at)
+                    VALUES (10, 'RENT_RECEIPT', 'Modèle legacy', 1, 'HTML', '/legacy/quittance.html', TRUE, TRUE, FALSE, NOW())
+                    """);
+            statement.execute("""
+                    INSERT INTO llm_config (id, active, provider, url, model, extraction_prompt, updated_at)
+                    VALUES (1, TRUE, 'OLLAMA', 'http://localhost:11434', 'legacy-model', 'Prompt', NOW())
+                    """);
+        }
+
+        migrate();
+
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            long owner = ownerId(statement, THTRAN_EMAIL);
+            long other = insertOtherUser(statement);
+
+            assertThat(singleLong(statement, "SELECT user_id FROM template_document WHERE id = 10")).isEqualTo(owner);
+            assertThat(singleLong(statement, "SELECT user_id FROM llm_config WHERE id = 1")).isEqualTo(owner);
+
+            for (String table : List.of("template_document", "llm_config")) {
+                assertThat(singleLong(statement, """
+                        SELECT COUNT(*) FROM information_schema.columns
+                        WHERE table_name = '%s' AND column_name = 'user_id' AND is_nullable = 'NO'
+                        """.formatted(table))).isEqualTo(1);
+            }
+
+            assertThat(singleLong(statement,
+                    "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'ux_template_active'"))
+                    .isZero();
+            assertThat(singleLong(statement,
+                    "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'ux_template_user_active'"))
+                    .isEqualTo(1);
+            assertThat(singleLong(statement,
+                    "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'ix_template_user_type'"))
+                    .isEqualTo(1);
+            assertThat(singleLong(statement,
+                    "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'ux_llm_config_user'"))
+                    .isEqualTo(1);
+
+            // Other user can also have an active RENT_RECEIPT template:
+            statement.execute("""
+                    INSERT INTO template_document (type, name, version, format, file_path, active, built_in, deleted, created_at, user_id)
+                    VALUES ('RENT_RECEIPT', 'Modèle autre', 1, 'HTML', '/other/quittance.html', TRUE, TRUE, FALSE, NOW(), %d)
+                    """.formatted(other));
+
+            // But same user cannot have two active templates of the same type:
+            assertThatThrownBy(() -> statement.execute("""
+                    INSERT INTO template_document (type, name, version, format, file_path, active, built_in, deleted, created_at, user_id)
+                    VALUES ('RENT_RECEIPT', 'Modèle doublon', 2, 'HTML', '/owner/quittance2.html', TRUE, FALSE, FALSE, NOW(), %d)
+                    """.formatted(owner))).isInstanceOf(SQLException.class);
+
+            // Other user gets their own LLM config:
+            statement.execute("""
+                    INSERT INTO llm_config (user_id, active, provider, url, extraction_prompt)
+                    VALUES (%d, TRUE, 'OLLAMA', 'http://localhost:11434', 'Prompt autre')
+                    """.formatted(other));
+
+            // Same user cannot have two LLM configs:
+            assertThatThrownBy(() -> statement.execute("""
+                    INSERT INTO llm_config (user_id, active, provider, url, extraction_prompt)
+                    VALUES (%d, TRUE, 'OLLAMA', 'http://localhost:11434', 'Prompt doublon')
+                    """.formatted(owner))).isInstanceOf(SQLException.class);
         }
     }
 
@@ -175,14 +347,6 @@ class UserOwnershipMigrationPostgresTest {
         try (ResultSet result = statement.executeQuery(sql)) {
             result.next();
             return result.getLong(1);
-        }
-    }
-
-    private Long singleNull(Statement statement, String sql) throws SQLException {
-        try (ResultSet result = statement.executeQuery(sql)) {
-            result.next();
-            long value = result.getLong(1);
-            return result.wasNull() ? null : value;
         }
     }
 }
