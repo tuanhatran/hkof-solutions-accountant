@@ -10,7 +10,7 @@ import type {
 } from "@/api/types";
 import i18n from "@/i18n";
 import { useRentReceiptDraft } from "@/state/rentReceiptDraft";
-import { useStatementDraft } from "@/state/statementDraft";
+import { draftScopeKey, useStatementDraft } from "@/state/statementDraft";
 import { useToasts } from "@/state/toasts";
 import { HistoryPage } from "./HistoryPage";
 
@@ -674,23 +674,25 @@ describe("HistoryPage", () => {
     renderPage();
     await screen.findByText("2 mois suivis");
 
+    const januaryNote = columnOf("2026-01", "statement");
+    const loadButtons = within(januaryNote).getAllByRole("button", {
+      name: "Charger",
+    });
+    expect(loadButtons).toHaveLength(2);
+    await user.click(loadButtons[0]);
+
+    const dialog = screen.getByRole("dialog", { name: "Rouvrir cette note ?" });
     await user.click(
-      document.querySelector(
-        '[data-cy="btn-reopen-statement-2026-01"]',
-      ) as HTMLElement,
+      within(dialog).getByRole("button", { name: "Charger les lignes" }),
     );
 
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-
-    await user.click(
-      document.querySelector(
-        '[data-cy="btn-reopen-statement-2026-01"]',
-      ) as HTMLElement,
-    );
-
-    await waitFor(() => expect(currentPath()).toBe("/historique"));
+    await waitFor(() => expect(currentPath()).toBe("/generer/note-frais"));
     const draft = useStatementDraft.getState();
-    expect(draft.month).toBe("2025-12");
+    const scope = draftScopeKey(1, "2026-01");
+    expect(draft.month).toBe("2026-01");
+    expect(draft.primedReceiptByMonth[scope]).toBe(11);
+    expect(draft.linesByMonth[scope]).toHaveLength(1);
+    expect(draft.linesByMonth[scope][0].itemCode).toBe("gaz");
   });
 
   it("carries the statement company to the generation page", async () => {
@@ -798,7 +800,7 @@ describe("HistoryPage", () => {
     expect(receiptRows.map((row) => row.getAttribute("data-cy"))).toEqual([
       "history-address-2026-01-address-51",
       "history-address-2026-01-address-61",
-      "history-address-2026-01-inconnue",
+      "history-address-2026-01-unknown",
     ]);
 
     const statementRows = Array.from(
@@ -824,11 +826,13 @@ describe("HistoryPage", () => {
 
     expect(within(unknown).getByText("Adresse inconnue")).toBeInTheDocument();
 
-    await user.click(
-      document.querySelector(
-        '[data-cy="btn-reopen-statement-2026-01-address-61"]',
-      ) as HTMLElement,
-    );
+    const [loadZuluNote] = within(zuluNote).getAllByRole("button", {
+      name: "Charger",
+    });
+    await user.click(loadZuluNote);
+    const dialog = screen.getByRole("dialog", { name: "Rouvrir cette note ?" });
+    expect(dialog).toHaveTextContent(/version 1 de Janvier 2026/);
+    await user.click(within(dialog).getByRole("button", { name: "Annuler" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
@@ -881,7 +885,7 @@ describe("HistoryPage", () => {
 
     await screen.findByText("1 mois suivi");
     const panel = document.querySelector(
-      '[data-cy="history-address-2026-03-inconnue"] .rent-receipt-month-panel',
+      '[data-cy="history-address-2026-03-unknown"] .rent-receipt-month-panel',
     );
     if (!(panel instanceof HTMLElement)) {
       throw new Error("March receipt panel not found");
