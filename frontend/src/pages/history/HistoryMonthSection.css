@@ -43,11 +43,7 @@
 
   /* One grid shared by the column header and every version row. */
   .history-versions-grid {
-    @apply flex min-h-9 flex-col gap-0.5 rounded-lg border-b border-line/70 px-3 py-1.5 text-xs last:border-b-0 xl:grid xl:items-center xl:gap-x-3 xl:gap-y-0;
-  }
-
-  .history-versions-header {
-    @apply text-[11px] font-normal text-ink-soft;
+    @apply flex min-h-9 flex-col gap-0.5 rounded-lg border-line/70 px-3 py-1.5 text-xs last:border-b-0 xl:grid xl:items-center xl:gap-x-3 xl:gap-y-0;
   }
 
   .history-versions-grid-quittance {

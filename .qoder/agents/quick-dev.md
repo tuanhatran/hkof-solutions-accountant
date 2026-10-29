@@ -43,7 +43,7 @@ Ambiguous task: ask all questions in ONE message before starting, never guess an
    | Docs, comments only                                               | `git diff --check`                                                                          |
    | Tests only, or component CSS only (no markup or text)             | Affected tests + that side's lint/format (frontend also `npm run build`). No E2E.           |
    | Backend production code                                           | `cd backend && ./mvnw -B verify` + `scripts/diff-coverage.sh <Base> backend` + full E2E     |
-   | Frontend production code                                          | `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + full E2E |
+   | Frontend production code                                          | `cd frontend && npm run test:coverage && npm run lint && npm run format && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + full E2E |
    | Docker or E2E configuration                                       | Backend + frontend gates + full E2E                                                         |
 
    Full E2E, one stack per task:

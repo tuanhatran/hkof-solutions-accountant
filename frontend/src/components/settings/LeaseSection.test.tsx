@@ -416,7 +416,9 @@ describe("LeaseSection receipt history", () => {
     renderSection();
 
     const row = document.querySelector('[data-cy="bail-10"]');
-    const history = document.querySelector('[data-cy="quittances-bail-10"]');
+    const history = document.querySelector(
+      '[data-cy="lease-receipt-history-10"]',
+    );
     expect(row).not.toBeNull();
     expect(history).not.toBeNull();
     expect(row?.lastElementChild).toBe(history);
@@ -433,7 +435,9 @@ describe("LeaseSection receipt history", () => {
     allRentReceiptRows = [OTHER_TENANT_RECEIPT];
     renderSection();
 
-    const history = document.querySelector('[data-cy="quittances-bail-10"]');
+    const history = document.querySelector(
+      '[data-cy="lease-receipt-history-10"]',
+    );
     expect(history).not.toBeNull();
     expect(history?.textContent).toContain(
       "Aucune quittance générée pour ce bail.",
@@ -444,7 +448,9 @@ describe("LeaseSection receipt history", () => {
     allRentReceiptsFailing = true;
     renderSection();
 
-    const history = document.querySelector('[data-cy="quittances-bail-10"]');
+    const history = document.querySelector(
+      '[data-cy="lease-receipt-history-10"]',
+    );
     expect(history?.textContent).toContain("Impossible de charger les données");
     expect(history?.textContent).toContain("historique indisponible");
     expect(

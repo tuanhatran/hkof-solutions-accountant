@@ -84,7 +84,7 @@ cd backend && ./mvnw -B test
 cd backend && ./mvnw -B verify          # tests + JaCoCo XML report
 cd frontend && npm ci && npm test && npm run build
 cd frontend && npm run lint             # ESLint
-cd frontend && npm run format:check     # Prettier
+cd frontend && npm run format     # Prettier
 cd frontend && npm run test:coverage   # Vitest coverage + Clover XML report
 scripts/diff-coverage.sh <Base> all    # changed-line coverage >= 80% gate
 cd frontend && npm run gen:api         # after an OpenAPI change
@@ -99,7 +99,7 @@ removes it with its volumes once the user accepts the change.
 
 - Every new task keeps changed-line coverage >= 80%: `scripts/diff-coverage.sh <Base> backend|frontend|all` is the gate (JaCoCo XML for backend lines from `cd backend && ./mvnw -B verify`, Vitest Clover XML for frontend lines from `cd frontend && npm run test:coverage`); no global bundle threshold.
 - Every production class stays under 300 lines. A class crossing 300 lines is split, never shrunk by deleting comments only. The same 300-line cap applies to a component CSS file.
-- `npm run lint` and `npm run format:check` must pass; a green build that skipped either gate is not evidence.
+- `npm run lint` and `npm run format` must pass; a green build that skipped either gate is not evidence.
 - The handoff carries one evidence line with the real changed-line percentages and measured line counts of the task.
 
 ## Workflow

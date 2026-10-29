@@ -59,7 +59,7 @@ export function LeaseReceiptHistory({
   return (
     <div
       className="lease-receipt-history"
-      data-cy={`quittances-bail-${lease.id}`}
+      data-cy={`lease-receipt-history-${lease.id}`}
     >
       <hr className="my-2 border-t border-[var(--color-accent)]/20" />
       <p className="lease-receipt-history-title">
@@ -91,7 +91,7 @@ function MonthList({
     return (
       <p
         className="lease-receipt-history-empty"
-        data-cy={`quittances-bail-vide-${lease.id}`}
+        data-cy={`lease-receipt-history-empty-${lease.id}`}
       >
         {t("settings.history.receipts.empty")}
       </p>
@@ -103,7 +103,7 @@ function MonthList({
         <details
           key={group.month}
           className="lease-receipt-history-month"
-          data-cy={`quittances-bail-mois-${lease.id}-${group.month}`}
+          data-cy={`lease-receipt-history-mois-${lease.id}-${group.month}`}
         >
           <summary className="lease-receipt-history-summary">
             <span>{formatMonth(group.month)}</span>

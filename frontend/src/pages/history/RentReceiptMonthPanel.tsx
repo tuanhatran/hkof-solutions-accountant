@@ -87,9 +87,7 @@ function RentReceiptHistoryItem({ version }: { version: RentReceiptDto }) {
 
 /** Receipt content of one address, grouped by landlord–tenant couple. */
 export function RentReceiptMonthPanel({
-  month,
   address,
-  suffix,
 }: {
   month: string;
   address: AddressGroup;
@@ -100,32 +98,16 @@ export function RentReceiptMonthPanel({
     return null;
   }
   const couples = groupReceiptsByCouple(address.rentReceipts);
-  const collapsedCount = couples.filter(
-    (couple) => couple.receipts.length > 1,
-  ).length;
 
   return (
     <div className="rent-receipt-month-panel">
       {couples.map((couple) =>
         couple.receipts.length > 1 ? (
-          <details
-            key={couple.key}
-            className="rent-receipt-month-panel-history"
-            data-cy={
-              collapsedCount === 1
-                ? `quittances-mois-${month}${suffix}`
-                : `quittances-mois-${month}${suffix}-${couple.key}`
-            }
-          >
-            <summary className="rent-receipt-month-panel-summary">
-              {pairLabel(couple.receipts[0])} ({couple.receipts.length})
-            </summary>
-            <ul className="rent-receipt-month-panel-history-list">
-              {couple.receipts.map((version) => (
-                <RentReceiptHistoryItem key={version.id} version={version} />
-              ))}
-            </ul>
-          </details>
+          <ul className="rent-receipt-month-panel-history-list-multiple">
+            {couple.receipts.map((version) => (
+              <RentReceiptHistoryItem key={version.id} version={version} />
+            ))}
+          </ul>
         ) : (
           <ul
             key={couple.key}

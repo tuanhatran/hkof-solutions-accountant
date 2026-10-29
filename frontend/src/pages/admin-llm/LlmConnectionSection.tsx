@@ -243,7 +243,6 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
           <div className="llm-connection-section-actions">
             <Button
               variant="secondary"
-              small
               icon={<Activity size={14} />}
               loading={c.testInProgress}
               onClick={() => void c.runTest()}
@@ -253,7 +252,6 @@ export function LlmConnectionSection({ c }: { c: AdminLlmController }) {
             </Button>
             <Button
               variant="primary"
-              small
               type="submit"
               icon={<Save size={14} />}
               loading={c.save.isPending}
