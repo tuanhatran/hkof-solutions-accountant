@@ -696,8 +696,7 @@ export const fr = {
       },
       leaseTab: {
         title: "Baux de la société",
-        description:
-          "Une société peut posséder plusieurs baux.",
+        description: "Une société peut posséder plusieurs baux.",
         columns: {
           address: "Adresse",
           landlord: "Bailleur",
@@ -728,6 +727,7 @@ export const fr = {
           rent: "Loyer",
           charges: "Charges",
           total: "Total",
+          actions: "Actions",
         },
         add: "Ajouter un bail",
         filterPlaceholder: "Filtrer les baux…",
@@ -983,6 +983,7 @@ export const fr = {
         person: "Personne",
         address: "Adresse",
         signatures: "Signatures",
+        actions: "Actions",
       },
       add: "Ajouter une personne",
       filterPlaceholder: "Filtrer les personnes…",

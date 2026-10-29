@@ -9,24 +9,36 @@
     @apply space-y-4;
   }
 
+  .lease-section-header-actions {
+    @apply flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3;
+  }
+
+  .lease-section-header-search {
+    @apply w-full sm:w-56;
+  }
+
+  .lease-section-count {
+    @apply text-xs text-ink-soft;
+  }
+
   .lease-section-address {
     @apply rounded-xl border border-line bg-paper/40 p-3 sm:max-w-md;
   }
 
+  .lease-section-table {
+    @apply overflow-hidden rounded-lg border border-line bg-surface;
+  }
+
   .lease-section-list {
-    @apply divide-y divide-line overflow-hidden rounded-xl border border-line bg-paper/40;
+    @apply flex flex-col divide-y divide-line;
   }
 
   .lease-section-headers {
-    @apply grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_6.5rem_7rem_17.5rem] items-center gap-3 border-b border-line px-3 py-1.5 text-[11px] text-ink-soft;
-  }
-
-  .lease-section-headers-amount {
-    @apply text-right;
+    @apply grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_6.5rem_7rem_17.5rem];
   }
 
   .lease-section-item {
-    @apply grid gap-x-3 gap-y-1 px-3 py-2 md:min-h-9 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_6.5rem_7rem_17.5rem] md:items-center md:py-1.5;
+    @apply grid gap-x-3 gap-y-1 px-4 py-2 md:min-h-9 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_6.5rem_7rem_17.5rem] md:items-center md:py-1.5;
   }
 
   .lease-section-item > .lease-receipt-history {

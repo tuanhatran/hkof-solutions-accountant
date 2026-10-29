@@ -674,8 +674,7 @@ export const en = {
       },
       leaseTab: {
         title: "Company leases",
-        description:
-          "A company can have several leases.",
+        description: "A company can have several leases.",
         columns: {
           address: "Address",
           landlord: "Landlord",
@@ -706,6 +705,7 @@ export const en = {
           rent: "Rent",
           charges: "Charges",
           total: "Total",
+          actions: "Actions",
         },
         add: "Add a lease",
         filterPlaceholder: "Filter leases…",
@@ -958,6 +958,7 @@ export const en = {
         person: "Person",
         address: "Address",
         signatures: "Signatures",
+        actions: "Actions",
       },
       add: "Add a person",
       filterPlaceholder: "Filter people…",

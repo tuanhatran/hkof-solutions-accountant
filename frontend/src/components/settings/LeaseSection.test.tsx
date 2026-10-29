@@ -192,12 +192,21 @@ describe("LeaseSection rent receipt", () => {
       '[data-cy="leases-headers"]',
     ) as HTMLElement;
     expect(headers).not.toBeNull();
+    expect(headers).toHaveAttribute("role", "row");
     expect(headers).toHaveClass("hidden", "md:grid");
     expect(within(headers).getByText("Bail")).toBeVisible();
     expect(within(headers).getByText("Société")).toBeVisible();
     expect(within(headers).getByText("Loyer")).toBeVisible();
     expect(within(headers).getByText("Charges")).toBeVisible();
     expect(within(headers).getByText("Total")).toBeVisible();
+    expect(within(headers).getByText("Actions")).toBeVisible();
+    expect(
+      within(headers)
+        .getAllByRole("columnheader")
+        .map((cell) => cell.textContent),
+    ).toEqual(["Bail", "Société", "Loyer", "Charges", "Total", "Actions"]);
+    const table = headers.closest('[role="table"]') as HTMLElement;
+    expect(table).toHaveClass("lease-section-table");
   });
 
   it("splits each lease row into aligned company and amount cells", () => {
@@ -368,22 +377,76 @@ describe("LeaseSection rent receipt", () => {
     expect(leaseOrder()).toEqual([]);
   });
 
-  it("sorts the leases by address, company or rent with a direction toggle", async () => {
+  it("sorts the leases from the column headers with a direction toggle", async () => {
     leaseRows = [LEASE, OTHER_LEASE];
     renderSection();
     const user = userEvent.setup();
 
-    expect(
-      within(screen.getByLabelText("Trier par"))
-        .getAllByRole("option")
-        .map((option) => option.textContent),
-    ).toEqual(["Bail", "Société", "Loyer"]);
     expect(leaseOrder()).toEqual([10, 11]);
+    const rent = document.querySelector(
+      '[data-cy="sort-leases-rent"]',
+    ) as HTMLElement;
+    await user.click(rent);
+    expect(leaseOrder()).toEqual([11, 10]);
+    expect(rent.closest('[role="columnheader"]')).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
 
-    await user.selectOptions(screen.getByLabelText("Trier par"), "rent");
+    await user.click(rent);
+    expect(leaseOrder()).toEqual([10, 11]);
+    expect(rent.closest('[role="columnheader"]')).toHaveAttribute(
+      "aria-sort",
+      "descending",
+    );
+  });
+
+  it("sorts the leases by charges and total, restarting a new column ascending", async () => {
+    leaseRows = [LEASE, OTHER_LEASE];
+    renderSection();
+    const user = userEvent.setup();
+    const click = (dataCy: string) =>
+      user.click(
+        document.querySelector(`[data-cy="${dataCy}"]`) as HTMLElement,
+      );
+
+    await click("sort-leases-charges");
+    expect(leaseOrder()).toEqual([10, 11]);
+    await click("sort-leases-charges");
     expect(leaseOrder()).toEqual([11, 10]);
 
-    await user.click(screen.getByRole("button", { name: "Tri croissant" }));
+    await click("sort-leases-total");
+    expect(leaseOrder()).toEqual([11, 10]);
+    expect(
+      document
+        .querySelector('[data-cy="sort-leases-total"]')
+        ?.closest('[role="columnheader"]'),
+    ).toHaveAttribute("aria-sort", "ascending");
+  });
+
+  it("keeps the search, live count and compact sort in the card header", async () => {
+    leaseRows = [LEASE, OTHER_LEASE];
+    renderSection();
+    const user = userEvent.setup();
+
+    const header = document.querySelector(".card-header") as HTMLElement;
+    expect(within(header).getByLabelText("Filtrer la liste")).toBeVisible();
+    expect(
+      header.querySelector('[data-cy="filter-count-leases"]'),
+    ).toHaveTextContent("2 sur 2");
+    expect(document.querySelector(".list-toolbar")).toBeNull();
+
+    await user.selectOptions(
+      document.querySelector('[data-cy="sort-leases-compact"]') as HTMLElement,
+      "rent",
+    );
+    expect(leaseOrder()).toEqual([11, 10]);
+
+    await user.click(
+      document.querySelector(
+        '[data-cy="sort-leases-compact-direction"]',
+      ) as HTMLElement,
+    );
     expect(leaseOrder()).toEqual([10, 11]);
   });
 

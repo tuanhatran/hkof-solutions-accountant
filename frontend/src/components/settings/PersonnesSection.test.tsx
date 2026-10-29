@@ -132,10 +132,19 @@ describe("PersonnesSection", () => {
       '[data-cy="persons-headers"]',
     ) as HTMLElement;
     expect(headers).not.toBeNull();
+    expect(headers).toHaveAttribute("role", "row");
     expect(headers).toHaveClass("hidden", "md:grid");
     expect(within(headers).getByText("Personne")).toBeVisible();
     expect(within(headers).getByText("Adresse")).toBeVisible();
     expect(within(headers).getByText("Signatures")).toBeVisible();
+    expect(within(headers).getByText("Actions")).toBeVisible();
+    expect(
+      within(headers)
+        .getAllByRole("columnheader")
+        .map((cell) => cell.textContent),
+    ).toEqual(["Personne", "Adresse", "Signatures", "Actions"]);
+    const table = headers.closest('[role="table"]') as HTMLElement;
+    expect(table).toHaveClass("personnes-section-table");
   });
 
   it("aligns each person row cell and its tabular signatures column", () => {
@@ -427,20 +436,58 @@ describe("PersonnesSection", () => {
     expect(personOrder()).toEqual([]);
   });
 
-  it("sorts the persons by name or signatures with a direction toggle", async () => {
+  it("sorts the persons from the column headers with a direction toggle", async () => {
     personsState = readyQuery([LANDLORD, TENANT, ACCENTED]);
     renderSection();
     const user = userEvent.setup();
 
-    expect(
-      screen.getAllByRole("option").map((option) => option.textContent),
-    ).toEqual(["Personne", "Signatures"]);
     expect(personOrder()).toEqual([3, 1, 2]);
+    const signatures = document.querySelector(
+      '[data-cy="sort-persons-signatures"]',
+    ) as HTMLElement;
+    await user.click(signatures);
+    expect(personOrder()).toEqual([2, 1, 3]);
+    expect(signatures.closest('[role="columnheader"]')).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
 
-    await user.selectOptions(screen.getByLabelText("Trier par"), "signatures");
+    await user.click(signatures);
+    expect(personOrder()).toEqual([3, 1, 2]);
+    expect(signatures.closest('[role="columnheader"]')).toHaveAttribute(
+      "aria-sort",
+      "descending",
+    );
+
+    await user.click(
+      document.querySelector('[data-cy="sort-persons-address"]') as HTMLElement,
+    );
+    expect(personOrder()).toEqual([2, 1, 3]);
+  });
+
+  it("keeps the search, live count and compact sort in the card header", async () => {
+    personsState = readyQuery([LANDLORD, TENANT, ACCENTED]);
+    renderSection();
+    const user = userEvent.setup();
+
+    const header = document.querySelector(".card-header") as HTMLElement;
+    expect(within(header).getByLabelText("Filtrer la liste")).toBeVisible();
+    expect(
+      header.querySelector('[data-cy="filter-count-persons"]'),
+    ).toHaveTextContent("3 sur 3");
+    expect(document.querySelector(".list-toolbar")).toBeNull();
+
+    await user.selectOptions(
+      document.querySelector('[data-cy="sort-persons-compact"]') as HTMLElement,
+      "signatures",
+    );
     expect(personOrder()).toEqual([2, 1, 3]);
 
-    await user.click(screen.getByRole("button", { name: "Tri croissant" }));
+    await user.click(
+      document.querySelector(
+        '[data-cy="sort-persons-compact-direction"]',
+      ) as HTMLElement,
+    );
     expect(personOrder()).toEqual([3, 1, 2]);
   });
 
