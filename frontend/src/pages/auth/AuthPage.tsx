@@ -379,7 +379,9 @@ function ConfirmPanel() {
   const { t } = useTranslation();
   const [params] = useSearchParams();
   const token = params.get("token");
-  const started = useRef(false);
+  const request = useRef<{ token: string; promise: Promise<void> } | null>(
+    null,
+  );
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     token ? "loading" : "error",
   );
@@ -388,24 +390,30 @@ function ConfirmPanel() {
   );
 
   useEffect(() => {
-    if (!token || started.current) {
+    if (!token) {
       return;
     }
-    started.current = true;
+    if (request.current?.token !== token) {
+      request.current = {
+        token,
+        promise: api.auth.confirmEmail({ token }),
+      };
+    }
+    const entry = request.current;
     let active = true;
-    api.auth
-      .confirmEmail({ token })
-      .then(() => {
+    entry.promise.then(
+      () => {
         if (active) {
           setStatus("success");
         }
-      })
-      .catch((error: unknown) => {
+      },
+      (error: unknown) => {
         if (active) {
           setStatus("error");
           setFailure(errorMessage(error));
         }
-      });
+      },
+    );
     return () => {
       active = false;
     };

@@ -28,6 +28,7 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
       OLLAMA_BASE_URL: http://ollama:11434
       OLLAMA_MODEL: mock-extract:latest
+      APP_AUTH_CONFIRMATION_URL: http://frontend/confirmer-email
       APP_DATA_DIR: /tmp/e2e-data
     volumes: !reset []
 

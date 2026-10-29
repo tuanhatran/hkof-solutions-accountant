@@ -50,6 +50,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       SPRING_MAIL_HOST: mailpit
       SPRING_MAIL_PORT: 1025
+      APP_AUTH_CONFIRMATION_URL: ${APP_AUTH_CONFIRMATION_URL:-http://localhost:${FRONTEND_PORT:-8080}/confirmer-email}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
       APP_DATA_DIR: /app/data

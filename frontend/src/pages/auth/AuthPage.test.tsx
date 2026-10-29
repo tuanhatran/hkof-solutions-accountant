@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { StrictMode } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "@/i18n";
@@ -213,6 +214,31 @@ describe("AuthPage confirmation", () => {
         "Ce lien de confirmation est invalide ou a expiré.",
       ),
     ).toBeVisible();
+  });
+
+  it("resolves the confirmation exactly once under StrictMode", async () => {
+    fetchMock.mockResolvedValue(emptyResponse());
+    render(
+      <StrictMode>
+        <MemoryRouter initialEntries={["/confirmer-email?token=jeton-strict"]}>
+          <Routes>
+            <Route
+              path="/confirmer-email"
+              element={<AuthPage mode="confirm" />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </StrictMode>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Adresse confirmée" }),
+    ).toBeVisible();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/auth/confirm-email");
+    expect(
+      screen.queryByText("Ce lien de confirmation est invalide ou a expiré."),
+    ).not.toBeInTheDocument();
   });
 });
 
