@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Read-only blocker review of a HomeOfficeExpenses diff. Real bugs only, never style.
-model: DeepSeek-V4-Pro
+model: DeepSeek-Flash
 disallowedTools: [Write, Edit, NotebookEdit, Agent]
 # File edits are blocked by disallowedTools; shell is allowed for read-only checks; agent dispatch is denied.
 # OpenCode keeps its own model pin.
