@@ -24,6 +24,13 @@ services:
     volumes:
       - ./data:/data
 
+  # Local SMTP sink for confirmation e-mails: SMTP 1025, web UI/API 8025.
+  mailpit:
+    image: axllent/mailpit:v1.27
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+
   backend:
     build:
       context: ./backend
@@ -35,10 +42,15 @@ services:
         condition: service_healthy
       data-init:
         condition: service_completed_successfully
+      mailpit:
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME}
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: 1025
+      APP_AUTH_CONFIRMATION_URL: ${APP_AUTH_CONFIRMATION_URL:-http://localhost:${FRONTEND_PORT:-8080}/confirmer-email}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
       APP_DATA_DIR: /app/data

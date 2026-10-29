@@ -11,10 +11,16 @@ services:
   data-init:
     profiles: ["e2e-disabled"]
 
+  # Mailpit stays off the host: Cypress reaches it on the compose network.
+  mailpit:
+    ports: !reset []
+
   backend:
     depends_on: !override
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     environment:
       SPRING_PROFILES_ACTIVE: e2e
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
@@ -22,6 +28,7 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
       OLLAMA_BASE_URL: http://ollama:11434
       OLLAMA_MODEL: mock-extract:latest
+      APP_AUTH_CONFIRMATION_URL: http://frontend/confirmer-email
       APP_DATA_DIR: /tmp/e2e-data
     volumes: !reset []
 
@@ -43,9 +50,10 @@ services:
     image: cypress/included:16.2.0
     working_dir: /e2e
     entrypoint: ["/bin/sh", "-c"]
-    command: ["npm ci --no-audit --no-fund && cypress run $${E2E_SPEC:+--spec $${E2E_SPEC}}"]
+    command: ["npm ci --no-audit --no-fund && cypress run --expose mailpitUrl=$${CYPRESS_mailpitUrl} $${E2E_SPEC:+--spec $${E2E_SPEC}}"]
     environment:
       CYPRESS_BASE_URL: http://frontend:80
+      CYPRESS_mailpitUrl: http://mailpit:8025
       CYPRESS_INSTALL_BINARY: "0"
       E2E_SPEC: ${E2E_SPEC:-}
     volumes:

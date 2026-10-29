@@ -12,6 +12,8 @@ spring:
 
 app:
   data-dir: ./target/test-data
+  security:
+    enabled: false
   llm:
     default-url: http://localhost:8089
     default-model: mock-model

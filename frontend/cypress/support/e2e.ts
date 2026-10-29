@@ -6,6 +6,7 @@ declare global {
   namespace Cypress {
     interface Chainable {
       resetState(): Chainable<void>;
+      login(): Chainable<void>;
       chooseMonth(month: string): Chainable<void>;
       waitForPreview(): Chainable<void>;
     }
@@ -26,6 +27,27 @@ Cypress.Commands.add("resetState", () => {
   cy.request({ method: "POST", url: "/api/e2e/reset" })
     .its("status")
     .should("eq", 204);
+});
+
+const E2E_EMAIL = "e2e@homeofficeexpenses.local";
+const E2E_PASSWORD = "e2e-password";
+
+/** Opens a reusable session for the seeded e2e account, after the reset restored it. */
+Cypress.Commands.add("login", () => {
+  cy.session(
+    "e2e-user",
+    () => {
+      cy.request({
+        method: "POST",
+        url: "/api/auth/login",
+        body: { email: E2E_EMAIL, password: E2E_PASSWORD },
+      })
+        .its("status")
+        .should("eq", 200);
+      cy.getCookie("JSESSIONID").should("exist");
+    },
+    { cacheAcrossSpecs: false },
+  );
 });
 
 Cypress.Commands.add("chooseMonth", (month: string) => {
@@ -59,11 +81,58 @@ Cypress.Commands.overwrite("visit", (originalVisit, url, options = {}) =>
   }),
 );
 
+const CSRF_COOKIE = "XSRF-TOKEN";
+const CSRF_HEADER = "X-XSRF-TOKEN";
+const SAFE_REQUEST_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+/** Accepts the string, method/url/body and options forms of `cy.request`. */
+function requestOptions(args: unknown[]): Partial<Cypress.RequestOptions> {
+  const [first, second, third] = args;
+  if (typeof first === "string" && second === undefined) {
+    return { url: first };
+  }
+  if (typeof first === "string") {
+    return {
+      method: first as Cypress.HttpMethod,
+      url: String(second),
+      ...(third === undefined ? {} : { body: third as Cypress.RequestBody }),
+    };
+  }
+  if (first && typeof first === "object") {
+    return { ...(first as Partial<Cypress.RequestOptions>) };
+  }
+  throw new Error("Unsupported cy.request signature");
+}
+
+/** Mirrors the XSRF-TOKEN cookie into X-XSRF-TOKEN for every mutating API call. */
+Cypress.Commands.overwrite("request", (originalFn, ...args: unknown[]) => {
+  const options = requestOptions(args);
+  const method = String(options.method ?? "GET").toUpperCase();
+  if (SAFE_REQUEST_METHODS.has(method)) {
+    return originalFn(options);
+  }
+  return cy.getCookie(CSRF_COOKIE).then((cookie) => {
+    if (!cookie?.value) {
+      return originalFn(options);
+    }
+    const headers = {
+      ...(options.headers as Record<string, string> | undefined),
+      [CSRF_HEADER]: decodeURIComponent(cookie.value),
+    };
+    return originalFn({ ...options, headers });
+  });
+});
+
+const AUTH_SPEC = "06-auth.cy.ts";
+
 beforeEach(() => {
   cy.clearAllSessionStorage();
   cy.clearAllLocalStorage();
   cy.resetState();
   cy.task("clearDownloads");
+  if (Cypress.spec.name !== AUTH_SPEC) {
+    cy.login();
+  }
 });
 
 export {};

@@ -1,5 +1,8 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
+import { useSyncExternalStore } from "react";
+import { AUTH_UNAUTHORIZED_EVENT, ApiError } from "./client";
 import { api } from "./endpoints";
+import type { CurrentUserDto } from "./endpoints";
 import type { TemplateType } from "./types";
 
 export const queryKeys = {
@@ -377,4 +380,77 @@ export function useStatements(
     enabled: companyId !== null,
     staleTime: 10_000,
   });
+}
+
+export interface AuthState {
+  user: CurrentUserDto | null;
+  loading: boolean;
+}
+
+let authState: AuthState = { user: null, loading: true };
+const authListeners = new Set<() => void>();
+let unauthorizedListenerAttached = false;
+
+function emitAuthChange(): void {
+  for (const listener of authListeners) {
+    listener();
+  }
+}
+
+/** Replaces the signed-in account; null clears the session locally. */
+export function setAuthUser(user: CurrentUserDto | null): void {
+  authState = { user, loading: false };
+  emitAuthChange();
+}
+
+function attachUnauthorizedListener(): void {
+  if (unauthorizedListenerAttached || typeof window === "undefined") {
+    return;
+  }
+  unauthorizedListenerAttached = true;
+  window.addEventListener(AUTH_UNAUTHORIZED_EVENT, () => setAuthUser(null));
+}
+
+function subscribeAuth(listener: () => void): () => void {
+  attachUnauthorizedListener();
+  authListeners.add(listener);
+  return () => {
+    authListeners.delete(listener);
+  };
+}
+
+/** Session state shared by the shell, the router guard and the auth pages. */
+export function useAuthState(): AuthState {
+  return useSyncExternalStore(subscribeAuth, () => authState);
+}
+
+/** Loads the current account once at application start. */
+export async function refreshAuth(): Promise<void> {
+  try {
+    const user = await api.auth.me();
+    setAuthUser(user);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      setAuthUser(null);
+      return;
+    }
+    setAuthUser(null);
+  }
+}
+
+export async function loginSession(
+  email: string,
+  password: string,
+): Promise<CurrentUserDto> {
+  const user = await api.auth.login({ email, password });
+  setAuthUser(user);
+  return user;
+}
+
+export async function logoutSession(): Promise<void> {
+  try {
+    await api.auth.logout();
+  } finally {
+    setAuthUser(null);
+  }
 }

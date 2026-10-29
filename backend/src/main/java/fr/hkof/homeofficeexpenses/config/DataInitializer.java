@@ -5,11 +5,14 @@ import java.time.Clock;
 import java.time.Instant;
 
 import org.springframework.boot.ApplicationArguments;
+import org.springframework.core.env.Environment;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import fr.hkof.homeofficeexpenses.domain.Address;
+import fr.hkof.homeofficeexpenses.domain.AppUser;
 import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.Employee;
 import fr.hkof.homeofficeexpenses.domain.EmployeeTitle;
@@ -22,6 +25,7 @@ import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateFormat;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.repository.AddressRepository;
+import fr.hkof.homeofficeexpenses.repository.AppUserRepository;
 import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
@@ -40,6 +44,10 @@ public class DataInitializer implements ApplicationRunner {
     private static final String DEFAULT_LANDLORD_ADDRESS = "Adresse du bailleur";
     private static final String DEFAULT_RENT_EXCL_CHARGES = "1300.00";
     private static final String DEFAULT_CHARGES = "0.00";
+    private static final String SEED_USER_EMAIL = "thtran@homeofficeexpenses.local";
+    private static final String SEED_USER_PASSWORD = "thtran";
+    private static final String E2E_USER_EMAIL = "e2e@homeofficeexpenses.local";
+    private static final String E2E_USER_PASSWORD = "e2e-password";
 
     private final CompanyRepository companyRepository;
     private final EmployeeRepository employeeRepository;
@@ -49,13 +57,17 @@ public class DataInitializer implements ApplicationRunner {
     private final ExpenseItemRepository expenseItemRepository;
     private final TemplateDocumentRepository templateRepository;
     private final LlmConfigRepository llmConfigRepository;
+    private final AppUserRepository appUserRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final Environment environment;
     private final AppProperties properties;
     private final Clock clock;
 
     public DataInitializer(CompanyRepository companyRepository, EmployeeRepository employeeRepository,
             PersonRepository personRepository, LeaseRepository leaseRepository, AddressRepository addressRepository,
             ExpenseItemRepository expenseItemRepository, TemplateDocumentRepository templateRepository,
-            LlmConfigRepository llmConfigRepository, AppProperties properties, Clock clock) {
+            LlmConfigRepository llmConfigRepository, AppUserRepository appUserRepository,
+            PasswordEncoder passwordEncoder, Environment environment, AppProperties properties, Clock clock) {
         this.companyRepository = companyRepository;
         this.employeeRepository = employeeRepository;
         this.personRepository = personRepository;
@@ -64,6 +76,9 @@ public class DataInitializer implements ApplicationRunner {
         this.expenseItemRepository = expenseItemRepository;
         this.templateRepository = templateRepository;
         this.llmConfigRepository = llmConfigRepository;
+        this.appUserRepository = appUserRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.environment = environment;
         this.properties = properties;
         this.clock = clock;
     }
@@ -71,12 +86,35 @@ public class DataInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
+        initUsers();
         Company company = initCompany();
         initEmployees(company);
         initRentConfiguration(company);
         initItems(company);
         initTemplates();
         initLlm();
+    }
+
+    private void initUsers() {
+        createUserIfAbsent(SEED_USER_EMAIL, SEED_USER_PASSWORD, true);
+        if (environment.matchesProfiles("e2e")) {
+            createUserIfAbsent(E2E_USER_EMAIL, E2E_USER_PASSWORD, false);
+        }
+    }
+
+    private void createUserIfAbsent(String email, String rawPassword, boolean mustChangePassword) {
+        if (appUserRepository.existsByEmailIgnoreCase(email)) {
+            return;
+        }
+        Instant now = Instant.now(clock);
+        AppUser user = new AppUser();
+        user.setEmail(email);
+        user.setPasswordHash(passwordEncoder.encode(rawPassword));
+        user.setConfirmed(true);
+        user.setMustChangePassword(mustChangePassword);
+        user.setCreatedAt(now);
+        user.setUpdatedAt(now);
+        appUserRepository.save(user);
     }
 
     private Company initCompany() {

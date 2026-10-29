@@ -439,3 +439,54 @@ describe("template endpoints", () => {
     expect(lastCall()[1]).toMatchObject({ method: "POST" });
   });
 });
+
+describe("auth endpoints", () => {
+  it("reads the current account", async () => {
+    await api.auth.me();
+    expect(lastCall()[0]).toBe("/api/auth/me");
+  });
+
+  it("logs in and out", async () => {
+    await api.auth.login({
+      email: "alice@example.test",
+      password: "motdepasse",
+    });
+    const [loginPath, loginInit] = lastCall();
+    expect(loginPath).toBe("/api/auth/login");
+    expect(loginInit).toMatchObject({
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: "alice@example.test",
+        password: "motdepasse",
+      }),
+    });
+
+    await api.auth.logout();
+    expect(lastCall()[0]).toBe("/api/auth/logout");
+    expect(lastCall()[1]).toMatchObject({ method: "POST" });
+  });
+
+  it("registers, confirms and resends the confirmation e-mail", async () => {
+    await api.auth.register({
+      email: "alice@example.test",
+      password: "motdepasse",
+    });
+    expect(lastCall()[0]).toBe("/api/auth/register");
+
+    await api.auth.confirmEmail({ token: "jeton" });
+    expect(lastCall()[0]).toBe("/api/auth/confirm-email");
+
+    await api.auth.resendConfirmation({ email: "alice@example.test" });
+    expect(lastCall()[0]).toBe("/api/auth/resend-confirmation");
+  });
+
+  it("changes the password", async () => {
+    await api.auth.changePassword({
+      currentPassword: "ancien-mot-de-passe",
+      newPassword: "nouveau-mot-de-passe",
+    });
+    expect(lastCall()[0]).toBe("/api/auth/change-password");
+    expect(lastCall()[1]).toMatchObject({ method: "POST" });
+  });
+});

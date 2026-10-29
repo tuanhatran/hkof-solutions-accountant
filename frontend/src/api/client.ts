@@ -1,5 +1,78 @@
 import i18n from "@/i18n";
 
+/** CSRF cookie written by the backend and mirrored in the request header. */
+export const CSRF_COOKIE = "XSRF-TOKEN";
+export const CSRF_HEADER = "X-XSRF-TOKEN";
+/** Emitted when an authenticated call loses its session, so the UI can sign out. */
+export const AUTH_UNAUTHORIZED_EVENT = "auth:unauthorized";
+
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+function readCookie(name: string): string | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
+  const prefix = `${name}=`;
+  const found = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(prefix));
+  if (!found) {
+    return null;
+  }
+  try {
+    return decodeURIComponent(found.slice(prefix.length));
+  } catch {
+    return found.slice(prefix.length);
+  }
+}
+
+function headerRecord(init?: RequestInit): Record<string, string> {
+  const source = init?.headers;
+  if (!source) {
+    return {};
+  }
+  if (source instanceof Headers) {
+    return Object.fromEntries(source.entries());
+  }
+  if (Array.isArray(source)) {
+    return Object.fromEntries(source);
+  }
+  return { ...source };
+}
+
+/**
+ * Sends the session cookie and, for every mutating request, the CSRF token read from the
+ * XSRF-TOKEN cookie. A read request without options stays untouched for the existing calls.
+ */
+function sessionInit(init?: RequestInit): RequestInit | undefined {
+  const method = (init?.method ?? "GET").toUpperCase();
+  if (!init && SAFE_METHODS.has(method)) {
+    return init;
+  }
+  const headers = headerRecord(init);
+  if (!SAFE_METHODS.has(method)) {
+    const token = readCookie(CSRF_COOKIE);
+    if (token) {
+      headers[CSRF_HEADER] = token;
+    }
+  }
+  return {
+    ...init,
+    credentials: init?.credentials ?? "same-origin",
+    headers,
+  };
+}
+
+function notifyUnauthorized(filePath: string, status: number): void {
+  if (status !== 401 || filePath.startsWith("/api/auth/login")) {
+    return;
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT));
+  }
+}
+
 export interface ProblemDetail {
   type?: string;
   title?: string;
@@ -104,7 +177,7 @@ export async function request<T>(
 ): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(filePath, init);
+    response = await fetch(filePath, sessionInit(init));
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw error;
@@ -118,6 +191,7 @@ export async function request<T>(
   }
   if (!response.ok) {
     const failure = await parseFailure(response);
+    notifyUnauthorized(filePath, response.status);
     throw new ApiError(
       failure.message,
       response.status,
@@ -163,7 +237,7 @@ export async function blobRequest(
 ): Promise<ResponseBlob> {
   let response: Response;
   try {
-    response = await fetch(filePath, init);
+    response = await fetch(filePath, sessionInit(init));
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw error;

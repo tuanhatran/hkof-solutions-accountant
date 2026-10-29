@@ -20,8 +20,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.boot.ApplicationArguments;
+import org.springframework.core.env.Environment;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import fr.hkof.homeofficeexpenses.domain.Address;
+import fr.hkof.homeofficeexpenses.domain.AppUser;
 import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.Employee;
 import fr.hkof.homeofficeexpenses.domain.EmployeeTitle;
@@ -30,6 +33,7 @@ import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.repository.AddressRepository;
+import fr.hkof.homeofficeexpenses.repository.AppUserRepository;
 import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
@@ -48,6 +52,9 @@ class DataInitializerTest {
     private ExpenseItemRepository expenseItemRepository;
     private TemplateDocumentRepository templateRepository;
     private LlmConfigRepository llmConfigRepository;
+    private AppUserRepository appUserRepository;
+    private PasswordEncoder passwordEncoder;
+    private Environment environment;
     private DataInitializer initializer;
 
     @BeforeEach
@@ -60,10 +67,16 @@ class DataInitializerTest {
         expenseItemRepository = mock(ExpenseItemRepository.class);
         templateRepository = mock(TemplateDocumentRepository.class);
         llmConfigRepository = mock(LlmConfigRepository.class);
+        appUserRepository = mock(AppUserRepository.class);
+        passwordEncoder = mock(PasswordEncoder.class);
+        environment = mock(Environment.class);
         AppProperties properties = new AppProperties("data", List.of(),
                 new AppProperties.Llm("http://localhost:11434", "qwen2.5vl"));
+        when(passwordEncoder.encode(any())).thenAnswer(invocation -> "hash:" + invocation.getArgument(0));
+        when(environment.matchesProfiles("e2e")).thenReturn(false);
         initializer = new DataInitializer(companyRepository, employeeRepository, personRepository,
                 leaseRepository, addressRepository, expenseItemRepository, templateRepository, llmConfigRepository,
+                appUserRepository, passwordEncoder, environment,
                 properties, Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
@@ -104,6 +117,7 @@ class DataInitializerTest {
         when(templateRepository.save(any(TemplateDocument.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(templateRepository.findFirstByTypeAndActiveTrueAndDeletedFalse(any())).thenReturn(Optional.empty());
         when(llmConfigRepository.existsById(1L)).thenReturn(false);
+        when(appUserRepository.existsByEmailIgnoreCase(any())).thenReturn(false);
 
         initializer.run(mock(ApplicationArguments.class));
 
@@ -136,6 +150,13 @@ class DataInitializerTest {
         verify(expenseItemRepository, times(6)).save(any());
         verify(llmConfigRepository).save(any());
 
+        ArgumentCaptor<AppUser> appUsers = ArgumentCaptor.forClass(AppUser.class);
+        verify(appUserRepository).save(appUsers.capture());
+        assertThat(appUsers.getValue().getEmail()).isEqualTo("thtran@homeofficeexpenses.local");
+        assertThat(appUsers.getValue().getPasswordHash()).isEqualTo("hash:thtran");
+        assertThat(appUsers.getValue().isConfirmed()).isTrue();
+        assertThat(appUsers.getValue().isMustChangePassword()).isTrue();
+
         ArgumentCaptor<TemplateDocument> templates = ArgumentCaptor.forClass(TemplateDocument.class);
         verify(templateRepository, times(4)).save(templates.capture());
         assertThat(templates.getAllValues()).extracting(TemplateDocument::getType)
@@ -158,6 +179,7 @@ class DataInitializerTest {
         when(templateRepository.findFirstByTypeAndActiveTrueAndDeletedFalse(any()))
                 .thenReturn(Optional.of(new TemplateDocument()));
         when(llmConfigRepository.existsById(1L)).thenReturn(true);
+        when(appUserRepository.existsByEmailIgnoreCase(any())).thenReturn(true);
 
         initializer.run(mock(ApplicationArguments.class));
 
@@ -168,5 +190,36 @@ class DataInitializerTest {
         verify(expenseItemRepository, never()).save(any());
         verify(llmConfigRepository, never()).save(any());
         verify(templateRepository, never()).save(any());
+        verify(appUserRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("The e2e profile seeds its own confirmed account without a forced password change")
+    void seedsE2eUserUnderE2eProfile() {
+        when(companyRepository.findFirstByDeletedFalseOrderByIdAsc()).thenReturn(Optional.of(company()));
+        when(employeeRepository.findFirstByCompanyIdAndDeletedFalseOrderByIdAsc(1L))
+                .thenReturn(Optional.of(new Employee()));
+        when(personRepository.findAllNaturalPersons()).thenReturn(List.of(new Person()));
+        when(leaseRepository.findFirstByDeletedFalseOrderByIdAsc()).thenReturn(Optional.of(new Lease()));
+        when(expenseItemRepository.findFirstByCompanyIdAndCode(eq(1L), any()))
+                .thenReturn(Optional.of(new fr.hkof.homeofficeexpenses.domain.ExpenseItem()));
+        when(templateRepository.findFirstByTypeAndBuiltInTrueAndDeletedFalse(any()))
+                .thenReturn(Optional.of(new TemplateDocument()));
+        when(templateRepository.findFirstByTypeAndActiveTrueAndDeletedFalse(any()))
+                .thenReturn(Optional.of(new TemplateDocument()));
+        when(llmConfigRepository.existsById(1L)).thenReturn(true);
+        when(appUserRepository.existsByEmailIgnoreCase(any())).thenReturn(false);
+        when(environment.matchesProfiles("e2e")).thenReturn(true);
+
+        initializer.run(mock(ApplicationArguments.class));
+
+        ArgumentCaptor<AppUser> appUsers = ArgumentCaptor.forClass(AppUser.class);
+        verify(appUserRepository, times(2)).save(appUsers.capture());
+        assertThat(appUsers.getAllValues()).extracting(AppUser::getEmail)
+                .containsExactly("thtran@homeofficeexpenses.local", "e2e@homeofficeexpenses.local");
+        AppUser e2e = appUsers.getAllValues().get(1);
+        assertThat(e2e.isConfirmed()).isTrue();
+        assertThat(e2e.isMustChangePassword()).isFalse();
+        assertThat(e2e.getPasswordHash()).isEqualTo("hash:e2e-password");
     }
 }

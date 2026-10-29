@@ -1,0 +1,89 @@
+@reference "../../index.css";
+
+@layer components {
+  .auth-page {
+    @apply flex min-h-screen items-center justify-center bg-paper px-4 py-10;
+  }
+
+  .auth-page-card {
+    @apply w-full max-w-md p-6 sm:p-8;
+  }
+
+  .auth-page-brand {
+    @apply mb-6 flex items-center gap-2.5;
+  }
+
+  .auth-page-brand-mark {
+    @apply grid h-9 w-9 place-items-center rounded-md bg-accent-soft text-base font-bold text-accent;
+  }
+
+  .auth-page-brand-name {
+    @apply text-sm font-semibold tracking-tight text-ink;
+  }
+
+  .auth-page-eyebrow {
+    @apply mb-1;
+  }
+
+  .auth-page-title {
+    @apply text-2xl font-semibold tracking-tight text-ink;
+  }
+
+  .auth-page-description {
+    @apply mt-2 text-sm leading-relaxed text-ink-soft;
+  }
+
+  .auth-page-form {
+    @apply mt-6 flex flex-col gap-4;
+  }
+
+  .auth-page-submit {
+    @apply mt-1 w-full;
+  }
+
+  .auth-page-status {
+    @apply mt-5 flex items-start gap-2 rounded-md border border-line bg-paper-deep/60 px-3 py-2.5 text-sm text-ink-soft;
+  }
+
+  .auth-page-status-error {
+    @apply border-danger/20 bg-danger-soft text-danger;
+  }
+
+  .auth-page-status-success {
+    @apply border-accent/15 bg-accent-soft text-accent;
+  }
+
+  .auth-page-status-warning {
+    @apply border-warning/20 bg-warning-soft text-warning;
+  }
+
+  .auth-page-actions {
+    @apply mt-5 flex flex-col gap-3;
+  }
+
+  .auth-page-links {
+    @apply mt-6 border-t border-line pt-4 text-sm text-ink-soft;
+  }
+
+  .auth-page-links a,
+  .auth-page-secondary-link,
+  .auth-page-primary-link {
+    @apply font-medium text-accent underline decoration-accent/30 underline-offset-4 transition hover:decoration-accent;
+  }
+
+  .auth-page-links a {
+    @apply ml-1;
+  }
+
+  .auth-page-secondary-link {
+    @apply self-start text-sm;
+  }
+
+  .auth-page-primary-link {
+    @apply mt-6 inline-flex text-sm;
+  }
+
+  .auth-page-loading {
+    @apply flex min-h-screen items-center justify-center bg-paper text-sm text-ink-soft;
+  }
+}

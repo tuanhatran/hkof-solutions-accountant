@@ -1,14 +1,21 @@
 import "./router.css";
 import { ArrowLeft, Compass } from "lucide-react";
+import { useEffect } from "react";
 import {
   Link,
   Navigate,
+  Outlet,
   createBrowserRouter,
   isRouteErrorResponse,
+  useLocation,
   useRouteError,
+  type RouteObject,
 } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { refreshAuth, useAuthState } from "@/api/queries";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
+import { AuthPage } from "@/pages/auth/AuthPage";
 import { AdminLlmPage } from "@/pages/admin-llm/AdminLlmPage";
 import { LmnpPage } from "@/pages/settings/LmnpPage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
@@ -76,29 +83,83 @@ export function routeErrorMessage(errorText: unknown): string {
   return "Une erreur inattendue est survenue.";
 }
 
-export const router = createBrowserRouter([
+function SessionBootstrap() {
+  const { t } = useTranslation();
+  const { loading } = useAuthState();
+
+  useEffect(() => {
+    void refreshAuth();
+  }, []);
+
+  if (loading) {
+    return (
+      <p className="auth-page-loading" role="status">
+        {t("auth.loading")}
+      </p>
+    );
+  }
+  return <Outlet />;
+}
+
+function RequireAuth() {
+  const { user, loading } = useAuthState();
+  const location = useLocation();
+
+  if (loading) {
+    return null;
+  }
+  if (!user) {
+    return (
+      <Navigate
+        to="/connexion"
+        replace
+        state={{ from: `${location.pathname}${location.search}` }}
+      />
+    );
+  }
+  if (user.mustChangePassword && location.pathname !== "/mot-de-passe") {
+    return <Navigate to="/mot-de-passe" replace />;
+  }
+  return <Outlet />;
+}
+
+const appRoutes: RouteObject[] = [
+  { index: true, element: <Navigate to="/generer/quittance" replace /> },
   {
-    path: "/",
-    element: <AppShell />,
+    path: "generer",
+    element: <Navigate to="/generer/quittance" replace />,
+  },
+  { path: "generer/quittance", element: <GenerateRentReceiptPage /> },
+  { path: "generer/note-frais", element: <GenerateExpenseStatementPage /> },
+  { path: "historique", element: <HistoryPage /> },
+  {
+    path: "configuration",
+    element: <Navigate to="/configuration/entreprise" replace />,
+  },
+  { path: "configuration/entreprise", element: <SettingsPage /> },
+  { path: "configuration/lmnp", element: <LmnpPage /> },
+  { path: "templates", element: <TemplatesPage /> },
+  { path: "admin", element: <AdminLlmPage /> },
+  { path: "*", element: <NotFoundPage /> },
+];
+
+export const routes: RouteObject[] = [
+  {
+    element: <SessionBootstrap />,
     errorElement: <AppError />,
     children: [
-      { index: true, element: <Navigate to="/generer/quittance" replace /> },
+      { path: "connexion", element: <AuthPage mode="login" /> },
+      { path: "inscription", element: <AuthPage mode="register" /> },
+      { path: "confirmer-email", element: <AuthPage mode="confirm" /> },
       {
-        path: "generer",
-        element: <Navigate to="/generer/quittance" replace />,
+        element: <RequireAuth />,
+        children: [
+          { path: "mot-de-passe", element: <AuthPage mode="password" /> },
+          { path: "/", element: <AppShell />, children: appRoutes },
+        ],
       },
-      { path: "generer/quittance", element: <GenerateRentReceiptPage /> },
-      { path: "generer/note-frais", element: <GenerateExpenseStatementPage /> },
-      { path: "historique", element: <HistoryPage /> },
-      {
-        path: "configuration",
-        element: <Navigate to="/configuration/entreprise" replace />,
-      },
-      { path: "configuration/entreprise", element: <SettingsPage /> },
-      { path: "configuration/lmnp", element: <LmnpPage /> },
-      { path: "templates", element: <TemplatesPage /> },
-      { path: "admin", element: <AdminLlmPage /> },
-      { path: "*", element: <NotFoundPage /> },
     ],
   },
-]);
+];
+
+export const router = createBrowserRouter(routes);

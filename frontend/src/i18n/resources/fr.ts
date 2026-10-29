@@ -53,6 +53,22 @@ export const fr = {
         "Le serveur est injoignable. Vérifiez que l'application HomeOfficeExpenses est démarrée.",
       HTTP_ERROR: "Erreur {{status}} : la requête a échoué.",
       UNEXPECTED_ERROR: "Une erreur inattendue est survenue.",
+      EMAIL_ALREADY_USED: "Un compte existe déjà avec cette adresse e-mail.",
+      CONFIRMATION_TOKEN_INVALID:
+        "Ce lien de confirmation est invalide ou a expiré.",
+      INVALID_CREDENTIALS: "Adresse e-mail ou mot de passe incorrect.",
+      EMAIL_NOT_CONFIRMED:
+        "Confirmez votre adresse e-mail avant de vous connecter.",
+      PASSWORD_TOO_SHORT:
+        "Le mot de passe doit contenir au moins 8 caractères.",
+      INVALID_PASSWORD: "Le mot de passe actuel est incorrect.",
+      PASSWORD_CHANGE_REQUIRED:
+        "Changez votre mot de passe avant de continuer.",
+      UNAUTHENTICATED:
+        "Vous devez vous connecter pour accéder à cette ressource.",
+      CSRF_INVALID:
+        "Le jeton de sécurité est absent ou invalide. Rechargez la page.",
+      ACCESS_DENIED: "Vous n'avez pas accès à cette action.",
       ADDRESS_REQUIRED: "L'adresse du bien est obligatoire.",
       AMOUNT_REQUIRED: "Le montant est obligatoire.",
       AMOUNT_INVALID: "Le montant est invalide.",
@@ -265,6 +281,69 @@ export const fr = {
       aiAdmin: "Analyse IA",
     },
   },
+  auth: {
+    loading: "Chargement…",
+    login: {
+      eyebrow: "Accès",
+      title: "Connexion",
+      description: "Connectez-vous à votre espace HomeOfficeExpenses.",
+      submit: "Se connecter",
+      noAccount: "Pas encore de compte ?",
+      registerLink: "Créer un compte",
+    },
+    register: {
+      eyebrow: "Inscription",
+      title: "Créer un compte",
+      description:
+        "Inscrivez-vous : un e-mail de confirmation vous sera envoyé pour activer votre compte.",
+      submit: "Créer le compte",
+      hasAccount: "Vous avez déjà un compte ?",
+      loginLink: "Se connecter",
+      successTitle: "Inscription enregistrée",
+      success:
+        "Un e-mail de confirmation vient de vous être envoyé. Ouvrez le lien reçu pour activer votre compte.",
+      resend: "Renvoyer l'e-mail de confirmation",
+      resent: "E-mail de confirmation renvoyé.",
+    },
+    confirm: {
+      eyebrow: "Confirmation",
+      title: "Confirmer l'adresse e-mail",
+      loading: "Confirmation en cours…",
+      successTitle: "Adresse confirmée",
+      success:
+        "Votre adresse e-mail est confirmée. Vous pouvez maintenant vous connecter.",
+      invalid: "Ce lien de confirmation est invalide ou a expiré.",
+      missing: "Ce lien de confirmation est incomplet.",
+      backToLogin: "Se connecter",
+    },
+    password: {
+      eyebrow: "Sécurité",
+      title: "Changer le mot de passe",
+      description:
+        "Choisissez un nouveau mot de passe d'au moins 8 caractères.",
+      forced:
+        "Votre mot de passe provisoire doit être remplacé avant de continuer.",
+      submit: "Changer le mot de passe",
+      success: "Votre mot de passe a été changé.",
+    },
+    fields: {
+      email: "Adresse e-mail",
+      password: "Mot de passe",
+      currentPassword: "Mot de passe actuel",
+      newPassword: "Nouveau mot de passe",
+      confirmPassword: "Confirmer le mot de passe",
+    },
+    validation: {
+      emailRequired: "L'adresse e-mail est obligatoire.",
+      emailInvalid: "L'adresse e-mail est invalide.",
+      passwordRequired: "Le mot de passe est obligatoire.",
+      passwordTooShort: "Le mot de passe doit contenir au moins 8 caractères.",
+      passwordTooLong: "Le mot de passe ne peut pas dépasser 100 caractères.",
+      currentPasswordRequired: "Le mot de passe actuel est obligatoire.",
+      confirmRequired: "Confirmez le mot de passe.",
+      confirmMismatch: "Les mots de passe ne correspondent pas.",
+    },
+  },
   shell: {
     skipLink: "Aller au contenu",
     tagline: "Quittances & frais d’occupation",
@@ -272,6 +351,8 @@ export const fr = {
     localDataText:
       "Aucune donnée ne quitte votre machine tant que l’URL du LLM reste locale.",
     footer: "HomeOfficeExpenses · usage personnel",
+    accountAria: "Compte connecté",
+    logout: "Se déconnecter",
     draftDialog: {
       title: "Modifications non enregistrées",
       message:
