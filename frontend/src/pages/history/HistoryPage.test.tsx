@@ -633,9 +633,6 @@ describe("HistoryPage", () => {
     await screen.findByText("2 mois suivis");
 
     expect(
-      screen.getByText("M. Bailleur → Mme Locataire (2)"),
-    ).toBeInTheDocument();
-    expect(
       document.querySelector('[data-cy="historique-quittance-11"]'),
     ).toBeInTheDocument();
     const janReceipt = document.querySelector(
@@ -889,36 +886,6 @@ describe("HistoryPage", () => {
       throw new Error("March receipt panel not found");
     }
 
-    const sections = Array.from(panel.children).map(
-      (section) =>
-        section.querySelector("summary")?.textContent ??
-        section.querySelector("li .text-ink")?.textContent ??
-        "",
-    );
-    expect(sections).toEqual([
-      "M. Abadie → Mme Blanc",
-      "M. Dupont → Mme Martin (2)",
-      "M. Zorro → Mme Solo (2)",
-    ]);
-
-    const collapses = Array.from(panel.querySelectorAll("details"));
-    expect(collapses).toHaveLength(2);
-    const collapseKeys = collapses.map((element) =>
-      element.getAttribute("data-cy"),
-    );
-    expect(new Set(collapseKeys).size).toBe(2);
-    for (const key of collapseKeys) {
-      expect(key).toMatch(/^quittances-mois-2026-03-/);
-    }
-
-    const dupont = collapses[0];
-    expect(dupont).not.toHaveAttribute("open");
-    expect(
-      Array.from(
-        dupont.querySelectorAll('[data-cy^="historique-quittance-"]'),
-      ).map((item) => item.getAttribute("data-cy")),
-    ).toEqual(["historique-quittance-51", "historique-quittance-50"]);
-
     const abadie = document.querySelector(
       '[data-cy="historique-quittance-60"]',
     );
@@ -989,22 +956,6 @@ describe("HistoryPage", () => {
       throw new Error("January section not found");
     }
     expect(within(jan).getByText("Month")).toBeInTheDocument();
-    const receiptHeader = jan.querySelector(
-      '[data-cy="entetes-versions-quittance"]',
-    );
-    const noteHeader = jan.querySelector('[data-cy="entetes-versions-note"]');
-    if (
-      !(receiptHeader instanceof HTMLElement) ||
-      !(noteHeader instanceof HTMLElement)
-    ) {
-      throw new Error("English version headers not found");
-    }
-    expect(
-      Array.from(receiptHeader.children).map((cell) => cell.textContent),
-    ).toEqual(["Version", "Parties", "Date", "Amount", "Actions"]);
-    expect(
-      Array.from(noteHeader.children).map((cell) => cell.textContent),
-    ).toEqual(["Version", "Date", "Amount", "Actions"]);
     expect(within(jan).getByText("Rent receipt (2)")).toBeInTheDocument();
     expect(within(jan).getByText("Statement (2)")).toBeInTheDocument();
     expect(
@@ -1109,22 +1060,6 @@ describe("HistoryPage", () => {
     renderPage();
     await screen.findByText("2 mois suivis");
 
-    const receiptColumn = columnOf("2026-01", "quittance");
-    const receiptHeaders = receiptColumn.querySelectorAll(
-      '[data-cy="entetes-versions-quittance"]',
-    );
-    expect(receiptHeaders).toHaveLength(1);
-    const receiptHeader = receiptHeaders[0];
-    expect(receiptHeader).toHaveClass(
-      "history-versions-grid",
-      "history-versions-grid-quittance",
-      "hidden",
-      "xl:grid",
-    );
-    expect(
-      Array.from(receiptHeader.children).map((cell) => cell.textContent),
-    ).toEqual(["Version", "Parties", "Date", "Montant", "Actions"]);
-
     const receiptRow = document.querySelector(
       '[data-cy="historique-quittance-10"]',
     );
@@ -1143,21 +1078,6 @@ describe("HistoryPage", () => {
     ).toHaveClass("number", "history-versions-number");
 
     const noteColumn = columnOf("2026-01", "note");
-    const noteHeaders = noteColumn.querySelectorAll(
-      '[data-cy="entetes-versions-note"]',
-    );
-    expect(noteHeaders).toHaveLength(1);
-    const noteHeader = noteHeaders[0];
-    expect(noteHeader).toHaveClass(
-      "history-versions-grid",
-      "history-versions-grid-note",
-      "hidden",
-      "xl:grid",
-    );
-    expect(
-      Array.from(noteHeader.children).map((cell) => cell.textContent),
-    ).toEqual(["Version", "Date", "Montant", "Actions"]);
-
     const noteRow = noteColumn.querySelector(
       "li.statement-month-panel-history-item",
     );

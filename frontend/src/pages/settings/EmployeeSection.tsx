@@ -98,7 +98,6 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
         action={
           <Button
             variant="primary"
-            small
             icon={<Plus size={14} />}
             onClick={() => setEmployeeForm("new")}
             disabled={companyId === null || employeeForm === "new"}

@@ -74,7 +74,6 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
         action={
           <Button
             variant="primary"
-            small
             icon={<Plus size={14} />}
             onClick={() => c.setLeaseForm("new")}
             disabled={c.leaseForm === "new"}

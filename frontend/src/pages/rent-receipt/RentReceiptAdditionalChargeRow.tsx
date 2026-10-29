@@ -69,7 +69,6 @@ export function RentReceiptAdditionalChargeRow({
         <div className="rent-receipt-amount-fields-charge-actions">
           <Button
             variant="primary"
-            small
             icon={<Save size={14} />}
             aria-label={t("rentReceipt.fields.saveAdditionalCharge")}
             data-cy="btn-enregistrer-charge-supplementaire"

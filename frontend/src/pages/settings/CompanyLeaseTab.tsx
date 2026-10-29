@@ -122,6 +122,15 @@ export function CompanyLeaseTab({
           description={t("settings.company.leaseTab.description")}
           action={
             <div className="company-lease-tab-header-actions">
+              <Button
+                variant="primary"
+                icon={<Plus size={14} />}
+                onClick={() => setAddingLease(true)}
+                disabled={addingLease}
+                data-cy="btn-ajouter-bail-societe"
+              >
+                {t("settings.company.leaseTab.add")}
+              </Button>
               {companyLeases.length > 0 ? (
                 <>
                   <div className="company-lease-tab-header-search">
@@ -152,16 +161,6 @@ export function CompanyLeaseTab({
                   />
                 </>
               ) : null}
-              <Button
-                variant="primary"
-                small
-                icon={<Plus size={14} />}
-                onClick={() => setAddingLease(true)}
-                disabled={addingLease}
-                data-cy="btn-ajouter-bail-societe"
-              >
-                {t("settings.company.leaseTab.add")}
-              </Button>
             </div>
           }
         />

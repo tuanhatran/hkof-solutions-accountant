@@ -67,7 +67,6 @@ export function PersonnesSection() {
         action={
           <Button
             variant="primary"
-            small
             icon={<Plus size={14} />}
             onClick={() => setForm("new")}
             disabled={form === "new"}

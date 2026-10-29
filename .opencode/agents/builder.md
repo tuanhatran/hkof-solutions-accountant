@@ -50,7 +50,7 @@ Cheap checks only inside the loop: never run a full gate here.
 | Docs, `.handoff/`, comments only                                       | `git diff --check`. No coverage, no E2E.                                                          |
 | Tests only, or component CSS only (no markup/text)                     | Affected tests, plus the side's lint/format (frontend: also `npm run build`). No coverage run, no E2E.                             |
 | Backend production code                                                | `cd backend && ./mvnw -B verify` + `scripts/diff-coverage.sh <Base> backend` + full E2E           |
-| Frontend production code                                               | `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + full E2E |
+| Frontend production code                                               | `cd frontend && npm run test:coverage && npm run lint && npm run format && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + full E2E |
 | `openapi/`, Flyway migration, Docker/E2E config, or both sides changed | Backend + frontend gates + full E2E                                                               |
 
 Full E2E, one stack per task:

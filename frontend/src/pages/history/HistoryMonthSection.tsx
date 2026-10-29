@@ -2,7 +2,6 @@ import "./HistoryMonthSection.css";
 import { FileCheck2, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { StatementDto } from "@/api/types";
-import { cn } from "@/lib/cn";
 import { formatMonth } from "@/lib/format";
 import { HistoryAddressRow } from "./HistoryAddressRow";
 import {
@@ -11,38 +10,6 @@ import {
   type AddressGroup,
   type MonthGroup,
 } from "./historyHelpers";
-
-/** Column header of one document version list, visible from `xl` only. */
-function VersionsHeader({ kind }: { kind: "quittance" | "note" }) {
-  const { t } = useTranslation();
-  return (
-    <div
-      className={cn(
-        "history-versions-grid",
-        `history-versions-grid-${kind}`,
-        "history-versions-header",
-        "hidden xl:grid",
-      )}
-      data-cy={
-        kind === "quittance"
-          ? "entetes-versions-quittance"
-          : "entetes-versions-note"
-      }
-    >
-      <span>{t("history.versions.version")}</span>
-      {kind === "quittance" ? (
-        <span>{t("history.versions.parties")}</span>
-      ) : null}
-      <span className="history-versions-number">
-        {t("history.versions.date")}
-      </span>
-      <span className="history-versions-number">
-        {t("history.versions.amount")}
-      </span>
-      <span>{t("history.versions.actions")}</span>
-    </div>
-  );
-}
 
 /** Month card: one Quittance column and one Note de frais column. */
 export function HistoryMonthSection({
@@ -131,7 +98,6 @@ export function HistoryMonthSection({
             </p>
           ) : (
             <>
-              <VersionsHeader kind="quittance" />
               {receiptAddresses.map((address) => (
                 <HistoryAddressRow
                   key={`receipt-${address.addressKey}`}
@@ -162,7 +128,6 @@ export function HistoryMonthSection({
             </p>
           ) : (
             <>
-              <VersionsHeader kind="note" />
               {statementAddresses.map((address) => (
                 <HistoryAddressRow
                   key={`statement-${address.addressKey}`}

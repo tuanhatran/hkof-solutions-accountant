@@ -110,7 +110,7 @@ describe("LeaseReceiptHistory", () => {
       ],
     });
 
-    const history = screen.getByTestId("quittances-bail-10");
+    const history = screen.getByTestId("lease-receipt-history-10");
     const months = within(history).getAllByRole("group");
     expect(months).toHaveLength(2);
     expect(months[0]).toHaveTextContent(formatMonth("2026-10"));
@@ -118,10 +118,10 @@ describe("LeaseReceiptHistory", () => {
     expect(months[1]).toHaveTextContent(formatMonth("2026-09"));
     expect(months[1]).toHaveTextContent("2 quittances");
     expect(
-      screen.getByTestId("quittances-bail-mois-10-2026-10"),
+      screen.getByTestId("lease-receipt-history-mois-10-2026-10"),
     ).toBeInTheDocument();
     expect(
-      screen.getByTestId("quittances-bail-mois-10-2026-09"),
+      screen.getByTestId("lease-receipt-history-mois-10-2026-09"),
     ).toBeInTheDocument();
   });
 
@@ -145,7 +145,7 @@ describe("LeaseReceiptHistory", () => {
       ],
     });
 
-    const month = screen.getByTestId("quittances-bail-mois-10-2026-09");
+    const month = screen.getByTestId("lease-receipt-history-mois-10-2026-09");
     const summary = month.querySelector("summary");
     expect(summary).not.toBeNull();
     summary?.focus();
@@ -173,7 +173,7 @@ describe("LeaseReceiptHistory", () => {
   it("shows the month and its single version even when there is only one receipt", () => {
     renderHistory({ receipts: [receipt({ id: 101 })] });
 
-    const month = screen.getByTestId("quittances-bail-mois-10-2026-09");
+    const month = screen.getByTestId("lease-receipt-history-mois-10-2026-09");
     expect(month).toBeInTheDocument();
     expect(within(month).getAllByRole("listitem")).toHaveLength(1);
     expect(
@@ -271,7 +271,7 @@ describe("LeaseReceiptHistory", () => {
       ],
     });
 
-    const month = screen.getByTestId("quittances-bail-mois-10-");
+    const month = screen.getByTestId("lease-receipt-history-mois-10-");
     const items = within(month).getAllByRole("listitem");
     expect(items).toHaveLength(1);
     expect(items[0]).toHaveTextContent("v1");
@@ -314,7 +314,7 @@ describe("LeaseReceiptHistory", () => {
     });
 
     expect(screen.getByText("Generated rent receipts")).toBeInTheDocument();
-    const month = screen.getByTestId("quittances-bail-mois-10-2026-09");
+    const month = screen.getByTestId("lease-receipt-history-mois-10-2026-09");
     expect(month).toHaveTextContent("September 2026");
     expect(month).toHaveTextContent("2 rent receipts");
     expect(
@@ -326,7 +326,7 @@ describe("LeaseReceiptHistory", () => {
     await i18n.changeLanguage("en");
     const single = renderHistory({ receipts: [receipt({ id: 101 })] });
     expect(
-      screen.getByTestId("quittances-bail-mois-10-2026-09"),
+      screen.getByTestId("lease-receipt-history-mois-10-2026-09"),
     ).toHaveTextContent("1 rent receipt");
     single.unmount();
 

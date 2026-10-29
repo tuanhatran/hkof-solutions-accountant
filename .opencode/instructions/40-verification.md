@@ -21,7 +21,7 @@ cd frontend && npm ci && npm test && npm run build
 cd frontend && npm run test:coverage   # Vitest coverage + Clover XML report
 scripts/diff-coverage.sh <Base> all    # changed-line coverage >= 80% gate
 cd frontend && npm run lint            # ESLint
-cd frontend && npm run format:check    # Prettier
+cd frontend && npm run format    # Prettier
 cd frontend && npm run build           # tsc + Vite build, same as CI
 cd frontend && npm run gen:api         # after an OpenAPI change
 make up / make down

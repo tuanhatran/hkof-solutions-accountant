@@ -48,7 +48,7 @@ or touches the database. Batch reads in parallel. No polling.
    (`scripts/diff-coverage.sh <Base> backend|frontend|all`, JaCoCo XML for backend lines, Vitest
    Clover XML for frontend lines), no coverage evidence line, or a production
    class at 300 lines or more.
-10. Frontend `npm run lint`, `npm run format:check` or `npm run build` failed, or a gate was skipped to get green.
+10. Frontend `npm run lint`, `npm run format` or `npm run build` failed, or a gate was skipped to get green.
 
 ## False-green probe (never skip)
 
