@@ -11,6 +11,8 @@ import {
   parseTenantKey,
   tenantKeyFromLease,
   leaseSchema,
+  registerSchema,
+  changePasswordSchema,
 } from "./validation";
 
 const VALID_EXPENSE = {
@@ -699,5 +701,51 @@ describe("llmSchema", () => {
       llmSchema.safeParse({ ...VALID, extractionPrompt: "court" }).error
         ?.issues[0]?.message,
     ).toBe("Le prompt d'extraction est trop court.");
+  });
+});
+
+describe("password schemas", () => {
+  it("accept a one-character password on registration and password change", () => {
+    expect(
+      registerSchema.safeParse({
+        email: "a@example.test",
+        password: "a",
+        confirmPassword: "a",
+      }).success,
+    ).toBe(true);
+    expect(
+      changePasswordSchema.safeParse({
+        currentPassword: "old",
+        newPassword: "n",
+        confirmPassword: "n",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("still reject a blank or too long password", () => {
+    const blank = registerSchema.safeParse({
+      email: "a@example.test",
+      password: "   ",
+      confirmPassword: "   ",
+    });
+    expect(blank.error?.issues[0]?.message).toBe(
+      i18n.t("auth.validation.passwordRequired"),
+    );
+    const long = "x".repeat(101);
+    const tooLong = changePasswordSchema.safeParse({
+      currentPassword: "old",
+      newPassword: long,
+      confirmPassword: long,
+    });
+    expect(tooLong.error?.issues[0]?.message).toBe(
+      i18n.t("auth.validation.passwordTooLong"),
+    );
+    expect(
+      changePasswordSchema.safeParse({
+        currentPassword: "old",
+        newPassword: "",
+        confirmPassword: "",
+      }).error?.issues[0]?.message,
+    ).toBe(i18n.t("auth.validation.passwordRequired"));
   });
 });

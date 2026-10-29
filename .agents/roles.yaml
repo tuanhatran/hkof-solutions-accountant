@@ -1,0 +1,27 @@
+# Role-to-model bindings (DOCUMENTATION ONLY).
+#
+# AGY does not read this file. The effective model of each agent is the `model:` field in the
+# frontmatter of `.agents/agents/<role>.md`. Keep both in sync by hand: when you change a model,
+# edit the agent's frontmatter first, then update this file.
+#
+# Model slugs come from `agy models`.
+
+roles:
+  lead:
+    file: agents/lead.md
+    model: claude-sonnet-5-5-medium # default (frontmatter)
+    fallback: gemini-4-argon-medium # manual `/model` switch on low quota, see lead.md "Models"
+    mainAgent: true
+  builder:
+    file: agents/builder.md
+    model: gemini-3.8-flash-medium
+    mainAgent: false
+  reviewer:
+    file: agents/reviewer.md
+    model: gemini-3.8-flash-medium
+    mainAgent: false
+  quick-dev:
+    file: agents/quick-dev.md
+    model: gemini-3.8-flash-medium
+    mainAgent: true
+

@@ -403,7 +403,9 @@ export const registerSchema = z
     email: authEmail,
     password: z
       .string()
-      .min(8, { error: () => authMessage("passwordTooShort") })
+      .refine((value) => value.trim() !== "", {
+        error: () => authMessage("passwordRequired"),
+      })
       .max(100, { error: () => authMessage("passwordTooLong") }),
     confirmPassword: z
       .string()
@@ -423,7 +425,9 @@ export const changePasswordSchema = z
       .min(1, { error: () => authMessage("currentPasswordRequired") }),
     newPassword: z
       .string()
-      .min(8, { error: () => authMessage("passwordTooShort") })
+      .refine((value) => value.trim() !== "", {
+        error: () => authMessage("passwordRequired"),
+      })
       .max(100, { error: () => authMessage("passwordTooLong") }),
     confirmPassword: z
       .string()
