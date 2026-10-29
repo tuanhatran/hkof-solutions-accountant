@@ -259,6 +259,7 @@ export const fr = {
       rentReceipt: "Quittance",
       expenseStatement: "Note de frais",
       history: "Historique",
+      templates: "Modèles",
       company: "Société",
       lmnp: "LMNP",
       aiAdmin: "Analyse IA",
@@ -427,7 +428,11 @@ export const fr = {
     download: "Télécharger l’aperçu",
   },
   templates: {
-    tab: {
+    page: {
+      eyebrow: "Réglages",
+      title: "Modèles",
+      description:
+        "Personnalisez les documents générés sans toucher au calcul : le backend fournit les montants déjà formatés, votre modèle HTML ne fait que les mettre en page.",
       warning:
         "Les modèles ne peuvent exécuter aucun code : Mustache sans logique, HTML assaini, images en data URI uniquement, aucune ressource distante. Un fichier refusé affiche les erreurs de validation sans être enregistré.",
     },
@@ -647,7 +652,6 @@ export const fr = {
         identification: "Info générale",
         leaseExpenses: "Baux & Frais",
         employees: "Salariés",
-        templates: "Modèles",
       },
       loading: "Chargement des sociétés…",
       empty: "Aucune société configurée. Créez la première société.",
@@ -693,7 +697,7 @@ export const fr = {
       leaseTab: {
         title: "Baux de la société",
         description:
-          "Une société peut être locataire de plusieurs baux. « Modifier les frais » ouvre les postes du bail ; les postes hérités au niveau de la société restent visibles et modifiables dans chaque bail.",
+          "Une société peut posséder plusieurs baux.",
         columns: {
           address: "Adresse",
           landlord: "Bailleur",
@@ -842,7 +846,6 @@ export const fr = {
       tabs: {
         leases: "Baux et adresses",
         persons: "Personnes",
-        templates: "Modèles",
       },
     },
     employees: {

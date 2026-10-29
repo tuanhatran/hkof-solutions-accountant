@@ -5,6 +5,7 @@ import {
   FileText,
   History,
   Home,
+  LayoutTemplate,
   ReceiptText,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -61,6 +62,12 @@ export const SECTIONS: NavigationSection[] = [
   {
     titleKey: "navigation.sections.settings",
     links: [
+      {
+        to: "/templates",
+        labelKey: "navigation.links.templates",
+        icon: LayoutTemplate,
+        dataCy: "tab-templates",
+      },
       {
         to: "/configuration/entreprise",
         labelKey: "navigation.links.company",

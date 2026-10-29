@@ -12,7 +12,7 @@ import type {
 } from "@/api/types";
 import i18n from "@/i18n";
 import { useToasts } from "@/state/toasts";
-import { TemplatesTab } from "./TemplatesTab";
+import { TemplatesCard } from "./TemplatesCard";
 import {
   EXPENSE_STATEMENT_CONFIGURATION,
   RENT_RECEIPT_CONFIGURATION,
@@ -124,7 +124,7 @@ const EXPENSE_ACTIVE: TemplateDto = {
   createdAt: "2026-02-01T10:00:00Z",
 };
 
-function renderTab(
+function renderCard(
   configuration: ConfigurationType = RENT_RECEIPT_CONFIGURATION,
 ) {
   const queryClient = new QueryClient({
@@ -132,7 +132,7 @@ function renderTab(
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <TemplatesTab configuration={configuration} />
+      <TemplatesCard configuration={configuration} />
     </QueryClientProvider>,
   );
 }
@@ -204,9 +204,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("TemplatesTab", () => {
-  it("renders only the rent receipt card with the sandbox warning", () => {
-    renderTab();
+describe("TemplatesCard", () => {
+  it("renders the rent receipt card only", () => {
+    renderCard();
 
     expect(
       screen.getByRole("heading", { name: "Quittance de loyer" }),
@@ -215,18 +215,12 @@ describe("TemplatesTab", () => {
       screen.queryByRole("heading", { name: "Note de frais d’occupation" }),
     ).toBeNull();
     expect(
-      screen.getByText(/Les modèles ne peuvent exécuter aucun code/),
-    ).toBeVisible();
-    expect(
-      screen.getByText(/Mustache sans logique, HTML assaini/),
-    ).toBeVisible();
-    expect(
       document.querySelector('[data-cy="dropzone-rent-receipt-template"]'),
     ).not.toBeNull();
   });
 
   it("renders the active model, previous versions and the variable reference", () => {
-    renderTab();
+    renderCard();
 
     const rent = card();
     expect(within(rent).getAllByText("Quittance 2026").length).toBeGreaterThan(
@@ -243,7 +237,7 @@ describe("TemplatesTab", () => {
   });
 
   it("aligns the version header and rows on one shared grid", () => {
-    renderTab();
+    renderCard();
 
     const header = document.querySelector(
       '[data-cy="template-versions-headers"]',
@@ -287,7 +281,7 @@ describe("TemplatesTab", () => {
   });
 
   it("renders a comparison checkbox per version without changing the row actions", () => {
-    renderTab();
+    renderCard();
 
     const archived = screen.getByRole("checkbox", {
       name: "Comparer Quittance archivée v2",
@@ -313,7 +307,7 @@ describe("TemplatesTab", () => {
   });
 
   it("renders the expense statement card when configured for it", () => {
-    renderTab(EXPENSE_STATEMENT_CONFIGURATION);
+    renderCard(EXPENSE_STATEMENT_CONFIGURATION);
 
     const expense = card();
     expect(
@@ -332,13 +326,13 @@ describe("TemplatesTab", () => {
 
   it("shows the loading and error states of the template list", async () => {
     templatesPending = true;
-    const loading = renderTab();
+    const loading = renderCard();
     expect(screen.getByText("Chargement des modèles…")).toBeInTheDocument();
     loading.unmount();
 
     templatesPending = false;
     templatesError = new Error("Service indisponible");
-    renderTab();
+    renderCard();
     expect(
       screen.getByText("Impossible de charger les données"),
     ).toBeInTheDocument();
@@ -352,7 +346,7 @@ describe("TemplatesTab", () => {
 
   it("downloads the built-in model of the rent receipt type", async () => {
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     await user.click(
       within(card()).getByRole("button", {
@@ -370,7 +364,7 @@ describe("TemplatesTab", () => {
 
   it("downloads the built-in model of the expense statement type", async () => {
     const user = userEvent.setup();
-    renderTab(EXPENSE_STATEMENT_CONFIGURATION);
+    renderCard(EXPENSE_STATEMENT_CONFIGURATION);
 
     await user.click(
       within(card()).getByRole("button", {
@@ -394,7 +388,7 @@ describe("TemplatesTab", () => {
       active: true,
     });
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     const row = screen.getByText("Quittance archivée").closest("li");
     if (!row) {
@@ -422,7 +416,7 @@ describe("TemplatesTab", () => {
 
   it("closes the preview with Escape and the close button", async () => {
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     const activePreview = within(card()).getAllByRole("button", {
       name: "Aperçu",
@@ -459,7 +453,7 @@ describe("TemplatesTab", () => {
     });
 
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     const rent = card();
     const file = new File(["<html></html>"], "modele.html", {
@@ -516,7 +510,7 @@ describe("TemplatesTab", () => {
     vi.mocked(api.templates.upload).mockResolvedValue(imported);
 
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     const rent = card();
     await user.upload(
@@ -541,7 +535,7 @@ describe("TemplatesTab", () => {
     );
 
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     const rent = card();
     await user.upload(
@@ -561,7 +555,7 @@ describe("TemplatesTab", () => {
   it("deletes a previous version after confirmation and supports cancel", async () => {
     vi.mocked(api.templates.delete).mockResolvedValue(undefined);
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     const row = screen.getByText("Quittance archivée").closest("li");
     if (!row) {
@@ -587,7 +581,7 @@ describe("TemplatesTab", () => {
   });
 
   it("keeps the active and built-in versions undeletable", () => {
-    renderTab();
+    renderCard();
 
     const rows = within(card()).getAllByRole("listitem");
     const activeRow = rows.find((row) =>
@@ -612,7 +606,7 @@ describe("TemplatesTab", () => {
       new Error("Suppression refusée"),
     );
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     const row = screen.getByText("Quittance archivée").closest("li");
     if (!row) {
@@ -638,7 +632,7 @@ describe("TemplatesTab", () => {
       active: true,
     });
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     await user.click(
       within(card()).getByRole("button", {
@@ -669,7 +663,7 @@ describe("TemplatesTab", () => {
       new Error("Restauration impossible"),
     );
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     const rent = card();
     expect(within(rent).getByText("Aucun modèle actif.")).toBeInTheDocument();
@@ -694,7 +688,7 @@ describe("TemplatesTab", () => {
 
   it("downloads a version with a sanitised file name", async () => {
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     const row = screen.getByText("Quittance archivée").closest("li");
     if (!row) {
@@ -714,7 +708,7 @@ describe("TemplatesTab", () => {
       new Error("PDF indisponible"),
     );
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     const row = screen.getByText("Quittance archivée").closest("li");
     if (!row) {
@@ -731,7 +725,7 @@ describe("TemplatesTab", () => {
       value: { writeText },
       configurable: true,
     });
-    renderTab();
+    renderCard();
 
     const rent = card();
     await user.click(
@@ -773,7 +767,7 @@ describe("TemplatesTab", () => {
     vi.mocked(api.templates.upload).mockResolvedValue(imported);
 
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     const rent = card();
     await user.upload(
@@ -794,13 +788,12 @@ describe("TemplatesTab", () => {
 
   it("renders the card header in English and relabels the configuration on switch", async () => {
     await i18n.changeLanguage("en");
-    renderTab();
+    renderCard();
 
     expect(screen.getByRole("heading", { name: "Rent receipt" })).toBeVisible();
     expect(
       screen.getByText("Template used for monthly rent receipts."),
     ).toBeVisible();
-    expect(screen.getByText(/Templates cannot execute any code/)).toBeVisible();
 
     await act(async () => {
       await i18n.changeLanguage("fr");
@@ -816,7 +809,7 @@ describe("TemplatesTab", () => {
 
   it("renders the expense statement configuration in English", async () => {
     await i18n.changeLanguage("en");
-    renderTab(EXPENSE_STATEMENT_CONFIGURATION);
+    renderCard(EXPENSE_STATEMENT_CONFIGURATION);
 
     const expense = card();
     expect(
@@ -837,7 +830,7 @@ describe("TemplatesTab", () => {
 
   it("renders the active model and version list in English", async () => {
     await i18n.changeLanguage("en");
-    renderTab();
+    renderCard();
 
     const rent = card();
     expect(within(rent).getByText("Active template")).toBeVisible();
@@ -867,7 +860,7 @@ describe("TemplatesTab", () => {
   it("shows the template loading state in English", async () => {
     templatesPending = true;
     await i18n.changeLanguage("en");
-    renderTab();
+    renderCard();
 
     expect(screen.getByText("Loading templates…")).toBeInTheDocument();
   });
@@ -890,7 +883,7 @@ describe("TemplatesTab", () => {
 
     await i18n.changeLanguage("en");
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
     const rent = card();
 
     expect(within(rent).getByText("Import a new version")).toBeVisible();
@@ -944,7 +937,7 @@ describe("TemplatesTab", () => {
     vi.mocked(api.templates.delete).mockResolvedValue(undefined);
     await i18n.changeLanguage("en");
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     const row = screen.getByText("Quittance archivée").closest("li");
     if (!row) {
@@ -973,7 +966,7 @@ describe("TemplatesTab", () => {
     });
     await i18n.changeLanguage("en");
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     const row = screen.getByText("Quittance archivée").closest("li");
     if (!row) {
@@ -1010,7 +1003,7 @@ describe("TemplatesTab", () => {
       configurable: true,
     });
     await i18n.changeLanguage("en");
-    renderTab(EXPENSE_STATEMENT_CONFIGURATION);
+    renderCard(EXPENSE_STATEMENT_CONFIGURATION);
     const expense = card();
 
     expect(within(expense).getByText("Variable reference")).toBeVisible();
@@ -1067,7 +1060,7 @@ describe("TemplatesTab", () => {
     });
     await i18n.changeLanguage("en");
     const user = userEvent.setup();
-    renderTab();
+    renderCard();
 
     await user.click(
       within(card()).getByRole("button", {
@@ -1095,7 +1088,7 @@ describe("TemplatesTab", () => {
   it("offers the built-in restore when no model is active in English", async () => {
     templatesByType = { ...templatesByType, RENT_RECEIPT: [RENT_OLD] };
     await i18n.changeLanguage("en");
-    renderTab();
+    renderCard();
 
     const rent = card();
     expect(within(rent).getByText("No active template.")).toBeVisible();

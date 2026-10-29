@@ -36,6 +36,11 @@ export const EXPENSE_STATEMENT_CONFIGURATION: ConfigurationType = {
   icon: FileText,
 };
 
+export const TEMPLATE_CONFIGURATIONS: ConfigurationType[] = [
+  RENT_RECEIPT_CONFIGURATION,
+  EXPENSE_STATEMENT_CONFIGURATION,
+];
+
 export function downloadFileName(
   name: string | undefined,
   version: number | undefined,

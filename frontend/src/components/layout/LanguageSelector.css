@@ -2,7 +2,7 @@
 
 @layer components {
   .language-selector-root {
-    @apply inline-flex items-center gap-0.5 rounded-lg border border-line bg-surface p-0.5;
+    @apply inline-flex items-center gap-0.5 rounded-lg bg-surface p-0.5;
   }
 
   .language-selector-option {

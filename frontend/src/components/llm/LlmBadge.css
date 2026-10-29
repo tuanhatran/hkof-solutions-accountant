@@ -30,6 +30,6 @@
   }
 
   .llm-badge-link {
-    @apply rounded-full;
+    @apply inline-flex items-center gap-0.5 rounded-lg bg-surface p-0.5;
   }
 }

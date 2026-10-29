@@ -111,8 +111,7 @@ describe("AI admin and templates", () => {
   });
 
   it("imports, previews, activates a template then reverts to the built-in model", () => {
-    cy.visit("/configuration/lmnp");
-    cy.get('[data-cy="tab-lmnp-templates"]').click();
+    cy.visit("/templates");
     cy.get('[data-cy="dropzone-rent-receipt-template"]', {
       timeout: 20_000,
     }).should("exist");
@@ -193,8 +192,7 @@ describe("AI admin and templates", () => {
       },
     );
 
-    cy.visit("/configuration/lmnp");
-    cy.get('[data-cy="tab-lmnp-templates"]').click();
+    cy.visit("/templates");
     cy.get('[data-cy="input-template-name"]', { timeout: 20_000 })
       .first()
       .clear()

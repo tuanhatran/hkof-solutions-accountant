@@ -143,32 +143,6 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
           />
         ) : (
           <>
-            <ListToolbar
-              list="leases"
-              placeholder={t("settings.lease.section.filterPlaceholder")}
-              query={listQuery.query}
-              onQueryChange={listQuery.setQuery}
-              sort={listQuery.sort}
-              onSortChange={listQuery.setSort}
-              direction={listQuery.direction}
-              onToggleDirection={listQuery.toggleDirection}
-              sortOptions={[
-                {
-                  value: "lease",
-                  label: t("settings.lease.section.columns.lease"),
-                },
-                {
-                  value: "company",
-                  label: t("settings.lease.section.columns.company"),
-                },
-                {
-                  value: "rent",
-                  label: t("settings.lease.section.columns.rent"),
-                },
-              ]}
-              visible={listQuery.visible.length}
-              total={listQuery.total}
-            />
             {listQuery.visible.length === 0 ? (
               <EmptyState
                 text={t("settings.list.noMatch", {

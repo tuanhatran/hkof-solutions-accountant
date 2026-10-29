@@ -25,6 +25,24 @@ describe("SideNavigation", () => {
     expect(
       within(navigation).getByRole("link", { name: /LMNP/ }),
     ).toHaveAttribute("href", "/configuration/lmnp");
+    const templatesLink = within(navigation).getByRole("link", {
+      name: /Modèles/,
+    });
+    expect(templatesLink).toHaveAttribute("href", "/templates");
+    expect(templatesLink).toHaveAttribute("data-cy", "tab-templates");
+    expect(
+      within(navigation)
+        .getAllByRole("link")
+        .map((link) => link.textContent),
+    ).toEqual([
+      "Quittance",
+      "Note de frais",
+      "Historique",
+      "Modèles",
+      "Société",
+      "LMNP",
+      "Analyse IA",
+    ]);
 
     const historyLink = within(navigation).getByRole("link", {
       name: /Historique/,
@@ -52,10 +70,6 @@ describe("SideNavigation", () => {
     });
     expect(statementLink).toHaveAttribute("href", "/generer/note-frais");
     expect(statementLink).toHaveAttribute("data-cy", "tab-expense-statement");
-
-    expect(
-      within(navigation).queryByRole("link", { name: /Templates/ }),
-    ).toBeNull();
   });
 
   it("marks the generation route as active", () => {
@@ -99,6 +113,9 @@ describe("SideNavigation", () => {
       within(navigation).getByRole("link", { name: /Company/ }),
     ).toHaveAttribute("href", "/configuration/entreprise");
     expect(
+      within(navigation).getByRole("link", { name: /Templates/ }),
+    ).toHaveAttribute("href", "/templates");
+    expect(
       within(navigation).getByRole("link", { name: /AI analysis/ }),
     ).toHaveAttribute("href", "/admin");
     expect(within(navigation).queryByText("Suivi")).toBeNull();
@@ -138,6 +155,7 @@ describe("navigation selectors", () => {
       "tab-rent-receipt",
       "tab-expense-statement",
       "tab-history",
+      "tab-templates",
       "tab-configuration",
       "tab-lmnp",
       "tab-admin",
@@ -161,6 +179,7 @@ describe("MobileNavigation", () => {
       "Quittance",
       "Note de frais",
       "Historique",
+      "Modèles",
       "Société",
       "LMNP",
       "Analyse IA",
@@ -190,6 +209,7 @@ describe("MobileNavigation", () => {
       "Rent receipt",
       "Expense statement",
       "History",
+      "Templates",
       "Company",
       "LMNP",
       "AI analysis",

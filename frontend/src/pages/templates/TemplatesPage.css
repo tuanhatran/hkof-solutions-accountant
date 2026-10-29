@@ -1,0 +1,15 @@
+@reference "../../index.css";
+
+@layer components {
+  .templates-page-grid {
+    @apply grid gap-6 xl:grid-cols-2;
+  }
+
+  .templates-page-warning {
+    @apply mt-6 flex items-start gap-2 rounded-2xl border border-warning/20 bg-warning-soft/50 px-4 py-3 text-xs leading-relaxed text-warning;
+  }
+
+  .templates-page-warning-icon {
+    @apply mt-0.5 shrink-0;
+  }
+}

@@ -244,6 +244,7 @@ export const en = {
       rentReceipt: "Rent receipt",
       expenseStatement: "Expense statement",
       history: "History",
+      templates: "Templates",
       company: "Company",
       lmnp: "LMNP",
       aiAdmin: "AI analysis",
@@ -407,7 +408,11 @@ export const en = {
     download: "Download the preview",
   },
   templates: {
-    tab: {
+    page: {
+      eyebrow: "Settings",
+      title: "Templates",
+      description:
+        "Customise the generated documents without touching the calculation: the backend provides ready-formatted amounts, and your HTML template only lays them out.",
       warning:
         "Templates cannot execute any code: logic-less Mustache, sanitized HTML, data URI images only, no remote resources. A rejected file displays validation errors without being saved.",
     },
@@ -626,7 +631,6 @@ export const en = {
         identification: "General info",
         leaseExpenses: "Leases & Expenses",
         employees: "Employees",
-        templates: "Templates",
       },
       loading: "Loading companies…",
       empty: "No company configured. Create the first company.",
@@ -671,7 +675,7 @@ export const en = {
       leaseTab: {
         title: "Company leases",
         description:
-          "A company can be the tenant of several leases. “Edit expenses” opens the lease expense items; items inherited at company level stay visible and editable in each lease.",
+          "A company can have several leases.",
         columns: {
           address: "Address",
           landlord: "Landlord",
@@ -818,7 +822,6 @@ export const en = {
       tabs: {
         leases: "Leases and addresses",
         persons: "People",
-        templates: "Templates",
       },
     },
     employees: {
