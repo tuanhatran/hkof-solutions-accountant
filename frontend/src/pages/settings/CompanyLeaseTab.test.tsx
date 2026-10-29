@@ -641,9 +641,7 @@ describe("CompanyLeaseTab", () => {
       screen.getByRole("heading", { name: "Company leases" }),
     ).toBeVisible();
     expect(
-      screen.getByText(
-        "A company can be the tenant of several leases. “Edit expenses” opens the lease expense items; items inherited at company level stay visible and editable in each lease.",
-      ),
+      screen.getByText("A company can have several leases."),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Add a lease" })).toBeVisible();
     expect(

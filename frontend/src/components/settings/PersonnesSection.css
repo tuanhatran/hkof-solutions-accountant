@@ -9,20 +9,32 @@
     @apply space-y-4;
   }
 
+  .personnes-section-header-actions {
+    @apply flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3;
+  }
+
+  .personnes-section-header-search {
+    @apply w-full sm:w-56;
+  }
+
+  .personnes-section-count {
+    @apply text-xs text-ink-soft;
+  }
+
+  .personnes-section-table {
+    @apply overflow-hidden rounded-lg border border-line bg-surface;
+  }
+
   .personnes-section-list {
-    @apply divide-y divide-line overflow-hidden rounded-xl border border-line bg-paper/40;
+    @apply flex flex-col divide-y divide-line;
   }
 
   .personnes-section-headers {
-    @apply grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_6.5rem_12rem] items-center gap-3 border-b border-line px-3 py-1.5 text-[11px] text-ink-soft;
-  }
-
-  .personnes-section-headers-signatures {
-    @apply text-right;
+    @apply grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_6.5rem_12rem];
   }
 
   .personnes-section-item {
-    @apply grid gap-x-3 gap-y-1 px-3 py-2 md:min-h-9 md:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_6.5rem_12rem] md:items-center md:py-1.5;
+    @apply grid gap-x-3 gap-y-1 px-4 py-2 md:min-h-9 md:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_6.5rem_12rem] md:items-center md:py-1.5;
   }
 
   .personnes-section-cell {

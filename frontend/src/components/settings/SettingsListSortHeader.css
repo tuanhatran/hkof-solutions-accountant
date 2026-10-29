@@ -1,0 +1,31 @@
+@reference "../../index.css";
+
+@layer components {
+  .settings-list-sort-header {
+    @apply items-stretch gap-3 border-b border-line bg-paper/50 px-4 text-[11px] font-medium uppercase tracking-wide text-ink-soft;
+  }
+
+  .settings-list-sort-header-amount {
+    @apply text-right;
+  }
+
+  .settings-list-sort-header-actions {
+    @apply py-2.5 text-right;
+  }
+
+  .settings-list-sort {
+    @apply flex h-full w-full items-center gap-1 rounded-md py-2.5 text-left text-[11px] font-medium uppercase tracking-wide text-ink-soft transition-colors hover:bg-paper/80 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-surface;
+  }
+
+  .settings-list-sort-amount {
+    @apply justify-end text-right;
+  }
+
+  .settings-list-mobile-sort {
+    @apply flex items-center gap-2;
+  }
+
+  .settings-list-mobile-sort-direction {
+    @apply shrink-0;
+  }
+}

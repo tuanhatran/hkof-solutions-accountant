@@ -7,7 +7,7 @@ import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys, usePersons } from "@/api/queries";
 import type { PersonDto } from "@/api/types";
-import { ListToolbar } from "@/components/settings/ListToolbar";
+import { ListSearch } from "@/components/settings/ListToolbar";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorState, LoadingState } from "@/components/ui/States";
@@ -15,6 +15,11 @@ import { useListQuery } from "@/hooks/useListQuery";
 import { toast } from "@/state/toasts";
 import { PersonForm } from "./PersonForm";
 import { EmptyState, SectionHeader } from "./SettingsSection";
+import {
+  SettingsListMobileSort,
+  SettingsListSortHeader,
+  type SettingsListColumn,
+} from "./SettingsListSortHeader";
 
 /** Natural persons directory: list, add/edit modal and logical deletion. */
 export function PersonnesSection() {
@@ -36,6 +41,13 @@ export function PersonnesSection() {
           }),
       },
       {
+        value: "address",
+        compare: (left, right) =>
+          (left.address ?? "").localeCompare(right.address ?? "", "fr", {
+            sensitivity: "base",
+          }),
+      },
+      {
         value: "signatures",
         compare: (left, right) =>
           (left.signatureCount ?? 0) - (right.signatureCount ?? 0),
@@ -43,6 +55,37 @@ export function PersonnesSection() {
     ],
     defaultSort: "name",
   });
+
+  /** An inactive column starts ascending, the active column toggles. */
+  function sortBy(column: string) {
+    if (listQuery.sort === column) {
+      listQuery.toggleDirection();
+      return;
+    }
+    listQuery.setSort(column);
+    if (listQuery.direction !== "asc") {
+      listQuery.toggleDirection();
+    }
+  }
+
+  const columns: SettingsListColumn[] = [
+    {
+      key: "name",
+      label: t("settings.people.columns.person"),
+      dataCy: "sort-persons-name",
+    },
+    {
+      key: "address",
+      label: t("settings.people.columns.address"),
+      dataCy: "sort-persons-address",
+    },
+    {
+      key: "signatures",
+      label: t("settings.people.columns.signatures"),
+      dataCy: "sort-persons-signatures",
+      numeric: true,
+    },
+  ];
 
   const remove = useMutation({
     mutationFn: (person: PersonDto) => api.persons.remove(person.id as number),
@@ -65,15 +108,48 @@ export function PersonnesSection() {
         title={t("settings.people.title")}
         description={t("settings.people.description")}
         action={
-          <Button
-            variant="primary"
-            icon={<Plus size={14} />}
-            onClick={() => setForm("new")}
-            disabled={form === "new"}
-            data-cy="btn-add-person"
-          >
-            {t("settings.people.add")}
-          </Button>
+          <div className="personnes-section-header-actions">
+            <Button
+              variant="primary"
+              icon={<Plus size={14} />}
+              onClick={() => setForm("new")}
+              disabled={form === "new"}
+              data-cy="btn-add-person"
+            >
+              {t("settings.people.add")}
+            </Button>
+            {list.length > 0 ? (
+              <>
+                <div className="personnes-section-header-search">
+                  <ListSearch
+                    list="persons"
+                    placeholder={t("settings.people.filterPlaceholder")}
+                    query={listQuery.query}
+                    onQueryChange={listQuery.setQuery}
+                  />
+                </div>
+                <span
+                  className="personnes-section-count"
+                  aria-live="polite"
+                  data-cy="filter-count-persons"
+                >
+                  {t("settings.list.count", {
+                    visible: listQuery.visible.length,
+                    total: listQuery.total,
+                  })}
+                </span>
+                <SettingsListMobileSort
+                  columns={columns}
+                  sort={listQuery.sort}
+                  direction={listQuery.direction}
+                  onSort={sortBy}
+                  onToggleDirection={listQuery.toggleDirection}
+                  selectDataCy="sort-persons-compact"
+                  directionDataCy="sort-persons-compact-direction"
+                />
+              </>
+            ) : null}
+          </div>
         }
       />
       <div className="card-body personnes-section-body">
@@ -96,28 +172,6 @@ export function PersonnesSection() {
           <EmptyState text={t("settings.people.empty")} dataCy="no-person" />
         ) : (
           <>
-            <ListToolbar
-              list="persons"
-              placeholder={t("settings.people.filterPlaceholder")}
-              query={listQuery.query}
-              onQueryChange={listQuery.setQuery}
-              sort={listQuery.sort}
-              onSortChange={listQuery.setSort}
-              direction={listQuery.direction}
-              onToggleDirection={listQuery.toggleDirection}
-              sortOptions={[
-                {
-                  value: "name",
-                  label: t("settings.people.columns.person"),
-                },
-                {
-                  value: "signatures",
-                  label: t("settings.people.columns.signatures"),
-                },
-              ]}
-              visible={listQuery.visible.length}
-              total={listQuery.total}
-            />
             {listQuery.visible.length === 0 ? (
               <EmptyState
                 text={t("settings.list.noMatch", {
@@ -126,18 +180,16 @@ export function PersonnesSection() {
                 dataCy="no-results-persons"
               />
             ) : (
-              <>
-                <div
-                  className="personnes-section-headers hidden md:grid"
-                  data-cy="persons-headers"
-                >
-                  <span>{t("settings.people.columns.person")}</span>
-                  <span>{t("settings.people.columns.address")}</span>
-                  <span className="personnes-section-headers-signatures">
-                    {t("settings.people.columns.signatures")}
-                  </span>
-                  <span aria-hidden="true" />
-                </div>
+              <div className="personnes-section-table" role="table">
+                <SettingsListSortHeader
+                  columns={columns}
+                  sort={listQuery.sort}
+                  direction={listQuery.direction}
+                  onSort={sortBy}
+                  actionsLabel={t("settings.people.columns.actions")}
+                  dataCy="persons-headers"
+                  className="personnes-section-headers"
+                />
                 <ul className="personnes-section-list">
                   {listQuery.visible.map((person) => (
                     <li
@@ -191,7 +243,7 @@ export function PersonnesSection() {
                     </li>
                   ))}
                 </ul>
-              </>
+              </div>
             )}
           </>
         )}
