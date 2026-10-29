@@ -10,7 +10,7 @@ export function HistoryEmptyState({
   onCreateStatement,
 }: {
   onCreateRentReceipt: () => void;
-  onCreateStatement: () => void;
+  onCreateStatement?: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -24,9 +24,11 @@ export function HistoryEmptyState({
           <Button variant="primary" onClick={onCreateRentReceipt}>
             {t("history.empty.createRentReceipt")}
           </Button>
-          <Button variant="secondary" onClick={onCreateStatement}>
-            {t("history.empty.createStatement")}
-          </Button>
+          {onCreateStatement ? (
+            <Button variant="secondary" onClick={onCreateStatement}>
+              {t("history.empty.createStatement")}
+            </Button>
+          ) : null}
         </div>
       }
     />
