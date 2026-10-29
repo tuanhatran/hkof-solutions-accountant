@@ -151,9 +151,9 @@ public class CompanyService {
                     "Cette société est locataire d'un bail actif et ne peut pas être supprimée.");
         }
         Instant now = Instant.now(clock);
+        Long owner = ownership.currentUserId();
         List<Employee> companyEmployees = employees
-                .findAllByUserIdAndCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(
-                        ownership.currentUserId(), id);
+                .findAllByUserIdAndCompanyIdAndDeletedFalseOrderByLastNameAscFirstNameAscIdAsc(owner, id);
         for (Employee employee : companyEmployees) {
             employee.setDeleted(true);
             employee.setUpdatedAt(now);
@@ -163,7 +163,7 @@ public class CompanyService {
         }
         List<Long> employeeIds = companyEmployees.stream().map(Employee::getId).toList();
         List<Signature> companySignatures = employeeIds.isEmpty() ? List.of()
-                : signatures.findAllByPersonIdInAndDeletedFalse(employeeIds);
+                : signatures.findAllByUserIdAndPersonIdInAndDeletedFalse(owner, employeeIds);
         for (Signature signature : companySignatures) {
             signature.setDeleted(true);
             signature.setUpdatedAt(now);
@@ -171,7 +171,7 @@ public class CompanyService {
         if (!companySignatures.isEmpty()) {
             signatures.saveAll(companySignatures);
         }
-        for (Lease lease : leases.findAllByUserIdAndCompanyIdAndDeletedFalse(ownership.currentUserId(), id)) {
+        for (Lease lease : leases.findAllByUserIdAndCompanyIdAndDeletedFalse(owner, id)) {
             unlink(lease);
         }
         company.setActiveLeaseId(null);
@@ -182,7 +182,7 @@ public class CompanyService {
 
     @Transactional(readOnly = true)
     public Optional<Company> find(Long id) {
-        return repository.findById(id);
+        return repository.findByIdAndUserId(id, ownership.currentUserId());
     }
 
     @Transactional(readOnly = true)

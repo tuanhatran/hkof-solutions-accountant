@@ -102,7 +102,7 @@ class DataInitializerTest {
             return saved;
         });
         when(employeeRepository.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(1L, 1L)).thenReturn(Optional.empty());
-        when(personRepository.findAllNaturalPersons()).thenReturn(List.of());
+        when(personRepository.findAllNaturalPersons(1L)).thenReturn(List.of());
         when(personRepository.save(any(Person.class))).thenAnswer(invocation -> {
             Person person = invocation.getArgument(0);
             person.setId(1L);
@@ -148,6 +148,7 @@ class DataInitializerTest {
         assertThat(leases.getValue().isCompanyLease()).isTrue();
         assertThat(leases.getValue().getTenant()).isNull();
         assertThat(leases.getValue().getLandlord().getName()).isEqualTo("Nom du bailleur");
+        assertThat(leases.getValue().getLandlord().getUserId()).isEqualTo(1L);
         assertThat(leases.getValue().getTotalArea()).isEqualByComparingTo("70.00");
         assertThat(leases.getValue().getBusinessArea()).isEqualByComparingTo("25.00");
         assertThat(companies.getValue().getHomeAddress()).isNull();
@@ -175,7 +176,7 @@ class DataInitializerTest {
         when(companyRepository.findFirstByUserIdAndDeletedFalseOrderByIdAsc(1L)).thenReturn(Optional.of(company()));
         when(employeeRepository.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(1L, 1L))
                 .thenReturn(Optional.of(new Employee()));
-        when(personRepository.findAllNaturalPersons()).thenReturn(List.of(new Person()));
+        when(personRepository.findAllNaturalPersons(1L)).thenReturn(List.of(new Person()));
         when(leaseRepository.findFirstByUserIdAndDeletedFalseOrderByIdAsc(1L)).thenReturn(Optional.of(new Lease()));
         when(expenseItemRepository.findFirstByUserIdAndCompanyIdAndCode(eq(1L), eq(1L), any()))
                 .thenReturn(Optional.of(new fr.hkof.homeofficeexpenses.domain.ExpenseItem()));
@@ -204,7 +205,7 @@ class DataInitializerTest {
         when(companyRepository.findFirstByUserIdAndDeletedFalseOrderByIdAsc(1L)).thenReturn(Optional.of(company()));
         when(employeeRepository.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(1L, 1L))
                 .thenReturn(Optional.of(new Employee()));
-        when(personRepository.findAllNaturalPersons()).thenReturn(List.of(new Person()));
+        when(personRepository.findAllNaturalPersons(1L)).thenReturn(List.of(new Person()));
         when(leaseRepository.findFirstByUserIdAndDeletedFalseOrderByIdAsc(1L)).thenReturn(Optional.of(new Lease()));
         when(expenseItemRepository.findFirstByUserIdAndCompanyIdAndCode(eq(1L), eq(1L), any()))
                 .thenReturn(Optional.of(new fr.hkof.homeofficeexpenses.domain.ExpenseItem()));

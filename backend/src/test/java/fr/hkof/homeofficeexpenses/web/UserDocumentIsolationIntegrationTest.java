@@ -161,8 +161,8 @@ class UserDocumentIsolationIntegrationTest {
     }
 
     @Test
-    @DisplayName("Receipts of two accounts sharing a person pair and month keep distinct stored PDFs")
-    void keepsSharedPersonReceiptsOfTwoAccountsApart() throws Exception {
+    @DisplayName("Signatures and person-scoped document generation stay isolated per account")
+    void isolatesSignaturesAndPersonsInDocuments() throws Exception {
         Session a = sessionFor("documents.shared.a@example.test");
         Session b = sessionFor("documents.shared.b@example.test");
 
@@ -170,40 +170,87 @@ class UserDocumentIsolationIntegrationTest {
                 {"name":"Alpha Partagée","legalForm":"SARL","address":"1 rue Alpha","managerName":"Gérant",
                  "leaseId":null,"issuePlace":"Paris"}
                 """));
-        // Persons are not account-scoped yet: both accounts see the same sender names.
-        long landlordId = id(created(a, "/api/persons",
-                "{\"name\":\"Bailleur Partagé\",\"address\":\"1 rue Bailleur\"}"));
-        long tenantId = id(created(a, "/api/persons",
-                "{\"name\":\"Locataire Partagé\",\"address\":\"2 rue Locataire\"}"));
-        long aLeaseId = id(created(a, "/api/leases",
-                leaseBody(landlordId, tenantId, aCompanyId, "12 rue Alpha, 75002 Paris")));
-        signature(a, landlordId, "Signature bailleur partagé");
+        long aLandlordId = id(created(a, "/api/persons",
+                "{\"name\":\"Bailleur Alpha\",\"address\":\"1 rue Bailleur\"}"));
+        long aTenantId = id(created(a, "/api/persons",
+                "{\"name\":\"Locataire Alpha\",\"address\":\"2 rue Locataire\"}"));
+        created(a, "/api/leases",
+                leaseBody(aLandlordId, aTenantId, aCompanyId, "12 rue Alpha, 75002 Paris"));
+        long aEmployeeId = id(created(a, "/api/companies/" + aCompanyId + "/employees", """
+                {"firstName":"Gérant","lastName":"Alpha","title":"CEO","address":"3 rue Gérant",
+                 "issuePlace":"Paris"}
+                """));
+        long aLandlordSig = signature(a, aLandlordId, "Signature bailleur Alpha");
+        long aCeoSig = signature(a, aEmployeeId, "Signature gérant Alpha");
 
-        long aReceiptId = id(created(a, "/api/rent-receipts", """
-                {"month":"2026-05","companyId":%d,"landlordId":%d,"tenantId":%d}
-                """.formatted(aCompanyId, landlordId, tenantId)));
-        String aPath = receiptPath(aReceiptId);
-        byte[] aPdf = receiptPdf(a, aReceiptId);
-
-        // A deletes its lease; the shared persons stay in the directory.
-        mockMvc.perform(mutation(delete("/api/leases/{id}", aLeaseId), a))
-                .andExpect(status().isNoContent());
-
-        // B creates its own lease on the very same persons and generates the same month:
-        // the per-owner version restarts at 1, so the stored name must stay owner-specific.
         long bCompanyId = id(created(b, "/api/companies", """
                 {"name":"Bêta Partagée","legalForm":"SARL","address":"2 rue Bêta","managerName":"Gérant",
                  "leaseId":null,"issuePlace":"Paris"}
                 """));
-        created(b, "/api/leases", leaseBody(landlordId, tenantId, bCompanyId, "14 rue Bêta, 75003 Paris"));
-        long bReceiptId = id(created(b, "/api/rent-receipts", """
-                {"month":"2026-05","companyId":%d,"landlordId":%d,"tenantId":%d}
-                """.formatted(bCompanyId, landlordId, tenantId)));
+        long bLandlordId = id(created(b, "/api/persons",
+                "{\"name\":\"Bailleur Bêta\",\"address\":\"1 rue Bailleur\"}"));
+        long bTenantId = id(created(b, "/api/persons",
+                "{\"name\":\"Locataire Bêta\",\"address\":\"2 rue Locataire\"}"));
+        created(b, "/api/leases", leaseBody(bLandlordId, bTenantId, bCompanyId, "14 rue Bêta, 75003 Paris"));
+        long bEmployeeId = id(created(b, "/api/companies/" + bCompanyId + "/employees", """
+                {"firstName":"Gérant","lastName":"Bêta","title":"CEO","address":"3 rue Gérant",
+                 "issuePlace":"Paris"}
+                """));
+        long bLandlordSig = signature(b, bLandlordId, "Signature bailleur Bêta");
+        created(b, "/api/expense-items", """
+                {"companyId":%d,"leaseId":null,"code":"gaz","label":"Gaz Bêta","supplier":"Fournisseur",
+                 "proRataPct":"35.71","periodicity":"MONTHLY","active":true,"sortOrder":10,
+                 "multipleLinesAllowed":false}
+                """.formatted(bCompanyId));
 
-        String bPath = receiptPath(bReceiptId);
-        assertThat(bPath).isNotEqualTo(aPath);
-        assertThat(receiptPath(aReceiptId)).isEqualTo(aPath);
-        assertThat(receiptPdf(a, aReceiptId)).isEqualTo(aPdf);
+        // B cannot list, create, read image, or delete signatures on A's person or A's signature id.
+        mockMvc.perform(get("/api/signatures").param("personId", String.valueOf(aLandlordId)).session(b.http()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PERSON_NOT_FOUND"));
+        mockMvc.perform(get("/api/signatures").param("personId", String.valueOf(aEmployeeId)).session(b.http()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PERSON_NOT_FOUND"));
+        MockMultipartHttpServletRequestBuilder foreignUpload = multipart("/api/signatures");
+        foreignUpload.file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
+                .param("personId", String.valueOf(aLandlordId))
+                .param("name", "Usurpée")
+                .session(b.http())
+                .cookie(b.csrf())
+                .header(CSRF_HEADER, b.csrf().getValue());
+        mockMvc.perform(foreignUpload)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PERSON_NOT_FOUND"));
+        mockMvc.perform(get("/api/signatures/{id}/image", aLandlordSig).session(b.http()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SIGNATURE_NOT_FOUND"));
+        mockMvc.perform(mutation(delete("/api/signatures/{id}", aLandlordSig), b))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SIGNATURE_NOT_FOUND"));
+
+        // B cannot pass A's signatureId to rent receipt or expense statement preview/generation.
+        mockMvc.perform(mutation(post("/api/rent-receipts"), b).contentType(JSON)
+                        .content("""
+                                {"month":"2026-05","companyId":%d,"landlordId":%d,"tenantId":%d,"signatureId":%d}
+                                """.formatted(bCompanyId, bLandlordId, bTenantId, aLandlordSig)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SIGNATURE_NOT_FOUND"));
+        mockMvc.perform(mutation(post("/api/rent-receipts/preview"), b).contentType(JSON)
+                        .content("""
+                                {"month":"2026-05","companyId":%d,"landlordId":%d,"tenantId":%d,"signatureId":%d}
+                                """.formatted(bCompanyId, bLandlordId, bTenantId, aLandlordSig)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SIGNATURE_NOT_FOUND"));
+        mockMvc.perform(mutation(post("/api/expense-statements"), b).contentType(JSON)
+                        .content("""
+                                {"companyId":%d,"month":"2026-05","signatureId":%d,
+                                 "lines":[{"itemCode":"gaz","amountInclVat":"80.00","proRataPct":"35,71"}]}
+                                """.formatted(bCompanyId, aCeoSig)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SIGNATURE_NOT_FOUND"));
+
+        // B sees only its own signature on its landlord.
+        assertThat(listedIds(b, "/api/signatures?personId=" + bLandlordId)).containsExactly(bLandlordSig);
+        assertThat(listedIds(b, "/api/signatures?personId=" + bEmployeeId)).isEmpty();
     }
 
     private static String leaseBody(long landlordId, long tenantId, long companyId, String address) {
@@ -264,7 +311,7 @@ class UserDocumentIsolationIntegrationTest {
                 """.formatted(companyId, month);
     }
 
-    private void signature(Session session, long personId, String name) throws Exception {
+    private long signature(Session session, long personId, String name) throws Exception {
         MockMultipartHttpServletRequestBuilder request = multipart("/api/signatures");
         request.file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
                 .param("personId", String.valueOf(personId))
@@ -272,7 +319,8 @@ class UserDocumentIsolationIntegrationTest {
                 .session(session.http())
                 .cookie(session.csrf())
                 .header(CSRF_HEADER, session.csrf().getValue());
-        mockMvc.perform(request).andExpect(status().isCreated());
+        MvcResult result = mockMvc.perform(request).andExpect(status().isCreated()).andReturn();
+        return id(result);
     }
 
     private long ownerId(String email) {

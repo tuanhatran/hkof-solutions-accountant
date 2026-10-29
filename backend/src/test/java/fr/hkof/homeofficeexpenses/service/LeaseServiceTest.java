@@ -184,8 +184,8 @@ class LeaseServiceTest {
     @Test
     @DisplayName("A normal lease can be created, updated and logically deleted")
     void normalLeaseCrud() {
-        when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
-        when(persons.findNaturalPersonById(2L)).thenReturn(Optional.of(person(2L, "Locataire")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(person(2L, "Locataire")));
         when(leases.save(any(Lease.class))).thenAnswer(invocation -> {
             Lease saved = invocation.getArgument(0);
             saved.setId(3L);
@@ -217,7 +217,7 @@ class LeaseServiceTest {
     @Test
     @DisplayName("A company lease stores the company tenant and requires both surfaces")
     void companyLeaseCrud() {
-        when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
         when(companies.entity(7L)).thenReturn(company(7L, "Société locataire"));
         when(leases.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(companies.find(7L)).thenReturn(Optional.of(company(7L, "Société locataire")));
@@ -255,7 +255,7 @@ class LeaseServiceTest {
                 .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_EMPLOYEE_PARTY"));
 
         when(employees.existsByIdAndUserIdAndDeletedFalse(1L, USER_ID)).thenReturn(false);
-        when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
         when(employees.existsByIdAndUserIdAndDeletedFalse(2L, USER_ID)).thenReturn(true);
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
@@ -267,7 +267,7 @@ class LeaseServiceTest {
     @Test
     @DisplayName("The same person cannot be landlord and tenant")
     void samePersonRejected() {
-        when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 1L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
@@ -278,7 +278,7 @@ class LeaseServiceTest {
     @Test
     @DisplayName("Lease validation rejects missing parties, missing entities and blank addresses")
     void leaseValidation() {
-        when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, null, null, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
@@ -301,21 +301,21 @@ class LeaseServiceTest {
                 .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
                         .isEqualTo("LEASE_COMPANY_TENANT_INVALID"));
 
-        when(persons.findNaturalPersonById(1L)).thenReturn(Optional.empty());
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Bailleur introuvable.")
                 .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("PERSON_NOT_FOUND"));
-        when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
-        when(persons.findNaturalPersonById(2L)).thenReturn(Optional.empty());
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Locataire introuvable.")
                 .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("PERSON_NOT_FOUND"));
 
-        when(persons.findNaturalPersonById(2L)).thenReturn(Optional.of(person(2L, "Locataire")));
+        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(person(2L, "Locataire")));
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, " ", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
@@ -326,8 +326,8 @@ class LeaseServiceTest {
     @Test
     @DisplayName("An active lease for the same parties is rejected on create and update")
     void duplicateLease() {
-        when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
-        when(persons.findNaturalPersonById(2L)).thenReturn(Optional.of(person(2L, "Locataire")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(person(2L, "Locataire")));
         when(leases.existsByUserIdAndLandlordIdAndTenantIdAndDeletedFalse(USER_ID, 1L, 2L)).thenReturn(true);
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
@@ -353,7 +353,7 @@ class LeaseServiceTest {
     @Test
     @DisplayName("A second active company lease for the same company is allowed with another landlord")
     void secondCompanyLeaseIsAllowed() {
-        when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
         when(companies.entity(7L)).thenReturn(company(7L, "Société"));
         when(companies.find(7L)).thenReturn(Optional.of(company(7L, "Société")));
         when(leases.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -368,8 +368,8 @@ class LeaseServiceTest {
     @Test
     @DisplayName("A normal lease cannot duplicate the pro-rata company link")
     void normalLeaseAlreadyLinkedIsRejected() {
-        when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
-        when(persons.findNaturalPersonById(2L)).thenReturn(Optional.of(person(2L, "Locataire")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(person(2L, "Locataire")));
         when(companies.entity(7L)).thenReturn(company(7L, "Société"));
         when(leases.existsByUserIdAndCompanyIdAndCompanyLeaseFalseAndDeletedFalse(USER_ID, 7L)).thenReturn(true);
 
@@ -398,8 +398,8 @@ class LeaseServiceTest {
     @Test
     @DisplayName("A lease update keeps its own company link and accepts no company")
     void companyLinkExcludesCurrentLease() {
-        when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Bailleur")));
-        when(persons.findNaturalPersonById(2L)).thenReturn(Optional.of(person(2L, "Locataire")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(person(2L, "Locataire")));
         when(companies.entity(9L)).thenReturn(company(9L, "Société pro-rata"));
         when(companies.find(9L)).thenReturn(Optional.of(company(9L, "Société pro-rata")));
         when(leases.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));

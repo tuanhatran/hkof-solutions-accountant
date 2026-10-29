@@ -24,24 +24,27 @@ public class PersonService {
     private final PersonRepository persons;
     private final LeaseRepository leases;
     private final SignatureRepository signatures;
+    private final OwnershipContext ownership;
     private final Clock clock;
 
     public PersonService(PersonRepository persons, LeaseRepository leases, SignatureRepository signatures,
-            Clock clock) {
+            OwnershipContext ownership, Clock clock) {
         this.persons = persons;
         this.leases = leases;
         this.signatures = signatures;
+        this.ownership = ownership;
         this.clock = clock;
     }
 
     @Transactional(readOnly = true)
     public List<PersonDto> list() {
-        return persons.findAllNaturalPersons().stream().map(this::toDto).toList();
+        return persons.findAllNaturalPersons(ownership.currentUserId()).stream().map(this::toDto).toList();
     }
 
     @Transactional
     public PersonDto create(PersonRequest request) {
         Person person = new Person();
+        person.setUserId(ownership.currentUserId());
         apply(person, request);
         person.setDeleted(false);
         person.setCreatedAt(Instant.now(clock));
@@ -78,7 +81,7 @@ public class PersonService {
         if (id == null) {
             throw new BusinessException("PERSON_REQUIRED", "Sélectionnez une personne.");
         }
-        return persons.findNaturalPersonById(id)
+        return persons.findNaturalPersonById(id, ownership.currentUserId())
                 .orElseThrow(() -> new NotFoundException("PERSON_NOT_FOUND", "Personne introuvable."));
     }
 

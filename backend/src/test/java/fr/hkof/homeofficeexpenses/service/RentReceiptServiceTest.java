@@ -76,7 +76,7 @@ class RentReceiptServiceTest {
         when(ownership.currentUserId()).thenReturn(OWNER);
         service = new RentReceiptService(repository, companies, leaseService, templateService,
                 templateDataService, signatureService, pdfService, storage, documentDraftService,
-                new RentReceiptMapper(persons, companies),
+                new RentReceiptMapper(persons, companies, ownership),
                 new RentReceiptAssembler(repository, templateService, ownership), ownership,
                 Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
@@ -183,8 +183,8 @@ class RentReceiptServiceTest {
             saved.setId(10L);
             return saved;
         });
-        when(persons.findById(1L)).thenReturn(Optional.of(person(1L, "Bailleur", "1 rue du Bail")));
-        when(persons.findById(2L)).thenReturn(Optional.of(person(2L, "Locataire", "2 rue du Locataire")));
+        when(persons.findByIdAndUserId(1L, OWNER)).thenReturn(Optional.of(person(1L, "Bailleur", "1 rue du Bail")));
+        when(persons.findByIdAndUserId(2L, OWNER)).thenReturn(Optional.of(person(2L, "Locataire", "2 rue du Locataire")));
     }
 
     @Test
@@ -609,8 +609,8 @@ class RentReceiptServiceTest {
         receipt.setTotal(new BigDecimal("950"));
         receipt.setStatus(DocumentStatus.ACTIVE);
         receipt.setPdfPath("/data/out/quittance.pdf");
-        when(persons.findById(5L)).thenReturn(Optional.empty());
-        when(persons.findById(6L)).thenReturn(Optional.empty());
+        when(persons.findByIdAndUserId(5L, OWNER)).thenReturn(Optional.empty());
+        when(persons.findByIdAndUserId(6L, OWNER)).thenReturn(Optional.empty());
         when(companies.find(COMPANY_ID)).thenReturn(Optional.of(company(COMPANY_ID, "HKOF")));
 
         RentReceiptDto dto = service.toDto(receipt);
@@ -630,7 +630,7 @@ class RentReceiptServiceTest {
         receipt.setLandlordId(1L);
         receipt.setTenantCompanyId(TENANT_COMPANY_ID);
         receipt.setStatus(DocumentStatus.ACTIVE);
-        when(persons.findById(1L)).thenReturn(Optional.of(person(1L, "Bailleur", null)));
+        when(persons.findByIdAndUserId(1L, OWNER)).thenReturn(Optional.of(person(1L, "Bailleur", null)));
         when(companies.find(TENANT_COMPANY_ID)).thenReturn(Optional.of(company(TENANT_COMPANY_ID, "Société Locataire")));
 
         RentReceiptDto dto = service.toDto(receipt);
@@ -661,6 +661,6 @@ class RentReceiptServiceTest {
         assertThat(dto.landlordName()).isNull();
         assertThat(dto.tenantName()).isNull();
         assertThat(dto.pdfAvailable()).isFalse();
-        verify(persons, never()).findById(any());
+        verify(persons, never()).findByIdAndUserId(any(), any());
     }
 }

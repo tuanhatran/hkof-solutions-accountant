@@ -27,9 +27,12 @@ import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.PersonRequest;
 
 class PersonServiceTest {
 
+    private static final Long USER_ID = 42L;
+
     private PersonRepository persons;
     private LeaseRepository leases;
     private SignatureRepository signatures;
+    private OwnershipContext ownership;
     private PersonService service;
 
     @BeforeEach
@@ -37,13 +40,16 @@ class PersonServiceTest {
         persons = mock(PersonRepository.class);
         leases = mock(LeaseRepository.class);
         signatures = mock(SignatureRepository.class);
-        service = new PersonService(persons, leases, signatures,
+        ownership = mock(OwnershipContext.class);
+        when(ownership.currentUserId()).thenReturn(USER_ID);
+        service = new PersonService(persons, leases, signatures, ownership,
                 Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
     private Person person(Long id, String name) {
         Person person = new Person();
         person.setId(id);
+        person.setUserId(USER_ID);
         person.setName(name);
         person.setAddress("Adresse");
         return person;
@@ -52,7 +58,7 @@ class PersonServiceTest {
     @Test
     @DisplayName("Natural persons are listed with their signature count")
     void lists() {
-        when(persons.findAllNaturalPersons()).thenReturn(List.of(person(1L, "Alice")));
+        when(persons.findAllNaturalPersons(USER_ID)).thenReturn(List.of(person(1L, "Alice")));
         when(signatures.countByPersonIdAndDeletedFalse(1L)).thenReturn(2L);
 
         assertThat(service.list()).extracting(PersonDto::name).containsExactly("Alice");
@@ -73,7 +79,7 @@ class PersonServiceTest {
         assertThat(created.issuePlace()).isEqualTo("Lyon");
 
         Person existing = person(1L, "Alice");
-        when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(existing));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(existing));
         PersonDto updated = service.update(1L, new PersonRequest("Alicia", "2 rue", "   "));
         assertThat(updated.name()).isEqualTo("Alicia");
         assertThat(updated.address()).isEqualTo("2 rue");
@@ -86,7 +92,7 @@ class PersonServiceTest {
     @Test
     @DisplayName("A person with signatures or an active lease cannot be deleted")
     void deletionGuards() {
-        when(persons.findNaturalPersonById(1L)).thenReturn(Optional.of(person(1L, "Alice")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Alice")));
         when(signatures.existsByPersonIdAndDeletedFalse(1L)).thenReturn(true);
         assertThatThrownBy(() -> service.delete(1L))
                 .isInstanceOf(BusinessException.class)
@@ -112,7 +118,7 @@ class PersonServiceTest {
         assertThatThrownBy(() -> service.create(new PersonRequest(" ", null, null)))
                 .isInstanceOf(BusinessException.class);
 
-        when(persons.findNaturalPersonById(9L)).thenReturn(Optional.empty());
+        when(persons.findNaturalPersonById(9L, USER_ID)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.update(9L, new PersonRequest("x", null, null)))
                 .isInstanceOf(NotFoundException.class).hasMessage("Personne introuvable.")
                 .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("PERSON_NOT_FOUND"));

@@ -246,10 +246,11 @@ public class LeaseService {
     }
 
     private Person party(Long id, String code, String notFound) {
-        if (employees.existsByIdAndUserIdAndDeletedFalse(id, ownership.currentUserId())) {
+        Long owner = ownership.currentUserId();
+        if (employees.existsByIdAndUserIdAndDeletedFalse(id, owner)) {
             throw new BusinessException("LEASE_EMPLOYEE_PARTY", "Un salarié ne peut pas être partie à un bail.");
         }
-        return persons.findNaturalPersonById(id)
+        return persons.findNaturalPersonById(id, owner)
                 .orElseThrow(() -> new NotFoundException(code, notFound));
     }
 

@@ -27,6 +27,9 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     Optional<Employee> findFirstByCompanyIdAndTitleAndDeletedFalseOrderByIdAsc(Long companyId,
             fr.hkof.homeofficeexpenses.domain.EmployeeTitle title);
 
+    Optional<Employee> findFirstByUserIdAndCompanyIdAndTitleAndDeletedFalseOrderByIdAsc(Long userId, Long companyId,
+            fr.hkof.homeofficeexpenses.domain.EmployeeTitle title);
+
     boolean existsByCompanyIdAndEmailIgnoreCaseAndDeletedFalse(Long companyId, String email);
 
     boolean existsByCompanyIdAndEmailIgnoreCaseAndDeletedFalseAndIdNot(Long companyId, String email, Long id);

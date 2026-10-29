@@ -104,6 +104,24 @@ class UserIsolationIntegrationTest {
         assertThat(listedIds(b, "/api/leases")).contains(bLease).doesNotContain(aLease);
         assertThat(listedIds(b, "/api/addresses")).contains(bAddress).doesNotContain(aAddress);
         assertThat(listedIds(a, "/api/addresses")).contains(aAddress).doesNotContain(bAddress);
+        assertThat(listedIds(a, "/api/persons")).contains(aLandlord, aTenant).doesNotContain(bLandlord, bTenant);
+        assertThat(listedIds(b, "/api/persons")).contains(bLandlord, bTenant).doesNotContain(aLandlord, aTenant);
+
+        mockMvc.perform(mutation(put("/api/persons/{id}", aLandlord), b)
+                        .contentType(JSON).content(person("Bailleur usurpé")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PERSON_NOT_FOUND"));
+        mockMvc.perform(mutation(delete("/api/persons/{id}", aLandlord), b))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PERSON_NOT_FOUND"));
+        mockMvc.perform(mutation(post("/api/leases"), b)
+                        .contentType(JSON).content(lease(aLandlord, bTenant, null, "10 rue Interdite")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PERSON_NOT_FOUND"));
+        mockMvc.perform(mutation(post("/api/leases"), b)
+                        .contentType(JSON).content(lease(bLandlord, aTenant, null, "10 rue Interdite")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PERSON_NOT_FOUND"));
     }
 
     @Test

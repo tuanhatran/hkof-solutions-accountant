@@ -174,8 +174,8 @@ public class DataInitializer implements ApplicationRunner {
     }
 
     private void initRentConfiguration(Long ownerId, Company company) {
-        Person landlord = personRepository.findAllNaturalPersons().stream().findFirst()
-                .orElseGet(this::createDefaultPerson);
+        Person landlord = personRepository.findAllNaturalPersons(ownerId).stream().findFirst()
+                .orElseGet(() -> createDefaultPerson(ownerId));
         if (leaseRepository.findFirstByUserIdAndDeletedFalseOrderByIdAsc(ownerId).isPresent()) {
             return;
         }
@@ -198,8 +198,9 @@ public class DataInitializer implements ApplicationRunner {
         leaseRepository.save(lease);
     }
 
-    private Person createDefaultPerson() {
+    private Person createDefaultPerson(Long ownerId) {
         Person person = new Person();
+        person.setUserId(ownerId);
         person.setName(DEFAULT_LANDLORD_NAME);
         person.setAddress(DEFAULT_LANDLORD_ADDRESS);
         person.setDeleted(false);
