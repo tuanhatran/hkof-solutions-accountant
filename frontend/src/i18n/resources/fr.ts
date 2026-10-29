@@ -697,7 +697,7 @@ export const fr = {
       leaseTab: {
         title: "Baux de la société",
         description:
-          "Une société peut être locataire de plusieurs baux. « Modifier les frais » ouvre les postes du bail ; les postes hérités au niveau de la société restent visibles et modifiables dans chaque bail.",
+          "Une société peut posséder plusieurs baux.",
         columns: {
           address: "Adresse",
           landlord: "Bailleur",

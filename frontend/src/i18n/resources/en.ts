@@ -675,7 +675,7 @@ export const en = {
       leaseTab: {
         title: "Company leases",
         description:
-          "A company can be the tenant of several leases. “Edit expenses” opens the lease expense items; items inherited at company level stay visible and editable in each lease.",
+          "A company can have several leases.",
         columns: {
           address: "Address",
           landlord: "Landlord",
