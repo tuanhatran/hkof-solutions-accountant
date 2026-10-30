@@ -5,8 +5,6 @@ import java.time.Clock;
 import java.time.Instant;
 
 import org.springframework.boot.ApplicationArguments;
-import org.springframework.core.env.Environment;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,10 +42,6 @@ public class DataInitializer implements ApplicationRunner {
     private static final String DEFAULT_LANDLORD_ADDRESS = "Adresse du bailleur";
     private static final String DEFAULT_RENT_EXCL_CHARGES = "1300.00";
     private static final String DEFAULT_CHARGES = "0.00";
-    private static final String SEED_USER_EMAIL = "thtran@homeofficeexpenses.local";
-    private static final String SEED_USER_PASSWORD = "thtran";
-    private static final String E2E_USER_EMAIL = "e2e@homeofficeexpenses.local";
-    private static final String E2E_USER_PASSWORD = "e2e-password";
 
     private final CompanyRepository companyRepository;
     private final EmployeeRepository employeeRepository;
@@ -58,8 +52,7 @@ public class DataInitializer implements ApplicationRunner {
     private final TemplateDocumentRepository templateRepository;
     private final LlmConfigRepository llmConfigRepository;
     private final AppUserRepository appUserRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final Environment environment;
+    private final SeedUserInitializer seedUsers;
     private final AppProperties properties;
     private final Clock clock;
 
@@ -67,7 +60,7 @@ public class DataInitializer implements ApplicationRunner {
             PersonRepository personRepository, LeaseRepository leaseRepository, AddressRepository addressRepository,
             ExpenseItemRepository expenseItemRepository, TemplateDocumentRepository templateRepository,
             LlmConfigRepository llmConfigRepository, AppUserRepository appUserRepository,
-            PasswordEncoder passwordEncoder, Environment environment, AppProperties properties, Clock clock) {
+            SeedUserInitializer seedUsers, AppProperties properties, Clock clock) {
         this.companyRepository = companyRepository;
         this.employeeRepository = employeeRepository;
         this.personRepository = personRepository;
@@ -77,8 +70,7 @@ public class DataInitializer implements ApplicationRunner {
         this.templateRepository = templateRepository;
         this.llmConfigRepository = llmConfigRepository;
         this.appUserRepository = appUserRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.environment = environment;
+        this.seedUsers = seedUsers;
         this.properties = properties;
         this.clock = clock;
     }
@@ -86,14 +78,14 @@ public class DataInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        initUsers();
+        seedUsers.initUsers();
         seedData(seedOwnerId());
     }
 
     /** Seeds the documented configuration owned by the given account; used by the e2e reset. */
     @Transactional
     public void seed(Long ownerId) {
-        initUsers();
+        seedUsers.initUsers();
         seedData(ownerId);
     }
 
@@ -107,31 +99,9 @@ public class DataInitializer implements ApplicationRunner {
     }
 
     private Long seedOwnerId() {
-        return appUserRepository.findByEmailIgnoreCase(SEED_USER_EMAIL)
+        return appUserRepository.findByEmailIgnoreCase(seedUsers.seedOwnerEmail())
                 .orElseThrow(() -> new IllegalStateException("Seeded owner account is missing"))
                 .getId();
-    }
-
-    private void initUsers() {
-        createUserIfAbsent(SEED_USER_EMAIL, SEED_USER_PASSWORD, true);
-        if (environment.matchesProfiles("e2e")) {
-            createUserIfAbsent(E2E_USER_EMAIL, E2E_USER_PASSWORD, false);
-        }
-    }
-
-    private void createUserIfAbsent(String email, String rawPassword, boolean mustChangePassword) {
-        if (appUserRepository.existsByEmailIgnoreCase(email)) {
-            return;
-        }
-        Instant now = Instant.now(clock);
-        AppUser user = new AppUser();
-        user.setEmail(email);
-        user.setPasswordHash(passwordEncoder.encode(rawPassword));
-        user.setConfirmed(true);
-        user.setMustChangePassword(mustChangePassword);
-        user.setCreatedAt(now);
-        user.setUpdatedAt(now);
-        appUserRepository.save(user);
     }
 
     private Company initCompany(Long ownerId) {

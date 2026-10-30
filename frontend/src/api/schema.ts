@@ -123,6 +123,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Liste les comptes locaux avec leur rôle et leurs modules activés. */
+        get: operations["listUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/modules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Active ou désactive le module entreprise (companyEnabled) et le module LMNP (lmnpEnabled) d'un compte. Un champ absent reste inchangé. */
+        patch: operations["updateUserModules"];
+        trace?: never;
+    };
+    "/api/admin/users/{id}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Change le rôle d'un compte (ADMIN ou USER). */
+        patch: operations["updateUserRole"];
+        trace?: never;
+    };
     "/api/companies": {
         parameters: {
             query?: never;
@@ -954,6 +1005,31 @@ export interface components {
             email?: string;
             /** @description Vrai tant que le changement de mot de passe imposé n'est pas fait. */
             mustChangePassword?: boolean;
+            role?: components["schemas"]["UserRole"];
+            /** @description Vrai quand le module entreprise est activé pour ce compte. */
+            companyEnabled?: boolean;
+            /** @description Vrai quand le module LMNP est activé pour ce compte. */
+            lmnpEnabled?: boolean;
+        };
+        /** @enum {string} */
+        UserRole: "ADMIN" | "USER";
+        AdminUserDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: email */
+            email: string;
+            role: components["schemas"]["UserRole"];
+            companyEnabled: boolean;
+            lmnpEnabled: boolean;
+        };
+        ModuleFlagsRequest: {
+            /** @description Active ou désactive le module entreprise ; absent, la valeur reste inchangée. */
+            companyEnabled?: boolean;
+            /** @description Active ou désactive le module LMNP ; absent, la valeur reste inchangée. */
+            lmnpEnabled?: boolean;
+        };
+        RoleRequest: {
+            role: components["schemas"]["UserRole"];
         };
         SignatureDto: {
             /** Format: int64 */
@@ -1596,7 +1672,44 @@ export interface components {
             prompt?: string;
         };
     };
-    responses: never;
+    responses: {
+        /** @description Accès réservé aux administrateurs (403 ACCESS_DENIED) */
+        AdminOnly: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ProblemDetail"];
+            };
+        };
+        /** @description Module entreprise désactivé pour ce compte (403 MODULE_COMPANY_DISABLED) */
+        CompanyModuleDisabled: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ProblemDetail"];
+            };
+        };
+        /** @description Module LMNP désactivé pour ce compte (403 MODULE_LMNP_DISABLED) */
+        LmnpModuleDisabled: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ProblemDetail"];
+            };
+        };
+        /** @description Compte introuvable (404 USER_NOT_FOUND) */
+        UserNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ProblemDetail"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
     headers: never;
@@ -1846,6 +1959,101 @@ export interface operations {
             };
         };
     };
+    listUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AdminUserDto"][];
+                };
+            };
+            403: components["responses"]["AdminOnly"];
+        };
+    };
+    updateUserModules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModuleFlagsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AdminUserDto"];
+                };
+            };
+            /** @description Aucun module précisé (MODULES_REQUIRED) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            403: components["responses"]["AdminOnly"];
+            404: components["responses"]["UserNotFound"];
+        };
+    };
+    updateUserRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AdminUserDto"];
+                };
+            };
+            /** @description Rôle absent ou invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            403: components["responses"]["AdminOnly"];
+            404: components["responses"]["UserNotFound"];
+        };
+    };
     listCompanies: {
         parameters: {
             query?: never;
@@ -1864,6 +2072,7 @@ export interface operations {
                     "*/*": components["schemas"]["CompanyDto"][];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     createCompany: {
@@ -1897,6 +2106,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     getCompany: {
@@ -1919,6 +2129,7 @@ export interface operations {
                     "*/*": components["schemas"]["CompanyDto"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -1963,6 +2174,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -1992,6 +2204,7 @@ export interface operations {
                 };
                 content?: never;
             };
+            403: components["responses"]["CompanyModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -2023,6 +2236,7 @@ export interface operations {
                     "*/*": components["schemas"]["EmployeeDto"][];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -2067,6 +2281,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -2175,6 +2390,7 @@ export interface operations {
                     "*/*": components["schemas"]["ExpenseItemDto"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     deleteExpenseItem: {
@@ -2195,6 +2411,7 @@ export interface operations {
                 };
                 content?: never;
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     getLlmConfig: {
@@ -2403,6 +2620,7 @@ export interface operations {
                     "*/*": components["schemas"]["RentReceiptDto"][];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     createRentReceipt: {
@@ -2427,6 +2645,7 @@ export interface operations {
                     "*/*": components["schemas"]["RentReceiptDto"];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     previewRentReceipt: {
@@ -2451,6 +2670,7 @@ export interface operations {
                     "*/*": string;
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     uploadReceipt: {
@@ -2526,6 +2746,7 @@ export interface operations {
                     "*/*": components["schemas"]["StatementDto"][];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     createExpenseStatement: {
@@ -2550,6 +2771,7 @@ export interface operations {
                     "*/*": components["schemas"]["StatementDto"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     previewStatement: {
@@ -2574,6 +2796,7 @@ export interface operations {
                     "*/*": string;
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     createStatementDraft: {
@@ -2600,6 +2823,7 @@ export interface operations {
                     "*/*": components["schemas"]["DraftDto"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     calculateStatement: {
@@ -2624,6 +2848,7 @@ export interface operations {
                     "*/*": components["schemas"]["CalculationResponse"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     getRentReceiptDraft: {
@@ -2793,6 +3018,7 @@ export interface operations {
                     "*/*": components["schemas"]["ExpenseItemDto"][];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     createExpenseItem: {
@@ -2817,6 +3043,7 @@ export interface operations {
                     "*/*": components["schemas"]["ExpenseItemDto"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     resetE2eData: {
@@ -2921,6 +3148,7 @@ export interface operations {
                     "*/*": components["schemas"]["RentReceiptDto"];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     getRentReceiptPdf: {
@@ -2943,6 +3171,7 @@ export interface operations {
                     "*/*": string;
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     getActiveRentReceipt: {
@@ -2972,6 +3201,7 @@ export interface operations {
                     "*/*": components["schemas"]["RentReceiptDto"];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     getReceipt: {
@@ -3058,6 +3288,7 @@ export interface operations {
                     "*/*": components["schemas"]["StatementDto"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     getExpenseStatementPdf: {
@@ -3082,6 +3313,7 @@ export interface operations {
                     "*/*": string;
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     getExpenseStatementZip: {
@@ -3104,6 +3336,7 @@ export interface operations {
                     "application/zip": string;
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     getActiveExpenseStatement: {
@@ -3130,6 +3363,7 @@ export interface operations {
                     "*/*": components["schemas"]["StatementDto"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     getAnalysis: {
@@ -3415,6 +3649,7 @@ export interface operations {
                     "*/*": components["schemas"]["PersonDto"][];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     createPerson: {
@@ -3448,6 +3683,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     updatePerson: {
@@ -3483,6 +3719,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -3521,6 +3758,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -3570,6 +3808,7 @@ export interface operations {
                     "*/*": components["schemas"]["LeaseDto"][];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     createLease: {
@@ -3603,6 +3842,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     updateLease: {
@@ -3638,6 +3878,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -3667,6 +3908,7 @@ export interface operations {
                 };
                 content?: never;
             };
+            403: components["responses"]["LmnpModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {

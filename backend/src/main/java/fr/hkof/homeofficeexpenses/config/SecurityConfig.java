@@ -37,6 +37,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import tools.jackson.databind.ObjectMapper;
 
+import fr.hkof.homeofficeexpenses.repository.AppUserRepository;
 import fr.hkof.homeofficeexpenses.service.AuthService.AuthenticatedUser;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -70,11 +71,13 @@ public class SecurityConfig {
     };
 
     private final AppProperties properties;
+    private final AppUserRepository users;
     private final boolean securityEnabled;
     private final boolean e2eProfile;
 
-    public SecurityConfig(AppProperties properties, Environment environment) {
+    public SecurityConfig(AppProperties properties, AppUserRepository users, Environment environment) {
         this.properties = properties;
+        this.users = users;
         this.securityEnabled = environment.getProperty("app.security.enabled", Boolean.class, Boolean.TRUE);
         this.e2eProfile = environment.matchesProfiles("e2e");
     }
@@ -140,6 +143,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/e2e/**").access((authentication, context) -> e2eProfile
                         ? new org.springframework.security.authorization.AuthorizationDecision(true)
                         : new org.springframework.security.authorization.AuthorizationDecision(false))
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated());
         http.exceptionHandling(exceptions -> exceptions
                 .authenticationEntryPoint((request, response, authException) -> writeProblem(objectMapper, response,
@@ -148,6 +152,7 @@ public class SecurityConfig {
                 .accessDeniedHandler(accessDeniedHandler(objectMapper)));
         http.addFilterBefore(new CsrfCookieFilter(csrfRepository), CsrfFilter.class);
         http.addFilterAfter(new PasswordChangeRequiredFilter(objectMapper), AuthorizationFilter.class);
+        http.addFilterAfter(new ModuleAccessFilter(users, objectMapper), AuthorizationFilter.class);
         return http.build();
     }
 

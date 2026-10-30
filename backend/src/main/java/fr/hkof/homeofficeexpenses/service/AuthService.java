@@ -20,6 +20,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import fr.hkof.homeofficeexpenses.config.AppProperties;
 import fr.hkof.homeofficeexpenses.domain.AppUser;
+import fr.hkof.homeofficeexpenses.domain.UserRole;
 import fr.hkof.homeofficeexpenses.repository.AppUserRepository;
 
 /**
@@ -203,17 +204,17 @@ public class AuthService {
     }
 
     /** The authenticated account exposed to the security context. */
-    public record AuthenticatedUser(Long id, String email, String password, boolean mustChangePassword)
-            implements UserDetails {
+    public record AuthenticatedUser(Long id, String email, String password, boolean mustChangePassword,
+            UserRole role, boolean companyEnabled, boolean lmnpEnabled) implements UserDetails {
 
         public static AuthenticatedUser from(AppUser user) {
             return new AuthenticatedUser(user.getId(), user.getEmail(), user.getPasswordHash(),
-                    user.isMustChangePassword());
+                    user.isMustChangePassword(), user.getRole(), user.isCompanyEnabled(), user.isLmnpEnabled());
         }
 
         @Override
         public java.util.Collection<? extends GrantedAuthority> getAuthorities() {
-            return java.util.List.of(() -> "ROLE_USER");
+            return java.util.List.of(() -> "ROLE_" + role.name());
         }
 
         @Override

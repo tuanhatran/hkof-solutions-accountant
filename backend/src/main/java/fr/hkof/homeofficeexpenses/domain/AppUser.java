@@ -4,6 +4,8 @@ import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -44,6 +46,16 @@ public class AppUser {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 20)
+    private UserRole role = UserRole.USER;
+
+    @Column(name = "company_enabled", nullable = false)
+    private boolean companyEnabled = true;
+
+    @Column(name = "lmnp_enabled", nullable = false)
+    private boolean lmnpEnabled = true;
 
     public Long getId() {
         return id;
@@ -115,5 +127,29 @@ public class AppUser {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public UserRole getRole() {
+        return role;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
+    }
+
+    public boolean isCompanyEnabled() {
+        return companyEnabled;
+    }
+
+    public void setCompanyEnabled(boolean companyEnabled) {
+        this.companyEnabled = companyEnabled;
+    }
+
+    public boolean isLmnpEnabled() {
+        return lmnpEnabled;
+    }
+
+    public void setLmnpEnabled(boolean lmnpEnabled) {
+        this.lmnpEnabled = lmnpEnabled;
     }
 }

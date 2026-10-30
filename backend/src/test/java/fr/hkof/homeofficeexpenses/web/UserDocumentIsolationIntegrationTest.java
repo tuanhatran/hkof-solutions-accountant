@@ -36,6 +36,7 @@ import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequ
 import com.jayway.jsonpath.JsonPath;
 
 import fr.hkof.homeofficeexpenses.domain.AppUser;
+import fr.hkof.homeofficeexpenses.domain.UserRole;
 import fr.hkof.homeofficeexpenses.repository.AppUserRepository;
 import jakarta.servlet.http.Cookie;
 
@@ -723,6 +724,7 @@ class UserDocumentIsolationIntegrationTest {
             user.setPasswordHash(passwordEncoder.encode(PASSWORD));
             user.setConfirmed(true);
             user.setMustChangePassword(false);
+            user.setRole(UserRole.ADMIN);
             user.setCreatedAt(now);
             user.setUpdatedAt(now);
             return users.save(user);
