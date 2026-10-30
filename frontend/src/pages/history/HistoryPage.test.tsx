@@ -659,27 +659,16 @@ describe("HistoryPage", () => {
     ).toHaveLength(5);
   });
 
-  it("offers the two generation actions in the populated header", async () => {
-    const user = userEvent.setup();
+  it("shows the month count badge in the populated header", async () => {
     renderPage();
     await screen.findByText("2 mois suivis");
 
-    const receiptButton = screen.getByRole("button", {
-      name: "Générer une quittance",
-    });
-    expect(receiptButton).toHaveAttribute("data-cy", "btn-new-rent-receipt");
-    await user.click(receiptButton);
-    expect(currentPath()).toBe("/generer/quittance");
-
-    const statementButton = screen.getByRole("button", {
-      name: "Générer une note de frais",
-    });
-    expect(statementButton).toHaveAttribute(
-      "data-cy",
-      "btn-new-expense-statement",
-    );
-    await user.click(statementButton);
-    expect(currentPath()).toBe("/generer/note-frais");
+    expect(
+      screen.queryByRole("button", { name: "Générer une quittance" }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Générer une note de frais" }),
+    ).toBeNull();
 
     expect(screen.getByText("2 mois suivis")).toBeInTheDocument();
   });
@@ -1225,7 +1214,7 @@ describe("HistoryPage module filtering", () => {
       screen.queryByRole("button", { name: "Générer une quittance" }),
     ).toBeNull();
   });
-  it("hides rent receipts and their actions for a company-only account", async () => {
+  it("hides rent receipts for a company-only account", async () => {
     setAuthUser({
       email: "societe@exemple.fr",
       companyEnabled: true,
@@ -1237,8 +1226,8 @@ describe("HistoryPage module filtering", () => {
     expect((await screen.findAllByText(/^Note \(/)).length).toBeGreaterThan(0);
     expect(screen.queryAllByText(/^Quittance \(/)).toHaveLength(0);
     expect(
-      screen.getByRole("button", { name: "Générer une note de frais" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: "Générer une note de frais" }),
+    ).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Générer une quittance" }),
     ).toBeNull();
@@ -1257,9 +1246,6 @@ describe("HistoryPage module filtering", () => {
       (await screen.findAllByText(/^Quittance \(/)).length,
     ).toBeGreaterThan(0);
     expect(screen.queryAllByText(/^Note \(/)).toHaveLength(0);
-    expect(
-      screen.getByRole("button", { name: "Générer une quittance" }),
-    ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Générer une note de frais" }),
     ).toBeNull();

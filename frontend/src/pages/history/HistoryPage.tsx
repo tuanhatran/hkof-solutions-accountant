@@ -1,5 +1,5 @@
 import "./HistoryPage.css";
-import { Archive, FileText, History, ReceiptText } from "lucide-react";
+import { Archive, History } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -161,32 +161,10 @@ export function HistoryPage() {
         description={t("history.page.description")}
         actions={
           groups.length > 0 ? (
-            <>
-              {access.lmnpEnabled ? (
-                <Button
-                  variant="primary"
-                  icon={<FileText size={14} aria-hidden="true" />}
-                  onClick={() => navigate("/generer/quittance")}
-                  data-cy="btn-new-rent-receipt"
-                >
-                  {t("history.empty.createRentReceipt")}
-                </Button>
-              ) : null}
-              {hasCompany ? (
-                <Button
-                  variant="secondary"
-                  icon={<ReceiptText size={14} aria-hidden="true" />}
-                  onClick={() => navigate("/generer/note-frais")}
-                  data-cy="btn-new-expense-statement"
-                >
-                  {t("history.empty.createStatement")}
-                </Button>
-              ) : null}
-              <span className="badge badge-neutral">
-                <History size={12} aria-hidden="true" />
-                {t("history.page.monthCount", { count: groups.length })}
-              </span>
-            </>
+            <span className="badge badge-neutral">
+              <History size={12} aria-hidden="true" />
+              {t("history.page.monthCount", { count: groups.length })}
+            </span>
           ) : undefined
         }
       />
