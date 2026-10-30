@@ -17,7 +17,9 @@ export function GenerateRentReceiptPage() {
   const { t } = useTranslation();
   const c = useRentReceiptPage();
   const hasDirectoryError =
-    c.persons.isError || c.companies.isError || c.leases.isError;
+    c.persons.isError ||
+    c.leases.isError ||
+    (c.moduleAccess.companyEnabled && c.companies.isError);
 
   return (
     <>
@@ -48,7 +50,9 @@ export function GenerateRentReceiptPage() {
             )}
             onRetry={() => {
               void c.persons.refetch();
-              void c.companies.refetch();
+              if (c.moduleAccess.companyEnabled) {
+                void c.companies.refetch();
+              }
               void c.leases.refetch();
             }}
           />

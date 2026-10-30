@@ -25,7 +25,7 @@ public class WebConfig implements WebMvcConfigurer {
         if (origins != null && !origins.isEmpty()) {
             registry.addMapping("/api/**")
                     .allowedOrigins(origins.toArray(String[]::new))
-                    .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                    .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                     .allowedHeaders("*")
                     .exposedHeaders("Content-Disposition");
         }

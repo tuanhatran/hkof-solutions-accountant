@@ -11,6 +11,7 @@ import {
   useActiveRentReceipt,
   useCompanies,
   useLeases,
+  useModuleAccess,
   usePersons,
   useSavedRentReceiptDraft,
   useSignatures,
@@ -82,7 +83,9 @@ export function useRentReceiptPage() {
     useState<EditingAdditionalCharge | null>(null);
 
   const persons = usePersons();
-  const companies = useCompanies();
+  // The company directory is company-module only: fetching it otherwise answers 403.
+  const moduleAccess = useModuleAccess();
+  const companies = useCompanies(moduleAccess.companyEnabled);
   const leases = useLeases();
   const templates = useTemplates("RENT_RECEIPT");
   const initialPeriod = periodOfMonth(draft.month);
@@ -177,7 +180,8 @@ export function useRentReceiptPage() {
   const activeModel = models.find((model) => model.active) ?? null;
   const selectedModel = draft.templateId ?? activeModel?.id ?? null;
   const personRows = persons.data ?? [];
-  const companyRows = companies.data ?? [];
+  // Cached rows survive logout: never surface the directory while the module is off.
+  const companyRows = moduleAccess.companyEnabled ? (companies.data ?? []) : [];
   const personTenantOptions: TenantOption[] = personRows
     .filter((person) => person.id !== undefined)
     .map((person) => ({
@@ -190,6 +194,21 @@ export function useRentReceiptPage() {
       value: `company:${company.id}`,
       label: company.name ?? t("rentReceipt.tenantOptions.companyFallback"),
     }));
+  // A saved lease or draft may still target a company while the module is off:
+  // the directory is not loaded, so label the selected value from its lease.
+  if (
+    selectedTenantCompanyId !== null &&
+    !companyTenantOptions.some(
+      (option) => option.value === `company:${selectedTenantCompanyId}`,
+    )
+  ) {
+    companyTenantOptions.push({
+      value: `company:${selectedTenantCompanyId}`,
+      label:
+        selectedLease?.companyName ??
+        t("rentReceipt.tenantOptions.companyFallback"),
+    });
+  }
   // Without a full pair the hook falls back to the month-scoped query, whose
   // receipt belongs to no identifiable pair: never surface it on this page.
   const pairSelected = selectedLandlordId !== null && selectedTenantKey !== "";
@@ -620,6 +639,7 @@ export function useRentReceiptPage() {
     setMobilePanel,
     persons,
     companies,
+    moduleAccess,
     leases,
     templates,
     signatures,

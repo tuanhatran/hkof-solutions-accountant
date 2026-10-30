@@ -9,9 +9,9 @@ import {
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import type { ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { api, type RentReceiptDraftDto } from "@/api/endpoints";
-import { queryKeys } from "@/api/queries";
+import { queryKeys, setAuthUser } from "@/api/queries";
 import i18n from "@/i18n";
 import type {
   LeaseDto,
@@ -37,6 +37,7 @@ let directoriesUndefined = false;
 let signaturesUndefined = false;
 let leaseError: Error | null = null;
 let companiesError: Error | null = null;
+let lastCompaniesEnabled: boolean | undefined;
 let personsError: Error | null = null;
 let savedDraft: RentReceiptDraftDto | null = null;
 let savedDraftCache: RentReceiptDraftDto | null = null;
@@ -103,13 +104,16 @@ vi.mock("@/api/queries", async (importOriginal) => {
       data: directoriesUndefined ? undefined : templatesList,
       isPending: false,
     }),
-    useCompanies: () => ({
-      data: [{ id: 3, name: "HKOF" }],
-      isPending: false,
-      isError: companiesError !== null,
-      error: companiesError,
-      refetch: companiesRefetch,
-    }),
+    useCompanies: (enabled = true) => {
+      lastCompaniesEnabled = enabled;
+      return {
+        data: enabled ? [{ id: 3, name: "HKOF" }] : undefined,
+        isPending: !enabled,
+        isError: companiesError !== null,
+        error: companiesError,
+        refetch: companiesRefetch,
+      };
+    },
     useActiveRentReceipt: () => ({ data: activeReceipt, isPending: false }),
     // Reads the real query cache when the test seeds it, so a stale saved row
     // behaves like the production query after a save.
@@ -240,8 +244,12 @@ function setMobile(matches: boolean) {
   });
 }
 
+afterEach(() => setAuthUser(null));
+
 describe("GenerateRentReceiptPage", () => {
   beforeEach(() => {
+    setAuthUser(null);
+    lastCompaniesEnabled = undefined;
     lastPreviewLoader = null;
     signatureList = [LANDLORD];
     signatureError = null;
@@ -779,6 +787,50 @@ describe("GenerateRentReceiptPage", () => {
     expect(
       await screen.findByText("Sociétés indisponibles"),
     ).toBeInTheDocument();
+  });
+
+  it("neither loads nor reports the company directory when the module is disabled", () => {
+    setAuthUser({
+      email: "lmnp@example.test",
+      mustChangePassword: false,
+      companyEnabled: false,
+    });
+    companiesError = new Error(
+      "Le module entreprise est désactivé pour ce compte.",
+    );
+
+    renderPage();
+
+    expect(lastCompaniesEnabled).toBe(false);
+    expect(
+      screen.queryByText(/désactivé pour ce compte/),
+    ).not.toBeInTheDocument();
+    const tenantSelect = screen.getByLabelText<HTMLSelectElement>("Locataire");
+    expect(tenantSelect).not.toBeDisabled();
+    expect(
+      within(tenantSelect).queryByRole("option", { name: "HKOF" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("retries only the modules that are enabled when the company module is disabled", async () => {
+    setAuthUser({
+      email: "lmnp@example.test",
+      mustChangePassword: false,
+      companyEnabled: false,
+    });
+    personsError = new Error("Personnes indisponibles");
+
+    renderPage();
+
+    expect(
+      await screen.findByText("Personnes indisponibles"),
+    ).toBeInTheDocument();
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Réessayer" }));
+    expect(personsRefetch).toHaveBeenCalledTimes(1);
+    expect(companiesRefetch).not.toHaveBeenCalled();
+    expect(leaseRefetch).toHaveBeenCalledTimes(1);
   });
 
   it("shows French validation messages for invalid months, dates, amounts and landlord", async () => {
