@@ -11,10 +11,18 @@ import { decimalFormatter } from "./settingsMoney";
 export function buildLeaseDefaults(
   item: LeaseDto | null,
   presetCompanyId: number | null,
+  ownedCompanyIds: number[] = [],
 ): LeaseFormValues {
   const companyLease = item
     ? (item.companyLease ?? false)
     : presetCompanyId !== null;
+  const foreignCompany =
+    item?.companySiren !== undefined &&
+    item.companySiren !== null &&
+    (item.companyId === undefined ||
+      item.companyId === null ||
+      !ownedCompanyIds.includes(item.companyId));
+  const foreignSiren = foreignCompany ? (item?.companySiren ?? "") : null;
   return {
     companyLease,
     landlordId: item?.landlordId === undefined ? "" : String(item.landlordId),
@@ -27,7 +35,9 @@ export function buildLeaseDefaults(
         ? presetCompanyId === null
           ? ""
           : String(presetCompanyId)
-        : String(item.companyId),
+        : foreignSiren
+          ? `siren:${foreignSiren}`
+          : String(item.companyId),
     propertyAddress: item?.propertyAddress ?? "",
     rentExclCharges: decimalFormatter(item?.rentExclCharges),
     charges: decimalFormatter(item?.charges),

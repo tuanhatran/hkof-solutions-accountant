@@ -146,7 +146,7 @@ public class CompanyService {
             throw new BusinessException("COMPANY_IN_USE",
                     "Cette société est utilisée par des données et ne peut pas être supprimée.");
         }
-        if (leases.existsByUserIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalse(ownership.currentUserId(), id)) {
+        if (leases.existsByCompanyIdAndCompanyLeaseTrueAndDeletedFalse(id)) {
             throw new BusinessException("COMPANY_ACTIVE_LEASE_TENANT",
                     "Cette société est locataire d'un bail actif et ne peut pas être supprimée.");
         }

@@ -9,6 +9,7 @@ import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
 import type {
   CompanyDto,
+  CompanyLookupDto,
   LeaseDto,
   LeaseRequest,
   PersonDto,
@@ -21,6 +22,7 @@ import { leaseSchema, type LeaseFormValues } from "@/lib/validation";
 import { toast } from "@/state/toasts";
 import { cents } from "./settingsMoney";
 import { buildLeaseDefaults } from "./leaseFormDefaults";
+import { CompanySirenLookup } from "./CompanySirenLookup";
 import { LeaseAreaFields } from "./LeaseAreaFields";
 
 /** Create/update form for a lease, with an indicative total. */
@@ -42,6 +44,26 @@ export function LeaseForm({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [requestError, setRequestError] = useState<string | null>(null);
+  const ownedCompanyIds = companies
+    .map((company) => company.id)
+    .filter((id): id is number => id !== undefined);
+  const foreignCompany =
+    item?.companySiren !== undefined &&
+    item.companySiren !== null &&
+    item.companyId !== undefined &&
+    item.companyId !== null &&
+    !ownedCompanyIds.includes(item.companyId);
+  const [linkedCompany, setLinkedCompany] = useState<CompanyLookupDto | null>(
+    foreignCompany && item
+      ? {
+          name: item.companyName ?? "",
+          siren: item.companySiren ?? undefined,
+          legalForm: item.companyLegalForm ?? undefined,
+          address: item.companyAddress ?? undefined,
+          managerName: item.companyManagerName ?? undefined,
+        }
+      : null,
+  );
   const {
     register,
     handleSubmit,
@@ -51,7 +73,7 @@ export function LeaseForm({
   } = useForm<LeaseFormValues>({
     resolver: zodResolver(leaseSchema),
     mode: "onChange",
-    defaultValues: buildLeaseDefaults(item, presetCompanyId),
+    defaultValues: buildLeaseDefaults(item, presetCompanyId, ownedCompanyIds),
   });
 
   const rent = watch("rentExclCharges");
@@ -69,7 +91,11 @@ export function LeaseForm({
         charges: parseAmount(values.charges) ?? "0.00",
       };
       if (values.companyLease) {
-        requestBody.companyId = Number(values.companyId);
+        if (values.companyId.startsWith("siren:")) {
+          requestBody.companySiren = values.companyId.slice("siren:".length);
+        } else {
+          requestBody.companyId = Number(values.companyId);
+        }
         requestBody.tenantId = null;
         requestBody.totalArea = parseAmount(values.totalArea) ?? undefined;
         requestBody.businessArea =
@@ -126,6 +152,7 @@ export function LeaseForm({
                   setValue("tenantId", "", { shouldValidate: true });
                 } else {
                   setValue("companyId", "", { shouldValidate: true });
+                  setLinkedCompany(null);
                 }
               },
             })}
@@ -163,27 +190,49 @@ export function LeaseForm({
         </FieldGroup>
 
         {isCompanyLease ? (
-          <FieldGroup
-            id="bail-locataire-societe"
-            label={t("settings.lease.form.companyTenant")}
-            error={errors.companyId?.message}
-          >
-            <select
+          <>
+            <FieldGroup
               id="bail-locataire-societe"
-              className={cn("field", errors.companyId && "field-error")}
-              {...register("companyId")}
-              data-cy="select-lease-company-tenant"
+              label={t("settings.lease.form.companyTenant")}
+              error={errors.companyId?.message}
             >
-              <option value="">
-                {t("settings.lease.form.companyPlaceholder")}
-              </option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
+              <select
+                id="bail-locataire-societe"
+                className={cn("field", errors.companyId && "field-error")}
+                {...register("companyId", {
+                  onChange: (event) => {
+                    if (!String(event.target.value).startsWith("siren:")) {
+                      setLinkedCompany(null);
+                    }
+                  },
+                })}
+                data-cy="select-lease-company-tenant"
+              >
+                <option value="">
+                  {t("settings.lease.form.companyPlaceholder")}
                 </option>
-              ))}
-            </select>
-          </FieldGroup>
+                {linkedCompany?.siren ? (
+                  <option value={`siren:${linkedCompany.siren}`}>
+                    {linkedCompany.name}
+                  </option>
+                ) : null}
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name}
+                  </option>
+                ))}
+              </select>
+            </FieldGroup>
+            <CompanySirenLookup
+              linked={linkedCompany}
+              onLinked={(company) => {
+                setLinkedCompany(company);
+                setValue("companyId", `siren:${company.siren ?? ""}`, {
+                  shouldValidate: true,
+                });
+              }}
+            />
+          </>
         ) : (
           <FieldGroup
             id="bail-locataire"

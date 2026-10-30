@@ -31,6 +31,8 @@ final class ModuleAccessFilter extends OncePerRequestFilter {
 
     private static final List<String> COMPANY_PREFIXES = List.of(
             "/api/companies", "/api/expense-statements", "/api/expense-items");
+    /** A landlord may need to link a tenant company even with the company module disabled. */
+    private static final String COMPANY_LOOKUP_PATH = "/api/companies/lookup";
     private static final List<String> LMNP_PREFIXES = List.of(
             "/api/leases", "/api/rent-receipts", "/api/persons");
 
@@ -48,7 +50,7 @@ final class ModuleAccessFilter extends OncePerRequestFilter {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof AuthenticatedUser principal) {
             String path = request.getRequestURI();
-            boolean companyRoute = matches(COMPANY_PREFIXES, path);
+            boolean companyRoute = matches(COMPANY_PREFIXES, path) && !COMPANY_LOOKUP_PATH.equals(path);
             boolean lmnpRoute = matches(LMNP_PREFIXES, path);
             if (companyRoute || lmnpRoute) {
                 AppUser user = users.findById(principal.id()).orElse(null);

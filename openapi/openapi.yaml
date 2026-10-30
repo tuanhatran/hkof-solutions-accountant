@@ -5,7 +5,8 @@ info:
     Local API for generating rent receipts and home-office expense statements.
     Les routes /api/companies/**, /api/expense-statements/** et /api/expense-items/**
     répondent 403 MODULE_COMPANY_DISABLED quand le module entreprise du compte est
-    désactivé ; les routes /api/leases/**, /api/rent-receipts/** et /api/persons/**
+    désactivé, sauf GET /api/companies/lookup qui reste disponible pour rattacher une
+    société locataire à un bail ; les routes /api/leases/**, /api/rent-receipts/** et /api/persons/**
     répondent 403 MODULE_LMNP_DISABLED quand le module LMNP est désactivé. Les routes
     /api/admin/** sont réservées aux administrateurs (403 ACCESS_DENIED).
   version: 1.0.0
@@ -322,6 +323,42 @@ paths:
                 $ref: "#/components/schemas/CompanyDto"
         "400":
           description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/companies/lookup:
+    get:
+      tags:
+        - company-controller
+      operationId: lookupCompany
+      description: >-
+        Recherche une société active par SIREN, y compris une société détenue par un
+        autre compte. Ne retourne que son identité légale publique ; les données
+        internes (surfaces, bail actif, salariés, postes) restent inaccessibles.
+        Route disponible même lorsque le module entreprise du compte est désactivé.
+      parameters:
+        - name: siren
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Numéro SIREN, avec ou sans espaces.
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/CompanyLookupDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
           content:
             application/problem+json:
               schema:
@@ -2227,6 +2264,22 @@ components:
           type: string
         issuePlace:
           type: string
+    CompanyLookupDto:
+      type: object
+      description: >-
+        Identité légale publique d'une société active, seule information exposée pour
+        une société détenue par un autre compte.
+      properties:
+        name:
+          type: string
+        siren:
+          type: string
+        legalForm:
+          type: string
+        address:
+          type: string
+        managerName:
+          type: string
     AdditionalCharge:
       type: object
       required:
@@ -2394,7 +2447,14 @@ components:
             - integer
             - "null"
           format: int64
-          description: Société locataire, obligatoire pour un bail société.
+          description: >-
+            Société locataire possédée par le compte courant. Pour lier une société
+            détenue par un autre compte, utiliser companySiren.
+        companySiren:
+          type: string
+          description: >-
+            SIREN d'une société active, y compris détenue par un autre compte. Le bail
+            ne référence alors que son identité légale publique, en lecture seule.
         tenantId:
           type:
             - integer
@@ -2439,6 +2499,30 @@ components:
             - string
             - "null"
           readOnly: true
+        companySiren:
+          type:
+            - string
+            - "null"
+          readOnly: true
+          description: Identité légale publique de la société liée (SIREN).
+        companyLegalForm:
+          type:
+            - string
+            - "null"
+          readOnly: true
+          description: Identité légale publique de la société liée (forme juridique).
+        companyAddress:
+          type:
+            - string
+            - "null"
+          readOnly: true
+          description: Identité légale publique de la société liée (siège social).
+        companyManagerName:
+          type:
+            - string
+            - "null"
+          readOnly: true
+          description: Identité légale publique de la société liée (représentant légal).
         companyLease:
           type: boolean
         landlordId:

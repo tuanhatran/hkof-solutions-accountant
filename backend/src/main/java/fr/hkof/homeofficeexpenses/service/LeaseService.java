@@ -31,25 +31,30 @@ public class LeaseService {
     private final EmployeeRepository employees;
     private final LeaseRepository leases;
     private final CompanyService companies;
+    private final CompanyLookupService publicCompanies;
     private final AddressService addresses;
     private final OwnershipContext ownership;
+    private final LeaseMapper mapper;
     private final Clock clock;
 
     public LeaseService(PersonRepository persons, EmployeeRepository employees, LeaseRepository leases,
-            CompanyService companies, AddressService addresses, OwnershipContext ownership, Clock clock) {
+            CompanyService companies, CompanyLookupService publicCompanies, AddressService addresses,
+            OwnershipContext ownership, LeaseMapper mapper, Clock clock) {
         this.persons = persons;
         this.employees = employees;
         this.leases = leases;
         this.companies = companies;
+        this.publicCompanies = publicCompanies;
         this.addresses = addresses;
         this.ownership = ownership;
+        this.mapper = mapper;
         this.clock = clock;
     }
 
     @Transactional(readOnly = true)
     public List<LeaseDto> listLeases() {
         return leases.findAllByUserIdAndDeletedFalseOrderByIdAsc(ownership.currentUserId()).stream()
-                .map(this::toDto).toList();
+                .map(mapper::toDto).toList();
     }
 
     @Transactional
@@ -59,14 +64,14 @@ public class LeaseService {
         lease.setUserId(ownership.currentUserId());
         lease.setDeleted(false);
         lease.setCreatedAt(Instant.now(clock));
-        return toDto(leases.save(lease));
+        return mapper.toDto(leases.save(lease));
     }
 
     @Transactional
     public LeaseDto updateLease(Long id, LeaseRequest request) {
         Lease lease = lease(id);
         apply(lease, request, id, lease.getCompanyId());
-        return toDto(leases.save(lease));
+        return mapper.toDto(leases.save(lease));
     }
 
     @Transactional
@@ -175,10 +180,13 @@ public class LeaseService {
                 throw new BusinessException("LEASE_COMPANY_TENANT_INVALID",
                         "Un bail société ne comporte pas de locataire personne physique.");
             }
-            if (request.companyId() == null) {
+            boolean sirenProvided = request.companySiren() != null && !request.companySiren().isBlank();
+            if (request.companyId() == null && !sirenProvided) {
                 throw new BusinessException("LEASE_TENANT_COMPANY_REQUIRED", "Sélectionnez la société locataire.");
             }
-            Company company = companies.entity(request.companyId());
+            Company company = sirenProvided
+                    ? publicCompanies.entityBySiren(request.companySiren())
+                    : companies.entity(request.companyId());
             companyId = company.getId();
             boolean pairTaken = currentId == null
                     ? leases.existsByUserIdAndLandlordIdAndCompanyIdAndCompanyLeaseTrueAndDeletedFalse(owner,
@@ -265,32 +273,5 @@ public class LeaseService {
             throw new BusinessException(code, message);
         }
         return cleaned;
-    }
-
-    private LeaseDto toDto(Lease lease) {
-        String companyName = lease.getCompanyId() == null
-                ? null
-                : companies.find(lease.getCompanyId()).map(company -> company.getName()).orElse(null);
-        String tenantName = lease.isCompanyLease()
-                ? companyName
-                : lease.getTenant() == null ? null : lease.getTenant().getName();
-        ProRata proRata = proRataOf(lease);
-        return new LeaseDto(
-                lease.getId(),
-                lease.getAddress().getId(),
-                lease.getCompanyId(),
-                companyName,
-                lease.isCompanyLease(),
-                lease.getLandlord().getId(),
-                lease.getTenant() == null ? null : lease.getTenant().getId(),
-                lease.getLandlord().getName(),
-                tenantName,
-                lease.getAddress().getLabel(),
-                Amounts.apiValue(lease.getRentExclCharges()),
-                Amounts.apiValue(lease.getCharges()),
-                Amounts.apiValue(lease.getTotalArea()),
-                Amounts.apiValue(lease.getBusinessArea()),
-                proRata == null ? null : Amounts.apiValue(proRata.base()),
-                proRata == null ? null : proRata.detail());
     }
 }

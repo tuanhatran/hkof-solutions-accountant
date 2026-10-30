@@ -27,4 +27,13 @@ public final class CompanyDtos {
             String proRataBaseDetail,
             String issuePlace) {
     }
+
+    /** Public legal identity of a company, safe to expose across accounts. */
+    public record CompanyLookupDto(
+            String name,
+            String siren,
+            String legalForm,
+            String address,
+            String managerName) {
+    }
 }

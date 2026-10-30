@@ -32,6 +32,7 @@ import type {
   StatementDto,
   StatementGenerationRequest,
   CompanyDto,
+  CompanyLookupDto,
   CompanyRequest,
   EmployeeDto,
   EmployeeRequest,
@@ -116,6 +117,10 @@ export const api = {
 
   companies: {
     list: () => request<CompanyDto[]>("/api/companies"),
+    lookup: (siren: string) =>
+      request<CompanyLookupDto>(
+        `/api/companies/lookup?siren=${encodeURIComponent(siren)}`,
+      ),
     get: (id: number) => request<CompanyDto>(`/api/companies/${id}`),
     create: (requestBody: CompanyRequest) =>
       request<CompanyDto>(

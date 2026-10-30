@@ -23,8 +23,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import fr.hkof.homeofficeexpenses.domain.AppUser;
+import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.UserRole;
 import fr.hkof.homeofficeexpenses.repository.AppUserRepository;
+import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
 
 @SpringBootTest(properties = "app.security.enabled=true")
 @AutoConfigureMockMvc
@@ -39,6 +41,9 @@ class ModuleAccessIntegrationTest {
 
     @Autowired
     private AppUserRepository users;
+
+    @Autowired
+    private CompanyRepository companies;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -93,6 +98,34 @@ class ModuleAccessIntegrationTest {
         users.save(user);
 
         mockMvc.perform(get("/api/companies").session(session))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("MODULE_COMPANY_DISABLED"));
+    }
+
+    @Test
+    @DisplayName("An LMNP-only landlord can look up a company by SIREN but keeps the company module closed")
+    void lmnpOnlyLandlordCanLookupCompany() throws Exception {
+        sessionFor("lookup.owner@example.test", true, true);
+        AppUser owner = users.findByEmailIgnoreCase("lookup.owner@example.test").orElseThrow();
+        Company company = new Company();
+        company.setUserId(owner.getId());
+        company.setName("Société recherchée");
+        company.setSiren("555 666 777");
+        company.setDeleted(false);
+        company.setCreatedAt(Instant.now());
+        long companyId = companies.save(company).getId();
+
+        MockHttpSession session = sessionFor("lmnp.lookup@example.test", false, true);
+
+        mockMvc.perform(get("/api/companies/lookup").param("siren", "555666777").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Société recherchée"))
+                .andExpect(jsonPath("$.siren").value("555 666 777"))
+                .andExpect(jsonPath("$.id").doesNotExist());
+        mockMvc.perform(get("/api/companies").session(session))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("MODULE_COMPANY_DISABLED"));
+        mockMvc.perform(get("/api/companies/{id}", companyId).session(session))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("MODULE_COMPANY_DISABLED"));
     }

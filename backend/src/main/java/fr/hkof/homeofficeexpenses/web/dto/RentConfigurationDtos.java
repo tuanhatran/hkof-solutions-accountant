@@ -28,7 +28,15 @@ public final class RentConfigurationDtos {
             String rentExclCharges,
             String charges,
             String totalArea,
-            String businessArea) {
+            String businessArea,
+            String companySiren) {
+
+        public LeaseRequest(Boolean companyLease, Long landlordId, Long companyId, Long tenantId,
+                String propertyAddress, String rentExclCharges, String charges, String totalArea,
+                String businessArea) {
+            this(companyLease, landlordId, companyId, tenantId, propertyAddress, rentExclCharges, charges,
+                    totalArea, businessArea, null);
+        }
     }
 
     public record AddressDto(
@@ -52,6 +60,10 @@ public final class RentConfigurationDtos {
             String totalArea,
             String businessArea,
             String proRataBase,
-            String proRataBaseDetail) {
+            String proRataBaseDetail,
+            String companySiren,
+            String companyLegalForm,
+            String companyAddress,
+            String companyManagerName) {
     }
 }

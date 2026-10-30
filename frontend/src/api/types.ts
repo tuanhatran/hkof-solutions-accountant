@@ -3,6 +3,7 @@ import type { components } from "./schema";
 type Schemas = components["schemas"];
 
 export type CompanyDto = Schemas["CompanyDto"];
+export type CompanyLookupDto = Schemas["CompanyLookupDto"];
 export type CompanyRequest = Schemas["CompanyRequest"];
 export type EmployeeDto = Schemas["EmployeeDto"];
 export type EmployeeRequest = Schemas["EmployeeRequest"];

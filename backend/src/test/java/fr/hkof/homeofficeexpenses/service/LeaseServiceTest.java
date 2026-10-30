@@ -39,6 +39,7 @@ class LeaseServiceTest {
     private EmployeeRepository employees;
     private LeaseRepository leases;
     private CompanyService companies;
+    private CompanyLookupService publicCompanies;
     private AddressService addresses;
     private OwnershipContext ownership;
     private LeaseService service;
@@ -49,12 +50,13 @@ class LeaseServiceTest {
         employees = mock(EmployeeRepository.class);
         leases = mock(LeaseRepository.class);
         companies = mock(CompanyService.class);
+        publicCompanies = mock(CompanyLookupService.class);
         addresses = mock(AddressService.class);
         ownership = mock(OwnershipContext.class);
         when(ownership.currentUserId()).thenReturn(USER_ID);
         when(addresses.findOrCreate(anyString())).thenAnswer(invocation -> address(4L, invocation.getArgument(0)));
-        service = new LeaseService(persons, employees, leases, companies, addresses, ownership,
-                Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
+        service = new LeaseService(persons, employees, leases, companies, publicCompanies, addresses, ownership,
+                new LeaseMapper(publicCompanies), Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
     private Person person(Long id, String name) {
@@ -110,8 +112,8 @@ class LeaseServiceTest {
         Lease normal = normalLease();
         normal.setCompanyId(9L);
         when(leases.findAllByUserIdAndDeletedFalseOrderByIdAsc(USER_ID)).thenReturn(List.of(normal, companyLease()));
-        when(companies.find(7L)).thenReturn(Optional.of(company(7L, "Société locataire")));
-        when(companies.find(9L)).thenReturn(Optional.of(company(9L, "Société pro-rata")));
+        when(publicCompanies.findPublic(7L)).thenReturn(Optional.of(company(7L, "Société locataire")));
+        when(publicCompanies.findPublic(9L)).thenReturn(Optional.of(company(9L, "Société pro-rata")));
 
         List<LeaseDto> result = service.listLeases();
 
@@ -220,7 +222,7 @@ class LeaseServiceTest {
         when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
         when(companies.entity(7L)).thenReturn(company(7L, "Société locataire"));
         when(leases.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(companies.find(7L)).thenReturn(Optional.of(company(7L, "Société locataire")));
+        when(publicCompanies.findPublic(7L)).thenReturn(Optional.of(company(7L, "Société locataire")));
 
         LeaseDto created = service.createLease(
                 new LeaseRequest(true, 1L, 7L, null, "12 rue", "900", null, "70", "25"));
@@ -355,7 +357,7 @@ class LeaseServiceTest {
     void secondCompanyLeaseIsAllowed() {
         when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
         when(companies.entity(7L)).thenReturn(company(7L, "Société"));
-        when(companies.find(7L)).thenReturn(Optional.of(company(7L, "Société")));
+        when(publicCompanies.findPublic(7L)).thenReturn(Optional.of(company(7L, "Société")));
         when(leases.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         LeaseDto created = service.createLease(
@@ -363,6 +365,45 @@ class LeaseServiceTest {
 
         assertThat(created.companyLease()).isTrue();
         assertThat(created.companyId()).isEqualTo(7L);
+    }
+
+    @Test
+    @DisplayName("A company lease links another account's company through its SIREN without owner access")
+    void linksForeignCompanyBySiren() {
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        Company foreign = company(7L, "Société ABC");
+        foreign.setSiren("987 654 321");
+        foreign.setLegalForm("SARL");
+        foreign.setAddress("1 rue de la Paix");
+        foreign.setManagerName("Gérant ABC");
+        when(publicCompanies.entityBySiren("987654321")).thenReturn(foreign);
+        when(publicCompanies.findPublic(7L)).thenReturn(Optional.of(foreign));
+        when(leases.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        LeaseDto created = service.createLease(
+                new LeaseRequest(true, 1L, null, null, "12 rue", "900", null, "70", "25", "987654321"));
+
+        assertThat(created.companyId()).isEqualTo(7L);
+        assertThat(created.companyName()).isEqualTo("Société ABC");
+        assertThat(created.companySiren()).isEqualTo("987 654 321");
+        assertThat(created.companyLegalForm()).isEqualTo("SARL");
+        assertThat(created.companyAddress()).isEqualTo("1 rue de la Paix");
+        assertThat(created.companyManagerName()).isEqualTo("Gérant ABC");
+        assertThat(created.tenantName()).isEqualTo("Société ABC");
+        verify(companies, never()).entity(anyLong());
+    }
+
+    @Test
+    @DisplayName("A company lease without company id or SIREN is rejected")
+    void companyLeaseRequiresCompanyOrSiren() {
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+
+        assertThatThrownBy(() -> service.createLease(
+                new LeaseRequest(true, 1L, null, null, "12 rue", "900", null, "70", "25")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Sélectionnez la société locataire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LEASE_TENANT_COMPANY_REQUIRED"));
     }
 
     @Test
@@ -401,7 +442,7 @@ class LeaseServiceTest {
         when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
         when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(person(2L, "Locataire")));
         when(companies.entity(9L)).thenReturn(company(9L, "Société pro-rata"));
-        when(companies.find(9L)).thenReturn(Optional.of(company(9L, "Société pro-rata")));
+        when(publicCompanies.findPublic(9L)).thenReturn(Optional.of(company(9L, "Société pro-rata")));
         when(leases.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Lease existing = normalLease();

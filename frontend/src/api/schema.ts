@@ -192,6 +192,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companies/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Recherche une société active par SIREN, y compris une société détenue par un autre compte. Ne retourne que son identité légale publique ; les données internes (surfaces, bail actif, salariés, postes) restent inaccessibles. Route disponible même lorsque le module entreprise du compte est désactivé. */
+        get: operations["lookupCompany"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companies/{id}": {
         parameters: {
             query?: never;
@@ -1083,6 +1100,14 @@ export interface components {
             proRataBaseDetail?: string;
             issuePlace?: string;
         };
+        /** @description Identité légale publique d'une société active, seule information exposée pour une société détenue par un autre compte. */
+        CompanyLookupDto: {
+            name?: string;
+            siren?: string;
+            legalForm?: string;
+            address?: string;
+            managerName?: string;
+        };
         AdditionalCharge: {
             /** @description Libellé libre de la charge supplémentaire d'une quittance. */
             label: string;
@@ -1164,9 +1189,11 @@ export interface components {
             landlordId?: number;
             /**
              * Format: int64
-             * @description Société locataire, obligatoire pour un bail société.
+             * @description Société locataire possédée par le compte courant. Pour lier une société détenue par un autre compte, utiliser companySiren.
              */
             companyId?: number | null;
+            /** @description SIREN d'une société active, y compris détenue par un autre compte. Le bail ne référence alors que son identité légale publique, en lecture seule. */
+            companySiren?: string;
             /**
              * Format: int64
              * @description Personne physique locataire, obligatoire hors bail société.
@@ -1195,6 +1222,14 @@ export interface components {
              */
             readonly companyId?: number | null;
             readonly companyName?: string | null;
+            /** @description Identité légale publique de la société liée (SIREN). */
+            readonly companySiren?: string | null;
+            /** @description Identité légale publique de la société liée (forme juridique). */
+            readonly companyLegalForm?: string | null;
+            /** @description Identité légale publique de la société liée (siège social). */
+            readonly companyAddress?: string | null;
+            /** @description Identité légale publique de la société liée (représentant légal). */
+            readonly companyManagerName?: string | null;
             companyLease?: boolean;
             /** Format: int64 */
             landlordId?: number;
@@ -2107,6 +2142,47 @@ export interface operations {
                 };
             };
             403: components["responses"]["CompanyModuleDisabled"];
+        };
+    };
+    lookupCompany: {
+        parameters: {
+            query: {
+                /** @description Numéro SIREN, avec ou sans espaces. */
+                siren: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompanyLookupDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     getCompany: {

@@ -29,6 +29,38 @@
     @apply block text-[10.5px] text-ink-soft;
   }
 
+  .lease-form-company-lookup {
+    @apply rounded-xl border border-line bg-paper/45 px-3 py-2.5 sm:col-span-2;
+  }
+
+  .lease-form-company-lookup-label {
+    @apply block text-[10.5px] font-bold uppercase tracking-[0.1em] text-ink-soft;
+  }
+
+  .lease-form-company-lookup-row {
+    @apply mt-1 flex items-center gap-2;
+  }
+
+  .lease-form-company-lookup-hint {
+    @apply mt-1 text-[10.5px] text-ink-soft;
+  }
+
+  .lease-form-company-lookup-error {
+    @apply mt-1 text-xs text-danger;
+  }
+
+  .lease-form-company-public {
+    @apply mt-2 rounded-lg border border-accent/25 bg-accent-soft/40 px-3 py-2;
+  }
+
+  .lease-form-company-public-name {
+    @apply text-sm font-semibold text-ink;
+  }
+
+  .lease-form-company-public-line {
+    @apply text-[11px] text-ink-soft;
+  }
+
   .lease-form-total {
     @apply flex flex-col justify-center rounded-xl border border-line bg-paper/45 px-4 py-3 sm:col-span-2;
   }
