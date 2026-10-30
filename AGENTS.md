@@ -115,6 +115,7 @@ Java 25, Spring Boot 4.1.x, Maven, PostgreSQL 17 + Flyway, OpenHTMLToPDF/PDFBox,
 4. Never modify a file belonging to another block without reporting it. Shared contracts are: `openapi/openapi.yaml`, backend DTOs, generated frontend types.
 5. Verify before concluding: compilation, unit tests, frontend build, and UI walkthrough if available.
 6. Forbidden to add `any`, to compute an authoritative amount on the client side, or to bypass a test failure.
+7. Turn efficiency: batch related edits into coarse deliverable blocks; emit tool calls in parallel; strictly forbid post-edit re-reading; run targeted single-test checks during development and full gate suites once at the end; test only the single primary touched E2E spec.
 
 ## Commands
 

@@ -36,7 +36,7 @@ Ambiguous task: ask all questions in ONE message before starting, never guess an
    blocks: never reset, clean, stash, revert or overwrite. Never create a second branch.
 3. **Implement.** Behaviour change: failing test first (`test-driven-development`), keep the red output,
    then the minimum code to green. Copy, CSS or selector fixes need no new test but are still verified.
-   Run only the targeted test, targeted lint/format on changed files (`npx eslint <changed files>`, `npx prettier --check <changed files>`), then the tests from `codegraph affected <changed files>`. To format changed files, run `npx prettier --write <changed files>`. On a failure,
+   Run only the targeted test, targeted lint/format on changed files (`npx eslint <changed files>`, `npx prettier --check <changed files>`), then the tests from `codegraph affected <changed files>`. To format changed files, run `npx prettier --write <changed files>`. Never run full verification or E2E during implementation. On a failure,
    find the root cause (`systematic-debugging`) before editing. Max 2 self-fix attempts, then stop and
    report. Never skip, weaken, disable or delete a test.
 4. **Gates, once, at the end.** `codegraph sync`. Check line limits (`wc -l <changed production files> < 300 lines`) and formatting (`npx prettier --check <changed files>`) first. Then run the gates for the change type, cheapest first. A
@@ -78,9 +78,7 @@ Ambiguous task: ask all questions in ONE message before starting, never guess an
 - TypeScript strict, no `any`. No refactor, rename, reformat, new feature, extra doc or script beyond the
   task. Frontend CSS stays colocated, prefixed, tokens only (no hex), in `@layer components`.
 - Never hand-edit `frontend/src/api/schema.ts` or `.codegraph/`. Never log secrets or real personal data.
-- Efficiency: independent tool calls in parallel, one edit per file, no re-read of a file you just
-  edited, quiet flags and tailed output (`-B -q`, `| tail -n 40`), no polling, no reinstall unless a
-  dependency changed. The same fix failing twice means stop and diagnose from the error output.
+- Efficiency: emit parallel tool calls; strictly forbid post-edit re-reading (`read_file` right after `edit_file` or `write_file` is forbidden); run commands synchronously (adequate wait time); no polling or sleep-wait; quiet flags and tailed output (`-B -q`, `| tail -n 40`); no reinstall unless a dependency changed. The same fix failing twice means stop and diagnose from the error output.
 - Skills: only `test-driven-development`, `systematic-debugging`, `verification-before-completion`.
   Never `using-git-worktrees`, `finishing-a-development-branch`, `subagent-driven-development`,
   `dispatching-parallel-agents`, `executing-plans`, `writing-plans`, `brainstorming`,

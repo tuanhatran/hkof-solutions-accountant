@@ -21,7 +21,7 @@ One sentence, testable. Out of scope: <what must not change>.
 Context (read only): `path`, `path`, `Symbol` / `METHOD /route`
 Writable: `path`, `path` (S: directories or globs when more than 6 files)
 Affected tests: `path`, `path`
-Touched E2E: `none` | `<spec>` (e.g. `00-settings`, `01-rent-receipt`, `02-expense-statement`, `03-statement-finalization`, `04-admin-templates`, `05-multi-company`, `06-auth`)
+Touched E2E: `none` | `<spec>` (strictly ONE primary spec, e.g. `00-settings`, `01-rent-receipt`, `02-expense-statement`, `03-statement-finalization`, `04-admin-templates`, `05-multi-company`, `06-auth`; never list multiple specs)
 
 ## Constraints
 
@@ -43,7 +43,7 @@ Run once, at the end, only the gates the change type requires (gate table in `bu
 - backend: `cd backend && ./mvnw -B verify`
 - frontend: `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build`
 - coverage: `scripts/diff-coverage.sh <Base> backend|frontend|all` (>= 80% changed lines)
-- e2e: `make e2e-up` once, then `make e2e <spec>` (run only the touched spec named in Touched E2E; if `none`, skip: `E2E: skipped (no touched spec)`. Never run bare `make e2e`). `make e2e-down` only after acceptance.
+- e2e: `make e2e-up` once, then `make e2e <spec>` (run strictly the single spec named in Touched E2E; if `none`, skip: `E2E: skipped (no touched spec)`. Never list or run multiple specs or bare `make e2e`). `make e2e-down` only after acceptance.
 
 ## Evidence
 

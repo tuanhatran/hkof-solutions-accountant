@@ -25,14 +25,14 @@ Verify the handoff branch; `git switch "<branch>"` non-destructively if needed. 
 staged worktree never blocks: never reset, clean, stash, revert or overwrite. Never create a
 second branch. Never push.
 
-## Loop (per block, handoff order, inline, one at a time)
+## Loop (per coarse deliverable block, inline)
 
-Cheap checks only inside the loop: never run a full gate here.
+Structure work into 1–2 coarse blocks (typically Block 1: DB migration + backend domain/service/controller/tests; Block 2: OpenAPI gen + frontend API/pages/tests). Do not micro-loop per individual file. Cheap checks only inside the loop: never run full gate suites here.
 
 1. Failing test first (`test-driven-development` skill). Keep the red output.
-2. Minimum implementation to green.
-3. Run only the targeted test, targeted lint/format on changed files (`npx eslint <changed files>`, `npx prettier --check <changed files>`), then `codegraph affected <changed files>` and run only those
-   regression tests. To format changed files, run `npx prettier --write <changed files>`.
+2. Minimum implementation to green (edit related files together in parallel tool calls).
+3. Run only the targeted test (`./mvnw test -Dtest=...` or `npx vitest run <file>`), targeted lint/format on changed files (`npx eslint <changed files>`, `npx prettier --check <changed files>`), then `codegraph affected <changed files>` and run only those
+   regression tests. To format changed files, run `npx prettier --write <changed files>`. Never run `./mvnw verify`, `npm run test:coverage`, or Cypress during the inner loop: those belong strictly to End of Task.
 4. On failure, find the root cause (`systematic-debugging` skill) before editing. Max 2
    self-fix attempts per block, then stop and report. Never weaken the test.
 
@@ -55,8 +55,8 @@ Cheap checks only inside the loop: never run a full gate here.
 | `openapi/`, Flyway migration, Docker/E2E config, or both sides changed | Backend + frontend gates + touched E2E (full suite only if Docker/E2E config changed)                                                       |
 
 Targeted E2E, one stack per task:
-`make e2e-up` once when the task first needs E2E, then `make e2e <spec>` (e.g. `make e2e 00-settings` or `make e2e 01-rent-receipt`) using the spec named in `Touched E2E:` in the handoff.
-**Never run bare `make e2e` without a spec.** If the handoff specifies `Touched E2E: none`, skip E2E and record `E2E: skipped (no touched spec)`. Full E2E suite (`make e2e`) is run *only* if Docker/E2E config itself changed.
+`make e2e-up` once when the task first needs E2E, then `make e2e <spec>` (e.g. `make e2e 00-settings` or `make e2e 01-rent-receipt`) using strictly the single spec named in `Touched E2E:` in the handoff.
+**Never run bare `make e2e` without a spec, and never run multiple specs.** If the handoff specifies `Touched E2E: none`, skip E2E and record `E2E: skipped (no touched spec)`. Full E2E suite (`make e2e`) is run *only* if Docker/E2E config itself changed.
 `make e2e <spec>` rebuilds only the changed services and leaves the stack up. Tests green on first run, none only
 on a retry. Keep the stack running after the report; `make e2e-down` runs only after the user
 accepts, when the lead sets `DONE`. If a required gate cannot run (for example Docker
@@ -110,10 +110,10 @@ Never use `using-git-worktrees`, `finishing-a-development-branch`, `subagent-dri
 
 ## Efficiency
 
-- Parallelize independent tool calls; read whole files in one call; one edit per file; do not
-  re-read a file you just edited unless the edit failed.
-- No reinstall unless a dependency changed. No polling or sleep-wait; timeouts on anything that
-  could hang.
+- Batch into coarse blocks: write/edit related files together in parallel tool calls. Emit multiple tool calls in a single turn (e.g. read multiple context files at once, write multiple files at once).
+- Strictly forbid post-edit re-reading: never `read_file` right after `edit_file` or `write_file` unless the tool returned an error. Trust the tool result.
+- Run commands synchronously (adequate wait time); do not background commands or poll `manage_task(status)` in a loop.
+- No reinstall unless a dependency changed. No polling or sleep-wait; timeouts on anything that could hang.
 - No refactor, rename, reformat, extra docs or scripts beyond the task.
 - Same fix fails twice: stop and diagnose from the error output.
 

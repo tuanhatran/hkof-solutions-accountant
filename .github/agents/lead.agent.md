@@ -43,8 +43,7 @@ One branch per task, recorded in the handoff.
   (`CalculationService`, totals, rounding), Flyway migration, template sandbox, LLM or security
   code, cross-module behaviour. Examples: copy fix, CSS, drifted UI test, E2E selector.
 - **M**: one module, up to 25 files, or a localized behaviour change; contract untouched.
-- **L**: contract change, money, migration, template sandbox, LLM path, security, or up to 40 files (26 to 40 files).
-  More than 40 files: do not start; ask the user in ONE message to split it into separate tasks.
+- **L**: contract change, money, migration, template sandbox, LLM path, security, or up to 40 files (26 to 40 files). Recommend splitting any task crossing 25 files into 2 logical tasks (e.g. Backend/API + Frontend/UI) to stay within the conversational turn budget and avoid turn exhaustion. More than 40 files: do not start; ask the user in ONE message to split it into separate tasks.
 
 | Size | Pipeline                                                                                  |
 | ---- | ----------------------------------------------------------------------------------------- |
@@ -73,8 +72,8 @@ Copilot selects its own model; do not pass a `model` override when routing. Qode
 
 Create or update `.handoff/tasks/<TASK-ID>.md` in the compact format of `.handoff/TEMPLATE.md`,
 max 25 lines (S: 6, no plan). Fill the **Files** block: exact paths for `builder` and `reviewer`,
-the 3-5 symbols or routes involved (for S, give directories or globs when more than 6 files), the affected tests from `codegraph affected`, and `Touched E2E: <spec>` (one of `00-settings`, `01-rent-receipt`, `02-expense-statement`, `03-statement-finalization`, `04-admin-templates`, `05-multi-company`, `06-auth`) or `Touched E2E: none` when no E2E spec is affected. Everything
-else is one line per item: goal, out of scope, constraints, acceptance, commands. In the commands line, write `make e2e <spec>` matching Touched E2E, or `E2E: skipped (no touched spec)` if `none`. **Never write bare `make e2e` without a spec.**
+the 3-5 symbols or routes involved (for S, give directories or globs when more than 6 files), the affected tests from `codegraph affected`, and `Touched E2E: <spec>` (strictly ONE primary spec from `00-settings`, `01-rent-receipt`, `02-expense-statement`, `03-statement-finalization`, `04-admin-templates`, `05-multi-company`, `06-auth`; never list multiple specs) or `Touched E2E: none` when no E2E spec is affected. Everything
+else is one line per item: goal, out of scope, constraints, acceptance, commands. In the commands line, write strictly `make e2e <spec>` matching Touched E2E, or `E2E: skipped (no touched spec)` if `none`. **Never list multiple specs and never write bare `make e2e`.**
 
 Edit only the lines you own (status, `Round:`, appended evidence). Never rewrite or reformat the
 file, never rewrite evidence from another agent (append only), never touch anything outside
@@ -108,8 +107,8 @@ Never use `using-git-worktrees`, `finishing-a-development-branch`, `subagent-dri
 
 ## Efficiency
 
-- Independent calls in parallel; whole-file reads; never re-read a file you just edited.
-- Quiet flags and tailed output; no polling or sleep-wait.
+- Emit parallel tool calls; whole-file reads; never re-read a file you just edited.
+- Run commands synchronously (adequate wait time); no polling or sleep-wait loops.
 - No refactor, reformat or extra docs. Same failure twice: stop and diagnose.
 - Done when the handoff is routed and the report below is complete.
 
