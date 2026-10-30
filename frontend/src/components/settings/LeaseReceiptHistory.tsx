@@ -124,7 +124,7 @@ function MonthList({
                   <span className="lease-receipt-history-date">
                     {formatDateTime(version.createdAt)}
                   </span>
-                  <span className="number lease-receipt-history-total">
+                  <span className="lease-receipt-history-total">
                     {formatEUR(version.total)}
                   </span>
                 </span>

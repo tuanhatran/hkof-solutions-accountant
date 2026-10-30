@@ -159,11 +159,7 @@ describe("PersonnesSection", () => {
       row.querySelector(".personnes-section-cell-address"),
     ).toHaveTextContent("1 avenue du Parc, 75011 Paris");
     const signatures = row.querySelector('[data-cy="person-signatures-1"]');
-    expect(signatures).toHaveClass(
-      "personnes-section-cell",
-      "number",
-      "text-right",
-    );
+    expect(signatures).toHaveClass("personnes-section-cell", "text-right");
     expect(row.querySelector(".personnes-section-cell-actions")).not.toBeNull();
   });
 

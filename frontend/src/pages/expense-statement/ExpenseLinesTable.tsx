@@ -64,16 +64,16 @@ export function ExpenseLinesTable({
                       <AiBadge label="AI" />
                     </span>
                   ) : null}
-                  <span className="expense-lines-table-amount-value number">
+                  <span className="expense-lines-table-amount-value">
                     {formatEUR(line.amountInclVat)}
                   </span>
                 </td>
-                <td className="expense-lines-table-prorata number">
+                <td className="expense-lines-table-prorata">
                   {formatPercentage(line.proRataPct)}
                 </td>
                 <td className="expense-lines-table-claimed">
                   {dto?.claimedAmount ? (
-                    <span className="expense-lines-table-claimed-value number">
+                    <span className="expense-lines-table-claimed-value">
                       {formatEUR(dto.claimedAmount)}
                     </span>
                   ) : (

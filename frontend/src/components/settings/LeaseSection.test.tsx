@@ -227,7 +227,7 @@ describe("LeaseSection rent receipt", () => {
     );
     const total = row.querySelector('[data-cy="lease-total-10"]');
     expect(total).toHaveTextContent("1 350,00 €");
-    expect(total).toHaveClass("number", "text-right");
+    expect(total).toHaveClass("text-right");
     expect(row.querySelector(".lease-section-cell-actions")).not.toBeNull();
   });
 

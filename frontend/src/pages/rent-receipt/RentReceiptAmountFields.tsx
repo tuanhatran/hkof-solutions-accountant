@@ -97,7 +97,7 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
           <p className="eyebrow text-accent">
             {t("rentReceipt.fields.estimatedTotal")}
           </p>
-          <p className="rent-receipt-amount-fields-total-value number">
+          <p className="rent-receipt-amount-fields-total-value">
             {c.estimatedTotal}
           </p>
         </div>

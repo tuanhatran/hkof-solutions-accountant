@@ -152,10 +152,12 @@ describe("ExpenseItemsManager", () => {
     expect(proRata).toHaveClass("text-right");
     const order = within(table).getByRole("columnheader", { name: "Ordre" });
     expect(order).toHaveClass("text-right");
-    const numericCells = table.querySelectorAll("td.number");
+    const numericCells = table.querySelectorAll(
+      "td.expense-items-table-number-cell, td.expense-items-table-order-cell",
+    );
     expect(numericCells).toHaveLength(6);
     numericCells.forEach((cell) => {
-      expect(cell).toHaveClass("number", "text-right");
+      expect(cell).toHaveClass("text-right");
     });
   });
 

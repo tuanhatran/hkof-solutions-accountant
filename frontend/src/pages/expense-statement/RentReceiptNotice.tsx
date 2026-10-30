@@ -32,9 +32,7 @@ export function RentReceiptNotice({
                   month: formatMonth(c.month),
                   version: c.rentReceipt.data.version ?? 1,
                 })}{" "}
-                <span className="number">
-                  {formatEUR(c.rentReceipt.data.total)}
-                </span>
+                <span>{formatEUR(c.rentReceipt.data.total)}</span>
               </p>
               <p className="rent-receipt-notice-hint">
                 {t("expenseStatement.notice.hint")}

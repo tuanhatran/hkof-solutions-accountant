@@ -204,7 +204,7 @@ export function PersonnesSection() {
                         {person.address || t("settings.people.addressFallback")}
                       </p>
                       <p
-                        className="personnes-section-cell personnes-section-cell-signatures personnes-section-item-meta number text-right"
+                        className="personnes-section-cell personnes-section-cell-signatures personnes-section-item-meta text-right"
                         data-cy={`person-signatures-${person.id}`}
                       >
                         {t("settings.people.signatureCount", {

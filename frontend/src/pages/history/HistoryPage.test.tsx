@@ -1138,10 +1138,10 @@ describe("HistoryPage", () => {
     );
     expect(
       receiptRow.querySelector(".rent-receipt-month-panel-history-date"),
-    ).toHaveClass("number", "history-versions-number");
+    ).toHaveClass("history-versions-number");
     expect(
       receiptRow.querySelector(".rent-receipt-month-panel-history-amount"),
-    ).toHaveClass("number", "history-versions-number");
+    ).toHaveClass("history-versions-number");
 
     const noteColumn = columnOf("2026-01", "statement");
     const noteRow = noteColumn.querySelector(
@@ -1156,10 +1156,10 @@ describe("HistoryPage", () => {
     );
     expect(
       noteRow.querySelector(".statement-month-panel-history-date"),
-    ).toHaveClass("number", "history-versions-number");
+    ).toHaveClass("history-versions-number");
     expect(
       noteRow.querySelector(".statement-month-panel-history-amount"),
-    ).toHaveClass("number", "history-versions-number");
+    ).toHaveClass("history-versions-number");
   });
 
   it("relabels the month cards and address rows without a reload", async () => {

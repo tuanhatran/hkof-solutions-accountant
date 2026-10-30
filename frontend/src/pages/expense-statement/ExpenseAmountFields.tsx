@@ -52,7 +52,7 @@ export function ExpenseAmountFields({
           <p className="eyebrow text-accent">
             {t("expenseStatement.fields.retainedEstimate")}
           </p>
-          <p className="expense-amount-fields-estimate-value number">
+          <p className="expense-amount-fields-estimate-value">
             {c.displayedRetainedAmount}
           </p>
           <p className="expense-amount-fields-estimate-note">

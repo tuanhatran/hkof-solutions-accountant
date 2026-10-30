@@ -269,14 +269,14 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
                             </span>
                           ) : null}
                         </p>
-                        <span className="lease-section-cell lease-section-cell-rent number text-right">
+                        <span className="lease-section-cell lease-section-cell-rent text-right">
                           {formatEUR(lease.rentExclCharges ?? "0.00")}
                         </span>
-                        <span className="lease-section-cell lease-section-cell-charges number text-right">
+                        <span className="lease-section-cell lease-section-cell-charges text-right">
                           {formatEUR(lease.charges ?? "0.00")}
                         </span>
                         <span
-                          className="lease-section-cell lease-section-cell-total lease-section-item-total number text-right"
+                          className="lease-section-cell lease-section-cell-total lease-section-item-total text-right"
                           data-cy={`lease-total-${lease.id}`}
                         >
                           {formatEUR(

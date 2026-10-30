@@ -100,7 +100,7 @@ export function RentReceiptAdditionalChargeRow({
         <span className="rent-receipt-amount-fields-charge-label">
           {charge.label}
         </span>
-        <span className="rent-receipt-amount-fields-charge-amount number">
+        <span className="rent-receipt-amount-fields-charge-amount">
           {formatEUR(charge.amount)}
         </span>
       </p>

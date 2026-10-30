@@ -116,7 +116,7 @@ export function TemplateVersionsList({ c }: { c: TemplatesCardController }) {
                   v{template.version}
                 </span>
               </span>
-              <span className="number template-versions-number template-versions-list-date">
+              <span className="template-versions-number template-versions-list-date">
                 {formatDate(template.createdAt)}
               </span>
               <div className="template-versions-list-actions">
