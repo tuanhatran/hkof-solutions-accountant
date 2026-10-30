@@ -433,6 +433,35 @@ describe("errorMessage translations", () => {
     expect(errorMessage(http)).toBe("Error 503: the request failed.");
     expect(errorMessage("texte")).toBe("An unexpected error occurred.");
   });
+
+  it("translates the module gate codes instead of the server detail", async () => {
+    const company = new ApiError(
+      "Le module entreprise est désactivé pour ce compte.",
+      403,
+      { code: "MODULE_COMPANY_DISABLED" },
+    );
+    const lmnp = new ApiError(
+      "Le module LMNP est désactivé pour ce compte.",
+      403,
+      { code: "MODULE_LMNP_DISABLED" },
+    );
+
+    await i18n.changeLanguage("fr");
+    expect(errorMessage(company)).toBe(
+      "Le module société est désactivé pour ce compte.",
+    );
+    expect(errorMessage(lmnp)).toBe(
+      "Le module LMNP est désactivé pour ce compte.",
+    );
+
+    await i18n.changeLanguage("en");
+    expect(errorMessage(company)).toBe(
+      "The company module is disabled for this account.",
+    );
+    expect(errorMessage(lmnp)).toBe(
+      "The LMNP module is disabled for this account.",
+    );
+  });
 });
 
 describe("session requests", () => {

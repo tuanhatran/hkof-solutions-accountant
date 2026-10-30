@@ -68,6 +68,9 @@ export const fr = {
       CSRF_INVALID:
         "Le jeton de sécurité est absent ou invalide. Rechargez la page.",
       ACCESS_DENIED: "Vous n'avez pas accès à cette action.",
+      MODULE_COMPANY_DISABLED:
+        "Le module société est désactivé pour ce compte.",
+      MODULE_LMNP_DISABLED: "Le module LMNP est désactivé pour ce compte.",
       ADDRESS_REQUIRED: "L'adresse du bien est obligatoire.",
       AMOUNT_REQUIRED: "Le montant est obligatoire.",
       AMOUNT_INVALID: "Le montant est invalide.",

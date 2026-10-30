@@ -84,7 +84,10 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
             className={cn("field", c.errors.tenantKey && "field-error")}
             data-cy="select-tenant"
             aria-invalid={Boolean(c.errors.tenantKey)}
-            disabled={c.persons.isPending || c.companies.isPending}
+            disabled={
+              c.persons.isPending ||
+              (c.moduleAccess.companyEnabled && c.companies.isPending)
+            }
             {...c.register("tenantKey", {
               onChange: (event) =>
                 c.selectPair(c.values.landlordId, event.target.value),

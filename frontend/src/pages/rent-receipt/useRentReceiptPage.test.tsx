@@ -1,9 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { downloadBlob } from "@/api/client";
 import { api, type RentReceiptDraftDto } from "@/api/endpoints";
+import { setAuthUser } from "@/api/queries";
 import type {
   CompanyDto,
   LeaseDto,
@@ -31,6 +32,8 @@ let leasesState: QueryLike<LeaseDto[]>;
 let templatesState: QueryLike<{ id: number; active?: boolean }[]>;
 let signaturesState: QueryLike<SignatureDto[]>;
 let companiesState: QueryLike<CompanyDto[]>;
+let cachedCompaniesWhenDisabled: CompanyDto[] | undefined;
+let lastCompaniesEnabled: boolean | undefined;
 let activeReceiptState: QueryLike<{ id: number; total: string } | null>;
 let savedDraftState: QueryLike<RentReceiptDraftDto | null>;
 let mediaMobile = false;
@@ -80,7 +83,20 @@ vi.mock("@/api/queries", async (importOriginal) => {
               (signature) => signature.personId === personId,
             ),
     }),
-    useCompanies: () => companiesState,
+    useCompanies: (enabled = true) => {
+      lastCompaniesEnabled = enabled;
+      return enabled
+        ? companiesState
+        : {
+            // A disabled query can still answer its cached rows from an earlier
+            // signed-in account until the cache is cleared.
+            data: cachedCompaniesWhenDisabled,
+            isPending: cachedCompaniesWhenDisabled === undefined,
+            isError: false,
+            error: null,
+            refetch: vi.fn(),
+          };
+    },
     useActiveRentReceipt: () => activeReceiptState,
     useSavedRentReceiptDraft: () => savedDraftState,
   };
@@ -170,7 +186,11 @@ function toastMessages(): string[] {
   return useToasts.getState().toasts.map((element) => element.message);
 }
 
+afterEach(() => setAuthUser(null));
+
 beforeEach(() => {
+  setAuthUser(null);
+  lastCompaniesEnabled = undefined;
   personsState = readyQuery([
     { id: 1, name: "M. Bailleur", address: "" },
     { id: 2, name: "Mme Locataire", address: "" },
@@ -193,6 +213,7 @@ beforeEach(() => {
     { id: 4, personId: 9, personName: "Camille Martin", name: "Gérant" },
   ]);
   companiesState = readyQuery([{ id: 3, name: "HKOF" }]);
+  cachedCompaniesWhenDisabled = undefined;
   activeReceiptState = readyQuery(null);
   savedDraftState = readyQuery(null);
   mediaMobile = false;
@@ -906,6 +927,64 @@ describe("useRentReceiptPage additional charges", () => {
     expect(result.current.editingAdditionalCharge).toBeNull();
     expect(result.current.values.additionalCharges).toEqual([
       { label: "Eau", amount: "20.00" },
+    ]);
+  });
+});
+
+describe("useRentReceiptPage company module", () => {
+  function disableCompanyModule() {
+    setAuthUser({
+      email: "lmnp@example.test",
+      mustChangePassword: false,
+      companyEnabled: false,
+    });
+  }
+
+  it("does not load the company directory when the account has it disabled", () => {
+    disableCompanyModule();
+
+    const { result } = renderController();
+
+    expect(lastCompaniesEnabled).toBe(false);
+    expect(result.current.moduleAccess.companyEnabled).toBe(false);
+    expect(result.current.companyRows).toEqual([]);
+    expect(result.current.companyTenantOptions).toEqual([]);
+  });
+
+  it("ignores cached company rows when the account has the module disabled", () => {
+    disableCompanyModule();
+    cachedCompaniesWhenDisabled = [{ id: 3, name: "HKOF" }];
+
+    const { result } = renderController();
+
+    expect(lastCompaniesEnabled).toBe(false);
+    expect(result.current.moduleAccess.companyEnabled).toBe(false);
+    expect(result.current.companyRows).toEqual([]);
+    expect(result.current.companyTenantOptions).toEqual([]);
+  });
+
+  it("keeps a selected company tenant labelled from its lease when disabled", () => {
+    disableCompanyModule();
+    const companyLease: LeaseDto = {
+      id: 20,
+      landlordId: 1,
+      companyId: 9,
+      companyName: "Société Locataire",
+      companyLease: true,
+      landlordName: "M. Bailleur",
+      tenantName: "Société Locataire",
+      propertyAddress: "12 rue de la République",
+      rentExclCharges: "1300.00",
+      charges: "50.00",
+    };
+    leasesState = readyQuery([companyLease]);
+    resetDraft({ landlordId: 1, tenantKey: "company:9", initialized: true });
+
+    const { result } = renderController();
+
+    expect(result.current.values.tenantKey).toBe("company:9");
+    expect(result.current.companyTenantOptions).toEqual([
+      { value: "company:9", label: "Société Locataire" },
     ]);
   });
 });

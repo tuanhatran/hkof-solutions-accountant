@@ -62,6 +62,9 @@ export const en = {
       CSRF_INVALID:
         "The security token is missing or invalid. Reload the page.",
       ACCESS_DENIED: "You do not have access to this action.",
+      MODULE_COMPANY_DISABLED:
+        "The company module is disabled for this account.",
+      MODULE_LMNP_DISABLED: "The LMNP module is disabled for this account.",
       ADDRESS_REQUIRED: "The property address is required.",
       AMOUNT_REQUIRED: "The amount is required.",
       AMOUNT_INVALID: "The amount is invalid.",

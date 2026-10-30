@@ -90,6 +90,19 @@ A default account is seeded automatically on first startup:
 
 - **Email:** `thtran@homeofficeexpenses.local`
 - **Password:** `thtran`
+- **Role:** `ADMIN`
+
+### Administration
+
+The application provides two administration interfaces:
+
+1. **User Administration (`/admin/utilisateurs`)**:
+   - Accessible from the sidebar navigation (**Paramètres** > **Administration utilisateurs**) or directly at `/admin/utilisateurs`.
+   - Reserved for accounts with the **`ADMIN`** role (such as the default seed account).
+   - Allows administrators to manage user accounts, change user roles (`ADMIN` vs `USER`), and toggle module access (Société / LMNP) for each user.
+2. **AI Administration (`/admin`)**:
+   - Accessible from the sidebar navigation (**Paramètres** > **Administration IA**) or directly at `/admin`.
+   - Allows configuration of the local LLM connection (Ollama URL, model selection, prompt customization, and connection status testing).
 
 ### Creating a New Account (Sign Up)
 
