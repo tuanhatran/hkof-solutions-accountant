@@ -38,11 +38,11 @@ One branch per task, recorded in the handoff.
 
 ## Size the task (when in doubt, pick the larger)
 
-- **S**: one deliverable, at most 15 files, and no `openapi/openapi.yaml`, money path
+- **S**: one deliverable, up to 15 files, and no `openapi/openapi.yaml`, money path
   (`CalculationService`, totals, rounding), Flyway migration, template sandbox, LLM or security
   code, cross-module behaviour. Examples: copy fix, CSS, drifted UI test, E2E selector.
-- **M**: one module, at most 25 files, or a localized behaviour change; contract untouched.
-- **L**: contract change, money, migration, template sandbox, LLM path, security, or 26 to 40 files.
+- **M**: one module, up to 25 files, or a localized behaviour change; contract untouched.
+- **L**: contract change, money, migration, template sandbox, LLM path, security, or up to 40 files (26 to 40 files).
   More than 40 files: do not start; ask the user in ONE message to split it into separate tasks.
 
 | Size | Pipeline                                                                                  |
@@ -86,7 +86,7 @@ file, never rewrite evidence from another agent (append only), never touch anyth
 
 - The pipeline stops at `USER_REVIEW`; `builder` and `reviewer` never set `DONE`. Report and ask
   the user to accept or request changes.
-- `DONE` needs the builder's required gate evidence per the table (full green E2E run where the
+- `DONE` needs the builder's required gate evidence per the table (green touched-spec E2E run where the
   table requires it). Without it keep `USER_REVIEW`; if a required gate cannot run (for example
   Docker unavailable), set `BLOCKED` and report the unverified gate. Never done on partial
   evidence.

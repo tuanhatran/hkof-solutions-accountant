@@ -114,7 +114,7 @@ project-wide rules are:
 - Every new task keeps frontend changed-line coverage >= 80%: `cd frontend && npm run test:coverage`
   produces the Vitest Clover XML report, then `scripts/diff-coverage.sh <Base> frontend` is the
   gate. No global threshold.
-- `npm run lint` and `npm run format` must pass (CI gate).
+- `npm run lint` and `npm run format:check` must pass (CI gate).
 
 ## Language
 
@@ -126,7 +126,7 @@ project-wide rules are:
 ## Verification
 
 - `cd backend && ./mvnw -B test`
-- `cd frontend && npm run typecheck && npm run lint && npm run format && npm test && npm run build`
+- `cd frontend && npm run typecheck && npm run lint && npm run format:check && npm test && npm run build`
 - Coverage gate for every task: changed-line coverage >= 80% via
   `scripts/diff-coverage.sh <Base> backend|frontend|all` (JaCoCo XML for backend lines,
   Vitest Clover XML for frontend lines); no global bundle threshold. The handoff carries one

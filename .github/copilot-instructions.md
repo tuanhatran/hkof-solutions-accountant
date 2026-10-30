@@ -78,28 +78,28 @@ Rules:
 make dev                               # db, backend, vite
 make test                              # backend tests, frontend tests, frontend build
 make e2e-up                            # e2e stack, once per task
-make e2e                               # Cypress against the running e2e stack
+make e2e <spec>                          # Cypress against running e2e stack (touched spec only)
 make e2e-down                          # e2e stack + volumes, once the user accepts
 cd backend && ./mvnw -B test
 cd backend && ./mvnw -B verify          # tests + JaCoCo XML report
 cd frontend && npm ci && npm test && npm run build
 cd frontend && npm run lint             # ESLint
-cd frontend && npm run format     # Prettier
+cd frontend && npm run format:check     # Prettier check (CI)
 cd frontend && npm run test:coverage   # Vitest coverage + Clover XML report
 scripts/diff-coverage.sh <Base> all    # changed-line coverage >= 80% gate
 cd frontend && npm run gen:api         # after an OpenAPI change
 make up / make down
 ```
 
-The e2e stack is built once per task with `make e2e-up`. `make e2e` rebuilds only the services
-whose files changed since the previous run and never tears the stack down; `make e2e-down`
+The e2e stack is built once per task with `make e2e-up`. `make e2e <spec>` rebuilds only the services
+whose files changed since the previous run, runs the touched spec, and never tears the stack down; `make e2e-down`
 removes it with its volumes once the user accepts the change.
 
 ## Coverage and size gate
 
 - Every new task keeps changed-line coverage >= 80%: `scripts/diff-coverage.sh <Base> backend|frontend|all` is the gate (JaCoCo XML for backend lines from `cd backend && ./mvnw -B verify`, Vitest Clover XML for frontend lines from `cd frontend && npm run test:coverage`); no global bundle threshold.
 - Every production class stays under 300 lines. A class crossing 300 lines is split, never shrunk by deleting comments only. The same 300-line cap applies to a component CSS file.
-- `npm run lint` and `npm run format` must pass; a green build that skipped either gate is not evidence.
+- `npm run lint` and `npm run format:check` must pass; a green build that skipped either gate is not evidence.
 - The handoff carries one evidence line with the real changed-line percentages and measured line counts of the task.
 
 ## Workflow

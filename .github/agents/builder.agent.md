@@ -30,8 +30,8 @@ Cheap checks only inside the loop: never run a full gate here.
 
 1. Failing test first (`test-driven-development` skill). Keep the red output.
 2. Minimum implementation to green.
-3. Run only the targeted test, then `codegraph affected <changed files>` and run only those
-   regression tests.
+3. Run only the targeted test, targeted lint/format on changed files (`npx eslint <changed files>`, `npx prettier --check <changed files>`), then `codegraph affected <changed files>` and run only those
+   regression tests. To format changed files, run `npx prettier --write <changed files>`.
 4. On failure, find the root cause (`systematic-debugging` skill) before editing. Max 2
    self-fix attempts per block, then stop and report. Never weaken the test.
 
@@ -42,15 +42,15 @@ Cheap checks only inside the loop: never run a full gate here.
    fix it before running the next, and never start E2E with another gate red.
 3. Capture real counts. Quiet flags, tailed output (`-B -q`, `| tail -n 40`). Backend and
    frontend gates touch separate directories and may run in parallel; E2E never runs alongside
-   another build.
+   another build. If `format:check` fails at the gate, format only the files you changed (`npx prettier --write <changed files>`), never the whole repository.
 
 | Change touches                                                         | Gates                                                                                             |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | Docs, `.handoff/`, comments only                                       | `git diff --check`. No coverage, no E2E.                                                          |
 | Tests only, or component CSS only (no markup/text)                     | Affected tests, plus the side's lint/format (frontend: also `npm run build`). No coverage run, no E2E.                             |
 | Backend production code                                                | `cd backend && ./mvnw -B verify` + `scripts/diff-coverage.sh <Base> backend` + touched E2E (`make e2e <spec>`) |
-| Frontend production code                                               | `cd frontend && npm run test:coverage && npm run lint && npm run format && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + touched E2E (`make e2e <spec>`) |
-| `openapi/`, Flyway migration, Docker/E2E config, or both sides changed | Backend + frontend gates + touched/full E2E                                                       |
+| Frontend production code                                               | `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + touched E2E (`make e2e <spec>`) |
+| `openapi/`, Flyway migration, Docker/E2E config, or both sides changed | Backend + frontend gates + touched E2E (full suite only if Docker/E2E config changed)                                                       |
 
 Targeted E2E, one stack per task:
 `make e2e-up` once when the task first needs E2E, then `make e2e <spec>` (e.g. `make e2e 00-settings` or `make e2e 01-rent-receipt`, launching only the touched E2E spec). `make e2e`

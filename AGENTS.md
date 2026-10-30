@@ -126,9 +126,9 @@ cd frontend && npm run test:coverage   # Vitest coverage + Clover XML report
 scripts/diff-coverage.sh <Base> all    # changed-line coverage >= 80% gate
 make up        # stack Docker
 make dev       # db + backend + vite
-make e2e-up    # e2e stack, once per task
-make e2e       # Cypress against the running e2e stack
-make e2e-down  # e2e stack + volumes, once the user accepts
+make e2e-up        # e2e stack, once per task
+make e2e <spec>    # Cypress against running e2e stack (touched spec only)
+make e2e-down      # e2e stack + volumes, once the user accepts
 ```
 
 Agents are described in `.qoder/agents/` (source of truth), `.opencode/agents/` (OpenCode

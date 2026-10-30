@@ -1,7 +1,7 @@
 ---
 description: Review current changes for correctness, regressions and missing tests
 ---
-Act as the `reviewer` agent (`.agents/agents/reviewer.md`).
+Act as the `reviewer` agent (`.agents/plugins/project-agents/agents/reviewer/agent.md`).
 
 Review the current changes for: the task described by the user
 

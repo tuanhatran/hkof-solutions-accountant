@@ -32,19 +32,19 @@ Ambiguous task: ask all questions in ONE message before starting, never guess an
    blocks: never reset, clean, stash, revert or overwrite. Never create a second branch.
 3. **Implement.** Behaviour change: failing test first (`test-driven-development`), keep the red output,
    then the minimum code to green. Copy, CSS or selector fixes need no new test but are still verified.
-   Run only the targeted test, then the tests from `codegraph affected <changed files>`. On a failure,
+   Run only the targeted test, targeted lint/format on changed files (`npx eslint <changed files>`, `npx prettier --check <changed files>`), then the tests from `codegraph affected <changed files>`. To format changed files, run `npx prettier --write <changed files>`. On a failure,
    find the root cause (`systematic-debugging`) before editing. Max 2 self-fix attempts, then stop and
    report. Never skip, weaken, disable or delete a test.
 4. **Gates, once, at the end.** `codegraph sync`, then the gates for the change type, cheapest first. A
-   red gate stops the sequence: fix it before running the next, and never start E2E with another gate red.
+   red gate stops the sequence: fix it before running the next, and never start E2E with another gate red. If `format:check` fails at the gate, format only the files you changed (`npx prettier --write <changed files>`), never the whole repository.
 
    | Change touches                                                    | Gates                                                                                       |
    | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
    | Docs, comments only                                               | `git diff --check`                                                                          |
    | Tests only, or component CSS only (no markup or text)             | Affected tests + that side's lint/format (frontend also `npm run build`). No E2E.           |
    | Backend production code                                           | `cd backend && ./mvnw -B verify` + `scripts/diff-coverage.sh <Base> backend` + touched E2E (`make e2e <spec>`) |
-   | Frontend production code                                          | `cd frontend && npm run test:coverage && npm run lint && npm run format && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + touched E2E (`make e2e <spec>`) |
-   | Docker or E2E configuration                                       | Backend + frontend gates + touched/full E2E                                                 |
+   | Frontend production code                                          | `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + touched E2E (`make e2e <spec>`) |
+   | Docker or E2E configuration                                       | Backend + frontend gates + touched E2E (full suite only if Docker/E2E config changed)                                                 |
 
    Targeted E2E, one stack per task:
    `make e2e-up` once when E2E is needed, then `make e2e <spec>` (e.g. `make e2e 00-settings` or `make e2e 01-rent-receipt`, launching only the touched E2E spec). `make e2e` rebuilds only the changed

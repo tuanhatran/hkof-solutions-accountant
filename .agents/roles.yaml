@@ -1,26 +1,34 @@
-# Role-to-model bindings (DOCUMENTATION ONLY).
+# Role-to-model bindings and sizing guidelines (DOCUMENTATION ONLY).
 #
 # AGY does not read this file. The effective model of each agent is the `model:` field in the
-# frontmatter of `.agents/agents/<role>.md`. Keep both in sync by hand: when you change a model,
-# edit the agent's frontmatter first, then update this file.
+# frontmatter of `.agents/plugins/project-agents/agents/<role>/agent.md`. Keep both in sync by hand:
+# when you change a model, edit the agent's frontmatter first, then update this file.
+#
+# Sizing thresholds:
+#   - S: up to 15 files -> builder only (lead runs on fast flash tier)
+#   - M: up to 25 files -> builder + 1 review round (lead switches to pro tier)
+#   - L: up to 40 files -> builder + max 2 review rounds (lead switches to pro tier)
+#   - Above 40 files: split the task into separate smaller tasks
+#   - Mandatory review: diff touching money, contract, migration, template sandbox, LLM or secrets
+#     forces a review regardless of size.
 #
 # Model slugs come from `agy models`.
 
 roles:
   lead:
     file: plugins/project-agents/agents/lead/agent.md
-    model: pro # Gemini 4 Argon / Claude Sonnet tier
+    model: flash # default for fast sizing of S tasks (up to 15 files); switch to pro (Claude Sonnet / Gemini Argon) for M (up to 25 files) & L (up to 40 files)
     mainAgent: true
   builder:
     file: plugins/project-agents/agents/builder/agent.md
-    model: flash # Gemini Flash tier
+    model: flash # Gemini Flash tier (implements & tests in one loop)
     mainAgent: false
   reviewer:
     file: plugins/project-agents/agents/reviewer/agent.md
-    model: flash # Gemini Flash tier
+    model: flash # Gemini Flash tier (read-only blocker review)
     mainAgent: false
   quick-dev:
     file: plugins/project-agents/agents/quick-dev/agent.md
-    model: flash # Gemini Flash tier
+    model: flash # Gemini Flash tier (single session, up to 9 files, no handoff/review)
     mainAgent: true
 

@@ -21,7 +21,7 @@ cd frontend && npm ci && npm test && npm run build
 cd frontend && npm run test:coverage   # Vitest coverage + Clover XML report
 scripts/diff-coverage.sh <Base> all    # changed-line coverage >= 80% gate
 cd frontend && npm run lint            # ESLint
-cd frontend && npm run format    # Prettier
+cd frontend && npm run format:check  # Prettier check (CI)
 cd frontend && npm run build           # tsc + Vite build, same as CI
 cd frontend && npm run gen:api         # after an OpenAPI change
 make up / make down
@@ -45,8 +45,8 @@ removes it with its volumes once the user accepts the change.
 
 The table in `builder.md` (End of task) is the single source: docs-only, tests-only and CSS-only
 changes skip coverage and E2E; production code, contract, migration or Docker/E2E config run the
-matching coverage gates (frontend includes `npm run build`) plus one full E2E run (`make e2e-up`
-once, then `make e2e`; `make e2e-down` only after acceptance).
+matching coverage gates (frontend includes `npm run build`) plus the touched E2E spec (`make e2e-up`
+once, then `make e2e <spec>`; `make e2e-down` only after acceptance).
 
 ## Evidence before claims
 
