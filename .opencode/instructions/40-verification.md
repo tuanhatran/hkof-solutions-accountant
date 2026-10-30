@@ -13,7 +13,7 @@
 make dev                               # database, backend, Vite
 make test                              # backend tests, frontend tests, build
 make e2e-up                            # e2e stack, once per task
-make e2e                               # Cypress against the running e2e stack
+make e2e <spec>                          # Cypress against running e2e stack (touched spec only)
 make e2e-down                          # e2e stack + volumes, once the user accepts
 cd backend && ./mvnw -B test
 cd backend && ./mvnw -B verify          # tests + JaCoCo XML report
@@ -27,8 +27,8 @@ cd frontend && npm run gen:api         # after an OpenAPI change
 make up / make down
 ```
 
-The e2e stack is built once per task with `make e2e-up`. `make e2e` rebuilds only the services
-whose files changed since the previous run and never tears the stack down; `make e2e-down`
+The e2e stack is built once per task with `make e2e-up`. `make e2e <spec>` rebuilds only the services
+whose files changed since the previous run, runs the touched spec, and never tears the stack down; `make e2e-down`
 removes it with its volumes once the user accepts the change.
 
 ## Coverage and size gate

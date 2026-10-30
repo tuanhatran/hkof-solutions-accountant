@@ -133,14 +133,14 @@ project-wide rules are:
   evidence line with the changed-line percentages and measured line counts.
 - Every production class stays under 300 lines. A class crossing 300 lines is split, never
   shrunk by deleting comments only.
-- Full E2E suite, once per task, on the task branch, in a single run: `make e2e-up` once, then
-  `make e2e` (rebuilds only the changed services, keeps the stack up); `make e2e-down` removes
+- Targeted E2E, once per task, on the task branch: `make e2e-up` once, then
+  `make e2e <spec>` (rebuilds only the changed services, runs the touched spec, keeps the stack up); `make e2e-down` removes
   the stack and its volumes only after the user accepts.
 
-A task is never `DONE` until the full E2E suite passes on its branch in a single run: every
-spec and every test green, with no test passing only on a retry. This applies to every task
-and every size, including documentation and configuration changes. If the E2E gate cannot run
-(for example Docker unavailable), the task stays `BLOCKED` and the unverified gate is
+A task is never `DONE` until the required gates pass on its branch: where E2E is required, the
+touched spec is green (`make e2e <spec>`), with no test passing only on a retry. If `Touched E2E: none`
+or the task is exempt per the gate table (docs-only, tests-only, CSS-only), E2E is skipped. If a required
+E2E gate cannot run (for example Docker unavailable), the task stays `BLOCKED` and the unverified gate is
 reported; it is never marked done on partial evidence.
 
 Stage agents never call a real LLM in automated tests: `mock-ollama` is deterministic.

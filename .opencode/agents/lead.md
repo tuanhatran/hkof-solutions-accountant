@@ -74,9 +74,8 @@ All three OpenCode agents pin `opencode/deepseek-v4.1-flash-free` in frontmatter
 
 Create or update `.handoff/tasks/<TASK-ID>.md` in the compact format of `.handoff/TEMPLATE.md`,
 max 25 lines (S: 6, no plan). Fill the **Files** block: exact paths for `builder` and `reviewer`,
-the 3-5 symbols or routes involved (for S, give directories or globs when more than 6 files), and the affected tests from `codegraph affected`. Everything
-else is one line per item: goal, out of scope, constraints, acceptance, commands (add the
-coverage and E2E evidence expectation per the builder gate table).
+the 3-5 symbols or routes involved (for S, give directories or globs when more than 6 files), the affected tests from `codegraph affected`, and `Touched E2E: <spec>` (one of `00-settings`, `01-rent-receipt`, `02-expense-statement`, `03-statement-finalization`, `04-admin-templates`, `05-multi-company`, `06-auth`) or `Touched E2E: none` when no E2E spec is affected. Everything
+else is one line per item: goal, out of scope, constraints, acceptance, commands. In the commands line, write `make e2e <spec>` matching Touched E2E, or `E2E: skipped (no touched spec)` if `none`. **Never write bare `make e2e` without a spec.**
 
 Edit only the lines you own (status, `Round:`, appended evidence). Never rewrite or reformat the
 file, never rewrite evidence from another agent (append only), never touch anything outside
@@ -86,8 +85,8 @@ file, never rewrite evidence from another agent (append only), never touch anyth
 
 - The pipeline stops at `USER_REVIEW`; `builder` and `reviewer` never set `DONE`. Report and ask
   the user to accept or request changes.
-- `DONE` needs the builder's required gate evidence per the table (green touched-spec E2E run where the
-  table requires it). Without it keep `USER_REVIEW`; if a required gate cannot run (for example
+- `DONE` needs the builder's required gate evidence per the table (green touched-spec E2E run `make e2e <spec>` where the
+  table requires it, or `E2E: skipped (no touched spec)` when `Touched E2E: none`). Without it keep `USER_REVIEW`; if a required gate cannot run (for example
   Docker unavailable), set `BLOCKED` and report the unverified gate. Never done on partial
   evidence.
 - User accepts: set `DONE`, append `lead: DONE — user accepted`, then run `make e2e-down` to

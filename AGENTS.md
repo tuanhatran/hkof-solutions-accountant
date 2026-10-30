@@ -46,7 +46,7 @@ shared `.handoff/tasks/` tree, so a task continues unchanged whichever configura
   and returns per-command evidence.
 - `reviewer` is a read-only, diff-scoped gate that reports blockers only.
 
-`S` tasks run builder only; `M` adds one review; `L` allows at most two review rounds. Any
+`S` (up to 15 files) tasks run builder only; `M` (up to 25 files) adds one review; `L` (up to 40 files) allows at most two review rounds. Tasks touching > 40 files must be split before starting. Any
 diff touching money, `openapi/openapi.yaml`, a migration, the template sandbox, the LLM path
 or secrets is reviewed whatever its size.
 
