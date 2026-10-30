@@ -61,6 +61,10 @@
     @apply break-words text-xs text-ink-soft;
   }
 
+  .lease-section-cell-company-siren {
+    @apply mt-0.5 block text-[10px] text-ink-soft/80;
+  }
+
   .lease-section-cell-rent {
     @apply text-xs text-ink-soft;
   }

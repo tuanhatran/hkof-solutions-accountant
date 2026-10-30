@@ -10,11 +10,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import fr.hkof.homeofficeexpenses.service.CompanyLookupService;
 import fr.hkof.homeofficeexpenses.service.CompanyService;
 import fr.hkof.homeofficeexpenses.web.dto.CompanyDtos.CompanyDto;
+import fr.hkof.homeofficeexpenses.web.dto.CompanyDtos.CompanyLookupDto;
 import fr.hkof.homeofficeexpenses.web.dto.CompanyDtos.CompanyRequest;
 
 @RestController
@@ -22,9 +25,16 @@ import fr.hkof.homeofficeexpenses.web.dto.CompanyDtos.CompanyRequest;
 public class CompanyController {
 
     private final CompanyService service;
+    private final CompanyLookupService lookup;
 
-    public CompanyController(CompanyService service) {
+    public CompanyController(CompanyService service, CompanyLookupService lookup) {
         this.service = service;
+        this.lookup = lookup;
+    }
+
+    @GetMapping("/lookup")
+    public CompanyLookupDto lookupCompany(@RequestParam String siren) {
+        return lookup.lookup(siren);
     }
 
     @GetMapping

@@ -131,7 +131,8 @@ public class AuthController {
     }
 
     private static CurrentUserDto currentUser(AuthenticatedUser user) {
-        return new CurrentUserDto(user.email(), user.mustChangePassword());
+        return new CurrentUserDto(user.email(), user.mustChangePassword(), user.role(),
+                user.companyEnabled(), user.lmnpEnabled());
     }
 
     private static ResponseEntity<ProblemDetail> problem(HttpStatus status, String title, String detail,

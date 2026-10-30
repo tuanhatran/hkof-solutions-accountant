@@ -1,8 +1,13 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
 import { AUTH_UNAUTHORIZED_EVENT, ApiError } from "./client";
 import { api } from "./endpoints";
-import type { CurrentUserDto } from "./endpoints";
+import type { CurrentUserDto, ModuleFlagsRequest, UserRole } from "./endpoints";
 import type { TemplateType } from "./types";
 
 export const queryKeys = {
@@ -27,6 +32,7 @@ export const queryKeys = {
   templates: (type: TemplateType) => ["templates", type] as const,
   variables: (type: TemplateType) => ["templates", type, "variables"] as const,
   llmConfig: ["llm", "config"] as const,
+  adminUsers: ["admin", "users"] as const,
   signaturesAll: ["signatures"] as const,
   signatures: (personId: number) => ["signatures", personId] as const,
   llmStatus: ["llm", "status"] as const,
@@ -60,6 +66,9 @@ export const queryKeys = {
       leaseId ?? "all-leases",
     ] as const,
   rentReceiptsAll: ["rentReceipts"] as const,
+  receivedRentReceiptsAll: ["receivedRentReceipts"] as const,
+  receivedRentReceipts: (companyId: number | null, month?: string) =>
+    ["receivedRentReceipts", companyId ?? "all", month ?? "all"] as const,
   statementsAll: ["statements"] as const,
   rentReceipts: (companyId?: number | null, month?: string) =>
     ["rentReceipts", companyId ?? "all", month ?? "all"] as const,
@@ -103,10 +112,11 @@ export const queryKeys = {
     ] as const,
 };
 
-export function useCompanies() {
+export function useCompanies(enabled = true) {
   return useQuery({
     queryKey: queryKeys.companies,
     queryFn: () => api.companies.list(),
+    enabled,
     staleTime: 30_000,
   });
 }
@@ -136,10 +146,11 @@ export function useAddresses() {
   });
 }
 
-export function useLeases() {
+export function useLeases(enabled = true) {
   return useQuery({
     queryKey: queryKeys.leases,
     queryFn: () => api.leases.list(),
+    enabled,
     staleTime: 30_000,
   });
 }
@@ -337,11 +348,40 @@ export function useRentReceipts(companyId: number | null, month?: string) {
 /**
  * Every rent receipt, all pairs and versions, under the shared
  * `rentReceiptsAll` prefix so the lease receipt modal refreshes it.
+ * Disabled with the LMNP module, whose API answers 403 MODULE_LMNP_DISABLED.
  */
-export function useAllRentReceipts() {
+export function useAllRentReceipts(enabled = true) {
   return useQuery({
     queryKey: queryKeys.rentReceiptsAll,
     queryFn: () => api.rentReceipts.list(),
+    enabled,
+    staleTime: 10_000,
+  });
+}
+
+/**
+ * Every rent receipt issued by another account for one of the current account's
+ * companies. The received route deliberately ignores the LMNP module gate, so a
+ * company-only owner keeps this query enabled.
+ */
+export function useReceivedRentReceipts(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.receivedRentReceiptsAll,
+    queryFn: () => api.rentReceipts.received(),
+    enabled,
+    staleTime: 10_000,
+  });
+}
+
+/** Received receipts of one owned company and month, for the statement draft. */
+export function useCompanyReceivedRentReceipts(
+  companyId: number | null,
+  month: string,
+) {
+  return useQuery({
+    queryKey: queryKeys.receivedRentReceipts(companyId, month),
+    queryFn: () => api.rentReceipts.received(companyId, month),
+    enabled: companyId !== null && /^\d{4}-\d{2}$/.test(month),
     staleTime: 10_000,
   });
 }
@@ -387,6 +427,38 @@ export interface AuthState {
   loading: boolean;
 }
 
+/** Modules and role derived from the current account. */
+export interface ModuleAccess {
+  companyEnabled: boolean;
+  lmnpEnabled: boolean;
+  isAdmin: boolean;
+  /** Home page of the account; the neutral page when no module is enabled. */
+  homePath: "/generer/quittance" | "/generer/note-frais" | "/aucun-module";
+}
+
+/**
+ * Missing flags keep both modules visible: only an explicit `false` from
+ * `/api/auth/me` hides a module, so an older session never loses its pages.
+ * With both modules off an administrator cut every generator: send the
+ * account to a neutral page instead of a guarded route that would redirect
+ * to itself.
+ */
+export function moduleAccessOf(user: CurrentUserDto | null): ModuleAccess {
+  const companyEnabled = user?.companyEnabled !== false;
+  const lmnpEnabled = user?.lmnpEnabled !== false;
+
+  return {
+    companyEnabled,
+    lmnpEnabled,
+    isAdmin: user?.role === "ADMIN",
+    homePath: lmnpEnabled
+      ? "/generer/quittance"
+      : companyEnabled
+        ? "/generer/note-frais"
+        : "/aucun-module",
+  };
+}
+
 let authState: AuthState = { user: null, loading: true };
 const authListeners = new Set<() => void>();
 let unauthorizedListenerAttached = false;
@@ -422,6 +494,42 @@ function subscribeAuth(listener: () => void): () => void {
 /** Session state shared by the shell, the router guard and the auth pages. */
 export function useAuthState(): AuthState {
   return useSyncExternalStore(subscribeAuth, () => authState);
+}
+
+/** Module visibility of the signed-in account, shared by nav, guards and lists. */
+export function useModuleAccess(): ModuleAccess {
+  return moduleAccessOf(useAuthState().user);
+}
+
+/** Local accounts listed by the administration page. */
+export function useAdminUsers() {
+  return useQuery({
+    queryKey: queryKeys.adminUsers,
+    queryFn: () => api.adminUsers.list(),
+    staleTime: 10_000,
+  });
+}
+
+export function useUpdateUserModules() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, flags }: { id: number; flags: ModuleFlagsRequest }) =>
+      api.adminUsers.updateModules(id, flags),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers }),
+  });
+}
+
+export function useUpdateUserRole() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, role }: { id: number; role: UserRole }) =>
+      api.adminUsers.updateRole(id, { role }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers }),
+  });
 }
 
 /** Loads the current account once at application start. */

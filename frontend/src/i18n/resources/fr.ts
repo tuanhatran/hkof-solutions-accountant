@@ -278,6 +278,7 @@ export const fr = {
       company: "Société",
       lmnp: "LMNP",
       aiAdmin: "Analyse IA",
+      adminUsers: "Administration utilisateurs",
     },
   },
   auth: {
@@ -693,6 +694,7 @@ export const fr = {
       open: "Ouvrir",
       load: "Charger",
       pdf: "PDF",
+      received: "Reçue",
       complete: "Complète",
       downloadPdf: "Télécharger le PDF",
       downloadComplete: "Note complète (ZIP)",
@@ -846,6 +848,15 @@ export const fr = {
         landlordPlaceholder: "Sélectionnez un bailleur",
         companyTenant: "Locataire (société)",
         companyPlaceholder: "Sélectionnez une société",
+        companySiren: "SIREN de la société locataire",
+        companySirenPlaceholder: "123 456 789",
+        companyLookup: "Rechercher",
+        companyLookupHint:
+          "Une société détenue par un autre compte peut être liée avec son SIREN. Seules ses informations légales publiques sont affichées.",
+        companyLookupSiren: "SIREN",
+        companyLookupLegalForm: "Forme juridique",
+        companyLookupAddress: "Siège social",
+        companyLookupManager: "Représentant légal",
         tenant: "Locataire",
         tenantPlaceholder: "Sélectionnez un locataire",
         address: "Adresse du bien",
@@ -1142,6 +1153,29 @@ export const fr = {
       removeImageAria: "Retirer l’image de la signature",
     },
   },
+  adminUsers: {
+    page: {
+      eyebrow: "Administration",
+      title: "Utilisateurs",
+      description:
+        "Activez les modules Société et LMNP de chaque compte et ajustez son rôle.",
+      loading: "Chargement des comptes…",
+      empty: "Aucun compte local.",
+      tableCaption: "Comptes locaux, rôles et modules activés",
+      email: "Adresse e-mail",
+      role: "Rôle",
+      modules: "Modules",
+      companyModule: "Module société",
+      lmnpModule: "Module LMNP",
+      roles: {
+        admin: "Administrateur",
+        user: "Utilisateur",
+      },
+      modulesUpdated: "Modules du compte mis à jour.",
+      roleUpdated: "Rôle du compte mis à jour.",
+      self: "Vous",
+    },
+  },
   adminLlm: {
     page: {
       eyebrow: "Réglages",
@@ -1338,6 +1372,12 @@ export const fr = {
       selectLeaseTitle: "Choisir un bail",
       selectLeaseDescription:
         "Plusieurs baux sont liés à cette société. Sélectionnez le bail concerné pour saisir les frais de ce mois.",
+      receivedReceipt: {
+        title: "Quittance reçue détectée",
+        description:
+          "La quittance de {{month}} émise par {{landlord}} pour cette société ({{amount}}) sera reprise dans la note de frais.",
+        download: "Télécharger la quittance",
+      },
     },
     header: {
       companyLabel: "Société concernée",

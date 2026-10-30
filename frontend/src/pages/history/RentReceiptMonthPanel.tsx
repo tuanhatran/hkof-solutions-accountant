@@ -68,7 +68,10 @@ function RentReceiptHistoryItem({ version }: { version: RentReceiptDto }) {
           active={version.status === "ACTIVE"}
         />
       </span>
-      <span className="min-w-0 truncate text-ink">{pairLabel(version)}</span>
+      <span className="min-w-0 truncate text-ink">
+        {version.received ? `${t("history.actions.received")} · ` : null}
+        {pairLabel(version)}
+      </span>
       <span className="number history-versions-number rent-receipt-month-panel-history-date">
         {formatDate(version.createdAt)}
       </span>
@@ -77,7 +80,11 @@ function RentReceiptHistoryItem({ version }: { version: RentReceiptDto }) {
       </span>
       {version.id ? (
         <PdfActionLink
-          href={api.rentReceipts.pdfUrl(version.id)}
+          href={
+            version.received
+              ? api.rentReceipts.receivedPdfUrl(version.id)
+              : api.rentReceipts.pdfUrl(version.id)
+          }
           label={t("history.actions.pdf")}
         />
       ) : null}

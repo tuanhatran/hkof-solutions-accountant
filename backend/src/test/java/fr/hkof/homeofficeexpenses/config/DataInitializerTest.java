@@ -33,6 +33,7 @@ import fr.hkof.homeofficeexpenses.domain.LlmConfig;
 import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
+import fr.hkof.homeofficeexpenses.domain.UserRole;
 import fr.hkof.homeofficeexpenses.repository.AddressRepository;
 import fr.hkof.homeofficeexpenses.repository.AppUserRepository;
 import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
@@ -56,6 +57,7 @@ class DataInitializerTest {
     private AppUserRepository appUserRepository;
     private PasswordEncoder passwordEncoder;
     private Environment environment;
+    private SeedUserInitializer seedUserInitializer;
     private DataInitializer initializer;
 
     @BeforeEach
@@ -79,10 +81,11 @@ class DataInitializerTest {
         owner.setId(1L);
         when(appUserRepository.findByEmailIgnoreCase("thtran@homeofficeexpenses.local"))
                 .thenReturn(Optional.of(owner));
+        Clock clock = Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC);
+        seedUserInitializer = new SeedUserInitializer(appUserRepository, passwordEncoder, environment, clock);
         initializer = new DataInitializer(companyRepository, employeeRepository, personRepository,
                 leaseRepository, addressRepository, expenseItemRepository, templateRepository, llmConfigRepository,
-                appUserRepository, passwordEncoder, environment,
-                properties, Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
+                appUserRepository, seedUserInitializer, properties, clock);
     }
 
     private Company company() {
@@ -165,6 +168,9 @@ class DataInitializerTest {
         assertThat(appUsers.getValue().getPasswordHash()).isEqualTo("hash:thtran");
         assertThat(appUsers.getValue().isConfirmed()).isTrue();
         assertThat(appUsers.getValue().isMustChangePassword()).isTrue();
+        assertThat(appUsers.getValue().getRole()).isEqualTo(UserRole.ADMIN);
+        assertThat(appUsers.getValue().isCompanyEnabled()).isTrue();
+        assertThat(appUsers.getValue().isLmnpEnabled()).isTrue();
 
         ArgumentCaptor<TemplateDocument> templates = ArgumentCaptor.forClass(TemplateDocument.class);
         verify(templateRepository, times(4)).save(templates.capture());

@@ -263,6 +263,11 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
                         >
                           {lease.companyName ??
                             t("settings.lease.section.noCompany")}
+                          {lease.companySiren ? (
+                            <span className="lease-section-cell-company-siren">
+                              SIREN {lease.companySiren}
+                            </span>
+                          ) : null}
                         </p>
                         <span className="lease-section-cell lease-section-cell-rent number text-right">
                           {formatEUR(lease.rentExclCharges ?? "0.00")}

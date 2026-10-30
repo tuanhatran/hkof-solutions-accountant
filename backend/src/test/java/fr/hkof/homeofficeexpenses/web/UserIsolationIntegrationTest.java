@@ -125,6 +125,77 @@ class UserIsolationIntegrationTest {
     }
 
     @Test
+    @DisplayName("A landlord links another account's company by SIREN read-only and both leases coexist")
+    void linksForeignCompanyBySiren() throws Exception {
+        Session a = sessionFor("lessor.a@example.test");
+        Session b = sessionFor("lessor.b@example.test");
+
+        long aCompany = id(created(a, "/api/companies", company("Charlie Conseil", "987 654 321")));
+        long aLandlord = id(created(a, "/api/persons", person("Bailleur A")));
+        long bLandlord = id(created(b, "/api/persons", person("Bailleur B")));
+
+        long aLease = id(created(a, "/api/leases",
+                companyLease(aLandlord, aCompany, null, "1 rue de la Paix, 75002 Paris")));
+
+        mockMvc.perform(get("/api/companies/lookup").param("siren", "987654321").session(b.http()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Charlie Conseil"))
+                .andExpect(jsonPath("$.siren").value("987 654 321"))
+                .andExpect(jsonPath("$.legalForm").value("SARL"))
+                .andExpect(jsonPath("$.address").value("1 rue de la Paix"))
+                .andExpect(jsonPath("$.managerName").value("Gérant"))
+                .andExpect(jsonPath("$.id").doesNotExist())
+                .andExpect(jsonPath("$.leaseId").doesNotExist())
+                .andExpect(jsonPath("$.proRataBase").doesNotExist())
+                .andExpect(jsonPath("$.proRataBaseDetail").doesNotExist())
+                .andExpect(jsonPath("$.issuePlace").doesNotExist());
+
+        MvcResult bLeaseResult = created(b, "/api/leases",
+                companyLease(bLandlord, null, "987654321", "2 rue de la Paix, 75002 Paris"));
+        long bLease = id(bLeaseResult);
+        assertThat(number(bLeaseResult, "$.companyId")).isEqualTo(aCompany);
+        assertThat((String) JsonPath.read(bLeaseResult.getResponse().getContentAsString(), "$.companySiren"))
+                .isEqualTo("987 654 321");
+        assertThat((String) JsonPath.read(bLeaseResult.getResponse().getContentAsString(), "$.companyLegalForm"))
+                .isEqualTo("SARL");
+        assertThat((String) JsonPath.read(bLeaseResult.getResponse().getContentAsString(), "$.companyAddress"))
+                .isEqualTo("1 rue de la Paix");
+        assertThat((String) JsonPath.read(bLeaseResult.getResponse().getContentAsString(), "$.companyManagerName"))
+                .isEqualTo("Gérant");
+        assertThat((String) JsonPath.read(bLeaseResult.getResponse().getContentAsString(), "$.tenantName"))
+                .isEqualTo("Charlie Conseil");
+
+        mockMvc.perform(mutation(put("/api/leases/{id}", bLease), b).contentType(JSON)
+                        .content(companyLease(bLandlord, null, "987654321", "3 rue de la Paix, 75002 Paris")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.companyId").value(aCompany))
+                .andExpect(jsonPath("$.companyName").value("Charlie Conseil"))
+                .andExpect(jsonPath("$.propertyAddress").value("3 rue de la Paix, 75002 Paris"));
+
+        mockMvc.perform(get("/api/companies/{id}", aCompany).session(b.http()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("COMPANY_NOT_FOUND"));
+        mockMvc.perform(mutation(put("/api/companies/{id}", aCompany), b)
+                        .contentType(JSON).content(company("Société usurpée", "987654321")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("COMPANY_NOT_FOUND"));
+        mockMvc.perform(mutation(delete("/api/companies/{id}", aCompany), b))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("COMPANY_NOT_FOUND"));
+        mockMvc.perform(get("/api/companies/{id}/employees", aCompany).session(b.http()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("COMPANY_NOT_FOUND"));
+
+        assertThat(listedIds(b, "/api/companies")).doesNotContain(aCompany);
+        assertThat(listedIds(b, "/api/leases")).contains(bLease).doesNotContain(aLease);
+        assertThat(listedIds(a, "/api/leases")).contains(aLease).doesNotContain(bLease);
+
+        mockMvc.perform(get("/api/companies/lookup").param("siren", "999888777").session(b.http()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("COMPANY_NOT_FOUND"));
+    }
+
+    @Test
     @DisplayName("Employees and expense items stay per account and reject a foreign identifier")
     void isolatesEmployeesAndExpenseItems() throws Exception {
         Session a = sessionFor("worker.a@example.test");
@@ -246,6 +317,17 @@ class UserIsolationIntegrationTest {
                 {"companyLease":false,"landlordId":%d,"tenantId":%d,"companyId":%s,
                  "propertyAddress":"%s","rentExclCharges":"900.00","charges":"50.00"}
                 """.formatted(landlordId, tenantId, companyId == null ? "null" : companyId.toString(), address);
+    }
+
+    private static String companyLease(Long landlordId, Long companyId, String companySiren, String address) {
+        String tenant = companyId != null
+                ? "\"companyId\":" + companyId
+                : "\"companySiren\":\"" + companySiren + "\"";
+        return """
+                {"companyLease":true,"landlordId":%d,%s,
+                 "propertyAddress":"%s","rentExclCharges":"900.00","charges":"50.00",
+                 "totalArea":"80","businessArea":"20"}
+                """.formatted(landlordId, tenant, address);
     }
 
     private static String employee(String firstName, String lastName) {

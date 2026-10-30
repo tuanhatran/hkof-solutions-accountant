@@ -7,6 +7,10 @@ export type RentReceiptDraftDto = Schemas["RentReceiptDraftDto"];
 export type StatementDraftRequest = Schemas["StatementDraftRequest"];
 export type StatementDraftDto = Schemas["StatementDraftDto"];
 export type CurrentUserDto = Schemas["CurrentUserDto"];
+export type AdminUserDto = Schemas["AdminUserDto"];
+export type ModuleFlagsRequest = Schemas["ModuleFlagsRequest"];
+export type RoleRequest = Schemas["RoleRequest"];
+export type UserRole = Schemas["UserRole"];
 export type LoginRequest = Schemas["LoginRequest"];
 export type RegisterRequest = Schemas["RegisterRequest"];
 export type ConfirmEmailRequest = Schemas["ConfirmEmailRequest"];
@@ -28,6 +32,7 @@ import type {
   StatementDto,
   StatementGenerationRequest,
   CompanyDto,
+  CompanyLookupDto,
   CompanyRequest,
   EmployeeDto,
   EmployeeRequest,
@@ -96,8 +101,26 @@ export const api = {
     logout: () => request<void>("/api/auth/logout", { method: "POST" }),
   },
 
+  adminUsers: {
+    list: () => request<AdminUserDto[]>("/api/admin/users"),
+    updateModules: (id: number, requestBody: ModuleFlagsRequest) =>
+      request<AdminUserDto>(
+        `/api/admin/users/${id}/modules`,
+        json({ method: "PATCH", body: JSON.stringify(requestBody) }),
+      ),
+    updateRole: (id: number, requestBody: RoleRequest) =>
+      request<AdminUserDto>(
+        `/api/admin/users/${id}/role`,
+        json({ method: "PATCH", body: JSON.stringify(requestBody) }),
+      ),
+  },
+
   companies: {
     list: () => request<CompanyDto[]>("/api/companies"),
+    lookup: (siren: string) =>
+      request<CompanyLookupDto>(
+        `/api/companies/lookup?siren=${encodeURIComponent(siren)}`,
+      ),
     get: (id: number) => request<CompanyDto>(`/api/companies/${id}`),
     create: (requestBody: CompanyRequest) =>
       request<CompanyDto>(
@@ -190,6 +213,10 @@ export const api = {
       request<RentReceiptDto[]>(
         `/api/rent-receipts${query({ companyId, month })}`,
       ),
+    received: (companyId?: number | null, month?: string) =>
+      request<RentReceiptDto[]>(
+        `/api/rent-receipts/received${query({ companyId, month })}`,
+      ),
     active: async (
       month: string,
       companyId?: number | null,
@@ -218,6 +245,7 @@ export const api = {
     pdf: (id: number): Promise<ResponseBlob> =>
       blobRequest(`/api/rent-receipts/${id}/pdf`),
     pdfUrl: (id: number) => `/api/rent-receipts/${id}/pdf`,
+    receivedPdfUrl: (id: number) => `/api/rent-receipts/received/${id}/pdf`,
   },
 
   expenseStatements: {

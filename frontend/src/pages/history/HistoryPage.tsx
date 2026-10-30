@@ -1,5 +1,5 @@
 import "./HistoryPage.css";
-import { FileText, History, ReceiptText } from "lucide-react";
+import { Archive, FileText, History, ReceiptText } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -9,11 +9,13 @@ import {
   useAllStatements,
   useCompanies,
   useLeases,
+  useModuleAccess,
+  useReceivedRentReceipts,
 } from "@/api/queries";
-import type { StatementDto } from "@/api/types";
+import type { RentReceiptDto, StatementDto } from "@/api/types";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
-import { ErrorState, LoadingState } from "@/components/ui/States";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/States";
 import { formatMonth } from "@/lib/format";
 import { useStatementDraft } from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
@@ -29,53 +31,84 @@ import {
 export function HistoryPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const companies = useCompanies();
+  const access = useModuleAccess();
+  const companies = useCompanies(access.companyEnabled);
   const companyIds = useMemo(
     () =>
-      (companies.data ?? [])
-        .map((company) => company.id)
-        .filter((id): id is number => typeof id === "number"),
-    [companies.data],
+      access.companyEnabled
+        ? (companies.data ?? [])
+            .map((company) => company.id)
+            .filter((id): id is number => typeof id === "number")
+        : [],
+    [companies.data, access.companyEnabled],
   );
-  const hasCompany = companyIds.length > 0;
-  // History spans every company: rent receipts are global, statements are
-  // fetched once per company.
-  const rentReceiptsQuery = useAllRentReceipts();
+  const hasCompany = access.companyEnabled && companyIds.length > 0;
+  // History spans every document: rent receipts and leases belong to the LMNP
+  // module, statements to the company module. A disabled module is never
+  // queried, since its API answers 403 MODULE_*_DISABLED.
+  const rentReceiptsQuery = useAllRentReceipts(access.lmnpEnabled);
+  // Receipts issued by landlords for the account's companies. The received route
+  // is not LMNP-gated, so a company-only owner still sees them.
+  const receivedReceiptsQuery = useReceivedRentReceipts(access.companyEnabled);
+  const receivedReceipts = useMemo<RentReceiptDto[]>(
+    () =>
+      access.companyEnabled
+        ? (receivedReceiptsQuery.data ?? []).map((receipt) => ({
+            ...receipt,
+            received: true,
+          }))
+        : [],
+    [receivedReceiptsQuery.data, access.companyEnabled],
+  );
   const statementsQuery = useAllStatements(companyIds);
-  const leasesQuery = useLeases();
+  const leasesQuery = useLeases(access.lmnpEnabled);
   const [statementToReload, setStatementToReload] =
     useState<StatementDto | null>(null);
 
   const groups = useMemo(
     () =>
       groupHistoryByMonthAndAddress(
-        rentReceiptsQuery.data ?? [],
-        statementsQuery.data ?? [],
-        leasesQuery.data ?? [],
+        access.lmnpEnabled ? (rentReceiptsQuery.data ?? []) : [],
+        access.companyEnabled ? (statementsQuery.data ?? []) : [],
+        access.lmnpEnabled ? (leasesQuery.data ?? []) : [],
         i18n.resolvedLanguage,
+        receivedReceipts,
       ),
     [
       rentReceiptsQuery.data,
+      receivedReceipts,
       statementsQuery.data,
       leasesQuery.data,
       i18n.resolvedLanguage,
+      access.lmnpEnabled,
+      access.companyEnabled,
     ],
   );
 
   const loading =
-    companies.isPending ||
-    rentReceiptsQuery.isPending ||
-    statementsQuery.isPending ||
-    leasesQuery.isPending;
-  const errorText = rentReceiptsQuery.isError
-    ? errorMessage(rentReceiptsQuery.error)
-    : statementsQuery.isError
-      ? errorMessage(statementsQuery.error)
-      : null;
+    (access.companyEnabled &&
+      (companies.isPending ||
+        statementsQuery.isPending ||
+        receivedReceiptsQuery.isPending)) ||
+    (access.lmnpEnabled &&
+      (rentReceiptsQuery.isPending || leasesQuery.isPending));
+  const errorText =
+    access.lmnpEnabled && rentReceiptsQuery.isError
+      ? errorMessage(rentReceiptsQuery.error)
+      : access.companyEnabled && receivedReceiptsQuery.isError
+        ? errorMessage(receivedReceiptsQuery.error)
+        : access.companyEnabled && statementsQuery.isError
+          ? errorMessage(statementsQuery.error)
+          : null;
 
   function reload() {
-    void rentReceiptsQuery.refetch();
-    void statementsQuery.refetch();
+    if (access.lmnpEnabled) {
+      void rentReceiptsQuery.refetch();
+    }
+    if (access.companyEnabled) {
+      void receivedReceiptsQuery.refetch();
+      void statementsQuery.refetch();
+    }
   }
 
   function confirmReload() {
@@ -129,14 +162,16 @@ export function HistoryPage() {
         actions={
           groups.length > 0 ? (
             <>
-              <Button
-                variant="primary"
-                icon={<FileText size={14} aria-hidden="true" />}
-                onClick={() => navigate("/generer/quittance")}
-                data-cy="btn-new-rent-receipt"
-              >
-                {t("history.empty.createRentReceipt")}
-              </Button>
+              {access.lmnpEnabled ? (
+                <Button
+                  variant="primary"
+                  icon={<FileText size={14} aria-hidden="true" />}
+                  onClick={() => navigate("/generer/quittance")}
+                  data-cy="btn-new-rent-receipt"
+                >
+                  {t("history.empty.createRentReceipt")}
+                </Button>
+              ) : null}
               {hasCompany ? (
                 <Button
                   variant="secondary"
@@ -165,12 +200,30 @@ export function HistoryPage() {
       {loading && groups.length === 0 ? (
         <LoadingState message={t("history.page.loading")} />
       ) : groups.length === 0 && !errorText ? (
-        <HistoryEmptyState
-          onCreateRentReceipt={() => navigate("/generer/quittance")}
-          onCreateStatement={
-            hasCompany ? () => navigate("/generer/note-frais") : undefined
-          }
-        />
+        access.lmnpEnabled ? (
+          <HistoryEmptyState
+            onCreateRentReceipt={() => navigate("/generer/quittance")}
+            onCreateStatement={
+              hasCompany ? () => navigate("/generer/note-frais") : undefined
+            }
+          />
+        ) : (
+          <EmptyState
+            title={t("history.empty.title")}
+            description={t("history.empty.description")}
+            icon={<Archive size={22} aria-hidden="true" />}
+            action={
+              hasCompany ? (
+                <Button
+                  variant="primary"
+                  onClick={() => navigate("/generer/note-frais")}
+                >
+                  {t("history.empty.createStatement")}
+                </Button>
+              ) : undefined
+            }
+          />
+        )
       ) : (
         <div className="history-page-months" data-cy="history">
           {groups.map((group) => (
@@ -178,6 +231,9 @@ export function HistoryPage() {
               key={group.month}
               group={group}
               hasCompany={hasCompany}
+              showRentReceipts={
+                access.lmnpEnabled || receivedReceipts.length > 0
+              }
               onReloadStatement={setStatementToReload}
             />
           ))}

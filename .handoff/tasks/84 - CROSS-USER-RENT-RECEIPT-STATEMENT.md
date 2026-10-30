@@ -1,8 +1,8 @@
 # 84 - CROSS-USER-RENT-RECEIPT-STATEMENT
 
-Status: TODO
+Status: DONE
 Branch: feat/84-cross-user-rent-receipt-statement
-Base: 77a9bf3
+Base: c12911b
 Size: L
 Round: 0/2
 
@@ -33,8 +33,20 @@ Contract: none or minor DTO enhancement (counterparty label on history items); i
 
 ## Commands
 
-`cd backend && ./mvnw -B verify` · `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build` · `scripts/diff-coverage.sh 77a9bf3 all` · `make e2e-up` once then `make e2e 02-expense-statement` (leave stack up; `make e2e-down` only after acceptance).
+`cd backend && ./mvnw -B verify` · `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build` · `scripts/diff-coverage.sh c12911b all` · `make e2e-up` once then `make e2e 02-expense-statement`, `make e2e 01-rent-receipt`, `make e2e 03-statement-finalization`, `make e2e 05-multi-company` (receipt/statement/bundle regression; leave stack up; `make e2e-down` only after acceptance).
 
 ## Evidence
 
 (Append one line per event; builder appends evidence and sets REVIEW)
+
+- Files: 25 committed (backend received service + controller/repo/mapper/service/filter, V28 index, 2 new tests, RentReceiptServiceTest; openapi + regen schema, api hooks/types, HistoryPage/RentReceiptMonthPanel/historyHelpers, GenerateExpenseStatementPage, i18n fr/en, tests).
+- PASS `cd backend && ./mvnw -B verify`: 642 tests, 0 failures, 1 skipped, BUILD SUCCESS (Jacoco written). PASS frontend `npm run test:coverage`: 72 files, 986 tests, 0 failed; `npm run lint`, `npm run format:check`, `npm run build`: all exit 0.
+- PASS `scripts/diff-coverage.sh c12911b all`: backend 97% (72 changed lines, 2 missing), frontend 100% (14 lines).
+- RED then GREEN: `RentReceiptReceivedServiceTest.receivedList/.receivedPdf` failed (2) with company scope + tenant-company ownership filters neutralized; integration `$.rentReceipt.id` missing with the `activeForMonth` received fallback disabled (detection + CalculationService amount); integration ZIP lacked `quittance_2026-09.pdf` with document bundling disabled. Restored files sha256-identical, then green: 2+25+1+3 tests pass.
+- PASS E2E first run, exit 0 each, stack left up: `make e2e 02-expense-statement` 12/12; `make e2e 01-rent-receipt` 2/2; `make e2e 03-statement-finalization` 1/1; `make e2e 05-multi-company` 2/2.
+- Contract impact: `openapi/openapi.yaml` adds `GET /api/rent-receipts/received` and `GET /api/rent-receipts/received/{id}/pdf`; `frontend/src/api/schema.ts` regenerated via `npm run gen:api` (not hand-edited).
+- Deviation (cross-block): `ModuleAccessFilter` exempts only `/api/rent-receipts/received*` from the LMNP gate so company-only owners can read/download their company receipts; `/api/rent-receipts`, `/{id}`, `/{id}/pdf`, `/active`, `/api/persons`, `/api/leases` stay 403 (asserted).
+- Deviation: prior run reused SIREN 987654321, colliding with UserIsolationIntegrationTest in the shared test DB; cross-user test now uses 741852963. One full verify hit a Testcontainers port-forward flake (RentReceiptMultiMigrationPostgresTest); class green alone and full verify green on rerun. PageHeader.css left untouched/uncommitted (pre-existing dirty).
+- Commit: 9616be9 25 files +1063/-29
+- 2026-10-30 lead: `VERDICT: PASS` (reviewer, round 1) — ownership-scoped received list/PDF, detection/bundling proven end-to-end (`quittance_2026-09.pdf` byte-equal to received PDF, draft line = receipt total), V28 indexes existing columns, contract updated + schema regenerated, production classes < 300; Testcontainers port-forward failure judged environmental (pre-existing class, clean full `verify` rerun 642/0/1).
+- 2026-10-30 lead: `DONE — user accepted`

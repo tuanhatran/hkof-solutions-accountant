@@ -2,6 +2,7 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { setAuthUser } from "@/api/queries";
 import type {
   CompanyDto,
   LeaseDto,
@@ -23,15 +24,21 @@ interface QueryLike<T> {
 }
 
 let receiptsState: QueryLike<RentReceiptDto[]>;
+let receivedState: QueryLike<RentReceiptDto[]>;
 let statementsState: QueryLike<StatementDto[]>;
 let companiesState: QueryLike<CompanyDto[]>;
 let leasesState: QueryLike<LeaseDto[]>;
 let statementsCompanyIds: number[][];
+let receiptsEnabledArgs: Array<boolean | undefined>;
+let receivedEnabledArgs: Array<boolean | undefined>;
+let leasesEnabledArgs: Array<boolean | undefined>;
+let companiesEnabledArgs: Array<boolean | undefined>;
 
 vi.mock("@/api/endpoints", () => ({
   api: {
     rentReceipts: {
       pdfUrl: (id: number) => `/api/rent-receipts/${id}/pdf`,
+      receivedPdfUrl: (id: number) => `/api/rent-receipts/received/${id}/pdf`,
     },
     expenseStatements: {
       pdfUrl: (id: number, complete: boolean) =>
@@ -45,13 +52,26 @@ vi.mock("@/api/queries", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/queries")>();
   return {
     ...actual,
-    useCompanies: () => companiesState,
-    useAllRentReceipts: () => receiptsState,
+    useCompanies: (enabled?: boolean) => {
+      companiesEnabledArgs.push(enabled);
+      return companiesState;
+    },
+    useAllRentReceipts: (enabled?: boolean) => {
+      receiptsEnabledArgs.push(enabled);
+      return receiptsState;
+    },
+    useReceivedRentReceipts: (enabled?: boolean) => {
+      receivedEnabledArgs.push(enabled);
+      return receivedState;
+    },
     useAllStatements: (companyIds: number[]) => {
       statementsCompanyIds.push(companyIds);
       return statementsState;
     },
-    useLeases: () => leasesState,
+    useLeases: (enabled?: boolean) => {
+      leasesEnabledArgs.push(enabled);
+      return leasesState;
+    },
   };
 });
 
@@ -366,7 +386,9 @@ function resetDrafts() {
 }
 
 beforeEach(() => {
+  setAuthUser(null);
   receiptsState = readyQuery([RENT_JAN_ACTIVE, RENT_JAN_OLD, RENT_FEB]);
+  receivedState = readyQuery([]);
   statementsState = readyQuery([
     STATEMENT_JAN_ACTIVE,
     STATEMENT_JAN_OLD,
@@ -375,6 +397,10 @@ beforeEach(() => {
   companiesState = readyQuery([{ id: 1, name: "HKOF" }] as CompanyDto[]);
   leasesState = readyQuery([]);
   statementsCompanyIds = [];
+  receiptsEnabledArgs = [];
+  receivedEnabledArgs = [];
+  leasesEnabledArgs = [];
+  companiesEnabledArgs = [];
   resetDrafts();
   useToasts.setState({ toasts: [] });
 });
@@ -1162,5 +1188,150 @@ describe("HistoryPage", () => {
 
     expect(screen.getByText("Quittance (2)")).toBeInTheDocument();
     expect(screen.getAllByText("Adresse inconnue").length).toBeGreaterThan(0);
+  });
+});
+
+describe("HistoryPage module filtering", () => {
+  it("shows the received rent receipts of its companies to a company-only account", async () => {
+    setAuthUser({
+      email: "societe@exemple.fr",
+      companyEnabled: true,
+      lmnpEnabled: false,
+    });
+    receiptsState = readyQuery([]);
+    receivedState = readyQuery([
+      {
+        ...RENT_JAN_ACTIVE,
+        id: 91,
+        received: true,
+        tenantCompanyId: 1,
+        landlordName: "Bailleur Croisé",
+        tenantName: "Société Croisée",
+      },
+    ]);
+    statementsState = readyQuery([]);
+
+    renderPage();
+
+    expect(await screen.findByText("Quittance (1)")).toBeInTheDocument();
+    expect(receivedEnabledArgs.at(-1)).toBe(true);
+    expect(receiptsEnabledArgs.at(-1)).toBe(false);
+    expect(screen.getByText(/Reçue ·/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "PDF" })).toHaveAttribute(
+      "href",
+      "/api/rent-receipts/received/91/pdf",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Générer une quittance" }),
+    ).toBeNull();
+  });
+  it("hides rent receipts and their actions for a company-only account", async () => {
+    setAuthUser({
+      email: "societe@exemple.fr",
+      companyEnabled: true,
+      lmnpEnabled: false,
+    });
+
+    renderPage();
+
+    expect((await screen.findAllByText(/^Note \(/)).length).toBeGreaterThan(0);
+    expect(screen.queryAllByText(/^Quittance \(/)).toHaveLength(0);
+    expect(
+      screen.getByRole("button", { name: "Générer une note de frais" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Générer une quittance" }),
+    ).toBeNull();
+  });
+
+  it("hides expense statements and their actions for an LMNP-only account", async () => {
+    setAuthUser({
+      email: "lmnp@exemple.fr",
+      companyEnabled: false,
+      lmnpEnabled: true,
+    });
+
+    renderPage();
+
+    expect(
+      (await screen.findAllByText(/^Quittance \(/)).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryAllByText(/^Note \(/)).toHaveLength(0);
+    expect(
+      screen.getByRole("button", { name: "Générer une quittance" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Générer une note de frais" }),
+    ).toBeNull();
+  });
+
+  it("does not request the LMNP module nor show its 403 banner for a company-only account", async () => {
+    setAuthUser({
+      email: "societe@exemple.fr",
+      companyEnabled: true,
+      lmnpEnabled: false,
+    });
+    receiptsState = {
+      data: undefined,
+      isPending: false,
+      isError: true,
+      error: new Error("Module LMNP désactivé"),
+      refetch: vi.fn(),
+    };
+    leasesState = {
+      data: undefined,
+      isPending: false,
+      isError: true,
+      error: new Error("Module LMNP désactivé"),
+      refetch: vi.fn(),
+    };
+    statementsState = readyQuery([STATEMENT_JAN_ACTIVE]);
+
+    renderPage();
+
+    expect(await screen.findByText("Note (1)")).toBeInTheDocument();
+    expect(receiptsEnabledArgs.at(-1)).toBe(false);
+    expect(leasesEnabledArgs.at(-1)).toBe(false);
+    expect(statementsCompanyIds.at(-1)).toEqual([1]);
+    expect(screen.queryByText("Module LMNP désactivé")).toBeNull();
+    expect(
+      document.querySelector('[data-cy^="history-column-rent-receipt-"]'),
+    ).toBeNull();
+    expect(screen.queryByText(/^Quittance \(/)).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Générer une quittance" }),
+    ).toBeNull();
+  });
+
+  it("does not request the company module nor show its 403 banner for an LMNP-only account", async () => {
+    setAuthUser({
+      email: "lmnp@exemple.fr",
+      companyEnabled: false,
+      lmnpEnabled: true,
+    });
+    receiptsState = readyQuery([RENT_JAN_ACTIVE]);
+    statementsState = {
+      data: undefined,
+      isPending: false,
+      isError: true,
+      error: new Error("Module entreprise désactivé"),
+      refetch: vi.fn(),
+    };
+
+    renderPage();
+
+    expect(await screen.findByText("Quittance (1)")).toBeInTheDocument();
+    expect(companiesEnabledArgs.at(-1)).toBe(false);
+    expect(statementsCompanyIds.at(-1)).toEqual([]);
+    expect(receiptsEnabledArgs.at(-1)).toBe(true);
+    expect(leasesEnabledArgs.at(-1)).toBe(true);
+    expect(screen.queryByText("Module entreprise désactivé")).toBeNull();
+    expect(
+      document.querySelector('[data-cy^="history-column-statement-"]'),
+    ).toBeNull();
+    expect(screen.queryByText(/^Note \(/)).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Générer une note de frais" }),
+    ).toBeNull();
   });
 });

@@ -123,6 +123,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Liste les comptes locaux avec leur rôle et leurs modules activés. */
+        get: operations["listUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/modules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Active ou désactive le module entreprise (companyEnabled) et le module LMNP (lmnpEnabled) d'un compte. Un champ absent reste inchangé. */
+        patch: operations["updateUserModules"];
+        trace?: never;
+    };
+    "/api/admin/users/{id}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Change le rôle d'un compte (ADMIN ou USER). */
+        patch: operations["updateUserRole"];
+        trace?: never;
+    };
     "/api/companies": {
         parameters: {
             query?: never;
@@ -135,6 +186,23 @@ export interface paths {
         put?: never;
         /** @description Crée une société et la lie éventuellement à un bail. */
         post: operations["createCompany"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companies/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Recherche une société active par SIREN, y compris une société détenue par un autre compte. Ne retourne que son identité légale publique ; les données internes (surfaces, bail actif, salariés, postes) restent inaccessibles. Route disponible même lorsque le module entreprise du compte est désactivé. */
+        get: operations["lookupCompany"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -557,6 +625,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rent-receipts/received": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Liste les quittances émises par un autre compte pour une société appartenant au compte courant. Accessible sans le module LMNP : un propriétaire de société doit pouvoir consulter ses quittances reçues. */
+        get: operations["listReceivedRentReceipts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rent-receipts/received/{id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Télécharge le PDF d'une quittance reçue pour une société du compte courant. Toute quittance émise par le compte courant ou rattachée à une autre société répond 404. */
+        get: operations["getReceivedRentReceiptPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rent-receipts/{id}": {
         parameters: {
             query?: never;
@@ -954,6 +1056,31 @@ export interface components {
             email?: string;
             /** @description Vrai tant que le changement de mot de passe imposé n'est pas fait. */
             mustChangePassword?: boolean;
+            role?: components["schemas"]["UserRole"];
+            /** @description Vrai quand le module entreprise est activé pour ce compte. */
+            companyEnabled?: boolean;
+            /** @description Vrai quand le module LMNP est activé pour ce compte. */
+            lmnpEnabled?: boolean;
+        };
+        /** @enum {string} */
+        UserRole: "ADMIN" | "USER";
+        AdminUserDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: email */
+            email: string;
+            role: components["schemas"]["UserRole"];
+            companyEnabled: boolean;
+            lmnpEnabled: boolean;
+        };
+        ModuleFlagsRequest: {
+            /** @description Active ou désactive le module entreprise ; absent, la valeur reste inchangée. */
+            companyEnabled?: boolean;
+            /** @description Active ou désactive le module LMNP ; absent, la valeur reste inchangée. */
+            lmnpEnabled?: boolean;
+        };
+        RoleRequest: {
+            role: components["schemas"]["UserRole"];
         };
         SignatureDto: {
             /** Format: int64 */
@@ -1006,6 +1133,14 @@ export interface components {
             proRataBase?: string;
             proRataBaseDetail?: string;
             issuePlace?: string;
+        };
+        /** @description Identité légale publique d'une société active, seule information exposée pour une société détenue par un autre compte. */
+        CompanyLookupDto: {
+            name?: string;
+            siren?: string;
+            legalForm?: string;
+            address?: string;
+            managerName?: string;
         };
         AdditionalCharge: {
             /** @description Libellé libre de la charge supplémentaire d'une quittance. */
@@ -1088,9 +1223,11 @@ export interface components {
             landlordId?: number;
             /**
              * Format: int64
-             * @description Société locataire, obligatoire pour un bail société.
+             * @description Société locataire possédée par le compte courant. Pour lier une société détenue par un autre compte, utiliser companySiren.
              */
             companyId?: number | null;
+            /** @description SIREN d'une société active, y compris détenue par un autre compte. Le bail ne référence alors que son identité légale publique, en lecture seule. */
+            companySiren?: string;
             /**
              * Format: int64
              * @description Personne physique locataire, obligatoire hors bail société.
@@ -1119,6 +1256,14 @@ export interface components {
              */
             readonly companyId?: number | null;
             readonly companyName?: string | null;
+            /** @description Identité légale publique de la société liée (SIREN). */
+            readonly companySiren?: string | null;
+            /** @description Identité légale publique de la société liée (forme juridique). */
+            readonly companyLegalForm?: string | null;
+            /** @description Identité légale publique de la société liée (siège social). */
+            readonly companyAddress?: string | null;
+            /** @description Identité légale publique de la société liée (représentant légal). */
+            readonly companyManagerName?: string | null;
             companyLease?: boolean;
             /** Format: int64 */
             landlordId?: number;
@@ -1596,7 +1741,44 @@ export interface components {
             prompt?: string;
         };
     };
-    responses: never;
+    responses: {
+        /** @description Accès réservé aux administrateurs (403 ACCESS_DENIED) */
+        AdminOnly: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ProblemDetail"];
+            };
+        };
+        /** @description Module entreprise désactivé pour ce compte (403 MODULE_COMPANY_DISABLED) */
+        CompanyModuleDisabled: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ProblemDetail"];
+            };
+        };
+        /** @description Module LMNP désactivé pour ce compte (403 MODULE_LMNP_DISABLED) */
+        LmnpModuleDisabled: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ProblemDetail"];
+            };
+        };
+        /** @description Compte introuvable (404 USER_NOT_FOUND) */
+        UserNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ProblemDetail"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
     headers: never;
@@ -1846,6 +2028,101 @@ export interface operations {
             };
         };
     };
+    listUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AdminUserDto"][];
+                };
+            };
+            403: components["responses"]["AdminOnly"];
+        };
+    };
+    updateUserModules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModuleFlagsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AdminUserDto"];
+                };
+            };
+            /** @description Aucun module précisé (MODULES_REQUIRED) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            403: components["responses"]["AdminOnly"];
+            404: components["responses"]["UserNotFound"];
+        };
+    };
+    updateUserRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AdminUserDto"];
+                };
+            };
+            /** @description Rôle absent ou invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            403: components["responses"]["AdminOnly"];
+            404: components["responses"]["UserNotFound"];
+        };
+    };
     listCompanies: {
         parameters: {
             query?: never;
@@ -1864,6 +2141,7 @@ export interface operations {
                     "*/*": components["schemas"]["CompanyDto"][];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     createCompany: {
@@ -1897,6 +2175,48 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
+        };
+    };
+    lookupCompany: {
+        parameters: {
+            query: {
+                /** @description Numéro SIREN, avec ou sans espaces. */
+                siren: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompanyLookupDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     getCompany: {
@@ -1919,6 +2239,7 @@ export interface operations {
                     "*/*": components["schemas"]["CompanyDto"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -1963,6 +2284,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -1992,6 +2314,7 @@ export interface operations {
                 };
                 content?: never;
             };
+            403: components["responses"]["CompanyModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -2023,6 +2346,7 @@ export interface operations {
                     "*/*": components["schemas"]["EmployeeDto"][];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -2067,6 +2391,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -2175,6 +2500,7 @@ export interface operations {
                     "*/*": components["schemas"]["ExpenseItemDto"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     deleteExpenseItem: {
@@ -2195,6 +2521,7 @@ export interface operations {
                 };
                 content?: never;
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     getLlmConfig: {
@@ -2403,6 +2730,7 @@ export interface operations {
                     "*/*": components["schemas"]["RentReceiptDto"][];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     createRentReceipt: {
@@ -2427,6 +2755,7 @@ export interface operations {
                     "*/*": components["schemas"]["RentReceiptDto"];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     previewRentReceipt: {
@@ -2451,6 +2780,7 @@ export interface operations {
                     "*/*": string;
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     uploadReceipt: {
@@ -2526,6 +2856,7 @@ export interface operations {
                     "*/*": components["schemas"]["StatementDto"][];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     createExpenseStatement: {
@@ -2550,6 +2881,7 @@ export interface operations {
                     "*/*": components["schemas"]["StatementDto"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     previewStatement: {
@@ -2574,6 +2906,7 @@ export interface operations {
                     "*/*": string;
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     createStatementDraft: {
@@ -2600,6 +2933,7 @@ export interface operations {
                     "*/*": components["schemas"]["DraftDto"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     calculateStatement: {
@@ -2624,6 +2958,7 @@ export interface operations {
                     "*/*": components["schemas"]["CalculationResponse"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     getRentReceiptDraft: {
@@ -2793,6 +3128,7 @@ export interface operations {
                     "*/*": components["schemas"]["ExpenseItemDto"][];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     createExpenseItem: {
@@ -2817,6 +3153,7 @@ export interface operations {
                     "*/*": components["schemas"]["ExpenseItemDto"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     resetE2eData: {
@@ -2901,6 +3238,66 @@ export interface operations {
             };
         };
     };
+    listReceivedRentReceipts: {
+        parameters: {
+            query?: {
+                /** @description Identifiant d'une société du compte courant. */
+                companyId?: number;
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RentReceiptDto"][];
+                };
+            };
+            /** @description Société inconnue du compte courant. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getReceivedRentReceiptPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+            /** @description Quittance reçue introuvable pour ce compte. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getRentReceipt: {
         parameters: {
             query?: never;
@@ -2921,6 +3318,7 @@ export interface operations {
                     "*/*": components["schemas"]["RentReceiptDto"];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     getRentReceiptPdf: {
@@ -2943,6 +3341,7 @@ export interface operations {
                     "*/*": string;
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     getActiveRentReceipt: {
@@ -2972,6 +3371,7 @@ export interface operations {
                     "*/*": components["schemas"]["RentReceiptDto"];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     getReceipt: {
@@ -3058,6 +3458,7 @@ export interface operations {
                     "*/*": components["schemas"]["StatementDto"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     getExpenseStatementPdf: {
@@ -3082,6 +3483,7 @@ export interface operations {
                     "*/*": string;
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     getExpenseStatementZip: {
@@ -3104,6 +3506,7 @@ export interface operations {
                     "application/zip": string;
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     getActiveExpenseStatement: {
@@ -3130,6 +3533,7 @@ export interface operations {
                     "*/*": components["schemas"]["StatementDto"];
                 };
             };
+            403: components["responses"]["CompanyModuleDisabled"];
         };
     };
     getAnalysis: {
@@ -3415,6 +3819,7 @@ export interface operations {
                     "*/*": components["schemas"]["PersonDto"][];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     createPerson: {
@@ -3448,6 +3853,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     updatePerson: {
@@ -3483,6 +3889,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -3521,6 +3928,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -3570,6 +3978,7 @@ export interface operations {
                     "*/*": components["schemas"]["LeaseDto"][];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     createLease: {
@@ -3603,6 +4012,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
         };
     };
     updateLease: {
@@ -3638,6 +4048,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            403: components["responses"]["LmnpModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {
@@ -3667,6 +4078,7 @@ export interface operations {
                 };
                 content?: never;
             };
+            403: components["responses"]["LmnpModuleDisabled"];
             /** @description Not Found */
             404: {
                 headers: {

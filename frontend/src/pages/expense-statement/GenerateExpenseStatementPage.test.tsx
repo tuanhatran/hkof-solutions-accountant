@@ -55,6 +55,12 @@ let activeStatementData: {
   total?: string;
 } | null = null;
 let savedStatementDraft: StatementDraftDto | null = null;
+let receivedRentReceipts: Array<{
+  id?: number;
+  month?: string;
+  total?: string;
+  landlordName?: string;
+}> = [];
 let lastPreviewLoader: ((signal: AbortSignal) => Promise<unknown>) | null =
   null;
 
@@ -105,6 +111,7 @@ vi.mock("@/api/endpoints", () => ({
     },
     rentReceipts: {
       pdfUrl: (id: number) => `/api/rent-receipts/${id}/pdf`,
+      receivedPdfUrl: (id: number) => `/api/rent-receipts/received/${id}/pdf`,
     },
     drafts: {
       getStatement: vi.fn(),
@@ -169,6 +176,10 @@ vi.mock("@/api/queries", async (importOriginal) => {
     useLeases: () => ({ data: leasesData, isPending: false }),
     useRentReceipts: () => ({
       data: rentReceiptsData,
+      isPending: false,
+    }),
+    useCompanyReceivedRentReceipts: () => ({
+      data: receivedRentReceipts,
       isPending: false,
     }),
     useActiveStatement: () => ({
@@ -265,6 +276,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     signaturePending = false;
     companiesError = null;
     expenseItemsError = null;
+    receivedRentReceipts = [];
     companyRows = [{ id: 1, name: "HKOF", proRataBase: "100.00", leaseId: 5 }];
     leasesData = [
       {
@@ -1228,6 +1240,34 @@ describe("GenerateExpenseStatementPage signatures", () => {
     expect(api.drafts.delete).not.toHaveBeenCalled();
     expect(useStatementDraft.getState().draftIdByMonth[SCOPE]).toBeNull();
     expect(useStatementDraft.getState().savedAtByMonth[SCOPE]).toBeNull();
+  });
+
+  it("shows the detected received rent receipt and its amount", async () => {
+    receivedRentReceipts = [
+      {
+        id: 77,
+        month: MONTH,
+        total: "950.00",
+        landlordName: "M. Bailleur",
+      },
+    ];
+
+    renderPage();
+
+    const banner = await waitFor(() => {
+      const element = document.querySelector(
+        '[data-cy="received-receipt-banner"]',
+      );
+      expect(element).not.toBeNull();
+      return element as HTMLElement;
+    });
+    expect(banner).toHaveTextContent("Quittance reçue détectée");
+    expect(banner).toHaveTextContent(/950,00/);
+    expect(
+      within(banner).getByRole("link", {
+        name: "Télécharger la quittance",
+      }),
+    ).toHaveAttribute("href", "/api/rent-receipts/received/77/pdf");
   });
 
   it("disables the draft save button while a save is in flight", async () => {

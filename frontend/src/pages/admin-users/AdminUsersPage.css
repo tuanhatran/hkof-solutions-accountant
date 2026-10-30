@@ -1,0 +1,43 @@
+@reference "../../index.css";
+
+@layer components {
+  .admin-users-table-wrapper {
+    @apply overflow-x-auto;
+  }
+
+  .admin-users-table {
+    @apply w-full border-collapse text-sm;
+  }
+
+  .admin-users-table th {
+    @apply border-b border-line px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-ink-soft;
+  }
+
+  .admin-users-table td {
+    @apply border-b border-line/60 px-3 py-2 align-middle;
+  }
+
+  .admin-users-table tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .admin-users-email {
+    @apply font-medium text-ink;
+  }
+
+  .admin-users-select {
+    @apply rounded-lg border border-line bg-surface px-2 py-1 text-sm text-ink;
+  }
+
+  .admin-users-modules {
+    @apply flex flex-wrap gap-4;
+  }
+
+  .admin-users-toggle {
+    @apply flex items-center gap-2 text-xs text-ink-soft;
+  }
+
+  .admin-users-toggle input {
+    @apply size-4 accent-accent;
+  }
+}

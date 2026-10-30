@@ -134,6 +134,7 @@ export function groupHistoryByMonthAndAddress(
   statements: StatementDto[],
   leases: LeaseDto[],
   language?: string,
+  receivedRentReceipts: RentReceiptDto[] = [],
 ): MonthGroup[] {
   const byMonth = new Map<string, Map<string, AddressGroup>>();
 
@@ -157,7 +158,7 @@ export function groupHistoryByMonthAndAddress(
     return { month: document.month, row };
   }
 
-  for (const receipt of rentReceipts) {
+  for (const receipt of [...rentReceipts, ...receivedRentReceipts]) {
     rowOf(receipt)?.row.rentReceipts.push(receipt);
   }
   for (const statement of statements) {

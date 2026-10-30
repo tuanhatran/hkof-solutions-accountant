@@ -1,13 +1,20 @@
 import "./TemplatesPage.css";
 import { ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useModuleAccess } from "@/api/queries";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { TemplatesCard } from "./TemplatesCard";
 import { TEMPLATE_CONFIGURATIONS } from "./templateTypes";
 
-/** Dedicated templates page: one card per document type, one sandbox notice. */
+/** Dedicated templates page: one card per active document type, one sandbox notice. */
 export function TemplatesPage() {
   const { t } = useTranslation();
+  const access = useModuleAccess();
+  const configurations = TEMPLATE_CONFIGURATIONS.filter((configuration) =>
+    configuration.type === "RENT_RECEIPT"
+      ? access.lmnpEnabled
+      : access.companyEnabled,
+  );
 
   return (
     <>
@@ -17,7 +24,7 @@ export function TemplatesPage() {
         description={t("templates.page.description")}
       />
       <div className="templates-page-grid">
-        {TEMPLATE_CONFIGURATIONS.map((configuration) => (
+        {configurations.map((configuration) => (
           <TemplatesCard
             key={configuration.type}
             configuration={configuration}

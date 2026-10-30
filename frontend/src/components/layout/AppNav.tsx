@@ -7,16 +7,22 @@ import {
   Home,
   LayoutTemplate,
   ReceiptText,
+  Users,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
+import { useModuleAccess, type ModuleAccess } from "@/api/queries";
 import { cn } from "@/lib/cn";
+
+export type NavigationModule = "company" | "lmnp" | "admin";
 
 export interface NavigationLink {
   to: string;
   labelKey: string;
   icon: typeof ReceiptText;
   dataCy: string;
+  /** Module required to see the link; omitted links always show. */
+  module?: NavigationModule;
 }
 
 export interface NavigationGroup {
@@ -39,12 +45,14 @@ export const SECTIONS: NavigationSection[] = [
         labelKey: "navigation.links.rentReceipt",
         icon: FileText,
         dataCy: "tab-rent-receipt",
+        module: "lmnp",
       },
       {
         to: "/generer/note-frais",
         labelKey: "navigation.links.expenseStatement",
         icon: ReceiptText,
         dataCy: "tab-expense-statement",
+        module: "company",
       },
     ],
   },
@@ -73,12 +81,21 @@ export const SECTIONS: NavigationSection[] = [
         labelKey: "navigation.links.company",
         icon: Building2,
         dataCy: "tab-configuration",
+        module: "company",
       },
       {
         to: "/configuration/lmnp",
         labelKey: "navigation.links.lmnp",
         icon: Home,
         dataCy: "tab-lmnp",
+        module: "lmnp",
+      },
+      {
+        to: "/admin/utilisateurs",
+        labelKey: "navigation.links.adminUsers",
+        icon: Users,
+        dataCy: "tab-admin-users",
+        module: "admin",
       },
       {
         to: "/admin",
@@ -90,10 +107,37 @@ export const SECTIONS: NavigationSection[] = [
   },
 ];
 
-const MOBILE_LINKS = SECTIONS.flatMap((section) => [
-  ...(section.groups?.flatMap((group) => group.links) ?? []),
-  ...section.links,
-]);
+function isLinkVisible(link: NavigationLink, access: ModuleAccess): boolean {
+  if (link.module === "company") {
+    return access.companyEnabled;
+  }
+  if (link.module === "lmnp") {
+    return access.lmnpEnabled;
+  }
+  if (link.module === "admin") {
+    return access.isAdmin;
+  }
+  return true;
+}
+
+/** Sections and links the account may use, in the declared order. */
+export function visibleSections(access: ModuleAccess): NavigationSection[] {
+  return SECTIONS.map((section) => ({
+    ...section,
+    links: section.links.filter((link) => isLinkVisible(link, access)),
+    groups: section.groups?.map((group) => ({
+      ...group,
+      links: group.links.filter((link) => isLinkVisible(link, access)),
+    })),
+  })).filter((section) => section.links.length > 0);
+}
+
+function mobileLinks(sections: NavigationSection[]): NavigationLink[] {
+  return sections.flatMap((section) => [
+    ...(section.groups?.flatMap((group) => group.links) ?? []),
+    ...section.links,
+  ]);
+}
 
 function SideNavigationLink({ link }: { link: NavigationLink }) {
   const { t } = useTranslation();
@@ -131,10 +175,11 @@ function SideNavigationLink({ link }: { link: NavigationLink }) {
 
 export function SideNavigation() {
   const { t } = useTranslation();
+  const sections = visibleSections(useModuleAccess());
 
   return (
     <nav className="app-nav" aria-label={t("navigation.ariaLabel")}>
-      {SECTIONS.map((section) => (
+      {sections.map((section) => (
         <div key={section.titleKey}>
           <p className="app-nav-section">{t(section.titleKey)}</p>
           <div className="app-nav-links">
@@ -160,13 +205,14 @@ export function SideNavigation() {
 
 export function MobileNavigation() {
   const { t } = useTranslation();
+  const links = mobileLinks(visibleSections(useModuleAccess()));
 
   return (
     <nav
       className="app-nav-mobile"
       aria-label={t("navigation.mobileAriaLabel")}
     >
-      {MOBILE_LINKS.map((link) => (
+      {links.map((link) => (
         <NavLink
           key={link.to}
           to={link.to}

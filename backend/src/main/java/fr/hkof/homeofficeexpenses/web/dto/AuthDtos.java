@@ -1,5 +1,6 @@
 package fr.hkof.homeofficeexpenses.web.dto;
 
+import fr.hkof.homeofficeexpenses.domain.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -39,6 +40,7 @@ public final class AuthDtos {
                     message = PASSWORD_SIZE) String newPassword) {
     }
 
-    public record CurrentUserDto(String email, boolean mustChangePassword) {
+    public record CurrentUserDto(String email, boolean mustChangePassword, UserRole role,
+            boolean companyEnabled, boolean lmnpEnabled) {
     }
 }

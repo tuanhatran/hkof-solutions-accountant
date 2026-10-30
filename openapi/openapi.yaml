@@ -1,7 +1,14 @@
 openapi: 3.1.0
 info:
   title: HomeOfficeExpenses API
-  description: Local API for generating rent receipts and home-office expense statements.
+  description: >-
+    Local API for generating rent receipts and home-office expense statements.
+    Les routes /api/companies/**, /api/expense-statements/** et /api/expense-items/**
+    répondent 403 MODULE_COMPANY_DISABLED quand le module entreprise du compte est
+    désactivé, sauf GET /api/companies/lookup qui reste disponible pour rattacher une
+    société locataire à un bail ; les routes /api/leases/**, /api/rent-receipts/** et /api/persons/**
+    répondent 403 MODULE_LMNP_DISABLED quand le module LMNP est désactivé. Les routes
+    /api/admin/** sont réservées aux administrateurs (403 ACCESS_DENIED).
   version: 1.0.0
 servers:
   - url: http://localhost:8080
@@ -186,6 +193,97 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /api/admin/users:
+    get:
+      tags:
+        - admin-user-controller
+      operationId: listUsers
+      description: Liste les comptes locaux avec leur rôle et leurs modules activés.
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUserDto"
+        "403":
+          $ref: "#/components/responses/AdminOnly"
+  /api/admin/users/{id}/modules:
+    patch:
+      tags:
+        - admin-user-controller
+      operationId: updateUserModules
+      description: >-
+        Active ou désactive le module entreprise (companyEnabled) et le module LMNP
+        (lmnpEnabled) d'un compte. Un champ absent reste inchangé.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModuleFlagsRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/AdminUserDto"
+        "400":
+          description: Aucun module précisé (MODULES_REQUIRED)
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/AdminOnly"
+        "404":
+          $ref: "#/components/responses/UserNotFound"
+  /api/admin/users/{id}/role:
+    patch:
+      tags:
+        - admin-user-controller
+      operationId: updateUserRole
+      description: Change le rôle d'un compte (ADMIN ou USER).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/AdminUserDto"
+        "400":
+          description: Rôle absent ou invalide
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/AdminOnly"
+        "404":
+          $ref: "#/components/responses/UserNotFound"
   /api/companies:
     get:
       tags:
@@ -193,6 +291,8 @@ paths:
       operationId: listCompanies
       description: Liste les sociétés non supprimées.
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "200":
           description: OK
           content:
@@ -213,6 +313,8 @@ paths:
               $ref: "#/components/schemas/CompanyRequest"
         required: true
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "201":
           description: Created
           content:
@@ -221,6 +323,42 @@ paths:
                 $ref: "#/components/schemas/CompanyDto"
         "400":
           description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/companies/lookup:
+    get:
+      tags:
+        - company-controller
+      operationId: lookupCompany
+      description: >-
+        Recherche une société active par SIREN, y compris une société détenue par un
+        autre compte. Ne retourne que son identité légale publique ; les données
+        internes (surfaces, bail actif, salariés, postes) restent inaccessibles.
+        Route disponible même lorsque le module entreprise du compte est désactivé.
+      parameters:
+        - name: siren
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Numéro SIREN, avec ou sans espaces.
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/CompanyLookupDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
           content:
             application/problem+json:
               schema:
@@ -239,6 +377,8 @@ paths:
             type: integer
             format: int64
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "200":
           description: OK
           content:
@@ -270,6 +410,8 @@ paths:
               $ref: "#/components/schemas/CompanyRequest"
         required: true
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "200":
           description: OK
           content:
@@ -304,6 +446,8 @@ paths:
             type: integer
             format: int64
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "204":
           description: No Content
         "404":
@@ -326,6 +470,8 @@ paths:
             type: integer
             format: int64
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "200":
           description: OK
           content:
@@ -359,6 +505,8 @@ paths:
               $ref: "#/components/schemas/EmployeeRequest"
         required: true
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "201":
           description: Created
           content:
@@ -455,6 +603,8 @@ paths:
               $ref: "#/components/schemas/ExpenseItemRequest"
         required: true
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "200":
           description: OK
           content:
@@ -473,6 +623,8 @@ paths:
             type: integer
             format: int64
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "204":
           description: No Content
   /api/admin/llm:
@@ -664,6 +816,8 @@ paths:
           schema:
             type: string
       responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
         "200":
           description: OK
           content:
@@ -683,6 +837,8 @@ paths:
               $ref: "#/components/schemas/RentReceiptRequest"
         required: true
       responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
         "201":
           description: Created
           content:
@@ -701,6 +857,8 @@ paths:
               $ref: "#/components/schemas/RentReceiptRequest"
         required: true
       responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
         "200":
           description: OK
           content:
@@ -780,6 +938,8 @@ paths:
           schema:
             type: string
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "200":
           description: OK
           content:
@@ -799,6 +959,8 @@ paths:
               $ref: "#/components/schemas/StatementGenerationRequest"
         required: true
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "201":
           description: Created
           content:
@@ -817,6 +979,8 @@ paths:
               $ref: "#/components/schemas/StatementPreviewRequest"
         required: true
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "200":
           description: OK
           content:
@@ -853,6 +1017,8 @@ paths:
             type: integer
             format: int64
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "200":
           description: OK
           content:
@@ -871,6 +1037,8 @@ paths:
               $ref: "#/components/schemas/StatementCalculationRequest"
         required: true
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "200":
           description: OK
           content:
@@ -1049,6 +1217,8 @@ paths:
             type: boolean
             default: false
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "200":
           description: OK
           content:
@@ -1068,6 +1238,8 @@ paths:
               $ref: "#/components/schemas/ExpenseItemRequest"
         required: true
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "201":
           description: Created
           content:
@@ -1137,6 +1309,65 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TemplateVariableDto"
+  /api/rent-receipts/received:
+    get:
+      tags:
+        - rent-receipt-controller
+      operationId: listReceivedRentReceipts
+      description: >-
+        Liste les quittances émises par un autre compte pour une société
+        appartenant au compte courant. Accessible sans le module LMNP : un
+        propriétaire de société doit pouvoir consulter ses quittances reçues.
+      parameters:
+        - name: companyId
+          in: query
+          required: false
+          description: Identifiant d'une société du compte courant.
+          schema:
+            type: integer
+            format: int64
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "404":
+          description: Société inconnue du compte courant.
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RentReceiptDto"
+  /api/rent-receipts/received/{id}/pdf:
+    get:
+      tags:
+        - rent-receipt-controller
+      operationId: getReceivedRentReceiptPdf
+      description: >-
+        Télécharge le PDF d'une quittance reçue pour une société du compte
+        courant. Toute quittance émise par le compte courant ou rattachée à une
+        autre société répond 404.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "404":
+          description: Quittance reçue introuvable pour ce compte.
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                type: string
+                format: byte
   /api/rent-receipts/{id}:
     get:
       tags:
@@ -1150,6 +1381,8 @@ paths:
             type: integer
             format: int64
       responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
         "200":
           description: OK
           content:
@@ -1169,6 +1402,8 @@ paths:
             type: integer
             format: int64
       responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
         "200":
           description: OK
           content:
@@ -1218,6 +1453,8 @@ paths:
             type: integer
             format: int64
       responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
         "200":
           description: OK
           content:
@@ -1290,6 +1527,8 @@ paths:
             type: integer
             format: int64
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "200":
           description: OK
           content:
@@ -1315,6 +1554,8 @@ paths:
             type: boolean
             default: false
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "200":
           description: OK
           content:
@@ -1335,6 +1576,8 @@ paths:
             type: integer
             format: int64
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "200":
           description: OK
           content:
@@ -1369,6 +1612,8 @@ paths:
             type: integer
             format: int64
       responses:
+        "403":
+          $ref: "#/components/responses/CompanyModuleDisabled"
         "200":
           description: OK
           content:
@@ -1615,6 +1860,8 @@ paths:
         Liste les personnes physiques non supprimées, triées par nom. Les
         salariés sont exclus de cette liste.
       responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
         "200":
           description: OK
           content:
@@ -1634,6 +1881,8 @@ paths:
               $ref: "#/components/schemas/PersonRequest"
         required: true
       responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
         "201":
           description: Created
           content:
@@ -1665,6 +1914,8 @@ paths:
               $ref: "#/components/schemas/PersonRequest"
         required: true
       responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
         "200":
           description: OK
           content:
@@ -1695,6 +1946,8 @@ paths:
             type: integer
             format: int64
       responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
         "204":
           description: No Content
         "400":
@@ -1732,6 +1985,8 @@ paths:
         - rent-configuration-controller
       operationId: listLeases
       responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
         "200":
           description: OK
           content:
@@ -1754,6 +2009,8 @@ paths:
               $ref: "#/components/schemas/LeaseRequest"
         required: true
       responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
         "201":
           description: Created
           content:
@@ -1787,6 +2044,8 @@ paths:
               $ref: "#/components/schemas/LeaseRequest"
         required: true
       responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
         "200":
           description: OK
           content:
@@ -1817,6 +2076,8 @@ paths:
             type: integer
             format: int64
       responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
         "204":
           description: No Content
         "404":
@@ -1834,6 +2095,31 @@ components:
       description: >-
         Session ouverte par POST /api/auth/login. Les mutations authentifiées
         exigent aussi le cookie XSRF-TOKEN recopié dans l'en-tête X-XSRF-TOKEN.
+  responses:
+    AdminOnly:
+      description: Accès réservé aux administrateurs (403 ACCESS_DENIED)
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+    CompanyModuleDisabled:
+      description: Module entreprise désactivé pour ce compte (403 MODULE_COMPANY_DISABLED)
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+    LmnpModuleDisabled:
+      description: Module LMNP désactivé pour ce compte (403 MODULE_LMNP_DISABLED)
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+    UserNotFound:
+      description: Compte introuvable (404 USER_NOT_FOUND)
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
   schemas:
     RegisterRequest:
       type: object
@@ -1899,6 +2185,56 @@ components:
         mustChangePassword:
           type: boolean
           description: Vrai tant que le changement de mot de passe imposé n'est pas fait.
+        role:
+          $ref: "#/components/schemas/UserRole"
+        companyEnabled:
+          type: boolean
+          description: Vrai quand le module entreprise est activé pour ce compte.
+        lmnpEnabled:
+          type: boolean
+          description: Vrai quand le module LMNP est activé pour ce compte.
+    UserRole:
+      type: string
+      enum:
+        - ADMIN
+        - USER
+    AdminUserDto:
+      type: object
+      required:
+        - id
+        - email
+        - role
+        - companyEnabled
+        - lmnpEnabled
+      properties:
+        id:
+          type: integer
+          format: int64
+        email:
+          type: string
+          format: email
+        role:
+          $ref: "#/components/schemas/UserRole"
+        companyEnabled:
+          type: boolean
+        lmnpEnabled:
+          type: boolean
+    ModuleFlagsRequest:
+      type: object
+      properties:
+        companyEnabled:
+          type: boolean
+          description: Active ou désactive le module entreprise ; absent, la valeur reste inchangée.
+        lmnpEnabled:
+          type: boolean
+          description: Active ou désactive le module LMNP ; absent, la valeur reste inchangée.
+    RoleRequest:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          $ref: "#/components/schemas/UserRole"
     SignatureDto:
       type: object
       properties:
@@ -1986,6 +2322,22 @@ components:
         proRataBaseDetail:
           type: string
         issuePlace:
+          type: string
+    CompanyLookupDto:
+      type: object
+      description: >-
+        Identité légale publique d'une société active, seule information exposée pour
+        une société détenue par un autre compte.
+      properties:
+        name:
+          type: string
+        siren:
+          type: string
+        legalForm:
+          type: string
+        address:
+          type: string
+        managerName:
           type: string
     AdditionalCharge:
       type: object
@@ -2154,7 +2506,14 @@ components:
             - integer
             - "null"
           format: int64
-          description: Société locataire, obligatoire pour un bail société.
+          description: >-
+            Société locataire possédée par le compte courant. Pour lier une société
+            détenue par un autre compte, utiliser companySiren.
+        companySiren:
+          type: string
+          description: >-
+            SIREN d'une société active, y compris détenue par un autre compte. Le bail
+            ne référence alors que son identité légale publique, en lecture seule.
         tenantId:
           type:
             - integer
@@ -2199,6 +2558,30 @@ components:
             - string
             - "null"
           readOnly: true
+        companySiren:
+          type:
+            - string
+            - "null"
+          readOnly: true
+          description: Identité légale publique de la société liée (SIREN).
+        companyLegalForm:
+          type:
+            - string
+            - "null"
+          readOnly: true
+          description: Identité légale publique de la société liée (forme juridique).
+        companyAddress:
+          type:
+            - string
+            - "null"
+          readOnly: true
+          description: Identité légale publique de la société liée (siège social).
+        companyManagerName:
+          type:
+            - string
+            - "null"
+          readOnly: true
+          description: Identité légale publique de la société liée (représentant légal).
         companyLease:
           type: boolean
         landlordId:

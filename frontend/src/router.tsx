@@ -1,6 +1,6 @@
 import "./router.css";
 import { ArrowLeft, Compass } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import {
   Link,
   Navigate,
@@ -12,11 +12,12 @@ import {
   type RouteObject,
 } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { refreshAuth, useAuthState } from "@/api/queries";
+import { refreshAuth, useAuthState, useModuleAccess } from "@/api/queries";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { AuthPage } from "@/pages/auth/AuthPage";
 import { AdminLlmPage } from "@/pages/admin-llm/AdminLlmPage";
+import { AdminUsersPage } from "@/pages/admin-users/AdminUsersPage";
 import { LmnpPage } from "@/pages/settings/LmnpPage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { GenerateExpenseStatementPage } from "@/pages/expense-statement/GenerateExpenseStatementPage";
@@ -25,6 +26,8 @@ import { HistoryPage } from "@/pages/history/HistoryPage";
 import { TemplatesPage } from "@/pages/templates/TemplatesPage";
 
 export function NotFoundPage() {
+  const { homePath } = useModuleAccess();
+
   return (
     <div className="card router-not-found">
       <span className="router-not-found-icon">
@@ -36,11 +39,28 @@ export function NotFoundPage() {
         Cette adresse ne correspond à aucune page de HomeOfficeExpenses. Vos
         brouillons restent conservés pendant la session.
       </p>
-      <Link to="/generer/quittance" className="router-not-found-action">
+      <Link to={homePath} className="router-not-found-action">
         <Button variant="primary" icon={<ArrowLeft size={15} />}>
           Revenir à la génération
         </Button>
       </Link>
+    </div>
+  );
+}
+
+/** Neutral page when an administrator disabled every module of the account. */
+export function NoModulePage() {
+  return (
+    <div className="card router-not-found" data-cy="no-module-page">
+      <span className="router-not-found-icon">
+        <Compass size={26} aria-hidden="true" />
+      </span>
+      <p className="eyebrow router-not-found-eyebrow">HomeOfficeExpenses</p>
+      <h1 className="router-not-found-title">Aucun module activé</h1>
+      <p className="router-not-found-text">
+        Votre compte n’a accès à aucun module. Contactez un administrateur pour
+        activer le module Société ou le module LMNP, puis rechargez la page.
+      </p>
     </div>
   );
 }
@@ -123,22 +143,97 @@ function RequireAuth() {
   return <Outlet />;
 }
 
+/** Sends the account to the generator of its active modules. */
+function HomeRedirect() {
+  const { homePath } = useModuleAccess();
+  return <Navigate to={homePath} replace />;
+}
+
+/** Keeps a page of a disabled module unreachable. */
+function ModuleRoute({
+  module,
+  children,
+}: {
+  module: "company" | "lmnp";
+  children: ReactNode;
+}) {
+  const access = useModuleAccess();
+  const enabled =
+    module === "company" ? access.companyEnabled : access.lmnpEnabled;
+
+  if (!enabled) {
+    return <Navigate to={access.homePath} replace />;
+  }
+  return <>{children}</>;
+}
+
+/** Users administration is reserved to the ADMIN role. */
+function AdminRoute({ children }: { children: ReactNode }) {
+  const access = useModuleAccess();
+
+  if (!access.isAdmin) {
+    return <Navigate to={access.homePath} replace />;
+  }
+  return <>{children}</>;
+}
+
 const appRoutes: RouteObject[] = [
-  { index: true, element: <Navigate to="/generer/quittance" replace /> },
+  { index: true, element: <HomeRedirect /> },
   {
     path: "generer",
-    element: <Navigate to="/generer/quittance" replace />,
+    element: <HomeRedirect />,
   },
-  { path: "generer/quittance", element: <GenerateRentReceiptPage /> },
-  { path: "generer/note-frais", element: <GenerateExpenseStatementPage /> },
+  {
+    path: "generer/quittance",
+    element: (
+      <ModuleRoute module="lmnp">
+        <GenerateRentReceiptPage />
+      </ModuleRoute>
+    ),
+  },
+  {
+    path: "generer/note-frais",
+    element: (
+      <ModuleRoute module="company">
+        <GenerateExpenseStatementPage />
+      </ModuleRoute>
+    ),
+  },
   { path: "historique", element: <HistoryPage /> },
   {
     path: "configuration",
-    element: <Navigate to="/configuration/entreprise" replace />,
+    element: (
+      <ModuleRoute module="company">
+        <Navigate to="/configuration/entreprise" replace />
+      </ModuleRoute>
+    ),
   },
-  { path: "configuration/entreprise", element: <SettingsPage /> },
-  { path: "configuration/lmnp", element: <LmnpPage /> },
+  {
+    path: "configuration/entreprise",
+    element: (
+      <ModuleRoute module="company">
+        <SettingsPage />
+      </ModuleRoute>
+    ),
+  },
+  {
+    path: "configuration/lmnp",
+    element: (
+      <ModuleRoute module="lmnp">
+        <LmnpPage />
+      </ModuleRoute>
+    ),
+  },
   { path: "templates", element: <TemplatesPage /> },
+  { path: "aucun-module", element: <NoModulePage /> },
+  {
+    path: "admin/utilisateurs",
+    element: (
+      <AdminRoute>
+        <AdminUsersPage />
+      </AdminRoute>
+    ),
+  },
   { path: "admin", element: <AdminLlmPage /> },
   { path: "*", element: <NotFoundPage /> },
 ];

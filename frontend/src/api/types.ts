@@ -3,6 +3,7 @@ import type { components } from "./schema";
 type Schemas = components["schemas"];
 
 export type CompanyDto = Schemas["CompanyDto"];
+export type CompanyLookupDto = Schemas["CompanyLookupDto"];
 export type CompanyRequest = Schemas["CompanyRequest"];
 export type EmployeeDto = Schemas["EmployeeDto"];
 export type EmployeeRequest = Schemas["EmployeeRequest"];
@@ -13,7 +14,10 @@ export type LeaseDto = Schemas["LeaseDto"];
 export type LeaseRequest = Schemas["LeaseRequest"];
 export type ExpenseItemDto = Schemas["ExpenseItemDto"];
 export type ExpenseItemRequest = Schemas["ExpenseItemRequest"];
-export type RentReceiptDto = Schemas["RentReceiptDto"];
+export type RentReceiptDto = Schemas["RentReceiptDto"] & {
+  /** Set by the history merge for a receipt issued by another account. */
+  received?: boolean;
+};
 export type RentReceiptRequest = Schemas["RentReceiptRequest"];
 export type LineRequest = Schemas["ExpenseLineRequest"];
 export type LineDto = Schemas["ExpenseLineDto"];
