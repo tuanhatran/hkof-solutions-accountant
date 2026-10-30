@@ -36,10 +36,10 @@ export function StatementMonthPanel({
                 active={version.status === "ACTIVE"}
               />
             </span>
-            <span className="number history-versions-number statement-month-panel-history-date">
+            <span className="history-versions-number statement-month-panel-history-date">
               {formatDate(version.createdAt)}
             </span>
-            <span className="number history-versions-number statement-month-panel-history-amount font-medium text-ink">
+            <span className="history-versions-number statement-month-panel-history-amount font-medium text-ink">
               {formatEUR(version.total)}
             </span>
             <span className="statement-month-panel-history-actions">

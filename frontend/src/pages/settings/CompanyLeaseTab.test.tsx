@@ -206,14 +206,8 @@ describe("CompanyLeaseTab", () => {
     expect(row).toHaveTextContent("M. Bailleur");
     expect(queryByCy("company-lease-rent-5")).toHaveTextContent("900,00 €");
     expect(queryByCy("company-lease-charges-5")).toHaveTextContent("50,00 €");
-    expect(queryByCy("company-lease-rent-5")).toHaveClass(
-      "number",
-      "text-right",
-    );
-    expect(queryByCy("company-lease-charges-5")).toHaveClass(
-      "number",
-      "text-right",
-    );
+    expect(queryByCy("company-lease-rent-5")).toHaveClass("text-right");
+    expect(queryByCy("company-lease-charges-5")).toHaveClass("text-right");
     expect(queryByCy("actions-company-lease-5")).not.toBeNull();
     expect(within(row as HTMLElement).queryByText("Bail actif")).toBeNull();
     expect(row).toHaveAttribute("role", "row");

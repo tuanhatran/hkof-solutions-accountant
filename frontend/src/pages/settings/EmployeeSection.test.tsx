@@ -189,11 +189,7 @@ describe("EmployeeSection", () => {
       row.querySelector(".employee-section-cell-contact"),
     ).toHaveTextContent("camille.martin@exemple.fr");
     const signatures = row.querySelector('[data-cy="employee-signatures-3"]');
-    expect(signatures).toHaveClass(
-      "employee-section-cell",
-      "number",
-      "text-right",
-    );
+    expect(signatures).toHaveClass("employee-section-cell", "text-right");
     expect(row.querySelector(".employee-section-cell-actions")).not.toBeNull();
   });
 

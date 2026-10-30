@@ -276,7 +276,7 @@ describe("TemplatesCard", () => {
     if (!(dateCell instanceof HTMLElement)) {
       throw new Error("Imported date cell not found");
     }
-    expect(dateCell).toHaveClass("number", "template-versions-number");
+    expect(dateCell).toHaveClass("template-versions-number");
     expect(dateCell.textContent).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
   });
 

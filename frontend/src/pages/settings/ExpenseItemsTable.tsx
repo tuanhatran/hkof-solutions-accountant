@@ -60,13 +60,13 @@ export function ExpenseItemsTable({
                 </div>
               </td>
               <td className="text-ink-soft">{expenseItem.supplier || "—"}</td>
-              <td className="number expense-items-table-number-cell text-right">
+              <td className="expense-items-table-number-cell text-right">
                 {formatPercentage(expenseItem.proRataPct)}
               </td>
               <td className="expense-items-table-periodicity-cell">
                 {periodicityLabel(expenseItem.periodicity, t)}
               </td>
-              <td className="number expense-items-table-order-cell text-right">
+              <td className="expense-items-table-order-cell text-right">
                 {expenseItem.sortOrder}
               </td>
               <td>

@@ -49,7 +49,7 @@ export function CompanyLeaseRow({
             {t("settings.company.leaseTab.columns.rent")}
           </span>
           <span
-            className="company-lease-tab-item-amount number text-right"
+            className="company-lease-tab-item-amount text-right"
             data-cy={`company-lease-rent-${lease.id}`}
           >
             {formatEUR(lease.rentExclCharges ?? "0.00")}
@@ -60,7 +60,7 @@ export function CompanyLeaseRow({
             {t("settings.company.leaseTab.columns.charges")}
           </span>
           <span
-            className="company-lease-tab-item-amount number text-right"
+            className="company-lease-tab-item-amount text-right"
             data-cy={`company-lease-charges-${lease.id}`}
           >
             {formatEUR(lease.charges ?? "0.00")}

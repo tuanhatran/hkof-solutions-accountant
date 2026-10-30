@@ -72,10 +72,10 @@ function RentReceiptHistoryItem({ version }: { version: RentReceiptDto }) {
         {version.received ? `${t("history.actions.received")} · ` : null}
         {pairLabel(version)}
       </span>
-      <span className="number history-versions-number rent-receipt-month-panel-history-date">
+      <span className="history-versions-number rent-receipt-month-panel-history-date">
         {formatDate(version.createdAt)}
       </span>
-      <span className="number history-versions-number rent-receipt-month-panel-history-amount font-medium text-ink">
+      <span className="history-versions-number rent-receipt-month-panel-history-amount font-medium text-ink">
         {formatEUR(version.total)}
       </span>
       {version.id ? (

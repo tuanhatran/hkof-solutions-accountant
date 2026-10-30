@@ -213,7 +213,7 @@ export function EmployeeSection({ companyId }: { companyId: number | null }) {
                     </span>
                   </div>
                   <p
-                    className="employee-section-cell employee-section-cell-signatures employee-section-item-signatures number text-right"
+                    className="employee-section-cell employee-section-cell-signatures employee-section-item-signatures text-right"
                     role="cell"
                     data-cy={`employee-signatures-${employee.id}`}
                   >

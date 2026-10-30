@@ -22,9 +22,7 @@ export function ExpenseGenerationFooter({
         <div>
           <p className="eyebrow">{t("expenseStatement.footer.total")}</p>
           <p className="expense-generation-footer-total">
-            <span className="number" data-cy="retained-total">
-              {formatEUR(c.displayedTotal)}
-            </span>
+            <span data-cy="retained-total">{formatEUR(c.displayedTotal)}</span>
             {c.calculationInProgress ? <Spinner size={15} /> : null}
           </p>
           {c.calculation?.totalInWords ? (
@@ -47,9 +45,7 @@ export function ExpenseGenerationFooter({
           {c.calculation?.proRataBase ? (
             <p>
               {t("expenseStatement.footer.referenceShare")}{" "}
-              <span className="number">
-                {formatEUR(c.calculation.proRataBase)}
-              </span>
+              <span>{formatEUR(c.calculation.proRataBase)}</span>
             </p>
           ) : null}
           <p>{t("expenseStatement.footer.calculationNote")}</p>

@@ -251,13 +251,6 @@
   }
 }
 
-@layer utilities {
-  .number {
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
-  }
-}
-
 @keyframes fade {
   from {
     opacity: 0;
