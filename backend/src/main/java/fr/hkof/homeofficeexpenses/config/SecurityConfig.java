@@ -143,7 +143,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/e2e/**").access((authentication, context) -> e2eProfile
                         ? new org.springframework.security.authorization.AuthorizationDecision(true)
                         : new org.springframework.security.authorization.AuthorizationDecision(false))
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/admin/users", "/api/admin/users/**").hasRole("ADMIN")
                 .anyRequest().authenticated());
         http.exceptionHandling(exceptions -> exceptions
                 .authenticationEntryPoint((request, response, authException) -> writeProblem(objectMapper, response,

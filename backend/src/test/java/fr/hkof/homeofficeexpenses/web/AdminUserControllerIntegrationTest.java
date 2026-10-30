@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -114,6 +115,31 @@ class AdminUserControllerIntegrationTest {
                 .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
 
         assertThat(users.findById(userId(USER_EMAIL)).orElseThrow().isCompanyEnabled()).isTrue();
+    }
+
+    @Test
+    @DisplayName("A non-admin keeps its own LLM configuration but cannot manage users")
+    void nonAdminKeepsOwnLlmConfigButNotUserManagement() throws Exception {
+        Session user = sessionFor(USER_EMAIL, UserRole.USER, true, true);
+
+        mockMvc.perform(get("/api/admin/llm").session(user.http()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.remoteUrl").value(false));
+
+        mockMvc.perform(mutation(put("/api/admin/llm"), user)
+                        .contentType(JSON)
+                        .content("{\"url\":\"https://llm.exemple.fr\",\"apiKey\":\"secret-de-test\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.remoteUrl").value(true))
+                .andExpect(jsonPath("$.apiKeyConfigured").value(true));
+
+        mockMvc.perform(get("/api/admin/llm").session(user.http()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.remoteUrl").value(true));
+
+        mockMvc.perform(get("/api/admin/users").session(user.http()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
     }
 
     @Test
