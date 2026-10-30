@@ -1,10 +1,10 @@
 # 81 - ADMIN-USER-MODULES
 
-Status: TODO
+Status: DONE
 Branch: feat/81-admin-user-modules
-Base: 77a9bf3
+Base: 9383032
 Size: L
-Round: 0/2
+Round: 1/2
 
 ## Goal
 
@@ -33,8 +33,37 @@ Contract first: `openapi/openapi.yaml` adds `/api/admin/users` endpoints, error 
 
 ## Commands
 
-`cd backend && ./mvnw -B verify` · `cd frontend && npm run gen:api && npm run test:coverage && npm run lint && npm run format:check && npm run build` · `scripts/diff-coverage.sh 77a9bf3 all` · `make e2e-up` once then `make e2e 06-auth` (leave stack up; `make e2e-down` only after acceptance).
+`cd backend && ./mvnw -B verify` · `cd frontend && npm run gen:api && npm run test:coverage && npm run lint && npm run format:check && npm run build` · `scripts/diff-coverage.sh 9383032 all` · `make e2e-up` once then `make e2e 06-auth`, `make e2e 02-expense-statement`, `make e2e 04-admin-templates` (regression specs for `/api/admin/llm`; leave stack up; `make e2e-down` only after acceptance).
 
 ## Evidence
 
-(Append one line per event; builder appends evidence and sets REVIEW)
+- Files: 22 changed (backend prod/migration 13, tests 8, contract+generated 2); DataInitializer split -> SeedUserInitializer (268/64 lines); all production classes < 300 lines.
+- Contract impact: `openapi/openapi.yaml` (admin user paths, UserRole/AdminUserDto/ModuleFlagsRequest/RoleRequest, CurrentUserDto role+companyEnabled+lmnpEnabled, 403/404 response refs on 34 module-gated operations) then `npm run gen:api` -> `frontend/src/api/schema.ts`.
+- RED->GREEN AuthServiceTest 3 tests (role/companyEnabled/lmnpEnabled principal + ROLE_ADMIN/USER authority).
+- RED->GREEN AdminUserServiceTest 5 tests (list, partial module update, empty update, role, USER_NOT_FOUND).
+- RED->GREEN AdminUserControllerIntegrationTest 4 tests (/me fields, admin list+toggles, 403 non-admin, 404/400).
+- RED->GREEN ModuleAccessIntegrationTest 3 tests (COMPANY/LMNP 403 with French details, fresh flags after login).
+- RED->GREEN AdminUserModulesMigrationPostgresTest 2 tests (upgrade V25->V26, fresh schema, thtran ADMIN).
+- PASS `cd backend && ./mvnw -B verify`: Tests run 625, failures 0, errors 0, skipped 1; BUILD SUCCESS.
+- PASS `cd frontend && npm run test:coverage`: 70 files / 957 tests passed; `npm run lint` clean; `npm run format:check` clean; `npm run build` OK.
+- PASS `scripts/diff-coverage.sh 9383032 all`: backend 99% (115 changed lines, 1 missing); frontend: generated schema excluded (no covered lines).
+- PASS `make e2e-up` then `make e2e 06-auth`: exit 0, spec 06-auth.cy.ts 5 tests / 5 passing / 0 failing; stack left up.
+- Deviations: DataInitializer split to keep < 300 lines; `UserDocumentIsolationIntegrationTest` users set ADMIN (LLM admin routes now admin-only); `DataInitializerTest` constructor updated; unrelated pre-existing edit `frontend/src/i18n/resources/en.ts` left uncommitted.
+- Commit: 025be51 22 files +1459/-47
+- 2026-10-30 lead: `VERDICT: BLOCKERS (1)` (reviewer, round 1) — `SecurityConfig` hasRole(ADMIN) on `/api/admin/**` blocks existing user-owned `/api/admin/llm` used by the e2e USER account in 02-expense-statement and 04-admin-templates. Scope admin role to the new user-management endpoints only; run the three E2E specs above.
+- 2026-10-30 lead: `VERDICT: PASS` (reviewer, round 2) — fix commit 26e9661 scopes ADMIN to `/api/admin/users/**`; regression test red→green; 06-auth 5/5, 02-expense-statement 12/12, 04-admin-templates 5/5.
+
+## Round 1 fix evidence
+
+- Files changed: `backend/src/main/java/fr/hkof/homeofficeexpenses/config/SecurityConfig.java` (matcher scoped to `/api/admin/users`, `/api/admin/users/**`), `backend/src/test/java/fr/hkof/homeofficeexpenses/web/AdminUserControllerIntegrationTest.java`. Contract: none.
+- RED: `./mvnw -B -q test -Dtest=AdminUserControllerIntegrationTest#nonAdminKeepsOwnLlmConfigButNotUserManagement` — GET /api/admin/llm expected 200, got 403 ACCESS_DENIED (1 failure), confirming the regression.
+- GREEN: new test passes; full class 5 tests, 0 failures. Non-admin USER GET/PUT `/api/admin/llm` -> 200, `GET /api/admin/users` -> 403 ACCESS_DENIED.
+- PASS targeted regression `AuthIntegrationTest,ModuleAccessIntegrationTest,UserIsolationIntegrationTest,UserDocumentIsolationIntegrationTest,E2eResetIntegrationTest`: 8+3+2+5+2 = 20 tests, 0 failures.
+- PASS `cd backend && ./mvnw -B verify`: Tests run 626, Failures 0, Errors 0, Skipped 1; BUILD SUCCESS (exit 0).
+- PASS `scripts/diff-coverage.sh 9383032 all`: backend 99% changed-line coverage (115 lines, 1 missing); frontend no coverage lines (generated schema only).
+- PASS `make e2e 06-auth`: exit 0, spec 06-auth.cy.ts 5 tests / 5 passing / 0 failing (first run).
+- PASS `make e2e 02-expense-statement`: exit 0, spec 02-expense-statement.cy.ts 12 tests / 12 passing / 0 failing (first run).
+- PASS `make e2e 04-admin-templates`: exit 0, spec 04-admin-templates.cy.ts 5 tests / 5 passing / 0 failing (first run).
+- Line limits: SecurityConfig 237, AdminUserControllerIntegrationTest 208 (< 300). Frontend untouched by this fix; stray `en.ts` edit left uncommitted. E2E stack left up.
+- Commit: 26e9661 2 files +27/-1
+- 2026-10-30 lead: `DONE — user accepted`
