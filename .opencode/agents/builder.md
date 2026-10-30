@@ -39,9 +39,10 @@ Cheap checks only inside the loop: never run a full gate here.
 ## End of task (ONCE, after the last block)
 
 1. `codegraph sync`.
-2. Run the gates required by the table below, cheapest first. A red gate stops the sequence:
+2. Check line limits (`wc -l <changed production files> < 300 lines`) and formatting (`npx prettier --check <changed files>`) *before* running heavyweight test suites so line/format issues are fixed before gate runs.
+3. Run the gates required by the table below, cheapest first. A red gate stops the sequence:
    fix it before running the next, and never start E2E with another gate red.
-3. Capture real counts. Quiet flags, tailed output (`-B -q`, `| tail -n 40`). Backend and
+4. Capture real counts. Quiet flags, tailed output (`-B -q`, `| tail -n 40`). Backend and
    frontend gates touch separate directories and may run in parallel; E2E never runs alongside
    another build. If `format:check` fails at the gate, format only the files you changed (`npx prettier --write <changed files>`), never the whole repository.
 
@@ -54,8 +55,9 @@ Cheap checks only inside the loop: never run a full gate here.
 | `openapi/`, Flyway migration, Docker/E2E config, or both sides changed | Backend + frontend gates + touched E2E (full suite only if Docker/E2E config changed)                                                       |
 
 Targeted E2E, one stack per task:
-`make e2e-up` once when the task first needs E2E, then `make e2e <spec>` (e.g. `make e2e 00-settings` or `make e2e 01-rent-receipt`, launching only the touched E2E spec). `make e2e`
-rebuilds only the changed services and leaves the stack up. Tests green on first run, none only
+`make e2e-up` once when the task first needs E2E, then `make e2e <spec>` (e.g. `make e2e 00-settings` or `make e2e 01-rent-receipt`) using the spec named in `Touched E2E:` in the handoff.
+**Never run bare `make e2e` without a spec.** If the handoff specifies `Touched E2E: none`, skip E2E and record `E2E: skipped (no touched spec)`. Full E2E suite (`make e2e`) is run *only* if Docker/E2E config itself changed.
+`make e2e <spec>` rebuilds only the changed services and leaves the stack up. Tests green on first run, none only
 on a retry. Keep the stack running after the report; `make e2e-down` runs only after the user
 accepts, when the lead sets `DONE`. If a required gate cannot run (for example Docker
 unavailable), report it as a blocker so the task stays `BLOCKED`; never done on partial evidence.
@@ -119,5 +121,5 @@ Never use `using-git-worktrees`, `finishing-a-development-branch`, `subagent-dri
 
 Append to the handoff (max 20 lines, evidence not prose): files changed; one `PASS`/`FAIL` line
 per command run with real counts; a red-then-green line per new test; the E2E evidence (exact
-command, exit code, spec and test counts) or `E2E: skipped, <table row>`; deviations; contract
+command `make e2e <spec>`, exit code, spec and test counts) or `E2E: skipped (no touched spec)`; deviations; contract
 impact. Set `REVIEW` for M/L or `USER_REVIEW` for S once the gates pass and the commit is made; never `DONE`.

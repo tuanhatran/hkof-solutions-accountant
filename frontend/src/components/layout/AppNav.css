@@ -18,7 +18,7 @@
   }
 
   .app-nav-link {
-    @apply flex min-h-11 items-center gap-2.5 rounded-md px-2 py-2 text-[13.5px] font-medium transition;
+    @apply flex min-h-11 items-center gap-2.5 rounded-lg px-2 py-2 text-[13.5px] font-medium transition;
   }
 
   .app-nav-link-active {
@@ -50,7 +50,7 @@
   }
 
   .app-nav-mobile-link {
-    @apply flex min-h-11 shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-medium transition;
+    @apply flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium transition;
   }
 
   .app-nav-mobile-link-active {

@@ -41,19 +41,19 @@ Ambiguous task: ask all questions in ONE message before starting, never guess an
    Run only the targeted test, targeted lint/format on changed files (`npx eslint <changed files>`, `npx prettier --check <changed files>`), then the tests from `codegraph affected <changed files>`. To format changed files, run `npx prettier --write <changed files>`. On a failure,
    find the root cause (`systematic-debugging`) before editing. Max 2 self-fix attempts, then stop and
    report. Never skip, weaken, disable or delete a test.
-4. **Gates, once, at the end.** `codegraph sync`, then the gates for the change type, cheapest first. A
+4. **Gates, once, at the end.** `codegraph sync`. Check line limits (`wc -l <changed production files> < 300 lines`) and formatting (`npx prettier --check <changed files>`) first. Then run the gates for the change type, cheapest first. A
    red gate stops the sequence: fix it before running the next, and never start E2E with another gate red. If `format:check` fails at the gate, format only the files you changed (`npx prettier --write <changed files>`), never the whole repository.
 
    | Change touches                                                    | Gates                                                                                       |
    | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
    | Docs, comments only                                               | `git diff --check`                                                                          |
    | Tests only, or component CSS only (no markup or text)             | Affected tests + that side's lint/format (frontend also `npm run build`). No E2E.           |
-   | Backend production code                                           | `cd backend && ./mvnw -B verify` + `scripts/diff-coverage.sh <Base> backend` + touched E2E (`make e2e <spec>`) |
-   | Frontend production code                                          | `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + touched E2E (`make e2e <spec>`) |
+   | Backend production code                                           | `cd backend && ./mvnw -B verify` + `scripts/diff-coverage.sh <Base> backend` + touched E2E if an E2E spec was touched (`make e2e <spec>`) |
+   | Frontend production code                                          | `cd frontend && npm run test:coverage && npm run lint && npm run format:check && npm run build` + `scripts/diff-coverage.sh <Base> frontend` + touched E2E if an E2E spec was touched (`make e2e <spec>`) |
    | Docker or E2E configuration                                       | Backend + frontend gates + touched E2E (full suite only if Docker/E2E config changed)                                                 |
 
    Targeted E2E, one stack per task:
-   `make e2e-up` once when E2E is needed, then `make e2e <spec>` (e.g. `make e2e 00-settings` or `make e2e 01-rent-receipt`, launching only the touched E2E spec). `make e2e` rebuilds only the changed
+   `make e2e-up` once when E2E is needed, then `make e2e <spec>` (e.g. `make e2e 00-settings` or `make e2e 01-rent-receipt`), launching only the touched E2E spec. **Never run bare `make e2e` without a spec.** If no E2E spec is touched by the change, skip E2E and record `E2E: skipped (no touched spec)`. `make e2e <spec>` rebuilds only the changed
    services and leaves the stack up. Tests green on first run, none only on a retry. Keep the
    stack running after the report; run `make e2e-down` only when the user accepts. If a required
    gate cannot run (for example Docker unavailable), report it as unverified and do not commit.
@@ -69,7 +69,7 @@ Ambiguous task: ask all questions in ONE message before starting, never guess an
    `--no-verify` or push. A file with user edits you cannot separate stays uncommitted: report it.
 7. **Report, max 10 lines, then stop.** Branch and commit sha with +/-; one `PASS`/`FAIL` line per
    command with real counts; a red-then-green line per new test; E2E evidence (`make e2e <spec>`) or
-   `E2E: skipped, <reason>`; the e2e stack stays up until acceptance (`make e2e-down`); deviations.
+   `E2E: skipped (no touched spec)`; the e2e stack stays up until acceptance (`make e2e-down`); deviations.
    State that there was no independent review, and ask the user
    to accept or request changes. Write no `.handoff/` file.
 
