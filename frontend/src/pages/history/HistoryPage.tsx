@@ -31,7 +31,7 @@ export function HistoryPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const access = useModuleAccess();
-  const companies = useCompanies();
+  const companies = useCompanies(access.companyEnabled);
   const companyIds = useMemo(
     () =>
       access.companyEnabled
@@ -42,11 +42,12 @@ export function HistoryPage() {
     [companies.data, access.companyEnabled],
   );
   const hasCompany = access.companyEnabled && companyIds.length > 0;
-  // History spans every company: rent receipts are global, statements are
-  // fetched once per company. A disabled module contributes no document.
-  const rentReceiptsQuery = useAllRentReceipts();
+  // History spans every document: rent receipts and leases belong to the LMNP
+  // module, statements to the company module. A disabled module is never
+  // queried, since its API answers 403 MODULE_*_DISABLED.
+  const rentReceiptsQuery = useAllRentReceipts(access.lmnpEnabled);
   const statementsQuery = useAllStatements(companyIds);
-  const leasesQuery = useLeases();
+  const leasesQuery = useLeases(access.lmnpEnabled);
   const [statementToReload, setStatementToReload] =
     useState<StatementDto | null>(null);
 
@@ -55,7 +56,7 @@ export function HistoryPage() {
       groupHistoryByMonthAndAddress(
         access.lmnpEnabled ? (rentReceiptsQuery.data ?? []) : [],
         access.companyEnabled ? (statementsQuery.data ?? []) : [],
-        leasesQuery.data ?? [],
+        access.lmnpEnabled ? (leasesQuery.data ?? []) : [],
         i18n.resolvedLanguage,
       ),
     [
@@ -69,19 +70,24 @@ export function HistoryPage() {
   );
 
   const loading =
-    companies.isPending ||
-    rentReceiptsQuery.isPending ||
-    statementsQuery.isPending ||
-    leasesQuery.isPending;
-  const errorText = rentReceiptsQuery.isError
-    ? errorMessage(rentReceiptsQuery.error)
-    : statementsQuery.isError
-      ? errorMessage(statementsQuery.error)
-      : null;
+    (access.companyEnabled &&
+      (companies.isPending || statementsQuery.isPending)) ||
+    (access.lmnpEnabled &&
+      (rentReceiptsQuery.isPending || leasesQuery.isPending));
+  const errorText =
+    access.lmnpEnabled && rentReceiptsQuery.isError
+      ? errorMessage(rentReceiptsQuery.error)
+      : access.companyEnabled && statementsQuery.isError
+        ? errorMessage(statementsQuery.error)
+        : null;
 
   function reload() {
-    void rentReceiptsQuery.refetch();
-    void statementsQuery.refetch();
+    if (access.lmnpEnabled) {
+      void rentReceiptsQuery.refetch();
+    }
+    if (access.companyEnabled) {
+      void statementsQuery.refetch();
+    }
   }
 
   function confirmReload() {
@@ -204,6 +210,7 @@ export function HistoryPage() {
               key={group.month}
               group={group}
               hasCompany={hasCompany}
+              showRentReceipts={access.lmnpEnabled}
               onReloadStatement={setStatementToReload}
             />
           ))}

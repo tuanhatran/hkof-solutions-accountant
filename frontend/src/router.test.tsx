@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   MemoryRouter,
@@ -118,11 +118,17 @@ describe("router", () => {
   });
 });
 
-function mockCurrentUser(account: Record<string, unknown>) {
+function mockCurrentUser(
+  account: Record<string, unknown>,
+  adminUsers: unknown[] = [],
+) {
   fetchMock.mockImplementation((input: unknown) => {
     const url = String(input);
     if (url.includes("/api/auth/me")) {
       return Promise.resolve(jsonResponse(account));
+    }
+    if (url.includes("/api/admin/users")) {
+      return Promise.resolve(jsonResponse(adminUsers));
     }
     return Promise.reject(new TypeError("network disabled"));
   });
@@ -183,19 +189,124 @@ describe("module guards", () => {
     await waitFor(() =>
       expect(router.state.location.pathname).toBe("/generer/quittance"),
     );
+    expect(
+      await screen.findByRole("heading", { name: "Quittance de loyer" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("table", {
+        name: "Comptes locaux, rôles et modules activés",
+      }),
+    ).toBeNull();
   });
 
-  it("keeps an admin account on the users administration page", async () => {
-    mockCurrentUser({
-      email: "admin@exemple.fr",
-      role: "ADMIN",
-      companyEnabled: true,
-      lmnpEnabled: true,
-    });
+  it("renders the users administration page for an admin account", async () => {
+    mockCurrentUser(
+      {
+        email: "admin@exemple.fr",
+        role: "ADMIN",
+        companyEnabled: true,
+        lmnpEnabled: true,
+      },
+      [
+        {
+          id: 7,
+          email: "admin@exemple.fr",
+          role: "ADMIN",
+          companyEnabled: true,
+          lmnpEnabled: true,
+        },
+      ],
+    );
     const router = await renderAndSettle("/admin/utilisateurs");
 
+    expect(
+      await screen.findByRole("heading", { name: "Utilisateurs" }),
+    ).toBeVisible();
+    expect(
+      await screen.findByRole("table", {
+        name: "Comptes locaux, rôles et modules activés",
+      }),
+    ).toBeVisible();
+    expect(
+      within(
+        screen.getByRole("table", {
+          name: "Comptes locaux, rôles et modules activés",
+        }),
+      ).getByText("admin@exemple.fr"),
+    ).toBeVisible();
+    expect(router.state.location.pathname).toBe("/admin/utilisateurs");
+  });
+
+  it("sends a company-only account from the root to the expense statement generator", async () => {
+    mockCurrentUser({
+      email: "societe@exemple.fr",
+      role: "USER",
+      companyEnabled: true,
+      lmnpEnabled: false,
+    });
+    const router = await renderAndSettle("/");
+
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe("/admin/utilisateurs"),
+      expect(router.state.location.pathname).toBe("/generer/note-frais"),
     );
+  });
+
+  it("sends an LMNP-only account from /generer to the rent receipt generator", async () => {
+    mockCurrentUser({
+      email: "lmnp@exemple.fr",
+      role: "USER",
+      companyEnabled: false,
+      lmnpEnabled: true,
+    });
+    const router = await renderAndSettle("/generer");
+
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe("/generer/quittance"),
+    );
+  });
+
+  it("renders a neutral no-module page from the root when both modules are off", async () => {
+    mockCurrentUser({
+      email: "aucun@exemple.fr",
+      role: "USER",
+      companyEnabled: false,
+      lmnpEnabled: false,
+    });
+    const router = await renderAndSettle("/");
+
+    expect(
+      await screen.findByRole("heading", { name: "Aucun module activé" }),
+    ).toBeVisible();
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe("/aucun-module"),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(router.state.location.pathname).toBe("/aucun-module");
+    expect(
+      screen.getAllByRole("heading", { name: "Aucun module activé" }),
+    ).toHaveLength(1);
+    expect(screen.queryByText(/désactivé pour ce compte/)).toBeNull();
+  });
+
+  it("renders the no-module page from /generer without a redirect loop", async () => {
+    mockCurrentUser({
+      email: "aucun@exemple.fr",
+      role: "USER",
+      companyEnabled: false,
+      lmnpEnabled: false,
+    });
+    const router = await renderAndSettle("/generer");
+
+    expect(
+      await screen.findByRole("heading", { name: "Aucun module activé" }),
+    ).toBeVisible();
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe("/aucun-module"),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(router.state.location.pathname).toBe("/aucun-module");
+    expect(
+      screen.getAllByRole("heading", { name: "Aucun module activé" }),
+    ).toHaveLength(1);
   });
 });

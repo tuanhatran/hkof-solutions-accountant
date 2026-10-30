@@ -194,6 +194,24 @@ describe("module-aware navigation", () => {
     expect(linkLabels()).toHaveLength(8);
   });
 
+  it("adds the admin users link to the mobile navigation for an ADMIN account", () => {
+    setAuthUser({
+      email: "admin@exemple.fr",
+      role: "ADMIN",
+      companyEnabled: true,
+      lmnpEnabled: true,
+    });
+    renderAt(<MobileNavigation />);
+
+    expect(
+      within(
+        screen.getByRole("navigation", {
+          name: "Navigation principale mobile",
+        }),
+      ).getByRole("link", { name: /Administration utilisateurs/ }),
+    ).toHaveAttribute("href", "/admin/utilisateurs");
+  });
+
   it("keeps the admin users link out of a USER navigation", () => {
     setAuthUser({
       email: "user@exemple.fr",
@@ -213,6 +231,36 @@ describe("module-aware navigation", () => {
         }),
       ).getAllByRole("link"),
     ).toHaveLength(7);
+  });
+
+  it("filters the USER mobile navigation without an admin users link", () => {
+    setAuthUser({
+      email: "user@exemple.fr",
+      role: "USER",
+      companyEnabled: true,
+      lmnpEnabled: false,
+    });
+    renderAt(<MobileNavigation />);
+
+    const mobileNavigation = screen.getByRole("navigation", {
+      name: "Navigation principale mobile",
+    });
+    expect(
+      within(mobileNavigation)
+        .getAllByRole("link")
+        .map((link) => link.textContent),
+    ).toEqual([
+      "Note de frais",
+      "Historique",
+      "Modèles",
+      "Société",
+      "Analyse IA",
+    ]);
+    expect(
+      within(mobileNavigation).queryByRole("link", {
+        name: /Administration utilisateurs/,
+      }),
+    ).toBeNull();
   });
 });
 

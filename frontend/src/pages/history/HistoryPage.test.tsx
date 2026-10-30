@@ -28,6 +28,9 @@ let statementsState: QueryLike<StatementDto[]>;
 let companiesState: QueryLike<CompanyDto[]>;
 let leasesState: QueryLike<LeaseDto[]>;
 let statementsCompanyIds: number[][];
+let receiptsEnabledArgs: Array<boolean | undefined>;
+let leasesEnabledArgs: Array<boolean | undefined>;
+let companiesEnabledArgs: Array<boolean | undefined>;
 
 vi.mock("@/api/endpoints", () => ({
   api: {
@@ -46,13 +49,22 @@ vi.mock("@/api/queries", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/queries")>();
   return {
     ...actual,
-    useCompanies: () => companiesState,
-    useAllRentReceipts: () => receiptsState,
+    useCompanies: (enabled?: boolean) => {
+      companiesEnabledArgs.push(enabled);
+      return companiesState;
+    },
+    useAllRentReceipts: (enabled?: boolean) => {
+      receiptsEnabledArgs.push(enabled);
+      return receiptsState;
+    },
     useAllStatements: (companyIds: number[]) => {
       statementsCompanyIds.push(companyIds);
       return statementsState;
     },
-    useLeases: () => leasesState,
+    useLeases: (enabled?: boolean) => {
+      leasesEnabledArgs.push(enabled);
+      return leasesState;
+    },
   };
 });
 
@@ -377,6 +389,9 @@ beforeEach(() => {
   companiesState = readyQuery([{ id: 1, name: "HKOF" }] as CompanyDto[]);
   leasesState = readyQuery([]);
   statementsCompanyIds = [];
+  receiptsEnabledArgs = [];
+  leasesEnabledArgs = [];
+  companiesEnabledArgs = [];
   resetDrafts();
   useToasts.setState({ toasts: [] });
 });
@@ -1203,6 +1218,76 @@ describe("HistoryPage module filtering", () => {
     expect(
       screen.getByRole("button", { name: "Générer une quittance" }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Générer une note de frais" }),
+    ).toBeNull();
+  });
+
+  it("does not request the LMNP module nor show its 403 banner for a company-only account", async () => {
+    setAuthUser({
+      email: "societe@exemple.fr",
+      companyEnabled: true,
+      lmnpEnabled: false,
+    });
+    receiptsState = {
+      data: undefined,
+      isPending: false,
+      isError: true,
+      error: new Error("Module LMNP désactivé"),
+      refetch: vi.fn(),
+    };
+    leasesState = {
+      data: undefined,
+      isPending: false,
+      isError: true,
+      error: new Error("Module LMNP désactivé"),
+      refetch: vi.fn(),
+    };
+    statementsState = readyQuery([STATEMENT_JAN_ACTIVE]);
+
+    renderPage();
+
+    expect(await screen.findByText("Note (1)")).toBeInTheDocument();
+    expect(receiptsEnabledArgs.at(-1)).toBe(false);
+    expect(leasesEnabledArgs.at(-1)).toBe(false);
+    expect(statementsCompanyIds.at(-1)).toEqual([1]);
+    expect(screen.queryByText("Module LMNP désactivé")).toBeNull();
+    expect(
+      document.querySelector('[data-cy^="history-column-rent-receipt-"]'),
+    ).toBeNull();
+    expect(screen.queryByText(/^Quittance \(/)).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Générer une quittance" }),
+    ).toBeNull();
+  });
+
+  it("does not request the company module nor show its 403 banner for an LMNP-only account", async () => {
+    setAuthUser({
+      email: "lmnp@exemple.fr",
+      companyEnabled: false,
+      lmnpEnabled: true,
+    });
+    receiptsState = readyQuery([RENT_JAN_ACTIVE]);
+    statementsState = {
+      data: undefined,
+      isPending: false,
+      isError: true,
+      error: new Error("Module entreprise désactivé"),
+      refetch: vi.fn(),
+    };
+
+    renderPage();
+
+    expect(await screen.findByText("Quittance (1)")).toBeInTheDocument();
+    expect(companiesEnabledArgs.at(-1)).toBe(false);
+    expect(statementsCompanyIds.at(-1)).toEqual([]);
+    expect(receiptsEnabledArgs.at(-1)).toBe(true);
+    expect(leasesEnabledArgs.at(-1)).toBe(true);
+    expect(screen.queryByText("Module entreprise désactivé")).toBeNull();
+    expect(
+      document.querySelector('[data-cy^="history-column-statement-"]'),
+    ).toBeNull();
+    expect(screen.queryByText(/^Note \(/)).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Générer une note de frais" }),
     ).toBeNull();

@@ -15,10 +15,12 @@ import {
 export function HistoryMonthSection({
   group,
   hasCompany = true,
+  showRentReceipts = true,
   onReloadStatement,
 }: {
   group: MonthGroup;
   hasCompany?: boolean;
+  showRentReceipts?: boolean;
   onReloadStatement: (statement: StatementDto) => void;
 }) {
   const { t } = useTranslation();
@@ -62,17 +64,19 @@ export function HistoryMonthSection({
           </h2>
         </div>
         <div className="history-month-section-badges">
-          <span
-            className={
-              rentReceipt ? "badge badge-accent" : "badge badge-neutral"
-            }
-          >
-            {rentReceiptCount > 0
-              ? t("history.month.rentReceiptCount", {
-                  count: rentReceiptCount,
-                })
-              : t("history.month.rentReceiptMissing")}
-          </span>
+          {showRentReceipts ? (
+            <span
+              className={
+                rentReceipt ? "badge badge-accent" : "badge badge-neutral"
+              }
+            >
+              {rentReceiptCount > 0
+                ? t("history.month.rentReceiptCount", {
+                    count: rentReceiptCount,
+                  })
+                : t("history.month.rentReceiptMissing")}
+            </span>
+          ) : null}
           {hasCompany ? (
             <span
               className={
@@ -89,40 +93,42 @@ export function HistoryMonthSection({
 
       <div
         className={
-          hasCompany
+          showRentReceipts && hasCompany
             ? "history-month-section-columns"
             : "history-month-section-columns history-month-section-columns-single"
         }
       >
-        <section
-          className="history-month-section-column"
-          data-cy={`history-column-rent-receipt-${group.month}`}
-        >
-          <h3 className="history-month-section-column-title">
-            <span className="history-month-section-column-icon history-month-section-column-icon-quittance">
-              <FileText size={15} aria-hidden="true" />
-            </span>
-            {t("history.month.rentReceiptColumn")}
-          </h3>
-          {receiptAddresses.length === 0 ? (
-            <p className="history-month-section-empty">
-              {t("history.month.emptyRentReceipts")}
-            </p>
-          ) : (
-            <>
-              {receiptAddresses.map((address) => (
-                <HistoryAddressRow
-                  key={`receipt-${address.addressKey}`}
-                  month={group.month}
-                  address={address}
-                  suffix={suffixOf(address)}
-                  documentType="receipt"
-                  onReloadStatement={onReloadStatement}
-                />
-              ))}
-            </>
-          )}
-        </section>
+        {showRentReceipts ? (
+          <section
+            className="history-month-section-column"
+            data-cy={`history-column-rent-receipt-${group.month}`}
+          >
+            <h3 className="history-month-section-column-title">
+              <span className="history-month-section-column-icon history-month-section-column-icon-quittance">
+                <FileText size={15} aria-hidden="true" />
+              </span>
+              {t("history.month.rentReceiptColumn")}
+            </h3>
+            {receiptAddresses.length === 0 ? (
+              <p className="history-month-section-empty">
+                {t("history.month.emptyRentReceipts")}
+              </p>
+            ) : (
+              <>
+                {receiptAddresses.map((address) => (
+                  <HistoryAddressRow
+                    key={`receipt-${address.addressKey}`}
+                    month={group.month}
+                    address={address}
+                    suffix={suffixOf(address)}
+                    documentType="receipt"
+                    onReloadStatement={onReloadStatement}
+                  />
+                ))}
+              </>
+            )}
+          </section>
+        ) : null}
 
         {hasCompany ? (
           <section

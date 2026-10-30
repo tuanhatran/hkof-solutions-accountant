@@ -48,6 +48,23 @@ export function NotFoundPage() {
   );
 }
 
+/** Neutral page when an administrator disabled every module of the account. */
+export function NoModulePage() {
+  return (
+    <div className="card router-not-found" data-cy="no-module-page">
+      <span className="router-not-found-icon">
+        <Compass size={26} aria-hidden="true" />
+      </span>
+      <p className="eyebrow router-not-found-eyebrow">HomeOfficeExpenses</p>
+      <h1 className="router-not-found-title">Aucun module activé</h1>
+      <p className="router-not-found-text">
+        Votre compte n’a accès à aucun module. Contactez un administrateur pour
+        activer le module Société ou le module LMNP, puis rechargez la page.
+      </p>
+    </div>
+  );
+}
+
 function AppError() {
   const errorText = useRouteError();
   const message = routeErrorMessage(errorText);
@@ -208,6 +225,7 @@ const appRoutes: RouteObject[] = [
     ),
   },
   { path: "templates", element: <TemplatesPage /> },
+  { path: "aucun-module", element: <NoModulePage /> },
   {
     path: "admin/utilisateurs",
     element: (

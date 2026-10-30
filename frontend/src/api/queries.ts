@@ -109,10 +109,11 @@ export const queryKeys = {
     ] as const,
 };
 
-export function useCompanies() {
+export function useCompanies(enabled = true) {
   return useQuery({
     queryKey: queryKeys.companies,
     queryFn: () => api.companies.list(),
+    enabled,
     staleTime: 30_000,
   });
 }
@@ -142,10 +143,11 @@ export function useAddresses() {
   });
 }
 
-export function useLeases() {
+export function useLeases(enabled = true) {
   return useQuery({
     queryKey: queryKeys.leases,
     queryFn: () => api.leases.list(),
+    enabled,
     staleTime: 30_000,
   });
 }
@@ -343,11 +345,13 @@ export function useRentReceipts(companyId: number | null, month?: string) {
 /**
  * Every rent receipt, all pairs and versions, under the shared
  * `rentReceiptsAll` prefix so the lease receipt modal refreshes it.
+ * Disabled with the LMNP module, whose API answers 403 MODULE_LMNP_DISABLED.
  */
-export function useAllRentReceipts() {
+export function useAllRentReceipts(enabled = true) {
   return useQuery({
     queryKey: queryKeys.rentReceiptsAll,
     queryFn: () => api.rentReceipts.list(),
+    enabled,
     staleTime: 10_000,
   });
 }
@@ -398,12 +402,16 @@ export interface ModuleAccess {
   companyEnabled: boolean;
   lmnpEnabled: boolean;
   isAdmin: boolean;
-  homePath: "/generer/quittance" | "/generer/note-frais";
+  /** Home page of the account; the neutral page when no module is enabled. */
+  homePath: "/generer/quittance" | "/generer/note-frais" | "/aucun-module";
 }
 
 /**
  * Missing flags keep both modules visible: only an explicit `false` from
  * `/api/auth/me` hides a module, so an older session never loses its pages.
+ * With both modules off an administrator cut every generator: send the
+ * account to a neutral page instead of a guarded route that would redirect
+ * to itself.
  */
 export function moduleAccessOf(user: CurrentUserDto | null): ModuleAccess {
   const companyEnabled = user?.companyEnabled !== false;
@@ -413,10 +421,11 @@ export function moduleAccessOf(user: CurrentUserDto | null): ModuleAccess {
     companyEnabled,
     lmnpEnabled,
     isAdmin: user?.role === "ADMIN",
-    homePath:
-      companyEnabled && !lmnpEnabled
+    homePath: lmnpEnabled
+      ? "/generer/quittance"
+      : companyEnabled
         ? "/generer/note-frais"
-        : "/generer/quittance",
+        : "/aucun-module",
   };
 }
 
