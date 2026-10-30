@@ -260,6 +260,7 @@ export const en = {
       company: "Company",
       lmnp: "LMNP",
       aiAdmin: "AI analysis",
+      adminUsers: "User administration",
     },
   },
   auth: {
@@ -485,7 +486,7 @@ export const en = {
       eyebrow: "Settings",
       title: "Templates",
       description:
-        "Customise the generated documents without touching the calculation: the backend provides ready-formatted amounts, and your HTML template only lays them out.",
+        "Customise the generated documents without touching the calculation.",
       warning:
         "Templates cannot execute any code: logic-less Mustache, sanitized HTML, data URI images only, no remote resources. A rejected file displays validation errors without being saved.",
     },
@@ -693,7 +694,7 @@ export const en = {
       eyebrow: "Settings",
       title: "Company",
       description:
-        "Manage your companies, their signing employees and their expense items. Calculations stay in the backend.",
+        "Manage your companies, their signing employees and their expense items.",
     },
     company: {
       selectAria: "Company to configure",
@@ -889,7 +890,7 @@ export const en = {
       eyebrow: "Settings",
       title: "LMNP",
       description:
-        "Lease addresses for the property, and natural persons acting as landlords or tenants with their signatures.",
+        "Lease addresses for the property, and persons acting as landlords or tenants with their signatures.",
       tabsAria: "LMNP sections",
       tabs: {
         leases: "Leases and addresses",
@@ -1111,13 +1112,36 @@ export const en = {
       removeImageAria: "Remove the signature image",
     },
   },
+  adminUsers: {
+    page: {
+      eyebrow: "Administration",
+      title: "Users",
+      description:
+        "Enable the company and LMNP modules for each account and adjust its role.",
+      loading: "Loading accounts…",
+      empty: "No local account.",
+      tableCaption: "Local accounts, roles and enabled modules",
+      email: "E-mail address",
+      role: "Role",
+      modules: "Modules",
+      companyModule: "Company module",
+      lmnpModule: "LMNP module",
+      roles: {
+        admin: "Administrator",
+        user: "User",
+      },
+      modulesUpdated: "Account modules updated.",
+      roleUpdated: "Account role updated.",
+      self: "You",
+    },
+  },
   adminLlm: {
     page: {
       eyebrow: "Settings",
       title: "AI analysis",
       loading: "Loading the AI configuration…",
       description:
-        "Ollama stays local by default. The model only proposes an extraction: every amount is verified and calculated by the backend.",
+        "The model only proposes an extraction: every amount is verified and calculated by the backend.",
       testConnection: "Test the connection",
       save: "Save",
     },

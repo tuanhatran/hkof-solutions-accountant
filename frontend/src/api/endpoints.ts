@@ -7,6 +7,10 @@ export type RentReceiptDraftDto = Schemas["RentReceiptDraftDto"];
 export type StatementDraftRequest = Schemas["StatementDraftRequest"];
 export type StatementDraftDto = Schemas["StatementDraftDto"];
 export type CurrentUserDto = Schemas["CurrentUserDto"];
+export type AdminUserDto = Schemas["AdminUserDto"];
+export type ModuleFlagsRequest = Schemas["ModuleFlagsRequest"];
+export type RoleRequest = Schemas["RoleRequest"];
+export type UserRole = Schemas["UserRole"];
 export type LoginRequest = Schemas["LoginRequest"];
 export type RegisterRequest = Schemas["RegisterRequest"];
 export type ConfirmEmailRequest = Schemas["ConfirmEmailRequest"];
@@ -94,6 +98,20 @@ export const api = {
         json({ method: "POST", body: JSON.stringify(body) }),
       ),
     logout: () => request<void>("/api/auth/logout", { method: "POST" }),
+  },
+
+  adminUsers: {
+    list: () => request<AdminUserDto[]>("/api/admin/users"),
+    updateModules: (id: number, requestBody: ModuleFlagsRequest) =>
+      request<AdminUserDto>(
+        `/api/admin/users/${id}/modules`,
+        json({ method: "PATCH", body: JSON.stringify(requestBody) }),
+      ),
+    updateRole: (id: number, requestBody: RoleRequest) =>
+      request<AdminUserDto>(
+        `/api/admin/users/${id}/role`,
+        json({ method: "PATCH", body: JSON.stringify(requestBody) }),
+      ),
   },
 
   companies: {

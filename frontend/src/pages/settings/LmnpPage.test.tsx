@@ -163,7 +163,7 @@ describe("LmnpPage", () => {
     expect(within(tabs).getByRole("tab", { name: "People" })).toBeVisible();
     expect(within(tabs).queryByRole("tab", { name: "Templates" })).toBeNull();
     expect(
-      screen.getByText(/natural persons acting as landlords or tenants/),
+      screen.getByText(/persons acting as landlords or tenants/),
     ).toBeVisible();
 
     await act(async () => {

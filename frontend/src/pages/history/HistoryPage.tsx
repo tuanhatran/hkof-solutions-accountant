@@ -1,5 +1,5 @@
 import "./HistoryPage.css";
-import { FileText, History, ReceiptText } from "lucide-react";
+import { Archive, FileText, History, ReceiptText } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -9,11 +9,12 @@ import {
   useAllStatements,
   useCompanies,
   useLeases,
+  useModuleAccess,
 } from "@/api/queries";
 import type { StatementDto } from "@/api/types";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
-import { ErrorState, LoadingState } from "@/components/ui/States";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/States";
 import { formatMonth } from "@/lib/format";
 import { useStatementDraft } from "@/state/statementDraft";
 import { toast } from "@/state/toasts";
@@ -29,17 +30,20 @@ import {
 export function HistoryPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const access = useModuleAccess();
   const companies = useCompanies();
   const companyIds = useMemo(
     () =>
-      (companies.data ?? [])
-        .map((company) => company.id)
-        .filter((id): id is number => typeof id === "number"),
-    [companies.data],
+      access.companyEnabled
+        ? (companies.data ?? [])
+            .map((company) => company.id)
+            .filter((id): id is number => typeof id === "number")
+        : [],
+    [companies.data, access.companyEnabled],
   );
-  const hasCompany = companyIds.length > 0;
+  const hasCompany = access.companyEnabled && companyIds.length > 0;
   // History spans every company: rent receipts are global, statements are
-  // fetched once per company.
+  // fetched once per company. A disabled module contributes no document.
   const rentReceiptsQuery = useAllRentReceipts();
   const statementsQuery = useAllStatements(companyIds);
   const leasesQuery = useLeases();
@@ -49,8 +53,8 @@ export function HistoryPage() {
   const groups = useMemo(
     () =>
       groupHistoryByMonthAndAddress(
-        rentReceiptsQuery.data ?? [],
-        statementsQuery.data ?? [],
+        access.lmnpEnabled ? (rentReceiptsQuery.data ?? []) : [],
+        access.companyEnabled ? (statementsQuery.data ?? []) : [],
         leasesQuery.data ?? [],
         i18n.resolvedLanguage,
       ),
@@ -59,6 +63,8 @@ export function HistoryPage() {
       statementsQuery.data,
       leasesQuery.data,
       i18n.resolvedLanguage,
+      access.lmnpEnabled,
+      access.companyEnabled,
     ],
   );
 
@@ -129,14 +135,16 @@ export function HistoryPage() {
         actions={
           groups.length > 0 ? (
             <>
-              <Button
-                variant="primary"
-                icon={<FileText size={14} aria-hidden="true" />}
-                onClick={() => navigate("/generer/quittance")}
-                data-cy="btn-new-rent-receipt"
-              >
-                {t("history.empty.createRentReceipt")}
-              </Button>
+              {access.lmnpEnabled ? (
+                <Button
+                  variant="primary"
+                  icon={<FileText size={14} aria-hidden="true" />}
+                  onClick={() => navigate("/generer/quittance")}
+                  data-cy="btn-new-rent-receipt"
+                >
+                  {t("history.empty.createRentReceipt")}
+                </Button>
+              ) : null}
               {hasCompany ? (
                 <Button
                   variant="secondary"
@@ -165,12 +173,30 @@ export function HistoryPage() {
       {loading && groups.length === 0 ? (
         <LoadingState message={t("history.page.loading")} />
       ) : groups.length === 0 && !errorText ? (
-        <HistoryEmptyState
-          onCreateRentReceipt={() => navigate("/generer/quittance")}
-          onCreateStatement={
-            hasCompany ? () => navigate("/generer/note-frais") : undefined
-          }
-        />
+        access.lmnpEnabled ? (
+          <HistoryEmptyState
+            onCreateRentReceipt={() => navigate("/generer/quittance")}
+            onCreateStatement={
+              hasCompany ? () => navigate("/generer/note-frais") : undefined
+            }
+          />
+        ) : (
+          <EmptyState
+            title={t("history.empty.title")}
+            description={t("history.empty.description")}
+            icon={<Archive size={22} aria-hidden="true" />}
+            action={
+              hasCompany ? (
+                <Button
+                  variant="primary"
+                  onClick={() => navigate("/generer/note-frais")}
+                >
+                  {t("history.empty.createStatement")}
+                </Button>
+              ) : undefined
+            }
+          />
+        )
       ) : (
         <div className="history-page-months" data-cy="history">
           {groups.map((group) => (

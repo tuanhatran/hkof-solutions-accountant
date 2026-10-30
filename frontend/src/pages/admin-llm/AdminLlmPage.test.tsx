@@ -566,7 +566,9 @@ describe("AdminLlmPage in English", () => {
 
     expect(screen.getByRole("heading", { name: "AI analysis" })).toBeVisible();
     expect(screen.getByText("Settings")).toBeVisible();
-    expect(screen.getByText(/Ollama stays local by default/)).toBeVisible();
+    expect(
+      screen.getByText(/The model only proposes an extraction/),
+    ).toBeVisible();
     expect(screen.getAllByText("Ollama connection")).toHaveLength(2);
     expect(
       screen.getByText(

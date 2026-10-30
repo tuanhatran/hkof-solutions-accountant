@@ -2,6 +2,7 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { setAuthUser } from "@/api/queries";
 import type {
   CompanyDto,
   LeaseDto,
@@ -366,6 +367,7 @@ function resetDrafts() {
 }
 
 beforeEach(() => {
+  setAuthUser(null);
   receiptsState = readyQuery([RENT_JAN_ACTIVE, RENT_JAN_OLD, RENT_FEB]);
   statementsState = readyQuery([
     STATEMENT_JAN_ACTIVE,
@@ -1162,5 +1164,47 @@ describe("HistoryPage", () => {
 
     expect(screen.getByText("Quittance (2)")).toBeInTheDocument();
     expect(screen.getAllByText("Adresse inconnue").length).toBeGreaterThan(0);
+  });
+});
+
+describe("HistoryPage module filtering", () => {
+  it("hides rent receipts and their actions for a company-only account", async () => {
+    setAuthUser({
+      email: "societe@exemple.fr",
+      companyEnabled: true,
+      lmnpEnabled: false,
+    });
+
+    renderPage();
+
+    expect((await screen.findAllByText(/^Note \(/)).length).toBeGreaterThan(0);
+    expect(screen.queryAllByText(/^Quittance \(/)).toHaveLength(0);
+    expect(
+      screen.getByRole("button", { name: "Générer une note de frais" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Générer une quittance" }),
+    ).toBeNull();
+  });
+
+  it("hides expense statements and their actions for an LMNP-only account", async () => {
+    setAuthUser({
+      email: "lmnp@exemple.fr",
+      companyEnabled: false,
+      lmnpEnabled: true,
+    });
+
+    renderPage();
+
+    expect(
+      (await screen.findAllByText(/^Quittance \(/)).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryAllByText(/^Note \(/)).toHaveLength(0);
+    expect(
+      screen.getByRole("button", { name: "Générer une quittance" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Générer une note de frais" }),
+    ).toBeNull();
   });
 });

@@ -278,6 +278,7 @@ export const fr = {
       company: "Société",
       lmnp: "LMNP",
       aiAdmin: "Analyse IA",
+      adminUsers: "Administration utilisateurs",
     },
   },
   auth: {
@@ -1140,6 +1141,29 @@ export const fr = {
       },
       previewAlt: "Aperçu de {{name}}",
       removeImageAria: "Retirer l’image de la signature",
+    },
+  },
+  adminUsers: {
+    page: {
+      eyebrow: "Administration",
+      title: "Utilisateurs",
+      description:
+        "Activez les modules Société et LMNP de chaque compte et ajustez son rôle.",
+      loading: "Chargement des comptes…",
+      empty: "Aucun compte local.",
+      tableCaption: "Comptes locaux, rôles et modules activés",
+      email: "Adresse e-mail",
+      role: "Rôle",
+      modules: "Modules",
+      companyModule: "Module société",
+      lmnpModule: "Module LMNP",
+      roles: {
+        admin: "Administrateur",
+        user: "Utilisateur",
+      },
+      modulesUpdated: "Modules du compte mis à jour.",
+      roleUpdated: "Rôle du compte mis à jour.",
+      self: "Vous",
     },
   },
   adminLlm: {
