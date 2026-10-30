@@ -668,6 +668,7 @@ export const en = {
       open: "Open",
       load: "Load",
       pdf: "PDF",
+      received: "Received",
       complete: "Complete",
       downloadPdf: "Download the PDF",
       downloadComplete: "Complete statement (ZIP)",
@@ -1338,6 +1339,12 @@ export const en = {
       selectLeaseTitle: "Select a lease",
       selectLeaseDescription:
         "Several leases are linked to this company. Select the relevant lease to enter this month's expenses.",
+      receivedReceipt: {
+        title: "Received rent receipt detected",
+        description:
+          "The {{month}} rent receipt issued by {{landlord}} for this company ({{amount}}) will be included in the expense statement.",
+        download: "Download the rent receipt",
+      },
     },
     header: {
       companyLabel: "Relevant company",

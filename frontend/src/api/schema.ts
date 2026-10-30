@@ -625,6 +625,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rent-receipts/received": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Liste les quittances émises par un autre compte pour une société appartenant au compte courant. Accessible sans le module LMNP : un propriétaire de société doit pouvoir consulter ses quittances reçues. */
+        get: operations["listReceivedRentReceipts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rent-receipts/received/{id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Télécharge le PDF d'une quittance reçue pour une société du compte courant. Toute quittance émise par le compte courant ou rattachée à une autre société répond 404. */
+        get: operations["getReceivedRentReceiptPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rent-receipts/{id}": {
         parameters: {
             query?: never;
@@ -3201,6 +3235,66 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["TemplateVariableDto"][];
                 };
+            };
+        };
+    };
+    listReceivedRentReceipts: {
+        parameters: {
+            query?: {
+                /** @description Identifiant d'une société du compte courant. */
+                companyId?: number;
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RentReceiptDto"][];
+                };
+            };
+            /** @description Société inconnue du compte courant. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getReceivedRentReceiptPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+            /** @description Quittance reçue introuvable pour ce compte. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

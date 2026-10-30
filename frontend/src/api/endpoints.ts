@@ -213,6 +213,10 @@ export const api = {
       request<RentReceiptDto[]>(
         `/api/rent-receipts${query({ companyId, month })}`,
       ),
+    received: (companyId?: number | null, month?: string) =>
+      request<RentReceiptDto[]>(
+        `/api/rent-receipts/received${query({ companyId, month })}`,
+      ),
     active: async (
       month: string,
       companyId?: number | null,
@@ -241,6 +245,7 @@ export const api = {
     pdf: (id: number): Promise<ResponseBlob> =>
       blobRequest(`/api/rent-receipts/${id}/pdf`),
     pdfUrl: (id: number) => `/api/rent-receipts/${id}/pdf`,
+    receivedPdfUrl: (id: number) => `/api/rent-receipts/received/${id}/pdf`,
   },
 
   expenseStatements: {

@@ -14,7 +14,10 @@ export type LeaseDto = Schemas["LeaseDto"];
 export type LeaseRequest = Schemas["LeaseRequest"];
 export type ExpenseItemDto = Schemas["ExpenseItemDto"];
 export type ExpenseItemRequest = Schemas["ExpenseItemRequest"];
-export type RentReceiptDto = Schemas["RentReceiptDto"];
+export type RentReceiptDto = Schemas["RentReceiptDto"] & {
+  /** Set by the history merge for a receipt issued by another account. */
+  received?: boolean;
+};
 export type RentReceiptRequest = Schemas["RentReceiptRequest"];
 export type LineRequest = Schemas["ExpenseLineRequest"];
 export type LineDto = Schemas["ExpenseLineDto"];

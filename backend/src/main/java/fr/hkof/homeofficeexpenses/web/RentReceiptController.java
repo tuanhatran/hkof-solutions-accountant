@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
+import fr.hkof.homeofficeexpenses.service.RentReceiptReceivedService;
 import fr.hkof.homeofficeexpenses.service.RentReceiptService;
 import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.RentReceiptDto;
 import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.RentReceiptRequest;
@@ -23,9 +24,11 @@ import fr.hkof.homeofficeexpenses.web.dto.RentReceiptDtos.RentReceiptRequest;
 public class RentReceiptController {
 
     private final RentReceiptService service;
+    private final RentReceiptReceivedService receivedService;
 
-    public RentReceiptController(RentReceiptService service) {
+    public RentReceiptController(RentReceiptService service, RentReceiptReceivedService receivedService) {
         this.service = service;
+        this.receivedService = receivedService;
     }
 
     @PostMapping
@@ -38,6 +41,22 @@ public class RentReceiptController {
     public List<RentReceiptDto> listRentReceipts(@RequestParam(required = false) Long companyId,
             @RequestParam(required = false) String month) {
         return service.list(companyId, month);
+    }
+
+    /**
+     * Receipts issued by another account for a company owned by the current account. These
+     * routes stay reachable with the LMNP module disabled: a company-only owner must still be
+     * able to read and download its own received receipts.
+     */
+    @GetMapping("/received")
+    public List<RentReceiptDto> listReceivedRentReceipts(@RequestParam(required = false) Long companyId,
+            @RequestParam(required = false) String month) {
+        return receivedService.list(companyId, month);
+    }
+
+    @GetMapping("/received/{id}/pdf")
+    public ResponseEntity<byte[]> getReceivedRentReceiptPdf(@PathVariable Long id) {
+        return PdfResponses.pdf(receivedService.pdf(id), "quittance_recue.pdf");
     }
 
     @GetMapping("/active")

@@ -66,6 +66,9 @@ export const queryKeys = {
       leaseId ?? "all-leases",
     ] as const,
   rentReceiptsAll: ["rentReceipts"] as const,
+  receivedRentReceiptsAll: ["receivedRentReceipts"] as const,
+  receivedRentReceipts: (companyId: number | null, month?: string) =>
+    ["receivedRentReceipts", companyId ?? "all", month ?? "all"] as const,
   statementsAll: ["statements"] as const,
   rentReceipts: (companyId?: number | null, month?: string) =>
     ["rentReceipts", companyId ?? "all", month ?? "all"] as const,
@@ -352,6 +355,33 @@ export function useAllRentReceipts(enabled = true) {
     queryKey: queryKeys.rentReceiptsAll,
     queryFn: () => api.rentReceipts.list(),
     enabled,
+    staleTime: 10_000,
+  });
+}
+
+/**
+ * Every rent receipt issued by another account for one of the current account's
+ * companies. The received route deliberately ignores the LMNP module gate, so a
+ * company-only owner keeps this query enabled.
+ */
+export function useReceivedRentReceipts(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.receivedRentReceiptsAll,
+    queryFn: () => api.rentReceipts.received(),
+    enabled,
+    staleTime: 10_000,
+  });
+}
+
+/** Received receipts of one owned company and month, for the statement draft. */
+export function useCompanyReceivedRentReceipts(
+  companyId: number | null,
+  month: string,
+) {
+  return useQuery({
+    queryKey: queryKeys.receivedRentReceipts(companyId, month),
+    queryFn: () => api.rentReceipts.received(companyId, month),
+    enabled: companyId !== null && /^\d{4}-\d{2}$/.test(month),
     staleTime: 10_000,
   });
 }

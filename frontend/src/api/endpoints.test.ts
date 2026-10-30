@@ -151,6 +151,14 @@ describe("rent receipt endpoints", () => {
     await api.rentReceipts.list(3, "2026-01");
     expect(lastCall()[0]).toBe("/api/rent-receipts?companyId=3&month=2026-01");
 
+    await api.rentReceipts.received();
+    expect(lastCall()[0]).toBe("/api/rent-receipts/received");
+
+    await api.rentReceipts.received(3, "2026-01");
+    expect(lastCall()[0]).toBe(
+      "/api/rent-receipts/received?companyId=3&month=2026-01",
+    );
+
     const body = {
       companyId: 3,
       month: "2026-01",
@@ -186,6 +194,9 @@ describe("rent receipt endpoints", () => {
     await api.rentReceipts.pdf(9);
     expect(lastCall()[0]).toBe("/api/rent-receipts/9/pdf");
     expect(api.rentReceipts.pdfUrl(9)).toBe("/api/rent-receipts/9/pdf");
+    expect(api.rentReceipts.receivedPdfUrl(9)).toBe(
+      "/api/rent-receipts/received/9/pdf",
+    );
   });
 });
 

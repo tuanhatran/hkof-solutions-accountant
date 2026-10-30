@@ -37,6 +37,7 @@ public class RentReceiptService {
     private final DocumentDraftService documentDraftService;
     private final RentReceiptMapper mapper;
     private final RentReceiptAssembler assembler;
+    private final CompanyLookupService publicCompanies;
     private final OwnershipContext ownership;
     private final Clock clock;
 
@@ -44,7 +45,7 @@ public class RentReceiptService {
             TemplateService templateService, TemplateDataService templateDataService,
             SignatureService signatureService, PdfService pdfService, StorageService storage,
             DocumentDraftService documentDraftService, RentReceiptMapper mapper,
-            RentReceiptAssembler assembler, OwnershipContext ownership,
+            RentReceiptAssembler assembler, CompanyLookupService publicCompanies, OwnershipContext ownership,
             Clock clock) {
         this.repository = repository;
         this.companies = companies;
@@ -57,6 +58,7 @@ public class RentReceiptService {
         this.documentDraftService = documentDraftService;
         this.mapper = mapper;
         this.assembler = assembler;
+        this.publicCompanies = publicCompanies;
         this.ownership = ownership;
         this.clock = clock;
     }
@@ -149,7 +151,6 @@ public class RentReceiptService {
         }
         return rentReceipts.stream().map(this::toDto).toList();
     }
-
     @Transactional(readOnly = true)
     public RentReceiptDto get(Long id) {
         return toDto(entity(id));
@@ -186,9 +187,19 @@ public class RentReceiptService {
                     .orElse(null));
         }
         if (companyId != null) {
-            return withAdditionalCharges(repository
+            RentReceipt own = repository
                     .findFirstByUserIdAndCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
                             owner, companyId, month, DocumentStatus.ACTIVE)
+                    .orElse(null);
+            if (own != null) {
+                return withAdditionalCharges(own);
+            }
+            // The company owner may have no lease of its own: the receipt was issued by the
+            // landlord's account against this company, so it is received through the tenant
+            // company instead of the issuer's owner scope.
+            return withAdditionalCharges(repository
+                    .findFirstByTenantCompanyIdAndMonthAndUserIdNotAndStatusOrderByVersionDescIdDesc(
+                            companyId, month, owner, DocumentStatus.ACTIVE)
                     .orElse(null));
         }
         return withAdditionalCharges(repository.findFirstByUserIdAndMonthAndStatusOrderByVersionDescIdDesc(owner,
@@ -226,17 +237,29 @@ public class RentReceiptService {
 
     /**
      * The lease company always wins. A person lease without a lease company may carry an
-     * explicit request company, and otherwise has no company at all.
+     * explicit request company, and otherwise has no company at all. A company lease may
+     * reference a corporate tenant owned by another account: that identity is resolved through
+     * the read-only public lookup, never through the issuer's company scope.
      */
     private Company resolveCompany(Lease lease, Long requestCompanyId) {
         Long companyId = lease.getCompanyId() != null ? lease.getCompanyId() : requestCompanyId;
-        return companyId == null ? null : companies.entity(companyId);
+        if (companyId == null) {
+            return null;
+        }
+        return companies.find(companyId)
+                .filter(company -> !company.isDeleted())
+                .or(() -> lease.isCompanyLease() ? publicCompanies.findPublic(companyId) : java.util.Optional.empty())
+                .orElseThrow(() -> new NotFoundException("COMPANY_NOT_FOUND", "Société introuvable."));
     }
 
     private Company tenantCompany(Lease lease) {
-        return lease.isCompanyLease() && lease.getCompanyId() != null
-                ? companies.find(lease.getCompanyId()).orElse(null)
-                : null;
+        if (!lease.isCompanyLease() || lease.getCompanyId() == null) {
+            return null;
+        }
+        return companies.find(lease.getCompanyId())
+                .filter(company -> !company.isDeleted())
+                .or(() -> publicCompanies.findPublic(lease.getCompanyId()))
+                .orElse(null);
     }
 
     private BigDecimal rentExclCharges(RentReceiptRequest request, Lease lease) {

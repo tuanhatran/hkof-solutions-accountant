@@ -35,6 +35,12 @@ final class ModuleAccessFilter extends OncePerRequestFilter {
     private static final String COMPANY_LOOKUP_PATH = "/api/companies/lookup";
     private static final List<String> LMNP_PREFIXES = List.of(
             "/api/leases", "/api/rent-receipts", "/api/persons");
+    /**
+     * A company-only owner has no LMNP module but must still read the receipts a landlord issued
+     * for its company. Only the received read paths bypass the LMNP gate; every other receipt
+     * operation (issue, list, active, draft, generation, download) stays gated.
+     */
+    private static final String RECEIVED_RENT_RECEIPT_PATH = "/api/rent-receipts/received";
 
     private final AppUserRepository users;
     private final ObjectMapper objectMapper;
@@ -51,7 +57,7 @@ final class ModuleAccessFilter extends OncePerRequestFilter {
         if (authentication != null && authentication.getPrincipal() instanceof AuthenticatedUser principal) {
             String path = request.getRequestURI();
             boolean companyRoute = matches(COMPANY_PREFIXES, path) && !COMPANY_LOOKUP_PATH.equals(path);
-            boolean lmnpRoute = matches(LMNP_PREFIXES, path);
+            boolean lmnpRoute = matches(LMNP_PREFIXES, path) && !isReceivedRentReceiptPath(path);
             if (companyRoute || lmnpRoute) {
                 AppUser user = users.findById(principal.id()).orElse(null);
                 if (companyRoute && user != null && !user.isCompanyEnabled()) {
@@ -71,6 +77,10 @@ final class ModuleAccessFilter extends OncePerRequestFilter {
 
     private static boolean matches(List<String> prefixes, String path) {
         return prefixes.stream().anyMatch(prefix -> path.equals(prefix) || path.startsWith(prefix + "/"));
+    }
+
+    private static boolean isReceivedRentReceiptPath(String path) {
+        return path.equals(RECEIVED_RENT_RECEIPT_PATH) || path.startsWith(RECEIVED_RENT_RECEIPT_PATH + "/");
     }
 
     private void writeProblem(HttpServletResponse response, String title, String detail, String code)

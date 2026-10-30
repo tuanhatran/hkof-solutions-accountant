@@ -24,11 +24,13 @@ interface QueryLike<T> {
 }
 
 let receiptsState: QueryLike<RentReceiptDto[]>;
+let receivedState: QueryLike<RentReceiptDto[]>;
 let statementsState: QueryLike<StatementDto[]>;
 let companiesState: QueryLike<CompanyDto[]>;
 let leasesState: QueryLike<LeaseDto[]>;
 let statementsCompanyIds: number[][];
 let receiptsEnabledArgs: Array<boolean | undefined>;
+let receivedEnabledArgs: Array<boolean | undefined>;
 let leasesEnabledArgs: Array<boolean | undefined>;
 let companiesEnabledArgs: Array<boolean | undefined>;
 
@@ -36,6 +38,7 @@ vi.mock("@/api/endpoints", () => ({
   api: {
     rentReceipts: {
       pdfUrl: (id: number) => `/api/rent-receipts/${id}/pdf`,
+      receivedPdfUrl: (id: number) => `/api/rent-receipts/received/${id}/pdf`,
     },
     expenseStatements: {
       pdfUrl: (id: number, complete: boolean) =>
@@ -56,6 +59,10 @@ vi.mock("@/api/queries", async (importOriginal) => {
     useAllRentReceipts: (enabled?: boolean) => {
       receiptsEnabledArgs.push(enabled);
       return receiptsState;
+    },
+    useReceivedRentReceipts: (enabled?: boolean) => {
+      receivedEnabledArgs.push(enabled);
+      return receivedState;
     },
     useAllStatements: (companyIds: number[]) => {
       statementsCompanyIds.push(companyIds);
@@ -381,6 +388,7 @@ function resetDrafts() {
 beforeEach(() => {
   setAuthUser(null);
   receiptsState = readyQuery([RENT_JAN_ACTIVE, RENT_JAN_OLD, RENT_FEB]);
+  receivedState = readyQuery([]);
   statementsState = readyQuery([
     STATEMENT_JAN_ACTIVE,
     STATEMENT_JAN_OLD,
@@ -390,6 +398,7 @@ beforeEach(() => {
   leasesState = readyQuery([]);
   statementsCompanyIds = [];
   receiptsEnabledArgs = [];
+  receivedEnabledArgs = [];
   leasesEnabledArgs = [];
   companiesEnabledArgs = [];
   resetDrafts();
@@ -1183,6 +1192,39 @@ describe("HistoryPage", () => {
 });
 
 describe("HistoryPage module filtering", () => {
+  it("shows the received rent receipts of its companies to a company-only account", async () => {
+    setAuthUser({
+      email: "societe@exemple.fr",
+      companyEnabled: true,
+      lmnpEnabled: false,
+    });
+    receiptsState = readyQuery([]);
+    receivedState = readyQuery([
+      {
+        ...RENT_JAN_ACTIVE,
+        id: 91,
+        received: true,
+        tenantCompanyId: 1,
+        landlordName: "Bailleur Croisé",
+        tenantName: "Société Croisée",
+      },
+    ]);
+    statementsState = readyQuery([]);
+
+    renderPage();
+
+    expect(await screen.findByText("Quittance (1)")).toBeInTheDocument();
+    expect(receivedEnabledArgs.at(-1)).toBe(true);
+    expect(receiptsEnabledArgs.at(-1)).toBe(false);
+    expect(screen.getByText(/Reçue ·/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "PDF" })).toHaveAttribute(
+      "href",
+      "/api/rent-receipts/received/91/pdf",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Générer une quittance" }),
+    ).toBeNull();
+  });
   it("hides rent receipts and their actions for a company-only account", async () => {
     setAuthUser({
       email: "societe@exemple.fr",

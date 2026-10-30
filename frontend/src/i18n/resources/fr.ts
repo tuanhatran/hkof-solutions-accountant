@@ -694,6 +694,7 @@ export const fr = {
       open: "Ouvrir",
       load: "Charger",
       pdf: "PDF",
+      received: "Reçue",
       complete: "Complète",
       downloadPdf: "Télécharger le PDF",
       downloadComplete: "Note complète (ZIP)",
@@ -1371,6 +1372,12 @@ export const fr = {
       selectLeaseTitle: "Choisir un bail",
       selectLeaseDescription:
         "Plusieurs baux sont liés à cette société. Sélectionnez le bail concerné pour saisir les frais de ce mois.",
+      receivedReceipt: {
+        title: "Quittance reçue détectée",
+        description:
+          "La quittance de {{month}} émise par {{landlord}} pour cette société ({{amount}}) sera reprise dans la note de frais.",
+        download: "Télécharger la quittance",
+      },
     },
     header: {
       companyLabel: "Société concernée",

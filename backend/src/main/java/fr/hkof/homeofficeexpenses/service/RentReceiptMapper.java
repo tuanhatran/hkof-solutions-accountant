@@ -21,24 +21,49 @@ public class RentReceiptMapper {
 
     private final PersonRepository persons;
     private final CompanyService companies;
+    private final CompanyLookupService publicCompanies;
     private final OwnershipContext ownership;
 
-    public RentReceiptMapper(PersonRepository persons, CompanyService companies, OwnershipContext ownership) {
+    public RentReceiptMapper(PersonRepository persons, CompanyService companies,
+            CompanyLookupService publicCompanies, OwnershipContext ownership) {
         this.persons = persons;
         this.companies = companies;
+        this.publicCompanies = publicCompanies;
         this.ownership = ownership;
+    }
+
+    /**
+     * Resolves a company name for the display: the owner scope first, then the public identity
+     * only for a receipt the current account issued, so the issuer can name a cross-user tenant.
+     */
+    private String companyName(Long id, Long documentUserId, Long owner) {
+        if (id == null) {
+            return null;
+        }
+        return companies.find(id)
+                .map(Company::getName)
+                .or(() -> documentUserId != null && documentUserId.equals(owner)
+                        ? publicCompanies.findPublic(id).map(Company::getName)
+                        : java.util.Optional.empty())
+                .orElse(null);
     }
 
     public RentReceiptDto toDto(RentReceipt rentReceipt) {
         Long owner = ownership.currentUserId();
+        boolean received = rentReceipt.getUserId() != null && !owner.equals(rentReceipt.getUserId());
         Person landlord = rentReceipt.getLandlordId() == null ? null
                 : persons.findByIdAndUserId(rentReceipt.getLandlordId(), owner).orElse(null);
+        if (landlord == null && received && rentReceipt.getLandlordId() != null
+                && rentReceipt.getTenantCompanyId() != null
+                && companies.find(rentReceipt.getTenantCompanyId()).isPresent()) {
+            // A received receipt names the landlord on the document itself: the company owner
+            // reads that name without gaining access to the landlord's person directory.
+            landlord = persons.findById(rentReceipt.getLandlordId()).orElse(null);
+        }
         Person tenant = rentReceipt.getTenantId() == null ? null
                 : persons.findByIdAndUserId(rentReceipt.getTenantId(), owner).orElse(null);
-        String companyName = rentReceipt.getCompanyId() == null ? null
-                : companies.find(rentReceipt.getCompanyId()).map(Company::getName).orElse(null);
-        String tenantCompanyName = rentReceipt.getTenantCompanyId() == null ? null
-                : companies.find(rentReceipt.getTenantCompanyId()).map(Company::getName).orElse(null);
+        String companyName = companyName(rentReceipt.getCompanyId(), rentReceipt.getUserId(), owner);
+        String tenantCompanyName = companyName(rentReceipt.getTenantCompanyId(), rentReceipt.getUserId(), owner);
         String tenantName = tenant != null ? tenant.getName() : tenantCompanyName;
         List<AdditionalCharge> additionalCharges = rentReceipt.getAdditionalCharges().stream()
                 .map(charge -> new AdditionalCharge(charge.getLabel(), Amounts.apiValue(charge.getAmount())))

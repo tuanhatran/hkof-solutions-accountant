@@ -1,5 +1,6 @@
 package fr.hkof.homeofficeexpenses.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,4 +41,13 @@ public interface RentReceiptRepository extends JpaRepository<RentReceipt, Long> 
             Long userId, String month, Long landlordId, Long tenantCompanyId);
 
     boolean existsByCompanyId(Long companyId);
+
+    List<RentReceipt> findByTenantCompanyIdInAndUserIdNotOrderByMonthDescVersionDescIdDesc(
+            Collection<Long> tenantCompanyIds, Long userId);
+
+    List<RentReceipt> findByTenantCompanyIdInAndUserIdNotAndMonthOrderByVersionDescIdDesc(
+            Collection<Long> tenantCompanyIds, Long userId, String month);
+
+    Optional<RentReceipt> findFirstByTenantCompanyIdAndMonthAndUserIdNotAndStatusOrderByVersionDescIdDesc(
+            Long tenantCompanyId, String month, Long userId, DocumentStatus status);
 }

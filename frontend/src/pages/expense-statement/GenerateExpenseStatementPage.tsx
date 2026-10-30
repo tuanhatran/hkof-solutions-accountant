@@ -2,10 +2,12 @@ import "./GenerateExpenseStatementPage.css";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 import { errorMessage } from "@/api/client";
+import { api } from "@/api/endpoints";
+import { useCompanyReceivedRentReceipts } from "@/api/queries";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/States";
 import { ViewTabs } from "@/components/ui/ViewTabs";
-import { formatMonth } from "@/lib/format";
+import { formatEUR, formatMonth } from "@/lib/format";
 import { ExpenseInputPane } from "./ExpenseInputPane";
 import { ExpensePreviewPane } from "./ExpensePreviewPane";
 import { ExpenseStatementHeader } from "./ExpenseStatementHeader";
@@ -34,10 +36,42 @@ export function GenerateExpenseStatementPage() {
   );
   const companyList = c.companies.data ?? [];
   const noCompany = c.companies.isSuccess && companyList.length === 0;
+  // A receipt issued by a landlord for this company is auto-detected by the
+  // backend draft; showing it here explains where the rent line comes from.
+  const receivedReceipt = useCompanyReceivedRentReceipts(
+    c.activeCompanyId,
+    c.month,
+  ).data?.[0];
 
   return (
     <>
       <ExpenseStatementHeader controller={c} />
+
+      {receivedReceipt?.id ? (
+        <div className="mb-4" data-cy="received-receipt-banner">
+          <EmptyState
+            title={t("expenseStatement.page.receivedReceipt.title")}
+            description={t(
+              "expenseStatement.page.receivedReceipt.description",
+              {
+                month: formatMonth(c.month),
+                landlord:
+                  receivedReceipt.landlordName ??
+                  t("history.address.unknownLandlord"),
+                amount: formatEUR(receivedReceipt.total),
+              },
+            )}
+            action={
+              <a
+                className="btn btn-secondary"
+                href={api.rentReceipts.receivedPdfUrl(receivedReceipt.id)}
+              >
+                {t("expenseStatement.page.receivedReceipt.download")}
+              </a>
+            }
+          />
+        </div>
+      ) : null}
 
       {c.companies.isError ? (
         <div className="mb-4">

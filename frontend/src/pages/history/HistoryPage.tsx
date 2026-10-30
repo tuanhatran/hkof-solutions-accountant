@@ -10,8 +10,9 @@ import {
   useCompanies,
   useLeases,
   useModuleAccess,
+  useReceivedRentReceipts,
 } from "@/api/queries";
-import type { StatementDto } from "@/api/types";
+import type { RentReceiptDto, StatementDto } from "@/api/types";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/States";
@@ -46,6 +47,19 @@ export function HistoryPage() {
   // module, statements to the company module. A disabled module is never
   // queried, since its API answers 403 MODULE_*_DISABLED.
   const rentReceiptsQuery = useAllRentReceipts(access.lmnpEnabled);
+  // Receipts issued by landlords for the account's companies. The received route
+  // is not LMNP-gated, so a company-only owner still sees them.
+  const receivedReceiptsQuery = useReceivedRentReceipts(access.companyEnabled);
+  const receivedReceipts = useMemo<RentReceiptDto[]>(
+    () =>
+      access.companyEnabled
+        ? (receivedReceiptsQuery.data ?? []).map((receipt) => ({
+            ...receipt,
+            received: true,
+          }))
+        : [],
+    [receivedReceiptsQuery.data, access.companyEnabled],
+  );
   const statementsQuery = useAllStatements(companyIds);
   const leasesQuery = useLeases(access.lmnpEnabled);
   const [statementToReload, setStatementToReload] =
@@ -58,9 +72,11 @@ export function HistoryPage() {
         access.companyEnabled ? (statementsQuery.data ?? []) : [],
         access.lmnpEnabled ? (leasesQuery.data ?? []) : [],
         i18n.resolvedLanguage,
+        receivedReceipts,
       ),
     [
       rentReceiptsQuery.data,
+      receivedReceipts,
       statementsQuery.data,
       leasesQuery.data,
       i18n.resolvedLanguage,
@@ -71,21 +87,26 @@ export function HistoryPage() {
 
   const loading =
     (access.companyEnabled &&
-      (companies.isPending || statementsQuery.isPending)) ||
+      (companies.isPending ||
+        statementsQuery.isPending ||
+        receivedReceiptsQuery.isPending)) ||
     (access.lmnpEnabled &&
       (rentReceiptsQuery.isPending || leasesQuery.isPending));
   const errorText =
     access.lmnpEnabled && rentReceiptsQuery.isError
       ? errorMessage(rentReceiptsQuery.error)
-      : access.companyEnabled && statementsQuery.isError
-        ? errorMessage(statementsQuery.error)
-        : null;
+      : access.companyEnabled && receivedReceiptsQuery.isError
+        ? errorMessage(receivedReceiptsQuery.error)
+        : access.companyEnabled && statementsQuery.isError
+          ? errorMessage(statementsQuery.error)
+          : null;
 
   function reload() {
     if (access.lmnpEnabled) {
       void rentReceiptsQuery.refetch();
     }
     if (access.companyEnabled) {
+      void receivedReceiptsQuery.refetch();
       void statementsQuery.refetch();
     }
   }
@@ -210,7 +231,9 @@ export function HistoryPage() {
               key={group.month}
               group={group}
               hasCompany={hasCompany}
-              showRentReceipts={access.lmnpEnabled}
+              showRentReceipts={
+                access.lmnpEnabled || receivedReceipts.length > 0
+              }
               onReloadStatement={setStatementToReload}
             />
           ))}

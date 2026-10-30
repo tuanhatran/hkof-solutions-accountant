@@ -1309,6 +1309,65 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TemplateVariableDto"
+  /api/rent-receipts/received:
+    get:
+      tags:
+        - rent-receipt-controller
+      operationId: listReceivedRentReceipts
+      description: >-
+        Liste les quittances émises par un autre compte pour une société
+        appartenant au compte courant. Accessible sans le module LMNP : un
+        propriétaire de société doit pouvoir consulter ses quittances reçues.
+      parameters:
+        - name: companyId
+          in: query
+          required: false
+          description: Identifiant d'une société du compte courant.
+          schema:
+            type: integer
+            format: int64
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "404":
+          description: Société inconnue du compte courant.
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RentReceiptDto"
+  /api/rent-receipts/received/{id}/pdf:
+    get:
+      tags:
+        - rent-receipt-controller
+      operationId: getReceivedRentReceiptPdf
+      description: >-
+        Télécharge le PDF d'une quittance reçue pour une société du compte
+        courant. Toute quittance émise par le compte courant ou rattachée à une
+        autre société répond 404.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "404":
+          description: Quittance reçue introuvable pour ce compte.
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                type: string
+                format: byte
   /api/rent-receipts/{id}:
     get:
       tags:

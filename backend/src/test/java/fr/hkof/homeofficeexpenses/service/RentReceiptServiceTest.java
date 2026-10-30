@@ -49,6 +49,7 @@ class RentReceiptServiceTest {
 
     private RentReceiptRepository repository;
     private CompanyService companies;
+    private CompanyLookupService publicCompanies;
     private LeaseService leaseService;
     private PersonRepository persons;
     private TemplateService templateService;
@@ -64,6 +65,7 @@ class RentReceiptServiceTest {
     void setUp() {
         repository = mock(RentReceiptRepository.class);
         companies = mock(CompanyService.class);
+        publicCompanies = mock(CompanyLookupService.class);
         leaseService = mock(LeaseService.class);
         persons = mock(PersonRepository.class);
         templateService = mock(TemplateService.class);
@@ -76,8 +78,8 @@ class RentReceiptServiceTest {
         when(ownership.currentUserId()).thenReturn(OWNER);
         service = new RentReceiptService(repository, companies, leaseService, templateService,
                 templateDataService, signatureService, pdfService, storage, documentDraftService,
-                new RentReceiptMapper(persons, companies, ownership),
-                new RentReceiptAssembler(repository, templateService, ownership), ownership,
+                new RentReceiptMapper(persons, companies, publicCompanies, ownership),
+                new RentReceiptAssembler(repository, templateService, ownership), publicCompanies, ownership,
                 Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
@@ -253,6 +255,7 @@ class RentReceiptServiceTest {
     @DisplayName("Preview and generation reject invalid additional charges in French")
     void generateRejectsInvalidAdditionalCharges() {
         when(companies.entity(COMPANY_ID)).thenReturn(company(COMPANY_ID, "HKOF"));
+        when(companies.find(COMPANY_ID)).thenReturn(Optional.of(company(COMPANY_ID, "HKOF")));
         when(leaseService.resolveLease(1L, 2L, null)).thenReturn(normalLease());
 
         assertThatThrownBy(() -> service.generate(requestWithCharges("2026-10",
@@ -357,6 +360,32 @@ class RentReceiptServiceTest {
     }
 
     @Test
+    @DisplayName("A company lease may bill a corporate tenant owned by another account")
+    void generateCrossUserCompanyLease() {
+        TemplateDocument template = template(4L, TemplateType.RENT_RECEIPT, "Quittance", 2);
+        stubGenerationDependencies(template);
+        when(companies.find(TENANT_COMPANY_ID)).thenReturn(Optional.empty());
+        when(publicCompanies.findPublic(TENANT_COMPANY_ID))
+                .thenReturn(Optional.of(company(TENANT_COMPANY_ID, "Société Locataire")));
+        when(leaseService.resolveLease(1L, null, TENANT_COMPANY_ID)).thenReturn(companyLease());
+        when(repository.findFirstByUserIdAndMonthAndLandlordIdAndTenantCompanyIdOrderByVersionDescIdDesc(
+                OWNER, "2026-10", 1L, TENANT_COMPANY_ID)).thenReturn(Optional.empty());
+
+        RentReceiptDto dto = service.generate(companyRequest("2026-10", null, null));
+
+        assertThat(dto.companyId()).isEqualTo(TENANT_COMPANY_ID);
+        assertThat(dto.companyName()).isEqualTo("Société Locataire");
+        assertThat(dto.tenantCompanyId()).isEqualTo(TENANT_COMPANY_ID);
+        assertThat(dto.tenantName()).isEqualTo("Société Locataire");
+        assertThat(dto.total()).isEqualTo("950.00");
+        ArgumentCaptor<RentReceipt> saved = ArgumentCaptor.forClass(RentReceipt.class);
+        verify(repository).save(saved.capture());
+        assertThat(saved.getValue().getUserId()).isEqualTo(OWNER);
+        assertThat(saved.getValue().getTenantCompanyId()).isEqualTo(TENANT_COMPANY_ID);
+        verify(companies, never()).entity(TENANT_COMPANY_ID);
+    }
+
+    @Test
     @DisplayName("A person lease without company generates a receipt without company")
     void generatePersonLeaseWithoutCompany() {
         TemplateDocument template = template(4L, TemplateType.RENT_RECEIPT, "Quittance", 2);
@@ -379,6 +408,7 @@ class RentReceiptServiceTest {
     @DisplayName("Generation rejects an inverted period and a template of another type")
     void generateRejectsInvalidInputs() {
         when(companies.entity(COMPANY_ID)).thenReturn(company(COMPANY_ID, "HKOF"));
+        when(companies.find(COMPANY_ID)).thenReturn(Optional.of(company(COMPANY_ID, "HKOF")));
         when(leaseService.resolveLease(1L, 2L, null)).thenReturn(normalLease());
         Signature signature = new Signature();
         signature.setId(7L);
@@ -404,6 +434,7 @@ class RentReceiptServiceTest {
     @DisplayName("Generation without a configured landlord signature is rejected in French")
     void generateWithoutSignature() {
         when(companies.entity(COMPANY_ID)).thenReturn(company(COMPANY_ID, "HKOF"));
+        when(companies.find(COMPANY_ID)).thenReturn(Optional.of(company(COMPANY_ID, "HKOF")));
         when(leaseService.resolveLease(1L, 2L, null)).thenReturn(normalLease());
         when(templateService.active(TemplateType.RENT_RECEIPT))
                 .thenReturn(template(1L, TemplateType.RENT_RECEIPT, "Quittance", 1));
@@ -431,6 +462,7 @@ class RentReceiptServiceTest {
     @DisplayName("Preview rejects an inverted period and a template of another type")
     void previewRejectsInvalidInputs() {
         when(companies.entity(COMPANY_ID)).thenReturn(company(COMPANY_ID, "HKOF"));
+        when(companies.find(COMPANY_ID)).thenReturn(Optional.of(company(COMPANY_ID, "HKOF")));
         when(leaseService.resolveLease(1L, 2L, null)).thenReturn(normalLease());
         Signature signature = new Signature();
         signature.setId(7L);
@@ -575,6 +607,44 @@ class RentReceiptServiceTest {
         verify(repository, never())
                 .findFirstByUserIdAndMonthAndLandlordIdAndTenantCompanyIdAndStatusOrderByVersionDescIdDesc(
                         any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("A company receipt issued by another account is detected for the draft and the bundle")
+    void activeForMonthFallsBackToReceivedCompanyReceipt() {
+        RentReceipt received = new RentReceipt();
+        received.setId(10L);
+        received.setUserId(99L);
+        received.setStatus(DocumentStatus.ACTIVE);
+        when(repository.findFirstByUserIdAndCompanyIdAndMonthAndStatusOrderByVersionDescIdDesc(
+                OWNER, COMPANY_ID, "2026-10", DocumentStatus.ACTIVE)).thenReturn(Optional.empty());
+        when(repository.findFirstByTenantCompanyIdAndMonthAndUserIdNotAndStatusOrderByVersionDescIdDesc(
+                COMPANY_ID, "2026-10", OWNER, DocumentStatus.ACTIVE)).thenReturn(Optional.of(received));
+
+        assertThat(service.activeForLease(COMPANY_ID, "2026-10", null)).isSameAs(received);
+        verify(repository).findFirstByTenantCompanyIdAndMonthAndUserIdNotAndStatusOrderByVersionDescIdDesc(
+                COMPANY_ID, "2026-10", OWNER, DocumentStatus.ACTIVE);
+    }
+
+    @Test
+    @DisplayName("A received receipt exposes its landlord name to the company owner without person access")
+    void toDtoReceivedReceiptExposesLandlordName() {
+        RentReceipt receipt = new RentReceipt();
+        receipt.setId(10L);
+        receipt.setUserId(99L);
+        receipt.setCompanyId(TENANT_COMPANY_ID);
+        receipt.setTenantCompanyId(TENANT_COMPANY_ID);
+        receipt.setLandlordId(1L);
+        receipt.setMonth("2026-10");
+        receipt.setStatus(DocumentStatus.ACTIVE);
+        when(companies.find(TENANT_COMPANY_ID)).thenReturn(Optional.of(company(TENANT_COMPANY_ID, "Société Locataire")));
+        when(persons.findByIdAndUserId(1L, OWNER)).thenReturn(Optional.empty());
+        when(persons.findById(1L)).thenReturn(Optional.of(person(1L, "Bailleur", "1 rue du Bail")));
+
+        RentReceiptDto dto = service.toDto(receipt);
+
+        assertThat(dto.landlordName()).isEqualTo("Bailleur");
+        assertThat(dto.tenantName()).isEqualTo("Société Locataire");
     }
 
     @Test

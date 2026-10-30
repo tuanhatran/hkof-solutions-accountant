@@ -11,6 +11,7 @@ import {
   useAllRentReceipts,
   useAllStatements,
   useCompanies,
+  useCompanyReceivedRentReceipts,
   useEmployees,
   useExpenseItems,
   useLeases,
@@ -19,6 +20,7 @@ import {
   useLlmModels,
   useLlmStatus,
   usePersons,
+  useReceivedRentReceipts,
   useRentReceipts,
   useSavedRentReceiptDraft,
   useSavedStatementDraft,
@@ -38,7 +40,7 @@ vi.mock("./endpoints", () => ({
     templates: { list: vi.fn(), variables: vi.fn() },
     signatures: { list: vi.fn() },
     llm: { get: vi.fn(), status: vi.fn(), models: vi.fn() },
-    rentReceipts: { active: vi.fn(), list: vi.fn() },
+    rentReceipts: { active: vi.fn(), list: vi.fn(), received: vi.fn() },
     expenseStatements: { active: vi.fn(), list: vi.fn() },
     drafts: { getRentReceipt: vi.fn(), getStatement: vi.fn() },
   },
@@ -343,6 +345,30 @@ describe("query hooks", () => {
     expect(
       queryClient.getQueryState(queryKeys.rentReceiptsAll)?.isInvalidated,
     ).toBe(true);
+  });
+
+  it("loads the received rent receipts of the account companies and of one company month", async () => {
+    vi.mocked(api.rentReceipts.received).mockResolvedValue([]);
+
+    const all = renderHook(() => useReceivedRentReceipts(), { wrapper });
+    await waitFor(() => expect(all.result.current.isSuccess).toBe(true));
+    expect(api.rentReceipts.received).toHaveBeenCalledWith();
+
+    const scoped = renderHook(
+      () => useCompanyReceivedRentReceipts(3, "2026-10"),
+      { wrapper },
+    );
+    await waitFor(() => expect(scoped.result.current.isSuccess).toBe(true));
+    expect(api.rentReceipts.received).toHaveBeenCalledWith(3, "2026-10");
+
+    vi.mocked(api.rentReceipts.received).mockClear();
+    renderHook(() => useCompanyReceivedRentReceipts(null, "2026-10"), {
+      wrapper,
+    });
+    renderHook(() => useCompanyReceivedRentReceipts(3, "invalid"), {
+      wrapper,
+    });
+    expect(api.rentReceipts.received).not.toHaveBeenCalled();
   });
 
   it("loads the saved rent receipt draft only for one tenant scope", async () => {
