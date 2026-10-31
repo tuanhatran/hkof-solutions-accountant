@@ -1,0 +1,143 @@
+@reference "../../index.css";
+
+@layer components {
+  .dashboard-page {
+    @apply mx-auto max-w-[1263px] space-y-6 px-4 py-6 sm:px-6;
+  }
+
+  .dashboard-header {
+    @apply space-y-1;
+  }
+
+  .dashboard-eyebrow {
+    @apply text-xs font-bold uppercase tracking-wider text-accent;
+  }
+
+  .dashboard-title {
+    @apply text-2xl font-bold tracking-tight text-ink;
+  }
+
+  .dashboard-description {
+    @apply text-sm text-ink-soft;
+  }
+
+  .dashboard-card {
+    @apply rounded-2xl border border-line bg-surface p-5 shadow-soft sm:p-6;
+  }
+
+  .dashboard-profile-header {
+    @apply mb-4 flex items-center gap-3 border-b border-line pb-3;
+  }
+
+  .dashboard-profile-icon {
+    @apply grid h-10 w-10 place-items-center rounded-xl bg-accent-soft text-accent;
+  }
+
+  .dashboard-profile-title {
+    @apply text-base font-bold text-ink;
+  }
+
+  .dashboard-profile-grid {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4;
+  }
+
+  .dashboard-profile-item {
+    @apply flex flex-col gap-1;
+  }
+
+  .dashboard-profile-label {
+    @apply text-xs font-medium text-ink-soft;
+  }
+
+  .dashboard-profile-value {
+    @apply truncate text-sm font-semibold text-ink;
+  }
+
+  .dashboard-kpi-grid {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4;
+  }
+
+  .dashboard-kpi-card {
+    @apply flex items-center justify-between rounded-2xl border border-line bg-surface p-5 shadow-soft transition-transform hover:-translate-y-0.5;
+  }
+
+  .dashboard-kpi-info {
+    @apply flex flex-col;
+  }
+
+  .dashboard-kpi-value {
+    @apply text-2xl font-bold tracking-tight text-ink;
+  }
+
+  .dashboard-kpi-label {
+    @apply mt-1 text-xs font-medium text-ink-soft;
+  }
+
+  .dashboard-kpi-icon {
+    @apply grid h-11 w-11 place-items-center rounded-xl bg-accent-soft text-accent;
+  }
+
+  .dashboard-actions-card {
+    @apply flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5 shadow-soft sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .dashboard-actions-title {
+    @apply text-sm font-bold text-ink;
+  }
+
+  .dashboard-actions-list {
+    @apply flex flex-wrap gap-2.5;
+  }
+
+  .dashboard-action-btn-primary {
+    @apply inline-flex items-center gap-2 rounded-lg bg-ink px-3.5 py-2 text-xs font-bold text-surface transition-opacity hover:opacity-90;
+  }
+
+  .dashboard-action-btn-secondary {
+    @apply inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3.5 py-2 text-xs font-bold text-ink transition-colors hover:bg-paper-deep;
+  }
+
+  .dashboard-portfolio {
+    @apply space-y-4;
+  }
+
+  .dashboard-portfolio-title {
+    @apply text-lg font-bold tracking-tight text-ink;
+  }
+
+  .dashboard-portfolio-grid {
+    @apply grid grid-cols-1 gap-6 lg:grid-cols-3;
+  }
+
+  .dashboard-portfolio-card {
+    @apply flex flex-col rounded-2xl border border-line bg-surface p-5 shadow-soft;
+  }
+
+  .dashboard-section-header {
+    @apply mb-3 flex items-center gap-2 border-b border-line pb-2 text-sm font-bold text-ink;
+  }
+
+  .dashboard-list {
+    @apply flex-1 space-y-2.5;
+  }
+
+  .dashboard-list-item {
+    @apply flex flex-col gap-1 rounded-xl border border-line bg-paper-deep/30 p-3 text-xs transition-colors hover:bg-paper-deep/60;
+  }
+
+  .dashboard-list-primary {
+    @apply font-semibold text-ink;
+  }
+
+  .dashboard-list-secondary {
+    @apply text-ink-soft;
+  }
+
+  .dashboard-list-tag {
+    @apply mt-1 inline-flex w-fit items-center rounded-md bg-paper px-2 py-0.5 text-[0.7rem] font-semibold text-ink-soft;
+  }
+
+  .dashboard-empty {
+    @apply py-8 text-center text-xs italic text-ink-soft;
+  }
+}

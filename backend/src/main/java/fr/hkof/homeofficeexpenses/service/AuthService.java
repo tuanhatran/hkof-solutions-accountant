@@ -37,6 +37,7 @@ public class AuthService {
     public static final String PASSWORD_TOO_LONG = "PASSWORD_TOO_LONG";
     public static final String PASSWORD_REQUIRED = "PASSWORD_REQUIRED";
     public static final String INVALID_PASSWORD = "INVALID_PASSWORD";
+    public static final String AT_LEAST_ONE_MODULE_REQUIRED = "AT_LEAST_ONE_MODULE_REQUIRED";
 
     public static final Duration DEFAULT_CONFIRMATION_TTL = Duration.ofHours(24);
 
@@ -64,6 +65,16 @@ public class AuthService {
 
     @Transactional
     public void register(String email, String password) {
+        register(email, password, true, true);
+    }
+
+    @Transactional
+    public void register(String email, String password, Boolean companyEnabled, Boolean lmnpEnabled) {
+        boolean effectiveCompany = companyEnabled == null || companyEnabled;
+        boolean effectiveLmnp = lmnpEnabled == null || lmnpEnabled;
+        if (!effectiveCompany && !effectiveLmnp) {
+            throw new BusinessException(AT_LEAST_ONE_MODULE_REQUIRED, "Au moins un module doit être sélectionné.");
+        }
         String normalized = normalize(email);
         if (users.existsByEmailIgnoreCase(normalized)) {
             throw new BusinessException(EMAIL_ALREADY_USED, "Un compte existe déjà avec cette adresse e-mail.");
@@ -75,6 +86,8 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(password));
         user.setConfirmed(false);
         user.setMustChangePassword(false);
+        user.setCompanyEnabled(effectiveCompany);
+        user.setLmnpEnabled(effectiveLmnp);
         user.setCreatedAt(now);
         user.setUpdatedAt(now);
         String token = issueConfirmation(user, now);

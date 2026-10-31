@@ -1,17 +1,21 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import type { PersonDto } from "@/api/types";
 import { SignatureStudio } from "@/components/settings/SignatureStudio";
+import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete";
 import { Button } from "@/components/ui/Button";
+import { CountryCodeSelect } from "@/components/ui/CountryCodeSelect";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
-import { onboardingMessage, type ProfileValues } from "./useOnboardingState";
-
-const PHONE_PATTERN = /^(?:\+33|0)[1-9](?:[ .-]?\d{2}){4}$/;
-/** SIREN with 9 digits or SIRET with 14: 10 to 13 digits are rejected. */
-const IDENTIFIER_PATTERN = /^(?:\d{9}|\d{14})$/;
+import {
+  onboardingMessage,
+  isValidPhone,
+  isValidSirenSiret,
+  type ProfileValues,
+} from "./useOnboardingState";
 
 export const profileSchema = z.object({
   firstName: z
@@ -26,10 +30,14 @@ export const profileSchema = z.object({
     .min(1, {
       error: () => onboardingMessage("lastName"),
     }),
+  phoneCountryCode: z.string().optional(),
   phone: z
     .string()
     .trim()
-    .refine((value) => PHONE_PATTERN.test(value), {
+    .min(1, {
+      error: () => onboardingMessage("phone"),
+    })
+    .refine(isValidPhone, {
       error: () => onboardingMessage("phone"),
     }),
   address: z.string(),
@@ -44,7 +52,7 @@ export const profileSchema = z.object({
   sirenSiret: z
     .string()
     .trim()
-    .refine((value) => IDENTIFIER_PATTERN.test(value.replace(/[ .]/g, "")), {
+    .refine(isValidSirenSiret, {
       error: () => onboardingMessage("sirenSiret"),
     }),
   agencyAddress: z.string(),
@@ -69,8 +77,12 @@ export function OnboardingStepProfile({
   onSave,
 }: ProfileStepProps) {
   const { t } = useTranslation();
+  const [countryCode, setCountryCode] = useState(
+    values.phoneCountryCode ?? "+33",
+  );
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<ProfileFormValues>({
@@ -95,7 +107,10 @@ export function OnboardingStepProfile({
         className="onboarding-form"
         noValidate
         onSubmit={handleSubmit((formValues) =>
-          onSave(formValues, person !== null),
+          onSave(
+            { ...formValues, phoneCountryCode: countryCode },
+            person !== null,
+          ),
         )}
       >
         <h3 className="onboarding-subtitle">
@@ -134,26 +149,44 @@ export function OnboardingStepProfile({
             error={errors.phone?.message}
             help={t("onboarding.profile.phoneHelp")}
           >
-            <input
-              id="onboarding-phone"
-              className={cn("field", errors.phone && "field-error")}
-              type="tel"
-              autoComplete="tel"
-              data-cy="input-onboarding-phone"
-              {...register("phone")}
-            />
+            <div className="mt-1.5 flex gap-2">
+              <CountryCodeSelect
+                key="onboarding-phone-country"
+                id="onboarding-phone-country"
+                value={countryCode}
+                onChange={setCountryCode}
+                data-cy="select-onboarding-phone-country"
+              />
+              <input
+                key="onboarding-phone-input"
+                id="onboarding-phone"
+                className={cn("field mt-0", errors.phone && "field-error")}
+                type="tel"
+                autoComplete="tel"
+                data-cy="input-onboarding-phone"
+                {...register("phone")}
+              />
+            </div>
           </FieldGroup>
           <FieldGroup
             id="onboarding-person-address"
             label={t("onboarding.profile.address")}
             error={errors.address?.message}
           >
-            <input
-              id="onboarding-person-address"
-              className="field"
-              autoComplete="street-address"
-              data-cy="input-onboarding-person-address"
-              {...register("address")}
+            <Controller
+              control={control}
+              name="address"
+              render={({ field }) => (
+                <AddressAutocomplete
+                  id="onboarding-person-address"
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  placeholder={t("onboarding.profile.addressPlaceholder")}
+                  data-cy="input-onboarding-person-address"
+                  className={errors.address ? "field-error" : undefined}
+                />
+              )}
             />
           </FieldGroup>
           <FieldGroup

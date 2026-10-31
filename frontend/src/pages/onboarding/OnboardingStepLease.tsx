@@ -6,50 +6,65 @@ import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
+import { OnboardingTenantCard } from "./OnboardingTenantCard";
 import {
+  EMPTY_TENANT,
+  isValidCharges,
+  isValidRent,
   onboardingMessage,
   type LeaseType,
   type LeaseValues,
-  type TenantValues,
+  type PropertyItemValues,
 } from "./useOnboardingState";
+
+const issue = (ctx: z.RefinementCtx, path: (string | number)[], key: string) =>
+  ctx.addIssue({ code: "custom", path, message: onboardingMessage(key) });
 
 const tenantSchema = z.object({
   firstName: z
     .string()
     .trim()
-    .min(1, {
-      error: () => onboardingMessage("tenantFirstName"),
-    }),
+    .min(1, { error: () => onboardingMessage("tenantFirstName") }),
   lastName: z
     .string()
     .trim()
-    .min(1, {
-      error: () => onboardingMessage("tenantLastName"),
-    }),
+    .min(1, { error: () => onboardingMessage("tenantLastName") }),
+  rentExclCharges: z.string(),
+  charges: z.string(),
 });
 
 export const leaseFormSchema = z
   .object({
+    propertyId: z
+      .string()
+      .min(1, { error: () => onboardingMessage("propertySelect") }),
     leaseType: z.enum(["individual", "colocation"]),
-    tenants: z.array(tenantSchema).min(1, {
-      error: () => onboardingMessage("tenants"),
-    }),
+    rentExclCharges: z.string(),
+    charges: z.string(),
+    tenants: z
+      .array(tenantSchema)
+      .min(1, { error: () => onboardingMessage("tenants") }),
   })
-  .superRefine((value, ctx) => {
-    if (value.leaseType === "colocation" && value.tenants.length < 2) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["tenants"],
-        message: onboardingMessage("colocation"),
+  .superRefine((data, ctx) => {
+    if (data.leaseType === "individual") {
+      data.tenants.forEach((t, i) => {
+        if (!isValidRent(t.rentExclCharges))
+          issue(ctx, ["tenants", i, "rentExclCharges"], "rent");
+        if (!isValidCharges(t.charges))
+          issue(ctx, ["tenants", i, "charges"], "charges");
       });
+    } else {
+      if (data.tenants.length < 2) issue(ctx, ["tenants"], "colocation");
+      if (!isValidRent(data.rentExclCharges))
+        issue(ctx, ["rentExclCharges"], "rent");
+      if (!isValidCharges(data.charges)) issue(ctx, ["charges"], "charges");
     }
   });
 
-export type LeaseFormValues = z.infer<typeof leaseFormSchema>;
-
-const EMPTY_TENANT: TenantValues = { firstName: "", lastName: "" };
+export type LeaseFormValues = LeaseValues;
 
 interface LeaseStepProps {
+  properties: PropertyItemValues[];
   values: LeaseValues;
   pending: boolean;
   error: string | null;
@@ -57,8 +72,9 @@ interface LeaseStepProps {
   onNext: (values: LeaseValues) => void;
 }
 
-/** Step 3: individual or solidary colocation lease with its natural-person tenants. */
+/** Step 3: attach leases to a selected property with individual or colocation amounts. */
 export function OnboardingStepLease({
+  properties,
   values,
   pending,
   error,
@@ -67,6 +83,8 @@ export function OnboardingStepLease({
 }: LeaseStepProps) {
   const { t } = useTranslation();
   const [submitted, setSubmitted] = useState(false);
+  const defaultPropertyId = values.propertyId || properties[0]?.id || "prop-1";
+
   const {
     register,
     control,
@@ -78,8 +96,9 @@ export function OnboardingStepLease({
   } = useForm<LeaseFormValues>({
     resolver: zodResolver(leaseFormSchema),
     mode: "onTouched",
-    defaultValues: values,
+    defaultValues: { ...values, propertyId: defaultPropertyId },
   });
+
   const { fields, append, remove, replace } = useFieldArray({
     control,
     name: "tenants",
@@ -90,21 +109,19 @@ export function OnboardingStepLease({
       ? onboardingMessage("colocation")
       : null;
 
-  function changeType(next: LeaseType) {
-    if (next === leaseType) {
-      return;
-    }
+  function changeType(nextType: LeaseType) {
+    if (nextType === leaseType) return;
     const current = getValues("tenants");
-    if (next === "individual") {
-      replace(current.slice(0, 1));
+    if (nextType === "individual") {
+      setValue("leaseType", nextType, { shouldValidate: true });
     } else {
       const missing = Math.max(0, 2 - current.length);
       replace([
         ...current,
         ...Array.from({ length: missing }, () => ({ ...EMPTY_TENANT })),
       ]);
+      setValue("leaseType", nextType, { shouldValidate: true });
     }
-    setValue("leaseType", next, { shouldValidate: true });
   }
 
   return (
@@ -128,17 +145,33 @@ export function OnboardingStepLease({
             if (
               formValues.leaseType === "colocation" &&
               formValues.tenants.length < 2
-            ) {
+            )
               return;
-            }
-            onNext({
-              leaseType: formValues.leaseType,
-              tenants: formValues.tenants,
-            });
+            onNext(formValues);
           },
           () => setSubmitted(true),
         )}
       >
+        <FieldGroup
+          id="onboarding-lease-property"
+          label={t("onboarding.lease.propertySelect")}
+          error={errors.propertyId?.message}
+        >
+          <select
+            id="onboarding-lease-property"
+            className="field"
+            data-cy="select-onboarding-lease-property"
+            {...register("propertyId")}
+          >
+            {properties.map((p, idx) => (
+              <option key={p.id} value={p.id}>
+                {p.propertyAddress ||
+                  t("onboarding.property.itemTitle", { index: idx + 1 })}
+              </option>
+            ))}
+          </select>
+        </FieldGroup>
+
         <fieldset className="onboarding-lease-type">
           <legend className="onboarding-subtitle">
             {t("onboarding.lease.type")}
@@ -167,63 +200,50 @@ export function OnboardingStepLease({
           </label>
         </fieldset>
 
+        {leaseType === "colocation" ? (
+          <div className="onboarding-grid rounded-xl border border-line p-4">
+            <FieldGroup
+              id="onboarding-total-rent"
+              label={t("onboarding.lease.totalRent")}
+              error={errors.rentExclCharges?.message}
+              help={t("onboarding.lease.totalRentHelp")}
+            >
+              <input
+                id="onboarding-total-rent"
+                className={cn("field", errors.rentExclCharges && "field-error")}
+                inputMode="decimal"
+                data-cy="input-onboarding-total-rent"
+                {...register("rentExclCharges")}
+              />
+            </FieldGroup>
+            <FieldGroup
+              id="onboarding-total-charges"
+              label={t("onboarding.lease.totalCharges")}
+              error={errors.charges?.message}
+              help={t("onboarding.lease.totalChargesHelp")}
+            >
+              <input
+                id="onboarding-total-charges"
+                className={cn("field", errors.charges && "field-error")}
+                inputMode="decimal"
+                data-cy="input-onboarding-total-charges"
+                {...register("charges")}
+              />
+            </FieldGroup>
+          </div>
+        ) : null}
+
         <div className="onboarding-tenants">
           {fields.map((field, index) => (
-            <fieldset
+            <OnboardingTenantCard
               key={field.id}
-              className="onboarding-tenant"
-              aria-label={t("onboarding.lease.tenantTitle", {
-                index: index + 1,
-              })}
-            >
-              <legend className="onboarding-subtitle">
-                {t("onboarding.lease.tenantTitle", { index: index + 1 })}
-              </legend>
-              <FieldGroup
-                id={`onboarding-tenant-first-${index}`}
-                label={t("onboarding.lease.firstName")}
-                error={errors.tenants?.[index]?.firstName?.message}
-              >
-                <input
-                  id={`onboarding-tenant-first-${index}`}
-                  className={cn(
-                    "field",
-                    errors.tenants?.[index]?.firstName && "field-error",
-                  )}
-                  data-cy={`input-onboarding-tenant-first-${index}`}
-                  {...register(`tenants.${index}.firstName`)}
-                />
-              </FieldGroup>
-              <FieldGroup
-                id={`onboarding-tenant-last-${index}`}
-                label={t("onboarding.lease.lastName")}
-                error={errors.tenants?.[index]?.lastName?.message}
-              >
-                <input
-                  id={`onboarding-tenant-last-${index}`}
-                  className={cn(
-                    "field",
-                    errors.tenants?.[index]?.lastName && "field-error",
-                  )}
-                  data-cy={`input-onboarding-tenant-last-${index}`}
-                  {...register(`tenants.${index}.lastName`)}
-                />
-              </FieldGroup>
-              {fields.length > 1 ? (
-                <div className="onboarding-tenant-actions">
-                  <Button
-                    variant="ghost"
-                    small
-                    onClick={() => remove(index)}
-                    aria-label={t("onboarding.lease.removeTenant", {
-                      index: index + 1,
-                    })}
-                  >
-                    {t("onboarding.lease.remove")}
-                  </Button>
-                </div>
-              ) : null}
-            </fieldset>
+              index={index}
+              total={fields.length}
+              leaseType={leaseType}
+              register={register}
+              errors={errors}
+              onRemove={remove}
+            />
           ))}
         </div>
 
@@ -233,15 +253,15 @@ export function OnboardingStepLease({
           </p>
         ) : null}
 
-        {leaseType === "colocation" ? (
-          <Button
-            variant="secondary"
-            small
-            onClick={() => append({ ...EMPTY_TENANT })}
-          >
-            {t("onboarding.lease.addTenant")}
-          </Button>
-        ) : null}
+        <Button
+          variant="secondary"
+          small
+          type="button"
+          onClick={() => append({ ...EMPTY_TENANT })}
+          data-cy="btn-add-tenant"
+        >
+          {t("onboarding.lease.addTenant")}
+        </Button>
 
         {error ? (
           <p className="error-text" role="alert">
@@ -252,12 +272,8 @@ export function OnboardingStepLease({
         <div className="onboarding-actions">
           <Button
             variant="secondary"
-            onClick={() =>
-              onBack({
-                leaseType: getValues("leaseType"),
-                tenants: getValues("tenants"),
-              })
-            }
+            type="button"
+            onClick={() => onBack(getValues())}
             disabled={pending}
           >
             {t("onboarding.navigation.back")}

@@ -6,13 +6,12 @@ import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { completeOnboardingSession, useAuthState } from "@/api/queries";
 import type { CompanyDto, CompanyRequest, PersonRequest } from "@/api/types";
-import { cn } from "@/lib/cn";
 import { OnboardingStepLease } from "./OnboardingStepLease";
+import { OnboardingStepNav } from "./OnboardingStepNav";
 import { OnboardingStepProfile } from "./OnboardingStepProfile";
 import { OnboardingStepProperty } from "./OnboardingStepProperty";
 import { OnboardingStepSummary } from "./OnboardingStepSummary";
 import {
-  ONBOARDING_STEP_KEYS,
   amountOf,
   fullName,
   sirenOf,
@@ -64,6 +63,8 @@ export function OnboardingPage() {
     updateLease,
     cachedTenantId,
     cacheTenantId,
+    cachedLandlordId,
+    cacheLandlordId,
   } = useOnboardingState();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,9 +88,7 @@ export function OnboardingPage() {
           ? await api.persons.update(draft.person.id, personRequest(values))
           : await api.persons.create(personRequest(values));
       updateProfile(values, person, company);
-      if (advance) {
-        next();
-      }
+      if (advance) next();
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -97,68 +96,132 @@ export function OnboardingPage() {
     }
   }
 
-  function saveProperty(values: PropertyValues) {
-    updateProperty(values);
+  const saveProperty = (v: PropertyValues) => {
+    updateProperty(v);
     next();
+  };
+  const saveLease = (v: LeaseValues) => {
+    updateLease(v);
+    next();
+  };
+
+  async function createPerson(
+    name: string,
+    phone: string | null = null,
+    addressNote: string | null = null,
+  ) {
+    const created = await api.persons.create({
+      name,
+      phone,
+      addressNote,
+      address: null,
+      issuePlace: null,
+    });
+    if (created.id === undefined)
+      throw new Error(t("onboarding.errors.tenant"));
+    return created.id;
   }
 
-  function saveLease(values: LeaseValues) {
-    updateLease(values.leaseType, values.tenants);
-    next();
+  async function ensureLandlords(): Promise<Map<string, number>> {
+    const ids = new Map<string, number>();
+    for (const property of draft.properties) {
+      const cached = cachedLandlordId(property.id);
+      if (cached !== undefined) {
+        ids.set(property.id, cached);
+        continue;
+      }
+      const landlordName = fullName(
+        property.landlordFirstName,
+        property.landlordLastName,
+      );
+      const id = await createPerson(
+        landlordName,
+        property.landlordPhone.trim() || null,
+        property.landlordAddressNote.trim() || null,
+      );
+      cacheLandlordId(property.id, id);
+      ids.set(property.id, id);
+    }
+    return ids;
+  }
+
+  async function ensureTenants(): Promise<number[]> {
+    const ids: number[] = [];
+    for (const [index, tenant] of draft.lease.tenants.entries()) {
+      const name = fullName(tenant.firstName, tenant.lastName);
+      const cacheKey = `${index}:${name.toLowerCase()}`;
+      const cached = cachedTenantId(cacheKey);
+      if (cached !== undefined) {
+        ids.push(cached);
+        continue;
+      }
+      const id = await createPerson(name);
+      cacheTenantId(cacheKey, id);
+      ids.push(id);
+    }
+    return ids;
   }
 
   async function finalize() {
     setPending(true);
     setError(null);
     try {
-      const landlordId = draft.person?.id;
-      if (landlordId === undefined) {
+      if (draft.person?.id === undefined) {
         setError(t("onboarding.errors.profileMissing"));
         return;
       }
-      const tenantIds: number[] = [];
-      for (const [index, tenant] of draft.tenants.entries()) {
-        const name = fullName(tenant.firstName, tenant.lastName);
-        const cacheKey = `${index}:${name.toLowerCase()}`;
-        const cached = cachedTenantId(cacheKey);
-        if (cached !== undefined) {
-          tenantIds.push(cached);
-          continue;
-        }
-        const created = await api.persons.create({
-          name,
-          address: null,
-          phone: null,
-          addressNote: null,
-          issuePlace: null,
+
+      const landlordIds = await ensureLandlords();
+      const selectedProperty =
+        draft.properties.find((p) => p.id === draft.lease.propertyId) ??
+        draft.properties[0];
+      const landlordId =
+        landlordIds.get(selectedProperty.id) ?? draft.person.id;
+      const propertyAddress = selectedProperty.propertyAddress.trim();
+      const tenantIds = await ensureTenants();
+
+      const createLease = (
+        tId: number,
+        tIds: number[],
+        r?: string,
+        c?: string,
+      ) =>
+        api.leases.create({
+          companyLease: false,
+          landlordId,
+          tenantId: tId,
+          tenantIds: tIds,
+          propertyAddress,
+          rentExclCharges: amountOf(r),
+          charges: amountOf(c),
         });
-        if (created.id === undefined) {
-          throw new Error(t("onboarding.errors.tenant"));
+
+      if (draft.lease.leaseType === "individual") {
+        for (const [index, tenant] of draft.lease.tenants.entries()) {
+          await createLease(
+            tenantIds[index],
+            [tenantIds[index]],
+            tenant.rentExclCharges,
+            tenant.charges,
+          );
         }
-        cacheTenantId(cacheKey, created.id);
-        tenantIds.push(created.id);
+      } else {
+        await createLease(
+          tenantIds[0],
+          tenantIds,
+          draft.lease.rentExclCharges,
+          draft.lease.charges,
+        );
       }
-      await api.leases.create({
-        companyLease: false,
-        landlordId,
-        tenantIds,
-        propertyAddress: draft.property.propertyAddress.trim(),
-        rentExclCharges: amountOf(draft.property.rentExclCharges),
-        charges: amountOf(draft.property.charges),
-      });
+
       await completeOnboardingSession();
-      navigate("/generer/quittance", { replace: true });
+      navigate("/tableau-de-bord", { replace: true });
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
       setPending(false);
     }
   }
-
-  const landlordName = fullName(
-    draft.profile.firstName,
-    draft.profile.lastName,
-  );
 
   return (
     <div className="onboarding-page">
@@ -174,28 +237,7 @@ export function OnboardingPage() {
           </p>
         </header>
 
-        <ol className="onboarding-steps" aria-label={t("onboarding.stepsAria")}>
-          {ONBOARDING_STEP_KEYS.map((key, index) => (
-            <li
-              key={key}
-              className={cn(
-                "onboarding-step",
-                index === step && "onboarding-step-active",
-              )}
-              aria-current={index === step ? "step" : undefined}
-              aria-label={t("onboarding.stepLabel", {
-                current: index + 1,
-                total: ONBOARDING_STEP_KEYS.length,
-                label: t(`onboarding.steps.${key}`),
-              })}
-            >
-              <span className="onboarding-step-index" aria-hidden="true">
-                {index + 1}
-              </span>
-              {t(`onboarding.steps.${key}`)}
-            </li>
-          ))}
-        </ol>
+        <OnboardingStepNav currentStep={step} />
 
         {step === 0 ? (
           <OnboardingStepProfile
@@ -208,9 +250,7 @@ export function OnboardingPage() {
         ) : null}
         {step === 1 ? (
           <OnboardingStepProperty
-            values={draft.property}
-            landlordName={landlordName}
-            landlordEmail={user?.email ?? ""}
+            values={draft.properties}
             pending={pending}
             error={error}
             onBack={(values) => {
@@ -222,14 +262,12 @@ export function OnboardingPage() {
         ) : null}
         {step === 2 ? (
           <OnboardingStepLease
-            values={{
-              leaseType: draft.leaseType,
-              tenants: draft.tenants,
-            }}
+            properties={draft.properties}
+            values={draft.lease}
             pending={pending}
             error={error}
             onBack={(values) => {
-              updateLease(values.leaseType, values.tenants);
+              updateLease(values);
               back();
             }}
             onNext={saveLease}

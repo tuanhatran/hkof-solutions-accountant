@@ -1,66 +1,82 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
-import { FieldGroup } from "@/components/ui/FieldGroup";
-import { cn } from "@/lib/cn";
-import { parseAmount } from "@/lib/format";
-import { onboardingMessage, type PropertyValues } from "./useOnboardingState";
+import { OnboardingPropertyCard } from "./OnboardingPropertyCard";
+import {
+  createEmptyProperty,
+  onboardingMessage,
+  type PropertyItemValues,
+  type PropertyValues,
+} from "./useOnboardingState";
 
-export const propertySchema = z.object({
+export const propertyItemSchema = z.object({
+  id: z.string(),
   propertyAddress: z
     .string()
     .trim()
-    .min(1, {
-      error: () => onboardingMessage("propertyAddress"),
-    }),
-  rentExclCharges: z.string().refine(
-    (value) => {
-      const amount = parseAmount(value);
-      return amount !== null && Number(amount) > 0;
-    },
-    { error: () => onboardingMessage("rent") },
-  ),
-  charges: z
+    .min(1, { error: () => onboardingMessage("propertyAddress") }),
+  landlordFirstName: z
     .string()
-    .refine((value) => value.trim() === "" || parseAmount(value) !== null, {
-      error: () => onboardingMessage("charges"),
-    }),
+    .trim()
+    .min(1, { error: () => onboardingMessage("landlordFirstName") }),
+  landlordLastName: z
+    .string()
+    .trim()
+    .min(1, { error: () => onboardingMessage("landlordLastName") }),
+  landlordPhoneCountryCode: z.string().optional(),
+  landlordPhone: z.string(),
+  landlordEmail: z.string(),
+  landlordAddressNote: z.string(),
 });
 
-export type PropertyFormValues = z.infer<typeof propertySchema>;
+export const propertySchema = z.object({
+  properties: z
+    .array(propertyItemSchema)
+    .min(1, { error: () => onboardingMessage("properties") }),
+});
+
+export type PropertyFormValues = PropertyValues;
 
 interface PropertyStepProps {
-  values: PropertyValues;
-  landlordName: string;
-  landlordEmail: string;
+  values: PropertyValues | PropertyItemValues[];
   pending: boolean;
   error: string | null;
   onBack: (values: PropertyValues) => void;
   onNext: (values: PropertyValues) => void;
 }
 
-/** Step 2: the rented dwelling and the landlord taken from step 1. */
+/** Step 2: managed properties and distinct landlord details. */
 export function OnboardingStepProperty({
   values,
-  landlordName,
-  landlordEmail,
   pending,
   error,
   onBack,
   onNext,
 }: PropertyStepProps) {
   const { t } = useTranslation();
+  const initialList = Array.isArray(values)
+    ? values
+    : (values?.properties ?? [createEmptyProperty()]);
+
   const {
     register,
-    getValues,
+    control,
     handleSubmit,
+    getValues,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<PropertyFormValues>({
     resolver: zodResolver(propertySchema),
     mode: "onTouched",
-    defaultValues: values,
+    defaultValues: { properties: initialList },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "properties",
   });
 
   return (
@@ -80,71 +96,31 @@ export function OnboardingStepProperty({
         noValidate
         onSubmit={handleSubmit((formValues) => onNext(formValues))}
       >
-        <h3 className="onboarding-subtitle">
-          {t("onboarding.property.dwellingTitle")}
-        </h3>
-        <FieldGroup
-          id="onboarding-property-address"
-          label={t("onboarding.property.address")}
-          error={errors.propertyAddress?.message}
-        >
-          <input
-            id="onboarding-property-address"
-            className={cn("field", errors.propertyAddress && "field-error")}
-            autoComplete="street-address"
-            data-cy="input-onboarding-property-address"
-            {...register("propertyAddress")}
-          />
-        </FieldGroup>
-        <div className="onboarding-grid">
-          <FieldGroup
-            id="onboarding-rent"
-            label={t("onboarding.property.rent")}
-            error={errors.rentExclCharges?.message}
-            help={t("onboarding.property.rentHelp")}
-          >
-            <input
-              id="onboarding-rent"
-              className={cn("field", errors.rentExclCharges && "field-error")}
-              inputMode="decimal"
-              data-cy="input-onboarding-rent"
-              {...register("rentExclCharges")}
+        <div className="space-y-6">
+          {fields.map((field, index) => (
+            <OnboardingPropertyCard
+              key={field.id}
+              index={index}
+              total={fields.length}
+              register={register}
+              control={control}
+              watch={watch}
+              setValue={setValue}
+              errors={errors}
+              onRemove={remove}
             />
-          </FieldGroup>
-          <FieldGroup
-            id="onboarding-charges"
-            label={t("onboarding.property.charges")}
-            error={errors.charges?.message}
-            help={t("onboarding.property.chargesHelp")}
-          >
-            <input
-              id="onboarding-charges"
-              className={cn("field", errors.charges && "field-error")}
-              inputMode="decimal"
-              data-cy="input-onboarding-charges"
-              {...register("charges")}
-            />
-          </FieldGroup>
+          ))}
         </div>
 
-        <h3 className="onboarding-subtitle">
-          {t("onboarding.property.landlordTitle")}
-        </h3>
-        <div className="onboarding-landlord" data-cy="onboarding-landlord">
-          <div>
-            <p className="onboarding-summary-term">
-              {t("onboarding.property.landlord")}
-            </p>
-            <p className="onboarding-landlord-value">{landlordName}</p>
-          </div>
-          <div>
-            <p className="onboarding-summary-term">
-              {t("onboarding.property.email")}
-            </p>
-            <p className="onboarding-landlord-value">{landlordEmail}</p>
-            <p className="hint">{t("onboarding.property.emailHelp")}</p>
-          </div>
-        </div>
+        <Button
+          variant="secondary"
+          small
+          type="button"
+          onClick={() => append(createEmptyProperty(`prop-${Date.now()}`))}
+          data-cy="btn-add-property"
+        >
+          {t("onboarding.property.addProperty")}
+        </Button>
 
         {error ? (
           <p className="error-text" role="alert">
@@ -155,6 +131,7 @@ export function OnboardingStepProperty({
         <div className="onboarding-actions">
           <Button
             variant="secondary"
+            type="button"
             onClick={() => onBack(getValues())}
             disabled={pending}
           >

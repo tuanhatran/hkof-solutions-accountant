@@ -5,6 +5,7 @@ import {
   FileText,
   History,
   Home,
+  LayoutDashboard,
   LayoutTemplate,
   ReceiptText,
   Users,
@@ -40,6 +41,13 @@ export const SECTIONS: NavigationSection[] = [
   {
     titleKey: "navigation.sections.documents",
     links: [
+      {
+        to: "/tableau-de-bord",
+        labelKey: "navigation.links.dashboard",
+        icon: LayoutDashboard,
+        dataCy: "tab-dashboard",
+        module: "lmnp",
+      },
       {
         to: "/generer/quittance",
         labelKey: "navigation.links.rentReceipt",

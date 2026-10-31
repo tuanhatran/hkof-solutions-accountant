@@ -97,7 +97,7 @@ describe("AdminUsersPage", () => {
     ).toBeChecked();
     expect(
       within(await rowOf("societe@exemple.fr")).getByRole("checkbox", {
-        name: "Module LMNP",
+        name: "Module Agence immobilière",
       }),
     ).not.toBeChecked();
     expect(
@@ -132,7 +132,7 @@ describe("AdminUsersPage", () => {
 
     await user.click(
       within(await rowOf("societe@exemple.fr")).getByRole("checkbox", {
-        name: "Module LMNP",
+        name: "Module Agence immobilière",
       }),
     );
 

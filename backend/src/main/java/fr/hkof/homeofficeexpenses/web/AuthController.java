@@ -47,7 +47,7 @@ public class AuthController {
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void register(@Valid @RequestBody RegisterRequest request) {
-        service.register(request.email(), request.password());
+        service.register(request.email(), request.password(), request.companyEnabled(), request.lmnpEnabled());
     }
 
     @PostMapping("/confirm-email")

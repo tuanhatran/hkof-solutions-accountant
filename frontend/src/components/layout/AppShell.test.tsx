@@ -85,7 +85,7 @@ describe("AppShell", () => {
       within(navigation).getByRole("link", { name: /Société/ }),
     ).toHaveAttribute("href", "/configuration/entreprise");
     expect(
-      within(navigation).getByRole("link", { name: /LMNP/ }),
+      within(navigation).getByRole("link", { name: /Agence immobilière/ }),
     ).toHaveAttribute("href", "/configuration/lmnp");
 
     const historyLink = within(navigation).getByRole("link", {
@@ -142,12 +142,13 @@ describe("AppShell", () => {
     });
     const links = within(mobileNavigation).getAllByRole("link");
     expect(links.map((link) => link.textContent)).toEqual([
+      "Tableau de bord",
       "Quittance",
       "Note de frais",
       "Historique",
       "Modèles",
       "Société",
-      "LMNP",
+      "Agence immobilière",
       "Analyse IA",
     ]);
     const active = within(mobileNavigation).getByRole("link", {
@@ -329,12 +330,13 @@ describe("AppShell", () => {
         .getAllByRole("link")
         .map((link) => link.textContent),
     ).toEqual([
+      "Dashboard",
       "Rent receipt",
       "Expense statement",
       "History",
       "Templates",
       "Company",
-      "LMNP",
+      "Real estate agency",
       "AI analysis",
     ]);
 

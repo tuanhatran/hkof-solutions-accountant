@@ -131,9 +131,11 @@ describe("LmnpPage", () => {
     renderPage();
 
     expect(
-      screen.getByRole("heading", { name: "LMNP", level: 1 }),
+      screen.getByRole("heading", { name: "Agence immobilière", level: 1 }),
     ).toBeVisible();
-    const tabs = screen.getByRole("tablist", { name: "Sections LMNP" });
+    const tabs = screen.getByRole("tablist", {
+      name: "Sections Agence immobilière",
+    });
     const leasesTab = within(tabs).getByRole("tab", {
       name: "Baux et adresses",
     });
@@ -154,9 +156,11 @@ describe("LmnpPage", () => {
     renderPage();
 
     expect(
-      screen.getByRole("heading", { name: "LMNP", level: 1 }),
+      screen.getByRole("heading", { name: "Real estate agency", level: 1 }),
     ).toBeVisible();
-    const tabs = screen.getByRole("tablist", { name: "LMNP sections" });
+    const tabs = screen.getByRole("tablist", {
+      name: "Real estate agency sections",
+    });
     expect(
       within(tabs).getByRole("tab", { name: "Leases and addresses" }),
     ).toHaveAttribute("aria-selected", "true");

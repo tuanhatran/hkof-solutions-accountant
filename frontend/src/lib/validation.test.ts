@@ -722,6 +722,40 @@ describe("password schemas", () => {
     ).toBe(true);
   });
 
+  it("requires at least one module on registration", () => {
+    const parsed = registerSchema.safeParse({
+      email: "a@example.test",
+      password: "a",
+      confirmPassword: "a",
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.companyEnabled).toBe(true);
+      expect(parsed.data.lmnpEnabled).toBe(true);
+    }
+
+    const none = registerSchema.safeParse({
+      email: "a@example.test",
+      password: "a",
+      confirmPassword: "a",
+      companyEnabled: false,
+      lmnpEnabled: false,
+    });
+    expect(none.success).toBe(false);
+    expect(none.error?.issues[0]?.message).toBe(
+      i18n.t("auth.validation.atLeastOneModuleRequired"),
+    );
+
+    const one = registerSchema.safeParse({
+      email: "a@example.test",
+      password: "a",
+      confirmPassword: "a",
+      companyEnabled: false,
+      lmnpEnabled: true,
+    });
+    expect(one.success).toBe(true);
+  });
+
   it("still reject a blank or too long password", () => {
     const blank = registerSchema.safeParse({
       email: "a@example.test",

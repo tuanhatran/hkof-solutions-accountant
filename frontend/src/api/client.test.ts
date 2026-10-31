@@ -441,7 +441,7 @@ describe("errorMessage translations", () => {
       { code: "MODULE_COMPANY_DISABLED" },
     );
     const lmnp = new ApiError(
-      "Le module LMNP est désactivé pour ce compte.",
+      "Le module Agence immobilière est désactivé pour ce compte.",
       403,
       { code: "MODULE_LMNP_DISABLED" },
     );
@@ -451,7 +451,7 @@ describe("errorMessage translations", () => {
       "Le module société est désactivé pour ce compte.",
     );
     expect(errorMessage(lmnp)).toBe(
-      "Le module LMNP est désactivé pour ce compte.",
+      "Le module Agence immobilière est désactivé pour ce compte.",
     );
 
     await i18n.changeLanguage("en");
@@ -459,7 +459,7 @@ describe("errorMessage translations", () => {
       "The company module is disabled for this account.",
     );
     expect(errorMessage(lmnp)).toBe(
-      "The LMNP module is disabled for this account.",
+      "The Real estate agency module is disabled for this account.",
     );
   });
 });

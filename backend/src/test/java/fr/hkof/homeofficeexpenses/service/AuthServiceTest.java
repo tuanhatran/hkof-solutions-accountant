@@ -15,6 +15,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -99,6 +100,56 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> service.completeOnboarding(99L))
                 .isInstanceOf(AuthService.InvalidCredentialsException.class);
+    }
+
+    @Test
+    @DisplayName("Registration accepts custom module flags and sets them on the user")
+    void registerWithCustomModules() {
+        when(users.existsByEmailIgnoreCase("new@example.test")).thenReturn(false);
+        when(encoder.encode("secret")).thenReturn("hashed");
+
+        service.register("new@example.test", "secret", false, true);
+
+        ArgumentCaptor<AppUser> captor = ArgumentCaptor.forClass(AppUser.class);
+        verify(users).save(captor.capture());
+        assertThat(captor.getValue().isCompanyEnabled()).isFalse();
+        assertThat(captor.getValue().isLmnpEnabled()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Registration defaults omitted module flags to true")
+    void registerDefaultsOmittedModulesToTrue() {
+        when(users.existsByEmailIgnoreCase("new2@example.test")).thenReturn(false);
+        when(encoder.encode("secret")).thenReturn("hashed");
+
+        service.register("new2@example.test", "secret", null, null);
+
+        ArgumentCaptor<AppUser> captor = ArgumentCaptor.forClass(AppUser.class);
+        verify(users).save(captor.capture());
+        assertThat(captor.getValue().isCompanyEnabled()).isTrue();
+        assertThat(captor.getValue().isLmnpEnabled()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Two-argument registration delegates with both modules enabled")
+    void registerTwoArgumentsDefaultsModules() {
+        when(users.existsByEmailIgnoreCase("two@example.test")).thenReturn(false);
+        when(encoder.encode("secret")).thenReturn("hashed");
+
+        service.register("two@example.test", "secret");
+
+        ArgumentCaptor<AppUser> captor = ArgumentCaptor.forClass(AppUser.class);
+        verify(users).save(captor.capture());
+        assertThat(captor.getValue().isCompanyEnabled()).isTrue();
+        assertThat(captor.getValue().isLmnpEnabled()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Registration rejects when neither module is selected")
+    void registerRejectsWhenBothModulesDisabled() {
+        assertThatThrownBy(() -> service.register("new@example.test", "secret", false, false))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Au moins un module doit être sélectionné.");
     }
 
     private static AppUser user(UserRole role, boolean companyEnabled, boolean lmnpEnabled) {

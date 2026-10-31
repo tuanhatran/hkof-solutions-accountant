@@ -433,7 +433,11 @@ export interface ModuleAccess {
   lmnpEnabled: boolean;
   isAdmin: boolean;
   /** Home page of the account; the neutral page when no module is enabled. */
-  homePath: "/generer/quittance" | "/generer/note-frais" | "/aucun-module";
+  homePath:
+    | "/tableau-de-bord"
+    | "/generer/quittance"
+    | "/generer/note-frais"
+    | "/aucun-module";
 }
 
 /**
@@ -452,7 +456,7 @@ export function moduleAccessOf(user: CurrentUserDto | null): ModuleAccess {
     lmnpEnabled,
     isAdmin: user?.role === "ADMIN",
     homePath: lmnpEnabled
-      ? "/generer/quittance"
+      ? "/tableau-de-bord"
       : companyEnabled
         ? "/generer/note-frais"
         : "/aucun-module",

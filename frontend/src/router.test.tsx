@@ -44,6 +44,7 @@ describe("router", () => {
   it("exposes the authenticated application routes and the public auth pages", () => {
     const paths = collectPaths(routes);
 
+    expect(paths).toContain("tableau-de-bord");
     expect(paths).toContain("templates");
     expect(paths).toContain("admin/utilisateurs");
     expect(paths).toContain("configuration/entreprise");
@@ -99,7 +100,7 @@ describe("router", () => {
     expect(screen.getByText(/Vos brouillons restent conservés/)).toBeVisible();
     expect(
       screen.getByRole("link", { name: "Revenir à la génération" }),
-    ).toHaveAttribute("href", "/generer/quittance");
+    ).toHaveAttribute("href", "/tableau-de-bord");
   });
 
   it("formats route errors in French", () => {
@@ -173,7 +174,7 @@ describe("module guards", () => {
     const router = await renderAndSettle("/generer/note-frais");
 
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe("/generer/quittance"),
+      expect(router.state.location.pathname).toBe("/tableau-de-bord"),
     );
   });
 
@@ -187,11 +188,8 @@ describe("module guards", () => {
     const router = await renderAndSettle("/admin/utilisateurs");
 
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe("/generer/quittance"),
+      expect(router.state.location.pathname).toBe("/tableau-de-bord"),
     );
-    expect(
-      await screen.findByRole("heading", { name: "Quittance de loyer" }),
-    ).toBeVisible();
     expect(
       screen.queryByRole("table", {
         name: "Comptes locaux, rôles et modules activés",
@@ -261,7 +259,21 @@ describe("module guards", () => {
     const router = await renderAndSettle("/generer");
 
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe("/generer/quittance"),
+      expect(router.state.location.pathname).toBe("/tableau-de-bord"),
+    );
+  });
+
+  it("redirects an account with LMNP disabled away from the dashboard", async () => {
+    mockCurrentUser({
+      email: "societe@exemple.fr",
+      role: "USER",
+      companyEnabled: true,
+      lmnpEnabled: false,
+    });
+    const router = await renderAndSettle("/tableau-de-bord");
+
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe("/generer/note-frais"),
     );
   });
 

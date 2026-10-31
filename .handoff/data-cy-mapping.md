@@ -63,33 +63,63 @@ statut→status, supplementaire→extra, suppression→deletion, supprimer→del
 telecharger→download, telephone→phone, televerser→upload, titre→title, total→total,
 totale→total, tri→sort, ttc→incl-vat, vide→empty, voir→view, volet→pane
 
-## Onboarding wizard hooks (task 90)
+## Onboarding wizard hooks (tasks 90-93)
 
 New attributes only (`frontend/src/pages/onboarding/*.tsx`): no behaviour, text, CSS or layout
 change. Consumed by `frontend/cypress/e2e/07-onboarding.cy.ts`.
 
-| Hook                                | Producer             | Purpose                                        |
-| ----------------------------------- | -------------------- | ---------------------------------------------- |
-| `input-onboarding-first-name`       | OnboardingStepProfile | landlord first name                           |
-| `input-onboarding-last-name`        | OnboardingStepProfile | landlord last name                            |
-| `input-onboarding-phone`            | OnboardingStepProfile | landlord phone                                |
-| `input-onboarding-person-address`   | OnboardingStepProfile | landlord postal address                       |
-| `input-onboarding-address-note`     | OnboardingStepProfile | landlord address note                         |
-| `input-onboarding-agency-name`      | OnboardingStepProfile | agency legal name                             |
-| `input-onboarding-legal-form`       | OnboardingStepProfile | agency legal form                             |
-| `input-onboarding-siren-siret`      | OnboardingStepProfile | 9-digit SIREN or 14-digit SIRET               |
-| `input-onboarding-agency-address`   | OnboardingStepProfile | agency address                                |
-| `btn-save-onboarding-profile`       | OnboardingStepProfile | save the profile, then continue               |
-| `input-onboarding-property-address` | OnboardingStepProperty | rented dwelling address                      |
-| `input-onboarding-rent`             | OnboardingStepProperty | rent excluding charges                       |
-| `input-onboarding-charges`          | OnboardingStepProperty | charges provision                            |
-| `onboarding-landlord`               | OnboardingStepProperty | pre-filled landlord (name and account email) |
-| `btn-next-onboarding-property`      | OnboardingStepProperty | validate the dwelling and continue           |
-| `onboarding-lease-individual`       | OnboardingStepLease  | individual lease radio                        |
-| `onboarding-lease-colocation`       | OnboardingStepLease  | solidary colocation lease radio               |
-| `input-onboarding-tenant-first-${index}` | OnboardingStepLease | co-tenant first name (field-array index 0, 1, …) |
-| `input-onboarding-tenant-last-${index}`  | OnboardingStepLease | co-tenant last name (field-array index 0, 1, …) |
-| `btn-next-onboarding-lease`         | OnboardingStepLease  | validate tenants and continue                 |
+| Hook                                                | Producer               | Purpose                                |
+| --------------------------------------------------- | ---------------------- | -------------------------------------- |
+| `input-onboarding-first-name`                       | OnboardingStepProfile  | manager first name                     |
+| `input-onboarding-last-name`                        | OnboardingStepProfile  | manager last name                      |
+| `select-onboarding-phone-country`                   | OnboardingStepProfile  | manager phone country code select      |
+| `input-onboarding-phone`                            | OnboardingStepProfile  | manager phone                          |
+| `input-onboarding-person-address`                   | OnboardingStepProfile  | manager postal address                 |
+| `input-onboarding-address-note`                     | OnboardingStepProfile  | manager address note                   |
+| `input-onboarding-agency-name`                      | OnboardingStepProfile  | agency legal name                      |
+| `input-onboarding-legal-form`                       | OnboardingStepProfile  | agency legal form                      |
+| `input-onboarding-siren-siret`                      | OnboardingStepProfile  | 9-digit SIREN or 14-digit SIRET        |
+| `input-onboarding-agency-address`                   | OnboardingStepProfile  | agency address                         |
+| `btn-save-onboarding-profile`                       | OnboardingStepProfile  | save the profile, then continue        |
+| `input-onboarding-property-address-${index}`        | OnboardingPropertyCard | managed dwelling address               |
+| `btn-remove-property-${index}`                      | OnboardingPropertyCard | remove managed property card           |
+| `input-onboarding-landlord-first-name-${index}`     | OnboardingPropertyCard | landlord first name                    |
+| `input-onboarding-landlord-last-name-${index}`      | OnboardingPropertyCard | landlord last name                     |
+| `select-onboarding-landlord-phone-country-${index}` | OnboardingPropertyCard | landlord phone country code select     |
+| `input-onboarding-landlord-phone-${index}`          | OnboardingPropertyCard | landlord phone                         |
+| `input-onboarding-landlord-email-${index}`          | OnboardingPropertyCard | landlord email                         |
+| `input-onboarding-landlord-address-note-${index}`   | OnboardingPropertyCard | landlord address note                  |
+| `btn-add-property`                                  | OnboardingStepProperty | add a new managed property             |
+| `btn-next-onboarding-property`                      | OnboardingStepProperty | validate properties and continue       |
+| `select-onboarding-lease-property`                  | OnboardingStepLease    | select property associated with lease  |
+| `onboarding-lease-individual`                       | OnboardingStepLease    | individual lease radio                 |
+| `onboarding-lease-colocation`                       | OnboardingStepLease    | solidary colocation lease radio        |
+| `input-onboarding-total-rent`                       | OnboardingStepLease    | total rent excl charges for colocation |
+| `input-onboarding-total-charges`                    | OnboardingStepLease    | total charges for colocation           |
+| `input-onboarding-tenant-first-${index}`            | OnboardingTenantCard   | tenant first name                      |
+| `input-onboarding-tenant-last-${index}`             | OnboardingTenantCard   | tenant last name                       |
+| `input-onboarding-tenant-rent-${index}`             | OnboardingTenantCard   | individual tenant rent excl charges    |
+| `input-onboarding-tenant-charges-${index}`          | OnboardingTenantCard   | individual tenant charges              |
+| `btn-add-tenant`                                    | OnboardingStepLease    | add tenant button                      |
+| `btn-next-onboarding-lease`                         | OnboardingStepLease    | validate tenants and continue          |
 
 Existing hooks reused by the spec: `onboarding-signature`, `btn-draw-signature`,
 `signature-pad-canvas`, `btn-confirm-signature-pad`, `onboarding-finalize`.
+
+## Registration & Dashboard hooks (tasks 91, 94, 95)
+
+Consumed by `frontend/cypress/e2e/07-onboarding.cy.ts`.
+
+| Hook                       | Producer      | Purpose                                         |
+| -------------------------- | ------------- | ----------------------------------------------- |
+| `auth-module-agency`       | AuthPage      | agency (LMNP) registration module card checkbox |
+| `auth-module-company`      | AuthPage      | company registration module card checkbox       |
+| `dashboard-page`           | DashboardPage | root container for Agency Dashboard page        |
+| `dashboard-agency-name`    | DashboardPage | agency trade name in header profile card        |
+| `dashboard-kpi-properties` | DashboardPage | total managed properties count KPI              |
+| `dashboard-kpi-leases`     | DashboardPage | total active leases count KPI                   |
+| `dashboard-kpi-tenants`    | DashboardPage | total unique tenants count KPI                  |
+| `dashboard-kpi-rent`       | DashboardPage | total monthly rental volume KPI                 |
+| `action-generate-receipt`  | DashboardPage | quick action link to rent receipt generator     |
+| `action-add-property`      | DashboardPage | quick action link to add property in settings   |
+| `action-manage-leases`     | DashboardPage | quick action link to manage leases in settings  |

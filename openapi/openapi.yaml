@@ -2195,6 +2195,12 @@ components:
           type: string
           format: password
           maxLength: 100
+        companyEnabled:
+          type: boolean
+          description: Active le module société lors de l'inscription (vrai par défaut).
+        lmnpEnabled:
+          type: boolean
+          description: Active le module agence immobilière lors de l'inscription (vrai par défaut).
     ConfirmEmailRequest:
       type: object
       required:

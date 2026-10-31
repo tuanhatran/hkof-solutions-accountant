@@ -24,7 +24,7 @@ describe("SideNavigation", () => {
       within(navigation).getByRole("link", { name: /Société/ }),
     ).toHaveAttribute("href", "/configuration/entreprise");
     expect(
-      within(navigation).getByRole("link", { name: /LMNP/ }),
+      within(navigation).getByRole("link", { name: /Agence immobilière/ }),
     ).toHaveAttribute("href", "/configuration/lmnp");
     const templatesLink = within(navigation).getByRole("link", {
       name: /Modèles/,
@@ -36,14 +36,21 @@ describe("SideNavigation", () => {
         .getAllByRole("link")
         .map((link) => link.textContent),
     ).toEqual([
+      "Tableau de bord",
       "Quittance",
       "Note de frais",
       "Historique",
       "Modèles",
       "Société",
-      "LMNP",
+      "Agence immobilière",
       "Analyse IA",
     ]);
+
+    const dashboardLink = within(navigation).getByRole("link", {
+      name: /Tableau de bord/,
+    });
+    expect(dashboardLink).toHaveAttribute("href", "/tableau-de-bord");
+    expect(dashboardLink).toHaveAttribute("data-cy", "tab-dashboard");
 
     const historyLink = within(navigation).getByRole("link", {
       name: /Historique/,
@@ -99,6 +106,9 @@ describe("SideNavigation", () => {
     expect(within(navigation).getByText("Tracking")).toBeVisible();
     expect(within(navigation).getByText("Settings")).toBeVisible();
     expect(
+      within(navigation).getByRole("link", { name: /Dashboard/ }),
+    ).toHaveAttribute("href", "/tableau-de-bord");
+    expect(
       within(navigation).getByRole("link", { name: /Rent receipt/ }),
     ).toHaveAttribute("href", "/generer/quittance");
     expect(
@@ -153,7 +163,9 @@ describe("module-aware navigation", () => {
     expect(
       screen.queryByRole("link", { name: /Quittance/ }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /^LMNP/ })).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: /^Agence immobilière/ }),
+    ).toBeNull();
   });
 
   it("shows only the LMNP module links for an LMNP-only account", () => {
@@ -165,10 +177,11 @@ describe("module-aware navigation", () => {
     renderAt(<SideNavigation />);
 
     expect(linkLabels()).toEqual([
+      "Tableau de bord",
       "Quittance",
       "Historique",
       "Modèles",
-      "LMNP",
+      "Agence immobilière",
       "Analyse IA",
     ]);
     expect(
@@ -191,7 +204,7 @@ describe("module-aware navigation", () => {
     });
     expect(adminUsers).toHaveAttribute("href", "/admin/utilisateurs");
     expect(adminUsers).toHaveAttribute("data-cy", "tab-admin-users");
-    expect(linkLabels()).toHaveLength(8);
+    expect(linkLabels()).toHaveLength(9);
   });
 
   it("adds the admin users link to the mobile navigation for an ADMIN account", () => {
@@ -230,7 +243,7 @@ describe("module-aware navigation", () => {
           name: "Navigation principale mobile",
         }),
       ).getAllByRole("link"),
-    ).toHaveLength(7);
+    ).toHaveLength(8);
   });
 
   it("filters the USER mobile navigation without an admin users link", () => {
@@ -293,6 +306,7 @@ describe("navigation selectors", () => {
     );
 
     for (const dataCy of [
+      "tab-dashboard",
       "tab-rent-receipt",
       "tab-expense-statement",
       "tab-history",
@@ -317,12 +331,13 @@ describe("MobileNavigation", () => {
     });
     const links = within(mobileNavigation).getAllByRole("link");
     expect(links.map((link) => link.textContent)).toEqual([
+      "Tableau de bord",
       "Quittance",
       "Note de frais",
       "Historique",
       "Modèles",
       "Société",
-      "LMNP",
+      "Agence immobilière",
       "Analyse IA",
     ]);
     const active = within(mobileNavigation).getByRole("link", {
@@ -347,12 +362,13 @@ describe("MobileNavigation", () => {
         .getAllByRole("link")
         .map((link) => link.textContent),
     ).toEqual([
+      "Dashboard",
       "Rent receipt",
       "Expense statement",
       "History",
       "Templates",
       "Company",
-      "LMNP",
+      "Real estate agency",
       "AI analysis",
     ]);
   });

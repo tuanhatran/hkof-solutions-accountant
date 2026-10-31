@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { AuthPage } from "@/pages/auth/AuthPage";
 import { AdminLlmPage } from "@/pages/admin-llm/AdminLlmPage";
 import { AdminUsersPage } from "@/pages/admin-users/AdminUsersPage";
+import { DashboardPage } from "@/pages/dashboard/DashboardPage";
 import { LmnpPage } from "@/pages/settings/LmnpPage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { GenerateExpenseStatementPage } from "@/pages/expense-statement/GenerateExpenseStatementPage";
@@ -189,6 +190,14 @@ function AdminRoute({ children }: { children: ReactNode }) {
 
 const appRoutes: RouteObject[] = [
   { index: true, element: <HomeRedirect /> },
+  {
+    path: "tableau-de-bord",
+    element: (
+      <ModuleRoute module="lmnp">
+        <DashboardPage />
+      </ModuleRoute>
+    ),
+  },
   {
     path: "generer",
     element: <HomeRedirect />,

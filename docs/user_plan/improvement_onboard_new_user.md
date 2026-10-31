@@ -1,0 +1,14 @@
+Improvement after the task from 86 -> 90:
+- In subscription page (need to add i8n as well), use need to precise which module they want. Agency (rename "LMNP" -> "Real estate agency" everywhere), and or Company
+- All onboard pages need to have i8n, add French
+- Page "Profile":
+  -- Title : Agency profile (instead of "Profile and agency")
+  -- "Manager" instead of "Your detail" (Gerant in french) detail. Phone number need to add country code. Postal address need to call somme free API to suggest address.
+  -- "Agency" instead of "Your agency". "Name" instead of "Agency name" and required for "Dashboard" page : , other info is optional
+- Page Landlord : change to "Property" (biens in french)
+  -- Add property which is the address, landlord detail (landlord is not the agency, the agency manage properties, landlord and tenant) (And allow to add multiple property). 
+  -- Rent + charge to be removed in this page
+- Page "Lease"
+  -- Choose "Property" to add lease.
+  -- Lease type : indidual lease => can have multiple tenant, and each person have lease with a lease + a separate amount. Solidary colocation : all on the same lease + have total amount
+- Add a "Dashboard" page which show agency information. Use /ui-ux-pro-max to design a good dashboard about the agency

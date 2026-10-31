@@ -413,12 +413,19 @@ export const registerSchema = z
     confirmPassword: z
       .string()
       .min(1, { error: () => authMessage("confirmRequired") }),
+    companyEnabled: z.boolean().default(true),
+    lmnpEnabled: z.boolean().default(true),
   })
   .refine((values) => values.password === values.confirmPassword, {
     path: ["confirmPassword"],
     error: () => authMessage("confirmMismatch"),
+  })
+  .refine((values) => values.companyEnabled || values.lmnpEnabled, {
+    path: ["lmnpEnabled"],
+    error: () => authMessage("atLeastOneModuleRequired"),
   });
 
+export type RegisterFormInput = z.input<typeof registerSchema>;
 export type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export const changePasswordSchema = z

@@ -299,3 +299,53 @@ export function waitForAnalysisText(
     );
   });
 }
+
+/**
+ * Attaches a synthetic PNG signature to a person using the browser session.
+ */
+export function addSignatureToPerson(
+  personId: number,
+  name = "Signature",
+): void {
+  cy.window().then((win) => {
+    const canvas = win.document.createElement("canvas");
+    canvas.width = 120;
+    canvas.height = 60;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.fillStyle = "#1c252e";
+      ctx.fillRect(10, 10, 50, 20);
+    }
+    return new Cypress.Promise<void>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error("Failed to create signature blob"));
+          return;
+        }
+        const formData = new win.FormData();
+        formData.append("file", blob, "signature.png");
+        const xsrf = win.document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("XSRF-TOKEN="))
+          ?.split("=")[1];
+        win
+          .fetch(
+            `/api/signatures?personId=${personId}&name=${encodeURIComponent(name)}`,
+            {
+              method: "POST",
+              body: formData,
+              headers: xsrf ? { "X-XSRF-TOKEN": decodeURIComponent(xsrf) } : {},
+            },
+          )
+          .then((res) => {
+            if (!res.ok) {
+              reject(new Error(`Failed to upload signature: ${res.status}`));
+            } else {
+              resolve();
+            }
+          })
+          .catch(reject);
+      }, "image/png");
+    });
+  });
+}
