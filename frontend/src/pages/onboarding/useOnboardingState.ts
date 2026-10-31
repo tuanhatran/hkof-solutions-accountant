@@ -8,6 +8,29 @@ export function onboardingMessage(key: string): string {
   return i18n.t(`onboarding.validation.${key}`);
 }
 
+export const PHONE_PATTERN =
+  /^(?:(?:\+33|0)[1-9](?:[ .-]?\d{2}){4}|\+[1-9]\d{0,3}[\s.-]?\d{4,14}|\d{8,15})$/;
+
+/** SIREN with 9 digits or SIRET with 14: 10 to 13 digits are rejected. */
+export const IDENTIFIER_PATTERN = /^(?:\d{9}|\d{14})$/;
+
+/** Validates French phone or international phone (8 to 15 digits). */
+export function isValidPhone(value: string): boolean {
+  const cleaned = value.replace(/[\s.-]/g, "");
+  const hasValidChars = /^\+?\d+$/.test(cleaned);
+  const digits = cleaned.replace(/\D/g, "");
+  if (!hasValidChars || digits.length < 8 || digits.length > 15) {
+    return false;
+  }
+  return PHONE_PATTERN.test(value);
+}
+
+/** Validates optional SIREN (9 digits) or SIRET (14 digits). Empty is valid. */
+export function isValidSirenSiret(value: string): boolean {
+  const cleaned = value.replace(/[ .]/g, "");
+  return cleaned.length === 0 || IDENTIFIER_PATTERN.test(cleaned);
+}
+
 export const ONBOARDING_STEP_KEYS = [
   "profile",
   "property",
@@ -22,6 +45,7 @@ export interface ProfileValues {
   firstName: string;
   lastName: string;
   phone: string;
+  phoneCountryCode?: string;
   address: string;
   addressNote: string;
   agencyName: string;
@@ -59,6 +83,7 @@ export const EMPTY_PROFILE: ProfileValues = {
   firstName: "",
   lastName: "",
   phone: "",
+  phoneCountryCode: "+33",
   address: "",
   addressNote: "",
   agencyName: "",

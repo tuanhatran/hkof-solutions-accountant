@@ -66,9 +66,15 @@ function renderWizard() {
 
 async function fillProfile(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("Prénom"), "Alice");
-  await user.type(screen.getByLabelText("Nom"), "Martin");
+  await user.type(
+    screen.getByLabelText("Nom", { selector: "#onboarding-last-name" }),
+    "Martin",
+  );
   await user.type(screen.getByLabelText("Téléphone"), "06 12 34 56 78");
-  await user.type(screen.getByLabelText("Nom de l'agence"), "HKOF");
+  await user.type(
+    screen.getByLabelText("Nom", { selector: "#onboarding-agency-name" }),
+    "HKOF",
+  );
   await user.type(screen.getByLabelText("SIREN ou SIRET"), "12345678900012");
 }
 
@@ -138,6 +144,11 @@ describe("OnboardingPage", () => {
       "step",
     );
     expect(screen.getByLabelText("Étape 4 sur 4 : Résumé")).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Profil de l'agence" }),
+    ).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Gérant" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Agence" })).toBeVisible();
   });
 
   it("saves the person and the agency, then reveals the signature studio", async () => {
@@ -205,24 +216,107 @@ describe("OnboardingPage", () => {
     renderWizard();
 
     await user.type(screen.getByLabelText("Prénom"), "Alice");
-    await user.type(screen.getByLabelText("Nom"), "Martin");
+    await user.type(
+      screen.getByLabelText("Nom", { selector: "#onboarding-last-name" }),
+      "Martin",
+    );
     await user.type(screen.getByLabelText("Téléphone"), "06");
-    await user.type(screen.getByLabelText("Nom de l'agence"), "HKOF");
+    await user.type(
+      screen.getByLabelText("Nom", { selector: "#onboarding-agency-name" }),
+      "HKOF",
+    );
     await user.type(screen.getByLabelText("SIREN ou SIRET"), "12345678901");
     await user.click(
       screen.getByRole("button", { name: "Enregistrer le profil" }),
     );
 
     expect(
-      await screen.findByText(
-        "Saisissez un numéro de téléphone français valide.",
-      ),
+      await screen.findByText("Saisissez un numéro de téléphone valide."),
     ).toBeVisible();
     expect(
       screen.getByText("Saisissez 9 chiffres (SIREN) ou 14 chiffres (SIRET)."),
     ).toBeVisible();
     expect(api.persons.create).not.toHaveBeenCalled();
     expect(api.companies.create).not.toHaveBeenCalled();
+  });
+
+  it("allows omitting legal form, SIREN/SIRET, and agency address", async () => {
+    const user = userEvent.setup();
+    renderWizard();
+
+    await user.type(screen.getByLabelText("Prénom"), "Alice");
+    await user.type(
+      screen.getByLabelText("Nom", { selector: "#onboarding-last-name" }),
+      "Martin",
+    );
+    await user.type(screen.getByLabelText("Téléphone"), "06 12 34 56 78");
+    await user.type(
+      screen.getByLabelText("Nom", { selector: "#onboarding-agency-name" }),
+      "Agence Seule",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Enregistrer le profil" }),
+    );
+
+    await waitFor(() =>
+      expect(api.companies.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "Agence Seule",
+          legalForm: "",
+          siren: "",
+          siret: null,
+          address: "",
+        }),
+      ),
+    );
+    expect(await screen.findByText(/Profil enregistré/)).toBeVisible();
+  });
+
+  it("provides an interactive country code selector for phone", async () => {
+    const user = userEvent.setup();
+    renderWizard();
+
+    const countrySelect = screen.getByLabelText("Indicatif pays");
+    expect(countrySelect).toHaveValue("+33");
+
+    await user.selectOptions(countrySelect, "+32");
+    expect(countrySelect).toHaveValue("+32");
+  });
+
+  it("suggests addresses via api-adresse.data.gouv.fr and fills postal address on selection", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [2.35, 48.85] },
+            properties: {
+              id: "addr-paris",
+              label: "10 Rue de la Paix 75002 Paris",
+              name: "10 Rue de la Paix",
+              postcode: "75002",
+              city: "Paris",
+            },
+          },
+        ],
+      }),
+    } as Response);
+
+    const user = userEvent.setup();
+    renderWizard();
+
+    const addressInput = screen.getByLabelText("Adresse postale");
+    await user.type(addressInput, "10 Rue de la Paix");
+
+    const option = await screen.findByRole("option", {
+      name: "10 Rue de la Paix 75002 Paris",
+    });
+    expect(option).toBeVisible();
+
+    await user.click(option);
+    expect(addressInput).toHaveValue("10 Rue de la Paix 75002 Paris");
   });
 
   it("keeps the profile values when returning from the property step", async () => {
