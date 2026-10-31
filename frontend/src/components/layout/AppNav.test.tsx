@@ -36,6 +36,7 @@ describe("SideNavigation", () => {
         .getAllByRole("link")
         .map((link) => link.textContent),
     ).toEqual([
+      "Tableau de bord",
       "Quittance",
       "Note de frais",
       "Historique",
@@ -44,6 +45,12 @@ describe("SideNavigation", () => {
       "Agence immobilière",
       "Analyse IA",
     ]);
+
+    const dashboardLink = within(navigation).getByRole("link", {
+      name: /Tableau de bord/,
+    });
+    expect(dashboardLink).toHaveAttribute("href", "/tableau-de-bord");
+    expect(dashboardLink).toHaveAttribute("data-cy", "tab-dashboard");
 
     const historyLink = within(navigation).getByRole("link", {
       name: /Historique/,
@@ -98,6 +105,9 @@ describe("SideNavigation", () => {
     expect(within(navigation).getByText("Documents")).toBeVisible();
     expect(within(navigation).getByText("Tracking")).toBeVisible();
     expect(within(navigation).getByText("Settings")).toBeVisible();
+    expect(
+      within(navigation).getByRole("link", { name: /Dashboard/ }),
+    ).toHaveAttribute("href", "/tableau-de-bord");
     expect(
       within(navigation).getByRole("link", { name: /Rent receipt/ }),
     ).toHaveAttribute("href", "/generer/quittance");
@@ -167,6 +177,7 @@ describe("module-aware navigation", () => {
     renderAt(<SideNavigation />);
 
     expect(linkLabels()).toEqual([
+      "Tableau de bord",
       "Quittance",
       "Historique",
       "Modèles",
@@ -193,7 +204,7 @@ describe("module-aware navigation", () => {
     });
     expect(adminUsers).toHaveAttribute("href", "/admin/utilisateurs");
     expect(adminUsers).toHaveAttribute("data-cy", "tab-admin-users");
-    expect(linkLabels()).toHaveLength(8);
+    expect(linkLabels()).toHaveLength(9);
   });
 
   it("adds the admin users link to the mobile navigation for an ADMIN account", () => {
@@ -232,7 +243,7 @@ describe("module-aware navigation", () => {
           name: "Navigation principale mobile",
         }),
       ).getAllByRole("link"),
-    ).toHaveLength(7);
+    ).toHaveLength(8);
   });
 
   it("filters the USER mobile navigation without an admin users link", () => {
@@ -295,6 +306,7 @@ describe("navigation selectors", () => {
     );
 
     for (const dataCy of [
+      "tab-dashboard",
       "tab-rent-receipt",
       "tab-expense-statement",
       "tab-history",
@@ -319,6 +331,7 @@ describe("MobileNavigation", () => {
     });
     const links = within(mobileNavigation).getAllByRole("link");
     expect(links.map((link) => link.textContent)).toEqual([
+      "Tableau de bord",
       "Quittance",
       "Note de frais",
       "Historique",
@@ -349,6 +362,7 @@ describe("MobileNavigation", () => {
         .getAllByRole("link")
         .map((link) => link.textContent),
     ).toEqual([
+      "Dashboard",
       "Rent receipt",
       "Expense statement",
       "History",

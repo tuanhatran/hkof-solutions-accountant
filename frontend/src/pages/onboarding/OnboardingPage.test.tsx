@@ -54,10 +54,7 @@ function renderWizard() {
       <MemoryRouter initialEntries={["/bienvenue"]}>
         <Routes>
           <Route path="/bienvenue" element={<OnboardingPage />} />
-          <Route
-            path="/generer/quittance"
-            element={<p>Générateur de quittances</p>}
-          />
+          <Route path="/tableau-de-bord" element={<p>Tableau de bord</p>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -472,7 +469,7 @@ describe("OnboardingPage", () => {
       charges: "40.00",
     });
     expect(api.auth.completeOnboarding).toHaveBeenCalledTimes(1);
-    expect(await screen.findByText("Générateur de quittances")).toBeVisible();
+    expect(await screen.findByText("Tableau de bord")).toBeVisible();
   });
 
   it("finalizes a colocation lease, completes onboarding and redirects", async () => {
@@ -541,7 +538,7 @@ describe("OnboardingPage", () => {
     expect(api.persons.create).toHaveBeenCalledTimes(4); // manager + landlord + 2 tenants
     expect(api.auth.completeOnboarding).toHaveBeenCalledTimes(1);
     expect(api.auth.me).toHaveBeenCalled();
-    expect(await screen.findByText("Générateur de quittances")).toBeVisible();
+    expect(await screen.findByText("Tableau de bord")).toBeVisible();
   });
 
   it("shows validation errors when property address or landlord name is missing, and allows removing a property", async () => {

@@ -215,7 +215,7 @@ export function OnboardingPage() {
       }
 
       await completeOnboardingSession();
-      navigate("/generer/quittance", { replace: true });
+      navigate("/tableau-de-bord", { replace: true });
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {

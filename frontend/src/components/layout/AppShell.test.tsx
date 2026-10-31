@@ -142,6 +142,7 @@ describe("AppShell", () => {
     });
     const links = within(mobileNavigation).getAllByRole("link");
     expect(links.map((link) => link.textContent)).toEqual([
+      "Tableau de bord",
       "Quittance",
       "Note de frais",
       "Historique",
@@ -329,6 +330,7 @@ describe("AppShell", () => {
         .getAllByRole("link")
         .map((link) => link.textContent),
     ).toEqual([
+      "Dashboard",
       "Rent receipt",
       "Expense statement",
       "History",
