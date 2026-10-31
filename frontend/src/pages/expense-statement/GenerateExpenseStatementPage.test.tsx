@@ -237,7 +237,7 @@ const CEO_V2: SignatureDto = {
 
 function renderPage(
   initialEntry: { pathname: string; state?: unknown } = {
-    pathname: "/generer/note-frais",
+    pathname: "/generate/expense-statement",
   },
 ) {
   const queryClient = new QueryClient();
@@ -421,7 +421,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     expect(alert).toHaveTextContent(/Aucune signature pour le PDG/);
     expect(screen.getByRole("link", { name: "Société" })).toHaveAttribute(
       "href",
-      "/configuration/entreprise",
+      "/settings/company",
     );
 
     await waitFor(() =>
@@ -913,7 +913,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
     expect(screen.getByText("Aucune société configurée")).toBeVisible();
     expect(
       screen.getByRole("link", { name: "Configurer une société" }),
-    ).toHaveAttribute("href", "/configuration/entreprise");
+    ).toHaveAttribute("href", "/settings/company");
     expect(screen.queryByLabelText("Type de frais")).toBeNull();
   });
 
@@ -945,7 +945,7 @@ describe("GenerateExpenseStatementPage signatures", () => {
       { id: 2, name: "Autre SARL" },
     ];
     renderPage({
-      pathname: "/generer/note-frais",
+      pathname: "/generate/expense-statement",
       state: { companyId: 2 },
     });
 

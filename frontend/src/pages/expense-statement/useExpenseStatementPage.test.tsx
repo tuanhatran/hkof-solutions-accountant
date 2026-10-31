@@ -768,7 +768,7 @@ describe("useExpenseStatementPage form and upload", () => {
 
     act(() => result.current.goToRentReceipt());
     expect(useRentReceiptDraft.getState().month).toBe("2026-02");
-    expect(navigateMock).toHaveBeenCalledWith("/generer/quittance");
+    expect(navigateMock).toHaveBeenCalledWith("/generate/rent-receipt");
   });
 });
 

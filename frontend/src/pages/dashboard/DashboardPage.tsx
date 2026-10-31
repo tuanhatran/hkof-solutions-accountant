@@ -230,7 +230,7 @@ export function DashboardPage() {
         </h2>
         <div className="dashboard-actions-list">
           <Link
-            to="/generer/quittance"
+            to="/generate/rent-receipt"
             className="dashboard-action-btn-primary"
             data-cy="action-generate-receipt"
           >
@@ -238,7 +238,7 @@ export function DashboardPage() {
             {t("dashboard.quickActions.generateReceipt")}
           </Link>
           <Link
-            to="/configuration/lmnp"
+            to="/settings/agency"
             className="dashboard-action-btn-secondary"
             data-cy="action-add-property"
           >
@@ -246,7 +246,7 @@ export function DashboardPage() {
             {t("dashboard.quickActions.addProperty")}
           </Link>
           <Link
-            to="/configuration/lmnp"
+            to="/settings/agency"
             className="dashboard-action-btn-secondary"
             data-cy="action-manage-leases"
           >

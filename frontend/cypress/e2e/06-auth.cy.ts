@@ -61,7 +61,7 @@ function findConfirmationMessage(
 
 function confirmationToken(message: MailpitMessage): string {
   const source = message.Text ?? message.HTML ?? "";
-  const match = /confirmer-email\?token=([A-Za-z0-9_-]+)/.exec(source);
+  const match = /confirm-email\?token=([A-Za-z0-9_-]+)/.exec(source);
   if (!match) {
     throw new Error("Confirmation token missing from the e-mail");
   }
@@ -84,7 +84,7 @@ function signIn(email: string, password: string) {
 describe("authentication", () => {
   it("registers, confirms through Mailpit, rejects the used link and signs in", () => {
     const email = `e2e-auth-${Date.now()}@example.test`;
-    cy.visit("/inscription");
+    cy.visit("/register");
     fillRegistration(email, NEW_PASSWORD);
 
     cy.contains(
@@ -93,29 +93,29 @@ describe("authentication", () => {
 
     findConfirmationMessage(email).then((message) => {
       const token = confirmationToken(message);
-      cy.visit(`/confirmer-email?token=${token}`);
+      cy.visit(`/confirm-email?token=${token}`);
       cy.contains("Adresse confirmée").should("be.visible");
 
-      cy.visit(`/confirmer-email?token=${token}`);
+      cy.visit(`/confirm-email?token=${token}`);
       cy.contains("Ce lien de confirmation est invalide ou a expiré.").should(
         "be.visible",
       );
 
-      cy.visit("/connexion");
+      cy.visit("/login");
       signIn(email, NEW_PASSWORD);
-      cy.location("pathname").should("eq", "/bienvenue");
+      cy.location("pathname").should("eq", "/welcome");
       cy.contains(email).should("be.visible");
     });
   });
 
   it("shows French errors for a duplicate e-mail and a wrong password", () => {
-    cy.visit("/inscription");
+    cy.visit("/register");
     fillRegistration(SEEDED_EMAIL, NEW_PASSWORD);
     cy.contains("Un compte existe déjà avec cette adresse e-mail.").should(
       "be.visible",
     );
 
-    cy.visit("/connexion");
+    cy.visit("/login");
     signIn(E2E_EMAIL, "mauvais-mot-de-passe");
     cy.contains("Adresse e-mail ou mot de passe incorrect.").should(
       "be.visible",
@@ -123,12 +123,12 @@ describe("authentication", () => {
   });
 
   it("signs a normal user in and out", () => {
-    cy.visit("/connexion");
+    cy.visit("/login");
     signIn(E2E_EMAIL, E2E_PASSWORD);
-    cy.location("pathname").should("eq", "/generer/quittance");
+    cy.location("pathname").should("eq", "/generate/rent-receipt");
 
     cy.get('[data-cy="logout"]').click();
-    cy.location("pathname").should("eq", "/connexion");
+    cy.location("pathname").should("eq", "/login");
     cy.contains("Connexion").should("be.visible");
 
     cy.request({ url: "/api/companies", failOnStatusCode: false })
@@ -137,9 +137,9 @@ describe("authentication", () => {
   });
 
   it("forces the seeded account to change its provisional password", () => {
-    cy.visit("/connexion");
+    cy.visit("/login");
     signIn(SEEDED_EMAIL, "thtran");
-    cy.location("pathname").should("eq", "/mot-de-passe");
+    cy.location("pathname").should("eq", "/password");
     cy.contains(
       "Votre mot de passe provisoire doit être remplacé avant de continuer.",
     ).should("be.visible");
@@ -156,13 +156,13 @@ describe("authentication", () => {
     cy.get('[data-cy="auth-password-confirm"]').clear().type(NEW_PASSWORD);
     cy.get('[data-cy="auth-submit"]').click();
 
-    cy.location("pathname").should("eq", "/generer/quittance");
+    cy.location("pathname").should("eq", "/generate/rent-receipt");
     cy.request({ url: "/api/companies" }).its("status").should("eq", 200);
   });
 
   it("redirects an anonymous visitor from a protected page to the login page", () => {
-    cy.visit("/historique");
-    cy.location("pathname").should("eq", "/connexion");
+    cy.visit("/history");
+    cy.location("pathname").should("eq", "/login");
     cy.get("h1").should("contain.text", "Connexion");
   });
 });

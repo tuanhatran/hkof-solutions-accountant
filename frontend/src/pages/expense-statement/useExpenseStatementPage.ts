@@ -88,7 +88,7 @@ export function useExpenseStatementPage(
       return;
     }
     useRentReceiptDraft.getState().changeMonth(month);
-    navigate("/generer/quittance");
+    navigate("/generate/rent-receipt");
   }
 
   async function generateStatement() {

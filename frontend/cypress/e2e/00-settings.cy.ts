@@ -11,9 +11,9 @@ import {
 const SEEDED_LANDLORD = "Nom du bailleur";
 
 describe("Settings", () => {
-  it("redirects /configuration to Entreprise and keeps the company after reload", () => {
-    cy.visit("/configuration");
-    cy.location("pathname").should("eq", "/configuration/entreprise");
+  it("redirects /settings to Entreprise and keeps the company after reload", () => {
+    cy.visit("/settings");
+    cy.location("pathname").should("eq", "/settings/company");
 
     waitForText('[data-cy="company-information"]', "HKOF");
 
@@ -38,7 +38,7 @@ describe("Settings", () => {
   });
 
   it("sorts the company leases from the headers and filters from the section header", () => {
-    cy.visit("/configuration/entreprise");
+    cy.visit("/settings/company");
     cy.get('[data-cy="company-information"]', { timeout: 20_000 }).should(
       "be.visible",
     );
@@ -106,7 +106,7 @@ describe("Settings", () => {
 
   it("keeps the lease sort reachable on mobile", () => {
     cy.viewport(390, 844);
-    cy.visit("/configuration/entreprise");
+    cy.visit("/settings/company");
     cy.get('[data-cy="company-information"]', { timeout: 20_000 }).should(
       "be.visible",
     );
@@ -130,7 +130,7 @@ describe("Settings", () => {
   });
 
   it("edits the seeded lease amounts in the LMNP Baux et adresses tab", () => {
-    cy.visit("/configuration/lmnp");
+    cy.visit("/settings/agency");
     cy.get('[data-cy="tab-leases"]').should(
       "have.attr",
       "aria-selected",
@@ -163,7 +163,7 @@ describe("Settings", () => {
   });
 
   it("adds, edits then removes a natural person in the Personnes tab", () => {
-    cy.visit("/configuration/lmnp");
+    cy.visit("/settings/agency");
     cy.get('[data-cy="tab-persons"]').click();
 
     cy.get('[data-cy="btn-add-person"]').click();
@@ -227,7 +227,7 @@ describe("Settings", () => {
   });
 
   it("adds, edits then removes an expense type", () => {
-    cy.visit("/configuration/entreprise");
+    cy.visit("/settings/company");
 
     // Wait for the companies query and the effect that selects the first
     // company: it resets the active tab to "identification" when selectedId
@@ -286,7 +286,7 @@ describe("Settings", () => {
   });
 
   it("adds a signature to the seeded natural person from her form", () => {
-    cy.visit("/configuration/lmnp");
+    cy.visit("/settings/agency");
     cy.get('[data-cy="tab-persons"]').click();
 
     personByName(SEEDED_LANDLORD).then((landlord) => {

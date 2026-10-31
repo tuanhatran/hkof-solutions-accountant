@@ -145,7 +145,7 @@ export function useExpenseStatementContext(
   );
   const hydratedScope = useRef<string | null>(null);
 
-  // Only the global /generer page reloads the saved draft; scoped editors used by
+  // Only the global /generate page reloads the saved draft; scoped editors used by
   // modals keep their own isolated state and never read the generation draft.
   useEffect(() => {
     const saved = savedDraft.data;

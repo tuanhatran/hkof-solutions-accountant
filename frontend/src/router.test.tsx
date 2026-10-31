@@ -44,27 +44,27 @@ describe("router", () => {
   it("exposes the authenticated application routes and the public auth pages", () => {
     const paths = collectPaths(routes);
 
-    expect(paths).toContain("tableau-de-bord");
+    expect(paths).toContain("dashboard");
     expect(paths).toContain("templates");
-    expect(paths).toContain("admin/utilisateurs");
-    expect(paths).toContain("configuration/entreprise");
-    expect(paths).toContain("configuration/lmnp");
-    expect(paths).toContain("connexion");
-    expect(paths).toContain("inscription");
-    expect(paths).toContain("confirmer-email");
-    expect(paths).toContain("mot-de-passe");
+    expect(paths).toContain("admin/users");
+    expect(paths).toContain("settings/company");
+    expect(paths).toContain("settings/agency");
+    expect(paths).toContain("login");
+    expect(paths).toContain("register");
+    expect(paths).toContain("confirm-email");
+    expect(paths).toContain("password");
   });
 
   it("redirects an anonymous visitor of a protected page to the login page", async () => {
     const router = createMemoryRouter(routes, {
-      initialEntries: ["/historique"],
+      initialEntries: ["/history"],
     });
     render(<RouterProvider router={router} />);
 
     expect(
       await screen.findByRole("heading", { name: "Connexion" }),
     ).toBeVisible();
-    expect(router.state.location.pathname).toBe("/connexion");
+    expect(router.state.location.pathname).toBe("/login");
   });
 
   it("redirects a forced password change to the password page", async () => {
@@ -76,14 +76,14 @@ describe("router", () => {
       }),
     );
     const router = createMemoryRouter(routes, {
-      initialEntries: ["/historique"],
+      initialEntries: ["/history"],
     });
     render(<RouterProvider router={router} />);
 
     expect(
       await screen.findByRole("heading", { name: "Changer le mot de passe" }),
     ).toBeVisible();
-    expect(router.state.location.pathname).toBe("/mot-de-passe");
+    expect(router.state.location.pathname).toBe("/password");
   });
 
   it("renders the French not-found page with a link back to generation", () => {
@@ -100,7 +100,7 @@ describe("router", () => {
     expect(screen.getByText(/Vos brouillons restent conservés/)).toBeVisible();
     expect(
       screen.getByRole("link", { name: "Revenir à la génération" }),
-    ).toHaveAttribute("href", "/tableau-de-bord");
+    ).toHaveAttribute("href", "/dashboard");
   });
 
   it("formats route errors in French", () => {
@@ -157,10 +157,12 @@ describe("module guards", () => {
       companyEnabled: true,
       lmnpEnabled: false,
     });
-    const router = await renderAndSettle("/generer/quittance");
+    const router = await renderAndSettle("/generate/rent-receipt");
 
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe("/generer/note-frais"),
+      expect(router.state.location.pathname).toBe(
+        "/generate/expense-statement",
+      ),
     );
   });
 
@@ -171,10 +173,10 @@ describe("module guards", () => {
       companyEnabled: false,
       lmnpEnabled: true,
     });
-    const router = await renderAndSettle("/generer/note-frais");
+    const router = await renderAndSettle("/generate/expense-statement");
 
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe("/tableau-de-bord"),
+      expect(router.state.location.pathname).toBe("/dashboard"),
     );
   });
 
@@ -185,10 +187,10 @@ describe("module guards", () => {
       companyEnabled: true,
       lmnpEnabled: true,
     });
-    const router = await renderAndSettle("/admin/utilisateurs");
+    const router = await renderAndSettle("/admin/users");
 
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe("/tableau-de-bord"),
+      expect(router.state.location.pathname).toBe("/dashboard"),
     );
     expect(
       screen.queryByRole("table", {
@@ -215,7 +217,7 @@ describe("module guards", () => {
         },
       ],
     );
-    const router = await renderAndSettle("/admin/utilisateurs");
+    const router = await renderAndSettle("/admin/users");
 
     expect(
       await screen.findByRole("heading", { name: "Utilisateurs" }),
@@ -232,7 +234,7 @@ describe("module guards", () => {
         }),
       ).getByText("admin@exemple.fr"),
     ).toBeVisible();
-    expect(router.state.location.pathname).toBe("/admin/utilisateurs");
+    expect(router.state.location.pathname).toBe("/admin/users");
   });
 
   it("sends a company-only account from the root to the expense statement generator", async () => {
@@ -245,21 +247,23 @@ describe("module guards", () => {
     const router = await renderAndSettle("/");
 
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe("/generer/note-frais"),
+      expect(router.state.location.pathname).toBe(
+        "/generate/expense-statement",
+      ),
     );
   });
 
-  it("sends an LMNP-only account from /generer to the rent receipt generator", async () => {
+  it("sends an LMNP-only account from /generate to the rent receipt generator", async () => {
     mockCurrentUser({
       email: "lmnp@exemple.fr",
       role: "USER",
       companyEnabled: false,
       lmnpEnabled: true,
     });
-    const router = await renderAndSettle("/generer");
+    const router = await renderAndSettle("/generate");
 
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe("/tableau-de-bord"),
+      expect(router.state.location.pathname).toBe("/dashboard"),
     );
   });
 
@@ -270,10 +274,12 @@ describe("module guards", () => {
       companyEnabled: true,
       lmnpEnabled: false,
     });
-    const router = await renderAndSettle("/tableau-de-bord");
+    const router = await renderAndSettle("/dashboard");
 
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe("/generer/note-frais"),
+      expect(router.state.location.pathname).toBe(
+        "/generate/expense-statement",
+      ),
     );
   });
 
@@ -285,10 +291,10 @@ describe("module guards", () => {
       lmnpEnabled: true,
       onboardingCompleted: false,
     });
-    const router = await renderAndSettle("/historique");
+    const router = await renderAndSettle("/history");
 
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe("/bienvenue"),
+      expect(router.state.location.pathname).toBe("/welcome"),
     );
     expect(
       await screen.findByRole("heading", {
@@ -299,7 +305,7 @@ describe("module guards", () => {
       screen.getByText("Connecté en tant que nouveau@exemple.fr"),
     ).toBeVisible();
     await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(router.state.location.pathname).toBe("/bienvenue");
+    expect(router.state.location.pathname).toBe("/welcome");
   });
 
   it("lets a forced password change win over onboarding", async () => {
@@ -308,12 +314,12 @@ describe("module guards", () => {
       mustChangePassword: true,
       onboardingCompleted: false,
     });
-    const router = await renderAndSettle("/historique");
+    const router = await renderAndSettle("/history");
 
     expect(
       await screen.findByRole("heading", { name: "Changer le mot de passe" }),
     ).toBeVisible();
-    expect(router.state.location.pathname).toBe("/mot-de-passe");
+    expect(router.state.location.pathname).toBe("/password");
   });
 
   it("never sends a completed account back to onboarding", async () => {
@@ -324,10 +330,10 @@ describe("module guards", () => {
       lmnpEnabled: true,
       onboardingCompleted: true,
     });
-    const router = await renderAndSettle("/configuration/entreprise");
+    const router = await renderAndSettle("/settings/company");
 
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe("/configuration/entreprise"),
+      expect(router.state.location.pathname).toBe("/settings/company"),
     );
     expect(
       screen.queryByRole("heading", {
@@ -349,33 +355,33 @@ describe("module guards", () => {
       await screen.findByRole("heading", { name: "Aucun module activé" }),
     ).toBeVisible();
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe("/aucun-module"),
+      expect(router.state.location.pathname).toBe("/no-module"),
     );
     await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(router.state.location.pathname).toBe("/aucun-module");
+    expect(router.state.location.pathname).toBe("/no-module");
     expect(
       screen.getAllByRole("heading", { name: "Aucun module activé" }),
     ).toHaveLength(1);
     expect(screen.queryByText(/désactivé pour ce compte/)).toBeNull();
   });
 
-  it("renders the no-module page from /generer without a redirect loop", async () => {
+  it("renders the no-module page from /generate without a redirect loop", async () => {
     mockCurrentUser({
       email: "aucun@exemple.fr",
       role: "USER",
       companyEnabled: false,
       lmnpEnabled: false,
     });
-    const router = await renderAndSettle("/generer");
+    const router = await renderAndSettle("/generate");
 
     expect(
       await screen.findByRole("heading", { name: "Aucun module activé" }),
     ).toBeVisible();
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe("/aucun-module"),
+      expect(router.state.location.pathname).toBe("/no-module"),
     );
     await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(router.state.location.pathname).toBe("/aucun-module");
+    expect(router.state.location.pathname).toBe("/no-module");
     expect(
       screen.getAllByRole("heading", { name: "Aucun module activé" }),
     ).toHaveLength(1);

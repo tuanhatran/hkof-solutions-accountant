@@ -698,7 +698,7 @@ describe("GenerateRentReceiptPage", () => {
     expect(alert).toHaveTextContent(/Aucune signature pour ce bailleur/);
     expect(
       screen.getByRole("link", { name: "Agence immobilière · Personnes" }),
-    ).toHaveAttribute("href", "/configuration/lmnp");
+    ).toHaveAttribute("href", "/settings/agency");
     expect(
       screen.getByRole("button", { name: /Générer la quittance/ }),
     ).toBeDisabled();

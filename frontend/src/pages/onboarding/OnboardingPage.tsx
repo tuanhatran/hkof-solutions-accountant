@@ -48,7 +48,7 @@ function companyRequest(
   };
 }
 
-/** `/bienvenue`: 3 form steps plus a summary, then the onboarding completion. */
+/** `/welcome`: 3 form steps plus a summary, then the onboarding completion. */
 export function OnboardingPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -215,7 +215,7 @@ export function OnboardingPage() {
       }
 
       await completeOnboardingSession();
-      navigate("/tableau-de-bord", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {

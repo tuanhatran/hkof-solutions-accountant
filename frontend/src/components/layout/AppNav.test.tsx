@@ -6,7 +6,7 @@ import { setAuthUser } from "@/api/queries";
 import i18n from "@/i18n";
 import { MobileNavigation, SECTIONS, SideNavigation } from "./AppNav";
 
-function renderAt(ui: ReactElement, path = "/historique") {
+function renderAt(ui: ReactElement, path = "/history") {
   return render(<MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>);
 }
 
@@ -22,10 +22,10 @@ describe("SideNavigation", () => {
     expect(within(navigation).getByText("Réglages")).toBeVisible();
     expect(
       within(navigation).getByRole("link", { name: /Société/ }),
-    ).toHaveAttribute("href", "/configuration/entreprise");
+    ).toHaveAttribute("href", "/settings/company");
     expect(
       within(navigation).getByRole("link", { name: /Agence immobilière/ }),
-    ).toHaveAttribute("href", "/configuration/lmnp");
+    ).toHaveAttribute("href", "/settings/agency");
     const templatesLink = within(navigation).getByRole("link", {
       name: /Modèles/,
     });
@@ -49,13 +49,13 @@ describe("SideNavigation", () => {
     const dashboardLink = within(navigation).getByRole("link", {
       name: /Tableau de bord/,
     });
-    expect(dashboardLink).toHaveAttribute("href", "/tableau-de-bord");
+    expect(dashboardLink).toHaveAttribute("href", "/dashboard");
     expect(dashboardLink).toHaveAttribute("data-cy", "tab-dashboard");
 
     const historyLink = within(navigation).getByRole("link", {
       name: /Historique/,
     });
-    expect(historyLink).toHaveAttribute("href", "/historique");
+    expect(historyLink).toHaveAttribute("href", "/history");
     expect(historyLink).toHaveAttribute("data-cy", "tab-history");
     expect(historyLink.className).toContain("app-nav-link-active");
     expect(historyLink.querySelector(".app-nav-icon-active")).not.toBeNull();
@@ -71,17 +71,20 @@ describe("SideNavigation", () => {
     const receiptLink = within(navigation).getByRole("link", {
       name: /Quittance/,
     });
-    expect(receiptLink).toHaveAttribute("href", "/generer/quittance");
+    expect(receiptLink).toHaveAttribute("href", "/generate/rent-receipt");
     expect(receiptLink).toHaveAttribute("data-cy", "tab-rent-receipt");
     const statementLink = within(navigation).getByRole("link", {
       name: /Note de frais/,
     });
-    expect(statementLink).toHaveAttribute("href", "/generer/note-frais");
+    expect(statementLink).toHaveAttribute(
+      "href",
+      "/generate/expense-statement",
+    );
     expect(statementLink).toHaveAttribute("data-cy", "tab-expense-statement");
   });
 
   it("marks the generation route as active", () => {
-    renderAt(<SideNavigation />, "/generer/quittance");
+    renderAt(<SideNavigation />, "/generate/rent-receipt");
 
     const navigation = screen.getByRole("navigation", {
       name: "Navigation principale",
@@ -107,22 +110,22 @@ describe("SideNavigation", () => {
     expect(within(navigation).getByText("Settings")).toBeVisible();
     expect(
       within(navigation).getByRole("link", { name: /Dashboard/ }),
-    ).toHaveAttribute("href", "/tableau-de-bord");
+    ).toHaveAttribute("href", "/dashboard");
     expect(
       within(navigation).getByRole("link", { name: /Rent receipt/ }),
-    ).toHaveAttribute("href", "/generer/quittance");
+    ).toHaveAttribute("href", "/generate/rent-receipt");
     expect(
       within(navigation).getByRole("link", { name: /Expense statement/ }),
-    ).toHaveAttribute("href", "/generer/note-frais");
+    ).toHaveAttribute("href", "/generate/expense-statement");
     expect(
       within(navigation).getByRole("link", { name: /History/ }),
-    ).toHaveAttribute("href", "/historique");
+    ).toHaveAttribute("href", "/history");
     expect(
       within(navigation).getByRole("link", { name: /History/ }),
     ).toHaveAttribute("data-cy", "tab-history");
     expect(
       within(navigation).getByRole("link", { name: /Company/ }),
-    ).toHaveAttribute("href", "/configuration/entreprise");
+    ).toHaveAttribute("href", "/settings/company");
     expect(
       within(navigation).getByRole("link", { name: /Templates/ }),
     ).toHaveAttribute("href", "/templates");
@@ -202,7 +205,7 @@ describe("module-aware navigation", () => {
     const adminUsers = screen.getByRole("link", {
       name: /Administration utilisateurs/,
     });
-    expect(adminUsers).toHaveAttribute("href", "/admin/utilisateurs");
+    expect(adminUsers).toHaveAttribute("href", "/admin/users");
     expect(adminUsers).toHaveAttribute("data-cy", "tab-admin-users");
     expect(linkLabels()).toHaveLength(9);
   });
@@ -222,7 +225,7 @@ describe("module-aware navigation", () => {
           name: "Navigation principale mobile",
         }),
       ).getByRole("link", { name: /Administration utilisateurs/ }),
-    ).toHaveAttribute("href", "/admin/utilisateurs");
+    ).toHaveAttribute("href", "/admin/users");
   });
 
   it("keeps the admin users link out of a USER navigation", () => {

@@ -65,7 +65,7 @@ export function RentReceiptSignatureField({ c }: { c: RentReceiptController }) {
           data-cy="alert-landlord-signature"
         >
           {t("rentReceipt.fields.missingLandlordSignatureBefore")}{" "}
-          <Link to="/configuration/lmnp" className="link">
+          <Link to="/settings/agency" className="link">
             {t("rentReceipt.fields.lmnpPersonsLink")}
           </Link>
           {t("rentReceipt.fields.missingLandlordSignatureAfter")}

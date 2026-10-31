@@ -118,7 +118,7 @@ export function ExpenseGenerationFooter({
             data-cy="alert-missing-ceo"
           >
             {t("expenseStatement.footer.missingCeoBefore")}{" "}
-            <Link to="/configuration/entreprise" className="link">
+            <Link to="/settings/company" className="link">
               {t("expenseStatement.footer.companyLink")}
             </Link>
             {t("expenseStatement.footer.missingCeoAfter")}
@@ -130,7 +130,7 @@ export function ExpenseGenerationFooter({
             data-cy="alert-missing-signature"
           >
             {t("expenseStatement.footer.missingSignatureBefore")}{" "}
-            <Link to="/configuration/entreprise" className="link">
+            <Link to="/settings/company" className="link">
               {t("expenseStatement.footer.companyLink")}
             </Link>
             {t("expenseStatement.footer.missingSignatureAfter")}

@@ -96,7 +96,7 @@ export function GenerateExpenseStatementPage() {
           description={t("expenseStatement.page.noCompanyDescription")}
           action={
             <Link
-              to="/configuration/entreprise"
+              to="/settings/company"
               className="btn btn-primary"
               data-cy="link-configure-company"
             >

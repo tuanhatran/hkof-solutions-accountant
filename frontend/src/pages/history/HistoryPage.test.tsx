@@ -327,7 +327,7 @@ function LocationProbe() {
 
 function renderPage() {
   render(
-    <MemoryRouter initialEntries={["/historique"]}>
+    <MemoryRouter initialEntries={["/history"]}>
       <HistoryPage />
       <LocationProbe />
     </MemoryRouter>,
@@ -416,7 +416,9 @@ async function confirmStatementReload() {
   await user.click(
     within(dialog).getByRole("button", { name: "Charger les lignes" }),
   );
-  await waitFor(() => expect(currentPath()).toBe("/generer/note-frais"));
+  await waitFor(() =>
+    expect(currentPath()).toBe("/generate/expense-statement"),
+  );
 }
 
 describe("HistoryPage", () => {
@@ -529,12 +531,12 @@ describe("HistoryPage", () => {
     await user.click(
       screen.getByRole("button", { name: "Générer une quittance" }),
     );
-    expect(currentPath()).toBe("/generer/quittance");
+    expect(currentPath()).toBe("/generate/rent-receipt");
 
     await user.click(
       screen.getByRole("button", { name: "Générer une note de frais" }),
     );
-    expect(currentPath()).toBe("/generer/note-frais");
+    expect(currentPath()).toBe("/generate/expense-statement");
   });
 
   it("surfaces the rent receipt or statement loading errors and retries", async () => {
@@ -736,7 +738,9 @@ describe("HistoryPage", () => {
       within(dialog).getByRole("button", { name: "Charger les lignes" }),
     );
 
-    await waitFor(() => expect(currentPath()).toBe("/generer/note-frais"));
+    await waitFor(() =>
+      expect(currentPath()).toBe("/generate/expense-statement"),
+    );
     const draft = useStatementDraft.getState();
     const scope = draftScopeKey(1, "2026-01");
     expect(draft.month).toBe("2026-01");
@@ -1077,12 +1081,12 @@ describe("HistoryPage", () => {
     await user.click(
       screen.getByRole("button", { name: "Generate a rent receipt" }),
     );
-    expect(currentPath()).toBe("/generer/quittance");
+    expect(currentPath()).toBe("/generate/rent-receipt");
 
     await user.click(
       screen.getByRole("button", { name: "Generate an expense statement" }),
     );
-    expect(currentPath()).toBe("/generer/note-frais");
+    expect(currentPath()).toBe("/generate/expense-statement");
   });
 
   it("reloads a statement with the English dialog and toast", async () => {
@@ -1105,7 +1109,9 @@ describe("HistoryPage", () => {
     await user.click(
       within(dialog).getByRole("button", { name: "Load the lines" }),
     );
-    await waitFor(() => expect(currentPath()).toBe("/generer/note-frais"));
+    await waitFor(() =>
+      expect(currentPath()).toBe("/generate/expense-statement"),
+    );
     expect(
       useToasts.getState().toasts.map((element) => element.message),
     ).toContain("January 2026 lines reloaded into the draft.");

@@ -138,17 +138,17 @@ describe("DashboardPage", () => {
     const receiptAction = screen.getByRole("link", {
       name: /Générer une quittance/i,
     });
-    expect(receiptAction).toHaveAttribute("href", "/generer/quittance");
+    expect(receiptAction).toHaveAttribute("href", "/generate/rent-receipt");
 
     const addPropertyAction = screen.getByRole("link", {
       name: /Ajouter un bien/i,
     });
-    expect(addPropertyAction).toHaveAttribute("href", "/configuration/lmnp");
+    expect(addPropertyAction).toHaveAttribute("href", "/settings/agency");
 
     const manageLeasesAction = screen.getByRole("link", {
       name: /Gérer les baux/i,
     });
-    expect(manageLeasesAction).toHaveAttribute("href", "/configuration/lmnp");
+    expect(manageLeasesAction).toHaveAttribute("href", "/settings/agency");
   });
 
   it("lists managed properties, landlords, and active tenants in portfolio overview", () => {

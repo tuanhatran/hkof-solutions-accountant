@@ -29,8 +29,8 @@ import {
 
 export type AuthMode = "login" | "register" | "confirm" | "password";
 
-const HOME_PATH = "/generer/quittance";
-const LOGIN_PATH = "/connexion";
+const HOME_PATH = "/generate/rent-receipt";
+const LOGIN_PATH = "/login";
 
 interface FrameProps {
   eyebrow: string;
@@ -133,10 +133,7 @@ function LoginPanel() {
 
   if (user) {
     return (
-      <Navigate
-        to={user.mustChangePassword ? "/mot-de-passe" : target}
-        replace
-      />
+      <Navigate to={user.mustChangePassword ? "/password" : target} replace />
     );
   }
 
@@ -145,7 +142,7 @@ function LoginPanel() {
     setSubmitError(null);
     try {
       const signedIn = await loginSession(values.email.trim(), values.password);
-      navigate(signedIn.mustChangePassword ? "/mot-de-passe" : target, {
+      navigate(signedIn.mustChangePassword ? "/password" : target, {
         replace: true,
       });
     } catch (error) {
@@ -208,7 +205,7 @@ function LoginPanel() {
       </form>
       <p className="auth-page-links">
         {t("auth.login.noAccount")}{" "}
-        <Link to="/inscription">{t("auth.login.registerLink")}</Link>
+        <Link to="/register">{t("auth.login.registerLink")}</Link>
       </p>
     </AuthFrame>
   );
