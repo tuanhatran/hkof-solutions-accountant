@@ -18,6 +18,10 @@ vi.mock("@/api/endpoints", () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
+    agency: {
+      get: vi.fn(),
+      save: vi.fn(),
+    },
     companies: {
       list: vi.fn(),
       create: vi.fn(),
@@ -115,6 +119,16 @@ beforeEach(() => {
   vi.mocked(api.companies.list).mockResolvedValue([]);
   vi.mocked(api.companies.create).mockResolvedValue(COMPANY);
   vi.mocked(api.companies.update).mockResolvedValue(COMPANY);
+  vi.mocked(api.agency.save).mockResolvedValue({
+    id: 1,
+    name: "HKOF",
+    isPersonal: false,
+    managerName: "Alice Martin",
+    legalForm: null,
+    siren: "123456789",
+    siret: "12345678900012",
+    address: null,
+  });
   vi.mocked(api.persons.create).mockImplementation(async (body) => ({
     id: nextPersonId++,
     name: body.name,
@@ -128,6 +142,34 @@ beforeEach(() => {
 });
 
 describe("OnboardingPage", () => {
+  it("renders the language selector in the header and toggles between French and English", async () => {
+    const user = userEvent.setup();
+    renderWizard();
+
+    const languageSelector = screen.getByRole("group", { name: "Langue" });
+    expect(languageSelector).toBeVisible();
+
+    const enButton = screen.getByRole("button", { name: "English" });
+    await user.click(enButton);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Welcome to HomeOfficeExpenses",
+      }),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Step 1 of 4: Profile")).toBeVisible();
+
+    const frButton = screen.getByRole("button", { name: "Français" });
+    await user.click(frButton);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Bienvenue dans HomeOfficeExpenses",
+      }),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Étape 1 sur 4 : Profil")).toBeVisible();
+  });
+
   it("shows the account e-mail and the four French steps", () => {
     renderWizard();
 
@@ -174,16 +216,17 @@ describe("OnboardingPage", () => {
         issuePlace: null,
       }),
     );
-    expect(api.companies.create).toHaveBeenCalledWith({
+    expect(api.agency.save).toHaveBeenCalledWith({
       name: "HKOF",
-      legalForm: "",
+      isPersonal: false,
+      managerName: "Alice Martin",
+      legalForm: null,
       siren: "123456789",
       siret: "12345678900012",
-      address: "",
-      managerName: "",
-      leaseId: null,
-      issuePlace: "",
+      address: null,
     });
+    expect(api.companies.create).not.toHaveBeenCalled();
+    expect(api.companies.update).not.toHaveBeenCalled();
     expect(await screen.findByText(/Profil enregistré/)).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Dessiner une signature" }),
@@ -194,26 +237,63 @@ describe("OnboardingPage", () => {
     expect(screen.getByRole("button", { name: "Continuer" })).toBeVisible();
   });
 
-  it("updates the first active company instead of creating a duplicate", async () => {
-    vi.mocked(api.companies.list).mockResolvedValue([
-      { id: 4, name: "Ancienne agence", siren: "111111111" },
-    ]);
-    vi.mocked(api.companies.update).mockResolvedValue({ id: 4, name: "HKOF" });
+  it("toggles personal agency, hiding corporate fields and saving with api.agency.save without companies", async () => {
+    setAuthUser({
+      email: "bailleur@exemple.fr",
+      role: "USER",
+      companyEnabled: false,
+      lmnpEnabled: true,
+      onboardingCompleted: false,
+    });
     const user = userEvent.setup();
     renderWizard();
 
-    await fillProfile(user);
+    const personalAgencyCheckbox = screen.getByLabelText("Agence personnelle");
+    expect(personalAgencyCheckbox).not.toBeChecked();
+
+    expect(screen.getByLabelText("Forme juridique")).toBeVisible();
+    expect(screen.getByLabelText("SIREN ou SIRET")).toBeVisible();
+    expect(screen.getByLabelText("Adresse de l'agence")).toBeVisible();
+
+    await user.click(personalAgencyCheckbox);
+    expect(personalAgencyCheckbox).toBeChecked();
+
+    expect(screen.queryByLabelText("Forme juridique")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("SIREN ou SIRET")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Adresse de l'agence"),
+    ).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Prénom"), "Alice");
+    await user.type(
+      screen.getByLabelText("Nom", { selector: "#onboarding-last-name" }),
+      "Martin",
+    );
+    await user.type(screen.getByLabelText("Téléphone"), "06 12 34 56 78");
+    await user.type(
+      screen.getByLabelText("Nom", { selector: "#onboarding-agency-name" }),
+      "Agence Personnelle Alice",
+    );
+
     await user.click(
       screen.getByRole("button", { name: "Enregistrer le profil" }),
     );
 
     await waitFor(() =>
-      expect(api.companies.update).toHaveBeenCalledWith(
-        4,
-        expect.objectContaining({ name: "HKOF", siren: "123456789" }),
-      ),
+      expect(api.agency.save).toHaveBeenCalledWith({
+        name: "Agence Personnelle Alice",
+        isPersonal: true,
+        managerName: "Alice Martin",
+        legalForm: null,
+        siren: null,
+        siret: null,
+        address: null,
+      }),
     );
     expect(api.companies.create).not.toHaveBeenCalled();
+    expect(api.companies.update).not.toHaveBeenCalled();
+    expect(api.companies.list).not.toHaveBeenCalled();
+    expect(await screen.findByText(/Profil enregistré/)).toBeVisible();
   });
 
   it("rejects an invalid phone and a SIREN of 11 digits in French", async () => {
@@ -242,7 +322,7 @@ describe("OnboardingPage", () => {
       screen.getByText("Saisissez 9 chiffres (SIREN) ou 14 chiffres (SIRET)."),
     ).toBeVisible();
     expect(api.persons.create).not.toHaveBeenCalled();
-    expect(api.companies.create).not.toHaveBeenCalled();
+    expect(api.agency.save).not.toHaveBeenCalled();
   });
 
   it("allows omitting legal form, SIREN/SIRET, and agency address", async () => {
@@ -264,15 +344,15 @@ describe("OnboardingPage", () => {
     );
 
     await waitFor(() =>
-      expect(api.companies.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: "Agence Seule",
-          legalForm: "",
-          siren: "",
-          siret: null,
-          address: "",
-        }),
-      ),
+      expect(api.agency.save).toHaveBeenCalledWith({
+        name: "Agence Seule",
+        isPersonal: false,
+        managerName: "Alice Martin",
+        legalForm: null,
+        siren: null,
+        siret: null,
+        address: null,
+      }),
     );
     expect(await screen.findByText(/Profil enregistré/)).toBeVisible();
   });

@@ -9,8 +9,12 @@
     @apply w-full max-w-md p-6 sm:p-8;
   }
 
+  .auth-page-top {
+    @apply mb-6 flex items-center justify-between gap-4;
+  }
+
   .auth-page-brand {
-    @apply mb-6 flex items-center gap-2.5;
+    @apply flex items-center gap-2.5;
   }
 
   .auth-page-brand-mark {

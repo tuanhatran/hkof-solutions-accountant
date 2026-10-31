@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import i18n from "@/i18n";
-import type { CompanyDto, PersonDto } from "@/api/types";
+import type { AgencyDto, PersonDto } from "@/api/types";
 import { parseAmount } from "@/lib/format";
 
 /** French message of the onboarding validation namespace. */
@@ -48,6 +48,7 @@ export interface ProfileValues {
   phoneCountryCode?: string;
   address: string;
   addressNote: string;
+  isPersonalAgency: boolean;
   agencyName: string;
   legalForm: string;
   sirenSiret: string;
@@ -92,7 +93,7 @@ export interface OnboardingDraft {
   leaseType: LeaseType;
   tenants: TenantValues[];
   person: PersonDto | null;
-  company: CompanyDto | null;
+  agency: AgencyDto | null;
 }
 
 export const EMPTY_PROFILE: ProfileValues = {
@@ -102,6 +103,7 @@ export const EMPTY_PROFILE: ProfileValues = {
   phoneCountryCode: "+33",
   address: "",
   addressNote: "",
+  isPersonalAgency: false,
   agencyName: "",
   legalForm: "",
   sirenSiret: "",
@@ -147,7 +149,7 @@ export const EMPTY_DRAFT: OnboardingDraft = {
   leaseType: "individual",
   tenants: [{ ...EMPTY_TENANT }],
   person: null,
-  company: null,
+  agency: null,
 };
 
 /** "Prénom Nom", the single name column of a person. */
@@ -203,8 +205,8 @@ export function useOnboardingState() {
   }, []);
 
   const updateProfile = useCallback(
-    (profile: ProfileValues, person: PersonDto, company: CompanyDto) => {
-      setDraft((current) => ({ ...current, profile, person, company }));
+    (profile: ProfileValues, person: PersonDto, agency: AgencyDto) => {
+      setDraft((current) => ({ ...current, profile, person, agency }));
     },
     [],
   );

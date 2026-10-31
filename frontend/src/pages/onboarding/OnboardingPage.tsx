@@ -5,7 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { completeOnboardingSession, useAuthState } from "@/api/queries";
-import type { CompanyDto, CompanyRequest, PersonRequest } from "@/api/types";
+import type { AgencyRequest, PersonRequest } from "@/api/types";
+import { LanguageSelector } from "@/components/layout/LanguageSelector";
 import { OnboardingStepLease } from "./OnboardingStepLease";
 import { OnboardingStepNav } from "./OnboardingStepNav";
 import { OnboardingStepProfile } from "./OnboardingStepProfile";
@@ -32,19 +33,17 @@ function personRequest(values: ProfileValues): PersonRequest {
   };
 }
 
-function companyRequest(
-  values: ProfileValues,
-  existing: CompanyDto | null,
-): CompanyRequest {
+function agencyRequest(values: ProfileValues): AgencyRequest {
   return {
     name: values.agencyName.trim(),
-    legalForm: values.legalForm.trim(),
-    siren: sirenOf(values.sirenSiret),
-    siret: siretOf(values.sirenSiret),
-    address: values.agencyAddress.trim(),
-    managerName: "",
-    leaseId: existing?.leaseId ?? null,
-    issuePlace: "",
+    isPersonal: values.isPersonalAgency,
+    managerName: fullName(values.firstName, values.lastName),
+    legalForm: values.isPersonalAgency ? null : values.legalForm.trim() || null,
+    siren: values.isPersonalAgency ? null : sirenOf(values.sirenSiret) || null,
+    siret: values.isPersonalAgency ? null : siretOf(values.sirenSiret),
+    address: values.isPersonalAgency
+      ? null
+      : values.agencyAddress.trim() || null,
   };
 }
 
@@ -69,25 +68,16 @@ export function OnboardingPage() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function ensureAgency(values: ProfileValues): Promise<CompanyDto> {
-    const existing =
-      draft.company ?? (await api.companies.list()).at(0) ?? null;
-    const requestBody = companyRequest(values, existing);
-    return existing?.id !== undefined
-      ? api.companies.update(existing.id, requestBody)
-      : api.companies.create(requestBody);
-  }
-
   async function saveProfile(values: ProfileValues, advance: boolean) {
     setPending(true);
     setError(null);
     try {
-      const company = await ensureAgency(values);
+      const agency = await api.agency.save(agencyRequest(values));
       const person =
         draft.person?.id !== undefined
           ? await api.persons.update(draft.person.id, personRequest(values))
           : await api.persons.create(personRequest(values));
-      updateProfile(values, person, company);
+      updateProfile(values, person, agency);
       if (advance) next();
     } catch (caught) {
       setError(errorMessage(caught));
@@ -227,7 +217,10 @@ export function OnboardingPage() {
     <div className="onboarding-page">
       <main className="onboarding-shell">
         <header className="onboarding-header">
-          <p className="eyebrow">{t("onboarding.eyebrow")}</p>
+          <div className="onboarding-header-top">
+            <p className="eyebrow">{t("onboarding.eyebrow")}</p>
+            <LanguageSelector />
+          </div>
           <h1 className="onboarding-title">{t("onboarding.title")}</h1>
           <p className="onboarding-description">
             {t("onboarding.description")}

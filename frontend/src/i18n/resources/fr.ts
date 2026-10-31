@@ -381,6 +381,9 @@ export const fr = {
         "Vos coordonnées de bailleur et l'agence utilisée pour vos notes de frais. Enregistrez le profil pour ajouter votre signature.",
       identityTitle: "Gérant",
       agencyTitle: "Agence",
+      personalAgency: "Agence personnelle",
+      personalAgencyDescription:
+        "Gestion en nom propre, sans société commerciale.",
       firstName: "Prénom",
       lastName: "Nom",
       phone: "Téléphone",

@@ -361,6 +361,9 @@ export const en = {
         "Your landlord details and the agency used for your expense statements. Save the profile to add your signature.",
       identityTitle: "Manager",
       agencyTitle: "Agency",
+      personalAgency: "Personal agency",
+      personalAgencyDescription:
+        "Direct management under own name, without commercial company.",
       firstName: "First name",
       lastName: "Last name",
       phone: "Phone",

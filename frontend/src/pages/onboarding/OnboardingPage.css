@@ -13,6 +13,10 @@
     @apply mb-6;
   }
 
+  .onboarding-header-top {
+    @apply mb-2 flex items-center justify-between gap-4;
+  }
+
   .onboarding-title {
     @apply text-2xl font-semibold tracking-tight text-ink;
   }
@@ -59,6 +63,22 @@
 
   .onboarding-subtitle {
     @apply text-sm font-semibold text-ink;
+  }
+
+  .onboarding-personal-agency {
+    @apply mb-4;
+  }
+
+  .onboarding-checkbox {
+    @apply flex cursor-pointer items-center gap-2 text-sm font-medium text-ink;
+  }
+
+  .onboarding-checkbox input {
+    @apply size-4 accent-accent;
+  }
+
+  .onboarding-checkbox-help {
+    @apply ml-6 mt-1 text-xs text-ink-soft;
   }
 
   .onboarding-grid {

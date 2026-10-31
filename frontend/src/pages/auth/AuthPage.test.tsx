@@ -121,6 +121,30 @@ describe("AuthPage login", () => {
       await screen.findByText("Adresse e-mail ou mot de passe incorrect."),
     ).toBeVisible();
   });
+
+  it("displays the language toggle and switches between French and English", async () => {
+    const user = userEvent.setup();
+    renderPage("login", "/login");
+
+    const languageSelector = screen.getByRole("group", { name: "Langue" });
+    expect(languageSelector).toBeVisible();
+
+    const enButton = screen.getByRole("button", { name: "English" });
+    await user.click(enButton);
+
+    expect(
+      await screen.findByRole("heading", { name: "Sign in" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeVisible();
+
+    const frButton = screen.getByRole("button", { name: "Français" });
+    await user.click(frButton);
+
+    expect(
+      await screen.findByRole("heading", { name: "Connexion" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Se connecter" })).toBeVisible();
+  });
 });
 
 describe("AuthPage register", () => {
