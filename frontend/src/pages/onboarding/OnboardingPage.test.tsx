@@ -451,6 +451,54 @@ describe("OnboardingPage", () => {
     expect(addressInput).toHaveValue("10 Rue de la Paix 75002 Paris");
   });
 
+  it("suggests addresses for the onboarding agency address and fills it on selection", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [2.35, 48.85] },
+            properties: {
+              id: "addr-paris",
+              label: "12 Rue de la Paix 75002 Paris",
+              name: "12 Rue de la Paix",
+              postcode: "75002",
+              city: "Paris",
+            },
+          },
+        ],
+      }),
+    } as Response);
+
+    const user = userEvent.setup();
+    renderWizard();
+
+    const agencyAddress = screen.getByLabelText("Adresse de l'agence");
+    expect(agencyAddress).toHaveAttribute("role", "combobox");
+    expect(agencyAddress).toHaveAttribute(
+      "data-cy",
+      "input-onboarding-agency-address",
+    );
+
+    await user.type(agencyAddress, "12");
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    await user.type(agencyAddress, " Rue de la Paix");
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining("q=12%20Rue%20de%20la%20Paix"),
+      expect.anything(),
+    );
+
+    const option = await screen.findByRole("option", {
+      name: "12 Rue de la Paix 75002 Paris",
+    });
+    await user.click(option);
+    expect(agencyAddress).toHaveValue("12 Rue de la Paix 75002 Paris");
+  });
+
   it("keeps the profile values when returning from the property step", async () => {
     const user = userEvent.setup();
     renderWizard();

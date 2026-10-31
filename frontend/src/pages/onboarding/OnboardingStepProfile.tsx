@@ -1,10 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type ReactNode, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import type { PersonDto } from "@/api/types";
 import { SignatureStudio } from "@/components/settings/SignatureStudio";
-import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete";
 import { Button } from "@/components/ui/Button";
 import { CountryCodeSelect } from "@/components/ui/CountryCodeSelect";
 import { FieldGroup } from "@/components/ui/FieldGroup";
@@ -14,6 +13,7 @@ import {
   type ProfileFormInput,
   type ProfileFormValues,
 } from "./profileSchema";
+import { ProfileAddressField } from "./ProfileAddressField";
 import type { ProfileValues } from "./useOnboardingState";
 
 export { profileSchema, type ProfileFormInput, type ProfileFormValues };
@@ -150,20 +150,13 @@ export function OnboardingStepProfile({
             label={t("onboarding.profile.address")}
             error={errors.address?.message}
           >
-            <Controller
+            <ProfileAddressField
               control={control}
               name="address"
-              render={({ field }) => (
-                <AddressAutocomplete
-                  id="onboarding-person-address"
-                  value={field.value}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  placeholder={t("onboarding.profile.addressPlaceholder")}
-                  data-cy="input-onboarding-person-address"
-                  className={errors.address ? "field-error" : undefined}
-                />
-              )}
+              id="onboarding-person-address"
+              placeholder={t("onboarding.profile.addressPlaceholder")}
+              dataCy="input-onboarding-person-address"
+              hasError={Boolean(errors.address)}
             />
           </FieldGroup>
           <FieldGroup
@@ -248,11 +241,12 @@ export function OnboardingStepProfile({
                 label={t("onboarding.profile.agencyAddress")}
                 error={errors.agencyAddress?.message}
               >
-                <input
+                <ProfileAddressField
+                  control={control}
+                  name="agencyAddress"
                   id="onboarding-agency-address"
-                  className="field"
-                  data-cy="input-onboarding-agency-address"
-                  {...register("agencyAddress")}
+                  dataCy="input-onboarding-agency-address"
+                  hasError={Boolean(errors.agencyAddress)}
                 />
               </FieldGroup>
             </>
