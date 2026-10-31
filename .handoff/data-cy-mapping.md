@@ -123,3 +123,23 @@ Consumed by `frontend/cypress/e2e/07-onboarding.cy.ts`.
 | `action-generate-receipt`  | DashboardPage | quick action link to rent receipt generator     |
 | `action-add-property`      | DashboardPage | quick action link to add property in settings   |
 | `action-manage-leases`     | DashboardPage | quick action link to manage leases in settings  |
+
+## Personal Agency, Resume & Settings hooks (tasks 97-100)
+
+Consumed by `frontend/cypress/e2e/07-onboarding.cy.ts`.
+
+| Hook                               | Producer               | Purpose                                                |
+| ---------------------------------- | ---------------------- | ------------------------------------------------------ |
+| `input-onboarding-personal-agency` | OnboardingStepProfile  | personal agency checkbox (skip company details)        |
+| `btn-skip-onboarding`              | OnboardingPage         | skip onboarding wizard to dashboard                    |
+| `onboarding-progress-card`         | OnboardingProgressCard | onboarding progress card shown on dashboard when draft |
+| `btn-resume-onboarding`            | OnboardingProgressCard | resume onboarding from dashboard progress card         |
+| `tab-agency`                       | LmnpPage               | agency settings tab in LMNP settings                   |
+| `agency-section`                   | AgencySection          | agency configuration section in settings               |
+| `agency-is-personal`               | AgencySection          | toggle personal vs professional agency                 |
+| `agency-name`                      | AgencySection          | agency name input in settings                          |
+| `agency-manager-name`              | AgencySection          | agency manager full name input                         |
+| `agency-legal-form`                | AgencySection          | agency legal form input                                |
+| `agency-siren-siret`               | AgencySection          | agency SIREN/SIRET input                               |
+| `agency-address`                   | AgencySection          | agency postal address input                            |
+| `btn-save-agency`                  | AgencySection          | save agency profile button                             |
