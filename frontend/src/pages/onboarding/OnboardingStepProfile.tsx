@@ -111,6 +111,7 @@ export function OnboardingStepProfile({
               id="onboarding-first-name"
               className={cn("field", errors.firstName && "field-error")}
               autoComplete="given-name"
+              data-cy="input-onboarding-first-name"
               {...register("firstName")}
             />
           </FieldGroup>
@@ -123,6 +124,7 @@ export function OnboardingStepProfile({
               id="onboarding-last-name"
               className={cn("field", errors.lastName && "field-error")}
               autoComplete="family-name"
+              data-cy="input-onboarding-last-name"
               {...register("lastName")}
             />
           </FieldGroup>
@@ -137,6 +139,7 @@ export function OnboardingStepProfile({
               className={cn("field", errors.phone && "field-error")}
               type="tel"
               autoComplete="tel"
+              data-cy="input-onboarding-phone"
               {...register("phone")}
             />
           </FieldGroup>
@@ -149,6 +152,7 @@ export function OnboardingStepProfile({
               id="onboarding-person-address"
               className="field"
               autoComplete="street-address"
+              data-cy="input-onboarding-person-address"
               {...register("address")}
             />
           </FieldGroup>
@@ -161,6 +165,7 @@ export function OnboardingStepProfile({
             <input
               id="onboarding-address-note"
               className="field"
+              data-cy="input-onboarding-address-note"
               {...register("addressNote")}
             />
           </FieldGroup>
@@ -179,6 +184,7 @@ export function OnboardingStepProfile({
               id="onboarding-agency-name"
               className={cn("field", errors.agencyName && "field-error")}
               autoComplete="organization"
+              data-cy="input-onboarding-agency-name"
               {...register("agencyName")}
             />
           </FieldGroup>
@@ -190,6 +196,7 @@ export function OnboardingStepProfile({
             <input
               id="onboarding-legal-form"
               className="field"
+              data-cy="input-onboarding-legal-form"
               {...register("legalForm")}
             />
           </FieldGroup>
@@ -203,6 +210,7 @@ export function OnboardingStepProfile({
               id="onboarding-siren-siret"
               className={cn("field", errors.sirenSiret && "field-error")}
               inputMode="numeric"
+              data-cy="input-onboarding-siren-siret"
               {...register("sirenSiret")}
             />
           </FieldGroup>
@@ -214,6 +222,7 @@ export function OnboardingStepProfile({
             <input
               id="onboarding-agency-address"
               className="field"
+              data-cy="input-onboarding-agency-address"
               {...register("agencyAddress")}
             />
           </FieldGroup>
@@ -239,7 +248,12 @@ export function OnboardingStepProfile({
         ) : null}
 
         <div className="onboarding-actions">
-          <Button variant="primary" type="submit" loading={pending}>
+          <Button
+            variant="primary"
+            type="submit"
+            loading={pending}
+            data-cy="btn-save-onboarding-profile"
+          >
             {person
               ? t("onboarding.navigation.next")
               : t("onboarding.navigation.saveProfile")}

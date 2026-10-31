@@ -92,6 +92,7 @@ export function OnboardingStepProperty({
             id="onboarding-property-address"
             className={cn("field", errors.propertyAddress && "field-error")}
             autoComplete="street-address"
+            data-cy="input-onboarding-property-address"
             {...register("propertyAddress")}
           />
         </FieldGroup>
@@ -106,6 +107,7 @@ export function OnboardingStepProperty({
               id="onboarding-rent"
               className={cn("field", errors.rentExclCharges && "field-error")}
               inputMode="decimal"
+              data-cy="input-onboarding-rent"
               {...register("rentExclCharges")}
             />
           </FieldGroup>
@@ -119,6 +121,7 @@ export function OnboardingStepProperty({
               id="onboarding-charges"
               className={cn("field", errors.charges && "field-error")}
               inputMode="decimal"
+              data-cy="input-onboarding-charges"
               {...register("charges")}
             />
           </FieldGroup>
@@ -127,7 +130,7 @@ export function OnboardingStepProperty({
         <h3 className="onboarding-subtitle">
           {t("onboarding.property.landlordTitle")}
         </h3>
-        <div className="onboarding-landlord">
+        <div className="onboarding-landlord" data-cy="onboarding-landlord">
           <div>
             <p className="onboarding-summary-term">
               {t("onboarding.property.landlord")}
@@ -157,7 +160,12 @@ export function OnboardingStepProperty({
           >
             {t("onboarding.navigation.back")}
           </Button>
-          <Button variant="primary" type="submit" loading={pending}>
+          <Button
+            variant="primary"
+            type="submit"
+            loading={pending}
+            data-cy="btn-next-onboarding-property"
+          >
             {t("onboarding.navigation.next")}
           </Button>
         </div>

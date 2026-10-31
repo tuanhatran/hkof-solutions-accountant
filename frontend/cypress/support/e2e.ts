@@ -123,14 +123,18 @@ Cypress.Commands.overwrite("request", (originalFn, ...args: unknown[]) => {
   });
 });
 
-const AUTH_SPEC = "06-auth.cy.ts";
+/** Specs that create and sign in their own account instead of the seeded one. */
+const SELF_AUTHENTICATED_SPECS = new Set([
+  "06-auth.cy.ts",
+  "07-onboarding.cy.ts",
+]);
 
 beforeEach(() => {
   cy.clearAllSessionStorage();
   cy.clearAllLocalStorage();
   cy.resetState();
   cy.task("clearDownloads");
-  if (Cypress.spec.name !== AUTH_SPEC) {
+  if (!SELF_AUTHENTICATED_SPECS.has(Cypress.spec.name)) {
     cy.login();
   }
 });

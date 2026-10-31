@@ -150,6 +150,7 @@ export function OnboardingStepLease({
               value="individual"
               checked={leaseType === "individual"}
               onChange={() => changeType("individual")}
+              data-cy="onboarding-lease-individual"
             />
             {t("onboarding.lease.individual")}
           </label>
@@ -160,6 +161,7 @@ export function OnboardingStepLease({
               value="colocation"
               checked={leaseType === "colocation"}
               onChange={() => changeType("colocation")}
+              data-cy="onboarding-lease-colocation"
             />
             {t("onboarding.lease.colocation")}
           </label>
@@ -188,6 +190,7 @@ export function OnboardingStepLease({
                     "field",
                     errors.tenants?.[index]?.firstName && "field-error",
                   )}
+                  data-cy={`input-onboarding-tenant-first-${index}`}
                   {...register(`tenants.${index}.firstName`)}
                 />
               </FieldGroup>
@@ -202,6 +205,7 @@ export function OnboardingStepLease({
                     "field",
                     errors.tenants?.[index]?.lastName && "field-error",
                   )}
+                  data-cy={`input-onboarding-tenant-last-${index}`}
                   {...register(`tenants.${index}.lastName`)}
                 />
               </FieldGroup>
@@ -258,7 +262,12 @@ export function OnboardingStepLease({
           >
             {t("onboarding.navigation.back")}
           </Button>
-          <Button variant="primary" type="submit" loading={pending}>
+          <Button
+            variant="primary"
+            type="submit"
+            loading={pending}
+            data-cy="btn-next-onboarding-lease"
+          >
             {t("onboarding.navigation.next")}
           </Button>
         </div>
