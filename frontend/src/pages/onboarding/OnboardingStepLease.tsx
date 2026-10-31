@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
@@ -70,6 +70,7 @@ interface LeaseStepProps {
   error: string | null;
   onBack: (values: LeaseValues) => void;
   onNext: (values: LeaseValues) => void;
+  skipAction: ReactNode;
 }
 
 /** Step 3: attach leases to a selected property with individual or colocation amounts. */
@@ -80,6 +81,7 @@ export function OnboardingStepLease({
   error,
   onBack,
   onNext,
+  skipAction,
 }: LeaseStepProps) {
   const { t } = useTranslation();
   const [submitted, setSubmitted] = useState(false);
@@ -270,6 +272,7 @@ export function OnboardingStepLease({
         ) : null}
 
         <div className="onboarding-actions">
+          {skipAction}
           <Button
             variant="secondary"
             type="button"

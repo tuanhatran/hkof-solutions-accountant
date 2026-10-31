@@ -19,7 +19,7 @@ describe("SideNavigation", () => {
     });
     expect(within(navigation).getByText("Documents")).toBeVisible();
     expect(within(navigation).getByText("Suivi")).toBeVisible();
-    expect(within(navigation).getByText("Réglages")).toBeVisible();
+    expect(within(navigation).getByText("Administration")).toBeVisible();
     expect(
       within(navigation).getByRole("link", { name: /Société/ }),
     ).toHaveAttribute("href", "/settings/company");
@@ -107,7 +107,7 @@ describe("SideNavigation", () => {
     });
     expect(within(navigation).getByText("Documents")).toBeVisible();
     expect(within(navigation).getByText("Tracking")).toBeVisible();
-    expect(within(navigation).getByText("Settings")).toBeVisible();
+    expect(within(navigation).getByText("Administration")).toBeVisible();
     expect(
       within(navigation).getByRole("link", { name: /Dashboard/ }),
     ).toHaveAttribute("href", "/dashboard");

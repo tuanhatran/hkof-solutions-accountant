@@ -68,7 +68,7 @@ describe("AppShell", () => {
     });
     expect(within(navigation).getByText("Documents")).toBeVisible();
     expect(within(navigation).getByText("Suivi")).toBeVisible();
-    expect(within(navigation).getByText("Réglages")).toBeVisible();
+    expect(within(navigation).getByText("Administration")).toBeVisible();
     expect(
       within(navigation).getByRole("link", { name: /Quittance/ }),
     ).toHaveAttribute("href", "/generate/rent-receipt");
@@ -304,7 +304,7 @@ describe("AppShell", () => {
     });
     expect(within(navigation).getByText("Documents")).toBeVisible();
     expect(within(navigation).getByText("Tracking")).toBeVisible();
-    expect(within(navigation).getByText("Settings")).toBeVisible();
+    expect(within(navigation).getByText("Administration")).toBeVisible();
     expect(
       within(navigation).getByRole("link", { name: /Rent receipt/ }),
     ).toHaveAttribute("href", "/generate/rent-receipt");

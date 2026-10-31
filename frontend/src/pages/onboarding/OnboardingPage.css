@@ -93,6 +93,10 @@
     @apply flex flex-wrap items-center justify-end gap-3 border-t border-line pt-4;
   }
 
+  .onboarding-skip {
+    @apply mr-auto;
+  }
+
   .onboarding-saved {
     @apply mt-4 rounded-md border border-accent/15 bg-accent-soft px-3 py-2 text-sm text-accent;
   }

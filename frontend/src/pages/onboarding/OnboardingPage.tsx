@@ -6,8 +6,8 @@ import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { completeOnboardingSession, useAuthState } from "@/api/queries";
 import { LanguageSelector } from "@/components/layout/LanguageSelector";
-import { Button } from "@/components/ui/Button";
 import { agencyRequest, personRequest } from "./onboardingRequests";
+import { OnboardingSkipButton } from "./OnboardingSkipButton";
 import { OnboardingStepLease } from "./OnboardingStepLease";
 import { OnboardingStepNav } from "./OnboardingStepNav";
 import { OnboardingStepProfile } from "./OnboardingStepProfile";
@@ -62,9 +62,12 @@ export function OnboardingPage() {
   }, [step, draft, save, user?.email]);
 
   function handleSkip() {
+    save(step, draft);
     setOnboardingSkipped(true);
     navigate("/dashboard");
   }
+
+  const skipAction = <OnboardingSkipButton onClick={handleSkip} />;
 
   async function saveProfile(values: ProfileValues, advance: boolean) {
     setPending(true);
@@ -221,15 +224,6 @@ export function OnboardingPage() {
             <p className="eyebrow">{t("onboarding.eyebrow")}</p>
             <div className="onboarding-header-actions">
               <LanguageSelector />
-              <Button
-                type="button"
-                variant="ghost"
-                small
-                data-cy="btn-skip-onboarding"
-                onClick={handleSkip}
-              >
-                {t("onboarding.skipToDashboard")}
-              </Button>
             </div>
           </div>
           <h1 className="onboarding-title">{t("onboarding.title")}</h1>
@@ -250,6 +244,7 @@ export function OnboardingPage() {
             pending={pending}
             error={error}
             onSave={(values, advance) => void saveProfile(values, advance)}
+            skipAction={skipAction}
           />
         ) : null}
         {step === 1 ? (
@@ -262,6 +257,7 @@ export function OnboardingPage() {
               back();
             }}
             onNext={saveProperty}
+            skipAction={skipAction}
           />
         ) : null}
         {step === 2 ? (
@@ -275,6 +271,7 @@ export function OnboardingPage() {
               back();
             }}
             onNext={saveLease}
+            skipAction={skipAction}
           />
         ) : null}
         {step === 3 ? (
@@ -284,6 +281,7 @@ export function OnboardingPage() {
             error={error}
             onBack={back}
             onFinalize={() => void finalize()}
+            skipAction={skipAction}
           />
         ) : null}
       </main>

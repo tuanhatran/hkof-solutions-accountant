@@ -254,7 +254,7 @@ export const en = {
     sections: {
       documents: "Documents",
       tracking: "Tracking",
-      settings: "Settings",
+      settings: "Administration",
     },
     links: {
       dashboard: "Dashboard",

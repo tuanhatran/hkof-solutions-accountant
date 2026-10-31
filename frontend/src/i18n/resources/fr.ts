@@ -272,7 +272,7 @@ export const fr = {
     sections: {
       documents: "Documents",
       tracking: "Suivi",
-      settings: "Réglages",
+      settings: "Administration",
     },
     links: {
       dashboard: "Tableau de bord",

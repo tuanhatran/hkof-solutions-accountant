@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { ReactNode } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
@@ -45,6 +46,7 @@ interface PropertyStepProps {
   error: string | null;
   onBack: (values: PropertyValues) => void;
   onNext: (values: PropertyValues) => void;
+  skipAction: ReactNode;
 }
 
 /** Step 2: managed properties and distinct landlord details. */
@@ -54,6 +56,7 @@ export function OnboardingStepProperty({
   error,
   onBack,
   onNext,
+  skipAction,
 }: PropertyStepProps) {
   const { t } = useTranslation();
   const initialList = Array.isArray(values)
@@ -129,6 +132,7 @@ export function OnboardingStepProperty({
         ) : null}
 
         <div className="onboarding-actions">
+          {skipAction}
           <Button
             variant="secondary"
             type="button"

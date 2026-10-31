@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import type { PersonDto } from "@/api/types";
@@ -24,6 +24,7 @@ interface ProfileStepProps {
   pending: boolean;
   error: string | null;
   onSave: (values: ProfileValues, advance: boolean) => void;
+  skipAction: ReactNode;
 }
 
 /** Step 1: the person profile, the agency identity and the signature studio. */
@@ -33,6 +34,7 @@ export function OnboardingStepProfile({
   pending,
   error,
   onSave,
+  skipAction,
 }: ProfileStepProps) {
   const { t } = useTranslation();
   const [countryCode, setCountryCode] = useState(
@@ -277,6 +279,7 @@ export function OnboardingStepProfile({
         ) : null}
 
         <div className="onboarding-actions">
+          {skipAction}
           <Button
             variant="primary"
             type="submit"

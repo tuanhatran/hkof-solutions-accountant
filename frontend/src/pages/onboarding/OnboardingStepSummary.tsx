@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
@@ -10,6 +11,7 @@ interface SummaryStepProps {
   error: string | null;
   onBack: () => void;
   onFinalize: () => void;
+  skipAction: ReactNode;
 }
 
 function amountLabel(value?: string): string {
@@ -36,6 +38,7 @@ export function OnboardingStepSummary({
   error,
   onBack,
   onFinalize,
+  skipAction,
 }: SummaryStepProps) {
   const { t } = useTranslation();
   const { profile, properties, lease, tenants } = draft;
@@ -213,6 +216,7 @@ export function OnboardingStepSummary({
       ) : null}
 
       <div className="onboarding-actions">
+        {skipAction}
         <Button variant="secondary" onClick={onBack} disabled={pending}>
           {t("onboarding.navigation.back")}
         </Button>

@@ -695,6 +695,86 @@ describe("OnboardingPage", () => {
     expect(screen.getByRole("heading", { name: "Baux" })).toBeVisible();
   });
 
+  it("renders the skip control in the profile step footer instead of the header", () => {
+    const { container } = renderWizard();
+
+    const skipBtn = screen.getByRole("button", {
+      name: "Passer au tableau de bord",
+    });
+    expect(skipBtn).toHaveAttribute("data-cy", "btn-skip-onboarding");
+    expect(skipBtn.closest(".onboarding-actions")).not.toBeNull();
+    expect(skipBtn.closest(".onboarding-header-actions")).toBeNull();
+    expect(
+      container.querySelectorAll('[data-cy="btn-skip-onboarding"]'),
+    ).toHaveLength(1);
+  });
+
+  it("keeps a single skip control in the action footer of every step", async () => {
+    const user = userEvent.setup();
+    const { container } = renderWizard();
+
+    const expectSkipInFooter = () => {
+      const buttons = container.querySelectorAll(
+        '[data-cy="btn-skip-onboarding"]',
+      );
+      expect(buttons).toHaveLength(1);
+      expect(buttons[0].closest(".onboarding-actions")).not.toBeNull();
+    };
+
+    expectSkipInFooter();
+
+    await saveAndContinueProfile(user);
+    expect(screen.getByRole("heading", { name: "Biens" })).toBeVisible();
+    expectSkipInFooter();
+
+    await fillProperty(user);
+    expect(screen.getByRole("heading", { name: "Baux" })).toBeVisible();
+    expectSkipInFooter();
+
+    const tenant1 = screen.getByRole("group", { name: "Locataire 1" });
+    await user.type(within(tenant1).getByLabelText("Prénom"), "Bob");
+    await user.type(within(tenant1).getByLabelText("Nom"), "Durand");
+    await user.type(
+      within(tenant1).getByLabelText("Loyer hors charges"),
+      "800,00",
+    );
+    await user.type(
+      within(tenant1).getByLabelText("Provision pour charges"),
+      "50,00",
+    );
+    await user.click(screen.getByRole("button", { name: "Continuer" }));
+    expect(screen.getByRole("heading", { name: "Résumé" })).toBeVisible();
+    expectSkipInFooter();
+  });
+
+  it("persists the current step and draft before skipping from a later step", async () => {
+    const user = userEvent.setup();
+    renderWizard();
+
+    await saveAndContinueProfile(user);
+    expect(screen.getByRole("heading", { name: "Biens" })).toBeVisible();
+
+    await user.click(
+      screen.getByRole("button", { name: "Passer au tableau de bord" }),
+    );
+
+    expect(await screen.findByText("Tableau de bord")).toBeVisible();
+    const stored = JSON.parse(
+      localStorage.getItem(
+        "homeofficeexpenses.onboarding.bailleur@exemple.fr",
+      ) ?? "null",
+    ) as { step: number; draft: { profile: { firstName: string } } };
+    expect(stored.step).toBe(1);
+    expect(stored.draft.profile.firstName).toBe("Alice");
+    expect(
+      sessionStorage.getItem("homeofficeexpenses.onboarding_skipped"),
+    ).toBe("true");
+    sessionStorage.removeItem("homeofficeexpenses.onboarding_skipped");
+    localStorage.removeItem(
+      "homeofficeexpenses.onboarding.bailleur@exemple.fr",
+    );
+  });
+
   it("navigates to dashboard and sets skip flag when clicking skip onboarding", async () => {
     const user = userEvent.setup();
     renderWizard();
