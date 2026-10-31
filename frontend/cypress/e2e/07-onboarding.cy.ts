@@ -41,6 +41,28 @@ const LANDLORD = {
 };
 const FIRST_TENANT = { firstName: "Alice", lastName: "DUPONT" };
 const SECOND_TENANT = { firstName: "Bob", lastName: "MARTIN" };
+const COMPANY = {
+  name: "HKOF Conseil E2E",
+  legalForm: "SAS",
+  siren: "123456789",
+  siret: "12345678900017",
+  address: "10 avenue de la Société, 75008 Paris",
+  managerName: `${MANAGER.firstName} ${MANAGER.lastName}`,
+  issuePlace: "Paris",
+};
+const COMPANY_LEASE = {
+  propertyAddress: "20 rue du Bail, 75011 Paris",
+  landlordAddress: "1 rue du Bailleur, 75012 Paris",
+  totalArea: "100",
+  businessArea: "40",
+  rent: "1 200,00",
+  charges: "100,00",
+};
+const COMPANY_EMPLOYEE = {
+  firstName: "Alice",
+  lastName: "MARTIN",
+  email: "alice.martin@example.test",
+};
 
 function mailpitUrl(): string {
   const configured = Cypress.expose("mailpitUrl") as string | undefined;
@@ -90,7 +112,7 @@ function confirmationToken(message: MailpitMessage): string {
 function fillRegistration(
   email: string,
   password: string,
-  options?: { onlyAgency?: boolean },
+  options?: { onlyAgency?: boolean; onlyCompany?: boolean },
 ) {
   cy.get('[data-cy="auth-email"]').clear().type(email);
   cy.get('[data-cy="auth-password"]').clear().type(password);
@@ -98,6 +120,9 @@ function fillRegistration(
   if (options?.onlyAgency) {
     cy.get('[data-cy="auth-module-company"]').uncheck();
     cy.get('[data-cy="auth-module-agency"]').should("be.checked");
+  } else if (options?.onlyCompany) {
+    cy.get('[data-cy="auth-module-agency"]').uncheck();
+    cy.get('[data-cy="auth-module-company"]').should("be.checked");
   } else {
     cy.get('[data-cy="auth-module-agency"]').check();
   }
@@ -372,5 +397,242 @@ describe("onboarding and colocation", () => {
         expect(text).to.contain("1 300,00 €");
       },
     );
+  });
+
+  it("registers a company-only account and completes the five-step company wizard", () => {
+    const email = `e2e-company-onboarding-${Date.now()}@example.test`;
+
+    // Both lookups are stubbed so the flow never depends on the public geo API
+    // or on another account's company being present in the reset database.
+    cy.intercept("GET", "https://api-adresse.data.gouv.fr/search/*", {
+      features: [],
+    }).as("addressSearch");
+    cy.intercept("GET", "/api/companies/lookup*", {
+      name: COMPANY.name,
+      siren: COMPANY.siren,
+      legalForm: COMPANY.legalForm,
+      address: COMPANY.address,
+      managerName: COMPANY.managerName,
+    }).as("companyLookup");
+
+    // 1. Register with only the Company module enabled.
+    cy.visit("/register");
+    fillRegistration(email, PASSWORD, { onlyCompany: true });
+    cy.contains(
+      "Un e-mail de confirmation vient de vous être envoyé. Ouvrez le lien reçu pour activer votre compte.",
+    ).should("be.visible");
+
+    findConfirmationMessage(email).then((message) => {
+      cy.visit(`/confirm-email?token=${confirmationToken(message)}`);
+      cy.contains("Adresse confirmée").should("be.visible");
+    });
+
+    cy.visit("/login");
+    signIn(email, PASSWORD);
+
+    // 2. The company-only account opens the company track, never the agency one.
+    cy.location("pathname").should("eq", "/welcome");
+    cy.get('[data-cy="company-onboarding-steps"]').should("be.visible");
+    cy.get('[data-cy^="company-step-"]').should("have.length", 5);
+    cy.get('[data-cy="company-step-identity"]').should(
+      "have.attr",
+      "aria-current",
+      "step",
+    );
+    cy.get('[data-cy="onboarding-track-selector"]').should("not.exist");
+    cy.get('[data-cy="input-onboarding-first-name"]').should("not.exist");
+    cy.contains(
+      "Quelques étapes pour préparer votre société, son bail et ses postes de frais.",
+    ).should("be.visible");
+
+    // Step 1: identity, with the stubbed SIREN lookup prefilling the company.
+    cy.get('[data-cy="company-identity-form"]').should("be.visible");
+    cy.get('[data-cy="input-company-onboarding-siren"]').type(COMPANY.siren);
+    cy.get('[data-cy="btn-company-siren-lookup"]').click();
+    cy.wait("@companyLookup").its("response.statusCode").should("eq", 200);
+    cy.contains(`Société trouvée : ${COMPANY.name}`).should("be.visible");
+    cy.get('[data-cy="input-company-onboarding-name"]').should(
+      "have.value",
+      COMPANY.name,
+    );
+    cy.get('[data-cy="input-company-onboarding-legal-form"]').should(
+      "have.value",
+      COMPANY.legalForm,
+    );
+    cy.get('[data-cy="input-company-onboarding-manager"]').should(
+      "have.value",
+      COMPANY.managerName,
+    );
+    cy.get('[data-cy="input-company-onboarding-address"]')
+      .clear()
+      .type(COMPANY.address);
+    cy.get('[data-cy="input-company-onboarding-siret"]').type(COMPANY.siret);
+    cy.get('[data-cy="input-company-onboarding-issue-place"]').type(
+      COMPANY.issuePlace,
+    );
+    cy.get('[data-cy="btn-company-next"]').click();
+
+    // Step 2: lease, surfaces, rent, charges and the natural-person landlord.
+    cy.get('[data-cy="company-lease-form"]').should("be.visible");
+    cy.get('[data-cy="company-step-lease"]').should(
+      "have.attr",
+      "aria-current",
+      "step",
+    );
+    cy.get('[data-cy="input-company-onboarding-property-address"]').type(
+      COMPANY_LEASE.propertyAddress,
+    );
+    cy.get('[data-cy="input-company-onboarding-total-area"]').type(
+      COMPANY_LEASE.totalArea,
+    );
+    cy.get('[data-cy="input-company-onboarding-business-area"]').type(
+      COMPANY_LEASE.businessArea,
+    );
+    cy.contains("40 %").should("be.visible");
+    cy.get('[data-cy="input-company-onboarding-rent"]').type(
+      COMPANY_LEASE.rent,
+    );
+    cy.get('[data-cy="input-company-onboarding-charges"]').type(
+      COMPANY_LEASE.charges,
+    );
+    cy.get('[data-cy="input-company-onboarding-landlord-name"]').type(
+      `${LANDLORD.firstName} ${LANDLORD.lastName}`,
+    );
+    cy.get('[data-cy="input-company-onboarding-landlord-phone"]').type(
+      LANDLORD.phone,
+    );
+    cy.get('[data-cy="input-company-onboarding-landlord-address"]').type(
+      COMPANY_LEASE.landlordAddress,
+    );
+    cy.get('[data-cy="btn-company-next"]').click();
+
+    // Step 3: expense categories. A reload mid-wizard must resume this step.
+    cy.get('[data-cy="company-expenses-form"]').should("be.visible");
+    cy.get('[data-cy="company-step-expenses"]').should(
+      "have.attr",
+      "aria-current",
+      "step",
+    );
+    cy.reload();
+    cy.get('[data-cy="company-step-expenses"]', { timeout: 20_000 }).should(
+      "have.attr",
+      "aria-current",
+      "step",
+    );
+    cy.get('[data-cy="company-expenses-form"]').should("be.visible");
+
+    cy.get('[data-cy="input-company-expense-loyer"]').should("be.checked");
+    cy.get('[data-cy="input-company-expense-telephone"]').uncheck();
+    cy.get('[data-cy="input-company-expense-prorata-electricite"]')
+      .clear()
+      .type("50");
+    cy.get('[data-cy="select-company-expense-periodicity-gaz"]').select(
+      "BIMONTHLY",
+    );
+    cy.get('[data-cy="btn-company-next"]').click();
+
+    // Step 4: the manager row is prefilled from the identity manager name.
+    cy.get('[data-cy="company-employees-form"]').should("be.visible");
+    cy.get('[data-cy="company-step-employees"]').should(
+      "have.attr",
+      "aria-current",
+      "step",
+    );
+    cy.get('[data-cy="input-company-employee-first-0"]').should(
+      "have.value",
+      MANAGER.firstName,
+    );
+    cy.get('[data-cy="input-company-employee-last-0"]').should(
+      "have.value",
+      MANAGER.lastName,
+    );
+    cy.get('[data-cy="select-company-employee-title-0"]').should(
+      "have.value",
+      "CEO",
+    );
+    cy.get('[data-cy="input-company-employee-address-0"]').type(
+      "1 rue du Gérant, 75001 Paris",
+    );
+    cy.get('[data-cy="input-company-employee-issue-place-0"]').type("Paris");
+
+    cy.get('[data-cy="btn-add-company-employee"]').click();
+    cy.get('[data-cy="input-company-employee-first-1"]').type(
+      COMPANY_EMPLOYEE.firstName,
+    );
+    cy.get('[data-cy="input-company-employee-last-1"]').type(
+      COMPANY_EMPLOYEE.lastName,
+    );
+    cy.get('[data-cy="input-company-employee-email-1"]').type(
+      COMPANY_EMPLOYEE.email,
+    );
+    cy.get('[data-cy="select-company-employee-title-1"]').select("CFO");
+    cy.get('[data-cy="input-company-employee-issue-place-1"]').type("Paris");
+    cy.get('[data-cy="btn-company-next"]').click();
+
+    // Step 5: the summary restates every captured value.
+    cy.get('[data-cy="company-summary"]').should("be.visible");
+    cy.get('[data-cy="company-step-summary"]').should(
+      "have.attr",
+      "aria-current",
+      "step",
+    );
+    cy.get('[data-cy="company-summary"]')
+      .should("contain.text", COMPANY.name)
+      .and("contain.text", COMPANY_LEASE.propertyAddress)
+      .and("contain.text", `${LANDLORD.firstName} ${LANDLORD.lastName}`)
+      .and("contain.text", "100 / 40 m²")
+      .and("contain.text", "40 %")
+      .and("contain.text", "50 %")
+      .and("contain.text", "Alice MARTIN")
+      .and("contain.text", "DAF");
+    // `formatEUR` uses narrow no-break spaces: match it through `cy.contains`,
+    // which normalizes whitespace, instead of an exact substring.
+    cy.contains('[data-cy="company-summary"]', "1 200,00 €").should(
+      "be.visible",
+    );
+
+    // 3. Footer skip routes to the company home, then /welcome resumes at the summary.
+    cy.get('[data-cy="btn-skip-onboarding"]').should("be.visible").click();
+    cy.location("pathname").should("eq", "/generate/expense-statement");
+    cy.visit("/welcome");
+    cy.get('[data-cy="company-summary"]', { timeout: 20_000 }).should(
+      "be.visible",
+    );
+    cy.get('[data-cy="company-step-summary"]').should(
+      "have.attr",
+      "aria-current",
+      "step",
+    );
+
+    // 4. Finalize: landlord, company, lease, expenses and employees are created.
+    cy.get('[data-cy="btn-finalize-company-onboarding"]').click();
+    cy.location("pathname", { timeout: 30_000 }).should(
+      "eq",
+      "/generate/expense-statement",
+    );
+    cy.get('[data-cy="company-expense-statement"]', { timeout: 20_000 })
+      .should("be.visible")
+      .and("contain.text", COMPANY.name);
+    cy.get('[data-cy="lease-expense-statement"]')
+      .should("be.visible")
+      .and("contain.text", `${LANDLORD.firstName} ${LANDLORD.lastName}`);
+
+    cy.request<{ id: number; name: string; leaseId?: number | null }[]>(
+      "/api/companies",
+    ).then(({ body }) => {
+      expect(body, "companies of the fresh account").to.have.length(1);
+      const created = body[0];
+      expect(created.name).to.eq(COMPANY.name);
+      expect(created.leaseId, "lease linked to the company").to.be.a("number");
+      cy.request<{ firstName: string; title: string }[]>(
+        `/api/companies/${created.id}/employees`,
+      ).then(({ body: employees }) => {
+        expect(
+          employees.map(
+            (employee) => `${employee.firstName} ${employee.title}`,
+          ),
+        ).to.deep.eq(["Jean CEO", "Alice CFO"]);
+      });
+    });
   });
 });

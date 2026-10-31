@@ -143,3 +143,56 @@ Consumed by `frontend/cypress/e2e/07-onboarding.cy.ts`.
 | `agency-siren-siret`               | AgencySection          | agency SIREN/SIRET input                               |
 | `agency-address`                   | AgencySection          | agency postal address input                            |
 | `btn-save-agency`                  | AgencySection          | save agency profile button                             |
+
+## Company onboarding hooks (task 104, consumed by 105)
+
+Produced by `frontend/src/pages/onboarding/OnboardingCompanyStep*.tsx`, `OnboardingCompanyStepNav`,
+`OnboardingSkipButton` and `ExpenseStatementHeader`; consumed by
+`frontend/cypress/e2e/07-onboarding.cy.ts` for the company-only registration.
+
+| Hook                                           | Producer                       | Purpose                                                 |
+| ---------------------------------------------- | ------------------------------ | ------------------------------------------------------- |
+| `company-onboarding-steps`                     | OnboardingCompanyStepNav       | five-step company wizard bar                            |
+| `company-step-${key}`                          | OnboardingCompanyStepNav       | step item; the active one carries `aria-current="step"` |
+| `company-identity-form`                        | OnboardingCompanyStepIdentity  | identity step form                                      |
+| `input-company-onboarding-name`                | OnboardingCompanyStepIdentity  | company legal name                                      |
+| `input-company-onboarding-legal-form`          | OnboardingCompanyStepIdentity  | company legal form                                      |
+| `input-company-onboarding-siren`               | OnboardingCompanyStepIdentity  | 9-digit SIREN                                           |
+| `input-company-onboarding-siret`               | OnboardingCompanyStepIdentity  | optional 14-digit SIRET                                 |
+| `input-company-onboarding-manager`             | OnboardingCompanyStepIdentity  | manager full name                                       |
+| `input-company-onboarding-address`             | OnboardingCompanyStepIdentity  | registered office address autocomplete                  |
+| `input-company-onboarding-issue-place`         | OnboardingCompanyStepIdentity  | document issue place                                    |
+| `btn-company-siren-lookup`                     | OnboardingCompanyStepIdentity  | SIREN lookup, prefills the identity fields              |
+| `company-lookup-error`                         | OnboardingCompanyStepIdentity  | SIREN lookup failure alert                              |
+| `company-lease-form`                           | OnboardingCompanyStepLease     | lease step form                                         |
+| `input-company-onboarding-property-address`    | OnboardingCompanyStepLease     | dwelling address autocomplete                           |
+| `input-company-onboarding-total-area`          | OnboardingCompanyStepLease     | total dwelling area (m²)                                |
+| `input-company-onboarding-business-area`       | OnboardingCompanyStepLease     | business area (m²)                                      |
+| `input-company-onboarding-rent`                | OnboardingCompanyStepLease     | rent excluding charges                                  |
+| `input-company-onboarding-charges`             | OnboardingCompanyStepLease     | charges provision                                       |
+| `input-company-onboarding-landlord-name`       | OnboardingCompanyStepLease     | natural-person landlord name                            |
+| `input-company-onboarding-landlord-phone`      | OnboardingCompanyStepLease     | landlord phone                                          |
+| `input-company-onboarding-landlord-address`    | OnboardingCompanyStepLease     | landlord address                                        |
+| `company-expenses-form`                        | OnboardingCompanyStepExpenses  | expense categories step                                 |
+| `input-company-expense-${code}`                | OnboardingCompanyStepExpenses  | category checkbox (`loyer`, `electricite`, `gaz`, …)    |
+| `input-company-expense-prorata-${code}`        | OnboardingCompanyStepExpenses  | category professional share (%)                         |
+| `select-company-expense-periodicity-${code}`   | OnboardingCompanyStepExpenses  | category periodicity (`MONTHLY`, `BIMONTHLY`, `ANNUAL`)  |
+| `company-employees-form`                       | OnboardingCompanyStepEmployees | employees step, manager row prefilled                   |
+| `input-company-employee-first-${index}`        | OnboardingCompanyStepEmployees | employee first name                                     |
+| `input-company-employee-last-${index}`         | OnboardingCompanyStepEmployees | employee last name                                      |
+| `input-company-employee-email-${index}`        | OnboardingCompanyStepEmployees | employee e-mail                                         |
+| `input-company-employee-address-${index}`      | OnboardingCompanyStepEmployees | employee address                                        |
+| `select-company-employee-title-${index}`       | OnboardingCompanyStepEmployees | employee title (`CEO`, `CFO`, `ACCOUNTANT`, `EMPLOYEE`) |
+| `input-company-employee-issue-place-${index}`  | OnboardingCompanyStepEmployees | employee issue place                                    |
+| `btn-add-company-employee`                     | OnboardingCompanyStepEmployees | append an employee row                                  |
+| `btn-remove-company-employee-${index}`         | OnboardingCompanyStepEmployees | remove an employee row (index > 0)                      |
+| `company-summary`                              | OnboardingCompanyStepSummary   | summary step with every captured value                  |
+| `btn-finalize-company-onboarding`              | OnboardingCompanyStepSummary   | create landlord, company, lease, items and employees    |
+| `company-finalize-error`                       | OnboardingCompanyStepSummary   | finalize failure alert                                  |
+| `btn-company-next`                             | all company steps              | footer next / submit                                    |
+| `btn-company-back`                             | company steps 2-5              | footer back                                             |
+| `btn-skip-onboarding`                          | OnboardingSkipButton           | skip the wizard from any `.onboarding-actions` footer   |
+| `onboarding-track-selector`                    | OnboardingTrackSelector        | track chooser, absent on a company-only account         |
+| `btn-onboarding-track-agency` / `-company`     | OnboardingTrackSelector        | track buttons when both modules are enabled             |
+| `company-expense-statement`                    | ExpenseStatementHeader         | company chip on the landing page (single company)       |
+| `lease-expense-statement`                      | ExpenseStatementHeader         | active lease chip on the landing page (single lease)    |
