@@ -1,32 +1,27 @@
 import "./PersonSignatureSection.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, Plus, Trash2 } from "lucide-react";
+import { Check, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
-import { queryKeys, useSignatures } from "@/api/queries";
-import type { SignatureDto } from "@/api/types";
+import { queryKeys } from "@/api/queries";
 import { Button } from "@/components/ui/Button";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FieldGroup } from "@/components/ui/FieldGroup";
-import { ErrorState, LoadingState } from "@/components/ui/States";
-import { formatDate } from "@/lib/format";
 import { toast } from "@/state/toasts";
 import { SignatureImageField } from "./SignatureImageField";
+import { SignatureStudio } from "./SignatureStudio";
 import { signatureImageError } from "./signatureUpload";
 
-/** Signature list and upload form attached to one natural person or employee. */
+/** Signature upload form and studio attached to one natural person or employee. */
 export function PersonSignatureSection({ personId }: { personId: number }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const signatures = useSignatures(personId);
   const [name, setName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
-  const [toDelete, setToDelete] = useState<SignatureDto | null>(null);
   const previewUrl = useMemo(
     () => (file ? URL.createObjectURL(file) : null),
     [file],
@@ -61,20 +56,6 @@ export function PersonSignatureSection({ personId }: { personId: number }) {
     onError: (error) => setRequestError(errorMessage(error)),
   });
 
-  const remove = useMutation({
-    mutationFn: (signature: SignatureDto) =>
-      api.signatures.remove(signature.id as number),
-    onSuccess: () => {
-      invalidate();
-      setToDelete(null);
-      toast.success(t("settings.signatures.deleted"));
-    },
-    onError: (error) => {
-      setToDelete(null);
-      toast.error(errorMessage(error));
-    },
-  });
-
   function selectFile(candidate: File) {
     const rejected = signatureImageError(candidate);
     if (rejected) {
@@ -101,8 +82,6 @@ export function PersonSignatureSection({ personId }: { personId: number }) {
     setFileError(null);
     create.mutate({ name: trimmed, file });
   }
-
-  const list = signatures.data ?? [];
 
   return (
     <div className="person-signature-section">
@@ -166,95 +145,12 @@ export function PersonSignatureSection({ personId }: { personId: number }) {
         </Button>
       </div>
 
-      {signatures.isError ? (
-        <ErrorState
-          message={errorMessage(signatures.error)}
-          onRetry={() => void signatures.refetch()}
-        />
-      ) : signatures.isPending ? (
-        <LoadingState message={t("settings.signatures.loading")} />
-      ) : list.length === 0 ? (
-        <p
-          className="person-signature-section-empty"
-          data-cy="no-person-signature"
-        >
-          {t("settings.signatures.empty")}
-        </p>
-      ) : (
-        <ul className="person-signature-section-list">
-          {list.map((signature) => (
-            <li
-              key={signature.id}
-              className="person-signature-section-item"
-              data-cy={`person-signature-${signature.id}`}
-            >
-              {signature.id !== undefined ? (
-                <img
-                  src={api.signatures.imageUrl(signature.id)}
-                  alt={t("settings.signatures.imageAlt", {
-                    name: signature.name ?? "",
-                  })}
-                  className="person-signature-section-image"
-                />
-              ) : null}
-              <div className="person-signature-section-item-body">
-                <p className="person-signature-section-item-name">
-                  {signature.name ?? t("settings.signatures.fallbackName")}
-                </p>
-                <p className="person-signature-section-item-meta">
-                  {t("settings.signatures.addedOn", {
-                    date: formatDate(signature.createdAt),
-                  })}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                small
-                type="button"
-                icon={<Trash2 size={13} />}
-                className="text-danger hover:bg-danger-soft"
-                onClick={() => setToDelete(signature)}
-                aria-label={t("settings.signatures.removeAria", {
-                  name:
-                    signature.name ??
-                    t("settings.signatures.removeFallbackName"),
-                })}
-                data-cy={`btn-delete-person-signature-${signature.id}`}
-              >
-                {t("settings.signatures.remove")}
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <SignatureStudio personId={personId} />
 
       <p className="person-signature-section-add-hint">
         <Plus size={12} aria-hidden="true" />
         {t("settings.signatures.keepSeveral")}
       </p>
-
-      <ConfirmDialog
-        open={toDelete !== null}
-        title={t("settings.signatures.deleteDialog.title")}
-        message={
-          toDelete
-            ? t("settings.signatures.deleteDialog.message", {
-                name:
-                  toDelete.name ??
-                  t("settings.signatures.deleteDialog.fallbackName"),
-              })
-            : ""
-        }
-        confirmLabel={t("settings.signatures.deleteDialog.confirm")}
-        variant="danger"
-        onConfirm={() => {
-          if (toDelete) {
-            remove.mutate(toDelete);
-          }
-        }}
-        onCancel={() => setToDelete(null)}
-        dataCy="dialog-delete-person-signature"
-      />
     </div>
   );
 }

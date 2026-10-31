@@ -54,6 +54,7 @@ vi.mock("@/api/endpoints", () => ({
       list: vi.fn(),
       create: vi.fn(),
       remove: vi.fn(),
+      rename: vi.fn(),
       imageUrl: (id: number) => `/api/signatures/${id}/image`,
     },
   },
@@ -101,6 +102,17 @@ beforeEach(() => {
 });
 
 describe("PersonSignatureSection", () => {
+  it("hosts the signature studio tools", () => {
+    renderSection();
+
+    expect(
+      screen.getByRole("button", { name: "Dessiner une signature" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Générer une signature" }),
+    ).toBeVisible();
+  });
+
   it("lists the signatures of the person with their creation date", () => {
     renderSection();
 

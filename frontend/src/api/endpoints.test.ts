@@ -356,6 +356,16 @@ describe("signature, receipt and analysis endpoints", () => {
 
     await api.signatures.remove(5);
     expect(lastCall()[1]).toMatchObject({ method: "DELETE" });
+
+    await api.signatures.rename(5, "Signature notaire");
+    const [renamePath, renameInit] = lastCall();
+    expect(renamePath).toBe("/api/signatures/5");
+    expect(renameInit).toMatchObject({
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Signature notaire" }),
+    });
+
     expect(api.signatures.imageUrl(5)).toBe("/api/signatures/5/image");
   });
 

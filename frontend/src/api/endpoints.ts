@@ -354,6 +354,11 @@ export const api = {
         body: payload,
       });
     },
+    rename: (id: number, name: string) =>
+      request<SignatureDto>(
+        `/api/signatures/${id}`,
+        json({ method: "PATCH", body: JSON.stringify({ name }) }),
+      ),
     remove: (id: number) =>
       request<void>(`/api/signatures/${id}`, { method: "DELETE" }),
     imageUrl: (id: number) => `/api/signatures/${id}/image`,

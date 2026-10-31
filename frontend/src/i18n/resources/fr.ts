@@ -1154,6 +1154,33 @@ export const fr = {
       },
       previewAlt: "Aperçu de {{name}}",
       removeImageAria: "Retirer l’image de la signature",
+      draw: "Dessiner une signature",
+      generate: "Générer une signature",
+      rename: "Renommer",
+      renameAria: "Renommer {{name}}",
+      renamed: "Signature renommée.",
+      renameTitle: "Renommer la signature",
+      drawnName: "Signature dessinée",
+      pad: {
+        title: "Dessiner une signature",
+        hint: "Tracez votre signature à la souris, au stylet ou au doigt.",
+        canvasLabel: "Zone de dessin de la signature",
+        clear: "Effacer",
+        note: "L’image est exportée en PNG transparent, recadrée sur le tracé.",
+        blank:
+          "La zone de dessin est vide. Tracez votre signature avant de valider.",
+      },
+      font: {
+        title: "Générer une signature",
+        textLabel: "Texte de la signature",
+        textPlaceholder: "Prénom Nom",
+        textHelp:
+          "Le texte est écrit en style cursif, puis exporté en PNG transparent.",
+        textRequired: "Saisissez le texte de la signature.",
+        styleLabel: "Style cursif",
+        previewFallback: "Votre signature",
+        exportFailed: "Impossible de générer l’image de la signature.",
+      },
     },
   },
   adminUsers: {

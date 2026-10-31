@@ -1,0 +1,23 @@
+@reference "../../index.css";
+
+@layer components {
+  .signature-pad-modal-hint {
+    @apply text-xs text-ink-soft;
+  }
+
+  .signature-pad-modal-frame {
+    @apply mt-3 rounded-xl border border-dashed border-line-strong bg-surface p-1;
+  }
+
+  .signature-pad-modal-canvas {
+    @apply block h-40 w-full cursor-crosshair touch-none rounded-lg bg-surface;
+  }
+
+  .signature-pad-modal-actions {
+    @apply mt-3 flex flex-wrap items-center justify-between gap-2;
+  }
+
+  .signature-pad-modal-note {
+    @apply flex items-center gap-1 text-[10.5px] text-ink-soft;
+  }
+}
