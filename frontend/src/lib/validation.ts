@@ -176,6 +176,7 @@ export const companySchema = z.object({
   managerName: z.string(),
   leaseId: z.string(),
   issuePlace: z.string(),
+  siret: z.string().optional(),
 });
 
 export type CompanyFormValues = z.infer<typeof companySchema>;
@@ -217,6 +218,8 @@ export const personSchema = z.object({
       error: () => personMessage("name"),
     }),
   address: z.string(),
+  phone: z.string().optional(),
+  addressNote: z.string().optional(),
   issuePlace: z.string(),
 });
 

@@ -232,6 +232,8 @@ describe("PersonnesSection", () => {
         name: "M. Nouveau",
         address: null,
         issuePlace: null,
+        phone: "",
+        addressNote: "",
       }),
     );
     expect(
@@ -276,6 +278,8 @@ describe("PersonnesSection", () => {
         name: "M. Bailleur Modifié",
         address: "1 avenue du Parc, 75011 Paris",
         issuePlace: null,
+        phone: "",
+        addressNote: "",
       }),
     );
     expect(toastMessages()).toContain(

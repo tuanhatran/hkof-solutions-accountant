@@ -94,10 +94,10 @@ public class PersonService {
     private void apply(Person person, PersonRequest request) {
         person.setName(requiredText(request.name(), "PERSON_NAME_REQUIRED",
                 "Le nom de la personne est obligatoire."));
-        person.setAddress(optionalText(request.address()));
-        person.setPhone(optionalText(request.phone()));
-        person.setAddressNote(optionalText(request.addressNote()));
-        person.setIssuePlace(optionalText(request.issuePlace()));
+        person.setAddress(OptionalTexts.trimToNull(request.address()));
+        person.setPhone(OptionalTexts.preserve(request.phone(), person.getPhone()));
+        person.setAddressNote(OptionalTexts.preserve(request.addressNote(), person.getAddressNote()));
+        person.setIssuePlace(OptionalTexts.trimToNull(request.issuePlace()));
     }
 
     private String requiredText(String value, String code, String message) {
@@ -108,7 +108,4 @@ public class PersonService {
         return cleaned;
     }
 
-    private String optionalText(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
-    }
 }

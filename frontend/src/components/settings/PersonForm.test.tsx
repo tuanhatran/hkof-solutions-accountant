@@ -12,6 +12,8 @@ const PERSON: PersonDto = {
   id: 1,
   name: "M. Bailleur",
   address: "1 avenue du Parc, 75011 Paris",
+  phone: "06 12 34 56 78",
+  addressNote: "Bâtiment B",
   issuePlace: "Paris",
   signatureCount: 1,
 };
@@ -110,6 +112,8 @@ describe("PersonForm", () => {
         name: "M. Nouveau",
         address: "2 rue du Marché, 75003 Paris",
         issuePlace: "Lyon",
+        phone: "",
+        addressNote: "",
       }),
     );
     expect(
@@ -147,6 +151,8 @@ describe("PersonForm", () => {
         name: "M. Nouveau",
         address: null,
         issuePlace: null,
+        phone: "",
+        addressNote: "",
       }),
     );
   });
@@ -195,11 +201,41 @@ describe("PersonForm", () => {
         name: "M. Bailleur Modifié",
         address: "1 avenue du Parc, 75011 Paris",
         issuePlace: "Paris",
+        phone: "06 12 34 56 78",
+        addressNote: "Bâtiment B",
       }),
     );
     expect(onClose).not.toHaveBeenCalled();
     expect(toastMessages()).toContain(
       "Personne « M. Bailleur Modifié » mise à jour.",
+    );
+  });
+
+  it("shows and submits the phone and the address note", async () => {
+    vi.mocked(api.persons.update).mockResolvedValue({
+      ...PERSON,
+      phone: "07 98 76 54 32",
+    });
+    renderForm(PERSON);
+    const user = userEvent.setup();
+
+    expect(screen.getByLabelText("Téléphone")).toHaveValue("06 12 34 56 78");
+    expect(screen.getByLabelText("Complément d'adresse")).toHaveValue(
+      "Bâtiment B",
+    );
+
+    await user.clear(screen.getByLabelText("Téléphone"));
+    await user.type(screen.getByLabelText("Téléphone"), " 07 98 76 54 32 ");
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    await waitFor(() =>
+      expect(api.persons.update).toHaveBeenCalledWith(1, {
+        name: "M. Bailleur",
+        address: "1 avenue du Parc, 75011 Paris",
+        issuePlace: "Paris",
+        phone: "07 98 76 54 32",
+        addressNote: "Bâtiment B",
+      }),
     );
   });
 
@@ -226,6 +262,8 @@ describe("PersonForm", () => {
     expect(screen.getByRole("heading", { name: "Add a person" })).toBeVisible();
     expect(screen.getByLabelText("Person name")).toBeVisible();
     expect(screen.getByLabelText("Address")).toBeVisible();
+    expect(screen.getByLabelText("Phone")).toBeVisible();
+    expect(screen.getByLabelText("Address details")).toBeVisible();
     expect(screen.getByLabelText("Place of issue")).toBeVisible();
     expect(
       screen.getByText(

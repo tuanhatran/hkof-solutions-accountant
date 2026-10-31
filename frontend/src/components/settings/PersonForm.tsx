@@ -40,6 +40,8 @@ export function PersonForm({
     defaultValues: {
       name: item?.name ?? "",
       address: item?.address ?? "",
+      phone: item?.phone ?? "",
+      addressNote: item?.addressNote ?? "",
       issuePlace: item?.issuePlace ?? "",
     },
   });
@@ -49,6 +51,8 @@ export function PersonForm({
       const requestBody: PersonRequest = {
         name: values.name.trim(),
         address: values.address.trim() === "" ? null : values.address.trim(),
+        phone: values.phone?.trim() ?? "",
+        addressNote: values.addressNote?.trim() ?? "",
         issuePlace:
           values.issuePlace.trim() === "" ? null : values.issuePlace.trim(),
       };
@@ -118,6 +122,34 @@ export function PersonForm({
             placeholder="1 avenue du Parc, 75011 Paris"
             {...register("address")}
             data-cy="input-person-address"
+          />
+        </FieldGroup>
+        <FieldGroup
+          id="personne-telephone"
+          label={t("settings.people.form.phone")}
+          error={errors.phone?.message}
+          help={t("settings.people.form.phoneHelp")}
+        >
+          <input
+            id="personne-telephone"
+            className="field"
+            placeholder="06 12 34 56 78"
+            {...register("phone")}
+            data-cy="input-person-phone"
+          />
+        </FieldGroup>
+        <FieldGroup
+          id="personne-complement-adresse"
+          label={t("settings.people.form.addressNote")}
+          error={errors.addressNote?.message}
+          help={t("settings.people.form.addressNoteHelp")}
+        >
+          <input
+            id="personne-complement-adresse"
+            className="field"
+            placeholder="Bâtiment B, étage 2"
+            {...register("addressNote")}
+            data-cy="input-person-address-note"
           />
         </FieldGroup>
         <FieldGroup

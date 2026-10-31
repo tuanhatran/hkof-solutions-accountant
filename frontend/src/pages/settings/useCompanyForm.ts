@@ -91,6 +91,7 @@ export function useCompanyForm(company: CompanyDto | null): CompanyFormApi {
         name: values.name.trim(),
         legalForm: values.legalForm.trim(),
         siren: values.siren.trim(),
+        siret: values.siret?.trim() ?? "",
         address: values.address.trim(),
         managerName: values.managerName.trim(),
         leaseId: values.leaseId === "" ? null : Number(values.leaseId),

@@ -186,6 +186,28 @@ class CompanyServiceTest {
     }
 
     @Test
+    @DisplayName("An omitted SIRET keeps the stored value, an explicit blank clears it")
+    void preservesOmittedSiretOnUpdate() {
+        Company existing = company();
+        existing.setSiret("123 456 789 00012");
+        when(repository.findByIdAndUserIdAndDeletedFalse(COMPANY_ID, USER_ID)).thenReturn(Optional.of(existing));
+        when(repository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID))
+                .thenReturn(Optional.empty());
+
+        CompanyDto kept = service.update(COMPANY_ID, request("HKOF", null, null));
+        assertThat(kept.siret()).isEqualTo("123 456 789 00012");
+
+        CompanyDto cleared = service.update(COMPANY_ID, new CompanyRequest("HKOF", "EURL", null, "12 rue",
+                "Gérant", null, "Paris", ""));
+        assertThat(cleared.siret()).isNull();
+
+        CompanyDto replaced = service.update(COMPANY_ID, new CompanyRequest("HKOF", "EURL", null, "12 rue",
+                "Gérant", null, "Paris", " 987 654 321 00021 "));
+        assertThat(replaced.siret()).isEqualTo("987 654 321 00021");
+    }
+
+    @Test
     @DisplayName("A blank name is rejected in French")
     void rejectsBlankName() {
         assertThatThrownBy(() -> service.create(request("  ", null, null)))
