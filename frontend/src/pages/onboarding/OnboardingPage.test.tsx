@@ -89,13 +89,19 @@ async function saveAndContinueProfile(
   await user.click(screen.getByRole("button", { name: "Continuer" }));
 }
 
-async function fillProperty(user: ReturnType<typeof userEvent.setup>) {
+async function fillProperty(
+  user: ReturnType<typeof userEvent.setup>,
+  address = "10 rue de la Paix, 75002 Paris",
+  landlordFirst = "Bernard",
+  landlordLast = "Dupont",
+) {
+  await user.type(screen.getByLabelText("Adresse du bien"), address);
+  const landlordGroup = screen.getByRole("group", { name: "Bailleur" });
   await user.type(
-    screen.getByLabelText("Adresse du bien loué"),
-    "10 rue de la Paix, 75002 Paris",
+    within(landlordGroup).getByLabelText("Prénom"),
+    landlordFirst,
   );
-  await user.type(screen.getByLabelText("Loyer hors charges"), "1200,00");
-  await user.type(screen.getByLabelText("Provision pour charges"), "80");
+  await user.type(within(landlordGroup).getByLabelText("Nom"), landlordLast);
   await user.click(screen.getByRole("button", { name: "Continuer" }));
 }
 
@@ -143,6 +149,8 @@ describe("OnboardingPage", () => {
       "aria-current",
       "step",
     );
+    expect(screen.getByLabelText("Étape 2 sur 4 : Biens")).toBeVisible();
+    expect(screen.getByLabelText("Étape 3 sur 4 : Baux")).toBeVisible();
     expect(screen.getByLabelText("Étape 4 sur 4 : Résumé")).toBeVisible();
     expect(
       screen.getByRole("heading", { name: "Profil de l'agence" }),
@@ -324,10 +332,7 @@ describe("OnboardingPage", () => {
     renderWizard();
 
     await saveAndContinueProfile(user);
-    expect(
-      screen.getByRole("heading", { name: "Logement et bailleur" }),
-    ).toBeVisible();
-    expect(screen.getByText("bailleur@exemple.fr")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Biens" })).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "Retour" }));
 
@@ -341,6 +346,135 @@ describe("OnboardingPage", () => {
     );
   });
 
+  it("supports adding multiple properties with distinct landlords and no rent or charges", async () => {
+    const user = userEvent.setup();
+    renderWizard();
+
+    await saveAndContinueProfile(user);
+    expect(screen.getByRole("heading", { name: "Biens" })).toBeVisible();
+    expect(screen.queryByLabelText(/Loyer/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/charges/i)).not.toBeInTheDocument();
+
+    // Fill first property
+    await user.type(
+      screen.getByLabelText("Adresse du bien"),
+      "10 rue de la Paix, 75002 Paris",
+    );
+    const landlordGroup1 = screen.getByRole("group", { name: "Bailleur" });
+    await user.type(within(landlordGroup1).getByLabelText("Prénom"), "Bernard");
+    await user.type(within(landlordGroup1).getByLabelText("Nom"), "Dupont");
+    await user.type(
+      within(landlordGroup1).getByLabelText("Téléphone"),
+      "06 11 22 33 44",
+    );
+    await user.type(
+      within(landlordGroup1).getByLabelText("Adresse e-mail"),
+      "bernard@exemple.fr",
+    );
+
+    // Add a second property
+    await user.click(screen.getByRole("button", { name: "Ajouter un bien" }));
+    const addressInputs = screen.getAllByLabelText("Adresse du bien");
+    expect(addressInputs).toHaveLength(2);
+    await user.type(addressInputs[1], "20 avenue Foch, 75016 Paris");
+
+    const landlordGroups = screen.getAllByRole("group", { name: "Bailleur" });
+    await user.type(
+      within(landlordGroups[1]).getByLabelText("Prénom"),
+      "Claire",
+    );
+    await user.type(
+      within(landlordGroups[1]).getByLabelText("Nom"),
+      "Fontaine",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Continuer" }));
+
+    // On Step 3: Baux
+    expect(screen.getByRole("heading", { name: "Baux" })).toBeVisible();
+    const propertySelect = screen.getByLabelText("Bien associé");
+    expect(propertySelect).toBeVisible();
+    expect(propertySelect).toHaveTextContent("10 rue de la Paix, 75002 Paris");
+    expect(propertySelect).toHaveTextContent("20 avenue Foch, 75016 Paris");
+  });
+
+  it("finalizes individual leases with separate rent and charges per tenant", async () => {
+    const user = userEvent.setup();
+    renderWizard();
+
+    await saveAndContinueProfile(user);
+    await fillProperty(user);
+
+    expect(screen.getByRole("heading", { name: "Baux" })).toBeVisible();
+    expect(
+      screen.getByRole("radio", { name: "Bail individuel" }),
+    ).toBeChecked();
+
+    // Tenant 1
+    const tenant1 = screen.getByRole("group", { name: "Locataire 1" });
+    await user.type(within(tenant1).getByLabelText("Prénom"), "Bob");
+    await user.type(within(tenant1).getByLabelText("Nom"), "Durand");
+    await user.type(
+      within(tenant1).getByLabelText("Loyer hors charges"),
+      "800,00",
+    );
+    await user.type(
+      within(tenant1).getByLabelText("Provision pour charges"),
+      "50,00",
+    );
+
+    // Add Tenant 2
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter un locataire" }),
+    );
+    const tenant2 = screen.getByRole("group", { name: "Locataire 2" });
+    await user.type(within(tenant2).getByLabelText("Prénom"), "Chloé");
+    await user.type(within(tenant2).getByLabelText("Nom"), "Petit");
+    await user.type(
+      within(tenant2).getByLabelText("Loyer hors charges"),
+      "750,00",
+    );
+    await user.type(
+      within(tenant2).getByLabelText("Provision pour charges"),
+      "40,00",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Continuer" }));
+
+    // Step 4: Summary
+    expect(screen.getByRole("heading", { name: "Résumé" })).toBeVisible();
+    expect(screen.getByText("Bernard Dupont")).toBeVisible();
+    expect(screen.getByText("Bob Durand")).toBeVisible();
+    expect(screen.getByText("Chloé Petit")).toBeVisible();
+
+    await user.click(
+      screen.getByRole("button", { name: "Terminer l'inscription" }),
+    );
+
+    await waitFor(() => expect(api.leases.create).toHaveBeenCalledTimes(2));
+    // Two separate leases created
+    expect(api.leases.create).toHaveBeenNthCalledWith(1, {
+      companyLease: false,
+      landlordId: 8,
+      tenantId: 9,
+      tenantIds: [9],
+      propertyAddress: "10 rue de la Paix, 75002 Paris",
+      rentExclCharges: "800.00",
+      charges: "50.00",
+    });
+    expect(api.leases.create).toHaveBeenNthCalledWith(2, {
+      companyLease: false,
+      landlordId: 8,
+      tenantId: 10,
+      tenantIds: [10],
+      propertyAddress: "10 rue de la Paix, 75002 Paris",
+      rentExclCharges: "750.00",
+      charges: "40.00",
+    });
+    expect(api.auth.completeOnboarding).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText("Générateur de quittances")).toBeVisible();
+  });
+
   it("finalizes a colocation lease, completes onboarding and redirects", async () => {
     const user = userEvent.setup();
     renderWizard();
@@ -348,12 +482,21 @@ describe("OnboardingPage", () => {
     await saveAndContinueProfile(user);
     await fillProperty(user);
 
-    expect(
-      screen.getByRole("heading", { name: "Bail et locataires" }),
-    ).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Baux" })).toBeVisible();
     await user.click(
       screen.getByRole("radio", { name: "Bail de colocation solidaire" }),
     );
+
+    // In colocation: total rent and charges
+    await user.type(
+      screen.getByLabelText("Loyer total hors charges"),
+      "1200,00",
+    );
+    await user.type(
+      screen.getByLabelText("Provision totale pour charges"),
+      "80",
+    );
+
     await user.click(
       screen.getByRole("button", { name: "Retirer le locataire 2" }),
     );
@@ -387,16 +530,91 @@ describe("OnboardingPage", () => {
     await waitFor(() =>
       expect(api.leases.create).toHaveBeenCalledWith({
         companyLease: false,
-        landlordId: 7,
-        tenantIds: [8, 9],
+        landlordId: 8,
+        tenantId: 9,
+        tenantIds: [9, 10],
         propertyAddress: "10 rue de la Paix, 75002 Paris",
         rentExclCharges: "1200.00",
         charges: "80.00",
       }),
     );
-    expect(api.persons.create).toHaveBeenCalledTimes(3);
+    expect(api.persons.create).toHaveBeenCalledTimes(4); // manager + landlord + 2 tenants
     expect(api.auth.completeOnboarding).toHaveBeenCalledTimes(1);
     expect(api.auth.me).toHaveBeenCalled();
     expect(await screen.findByText("Générateur de quittances")).toBeVisible();
+  });
+
+  it("shows validation errors when property address or landlord name is missing, and allows removing a property", async () => {
+    const user = userEvent.setup();
+    renderWizard();
+
+    await saveAndContinueProfile(user);
+    expect(screen.getByRole("heading", { name: "Biens" })).toBeVisible();
+
+    // Click continue without filling
+    await user.click(screen.getByRole("button", { name: "Continuer" }));
+    expect(
+      await screen.findByText("L'adresse du bien est obligatoire."),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Le prénom du bailleur est obligatoire."),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Le nom du bailleur est obligatoire."),
+    ).toBeVisible();
+
+    // Add a second property, then remove it
+    await user.click(screen.getByRole("button", { name: "Ajouter un bien" }));
+    expect(screen.getAllByLabelText("Adresse du bien")).toHaveLength(2);
+
+    await user.click(screen.getByRole("button", { name: "Retirer le bien 2" }));
+    expect(screen.getAllByLabelText("Adresse du bien")).toHaveLength(1);
+  });
+
+  it("validates tenant rent and allows navigating back from step 3 and step 4", async () => {
+    const user = userEvent.setup();
+    renderWizard();
+
+    await saveAndContinueProfile(user);
+    await fillProperty(user);
+
+    expect(screen.getByRole("heading", { name: "Baux" })).toBeVisible();
+    const tenant1 = screen.getByRole("group", { name: "Locataire 1" });
+    await user.type(within(tenant1).getByLabelText("Prénom"), "Bob");
+    await user.type(within(tenant1).getByLabelText("Nom"), "Durand");
+    await user.type(within(tenant1).getByLabelText("Loyer hors charges"), "0");
+    await user.click(screen.getByRole("button", { name: "Continuer" }));
+
+    expect(
+      await screen.findByText(
+        "Saisissez un loyer supérieur à 0 (ex. 1 200,00).",
+      ),
+    ).toBeVisible();
+
+    // Fix rent
+    await user.clear(within(tenant1).getByLabelText("Loyer hors charges"));
+    await user.type(
+      within(tenant1).getByLabelText("Loyer hors charges"),
+      "900,00",
+    );
+
+    // Test back button from step 3 to step 2
+    await user.click(screen.getByRole("button", { name: "Retour" }));
+    expect(screen.getByRole("heading", { name: "Biens" })).toBeVisible();
+    expect(screen.getByLabelText("Adresse du bien")).toHaveValue(
+      "10 rue de la Paix, 75002 Paris",
+    );
+
+    // Advance to step 3 again
+    await user.click(screen.getByRole("button", { name: "Continuer" }));
+    expect(screen.getByRole("heading", { name: "Baux" })).toBeVisible();
+
+    // Advance to step 4
+    await user.click(screen.getByRole("button", { name: "Continuer" }));
+    expect(screen.getByRole("heading", { name: "Résumé" })).toBeVisible();
+
+    // Test back button from step 4 to step 3
+    await user.click(screen.getByRole("button", { name: "Retour" }));
+    expect(screen.getByRole("heading", { name: "Baux" })).toBeVisible();
   });
 });
