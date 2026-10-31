@@ -111,7 +111,7 @@ class RentReceiptCrossUserIntegrationTest {
                 .isEqualTo(companyId);
 
         // A second receipt of the same landlord for a private tenant must stay invisible to the owner.
-        long tenantPersonId = id(created(landlord, "/api/persons",
+        long tenantPersonId = id(created(landlord, "/api/tenants",
                 "{\"name\":\"Locataire Privé\",\"address\":\"6 rue Privée\"}"));
         created(landlord, "/api/leases", """
                 {"companyLease":false,"landlordId":%d,"tenantId":%d,"companyId":null,

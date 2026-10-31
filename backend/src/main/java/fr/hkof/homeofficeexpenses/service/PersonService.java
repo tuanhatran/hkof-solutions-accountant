@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.repository.LeaseRepository;
 import fr.hkof.homeofficeexpenses.repository.PersonRepository;
@@ -43,7 +44,7 @@ public class PersonService {
 
     @Transactional
     public PersonDto create(PersonRequest request) {
-        Person person = new Person();
+        Person person = new Landlord();
         person.setUserId(ownership.currentUserId());
         apply(person, request);
         person.setDeleted(false);

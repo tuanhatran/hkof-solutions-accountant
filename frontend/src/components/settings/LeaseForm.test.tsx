@@ -2,17 +2,24 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { api } from "@/api/endpoints";
-import type { LeaseDto, PersonDto } from "@/api/types";
+import { api, type LandlordDto, type TenantDto } from "@/api/endpoints";
+import type { LeaseDto } from "@/api/types";
 import { useToasts } from "@/state/toasts";
 import { LeaseForm } from "./LeaseForm";
 
-const LANDLORD: PersonDto = {
+const LANDLORD: LandlordDto = {
   id: 1,
   name: "M. Bailleur",
   address: null,
   issuePlace: "Paris",
   signatureCount: 0,
+};
+
+const TENANT: TenantDto = {
+  id: 2,
+  name: "Mme Locataire",
+  address: null,
+  email: "locataire@exemple.fr",
 };
 
 const FOREIGN_COMPANY = {
@@ -61,7 +68,8 @@ function renderForm(item: LeaseDto | null = null) {
     <QueryClientProvider client={queryClient}>
       <LeaseForm
         item={item}
-        persons={[LANDLORD]}
+        landlords={[LANDLORD]}
+        tenants={[TENANT]}
         companies={[]}
         onClose={onClose}
       />

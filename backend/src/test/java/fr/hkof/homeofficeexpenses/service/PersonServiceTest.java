@@ -17,8 +17,11 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
+import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Person;
+import fr.hkof.homeofficeexpenses.domain.Tenant;
 import fr.hkof.homeofficeexpenses.repository.LeaseRepository;
 import fr.hkof.homeofficeexpenses.repository.PersonRepository;
 import fr.hkof.homeofficeexpenses.repository.SignatureRepository;
@@ -53,6 +56,30 @@ class PersonServiceTest {
         person.setName(name);
         person.setAddress("Adresse");
         return person;
+    }
+
+    @Test
+    @DisplayName("The person directory creates landlords and lists every non-employee kind")
+    void createsLandlordsAndListsAllNaturalKinds() {
+        when(persons.save(any(Person.class))).thenAnswer(invocation -> {
+            Person saved = invocation.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
+        service.create(new PersonRequest("Alice", null, null));
+        ArgumentCaptor<Person> saved = ArgumentCaptor.forClass(Person.class);
+        verify(persons).save(saved.capture());
+        assertThat(saved.getValue()).isInstanceOf(Landlord.class);
+
+        Landlord landlord = new Landlord();
+        landlord.setId(1L);
+        landlord.setName("Bailleur");
+        Tenant tenant = new Tenant();
+        tenant.setId(2L);
+        tenant.setName("Locataire");
+        when(persons.findAllNaturalPersons(USER_ID)).thenReturn(List.of(landlord, tenant));
+
+        assertThat(service.list()).extracting(PersonDto::name).containsExactly("Bailleur", "Locataire");
     }
 
     @Test

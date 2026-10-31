@@ -16,6 +16,10 @@ export type RegisterRequest = Schemas["RegisterRequest"];
 export type ConfirmEmailRequest = Schemas["ConfirmEmailRequest"];
 export type ResendConfirmationRequest = Schemas["ResendConfirmationRequest"];
 export type ChangePasswordRequest = Schemas["ChangePasswordRequest"];
+export type LandlordDto = Schemas["LandlordDto"];
+export type LandlordRequest = Schemas["LandlordRequest"];
+export type TenantDto = Schemas["TenantDto"];
+export type TenantRequest = Schemas["TenantRequest"];
 import type {
   AnalysisDto,
   AnalysisStartResponse,
@@ -182,6 +186,38 @@ export const api = {
       ),
     remove: (id: number) =>
       request<void>(`/api/persons/${id}`, { method: "DELETE" }),
+  },
+
+  landlords: {
+    list: () => request<LandlordDto[]>("/api/landlords"),
+    create: (requestBody: LandlordRequest) =>
+      request<LandlordDto>(
+        "/api/landlords",
+        json({ method: "POST", body: JSON.stringify(requestBody) }),
+      ),
+    update: (id: number, requestBody: LandlordRequest) =>
+      request<LandlordDto>(
+        `/api/landlords/${id}`,
+        json({ method: "PUT", body: JSON.stringify(requestBody) }),
+      ),
+    remove: (id: number) =>
+      request<void>(`/api/landlords/${id}`, { method: "DELETE" }),
+  },
+
+  tenants: {
+    list: () => request<TenantDto[]>("/api/tenants"),
+    create: (requestBody: TenantRequest) =>
+      request<TenantDto>(
+        "/api/tenants",
+        json({ method: "POST", body: JSON.stringify(requestBody) }),
+      ),
+    update: (id: number, requestBody: TenantRequest) =>
+      request<TenantDto>(
+        `/api/tenants/${id}`,
+        json({ method: "PUT", body: JSON.stringify(requestBody) }),
+      ),
+    remove: (id: number) =>
+      request<void>(`/api/tenants/${id}`, { method: "DELETE" }),
   },
 
   addresses: {

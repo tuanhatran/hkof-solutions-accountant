@@ -18,6 +18,14 @@ vi.mock("@/api/endpoints", () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
+    landlords: {
+      create: vi.fn(),
+      list: vi.fn(),
+    },
+    tenants: {
+      create: vi.fn(),
+      list: vi.fn(),
+    },
     agency: {
       get: vi.fn(),
       save: vi.fn(),
@@ -134,6 +142,15 @@ beforeEach(() => {
     name: body.name,
     signatureCount: 0,
   }));
+  vi.mocked(api.landlords.create).mockImplementation(async (body) => ({
+    id: nextPersonId++,
+    name: body.name,
+    signatureCount: 0,
+  }));
+  vi.mocked(api.tenants.create).mockImplementation(async (body) => ({
+    id: nextPersonId++,
+    name: body.name,
+  }));
   vi.mocked(api.persons.update).mockResolvedValue(PERSON);
   vi.mocked(api.signatures.list).mockResolvedValue([]);
   vi.mocked(api.leases.create).mockResolvedValue({ id: 9 });
@@ -168,6 +185,36 @@ describe("OnboardingPage", () => {
       }),
     ).toBeVisible();
     expect(screen.getByLabelText("Étape 1 sur 4 : Profil")).toBeVisible();
+  });
+
+  it("shows a track selector when both modules are enabled and opens the company wizard", async () => {
+    const user = userEvent.setup();
+    renderWizard();
+
+    const tracks = screen.getByRole("group", {
+      name: "Parcours d'inscription",
+    });
+    expect(
+      within(tracks).getByRole("button", { name: "Espace LMNP" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      within(tracks).getByRole("button", { name: "Espace société" }),
+    ).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(
+      within(tracks).getByRole("button", { name: "Espace société" }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Identité de la société" }),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Étape 1 sur 5 : Identité")).toHaveAttribute(
+      "aria-current",
+      "step",
+    );
+    expect(
+      screen.queryByRole("heading", { name: "Profil de l'agence" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows the account e-mail and the four French steps", () => {
@@ -615,7 +662,23 @@ describe("OnboardingPage", () => {
         charges: "80.00",
       }),
     );
-    expect(api.persons.create).toHaveBeenCalledTimes(4); // manager + landlord + 2 tenants
+    expect(api.persons.create).toHaveBeenCalledTimes(1); // the profile manager
+    expect(api.landlords.create).toHaveBeenCalledTimes(1);
+    expect(api.landlords.create).toHaveBeenCalledWith({
+      name: "Bernard Dupont",
+      phone: null,
+      addressNote: null,
+      address: null,
+      issuePlace: null,
+    });
+    expect(api.tenants.create).toHaveBeenCalledTimes(2);
+    expect(api.tenants.create).toHaveBeenNthCalledWith(1, {
+      name: "Bob Durand",
+      phone: null,
+      email: null,
+      addressNote: null,
+      address: null,
+    });
     expect(api.auth.completeOnboarding).toHaveBeenCalledTimes(1);
     expect(api.auth.me).toHaveBeenCalled();
     expect(await screen.findByText("Tableau de bord")).toBeVisible();
@@ -693,6 +756,86 @@ describe("OnboardingPage", () => {
     // Test back button from step 4 to step 3
     await user.click(screen.getByRole("button", { name: "Retour" }));
     expect(screen.getByRole("heading", { name: "Baux" })).toBeVisible();
+  });
+
+  it("renders the skip control in the profile step footer instead of the header", () => {
+    const { container } = renderWizard();
+
+    const skipBtn = screen.getByRole("button", {
+      name: "Passer au tableau de bord",
+    });
+    expect(skipBtn).toHaveAttribute("data-cy", "btn-skip-onboarding");
+    expect(skipBtn.closest(".onboarding-actions")).not.toBeNull();
+    expect(skipBtn.closest(".onboarding-header-actions")).toBeNull();
+    expect(
+      container.querySelectorAll('[data-cy="btn-skip-onboarding"]'),
+    ).toHaveLength(1);
+  });
+
+  it("keeps a single skip control in the action footer of every step", async () => {
+    const user = userEvent.setup();
+    const { container } = renderWizard();
+
+    const expectSkipInFooter = () => {
+      const buttons = container.querySelectorAll(
+        '[data-cy="btn-skip-onboarding"]',
+      );
+      expect(buttons).toHaveLength(1);
+      expect(buttons[0].closest(".onboarding-actions")).not.toBeNull();
+    };
+
+    expectSkipInFooter();
+
+    await saveAndContinueProfile(user);
+    expect(screen.getByRole("heading", { name: "Biens" })).toBeVisible();
+    expectSkipInFooter();
+
+    await fillProperty(user);
+    expect(screen.getByRole("heading", { name: "Baux" })).toBeVisible();
+    expectSkipInFooter();
+
+    const tenant1 = screen.getByRole("group", { name: "Locataire 1" });
+    await user.type(within(tenant1).getByLabelText("Prénom"), "Bob");
+    await user.type(within(tenant1).getByLabelText("Nom"), "Durand");
+    await user.type(
+      within(tenant1).getByLabelText("Loyer hors charges"),
+      "800,00",
+    );
+    await user.type(
+      within(tenant1).getByLabelText("Provision pour charges"),
+      "50,00",
+    );
+    await user.click(screen.getByRole("button", { name: "Continuer" }));
+    expect(screen.getByRole("heading", { name: "Résumé" })).toBeVisible();
+    expectSkipInFooter();
+  });
+
+  it("persists the current step and draft before skipping from a later step", async () => {
+    const user = userEvent.setup();
+    renderWizard();
+
+    await saveAndContinueProfile(user);
+    expect(screen.getByRole("heading", { name: "Biens" })).toBeVisible();
+
+    await user.click(
+      screen.getByRole("button", { name: "Passer au tableau de bord" }),
+    );
+
+    expect(await screen.findByText("Tableau de bord")).toBeVisible();
+    const stored = JSON.parse(
+      localStorage.getItem(
+        "homeofficeexpenses.onboarding.bailleur@exemple.fr",
+      ) ?? "null",
+    ) as { step: number; draft: { profile: { firstName: string } } };
+    expect(stored.step).toBe(1);
+    expect(stored.draft.profile.firstName).toBe("Alice");
+    expect(
+      sessionStorage.getItem("homeofficeexpenses.onboarding_skipped"),
+    ).toBe("true");
+    sessionStorage.removeItem("homeofficeexpenses.onboarding_skipped");
+    localStorage.removeItem(
+      "homeofficeexpenses.onboarding.bailleur@exemple.fr",
+    );
   });
 
   it("navigates to dashboard and sets skip flag when clicking skip onboarding", async () => {

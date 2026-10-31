@@ -24,8 +24,10 @@ import org.mockito.ArgumentCaptor;
 
 import fr.hkof.homeofficeexpenses.domain.Address;
 import fr.hkof.homeofficeexpenses.domain.Company;
+import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.Person;
+import fr.hkof.homeofficeexpenses.domain.Tenant;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
 import fr.hkof.homeofficeexpenses.repository.LeaseRepository;
 import fr.hkof.homeofficeexpenses.repository.PersonRepository;
@@ -61,12 +63,20 @@ class LeaseServiceTest {
                 new LeaseMapper(publicCompanies), Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
-    private Person person(Long id, String name) {
-        Person person = new Person();
-        person.setId(id);
-        person.setName(name);
-        person.setAddress("Adresse " + name);
-        return person;
+    private Person landlord(Long id, String name) {
+        Landlord landlord = new Landlord();
+        landlord.setId(id);
+        landlord.setName(name);
+        landlord.setAddress("Adresse " + name);
+        return landlord;
+    }
+
+    private Person tenant(Long id, String name) {
+        Tenant tenant = new Tenant();
+        tenant.setId(id);
+        tenant.setName(name);
+        tenant.setAddress("Adresse " + name);
+        return tenant;
     }
 
     private Company company(Long id, String name) {
@@ -86,8 +96,8 @@ class LeaseServiceTest {
     private Lease normalLease() {
         Lease lease = new Lease();
         lease.setId(3L);
-        lease.setLandlord(person(1L, "Bailleur"));
-        lease.setTenant(person(2L, "Locataire"));
+        lease.setLandlord(landlord(1L, "Bailleur"));
+        lease.setTenant(tenant(2L, "Locataire"));
         lease.setAddress(address(4L, "12 rue de la République"));
         lease.setRentExclCharges(new BigDecimal("900.00"));
         lease.setCharges(new BigDecimal("50.00"));
@@ -97,7 +107,7 @@ class LeaseServiceTest {
     private Lease companyLease() {
         Lease lease = new Lease();
         lease.setId(5L);
-        lease.setLandlord(person(1L, "Bailleur"));
+        lease.setLandlord(landlord(1L, "Bailleur"));
         lease.setAddress(address(4L, "12 rue de la République"));
         lease.setCompanyId(7L);
         lease.setCompanyLease(true);
@@ -190,8 +200,8 @@ class LeaseServiceTest {
     @Test
     @DisplayName("A normal lease can be created, updated and logically deleted")
     void normalLeaseCrud() {
-        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
-        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(person(2L, "Locataire")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(landlord(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(tenant(2L, "Locataire")));
         when(leases.save(any(Lease.class))).thenAnswer(invocation -> {
             Lease saved = invocation.getArgument(0);
             saved.setId(3L);
@@ -223,7 +233,7 @@ class LeaseServiceTest {
     @Test
     @DisplayName("A company lease stores the company tenant and requires both surfaces")
     void companyLeaseCrud() {
-        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(landlord(1L, "Bailleur")));
         when(companies.entity(7L)).thenReturn(company(7L, "Société locataire"));
         when(leases.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(publicCompanies.findPublic(7L)).thenReturn(Optional.of(company(7L, "Société locataire")));
@@ -261,7 +271,7 @@ class LeaseServiceTest {
                 .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_EMPLOYEE_PARTY"));
 
         when(employees.existsByIdAndUserIdAndDeletedFalse(1L, USER_ID)).thenReturn(false);
-        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(landlord(1L, "Bailleur")));
         when(employees.existsByIdAndUserIdAndDeletedFalse(2L, USER_ID)).thenReturn(true);
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
@@ -271,9 +281,29 @@ class LeaseServiceTest {
     }
 
     @Test
+    @DisplayName("A tenant can never be landlord and a landlord can never be tenant")
+    void rejectsWrongPartyKinds() {
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(tenant(1L, "Locataire")));
+        assertThatThrownBy(() -> service.createLease(
+                new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Le bailleur sélectionné n'est pas un bailleur.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_LANDLORD_INVALID"));
+
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(landlord(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(landlord(2L, "Autre bailleur")));
+        assertThatThrownBy(() -> service.createLease(
+                new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Le locataire sélectionné n'est pas un locataire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_TENANT_INVALID"));
+        verify(leases, never()).save(any(Lease.class));
+    }
+
+    @Test
     @DisplayName("The same person cannot be landlord and tenant")
     void samePersonRejected() {
-        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(landlord(1L, "Bailleur")));
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 1L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
@@ -284,9 +314,9 @@ class LeaseServiceTest {
     @Test
     @DisplayName("A lease links several tenants, keeps tenantId as primary and orders tenantIds")
     void multiTenantLease() {
-        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
-        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(person(2L, "Alice DUPONT")));
-        when(persons.findNaturalPersonById(3L, USER_ID)).thenReturn(Optional.of(person(3L, "Bob MARTIN")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(landlord(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(tenant(2L, "Alice DUPONT")));
+        when(persons.findNaturalPersonById(3L, USER_ID)).thenReturn(Optional.of(tenant(3L, "Bob MARTIN")));
         when(leases.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         LeaseDto created = service.createLease(new LeaseRequest(false, 1L, null, 3L, "12 rue", "900", null,
@@ -314,7 +344,7 @@ class LeaseServiceTest {
     @Test
     @DisplayName("Empty, duplicate and inconsistent tenant lists are rejected in French")
     void rejectsInvalidTenantLists() {
-        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(landlord(1L, "Bailleur")));
 
         assertThatThrownBy(() -> service.createLease(new LeaseRequest(false, 1L, null, null, "12 rue", "900",
                 null, null, null, null, List.of())))
@@ -338,7 +368,7 @@ class LeaseServiceTest {
     @Test
     @DisplayName("A new lease validation rejects missing parties, missing entities and blank addresses")
     void leaseValidation() {
-        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(landlord(1L, "Bailleur")));
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, null, null, 2L, "12 rue", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
@@ -367,7 +397,7 @@ class LeaseServiceTest {
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Bailleur introuvable.")
                 .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("PERSON_NOT_FOUND"));
-        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(landlord(1L, "Bailleur")));
         when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
@@ -375,7 +405,7 @@ class LeaseServiceTest {
                 .hasMessage("Locataire introuvable.")
                 .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("PERSON_NOT_FOUND"));
 
-        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(person(2L, "Locataire")));
+        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(tenant(2L, "Locataire")));
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, " ", "900", null, null, null)))
                 .isInstanceOf(BusinessException.class)
@@ -386,8 +416,8 @@ class LeaseServiceTest {
     @Test
     @DisplayName("An active lease for the same parties is rejected on create and update")
     void duplicateLease() {
-        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
-        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(person(2L, "Locataire")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(landlord(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(tenant(2L, "Locataire")));
         when(leases.existsByUserIdAndLandlordIdAndTenantIdAndDeletedFalse(USER_ID, 1L, 2L)).thenReturn(true);
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null, null, null)))
@@ -413,7 +443,7 @@ class LeaseServiceTest {
     @Test
     @DisplayName("A second active company lease for the same company is allowed with another landlord")
     void secondCompanyLeaseIsAllowed() {
-        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(landlord(1L, "Bailleur")));
         when(companies.entity(7L)).thenReturn(company(7L, "Société"));
         when(publicCompanies.findPublic(7L)).thenReturn(Optional.of(company(7L, "Société")));
         when(leases.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -428,7 +458,7 @@ class LeaseServiceTest {
     @Test
     @DisplayName("A company lease links another account's company through its SIREN without owner access")
     void linksForeignCompanyBySiren() {
-        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(landlord(1L, "Bailleur")));
         Company foreign = company(7L, "Société ABC");
         foreign.setSiren("987 654 321");
         foreign.setLegalForm("SARL");
@@ -454,7 +484,7 @@ class LeaseServiceTest {
     @Test
     @DisplayName("A company lease without company id or SIREN is rejected")
     void companyLeaseRequiresCompanyOrSiren() {
-        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(landlord(1L, "Bailleur")));
 
         assertThatThrownBy(() -> service.createLease(
                 new LeaseRequest(true, 1L, null, null, "12 rue", "900", null, "70", "25")))
@@ -467,8 +497,8 @@ class LeaseServiceTest {
     @Test
     @DisplayName("A normal lease cannot duplicate the pro-rata company link")
     void normalLeaseAlreadyLinkedIsRejected() {
-        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
-        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(person(2L, "Locataire")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(landlord(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(tenant(2L, "Locataire")));
         when(companies.entity(7L)).thenReturn(company(7L, "Société"));
         when(leases.existsByUserIdAndCompanyIdAndCompanyLeaseFalseAndDeletedFalse(USER_ID, 7L)).thenReturn(true);
 
@@ -482,7 +512,7 @@ class LeaseServiceTest {
         when(leases.existsByUserIdAndCompanyIdAndCompanyLeaseFalseAndDeletedFalseAndIdNot(USER_ID, 7L, 5L)).thenReturn(true);
         Lease existing = companyLease();
         existing.setCompanyLease(false);
-        existing.setTenant(person(8L, "Locataire 8"));
+        existing.setTenant(tenant(8L, "Locataire 8"));
         existing.setTotalArea(null);
         existing.setBusinessArea(null);
         when(leases.findByIdAndUserIdAndDeletedFalse(5L, USER_ID)).thenReturn(Optional.of(existing));
@@ -497,8 +527,8 @@ class LeaseServiceTest {
     @Test
     @DisplayName("A lease update keeps its own company link and accepts no company")
     void companyLinkExcludesCurrentLease() {
-        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
-        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(person(2L, "Locataire")));
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(landlord(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(tenant(2L, "Locataire")));
         when(companies.entity(9L)).thenReturn(company(9L, "Société pro-rata"));
         when(publicCompanies.findPublic(9L)).thenReturn(Optional.of(company(9L, "Société pro-rata")));
         when(leases.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));

@@ -11,4 +11,7 @@ public interface LeaseTenantRepository extends JpaRepository<LeaseTenant, Long> 
     List<LeaseTenant> findAllByLeaseIdOrderByIdAsc(Long leaseId);
 
     boolean existsByLeaseIdAndPersonId(Long leaseId, Long personId);
+
+    /** True when the person is still attached to an active lease as a tenant. */
+    boolean existsByPersonIdAndLeaseDeletedFalse(Long personId);
 }

@@ -5,14 +5,13 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
-import { api } from "@/api/endpoints";
+import { api, type LandlordDto, type TenantDto } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
 import type {
   CompanyDto,
   CompanyLookupDto,
   LeaseDto,
   LeaseRequest,
-  PersonDto,
 } from "@/api/types";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { FormModal } from "@/components/ui/FormModal";
@@ -22,20 +21,22 @@ import { leaseSchema, type LeaseFormValues } from "@/lib/validation";
 import { toast } from "@/state/toasts";
 import { cents } from "./settingsMoney";
 import { buildLeaseDefaults } from "./leaseFormDefaults";
-import { CompanySirenLookup } from "./CompanySirenLookup";
 import { LeaseAreaFields } from "./LeaseAreaFields";
+import { LeasePartyFields } from "./LeasePartyFields";
 
 /** Create/update form for a lease, with an indicative total. */
 export function LeaseForm({
   item,
-  persons,
+  landlords,
+  tenants,
   companies,
   presetCompanyId = null,
   onSaved,
   onClose,
 }: {
   item: LeaseDto | null;
-  persons: PersonDto[];
+  landlords: LandlordDto[];
+  tenants: TenantDto[];
   companies: CompanyDto[];
   presetCompanyId?: number | null;
   onSaved?: (lease: LeaseDto) => void;
@@ -167,95 +168,17 @@ export function LeaseForm({
             </span>
           </span>
         </label>
-        <FieldGroup
-          id="bail-bailleur"
-          label={t("settings.lease.form.landlord")}
-          error={errors.landlordId?.message}
-        >
-          <select
-            id="bail-bailleur"
-            className={cn("field", errors.landlordId && "field-error")}
-            {...register("landlordId")}
-            data-cy="select-lease-landlord"
-          >
-            <option value="">
-              {t("settings.lease.form.landlordPlaceholder")}
-            </option>
-            {persons.map((person) => (
-              <option key={person.id} value={person.id}>
-                {person.name}
-              </option>
-            ))}
-          </select>
-        </FieldGroup>
-
-        {isCompanyLease ? (
-          <>
-            <FieldGroup
-              id="bail-locataire-societe"
-              label={t("settings.lease.form.companyTenant")}
-              error={errors.companyId?.message}
-            >
-              <select
-                id="bail-locataire-societe"
-                className={cn("field", errors.companyId && "field-error")}
-                {...register("companyId", {
-                  onChange: (event) => {
-                    if (!String(event.target.value).startsWith("siren:")) {
-                      setLinkedCompany(null);
-                    }
-                  },
-                })}
-                data-cy="select-lease-company-tenant"
-              >
-                <option value="">
-                  {t("settings.lease.form.companyPlaceholder")}
-                </option>
-                {linkedCompany?.siren ? (
-                  <option value={`siren:${linkedCompany.siren}`}>
-                    {linkedCompany.name}
-                  </option>
-                ) : null}
-                {companies.map((company) => (
-                  <option key={company.id} value={company.id}>
-                    {company.name}
-                  </option>
-                ))}
-              </select>
-            </FieldGroup>
-            <CompanySirenLookup
-              linked={linkedCompany}
-              onLinked={(company) => {
-                setLinkedCompany(company);
-                setValue("companyId", `siren:${company.siren ?? ""}`, {
-                  shouldValidate: true,
-                });
-              }}
-            />
-          </>
-        ) : (
-          <FieldGroup
-            id="bail-locataire"
-            label={t("settings.lease.form.tenant")}
-            error={errors.tenantId?.message}
-          >
-            <select
-              id="bail-locataire"
-              className={cn("field", errors.tenantId && "field-error")}
-              {...register("tenantId")}
-              data-cy="select-lease-tenant"
-            >
-              <option value="">
-                {t("settings.lease.form.tenantPlaceholder")}
-              </option>
-              {persons.map((person) => (
-                <option key={person.id} value={person.id}>
-                  {person.name}
-                </option>
-              ))}
-            </select>
-          </FieldGroup>
-        )}
+        <LeasePartyFields
+          landlords={landlords}
+          tenants={tenants}
+          companies={companies}
+          isCompanyLease={isCompanyLease}
+          linkedCompany={linkedCompany}
+          onLinkedCompany={setLinkedCompany}
+          register={register}
+          setValue={setValue}
+          errors={errors}
+        />
 
         <FieldGroup
           id="bail-adresse"

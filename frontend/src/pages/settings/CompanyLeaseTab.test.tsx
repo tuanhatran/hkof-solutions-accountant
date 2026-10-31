@@ -14,6 +14,8 @@ vi.mock("@/api/endpoints", () => ({
   api: {
     companies: { list: vi.fn(), update: vi.fn() },
     persons: { list: vi.fn() },
+    landlords: { list: vi.fn() },
+    tenants: { list: vi.fn() },
     addresses: { list: vi.fn() },
     leases: {
       list: vi.fn(),
@@ -129,6 +131,8 @@ beforeEach(() => {
   vi.mocked(api.companies.list).mockReset();
   vi.mocked(api.companies.update).mockReset();
   vi.mocked(api.persons.list).mockReset();
+  vi.mocked(api.landlords.list).mockReset();
+  vi.mocked(api.tenants.list).mockReset();
   vi.mocked(api.addresses.list).mockReset();
   vi.mocked(api.leases.list).mockReset();
   vi.mocked(api.leases.create).mockReset();
@@ -140,9 +144,10 @@ beforeEach(() => {
   vi.mocked(api.templates.list).mockReset();
   vi.mocked(api.employees.list).mockReset();
   vi.mocked(api.signatures.list).mockReset();
-  vi.mocked(api.persons.list).mockResolvedValue([
+  vi.mocked(api.landlords.list).mockResolvedValue([
     { id: 1, name: "M. Bailleur", address: "" },
   ]);
+  vi.mocked(api.tenants.list).mockResolvedValue([]);
   vi.mocked(api.addresses.list).mockResolvedValue([]);
   vi.mocked(api.leases.list).mockResolvedValue([LEASE5, LEASE6, LEASE7]);
   vi.mocked(api.expenseItems.list).mockResolvedValue([]);

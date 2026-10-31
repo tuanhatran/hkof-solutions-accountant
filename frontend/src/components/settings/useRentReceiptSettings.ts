@@ -7,8 +7,9 @@ import {
   queryKeys,
   useAddresses,
   useCompanies,
+  useLandlords,
   useLeases,
-  usePersons,
+  useTenants,
 } from "@/api/queries";
 import type { LeaseDto } from "@/api/types";
 import { toast } from "@/state/toasts";
@@ -17,7 +18,8 @@ import { toast } from "@/state/toasts";
 export function useRentReceiptSettings() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const persons = usePersons();
+  const landlords = useLandlords();
+  const tenants = useTenants();
   const companies = useCompanies();
   const addresses = useAddresses();
   const leases = useLeases();
@@ -28,7 +30,8 @@ export function useRentReceiptSettings() {
     null,
   );
 
-  const personList = persons.data ?? [];
+  const landlordList = landlords.data ?? [];
+  const tenantList = tenants.data ?? [];
   const companyList = companies.data ?? [];
   const addressList = addresses.data ?? [];
   // The first address is selected until the user picks another one.
@@ -58,11 +61,13 @@ export function useRentReceiptSettings() {
   }
 
   return {
-    persons,
+    landlords,
+    tenants,
     companies,
     addresses,
     leases,
-    personList,
+    landlordList,
+    tenantList,
     companyList,
     addressList,
     leaseList,

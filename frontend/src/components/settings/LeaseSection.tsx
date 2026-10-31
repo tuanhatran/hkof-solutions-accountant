@@ -202,7 +202,8 @@ export function LeaseSection({ c }: { c: RentReceiptSettingsController }) {
           <LeaseForm
             key={c.leaseForm === "new" ? "new" : c.leaseForm.id}
             item={c.leaseForm === "new" ? null : c.leaseForm}
-            persons={c.personList}
+            landlords={c.landlordList}
+            tenants={c.tenantList}
             companies={c.companyList}
             onSaved={c.handleLeaseSaved}
             onClose={() => c.setLeaseForm(null)}

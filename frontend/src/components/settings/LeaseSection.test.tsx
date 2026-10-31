@@ -2,12 +2,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { api } from "@/api/endpoints";
+import { api, type LandlordDto, type TenantDto } from "@/api/endpoints";
 import type {
   AddressDto,
   CompanyDto,
   LeaseDto,
-  PersonDto,
   RentReceiptDto,
   SignatureDto,
   TemplateDto,
@@ -36,8 +35,13 @@ function readyQuery<T>(data: T): QueryLike<T> {
   };
 }
 
-const PERSON: PersonDto = { id: 1, name: "M. Bailleur", address: null };
-const TENANT: PersonDto = { id: 2, name: "Mme Locataire", address: null };
+const LANDLORD: LandlordDto = {
+  id: 1,
+  name: "M. Bailleur",
+  address: null,
+  signatureCount: 0,
+};
+const TENANT: TenantDto = { id: 2, name: "Mme Locataire", address: null };
 const COMPANY: CompanyDto = { id: 3, name: "HKOF" };
 const ADDRESS: AddressDto = { id: 4, label: "12 rue de la République" };
 const LEASE: LeaseDto = {
@@ -131,7 +135,8 @@ vi.mock("@/api/queries", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/queries")>();
   return {
     ...actual,
-    usePersons: () => readyQuery([PERSON, TENANT]),
+    useLandlords: () => readyQuery([LANDLORD]),
+    useTenants: () => readyQuery([TENANT]),
     useCompanies: () => readyQuery([COMPANY]),
     useAddresses: () => readyQuery([ADDRESS]),
     useLeases: () => readyQuery(leaseRows),

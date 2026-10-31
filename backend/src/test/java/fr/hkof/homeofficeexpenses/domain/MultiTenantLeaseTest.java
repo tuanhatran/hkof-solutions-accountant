@@ -10,7 +10,7 @@ class MultiTenantLeaseTest {
     @Test
     @DisplayName("A lease carries several tenants and flags the primary one")
     void carriesSeveralTenants() {
-        Person tenant = new Person();
+        Tenant tenant = new Tenant();
         tenant.setId(7L);
         Lease lease = new Lease();
         lease.setId(3L);
@@ -24,7 +24,7 @@ class MultiTenantLeaseTest {
         LeaseTenant secondary = new LeaseTenant();
         secondary.setId(2L);
         secondary.setLease(lease);
-        secondary.setPerson(new Person());
+        secondary.setPerson(new Tenant());
         secondary.setPrimary(false);
 
         lease.getTenants().add(primary);

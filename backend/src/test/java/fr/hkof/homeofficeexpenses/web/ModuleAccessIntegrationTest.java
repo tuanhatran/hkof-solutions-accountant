@@ -66,16 +66,21 @@ class ModuleAccessIntegrationTest {
 
         mockMvc.perform(get("/api/persons").session(session))
                 .andExpect(status().isOk());
+        mockMvc.perform(get("/api/landlords").session(session))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/leases").session(session))
+                .andExpect(status().isOk());
         mockMvc.perform(get("/api/agency").session(session))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    @DisplayName("An LMNP module disabled account is stopped on every LMNP route")
-    void blocksLmnpRoutes() throws Exception {
-        MockHttpSession session = sessionFor("lmnp.off@example.test", true, false);
+    @DisplayName("A company-only account keeps the LMNP-only routes closed")
+    void companyOnlyAccountKeepsLmnpOnlyRoutesClosed() throws Exception {
+        MockHttpSession session = sessionFor("company.only@example.test", true, false);
 
-        for (String path : new String[] {"/api/persons", "/api/leases", "/api/rent-receipts", "/api/agency"}) {
+        for (String path : new String[] {"/api/persons", "/api/tenants", "/api/rent-receipts",
+                "/api/agency"}) {
             mockMvc.perform(get(path).session(session))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("MODULE_LMNP_DISABLED"))
@@ -85,6 +90,54 @@ class ModuleAccessIntegrationTest {
 
         mockMvc.perform(get("/api/companies").session(session))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("A company-only account can create its landlord and its company lease")
+    void companyOnlyAccountCanUseSharedRoutes() throws Exception {
+        MockHttpSession session = sessionFor("company.shared@example.test", true, false);
+
+        mockMvc.perform(get("/api/landlords").session(session))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/leases").session(session))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/rent-receipts/received").session(session))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("An LMNP-only account keeps its landlord and lease routes open")
+    void lmnpOnlyAccountKeepsSharedRoutesOpen() throws Exception {
+        MockHttpSession session = sessionFor("lmnp.shared@example.test", false, true);
+
+        mockMvc.perform(get("/api/landlords").session(session))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/leases").session(session))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/persons").session(session))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/agency").session(session))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/companies").session(session))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("MODULE_COMPANY_DISABLED"));
+    }
+
+    @Test
+    @DisplayName("An account without any module is stopped on the shared routes")
+    void blocksSharedRoutesWithoutAnyModule() throws Exception {
+        MockHttpSession session = sessionFor("no.module@example.test", false, false);
+
+        for (String path : new String[] {"/api/landlords", "/api/leases", "/api/persons", "/api/tenants",
+                "/api/rent-receipts", "/api/agency"}) {
+            mockMvc.perform(get(path).session(session))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("MODULE_LMNP_DISABLED"));
+        }
+
+        mockMvc.perform(get("/api/companies").session(session))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("MODULE_COMPANY_DISABLED"));
     }
 
     @Test

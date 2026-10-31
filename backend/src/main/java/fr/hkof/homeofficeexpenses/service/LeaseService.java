@@ -9,7 +9,10 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.hibernate.Hibernate;
+
 import fr.hkof.homeofficeexpenses.domain.Company;
+import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
@@ -173,7 +176,7 @@ public class LeaseService {
         if (request.landlordId() == null) {
             throw new BusinessException("LEASE_LANDLORD_REQUIRED", "Sélectionnez un bailleur.");
         }
-        Person landlord = party(request.landlordId(), "PERSON_NOT_FOUND", "Bailleur introuvable.");
+        Person landlord = landlord(request.landlordId());
         boolean companyLease = Boolean.TRUE.equals(request.companyLease());
         List<Person> tenants = tenantBinder.bind(lease, request, landlord);
         Person tenant = tenants.isEmpty() ? null : tenants.get(0);
@@ -242,6 +245,17 @@ public class LeaseService {
             lease.setTotalArea(null);
             lease.setBusinessArea(null);
         }
+    }
+
+    private Landlord landlord(Long id) {
+        Person person = party(id, "PERSON_NOT_FOUND", "Bailleur introuvable.");
+        // A lease loads its landlord as a lazy Person proxy before the kind check; unwrap it so
+        // the check reads the discriminator instead of the declared association type.
+        if (!(Hibernate.unproxy(person) instanceof Landlord landlord)) {
+            throw new BusinessException("LEASE_LANDLORD_INVALID",
+                    "Le bailleur sélectionné n'est pas un bailleur.");
+        }
+        return landlord;
     }
 
     private Person party(Long id, String code, String notFound) {
