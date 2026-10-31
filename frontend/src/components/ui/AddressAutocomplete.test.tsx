@@ -235,4 +235,28 @@ describe("AddressAutocomplete", () => {
     fireEvent.focus(input);
     expect(screen.getByRole("listbox")).toBeInTheDocument();
   });
+
+  it("keeps the list closed when the input is blurred before the response arrives", async () => {
+    let resolveFetch: (response: Response) => void = () => undefined;
+    vi.mocked(globalThis.fetch).mockReturnValueOnce(
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      }),
+    );
+    render(<ControlledWrapper initialValue="10 Rue de la Paix" />);
+    const input = screen.getByRole("combobox");
+
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(1), {
+      timeout: 1000,
+    });
+    fireEvent.blur(input);
+    resolveFetch({
+      ok: true,
+      json: async () => MOCK_API_RESPONSE,
+    } as Response);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    expect(input).toHaveValue("10 Rue de la Paix");
+  });
 });

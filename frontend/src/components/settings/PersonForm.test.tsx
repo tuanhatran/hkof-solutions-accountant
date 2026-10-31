@@ -18,6 +18,19 @@ const PERSON: PersonDto = {
   signatureCount: 1,
 };
 
+const ADDRESS_RESPONSE = {
+  features: [
+    {
+      properties: {
+        id: "addr-test-1",
+        label: "2 rue du Test 75001 Paris",
+        postcode: "75001",
+        city: "Paris",
+      },
+    },
+  ],
+};
+
 vi.mock("@/api/endpoints", () => ({
   api: {
     persons: {
@@ -65,6 +78,10 @@ function toastMessages(): string[] {
 }
 
 beforeEach(() => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    ok: true,
+    json: async () => ({ features: [] }),
+  } as Response);
   vi.mocked(api.persons.create).mockReset();
   vi.mocked(api.persons.update).mockReset();
   useToasts.setState({ toasts: [] });
@@ -309,5 +326,43 @@ describe("PersonForm", () => {
     await user.click(screen.getByRole("button", { name: "Fermer" }));
 
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("autocompletes the person address and saves the selected suggestion", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ADDRESS_RESPONSE,
+    } as Response);
+    vi.mocked(api.persons.create).mockResolvedValue({
+      id: 7,
+      name: "M. Nouveau",
+      address: "2 rue du Test 75001 Paris",
+      signatureCount: 0,
+    });
+    renderForm();
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Nom de la personne"), "M. Nouveau");
+    const address = screen.getByRole("combobox", { name: "Adresse" });
+    await user.type(address, "2 rue du Test");
+
+    await waitFor(() =>
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        "https://api-adresse.data.gouv.fr/search/?q=2%20rue%20du%20Test&limit=5",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      ),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: "2 rue du Test 75001 Paris" }),
+    );
+    expect(address).toHaveValue("2 rue du Test 75001 Paris");
+
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    await waitFor(() =>
+      expect(api.persons.create).toHaveBeenCalledWith(
+        expect.objectContaining({ address: "2 rue du Test 75001 Paris" }),
+      ),
+    );
   });
 });

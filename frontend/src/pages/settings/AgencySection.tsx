@@ -7,6 +7,7 @@ import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys, useAgency } from "@/api/queries";
 import type { AgencyRequest } from "@/api/types";
+import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete";
 import { Button } from "@/components/ui/Button";
 import { ErrorState, LoadingState } from "@/components/ui/States";
 import {
@@ -191,12 +192,11 @@ export function AgencySection() {
                 <label className="field-label" htmlFor="agency-address">
                   {t("settings.agency.address")}
                 </label>
-                <input
+                <AddressAutocomplete
                   id="agency-address"
-                  className="field"
                   data-cy="agency-address"
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={setAddress}
                 />
               </div>
             </>

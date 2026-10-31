@@ -30,6 +30,19 @@ const FOREIGN_COMPANY = {
   managerName: "Mme Gérante",
 };
 
+const ADDRESS_RESPONSE = {
+  features: [
+    {
+      properties: {
+        id: "addr-test-1",
+        label: "2 rue du Test 75001 Paris",
+        postcode: "75001",
+        city: "Paris",
+      },
+    },
+  ],
+};
+
 const SAVED_LEASE: LeaseDto = {
   id: 42,
   addressId: 4,
@@ -91,6 +104,10 @@ async function fillCommonFields(user: ReturnType<typeof userEvent.setup>) {
 }
 
 beforeEach(() => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    ok: true,
+    json: async () => ({ features: [] }),
+  } as Response);
   vi.mocked(api.companies.lookup).mockReset();
   vi.mocked(api.leases.create).mockReset();
   vi.mocked(api.leases.update).mockReset();
@@ -186,6 +203,46 @@ describe("LeaseForm cross-user company lease", () => {
     expect(api.leases.update).not.toHaveBeenCalledWith(
       42,
       expect.objectContaining({ companyId: expect.anything() }),
+    );
+  });
+
+  it("autocompletes the lease address and saves the selected suggestion", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ADDRESS_RESPONSE,
+    } as Response);
+    vi.mocked(api.leases.update).mockResolvedValue({
+      ...SAVED_LEASE,
+      propertyAddress: "2 rue du Test 75001 Paris",
+    });
+    renderForm(SAVED_LEASE);
+    const user = userEvent.setup();
+
+    const address = screen.getByRole("combobox", { name: "Adresse du bien" });
+    expect(address).toHaveValue("12 rue des Lilas, 75011 Paris");
+    await user.clear(address);
+    await user.type(address, "2 rue du Test");
+
+    await waitFor(() =>
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        "https://api-adresse.data.gouv.fr/search/?q=2%20rue%20du%20Test&limit=5",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      ),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: "2 rue du Test 75001 Paris" }),
+    );
+    expect(address).toHaveValue("2 rue du Test 75001 Paris");
+
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    await waitFor(() =>
+      expect(api.leases.update).toHaveBeenCalledWith(
+        42,
+        expect.objectContaining({
+          propertyAddress: "2 rue du Test 75001 Paris",
+        }),
+      ),
     );
   });
 });

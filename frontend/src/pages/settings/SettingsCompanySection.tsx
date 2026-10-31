@@ -1,7 +1,13 @@
 import "./SettingsCompanySection.css";
 import { Building2 } from "lucide-react";
-import type { FieldErrors, UseFormRegister } from "react-hook-form";
+import {
+  Controller,
+  type Control,
+  type FieldErrors,
+  type UseFormRegister,
+} from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
 import type { CompanyFormValues } from "@/lib/validation";
@@ -10,9 +16,11 @@ import { SettingsCardSection } from "./SettingsCardSection";
 /** Company identity used in the document headers. */
 export function SettingsCompanySection({
   register,
+  control,
   errors,
 }: {
   register: UseFormRegister<CompanyFormValues>;
+  control: Control<CompanyFormValues>;
   errors: FieldErrors<CompanyFormValues>;
 }) {
   const { t } = useTranslation();
@@ -101,15 +109,19 @@ export function SettingsCompanySection({
         error={errors.address?.message}
         className="sm:col-span-2"
       >
-        <textarea
-          id="param-societe-adresse"
-          rows={2}
-          className={cn(
-            "field settings-company-section-textarea",
-            errors.address && "field-error",
+        <Controller
+          control={control}
+          name="address"
+          render={({ field }) => (
+            <AddressAutocomplete
+              id="param-societe-adresse"
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              data-cy="input-company-address"
+              className={errors.address ? "field-error" : undefined}
+            />
           )}
-          {...register("address")}
-          data-cy="input-company-address"
         />
       </FieldGroup>
       <FieldGroup

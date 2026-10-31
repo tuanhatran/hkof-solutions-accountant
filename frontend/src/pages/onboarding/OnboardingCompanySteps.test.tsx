@@ -46,6 +46,19 @@ const LOOKUP_COMPANY = {
   managerName: "Alice Martin",
 };
 
+const ADDRESS_RESPONSE = {
+  features: [
+    {
+      properties: {
+        id: "addr-test-1",
+        label: "2 rue du Test 75001 Paris",
+        postcode: "75001",
+        city: "Paris",
+      },
+    },
+  ],
+};
+
 function renderWizard() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -100,6 +113,10 @@ async function reachEmployees(user: ReturnType<typeof userEvent.setup>) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    ok: true,
+    json: async () => ({ features: [] }),
+  } as Response);
   localStorage.clear();
   sessionStorage.clear();
   setAuthUser({
@@ -408,5 +425,54 @@ describe("Company onboarding wizard", () => {
     await next(user);
     expectSkipInFooter();
     expect(screen.getByRole("heading", { name: "Salariés" })).toBeVisible();
+  });
+
+  it("autocompletes the landlord and employee addresses", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ADDRESS_RESPONSE,
+    } as Response);
+    const user = userEvent.setup();
+    renderWizard();
+
+    await fillIdentity(user);
+    await next(user);
+
+    const landlordAddress = screen.getByRole("combobox", {
+      name: "Adresse du bailleur",
+    });
+    await user.type(landlordAddress, "2 rue du Test");
+    await user.click(
+      await screen.findByRole("option", { name: "2 rue du Test 75001 Paris" }),
+    );
+    expect(landlordAddress).toHaveValue("2 rue du Test 75001 Paris");
+
+    await user.type(
+      screen.getByLabelText("Adresse du logement"),
+      "10 rue de la Paix, 75002 Paris",
+    );
+    await user.type(screen.getByLabelText("Surface totale (m²)"), "100");
+    await user.type(
+      screen.getByLabelText("Surface professionnelle (m²)"),
+      "25",
+    );
+    await user.type(screen.getByLabelText("Loyer hors charges"), "1200");
+    await user.type(screen.getByLabelText("Provision pour charges"), "80");
+    await user.type(screen.getByLabelText("Nom du bailleur"), "Bernard Dupont");
+    await next(user);
+    await next(user);
+
+    const employeeAddress = screen.getByRole("combobox", {
+      name: "Adresse du salarié 1",
+    });
+    await user.type(employeeAddress, "3 avenue du Test");
+
+    await waitFor(() =>
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        "https://api-adresse.data.gouv.fr/search/?q=3%20avenue%20du%20Test&limit=5",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      ),
+    );
+    expect(employeeAddress).toHaveValue("3 avenue du Test");
   });
 });

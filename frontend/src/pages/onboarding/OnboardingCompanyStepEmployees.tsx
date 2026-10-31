@@ -1,5 +1,6 @@
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import { EMPLOYEE_TITLES } from "@/pages/settings/settingsValues";
@@ -211,13 +212,10 @@ export function OnboardingCompanyStepEmployees({
             >
               {t("onboarding.company.employees.address", { index: index + 1 })}
             </label>
-            <input
+            <AddressAutocomplete
               id={`company-employee-address-${index}`}
-              className="field"
               value={row.address}
-              onChange={(event) =>
-                patch(index, { address: event.target.value })
-              }
+              onChange={(value) => patch(index, { address: value })}
               data-cy={`input-company-employee-address-${index}`}
             />
             <label

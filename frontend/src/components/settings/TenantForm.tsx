@@ -2,12 +2,13 @@ import "./PersonForm.css";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { errorMessage } from "@/api/client";
 import { api, type TenantDto, type TenantRequest } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
+import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { FormModal } from "@/components/ui/FormModal";
 import { cn } from "@/lib/cn";
@@ -54,6 +55,7 @@ export function TenantForm({
   const [requestError, setRequestError] = useState<string | null>(null);
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<TenantFormValues>({
@@ -151,12 +153,19 @@ export function TenantForm({
           error={errors.address?.message}
           help={t("settings.tenants.form.addressHelp")}
         >
-          <input
-            id="locataire-adresse"
-            className="field"
-            placeholder="1 avenue du Parc, 75011 Paris"
-            {...register("address")}
-            data-cy="input-tenant-address"
+          <Controller
+            control={control}
+            name="address"
+            render={({ field }) => (
+              <AddressAutocomplete
+                id="locataire-adresse"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                placeholder="1 avenue du Parc, 75011 Paris"
+                data-cy="input-tenant-address"
+              />
+            )}
           />
         </FieldGroup>
         <FieldGroup

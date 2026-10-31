@@ -44,6 +44,7 @@ export function CompanyIdentityModal({
     >
       <SettingsCompanySection
         register={form.register}
+        control={form.control}
         errors={form.formState.errors}
       />
     </FormModal>

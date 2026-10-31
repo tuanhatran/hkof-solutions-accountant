@@ -1,10 +1,15 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
-import { afterEach, beforeEach } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
 import i18n from "@/i18n";
 
 beforeEach(async () => {
   localStorage.clear();
+  // Default network stub: no unit test may reach the real address API.
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    ok: true,
+    json: async () => ({ features: [] }),
+  } as Response);
   await i18n.changeLanguage("fr");
 });
 

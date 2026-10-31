@@ -59,7 +59,24 @@ function toastMessages(): string[] {
   return useToasts.getState().toasts.map((element) => element.message);
 }
 
+const ADDRESS_RESPONSE = {
+  features: [
+    {
+      properties: {
+        id: "addr-test-1",
+        label: "2 rue du Test 75001 Paris",
+        postcode: "75001",
+        city: "Paris",
+      },
+    },
+  ],
+};
+
 beforeEach(() => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    ok: true,
+    json: async () => ({ features: [] }),
+  } as Response);
   vi.mocked(api.companies.create).mockReset();
   vi.mocked(api.companies.update).mockReset();
   useToasts.setState({ toasts: [] });
@@ -258,5 +275,43 @@ describe("CompanyIdentityModal", () => {
       }),
     );
     await waitFor(() => expect(toastMessages()).toContain("Company created."));
+  });
+
+  it("autocompletes the company address and saves the selected suggestion", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ADDRESS_RESPONSE,
+    } as Response);
+    vi.mocked(api.companies.create).mockResolvedValue({
+      ...COMPANY,
+      address: "2 rue du Test 75001 Paris",
+    });
+    renderModal();
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Raison sociale"), "HKOF");
+    const address = screen.getByRole("combobox", {
+      name: "Adresse de la société",
+    });
+    await user.type(address, "2 rue du Test");
+
+    await waitFor(() =>
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        "https://api-adresse.data.gouv.fr/search/?q=2%20rue%20du%20Test&limit=5",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      ),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: "2 rue du Test 75001 Paris" }),
+    );
+    expect(address).toHaveValue("2 rue du Test 75001 Paris");
+
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    await waitFor(() =>
+      expect(api.companies.create).toHaveBeenCalledWith(
+        expect.objectContaining({ address: "2 rue du Test 75001 Paris" }),
+      ),
+    );
   });
 });
