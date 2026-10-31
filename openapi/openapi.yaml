@@ -2344,6 +2344,13 @@ components:
         siren:
           type: string
           description: Numéro SIREN, unique parmi les sociétés non supprimées.
+        siret:
+          type:
+            - string
+            - "null"
+          description: >-
+            Numéro SIRET facultatif de l'établissement, 14 chiffres espaces
+            admis. Il complète le SIREN sans le remplacer.
         address:
           type: string
           description: Adresse du siège social.
@@ -2381,6 +2388,10 @@ components:
           type: string
         siren:
           type: string
+        siret:
+          type:
+            - string
+            - "null"
         address:
           type: string
         managerName:
@@ -2523,6 +2534,18 @@ components:
             - string
             - "null"
           description: Adresse personnelle facultative.
+        phone:
+          type:
+            - string
+            - "null"
+          description: >-
+            Téléphone de contact facultatif collecté pendant l'onboarding.
+        addressNote:
+          type:
+            - string
+            - "null"
+          description: >-
+            Complément d'adresse facultatif collecté pendant l'onboarding.
         issuePlace:
           type:
             - string
@@ -2543,6 +2566,16 @@ components:
           type:
             - string
             - "null"
+        phone:
+          type:
+            - string
+            - "null"
+          description: Téléphone de contact facultatif de la personne.
+        addressNote:
+          type:
+            - string
+            - "null"
+          description: Complément d'adresse facultatif de la personne.
         issuePlace:
           type:
             - string

@@ -1128,6 +1128,8 @@ export interface components {
             legalForm?: string;
             /** @description Numéro SIREN, unique parmi les sociétés non supprimées. */
             siren?: string;
+            /** @description Numéro SIRET facultatif de l'établissement, 14 chiffres espaces admis. Il complète le SIREN sans le remplacer. */
+            siret?: string | null;
             /** @description Adresse du siège social. */
             address?: string;
             /** @description Nom du représentant légal. */
@@ -1150,6 +1152,7 @@ export interface components {
             name?: string;
             legalForm?: string;
             siren?: string;
+            siret?: string | null;
             address?: string;
             managerName?: string;
             /** Format: int64 */
@@ -1216,6 +1219,10 @@ export interface components {
             name: string;
             /** @description Adresse personnelle facultative. */
             address?: string | null;
+            /** @description Téléphone de contact facultatif collecté pendant l'onboarding. */
+            phone?: string | null;
+            /** @description Complément d'adresse facultatif collecté pendant l'onboarding. */
+            addressNote?: string | null;
             /** @description Lieu d'émission facultatif imprimé après « Fait à » sur les quittances de ce bailleur. Vide ou nul : le lieu de la société du bail, puis une chaîne vide. */
             issuePlace?: string | null;
         };
@@ -1224,6 +1231,10 @@ export interface components {
             id?: number;
             name?: string;
             address?: string | null;
+            /** @description Téléphone de contact facultatif de la personne. */
+            phone?: string | null;
+            /** @description Complément d'adresse facultatif de la personne. */
+            addressNote?: string | null;
             /** @description Lieu d'émission facultatif du bailleur. */
             issuePlace?: string | null;
             /**

@@ -555,6 +555,15 @@ export async function loginSession(
   return user;
 }
 
+/**
+ * Marks the onboarding as complete, then refreshes the shared session from
+ * `/api/auth/me` so the router guard stops redirecting to the welcome wizard.
+ */
+export async function completeOnboardingSession(): Promise<void> {
+  await api.auth.completeOnboarding();
+  await refreshAuth();
+}
+
 export async function logoutSession(): Promise<void> {
   try {
     await api.auth.logout();

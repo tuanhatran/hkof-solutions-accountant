@@ -98,6 +98,10 @@ export const api = {
         "/api/auth/change-password",
         json({ method: "POST", body: JSON.stringify(body) }),
       ),
+    completeOnboarding: () =>
+      request<CurrentUserDto>("/api/auth/onboarding-complete", {
+        method: "POST",
+      }),
     logout: () => request<void>("/api/auth/logout", { method: "POST" }),
   },
 

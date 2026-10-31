@@ -265,6 +265,65 @@ describe("module guards", () => {
     );
   });
 
+  it("redirects an account that has not finished onboarding to the welcome wizard", async () => {
+    mockCurrentUser({
+      email: "nouveau@exemple.fr",
+      role: "USER",
+      companyEnabled: true,
+      lmnpEnabled: true,
+      onboardingCompleted: false,
+    });
+    const router = await renderAndSettle("/historique");
+
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe("/bienvenue"),
+    );
+    expect(
+      await screen.findByRole("heading", {
+        name: "Bienvenue dans HomeOfficeExpenses",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Connecté en tant que nouveau@exemple.fr"),
+    ).toBeVisible();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(router.state.location.pathname).toBe("/bienvenue");
+  });
+
+  it("lets a forced password change win over onboarding", async () => {
+    mockCurrentUser({
+      email: "nouveau@exemple.fr",
+      mustChangePassword: true,
+      onboardingCompleted: false,
+    });
+    const router = await renderAndSettle("/historique");
+
+    expect(
+      await screen.findByRole("heading", { name: "Changer le mot de passe" }),
+    ).toBeVisible();
+    expect(router.state.location.pathname).toBe("/mot-de-passe");
+  });
+
+  it("never sends a completed account back to onboarding", async () => {
+    mockCurrentUser({
+      email: "complet@exemple.fr",
+      role: "USER",
+      companyEnabled: true,
+      lmnpEnabled: true,
+      onboardingCompleted: true,
+    });
+    const router = await renderAndSettle("/configuration/entreprise");
+
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe("/configuration/entreprise"),
+    );
+    expect(
+      screen.queryByRole("heading", {
+        name: "Bienvenue dans HomeOfficeExpenses",
+      }),
+    ).toBeNull();
+  });
+
   it("renders a neutral no-module page from the root when both modules are off", async () => {
     mockCurrentUser({
       email: "aucun@exemple.fr",

@@ -221,6 +221,7 @@ public class CompanyService {
                 company.getName(),
                 company.getLegalForm(),
                 company.getSiren(),
+                company.getSiret(),
                 company.getAddress(),
                 company.getManagerName(),
                 lease.map(Lease::getId).orElse(null),
@@ -269,6 +270,7 @@ public class CompanyService {
             }
         }
         company.setSiren(siren);
+        company.setSiret(optionalText(request.siret()));
         company.setAddress(optionalText(request.address()));
         company.setManagerName(optionalText(request.managerName()));
         company.setIssuePlace(optionalText(request.issuePlace()));

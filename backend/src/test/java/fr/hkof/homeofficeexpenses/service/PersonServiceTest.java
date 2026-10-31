@@ -90,6 +90,27 @@ class PersonServiceTest {
     }
 
     @Test
+    @DisplayName("Onboarding profile exposes the phone and the address note")
+    void profileFields() {
+        when(persons.save(any(Person.class))).thenAnswer(invocation -> {
+            Person saved = invocation.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
+
+        PersonDto created = service.create(
+                new PersonRequest("Alice", null, null, "  06 12 34 56 78 ", "  Bâtiment B  "));
+        assertThat(created.phone()).isEqualTo("06 12 34 56 78");
+        assertThat(created.addressNote()).isEqualTo("Bâtiment B");
+
+        Person existing = person(1L, "Alice");
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(existing));
+        PersonDto updated = service.update(1L, new PersonRequest("Alice", null, null, "   ", null));
+        assertThat(updated.phone()).isNull();
+        assertThat(updated.addressNote()).isNull();
+    }
+
+    @Test
     @DisplayName("A person with signatures or an active lease cannot be deleted")
     void deletionGuards() {
         when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Alice")));

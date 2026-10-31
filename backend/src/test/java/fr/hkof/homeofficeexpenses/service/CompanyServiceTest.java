@@ -172,6 +172,20 @@ class CompanyServiceTest {
     }
 
     @Test
+    @DisplayName("The onboarding agency exposes its SIRET")
+    void exposesSiret() {
+        stubSave();
+        when(leases.findFirstByUserIdAndCompanyIdAndDeletedFalseOrderByIdAsc(USER_ID, COMPANY_ID))
+                .thenReturn(Optional.empty());
+
+        CompanyDto created = service.create(new CompanyRequest("HKOF", "EURL", "123 456 789", "12 rue",
+                "Gérant", null, "Paris", " 123 456 789 00012 "));
+
+        assertThat(created.siret()).isEqualTo("123 456 789 00012");
+        assertThat(created.siren()).isEqualTo("123 456 789");
+    }
+
+    @Test
     @DisplayName("A blank name is rejected in French")
     void rejectsBlankName() {
         assertThatThrownBy(() -> service.create(request("  ", null, null)))

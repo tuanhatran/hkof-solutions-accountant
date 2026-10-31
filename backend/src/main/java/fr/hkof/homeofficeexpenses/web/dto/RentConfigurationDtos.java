@@ -10,15 +10,27 @@ public final class RentConfigurationDtos {
     public record PersonRequest(
             String name,
             String address,
-            String issuePlace) {
+            String issuePlace,
+            String phone,
+            String addressNote) {
+
+        public PersonRequest(String name, String address, String issuePlace) {
+            this(name, address, issuePlace, null, null);
+        }
     }
 
     public record PersonDto(
             Long id,
             String name,
             String address,
+            String phone,
+            String addressNote,
             String issuePlace,
             int signatureCount) {
+
+        public PersonDto(Long id, String name, String address, String issuePlace, int signatureCount) {
+            this(id, name, address, null, null, issuePlace, signatureCount);
+        }
     }
 
     public record LeaseRequest(
