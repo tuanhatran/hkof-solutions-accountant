@@ -103,7 +103,7 @@ describe("authentication", () => {
 
       cy.visit("/connexion");
       signIn(email, NEW_PASSWORD);
-      cy.location("pathname").should("eq", "/generer/quittance");
+      cy.location("pathname").should("eq", "/bienvenue");
       cy.contains(email).should("be.visible");
     });
   });

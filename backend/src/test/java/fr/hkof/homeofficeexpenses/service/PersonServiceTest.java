@@ -90,6 +90,50 @@ class PersonServiceTest {
     }
 
     @Test
+    @DisplayName("Onboarding profile exposes the phone and the address note")
+    void profileFields() {
+        when(persons.save(any(Person.class))).thenAnswer(invocation -> {
+            Person saved = invocation.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
+
+        PersonDto created = service.create(
+                new PersonRequest("Alice", null, null, "  06 12 34 56 78 ", "  Bâtiment B  "));
+        assertThat(created.phone()).isEqualTo("06 12 34 56 78");
+        assertThat(created.addressNote()).isEqualTo("Bâtiment B");
+
+        Person existing = person(1L, "Alice");
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(existing));
+        PersonDto updated = service.update(1L, new PersonRequest("Alice", null, null, "   ", null));
+        assertThat(updated.phone()).isNull();
+        assertThat(updated.addressNote()).isNull();
+    }
+
+    @Test
+    @DisplayName("An omitted phone or address note keeps the stored value, an explicit blank clears it")
+    void preservesOmittedProfileFieldsOnUpdate() {
+        Person existing = person(1L, "Alice");
+        existing.setPhone("06 12 34 56 78");
+        existing.setAddressNote("Bâtiment B");
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(existing));
+        when(persons.save(any(Person.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PersonDto kept = service.update(1L, new PersonRequest("Alice", null, null));
+        assertThat(kept.phone()).isEqualTo("06 12 34 56 78");
+        assertThat(kept.addressNote()).isEqualTo("Bâtiment B");
+
+        PersonDto cleared = service.update(1L, new PersonRequest("Alice", null, null, "", "   "));
+        assertThat(cleared.phone()).isNull();
+        assertThat(cleared.addressNote()).isNull();
+
+        PersonDto replaced = service.update(1L,
+                new PersonRequest("Alice", null, null, " 07 98 76 54 32 ", "  Étage 2  "));
+        assertThat(replaced.phone()).isEqualTo("07 98 76 54 32");
+        assertThat(replaced.addressNote()).isEqualTo("Étage 2");
+    }
+
+    @Test
     @DisplayName("A person with signatures or an active lease cannot be deleted")
     void deletionGuards() {
         when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Alice")));

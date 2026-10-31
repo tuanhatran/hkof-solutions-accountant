@@ -221,6 +221,7 @@ public class CompanyService {
                 company.getName(),
                 company.getLegalForm(),
                 company.getSiren(),
+                company.getSiret(),
                 company.getAddress(),
                 company.getManagerName(),
                 lease.map(Lease::getId).orElse(null),
@@ -257,8 +258,8 @@ public class CompanyService {
     private void apply(Company company, CompanyRequest request, Long currentId) {
         company.setName(requiredText(request.name(), "COMPANY_NAME_REQUIRED",
                 "Le nom de la société est obligatoire."));
-        company.setLegalForm(optionalText(request.legalForm()));
-        String siren = optionalText(request.siren());
+        company.setLegalForm(OptionalTexts.trimToNull(request.legalForm()));
+        String siren = OptionalTexts.trimToNull(request.siren());
         if (siren != null) {
             Long owner = ownership.currentUserId();
             boolean duplicate = currentId == null
@@ -269,9 +270,10 @@ public class CompanyService {
             }
         }
         company.setSiren(siren);
-        company.setAddress(optionalText(request.address()));
-        company.setManagerName(optionalText(request.managerName()));
-        company.setIssuePlace(optionalText(request.issuePlace()));
+        company.setSiret(OptionalTexts.preserve(request.siret(), company.getSiret()));
+        company.setAddress(OptionalTexts.trimToNull(request.address()));
+        company.setManagerName(OptionalTexts.trimToNull(request.managerName()));
+        company.setIssuePlace(OptionalTexts.trimToNull(request.issuePlace()));
     }
 
     private String requiredText(String value, String code, String message) {
@@ -280,9 +282,5 @@ public class CompanyService {
             throw new BusinessException(code, message);
         }
         return cleaned;
-    }
-
-    private String optionalText(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
     }
 }

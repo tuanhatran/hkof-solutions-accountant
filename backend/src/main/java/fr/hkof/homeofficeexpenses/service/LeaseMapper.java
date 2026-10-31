@@ -1,5 +1,7 @@
 package fr.hkof.homeofficeexpenses.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
 import fr.hkof.homeofficeexpenses.domain.Company;
@@ -28,6 +30,9 @@ public class LeaseMapper {
         String tenantName = lease.isCompanyLease()
                 ? companyName
                 : lease.getTenant() == null ? null : lease.getTenant().getName();
+        List<Long> tenantIds = LeaseTenantBinder.personsOf(lease).stream()
+                .map(person -> person.getId())
+                .toList();
         LeaseService.ProRata proRata = LeaseService.proRataOf(lease);
         return new LeaseDto(
                 lease.getId(),
@@ -37,6 +42,7 @@ public class LeaseMapper {
                 lease.isCompanyLease(),
                 lease.getLandlord().getId(),
                 lease.getTenant() == null ? null : lease.getTenant().getId(),
+                tenantIds,
                 lease.getLandlord().getName(),
                 tenantName,
                 lease.getAddress().getLabel(),

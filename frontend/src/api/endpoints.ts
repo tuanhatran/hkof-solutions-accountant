@@ -98,6 +98,10 @@ export const api = {
         "/api/auth/change-password",
         json({ method: "POST", body: JSON.stringify(body) }),
       ),
+    completeOnboarding: () =>
+      request<CurrentUserDto>("/api/auth/onboarding-complete", {
+        method: "POST",
+      }),
     logout: () => request<void>("/api/auth/logout", { method: "POST" }),
   },
 
@@ -354,6 +358,11 @@ export const api = {
         body: payload,
       });
     },
+    rename: (id: number, name: string) =>
+      request<SignatureDto>(
+        `/api/signatures/${id}`,
+        json({ method: "PATCH", body: JSON.stringify({ name }) }),
+      ),
     remove: (id: number) =>
       request<void>(`/api/signatures/${id}`, { method: "DELETE" }),
     imageUrl: (id: number) => `/api/signatures/${id}/image`,

@@ -210,6 +210,50 @@ class SignatureServiceTest {
     }
 
     @Test
+    @DisplayName("Renames an active signature of the account and trims the new name")
+    void renamesSignature() {
+        Signature stored = signature(4L, PERSON_ID, "Ancien nom", false);
+        when(repository.findByIdAndUserIdAndDeletedFalse(4L, USER_ID)).thenReturn(Optional.of(stored));
+        when(persons.findByIdAndUserId(PERSON_ID, USER_ID)).thenReturn(Optional.of(person(PERSON_ID, "Bailleur")));
+        stubSavedSignature();
+
+        SignatureDto renamed = service.rename(4L, "  Nouveau nom  ");
+
+        assertThat(renamed.name()).isEqualTo("Nouveau nom");
+        assertThat(stored.getName()).isEqualTo("Nouveau nom");
+        assertThat(stored.getUpdatedAt()).isNotNull();
+        verify(repository).save(stored);
+    }
+
+    @Test
+    @DisplayName("A rename rejects a blank or too long name in French")
+    void renameValidatesName() {
+        Signature stored = signature(4L, PERSON_ID, "Ancien nom", false);
+        when(repository.findByIdAndUserIdAndDeletedFalse(4L, USER_ID)).thenReturn(Optional.of(stored));
+
+        assertThatThrownBy(() -> service.rename(4L, "  "))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Le nom de la signature est obligatoire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("SIGNATURE_NAME_REQUIRED"));
+        assertThatThrownBy(() -> service.rename(4L, "a".repeat(256)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Le nom de la signature est trop long (255 caractères maximum).")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("SIGNATURE_NAME_TOO_LONG"));
+        verify(repository, never()).save(any(Signature.class));
+    }
+
+    @Test
+    @DisplayName("A missing or deleted signature cannot be renamed")
+    void renameRequiresActiveOwnedSignature() {
+        when(repository.findByIdAndUserIdAndDeletedFalse(99L, USER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.rename(99L, "Nom"))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Signature introuvable.")
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("SIGNATURE_NOT_FOUND"));
+    }
+
+    @Test
     @DisplayName("Builds a data URI from the stored bytes")
     void buildsDataUri() {
         when(repository.findByIdAndUserIdAndDeletedFalse(5L, USER_ID))

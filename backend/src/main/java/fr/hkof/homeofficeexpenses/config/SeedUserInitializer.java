@@ -57,6 +57,9 @@ public class SeedUserInitializer {
         user.setRole(role);
         user.setCompanyEnabled(true);
         user.setLmnpEnabled(true);
+        // Seeded accounts are created after Flyway on a fresh database, so V29 does not backfill
+        // them: they already have their data and must never be sent to the onboarding wizard.
+        user.setOnboardingCompleted(true);
         user.setCreatedAt(now);
         user.setUpdatedAt(now);
         users.save(user);

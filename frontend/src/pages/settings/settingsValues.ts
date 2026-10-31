@@ -55,6 +55,7 @@ export function valuesFromCompany(
     name: company?.name ?? "",
     legalForm: company?.legalForm ?? "",
     siren: company?.siren ?? "",
+    siret: company?.siret ?? "",
     address: company?.address ?? "",
     managerName: company?.managerName ?? "",
     leaseId:

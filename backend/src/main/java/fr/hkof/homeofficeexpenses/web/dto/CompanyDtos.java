@@ -12,7 +12,13 @@ public final class CompanyDtos {
             String address,
             String managerName,
             Long leaseId,
-            String issuePlace) {
+            String issuePlace,
+            String siret) {
+
+        public CompanyRequest(String name, String legalForm, String siren, String address, String managerName,
+                Long leaseId, String issuePlace) {
+            this(name, legalForm, siren, address, managerName, leaseId, issuePlace, null);
+        }
     }
 
     public record CompanyDto(
@@ -20,12 +26,19 @@ public final class CompanyDtos {
             String name,
             String legalForm,
             String siren,
+            String siret,
             String address,
             String managerName,
             Long leaseId,
             String proRataBase,
             String proRataBaseDetail,
             String issuePlace) {
+
+        public CompanyDto(Long id, String name, String legalForm, String siren, String address, String managerName,
+                Long leaseId, String proRataBase, String proRataBaseDetail, String issuePlace) {
+            this(id, name, legalForm, siren, null, address, managerName, leaseId, proRataBase, proRataBaseDetail,
+                    issuePlace);
+        }
     }
 
     /** Public legal identity of a company, safe to expose across accounts. */

@@ -174,6 +174,27 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /api/auth/onboarding-complete:
+    post:
+      tags:
+        - auth-controller
+      operationId: completeOnboarding
+      description: >-
+        Marque l'onboarding du compte connecté comme terminé. Idempotent : un compte
+        déjà complété renvoie le même état sans nouvelle écriture.
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/CurrentUserDto"
+        "401":
+          description: Non authentifié
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/auth/me:
     get:
       tags:
@@ -1783,6 +1804,45 @@ paths:
                   detail:
                     type: string
   /api/signatures/{id}:
+    patch:
+      tags:
+        - signature-controller
+      operationId: renameSignature
+      description: >-
+        Renomme une signature active du compte connecté. Une signature supprimée ou
+        appartenant à un autre compte est introuvable.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameSignatureRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/SignatureDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
     delete:
       tags:
         - signature-controller
@@ -2193,6 +2253,11 @@ components:
         lmnpEnabled:
           type: boolean
           description: Vrai quand le module LMNP est activé pour ce compte.
+        onboardingCompleted:
+          type: boolean
+          description: >-
+            Vrai quand l'onboarding du compte est terminé ; faux tant que
+            l'assistant de premier accès n'a pas été validé.
     UserRole:
       type: string
       enum:
@@ -2257,6 +2322,14 @@ components:
         createdAt:
           type: string
           format: date-time
+    RenameSignatureRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Nouveau nom de la signature, 255 caractères maximum.
     CompanyRequest:
       type: object
       required:
@@ -2271,6 +2344,13 @@ components:
         siren:
           type: string
           description: Numéro SIREN, unique parmi les sociétés non supprimées.
+        siret:
+          type:
+            - string
+            - "null"
+          description: >-
+            Numéro SIRET facultatif de l'établissement, 14 chiffres espaces
+            admis. Il complète le SIREN sans le remplacer.
         address:
           type: string
           description: Adresse du siège social.
@@ -2308,6 +2388,10 @@ components:
           type: string
         siren:
           type: string
+        siret:
+          type:
+            - string
+            - "null"
         address:
           type: string
         managerName:
@@ -2450,6 +2534,18 @@ components:
             - string
             - "null"
           description: Adresse personnelle facultative.
+        phone:
+          type:
+            - string
+            - "null"
+          description: >-
+            Téléphone de contact facultatif collecté pendant l'onboarding.
+        addressNote:
+          type:
+            - string
+            - "null"
+          description: >-
+            Complément d'adresse facultatif collecté pendant l'onboarding.
         issuePlace:
           type:
             - string
@@ -2470,6 +2566,16 @@ components:
           type:
             - string
             - "null"
+        phone:
+          type:
+            - string
+            - "null"
+          description: Téléphone de contact facultatif de la personne.
+        addressNote:
+          type:
+            - string
+            - "null"
+          description: Complément d'adresse facultatif de la personne.
         issuePlace:
           type:
             - string
@@ -2520,6 +2626,15 @@ components:
             - "null"
           format: int64
           description: Personne physique locataire, obligatoire hors bail société.
+        tenantIds:
+          type: array
+          description: >-
+            Locataires personnes physiques du bail (colocation). Le locataire désigné par
+            tenantId, quand il est fourni, reste le locataire principal et doit figurer dans
+            cette liste. Absent, le bail reste mono-locataire avec tenantId.
+          items:
+            type: integer
+            format: int64
         propertyAddress:
           type: string
           description: >-
@@ -2592,6 +2707,15 @@ components:
             - integer
             - "null"
           format: int64
+        tenantIds:
+          type: array
+          readOnly: true
+          description: >-
+            Locataires personnes physiques liés au bail, locataire principal en tête ;
+            vide pour un bail société.
+          items:
+            type: integer
+            format: int64
         landlordName:
           type: string
         tenantName:

@@ -168,7 +168,8 @@ class UserOwnershipMigrationPostgresTest {
                     """);
         }
 
-        migrate();
+        // Scope to V23: V29 replaces the active-pair index with the lease-tenant join table.
+        migrateTo("23");
 
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
             long owner = ownerId(statement, THTRAN_EMAIL);

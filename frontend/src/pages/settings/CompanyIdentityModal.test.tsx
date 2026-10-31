@@ -23,6 +23,7 @@ const COMPANY: CompanyDto = {
   name: "HKOF",
   legalForm: "EURL",
   siren: "123 456 789",
+  siret: "123 456 789 00012",
   address: "1 rue de la Paix, 75002 Paris",
   managerName: "Camille Martin",
   leaseId: 5,
@@ -102,6 +103,7 @@ describe("CompanyIdentityModal", () => {
         name: "HKOF",
         legalForm: "",
         siren: "123 456 789",
+        siret: "",
         address: "",
         managerName: "",
         leaseId: null,
@@ -130,6 +132,7 @@ describe("CompanyIdentityModal", () => {
         name: "HKOF",
         legalForm: "EURL",
         siren: "123 456 789",
+        siret: "123 456 789 00012",
         address: "1 rue de la Paix, 75002 Paris",
         managerName: "Camille Martin",
         leaseId: 5,
@@ -139,6 +142,34 @@ describe("CompanyIdentityModal", () => {
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith(COMPANY));
     expect(toastMessages()).toContain(
       "Société enregistrée. Les prochains documents utiliseront ces valeurs.",
+    );
+  });
+
+  it("shows and submits the stored SIRET", async () => {
+    vi.mocked(api.companies.update).mockResolvedValue({
+      ...COMPANY,
+      siret: "987 654 321 00021",
+    });
+    renderModal({ company: COMPANY });
+    const user = userEvent.setup();
+
+    expect(screen.getByLabelText("SIRET")).toHaveValue("123 456 789 00012");
+
+    await user.clear(screen.getByLabelText("SIRET"));
+    await user.type(screen.getByLabelText("SIRET"), "987 654 321 00021");
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    await waitFor(() =>
+      expect(api.companies.update).toHaveBeenCalledWith(1, {
+        name: "HKOF",
+        legalForm: "EURL",
+        siren: "123 456 789",
+        siret: "987 654 321 00021",
+        address: "1 rue de la Paix, 75002 Paris",
+        managerName: "Camille Martin",
+        leaseId: 5,
+        issuePlace: "Paris",
+      }),
     );
   });
 
@@ -194,6 +225,7 @@ describe("CompanyIdentityModal", () => {
     expect(screen.getByText("Company identity")).toBeVisible();
     expect(screen.getByLabelText("Company name")).toHaveValue("");
     expect(screen.getByLabelText("SIREN")).toBeVisible();
+    expect(screen.getByLabelText("SIRET")).toBeVisible();
     expect(screen.getByText("9 digits, spaces allowed.")).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "Save" }));
@@ -218,6 +250,7 @@ describe("CompanyIdentityModal", () => {
         name: "HKOF",
         legalForm: "",
         siren: "123 456 789",
+        siret: "",
         address: "",
         managerName: "",
         leaseId: null,

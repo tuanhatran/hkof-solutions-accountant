@@ -1,7 +1,12 @@
 package fr.hkof.homeofficeexpenses.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
@@ -58,13 +63,42 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("A new account defaults to USER with both modules enabled")
+    @DisplayName("A new account defaults to USER with both modules enabled and onboarding pending")
     void defaultsToRegularUserWithModulesEnabled() {
         AppUser user = new AppUser();
 
         assertThat(user.getRole()).isEqualTo(UserRole.USER);
         assertThat(user.isCompanyEnabled()).isTrue();
         assertThat(user.isLmnpEnabled()).isTrue();
+        assertThat(user.isOnboardingCompleted()).isFalse();
+    }
+
+    @Test
+    @DisplayName("Completing the onboarding flips the flag once and exposes it on the principal")
+    void completesOnboardingOnce() {
+        AppUser user = user(UserRole.USER, true, true);
+        user.setId(1L);
+        when(users.findById(1L)).thenReturn(Optional.of(user));
+
+        AuthenticatedUser first = service.completeOnboarding(1L);
+
+        assertThat(first.onboardingCompleted()).isTrue();
+        assertThat(user.isOnboardingCompleted()).isTrue();
+        verify(users).save(user);
+
+        clearInvocations(users);
+        when(users.findById(1L)).thenReturn(Optional.of(user));
+        assertThat(service.completeOnboarding(1L).onboardingCompleted()).isTrue();
+        verify(users, never()).save(any(AppUser.class));
+    }
+
+    @Test
+    @DisplayName("Completing the onboarding of an unknown account fails like a missing principal")
+    void onboardingRequiresAnAccount() {
+        when(users.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.completeOnboarding(99L))
+                .isInstanceOf(AuthService.InvalidCredentialsException.class);
     }
 
     private static AppUser user(UserRole role, boolean companyEnabled, boolean lmnpEnabled) {

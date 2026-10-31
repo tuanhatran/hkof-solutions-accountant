@@ -66,6 +66,24 @@ export function SettingsCompanySection({
         />
       </FieldGroup>
       <FieldGroup
+        id="param-siret"
+        label={t("settings.company.identity.fields.siret")}
+        error={errors.siret?.message}
+        help={t("settings.company.identity.siretHelp")}
+      >
+        <input
+          id="param-siret"
+          className={cn(
+            "field settings-company-section-code",
+            errors.siret && "field-error",
+          )}
+          inputMode="numeric"
+          placeholder="000 000 000 00000"
+          {...register("siret")}
+          data-cy="input-company-siret"
+        />
+      </FieldGroup>
+      <FieldGroup
         id="param-managerName"
         label={t("settings.company.identity.fields.managerName")}
         error={errors.managerName?.message}

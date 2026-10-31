@@ -41,6 +41,6 @@ public final class AuthDtos {
     }
 
     public record CurrentUserDto(String email, boolean mustChangePassword, UserRole role,
-            boolean companyEnabled, boolean lmnpEnabled) {
+            boolean companyEnabled, boolean lmnpEnabled, boolean onboardingCompleted) {
     }
 }

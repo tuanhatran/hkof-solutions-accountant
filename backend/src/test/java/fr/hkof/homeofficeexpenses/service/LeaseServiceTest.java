@@ -20,6 +20,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import fr.hkof.homeofficeexpenses.domain.Address;
 import fr.hkof.homeofficeexpenses.domain.Company;
@@ -56,6 +57,7 @@ class LeaseServiceTest {
         when(ownership.currentUserId()).thenReturn(USER_ID);
         when(addresses.findOrCreate(anyString())).thenAnswer(invocation -> address(4L, invocation.getArgument(0)));
         service = new LeaseService(persons, employees, leases, companies, publicCompanies, addresses, ownership,
+                new LeaseTenantBinder(persons, employees, ownership),
                 new LeaseMapper(publicCompanies), Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC));
     }
 
@@ -123,7 +125,9 @@ class LeaseServiceTest {
         assertThat(result.get(0).companyName()).isEqualTo("Société pro-rata");
         assertThat(result.get(1).tenantId()).isNull();
         assertThat(result.get(1).tenantName()).isEqualTo("Société locataire");
+        assertThat(result.get(1).tenantIds()).isEmpty();
         assertThat(result.get(1).companyId()).isEqualTo(7L);
+        assertThat(result.get(0).tenantIds()).containsExactly(2L);
         assertThat(result.get(0).proRataBase()).isNull();
         assertThat(result.get(0).proRataBaseDetail()).isNull();
         assertThat(result.get(1).proRataBase()).isEqualTo("35.71");
@@ -278,7 +282,61 @@ class LeaseServiceTest {
     }
 
     @Test
-    @DisplayName("Lease validation rejects missing parties, missing entities and blank addresses")
+    @DisplayName("A lease links several tenants, keeps tenantId as primary and orders tenantIds")
+    void multiTenantLease() {
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+        when(persons.findNaturalPersonById(2L, USER_ID)).thenReturn(Optional.of(person(2L, "Alice DUPONT")));
+        when(persons.findNaturalPersonById(3L, USER_ID)).thenReturn(Optional.of(person(3L, "Bob MARTIN")));
+        when(leases.save(any(Lease.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        LeaseDto created = service.createLease(new LeaseRequest(false, 1L, null, 3L, "12 rue", "900", null,
+                null, null, null, List.of(2L, 3L)));
+
+        assertThat(created.tenantId()).isEqualTo(3L);
+        assertThat(created.tenantIds()).containsExactly(3L, 2L);
+        assertThat(created.tenantName()).isEqualTo("Bob MARTIN");
+
+        ArgumentCaptor<Lease> saved = ArgumentCaptor.forClass(Lease.class);
+        verify(leases).save(saved.capture());
+        assertThat(saved.getValue().getTenants()).extracting(link -> link.getPerson().getId())
+                .containsExactly(3L, 2L);
+        assertThat(saved.getValue().getTenants()).extracting(link -> link.isPrimary())
+                .containsExactly(true, false);
+
+        Lease existing = normalLease();
+        when(leases.findByIdAndUserIdAndDeletedFalse(3L, USER_ID)).thenReturn(Optional.of(existing));
+        LeaseDto updated = service.updateLease(3L, new LeaseRequest(false, 1L, null, 2L, "12 rue", "900", null,
+                null, null, null, List.of(2L, 3L)));
+        assertThat(updated.tenantIds()).containsExactly(2L, 3L);
+        assertThat(existing.getTenants()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("Empty, duplicate and inconsistent tenant lists are rejected in French")
+    void rejectsInvalidTenantLists() {
+        when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
+
+        assertThatThrownBy(() -> service.createLease(new LeaseRequest(false, 1L, null, null, "12 rue", "900",
+                null, null, null, null, List.of())))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Sélectionnez un locataire.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_TENANT_REQUIRED"));
+        assertThatThrownBy(() -> service.createLease(new LeaseRequest(false, 1L, null, 2L, "12 rue", "900",
+                null, null, null, null, List.of(2L, 2L))))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Un locataire ne peut être sélectionné qu'une seule fois.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("LEASE_TENANT_DUPLICATE"));
+        assertThatThrownBy(() -> service.createLease(new LeaseRequest(false, 1L, null, 2L, "12 rue", "900",
+                null, null, null, null, List.of(3L))))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Le locataire principal doit figurer parmi les locataires du bail.")
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                        .isEqualTo("LEASE_PRIMARY_TENANT_INVALID"));
+        verify(leases, never()).save(any(Lease.class));
+    }
+
+    @Test
+    @DisplayName("A new lease validation rejects missing parties, missing entities and blank addresses")
     void leaseValidation() {
         when(persons.findNaturalPersonById(1L, USER_ID)).thenReturn(Optional.of(person(1L, "Bailleur")));
         assertThatThrownBy(() -> service.createLease(

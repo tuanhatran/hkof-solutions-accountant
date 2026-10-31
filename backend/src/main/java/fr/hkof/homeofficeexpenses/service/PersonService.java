@@ -87,15 +87,17 @@ public class PersonService {
 
     public PersonDto toDto(Person person) {
         long count = person.getId() == null ? 0 : signatures.countByPersonIdAndDeletedFalse(person.getId());
-        return new PersonDto(person.getId(), person.getName(), person.getAddress(), person.getIssuePlace(),
-                (int) count);
+        return new PersonDto(person.getId(), person.getName(), person.getAddress(), person.getPhone(),
+                person.getAddressNote(), person.getIssuePlace(), (int) count);
     }
 
     private void apply(Person person, PersonRequest request) {
         person.setName(requiredText(request.name(), "PERSON_NAME_REQUIRED",
                 "Le nom de la personne est obligatoire."));
-        person.setAddress(optionalText(request.address()));
-        person.setIssuePlace(optionalText(request.issuePlace()));
+        person.setAddress(OptionalTexts.trimToNull(request.address()));
+        person.setPhone(OptionalTexts.preserve(request.phone(), person.getPhone()));
+        person.setAddressNote(OptionalTexts.preserve(request.addressNote(), person.getAddressNote()));
+        person.setIssuePlace(OptionalTexts.trimToNull(request.issuePlace()));
     }
 
     private String requiredText(String value, String code, String message) {
@@ -106,7 +108,4 @@ public class PersonService {
         return cleaned;
     }
 
-    private String optionalText(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
-    }
 }

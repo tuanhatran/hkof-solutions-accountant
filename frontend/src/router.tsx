@@ -23,6 +23,7 @@ import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { GenerateExpenseStatementPage } from "@/pages/expense-statement/GenerateExpenseStatementPage";
 import { GenerateRentReceiptPage } from "@/pages/rent-receipt/GenerateRentReceiptPage";
 import { HistoryPage } from "@/pages/history/HistoryPage";
+import { OnboardingPage } from "@/pages/onboarding/OnboardingPage";
 import { TemplatesPage } from "@/pages/templates/TemplatesPage";
 
 export function NotFoundPage() {
@@ -140,6 +141,15 @@ function RequireAuth() {
   if (user.mustChangePassword && location.pathname !== "/mot-de-passe") {
     return <Navigate to="/mot-de-passe" replace />;
   }
+  // An explicit false only: a session without the flag keeps the old routing.
+  // A forced password change always wins and never sends the account to onboarding.
+  if (
+    user.onboardingCompleted === false &&
+    !user.mustChangePassword &&
+    location.pathname !== "/bienvenue"
+  ) {
+    return <Navigate to="/bienvenue" replace />;
+  }
   return <Outlet />;
 }
 
@@ -250,6 +260,7 @@ export const routes: RouteObject[] = [
         element: <RequireAuth />,
         children: [
           { path: "mot-de-passe", element: <AuthPage mode="password" /> },
+          { path: "bienvenue", element: <OnboardingPage /> },
           { path: "/", element: <AppShell />, children: appRoutes },
         ],
       },

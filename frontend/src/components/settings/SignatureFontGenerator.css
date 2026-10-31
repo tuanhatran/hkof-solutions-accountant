@@ -1,0 +1,43 @@
+@reference "../../index.css";
+
+@layer components {
+  .signature-font-generator-styles {
+    @apply mt-4 rounded-xl border border-line bg-paper/40 p-3;
+  }
+
+  .signature-font-generator-grid {
+    @apply mt-2 grid gap-2 sm:grid-cols-3;
+  }
+
+  .signature-font-generator-card {
+    @apply flex cursor-pointer flex-col gap-1 rounded-lg border border-line bg-surface p-2.5 transition hover:border-line-strong;
+  }
+
+  .signature-font-generator-card-active {
+    @apply border-accent bg-accent-soft;
+  }
+
+  .signature-font-generator-radio {
+    @apply sr-only;
+  }
+
+  .signature-font-generator-name {
+    @apply text-[11px] font-semibold text-ink;
+  }
+
+  .signature-font-generator-preview {
+    @apply block truncate text-2xl leading-tight text-ink;
+  }
+
+  .signature-font-generator-preview-caveat {
+    font-family: Caveat, "Segoe Script", "Brush Script MT", cursive;
+  }
+
+  .signature-font-generator-preview-dancing-script {
+    font-family: "Dancing Script", "Segoe Script", "Brush Script MT", cursive;
+  }
+
+  .signature-font-generator-preview-alex-brush {
+    font-family: "Alex Brush", "Segoe Script", "Brush Script MT", cursive;
+  }
+}

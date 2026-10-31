@@ -62,3 +62,34 @@ salaries→employees, signature→signature, signatures→signatures, sociale→
 statut→status, supplementaire→extra, suppression→deletion, supprimer→delete, surface→area,
 telecharger→download, telephone→phone, televerser→upload, titre→title, total→total,
 totale→total, tri→sort, ttc→incl-vat, vide→empty, voir→view, volet→pane
+
+## Onboarding wizard hooks (task 90)
+
+New attributes only (`frontend/src/pages/onboarding/*.tsx`): no behaviour, text, CSS or layout
+change. Consumed by `frontend/cypress/e2e/07-onboarding.cy.ts`.
+
+| Hook                                | Producer             | Purpose                                        |
+| ----------------------------------- | -------------------- | ---------------------------------------------- |
+| `input-onboarding-first-name`       | OnboardingStepProfile | landlord first name                           |
+| `input-onboarding-last-name`        | OnboardingStepProfile | landlord last name                            |
+| `input-onboarding-phone`            | OnboardingStepProfile | landlord phone                                |
+| `input-onboarding-person-address`   | OnboardingStepProfile | landlord postal address                       |
+| `input-onboarding-address-note`     | OnboardingStepProfile | landlord address note                         |
+| `input-onboarding-agency-name`      | OnboardingStepProfile | agency legal name                             |
+| `input-onboarding-legal-form`       | OnboardingStepProfile | agency legal form                             |
+| `input-onboarding-siren-siret`      | OnboardingStepProfile | 9-digit SIREN or 14-digit SIRET               |
+| `input-onboarding-agency-address`   | OnboardingStepProfile | agency address                                |
+| `btn-save-onboarding-profile`       | OnboardingStepProfile | save the profile, then continue               |
+| `input-onboarding-property-address` | OnboardingStepProperty | rented dwelling address                      |
+| `input-onboarding-rent`             | OnboardingStepProperty | rent excluding charges                       |
+| `input-onboarding-charges`          | OnboardingStepProperty | charges provision                            |
+| `onboarding-landlord`               | OnboardingStepProperty | pre-filled landlord (name and account email) |
+| `btn-next-onboarding-property`      | OnboardingStepProperty | validate the dwelling and continue           |
+| `onboarding-lease-individual`       | OnboardingStepLease  | individual lease radio                        |
+| `onboarding-lease-colocation`       | OnboardingStepLease  | solidary colocation lease radio               |
+| `input-onboarding-tenant-first-${index}` | OnboardingStepLease | co-tenant first name (field-array index 0, 1, …) |
+| `input-onboarding-tenant-last-${index}`  | OnboardingStepLease | co-tenant last name (field-array index 0, 1, …) |
+| `btn-next-onboarding-lease`         | OnboardingStepLease  | validate tenants and continue                 |
+
+Existing hooks reused by the spec: `onboarding-signature`, `btn-draw-signature`,
+`signature-pad-canvas`, `btn-confirm-signature-pad`, `onboarding-finalize`.

@@ -2,7 +2,10 @@ package fr.hkof.homeofficeexpenses.domain;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -11,6 +14,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -32,6 +36,13 @@ public class Lease {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id")
     private Person tenant;
+
+    /**
+     * Natural-person tenants of the lease; the primary row mirrors {@link #tenant}. Empty on a
+     * company lease and on rows created before multi-tenant leases were introduced.
+     */
+    @OneToMany(mappedBy = "lease", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<LeaseTenant> tenants = new ArrayList<>();
 
     /** Optional company: when set, the rent receipt uses that company's identity and data. */
     @Column(name = "company_id")
@@ -93,6 +104,10 @@ public class Lease {
 
     public void setTenant(Person tenant) {
         this.tenant = tenant;
+    }
+
+    public List<LeaseTenant> getTenants() {
+        return tenants;
     }
 
     public Long getCompanyId() {

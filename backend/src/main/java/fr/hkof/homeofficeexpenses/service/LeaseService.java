@@ -34,12 +34,13 @@ public class LeaseService {
     private final CompanyLookupService publicCompanies;
     private final AddressService addresses;
     private final OwnershipContext ownership;
+    private final LeaseTenantBinder tenantBinder;
     private final LeaseMapper mapper;
     private final Clock clock;
 
     public LeaseService(PersonRepository persons, EmployeeRepository employees, LeaseRepository leases,
             CompanyService companies, CompanyLookupService publicCompanies, AddressService addresses,
-            OwnershipContext ownership, LeaseMapper mapper, Clock clock) {
+            OwnershipContext ownership, LeaseTenantBinder tenantBinder, LeaseMapper mapper, Clock clock) {
         this.persons = persons;
         this.employees = employees;
         this.leases = leases;
@@ -47,6 +48,7 @@ public class LeaseService {
         this.publicCompanies = publicCompanies;
         this.addresses = addresses;
         this.ownership = ownership;
+        this.tenantBinder = tenantBinder;
         this.mapper = mapper;
         this.clock = clock;
     }
@@ -173,13 +175,10 @@ public class LeaseService {
         }
         Person landlord = party(request.landlordId(), "PERSON_NOT_FOUND", "Bailleur introuvable.");
         boolean companyLease = Boolean.TRUE.equals(request.companyLease());
-        Person tenant = null;
+        List<Person> tenants = tenantBinder.bind(lease, request, landlord);
+        Person tenant = tenants.isEmpty() ? null : tenants.get(0);
         Long companyId;
         if (companyLease) {
-            if (request.tenantId() != null) {
-                throw new BusinessException("LEASE_COMPANY_TENANT_INVALID",
-                        "Un bail société ne comporte pas de locataire personne physique.");
-            }
             boolean sirenProvided = request.companySiren() != null && !request.companySiren().isBlank();
             if (request.companyId() == null && !sirenProvided) {
                 throw new BusinessException("LEASE_TENANT_COMPANY_REQUIRED", "Sélectionnez la société locataire.");
@@ -198,14 +197,6 @@ public class LeaseService {
                         "Un bail actif existe déjà pour ce bailleur et ce locataire.");
             }
         } else {
-            if (request.tenantId() == null) {
-                throw new BusinessException("LEASE_TENANT_REQUIRED", "Sélectionnez un locataire.");
-            }
-            tenant = party(request.tenantId(), "PERSON_NOT_FOUND", "Locataire introuvable.");
-            if (tenant.getId().equals(landlord.getId())) {
-                throw new BusinessException("LEASE_PARTIES_IDENTICAL",
-                        "Le bailleur et le locataire doivent être deux personnes distinctes.");
-            }
             boolean pairTaken = currentId == null
                     ? leases.existsByUserIdAndLandlordIdAndTenantIdAndDeletedFalse(owner, landlord.getId(),
                             tenant.getId())
