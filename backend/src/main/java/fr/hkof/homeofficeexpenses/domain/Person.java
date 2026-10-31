@@ -42,6 +42,14 @@ public class Person {
     @Column(name = "issue_place")
     private String issuePlace;
 
+    /** Contact phone number collected during onboarding. */
+    @Column(name = "phone", length = 50)
+    private String phone;
+
+    /** Free-form complement to {@link #address}: building, floor or access details. */
+    @Column(name = "address_note", length = 500)
+    private String addressNote;
+
     @Column(name = "deleted", nullable = false)
     private boolean deleted;
 
@@ -89,6 +97,22 @@ public class Person {
 
     public void setIssuePlace(String issuePlace) {
         this.issuePlace = issuePlace;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getAddressNote() {
+        return addressNote;
+    }
+
+    public void setAddressNote(String addressNote) {
+        this.addressNote = addressNote;
     }
 
     public boolean isDeleted() {

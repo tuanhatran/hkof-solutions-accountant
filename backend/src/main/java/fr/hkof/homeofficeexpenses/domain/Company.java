@@ -33,6 +33,10 @@ public class Company {
 
     private String siren;
 
+    /** Legal establishment identifier (SIRET) printed on the company's generated documents. */
+    @Column(name = "siret", length = 20)
+    private String siret;
+
     @Column(name = "address")
     private String address;
 
@@ -102,6 +106,14 @@ public class Company {
 
     public void setSiren(String siren) {
         this.siren = siren;
+    }
+
+    public String getSiret() {
+        return siret;
+    }
+
+    public void setSiret(String siret) {
+        this.siret = siret;
     }
 
     public String getAddress() {

@@ -57,6 +57,10 @@ public class AppUser {
     @Column(name = "lmnp_enabled", nullable = false)
     private boolean lmnpEnabled = true;
 
+    /** True once the onboarding wizard is completed; migrated accounts start as done. */
+    @Column(name = "onboarding_completed", nullable = false)
+    private boolean onboardingCompleted;
+
     public Long getId() {
         return id;
     }
@@ -151,5 +155,13 @@ public class AppUser {
 
     public void setLmnpEnabled(boolean lmnpEnabled) {
         this.lmnpEnabled = lmnpEnabled;
+    }
+
+    public boolean isOnboardingCompleted() {
+        return onboardingCompleted;
+    }
+
+    public void setOnboardingCompleted(boolean onboardingCompleted) {
+        this.onboardingCompleted = onboardingCompleted;
     }
 }
