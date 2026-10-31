@@ -41,10 +41,10 @@ class CompanyLeaseIntegrationTest {
         long landlordId = id("/api/persons", """
                 {"name":"Bailleur colocation test"}
                 """);
-        long aliceId = id("/api/persons", """
+        long aliceId = id("/api/tenants", """
                 {"name":"Alice DUPONT"}
                 """);
-        long bobId = id("/api/persons", """
+        long bobId = id("/api/tenants", """
                 {"name":"Bob MARTIN"}
                 """);
 
@@ -180,7 +180,7 @@ class CompanyLeaseIntegrationTest {
         long landlordId = id("/api/persons", """
                 {"name":"Bailleur normal test","address":"1 rue du Bail"}
                 """);
-        long tenantId = id("/api/persons", """
+        long tenantId = id("/api/tenants", """
                 {"name":"Locataire normal test","address":"2 rue du Bail"}
                 """);
 

@@ -16,6 +16,7 @@ import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.Employee;
 import fr.hkof.homeofficeexpenses.domain.EmployeeTitle;
 import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
+import fr.hkof.homeofficeexpenses.domain.Landlord;
 import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.LlmConfig;
 import fr.hkof.homeofficeexpenses.domain.LlmProvider;
@@ -191,7 +192,7 @@ public class DataInitializer implements ApplicationRunner {
     }
 
     private Person createDefaultPerson(Long ownerId) {
-        Person person = new Person();
+        Person person = new Landlord();
         person.setUserId(ownerId);
         person.setName(DEFAULT_LANDLORD_NAME);
         person.setAddress(DEFAULT_LANDLORD_ADDRESS);

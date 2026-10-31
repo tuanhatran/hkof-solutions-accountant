@@ -6,8 +6,9 @@ info:
     Les routes /api/companies/**, /api/expense-statements/** et /api/expense-items/**
     répondent 403 MODULE_COMPANY_DISABLED quand le module entreprise du compte est
     désactivé, sauf GET /api/companies/lookup qui reste disponible pour rattacher une
-    société locataire à un bail ; les routes /api/leases/**, /api/rent-receipts/**, /api/persons/** et /api/agency
-    répondent 403 MODULE_LMNP_DISABLED quand le module LMNP est désactivé. Les routes
+    société locataire à un bail ; les routes /api/leases/**, /api/rent-receipts/**, /api/persons/**,
+    /api/landlords/**, /api/tenants/** et /api/agency répondent 403 MODULE_LMNP_DISABLED quand le
+    module LMNP est désactivé. Les routes
     /api/admin/** sont réservées aux administrateurs (403 ACCESS_DENIED).
   version: 1.0.0
 servers:
@@ -1917,8 +1918,10 @@ paths:
         - person-controller
       operationId: listPersons
       description: >-
-        Liste les personnes physiques non supprimées, triées par nom. Les
-        salariés sont exclus de cette liste.
+        Liste les personnes physiques non supprimées, triées par nom : bailleurs,
+        locataires et personnes historiques. Les salariés sont exclus de cette
+        liste. Route de compatibilité des parties de bail ; un POST crée un
+        bailleur par défaut.
       responses:
         "403":
           $ref: "#/components/responses/LmnpModuleDisabled"
@@ -1998,6 +2001,236 @@ paths:
       tags:
         - person-controller
       operationId: deletePerson
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/landlords:
+    get:
+      tags:
+        - landlord-controller
+      operationId: listLandlords
+      description: >-
+        Liste les bailleurs non supprimés du compte, triés par nom. Un bailleur
+        peut porter des signatures et être partie à des baux.
+      responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LandlordDto"
+    post:
+      tags:
+        - landlord-controller
+      operationId: createLandlord
+      description: Crée un bailleur pour le compte courant.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LandlordRequest"
+        required: true
+      responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
+        "201":
+          description: Created
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/LandlordDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/landlords/{id}:
+    put:
+      tags:
+        - landlord-controller
+      operationId: updateLandlord
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LandlordRequest"
+        required: true
+      responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/LandlordDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    delete:
+      tags:
+        - landlord-controller
+      operationId: deleteLandlord
+      description: >-
+        Supprime logiquement un bailleur. Refusé en français s'il porte des
+        signatures ou s'il est utilisé par un bail actif.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/tenants:
+    get:
+      tags:
+        - tenant-controller
+      operationId: listTenants
+      description: >-
+        Liste les locataires personnes physiques non supprimés du compte, triés
+        par nom.
+      responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TenantDto"
+    post:
+      tags:
+        - tenant-controller
+      operationId: createTenant
+      description: Crée un locataire personne physique pour le compte courant.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantRequest"
+        required: true
+      responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
+        "201":
+          description: Created
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/TenantDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/tenants/{id}:
+    put:
+      tags:
+        - tenant-controller
+      operationId: updateTenant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantRequest"
+        required: true
+      responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/TenantDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    delete:
+      tags:
+        - tenant-controller
+      operationId: deleteTenant
+      description: >-
+        Supprime logiquement un locataire. Refusé en français s'il porte des
+        signatures ou s'il est utilisé par un bail actif.
       parameters:
         - name: id
           in: path
@@ -2699,6 +2932,117 @@ components:
           format: int32
           readOnly: true
           description: Nombre de signatures non supprimées de la personne.
+    LandlordRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Nom du bailleur.
+        address:
+          type:
+            - string
+            - "null"
+          description: Adresse personnelle facultative du bailleur.
+        phone:
+          type:
+            - string
+            - "null"
+          description: Téléphone de contact facultatif du bailleur.
+        addressNote:
+          type:
+            - string
+            - "null"
+          description: Complément d'adresse facultatif du bailleur.
+        issuePlace:
+          type:
+            - string
+            - "null"
+          description: >-
+            Lieu d'émission facultatif imprimé après « Fait à » sur les
+            quittances de ce bailleur.
+    LandlordDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        address:
+          type:
+            - string
+            - "null"
+        phone:
+          type:
+            - string
+            - "null"
+        addressNote:
+          type:
+            - string
+            - "null"
+        issuePlace:
+          type:
+            - string
+            - "null"
+        signatureCount:
+          type: integer
+          format: int32
+          readOnly: true
+          description: Nombre de signatures non supprimées du bailleur.
+    TenantRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Nom du locataire.
+        address:
+          type:
+            - string
+            - "null"
+          description: Adresse personnelle facultative du locataire.
+        phone:
+          type:
+            - string
+            - "null"
+          description: Téléphone de contact facultatif du locataire.
+        email:
+          type:
+            - string
+            - "null"
+          description: Adresse électronique facultative du locataire.
+        addressNote:
+          type:
+            - string
+            - "null"
+          description: Complément d'adresse facultatif du locataire.
+    TenantDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        address:
+          type:
+            - string
+            - "null"
+        phone:
+          type:
+            - string
+            - "null"
+        email:
+          type:
+            - string
+            - "null"
+        addressNote:
+          type:
+            - string
+            - "null"
     AddressDto:
       type: object
       properties:

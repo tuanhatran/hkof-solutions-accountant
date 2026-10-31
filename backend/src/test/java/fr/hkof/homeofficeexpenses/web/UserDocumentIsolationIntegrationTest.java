@@ -176,7 +176,7 @@ class UserDocumentIsolationIntegrationTest {
                 """));
         long aLandlordId = id(created(a, "/api/persons",
                 "{\"name\":\"Bailleur Alpha\",\"address\":\"1 rue Bailleur\"}"));
-        long aTenantId = id(created(a, "/api/persons",
+        long aTenantId = id(created(a, "/api/tenants",
                 "{\"name\":\"Locataire Alpha\",\"address\":\"2 rue Locataire\"}"));
         created(a, "/api/leases",
                 leaseBody(aLandlordId, aTenantId, aCompanyId, "12 rue Alpha, 75002 Paris"));
@@ -193,7 +193,7 @@ class UserDocumentIsolationIntegrationTest {
                 """));
         long bLandlordId = id(created(b, "/api/persons",
                 "{\"name\":\"Bailleur Bêta\",\"address\":\"1 rue Bailleur\"}"));
-        long bTenantId = id(created(b, "/api/persons",
+        long bTenantId = id(created(b, "/api/tenants",
                 "{\"name\":\"Locataire Bêta\",\"address\":\"2 rue Locataire\"}"));
         created(b, "/api/leases", leaseBody(bLandlordId, bTenantId, bCompanyId, "14 rue Bêta, 75003 Paris"));
         long bEmployeeId = id(created(b, "/api/companies/" + bCompanyId + "/employees", """
@@ -329,7 +329,7 @@ class UserDocumentIsolationIntegrationTest {
                  "leaseId":null,"issuePlace":"Paris"}
                 """));
         long bLandlordId = id(created(b, "/api/persons", "{\"name\":\"Bailleur Bêta\",\"address\":\"1 rue B\"}"));
-        long bTenantId = id(created(b, "/api/persons", "{\"name\":\"Locataire Bêta\",\"address\":\"2 rue B\"}"));
+        long bTenantId = id(created(b, "/api/tenants", "{\"name\":\"Locataire Bêta\",\"address\":\"2 rue B\"}"));
         created(b, "/api/leases", leaseBody(bLandlordId, bTenantId, bCompanyId, "1 rue Bêta, 75001 Paris"));
         long bEmployeeId = id(created(b, "/api/companies/" + bCompanyId + "/employees", """
                 {"firstName":"Gérant","lastName":"Bêta","title":"CEO","address":"3 rue Gérant",
@@ -432,7 +432,7 @@ class UserDocumentIsolationIntegrationTest {
                 """));
         long aLandlordId = id(created(a, "/api/persons",
                 "{\"name\":\"Bailleur Alpha Justif\",\"address\":\"1 rue Bailleur\"}"));
-        long aTenantId = id(created(a, "/api/persons",
+        long aTenantId = id(created(a, "/api/tenants",
                 "{\"name\":\"Locataire Alpha Justif\",\"address\":\"2 rue Locataire\"}"));
         created(a, "/api/leases",
                 leaseBody(aLandlordId, aTenantId, aCompanyId, "12 rue Alpha Justif, 75002 Paris"));
@@ -454,7 +454,7 @@ class UserDocumentIsolationIntegrationTest {
                 """));
         long bLandlordId = id(created(b, "/api/persons",
                 "{\"name\":\"Bailleur Bêta Justif\",\"address\":\"1 rue Bailleur\"}"));
-        long bTenantId = id(created(b, "/api/persons",
+        long bTenantId = id(created(b, "/api/tenants",
                 "{\"name\":\"Locataire Bêta Justif\",\"address\":\"2 rue Locataire\"}"));
         created(b, "/api/leases",
                 leaseBody(bLandlordId, bTenantId, bCompanyId, "14 rue Bêta Justif, 75003 Paris"));
@@ -661,7 +661,7 @@ class UserDocumentIsolationIntegrationTest {
                 """.formatted(label, label)));
         long landlordId = id(created(session, "/api/persons",
                 "{\"name\":\"Bailleur " + label + "\",\"address\":\"1 rue Bailleur\"}"));
-        long tenantId = id(created(session, "/api/persons",
+        long tenantId = id(created(session, "/api/tenants",
                 "{\"name\":\"Locataire " + label + "\",\"address\":\"2 rue Locataire\"}"));
         long leaseId = id(created(session, "/api/leases", """
                 {"companyLease":false,"landlordId":%d,"tenantId":%d,"companyId":%d,

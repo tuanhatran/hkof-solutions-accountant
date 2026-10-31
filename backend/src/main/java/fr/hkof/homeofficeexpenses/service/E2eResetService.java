@@ -22,6 +22,7 @@ import fr.hkof.homeofficeexpenses.domain.EmployeeTitle;
 import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.domain.Signature;
+import fr.hkof.homeofficeexpenses.domain.Tenant;
 import fr.hkof.homeofficeexpenses.repository.AddressRepository;
 import fr.hkof.homeofficeexpenses.repository.AnalysisDocumentRepository;
 import fr.hkof.homeofficeexpenses.repository.AppUserRepository;
@@ -159,7 +160,7 @@ public class E2eResetService {
             return existing;
         }
         Instant now = Instant.now();
-        Person tenant = new Person();
+        Person tenant = new Tenant();
         tenant.setUserId(ownerId);
         tenant.setName(DEFAULT_TENANT_NAME);
         tenant.setAddress(DEFAULT_TENANT_ADDRESS);

@@ -50,6 +50,10 @@ public class Person {
     @Column(name = "address_note", length = 500)
     private String addressNote;
 
+    /** Optional email shared by tenants and employees; landlords never carry one. */
+    @Column(name = "email")
+    private String email;
+
     @Column(name = "deleted", nullable = false)
     private boolean deleted;
 
@@ -113,6 +117,14 @@ public class Person {
 
     public void setAddressNote(String addressNote) {
         this.addressNote = addressNote;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public boolean isDeleted() {

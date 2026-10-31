@@ -67,9 +67,9 @@ class UserIsolationIntegrationTest {
         assertThat(bCompany).isNotEqualTo(aCompany);
 
         long aLandlord = id(created(a, "/api/persons", person("Bailleur A")));
-        long aTenant = id(created(a, "/api/persons", person("Locataire A")));
+        long aTenant = id(created(a, "/api/tenants", person("Locataire A")));
         long bLandlord = id(created(b, "/api/persons", person("Bailleur B")));
-        long bTenant = id(created(b, "/api/persons", person("Locataire B")));
+        long bTenant = id(created(b, "/api/tenants", person("Locataire B")));
 
         MvcResult aLeaseResult = created(a, "/api/leases",
                 lease(aLandlord, aTenant, aCompany, "12 rue Partagée, 75002 Paris"));

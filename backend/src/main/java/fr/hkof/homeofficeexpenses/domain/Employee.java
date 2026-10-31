@@ -23,9 +23,6 @@ public class Employee extends Person {
     @Column(name = "last_name")
     private String lastName;
 
-    @Column(name = "email")
-    private String email;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "title", length = 20)
     private EmployeeTitle title;
@@ -52,14 +49,6 @@ public class Employee extends Person {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 
     public EmployeeTitle getTitle() {

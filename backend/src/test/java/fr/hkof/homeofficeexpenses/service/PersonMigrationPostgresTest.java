@@ -206,6 +206,91 @@ class PersonMigrationPostgresTest {
         }
     }
 
+    @Test
+    @DisplayName("V31 splits natural persons into landlords and tenants and keeps employees")
+    void splitsLandlordsAndTenants() throws Exception {
+        resetSchema();
+        migrateTo("30");
+        long employeeId;
+        long landlordId;
+        long tenantId;
+        long signedId;
+        long unlinkedId;
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            employeeId = singleLong(statement,
+                    "SELECT id FROM person WHERE kind = 'EMPLOYEE' ORDER BY id LIMIT 1");
+            statement.execute("""
+                    INSERT INTO person (user_id, kind, name, deleted, created_at)
+                    VALUES ((SELECT id FROM app_user ORDER BY id LIMIT 1), 'PERSON', 'Bailleur V31', FALSE, NOW()),
+                        ((SELECT id FROM app_user ORDER BY id LIMIT 1), 'PERSON', 'Locataire V31', FALSE, NOW()),
+                        ((SELECT id FROM app_user ORDER BY id LIMIT 1), 'PERSON', 'Signataire V31', FALSE, NOW()),
+                        ((SELECT id FROM app_user ORDER BY id LIMIT 1), 'PERSON', 'Sans lien V31', FALSE, NOW())
+                    """);
+            landlordId = personId(statement, "Bailleur V31");
+            tenantId = personId(statement, "Locataire V31");
+            signedId = personId(statement, "Signataire V31");
+            unlinkedId = personId(statement, "Sans lien V31");
+            statement.execute("""
+                    INSERT INTO address (user_id, label, deleted, created_at)
+                    VALUES ((SELECT id FROM app_user ORDER BY id LIMIT 1), '31 rue V31', FALSE, NOW())
+                    """);
+            long addressId = singleLong(statement, "SELECT MAX(id) FROM address");
+            statement.execute("""
+                    INSERT INTO lease (user_id, landlord_id, tenant_id, address_id, rent_excl_charges, charges,
+                        company_lease, deleted, created_at)
+                    VALUES ((SELECT id FROM app_user ORDER BY id LIMIT 1), %d, %d, %d,
+                        900.00, 50.00, FALSE, FALSE, NOW())
+                    """.formatted(landlordId, tenantId, addressId));
+            long leaseId = singleLong(statement, "SELECT MAX(id) FROM lease");
+            statement.execute("""
+                    INSERT INTO lease_tenant (lease_id, person_id, is_primary) VALUES (%d, %d, TRUE)
+                    """.formatted(leaseId, tenantId));
+            statement.execute("""
+                    INSERT INTO signature (user_id, name, mime_type, image, deleted, created_at, person_id)
+                    VALUES ((SELECT id FROM app_user ORDER BY id LIMIT 1), 'Signature V31', 'image/png',
+                        '\\x89504e47'::bytea, FALSE, NOW(), %d)
+                    """.formatted(signedId));
+        }
+
+        migrate();
+
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            assertThat(kindOf(statement, landlordId)).isEqualTo("LANDLORD");
+            assertThat(kindOf(statement, tenantId)).isEqualTo("TENANT");
+            assertThat(kindOf(statement, signedId)).isEqualTo("LANDLORD");
+            assertThat(kindOf(statement, unlinkedId)).isEqualTo("LANDLORD");
+            assertThat(kindOf(statement, employeeId)).isEqualTo("EMPLOYEE");
+            assertThat(singleLong(statement, """
+                    SELECT COUNT(*) FROM information_schema.columns
+                    WHERE table_name = 'person' AND column_name = 'email'
+                    """)).isEqualTo(1);
+            assertThat(singleLong(statement, "SELECT COUNT(*) FROM lease_tenant WHERE person_id = "
+                    + tenantId)).isEqualTo(1);
+
+            statement.execute("""
+                    INSERT INTO person (user_id, kind, name, email, deleted, created_at)
+                    VALUES ((SELECT id FROM app_user ORDER BY id LIMIT 1), 'TENANT', 'Locataire email',
+                        'locataire@example.test', FALSE, NOW())
+                    """);
+            assertThat(singleString(statement, """
+                    SELECT email FROM person WHERE kind = 'TENANT' AND name = 'Locataire email'
+                    """)).isEqualTo("locataire@example.test");
+            assertThatThrownBy(() -> statement.execute("""
+                    INSERT INTO person (user_id, kind, name, email, deleted, created_at)
+                    VALUES ((SELECT id FROM app_user ORDER BY id LIMIT 1), 'LANDLORD', 'Bailleur email',
+                        'bailleur@example.test', FALSE, NOW())
+                    """)).isInstanceOf(SQLException.class);
+        }
+    }
+
+    private long personId(Statement statement, String name) throws SQLException {
+        return singleLong(statement, "SELECT id FROM person WHERE name = '" + name + "'");
+    }
+
+    private String kindOf(Statement statement, long id) throws SQLException {
+        return singleString(statement, "SELECT kind FROM person WHERE id = " + id);
+    }
+
     private String addressInsert(String label) {
         return "INSERT INTO address (label, deleted, created_at) VALUES ('%s', FALSE, NOW())".formatted(label);
     }

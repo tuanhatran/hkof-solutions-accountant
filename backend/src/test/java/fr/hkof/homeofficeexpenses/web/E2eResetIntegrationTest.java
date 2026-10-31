@@ -72,7 +72,7 @@ class E2eResetIntegrationTest {
                                 """))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String tenant = mockMvc.perform(mutation(post("/api/persons"), e2e)
+        String tenant = mockMvc.perform(mutation(post("/api/tenants"), e2e)
                         .contentType(JSON)
                         .content("""
                                 {"name":"Locataire Test e2e","address":"2 rue du Test, 75001 Paris"}

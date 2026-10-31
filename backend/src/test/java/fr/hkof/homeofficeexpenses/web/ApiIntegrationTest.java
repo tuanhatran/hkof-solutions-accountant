@@ -447,7 +447,7 @@ class ApiIntegrationTest {
 
         // A second pair of natural persons gets its own version sequence in the same month.
         long secondLandlordId = createdPerson("Bailleur quittance multiple");
-        long secondTenantId = createdPerson("Locataire quittance multiple");
+        long secondTenantId = createdTenant("Locataire quittance multiple");
         mockMvc.perform(post("/api/leases")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -528,7 +528,7 @@ class ApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.address").value("4 rue du Test, 75001 Paris"));
 
-        long newTenantId = createdPerson("Locataire secondaire");
+        long newTenantId = createdTenant("Locataire secondaire");
 
         mockMvc.perform(post("/api/leases")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -611,7 +611,7 @@ class ApiIntegrationTest {
     @DisplayName("An address is listed once and reused for trimmed, case-insensitive labels")
     void addressesAreListedAndReused() throws Exception {
         long landlordId = createdPerson("Bailleur adresse test");
-        long tenantId = createdPerson("Locataire adresse test");
+        long tenantId = createdTenant("Locataire adresse test");
 
         String lease = mockMvc.perform(post("/api/leases")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -796,6 +796,17 @@ class ApiIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"%s","address":"1 rue du Test, 75001 Paris"}
+                                """.formatted(name)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return ((Number) JsonPath.read(body, "$.id")).longValue();
+    }
+
+    private long createdTenant(String name) throws Exception {
+        String body = mockMvc.perform(post("/api/tenants")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"%s","address":"2 rue du Test, 75001 Paris"}
                                 """.formatted(name)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();

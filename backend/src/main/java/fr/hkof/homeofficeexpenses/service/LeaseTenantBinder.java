@@ -8,9 +8,12 @@ import java.util.Objects;
 
 import org.springframework.stereotype.Component;
 
+import org.hibernate.Hibernate;
+
 import fr.hkof.homeofficeexpenses.domain.Lease;
 import fr.hkof.homeofficeexpenses.domain.LeaseTenant;
 import fr.hkof.homeofficeexpenses.domain.Person;
+import fr.hkof.homeofficeexpenses.domain.Tenant;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
 import fr.hkof.homeofficeexpenses.repository.PersonRepository;
 import fr.hkof.homeofficeexpenses.web.dto.RentConfigurationDtos.LeaseRequest;
@@ -49,12 +52,11 @@ public class LeaseTenantBinder {
         }
         List<Person> tenants = new ArrayList<>();
         for (Long id : orderedIds(request)) {
-            Person tenant = party(id);
-            if (tenant.getId().equals(landlord.getId())) {
+            if (id.equals(landlord.getId())) {
                 throw new BusinessException("LEASE_PARTIES_IDENTICAL",
                         "Le bailleur et le locataire doivent être deux personnes distinctes.");
             }
-            tenants.add(tenant);
+            tenants.add(party(id));
         }
         lease.getTenants().clear();
         for (int index = 0; index < tenants.size(); index++) {
@@ -101,8 +103,15 @@ public class LeaseTenantBinder {
         if (employees.existsByIdAndUserIdAndDeletedFalse(id, owner)) {
             throw new BusinessException("LEASE_EMPLOYEE_PARTY", "Un salarié ne peut pas être partie à un bail.");
         }
-        return persons.findNaturalPersonById(id, owner)
+        Person person = persons.findNaturalPersonById(id, owner)
                 .orElseThrow(() -> new NotFoundException("PERSON_NOT_FOUND", "Locataire introuvable."));
+        // A lease loads its tenants as lazy Person proxies before the kind check; unwrap them so
+        // the check reads the discriminator instead of the declared association type.
+        if (!(Hibernate.unproxy(person) instanceof Tenant)) {
+            throw new BusinessException("LEASE_TENANT_INVALID",
+                    "Le locataire sélectionné n'est pas un locataire.");
+        }
+        return person;
     }
 
     /**
