@@ -18,6 +18,8 @@ export const queryKeys = {
   employeesAll: ["employees"] as const,
   employees: (companyId: number) => ["employees", companyId] as const,
   persons: ["persons"] as const,
+  landlords: ["landlords"] as const,
+  tenants: ["tenants"] as const,
   addresses: ["addresses"] as const,
   leases: ["leases"] as const,
   expenseItemsAll: ["expenseItems"] as const,
@@ -144,6 +146,26 @@ export function usePersons() {
   return useQuery({
     queryKey: queryKeys.persons,
     queryFn: () => api.persons.list(),
+    staleTime: 30_000,
+  });
+}
+
+/** Landlords of the LMNP settings, the only source of the lease landlord select. */
+export function useLandlords(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.landlords,
+    queryFn: () => api.landlords.list(),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+/** Tenants of the LMNP settings, the only source of the lease tenant select. */
+export function useTenants(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.tenants,
+    queryFn: () => api.tenants.list(),
+    enabled,
     staleTime: 30_000,
   });
 }

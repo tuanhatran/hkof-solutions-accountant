@@ -7,6 +7,10 @@ import { api } from "@/api/endpoints";
 import { completeOnboardingSession, useAuthState } from "@/api/queries";
 import { LanguageSelector } from "@/components/layout/LanguageSelector";
 import { agencyRequest, personRequest } from "./onboardingRequests";
+import {
+  createOnboardingLandlord,
+  createOnboardingTenant,
+} from "./onboardingPeople";
 import { OnboardingSkipButton } from "./OnboardingSkipButton";
 import { OnboardingStepLease } from "./OnboardingStepLease";
 import { OnboardingStepNav } from "./OnboardingStepNav";
@@ -96,23 +100,6 @@ export function OnboardingPage() {
     next();
   };
 
-  async function createPerson(
-    name: string,
-    phone: string | null = null,
-    addressNote: string | null = null,
-  ) {
-    const created = await api.persons.create({
-      name,
-      phone,
-      addressNote,
-      address: null,
-      issuePlace: null,
-    });
-    if (created.id === undefined)
-      throw new Error(t("onboarding.errors.tenant"));
-    return created.id;
-  }
-
   async function ensureLandlords(): Promise<Map<string, number>> {
     const ids = new Map<string, number>();
     for (const property of draft.properties) {
@@ -125,10 +112,11 @@ export function OnboardingPage() {
         property.landlordFirstName,
         property.landlordLastName,
       );
-      const id = await createPerson(
+      const id = await createOnboardingLandlord(
         landlordName,
         property.landlordPhone.trim() || null,
         property.landlordAddressNote.trim() || null,
+        t("onboarding.errors.tenant"),
       );
       cacheLandlordId(property.id, id);
       ids.set(property.id, id);
@@ -146,7 +134,10 @@ export function OnboardingPage() {
         ids.push(cached);
         continue;
       }
-      const id = await createPerson(name);
+      const id = await createOnboardingTenant(
+        name,
+        t("onboarding.errors.tenant"),
+      );
       cacheTenantId(cacheKey, id);
       ids.push(id);
     }

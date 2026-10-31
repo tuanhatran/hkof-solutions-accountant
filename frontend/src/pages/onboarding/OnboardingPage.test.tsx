@@ -18,6 +18,14 @@ vi.mock("@/api/endpoints", () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
+    landlords: {
+      create: vi.fn(),
+      list: vi.fn(),
+    },
+    tenants: {
+      create: vi.fn(),
+      list: vi.fn(),
+    },
     agency: {
       get: vi.fn(),
       save: vi.fn(),
@@ -133,6 +141,15 @@ beforeEach(() => {
     id: nextPersonId++,
     name: body.name,
     signatureCount: 0,
+  }));
+  vi.mocked(api.landlords.create).mockImplementation(async (body) => ({
+    id: nextPersonId++,
+    name: body.name,
+    signatureCount: 0,
+  }));
+  vi.mocked(api.tenants.create).mockImplementation(async (body) => ({
+    id: nextPersonId++,
+    name: body.name,
   }));
   vi.mocked(api.persons.update).mockResolvedValue(PERSON);
   vi.mocked(api.signatures.list).mockResolvedValue([]);
@@ -615,7 +632,23 @@ describe("OnboardingPage", () => {
         charges: "80.00",
       }),
     );
-    expect(api.persons.create).toHaveBeenCalledTimes(4); // manager + landlord + 2 tenants
+    expect(api.persons.create).toHaveBeenCalledTimes(1); // the profile manager
+    expect(api.landlords.create).toHaveBeenCalledTimes(1);
+    expect(api.landlords.create).toHaveBeenCalledWith({
+      name: "Bernard Dupont",
+      phone: null,
+      addressNote: null,
+      address: null,
+      issuePlace: null,
+    });
+    expect(api.tenants.create).toHaveBeenCalledTimes(2);
+    expect(api.tenants.create).toHaveBeenNthCalledWith(1, {
+      name: "Bob Durand",
+      phone: null,
+      email: null,
+      addressNote: null,
+      address: null,
+    });
     expect(api.auth.completeOnboarding).toHaveBeenCalledTimes(1);
     expect(api.auth.me).toHaveBeenCalled();
     expect(await screen.findByText("Tableau de bord")).toBeVisible();

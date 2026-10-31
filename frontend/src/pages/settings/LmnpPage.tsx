@@ -2,20 +2,21 @@ import "./LmnpPage.css";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { LandlordsSection } from "@/components/settings/LandlordsSection";
 import { LeaseSection } from "@/components/settings/LeaseSection";
-import { PersonnesSection } from "@/components/settings/PersonnesSection";
+import { TenantsSection } from "@/components/settings/TenantsSection";
 import { useRentReceiptSettings } from "@/components/settings/useRentReceiptSettings";
 import { cn } from "@/lib/cn";
 import { AgencySection } from "./AgencySection";
 
-type Tab = "baux" | "personnes" | "agence";
+type Tab = "baux" | "bailleurs" | "locataires" | "agence";
 
 function LeasesTab() {
   const c = useRentReceiptSettings();
   return <LeaseSection c={c} />;
 }
 
-/** LMNP settings: leases and addresses, natural persons. */
+/** LMNP settings: leases and addresses, landlords, tenants and the agency. */
 export function LmnpPage() {
   const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("baux");
@@ -26,9 +27,14 @@ export function LmnpPage() {
       dataCy: "tab-leases",
     },
     {
-      value: "personnes",
-      label: t("settings.lmnp.tabs.persons"),
-      dataCy: "tab-persons",
+      value: "bailleurs",
+      label: t("settings.lmnp.tabs.landlords"),
+      dataCy: "tab-landlords",
+    },
+    {
+      value: "locataires",
+      label: t("settings.lmnp.tabs.tenants"),
+      dataCy: "tab-tenants",
     },
     {
       value: "agence",
@@ -70,7 +76,8 @@ export function LmnpPage() {
 
       <div className="lmnp-page-sections">
         {tab === "baux" ? <LeasesTab /> : null}
-        {tab === "personnes" ? <PersonnesSection /> : null}
+        {tab === "bailleurs" ? <LandlordsSection /> : null}
+        {tab === "locataires" ? <TenantsSection /> : null}
         {tab === "agence" ? <AgencySection /> : null}
       </div>
     </>

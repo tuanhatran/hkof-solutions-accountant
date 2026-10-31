@@ -1,19 +1,18 @@
-import "./PersonnesSection.css";
+import "./LandlordsSection.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PencilLine, Plus, Trash2, UserRound } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
-import { api } from "@/api/endpoints";
-import { queryKeys, usePersons } from "@/api/queries";
-import type { PersonDto } from "@/api/types";
+import { api, type LandlordDto } from "@/api/endpoints";
+import { queryKeys, useLandlords } from "@/api/queries";
 import { ListSearch } from "@/components/settings/ListToolbar";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorState, LoadingState } from "@/components/ui/States";
 import { useListQuery } from "@/hooks/useListQuery";
 import { toast } from "@/state/toasts";
-import { PersonForm } from "./PersonForm";
+import { LandlordForm } from "./LandlordForm";
 import { EmptyState, SectionHeader } from "./SettingsSection";
 import {
   SettingsListMobileSort,
@@ -21,17 +20,18 @@ import {
   type SettingsListColumn,
 } from "./SettingsListSortHeader";
 
-/** Natural persons directory: list, add/edit modal and logical deletion. */
-export function PersonnesSection() {
+/** Landlord directory: list, add/edit modal, signatures and logical deletion. */
+export function LandlordsSection() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const persons = usePersons();
-  const [form, setForm] = useState<PersonDto | null | "new">(null);
-  const [toDelete, setToDelete] = useState<PersonDto | null>(null);
-  const list = persons.data ?? [];
-  const listQuery = useListQuery<PersonDto>({
+  const landlords = useLandlords();
+  const [form, setForm] = useState<LandlordDto | null | "new">(null);
+  const [toDelete, setToDelete] = useState<LandlordDto | null>(null);
+  const list = landlords.data ?? [];
+  const listQuery = useListQuery<LandlordDto>({
     items: list,
-    searchText: (person) => `${person.name ?? ""} ${person.address ?? ""}`,
+    searchText: (landlord) =>
+      `${landlord.name ?? ""} ${landlord.address ?? ""}`,
     sorts: [
       {
         value: "name",
@@ -71,29 +71,31 @@ export function PersonnesSection() {
   const columns: SettingsListColumn[] = [
     {
       key: "name",
-      label: t("settings.people.columns.person"),
-      dataCy: "sort-persons-name",
+      label: t("settings.landlords.columns.landlord"),
+      dataCy: "sort-landlords-name",
     },
     {
       key: "address",
-      label: t("settings.people.columns.address"),
-      dataCy: "sort-persons-address",
+      label: t("settings.landlords.columns.address"),
+      dataCy: "sort-landlords-address",
     },
     {
       key: "signatures",
-      label: t("settings.people.columns.signatures"),
-      dataCy: "sort-persons-signatures",
+      label: t("settings.landlords.columns.signatures"),
+      dataCy: "sort-landlords-signatures",
       numeric: true,
     },
   ];
 
   const remove = useMutation({
-    mutationFn: (person: PersonDto) => api.persons.remove(person.id as number),
+    mutationFn: (landlord: LandlordDto) =>
+      api.landlords.remove(landlord.id as number),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.landlords });
       void queryClient.invalidateQueries({ queryKey: queryKeys.persons });
       void queryClient.invalidateQueries({ queryKey: queryKeys.leases });
       setToDelete(null);
-      toast.success(t("settings.people.deleted"));
+      toast.success(t("settings.landlords.deleted"));
     },
     onError: (error) => {
       setToDelete(null);
@@ -102,36 +104,36 @@ export function PersonnesSection() {
   });
 
   return (
-    <section className="card personnes-section">
+    <section className="card landlords-section">
       <SectionHeader
         icon={UserRound}
-        title={t("settings.people.title")}
-        description={t("settings.people.description")}
+        title={t("settings.landlords.title")}
+        description={t("settings.landlords.description")}
         action={
-          <div className="personnes-section-header-actions">
+          <div className="landlords-section-header-actions">
             <Button
               variant="primary"
               icon={<Plus size={14} />}
               onClick={() => setForm("new")}
               disabled={form === "new"}
-              data-cy="btn-add-person"
+              data-cy="btn-add-landlord"
             >
-              {t("settings.people.add")}
+              {t("settings.landlords.add")}
             </Button>
             {list.length > 0 ? (
               <>
-                <div className="personnes-section-header-search">
+                <div className="landlords-section-header-search">
                   <ListSearch
-                    list="persons"
-                    placeholder={t("settings.people.filterPlaceholder")}
+                    list="landlords"
+                    placeholder={t("settings.landlords.filterPlaceholder")}
                     query={listQuery.query}
                     onQueryChange={listQuery.setQuery}
                   />
                 </div>
                 <span
-                  className="personnes-section-count"
+                  className="landlords-section-count"
                   aria-live="polite"
-                  data-cy="filter-count-persons"
+                  data-cy="filter-count-landlords"
                 >
                   {t("settings.list.count", {
                     visible: listQuery.visible.length,
@@ -144,32 +146,35 @@ export function PersonnesSection() {
                   direction={listQuery.direction}
                   onSort={sortBy}
                   onToggleDirection={listQuery.toggleDirection}
-                  selectDataCy="sort-persons-compact"
-                  directionDataCy="sort-persons-compact-direction"
+                  selectDataCy="sort-landlords-compact"
+                  directionDataCy="sort-landlords-compact-direction"
                 />
               </>
             ) : null}
           </div>
         }
       />
-      <div className="card-body personnes-section-body">
+      <div className="card-body landlords-section-body">
         {form !== null ? (
-          <PersonForm
+          <LandlordForm
             key={form === "new" ? "new" : form.id}
             item={form === "new" ? null : form}
             onClose={() => setForm(null)}
           />
         ) : null}
 
-        {persons.isError ? (
+        {landlords.isError ? (
           <ErrorState
-            message={errorMessage(persons.error)}
-            onRetry={() => void persons.refetch()}
+            message={errorMessage(landlords.error)}
+            onRetry={() => void landlords.refetch()}
           />
-        ) : persons.isPending ? (
-          <LoadingState message={t("settings.people.loading")} />
+        ) : landlords.isPending ? (
+          <LoadingState message={t("settings.landlords.loading")} />
         ) : list.length === 0 ? (
-          <EmptyState text={t("settings.people.empty")} dataCy="no-person" />
+          <EmptyState
+            text={t("settings.landlords.empty")}
+            dataCy="no-landlord"
+          />
         ) : (
           <>
             {listQuery.visible.length === 0 ? (
@@ -177,67 +182,70 @@ export function PersonnesSection() {
                 text={t("settings.list.noMatch", {
                   query: listQuery.query.trim(),
                 })}
-                dataCy="no-results-persons"
+                dataCy="no-results-landlords"
               />
             ) : (
-              <div className="personnes-section-table" role="table">
+              <div className="landlords-section-table" role="table">
                 <SettingsListSortHeader
                   columns={columns}
                   sort={listQuery.sort}
                   direction={listQuery.direction}
                   onSort={sortBy}
-                  actionsLabel={t("settings.people.columns.actions")}
-                  dataCy="persons-headers"
-                  className="personnes-section-headers"
+                  actionsLabel={t("settings.landlords.columns.actions")}
+                  dataCy="landlords-headers"
+                  className="landlords-section-headers"
                 />
-                <ul className="personnes-section-list">
-                  {listQuery.visible.map((person) => (
+                <ul className="landlords-section-list">
+                  {listQuery.visible.map((landlord) => (
                     <li
-                      key={person.id}
-                      className="personnes-section-item"
-                      data-cy={`person-${person.id}`}
+                      key={landlord.id}
+                      className="landlords-section-item"
+                      data-cy={`landlord-${landlord.id}`}
                     >
-                      <p className="personnes-section-cell personnes-section-cell-name personnes-section-item-name">
-                        {person.name ?? t("settings.people.nameFallback")}
+                      <p className="landlords-section-cell landlords-section-cell-name landlords-section-item-name">
+                        {landlord.name ?? t("settings.landlords.nameFallback")}
                       </p>
-                      <p className="personnes-section-cell personnes-section-cell-address personnes-section-item-address">
-                        {person.address || t("settings.people.addressFallback")}
+                      <p className="landlords-section-cell landlords-section-cell-address landlords-section-item-address">
+                        {landlord.address ||
+                          t("settings.landlords.addressFallback")}
                       </p>
                       <p
-                        className="personnes-section-cell personnes-section-cell-signatures personnes-section-item-meta text-right"
-                        data-cy={`person-signatures-${person.id}`}
+                        className="landlords-section-cell landlords-section-cell-signatures landlords-section-item-meta text-right"
+                        data-cy={`landlord-signatures-${landlord.id}`}
                       >
-                        {t("settings.people.signatureCount", {
-                          count: person.signatureCount ?? 0,
+                        {t("settings.landlords.signatureCount", {
+                          count: landlord.signatureCount ?? 0,
                         })}
                       </p>
-                      <div className="personnes-section-cell personnes-section-cell-actions">
+                      <div className="landlords-section-cell landlords-section-cell-actions">
                         <Button
                           variant="ghost"
                           small
                           icon={<PencilLine size={13} />}
-                          onClick={() => setForm(person)}
-                          aria-label={t("settings.people.editAria", {
+                          onClick={() => setForm(landlord)}
+                          aria-label={t("settings.landlords.editAria", {
                             name:
-                              person.name ?? t("settings.people.editFallback"),
+                              landlord.name ??
+                              t("settings.landlords.editFallback"),
                           })}
-                          data-cy={`btn-edit-person-${person.id}`}
+                          data-cy={`btn-edit-landlord-${landlord.id}`}
                         >
-                          {t("settings.people.edit")}
+                          {t("settings.landlords.edit")}
                         </Button>
                         <Button
                           variant="ghost"
                           small
                           icon={<Trash2 size={13} />}
                           className="text-danger hover:bg-danger-soft"
-                          onClick={() => setToDelete(person)}
-                          aria-label={t("settings.people.removeAria", {
+                          onClick={() => setToDelete(landlord)}
+                          aria-label={t("settings.landlords.removeAria", {
                             name:
-                              person.name ?? t("settings.people.editFallback"),
+                              landlord.name ??
+                              t("settings.landlords.editFallback"),
                           })}
-                          data-cy={`btn-delete-person-${person.id}`}
+                          data-cy={`btn-delete-landlord-${landlord.id}`}
                         >
-                          {t("settings.people.remove")}
+                          {t("settings.landlords.remove")}
                         </Button>
                       </div>
                     </li>
@@ -251,17 +259,17 @@ export function PersonnesSection() {
 
       <ConfirmDialog
         open={toDelete !== null}
-        title={t("settings.people.deleteDialog.title")}
+        title={t("settings.landlords.deleteDialog.title")}
         message={
           toDelete
-            ? t("settings.people.deleteDialog.message", {
+            ? t("settings.landlords.deleteDialog.message", {
                 name:
                   toDelete.name ??
-                  t("settings.people.deleteDialog.fallbackName"),
+                  t("settings.landlords.deleteDialog.fallbackName"),
               })
             : ""
         }
-        confirmLabel={t("settings.people.deleteDialog.confirm")}
+        confirmLabel={t("settings.landlords.deleteDialog.confirm")}
         variant="danger"
         onConfirm={() => {
           if (toDelete) {
@@ -269,7 +277,7 @@ export function PersonnesSection() {
           }
         }}
         onCancel={() => setToDelete(null)}
-        dataCy="dialog-delete-person"
+        dataCy="dialog-delete-landlord"
       />
     </section>
   );

@@ -959,7 +959,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Liste les personnes physiques non supprimées, triées par nom. Les salariés sont exclus de cette liste. */
+        /** @description Liste les personnes physiques non supprimées, triées par nom : bailleurs, locataires et personnes historiques. Les salariés sont exclus de cette liste. Route de compatibilité des parties de bail ; un POST crée un bailleur par défaut. */
         get: operations["listPersons"];
         put?: never;
         post: operations["createPerson"];
@@ -980,6 +980,76 @@ export interface paths {
         put: operations["updatePerson"];
         post?: never;
         delete: operations["deletePerson"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/landlords": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Liste les bailleurs non supprimés du compte, triés par nom. Un bailleur peut porter des signatures et être partie à des baux. */
+        get: operations["listLandlords"];
+        put?: never;
+        /** @description Crée un bailleur pour le compte courant. */
+        post: operations["createLandlord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/landlords/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateLandlord"];
+        post?: never;
+        /** @description Supprime logiquement un bailleur. Refusé en français s'il porte des signatures ou s'il est utilisé par un bail actif. */
+        delete: operations["deleteLandlord"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Liste les locataires personnes physiques non supprimés du compte, triés par nom. */
+        get: operations["listTenants"];
+        put?: never;
+        /** @description Crée un locataire personne physique pour le compte courant. */
+        post: operations["createTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateTenant"];
+        post?: never;
+        /** @description Supprime logiquement un locataire. Refusé en français s'il porte des signatures ou s'il est utilisé par un bail actif. */
+        delete: operations["deleteTenant"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1284,6 +1354,53 @@ export interface components {
              * @description Nombre de signatures non supprimées de la personne.
              */
             readonly signatureCount?: number;
+        };
+        LandlordRequest: {
+            /** @description Nom du bailleur. */
+            name: string;
+            /** @description Adresse personnelle facultative du bailleur. */
+            address?: string | null;
+            /** @description Téléphone de contact facultatif du bailleur. */
+            phone?: string | null;
+            /** @description Complément d'adresse facultatif du bailleur. */
+            addressNote?: string | null;
+            /** @description Lieu d'émission facultatif imprimé après « Fait à » sur les quittances de ce bailleur. */
+            issuePlace?: string | null;
+        };
+        LandlordDto: {
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+            address?: string | null;
+            phone?: string | null;
+            addressNote?: string | null;
+            issuePlace?: string | null;
+            /**
+             * Format: int32
+             * @description Nombre de signatures non supprimées du bailleur.
+             */
+            readonly signatureCount?: number;
+        };
+        TenantRequest: {
+            /** @description Nom du locataire. */
+            name: string;
+            /** @description Adresse personnelle facultative du locataire. */
+            address?: string | null;
+            /** @description Téléphone de contact facultatif du locataire. */
+            phone?: string | null;
+            /** @description Adresse électronique facultative du locataire. */
+            email?: string | null;
+            /** @description Complément d'adresse facultatif du locataire. */
+            addressNote?: string | null;
+        };
+        TenantDto: {
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+            address?: string | null;
+            phone?: string | null;
+            email?: string | null;
+            addressNote?: string | null;
         };
         AddressDto: {
             /** Format: int64 */
@@ -4056,6 +4173,284 @@ export interface operations {
         };
     };
     deletePerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            403: components["responses"]["LmnpModuleDisabled"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listLandlords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LandlordDto"][];
+                };
+            };
+            403: components["responses"]["LmnpModuleDisabled"];
+        };
+    };
+    createLandlord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LandlordRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LandlordDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            403: components["responses"]["LmnpModuleDisabled"];
+        };
+    };
+    updateLandlord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LandlordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LandlordDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            403: components["responses"]["LmnpModuleDisabled"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    deleteLandlord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            403: components["responses"]["LmnpModuleDisabled"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listTenants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TenantDto"][];
+                };
+            };
+            403: components["responses"]["LmnpModuleDisabled"];
+        };
+    };
+    createTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TenantDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            403: components["responses"]["LmnpModuleDisabled"];
+        };
+    };
+    updateTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TenantDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            403: components["responses"]["LmnpModuleDisabled"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    deleteTenant: {
         parameters: {
             query?: never;
             header?: never;

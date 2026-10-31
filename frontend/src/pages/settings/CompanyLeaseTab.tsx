@@ -4,9 +4,10 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import {
+  useLandlords,
   useLeaseExpenseItemPresence,
   useLeases,
-  usePersons,
+  useTenants,
 } from "@/api/queries";
 import type { CompanyDto, LeaseDto } from "@/api/types";
 import { LeaseForm } from "@/components/settings/LeaseForm";
@@ -42,7 +43,8 @@ export function CompanyLeaseTab({
 }) {
   const { t } = useTranslation();
   const leases = useLeases();
-  const persons = usePersons();
+  const landlords = useLandlords();
+  const tenants = useTenants();
   const [addingLease, setAddingLease] = useState(false);
   const [editingLease, setEditingLease] = useState<LeaseDto | null>(null);
   const [expensesLease, setExpensesLease] = useState<LeaseDto | null>(null);
@@ -217,7 +219,8 @@ export function CompanyLeaseTab({
         <LeaseForm
           key="new-company-lease"
           item={null}
-          persons={persons.data ?? []}
+          landlords={landlords.data ?? []}
+          tenants={tenants.data ?? []}
           companies={companies}
           presetCompanyId={company.id as number}
           onClose={() => setAddingLease(false)}
@@ -227,7 +230,8 @@ export function CompanyLeaseTab({
         <LeaseForm
           key={`edit-company-lease-${editingLease.id}`}
           item={editingLease}
-          persons={persons.data ?? []}
+          landlords={landlords.data ?? []}
+          tenants={tenants.data ?? []}
           companies={companies}
           onClose={() => setEditingLease(null)}
         />

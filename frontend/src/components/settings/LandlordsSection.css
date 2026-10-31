@@ -1,0 +1,59 @@
+@reference "../../index.css";
+
+@layer components {
+  .landlords-section {
+    @apply overflow-hidden;
+  }
+
+  .landlords-section-body {
+    @apply space-y-4;
+  }
+
+  .landlords-section-header-actions {
+    @apply flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3;
+  }
+
+  .landlords-section-header-search {
+    @apply w-full sm:w-56;
+  }
+
+  .landlords-section-count {
+    @apply text-xs text-ink-soft;
+  }
+
+  .landlords-section-table {
+    @apply overflow-hidden rounded-lg border border-line bg-surface;
+  }
+
+  .landlords-section-list {
+    @apply flex flex-col divide-y divide-line;
+  }
+
+  .landlords-section-headers {
+    @apply grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_6.5rem_12rem];
+  }
+
+  .landlords-section-item {
+    @apply grid gap-x-3 gap-y-1 px-4 py-2 md:min-h-9 md:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_6.5rem_12rem] md:items-center md:py-1.5;
+  }
+
+  .landlords-section-cell {
+    @apply min-w-0;
+  }
+
+  .landlords-section-cell-name {
+    @apply truncate text-sm font-semibold text-ink;
+  }
+
+  .landlords-section-cell-address {
+    @apply break-words text-xs text-ink-soft;
+  }
+
+  .landlords-section-cell-actions {
+    @apply flex items-center justify-end gap-1;
+  }
+
+  .landlords-section-item-meta {
+    @apply text-[11px] font-semibold text-accent;
+  }
+}

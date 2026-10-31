@@ -162,45 +162,47 @@ describe("Settings", () => {
     });
   });
 
-  it("adds, edits then removes a natural person in the Personnes tab", () => {
+  it("adds, edits then removes a landlord in the Bailleurs tab", () => {
     cy.visit("/settings/agency");
-    cy.get('[data-cy="tab-persons"]').click();
+    cy.get('[data-cy="tab-landlords"]').click();
 
-    cy.get('[data-cy="btn-add-person"]').click();
-    cy.get('[data-cy="person-form"]').should("be.visible");
-    cy.get('[data-cy="input-person-name"]').type("Personne E2E");
-    cy.get('[data-cy="input-person-address"]').type(
+    cy.get('[data-cy="btn-add-landlord"]').click();
+    cy.get('[data-cy="landlord-form"]').should("be.visible");
+    cy.get('[data-cy="input-landlord-name"]').type("Personne E2E");
+    cy.get('[data-cy="input-landlord-address"]').type(
       "2 rue du Test, 75001 Paris",
     );
     // Distinct from the company modal's `input-issue-place`.
     cy.get('[data-cy="input-issue-place"]').should("not.exist");
-    cy.get('[data-cy="input-person-issue-place"]').type("Lyon");
-    cy.get('[data-cy="btn-save-person"]').click();
+    cy.get('[data-cy="input-landlord-issue-place"]').type("Lyon");
+    cy.get('[data-cy="btn-save-landlord"]').click();
 
-    cy.contains("Personne « Personne E2E » ajoutée.", {
+    cy.contains("Bailleur « Personne E2E » ajouté.", {
       timeout: 15_000,
     }).should("be.visible");
     // The modal stays open in saved mode so signatures can be added.
-    cy.get('[data-cy="person-saved"]').should("be.visible");
+    cy.get('[data-cy="landlord-saved"]').should("be.visible");
 
     personByName("Personne E2E").then((person) => {
       expect(person.issuePlace, "issue place persisted").to.eq("Lyon");
       cy.get(
-        '[data-cy="dialog-person-form"] button[aria-label="Fermer"]',
+        '[data-cy="dialog-landlord-form"] button[aria-label="Fermer"]',
       ).click();
-      cy.get('[data-cy="person-form"]').should("not.exist");
-      cy.get(`[data-cy="person-${person.id}"]`)
+      cy.get('[data-cy="landlord-form"]').should("not.exist");
+      cy.get(`[data-cy="landlord-${person.id}"]`)
         .should("contain.text", "Personne E2E")
         .and("contain.text", "2 rue du Test, 75001 Paris");
 
-      cy.get(`[data-cy="btn-edit-person-${person.id}"]`).click();
-      waitForValue('[data-cy="input-person-issue-place"]', "Lyon");
-      cy.get('[data-cy="input-person-issue-place"]').clear().type("Marseille");
-      cy.get('[data-cy="input-person-name"]')
+      cy.get(`[data-cy="btn-edit-landlord-${person.id}"]`).click();
+      waitForValue('[data-cy="input-landlord-issue-place"]', "Lyon");
+      cy.get('[data-cy="input-landlord-issue-place"]')
+        .clear()
+        .type("Marseille");
+      cy.get('[data-cy="input-landlord-name"]')
         .clear()
         .type("Personne E2E modifiée");
-      cy.get('[data-cy="btn-save-person"]').click();
-      cy.contains("Personne « Personne E2E modifiée » mise à jour.", {
+      cy.get('[data-cy="btn-save-landlord"]').click();
+      cy.contains("Bailleur « Personne E2E modifiée » mis à jour.", {
         timeout: 15_000,
       }).should("be.visible");
       personByName("Personne E2E modifiée")
@@ -208,22 +210,32 @@ describe("Settings", () => {
         .should("eq", "Marseille");
 
       cy.get(
-        '[data-cy="dialog-person-form"] button[aria-label="Fermer"]',
+        '[data-cy="dialog-landlord-form"] button[aria-label="Fermer"]',
       ).click();
-      cy.get(`[data-cy="person-${person.id}"]`).should(
+      cy.get(`[data-cy="landlord-${person.id}"]`).should(
         "contain.text",
         "Personne E2E modifiée",
       );
 
-      cy.get(`[data-cy="btn-delete-person-${person.id}"]`).click();
-      cy.get('[data-cy="dialog-delete-person"]').should("be.visible");
+      cy.get(`[data-cy="btn-delete-landlord-${person.id}"]`).click();
+      cy.get('[data-cy="dialog-delete-landlord"]').should("be.visible");
       cy.get('[data-cy="dialog-confirm"]').click();
 
-      cy.contains("Personne supprimée.", { timeout: 15_000 }).should(
+      cy.contains("Bailleur supprimé.", { timeout: 15_000 }).should(
         "be.visible",
       );
-      cy.get(`[data-cy="person-${person.id}"]`).should("not.exist");
+      cy.get(`[data-cy="landlord-${person.id}"]`).should("not.exist");
     });
+  });
+
+  it("keeps tenants in their own tab with their email", () => {
+    cy.visit("/settings/agency");
+    cy.get('[data-cy="tab-tenants"]').click();
+
+    cy.contains("h2", "Locataires", { timeout: 20_000 }).should("be.visible");
+    cy.get('[data-cy="btn-add-tenant"]').should("be.visible");
+    cy.get('[data-cy^="tenant-"]').should("have.length.at.least", 1);
+    cy.get('[data-cy="btn-add-landlord"]').should("not.exist");
   });
 
   it("adds, edits then removes an expense type", () => {
@@ -285,13 +297,13 @@ describe("Settings", () => {
     cy.get('[data-cy="dialog-company-lease-expenses"]').should("not.exist");
   });
 
-  it("adds a signature to the seeded natural person from her form", () => {
+  it("adds a signature to the seeded landlord from her form", () => {
     cy.visit("/settings/agency");
-    cy.get('[data-cy="tab-persons"]').click();
+    cy.get('[data-cy="tab-landlords"]').click();
 
     personByName(SEEDED_LANDLORD).then((landlord) => {
-      cy.get(`[data-cy="btn-edit-person-${landlord.id}"]`).click();
-      cy.get('[data-cy="person-form"]').should("be.visible");
+      cy.get(`[data-cy="btn-edit-landlord-${landlord.id}"]`).click();
+      cy.get('[data-cy="landlord-form"]').should("be.visible");
 
       cy.get('[data-cy="input-person-signature-name"]').type(
         "Signature E2E bailleur",

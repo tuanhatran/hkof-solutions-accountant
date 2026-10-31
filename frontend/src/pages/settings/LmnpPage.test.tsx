@@ -3,8 +3,8 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { api } from "@/api/endpoints";
-import type { AddressDto, CompanyDto, LeaseDto, PersonDto } from "@/api/types";
+import { api, type LandlordDto, type TenantDto } from "@/api/endpoints";
+import type { AddressDto, CompanyDto, LeaseDto } from "@/api/types";
 import i18n from "@/i18n";
 import { useToasts } from "@/state/toasts";
 import { LmnpPage } from "./LmnpPage";
@@ -17,18 +17,18 @@ interface QueryLike<T> {
   refetch: ReturnType<typeof vi.fn>;
 }
 
-const PERSON: PersonDto = {
+const LANDLORD: LandlordDto = {
   id: 1,
   name: "M. Bailleur",
   address: "1 avenue du Parc, 75011 Paris",
   signatureCount: 2,
 };
 
-const TENANT: PersonDto = {
+const TENANT: TenantDto = {
   id: 2,
   name: "Mme Locataire",
   address: "12 rue de la République, 75000 Paris",
-  signatureCount: 0,
+  email: "locataire@exemple.fr",
 };
 
 const COMPANY: CompanyDto = { id: 3, name: "HKOF" };
@@ -50,7 +50,8 @@ const LEASE: LeaseDto = {
   charges: "50.00",
 };
 
-let personsState: QueryLike<PersonDto[]>;
+let landlordsState: QueryLike<LandlordDto[]>;
+let tenantsState: QueryLike<TenantDto[]>;
 let addressesState: QueryLike<AddressDto[]>;
 let leasesState: QueryLike<LeaseDto[]>;
 let companiesState: QueryLike<CompanyDto[]>;
@@ -77,6 +78,18 @@ vi.mock("@/api/endpoints", () => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
+    landlords: {
+      list: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      remove: vi.fn(),
+    },
+    tenants: {
+      list: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      remove: vi.fn(),
+    },
     signatures: {
       list: vi.fn(),
       create: vi.fn(),
@@ -94,7 +107,8 @@ vi.mock("@/api/queries", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/queries")>();
   return {
     ...actual,
-    usePersons: () => personsState,
+    useLandlords: () => landlordsState,
+    useTenants: () => tenantsState,
     useCompanies: () => companiesState,
     useAddresses: () => addressesState,
     useLeases: () => leasesState,
@@ -120,7 +134,8 @@ function toastMessages(): string[] {
 }
 
 beforeEach(() => {
-  personsState = readyQuery([PERSON, TENANT]);
+  landlordsState = readyQuery([LANDLORD]);
+  tenantsState = readyQuery([TENANT]);
   companiesState = readyQuery([COMPANY]);
   addressesState = readyQuery([ADDRESS]);
   leasesState = readyQuery([LEASE]);
@@ -147,7 +162,10 @@ describe("LmnpPage", () => {
     });
     expect(leasesTab).toHaveAttribute("aria-selected", "true");
     expect(
-      within(tabs).getByRole("tab", { name: "Personnes" }),
+      within(tabs).getByRole("tab", { name: "Bailleurs" }),
+    ).toHaveAttribute("aria-selected", "false");
+    expect(
+      within(tabs).getByRole("tab", { name: "Locataires" }),
     ).toHaveAttribute("aria-selected", "false");
     expect(within(tabs).getByRole("tab", { name: "Agence" })).toHaveAttribute(
       "aria-selected",
@@ -158,7 +176,8 @@ describe("LmnpPage", () => {
     ).toBeVisible();
     expect(screen.getByLabelText("Adresse des baux")).toHaveValue("4");
     expect(screen.getByText("M. Bailleur → Mme Locataire")).toBeVisible();
-    expect(screen.queryByRole("heading", { name: "Personnes" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Bailleurs" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Locataires" })).toBeNull();
   });
 
   it("renders the LMNP page and tabs in English and relabels on switch", async () => {
@@ -174,19 +193,19 @@ describe("LmnpPage", () => {
     expect(
       within(tabs).getByRole("tab", { name: "Leases and addresses" }),
     ).toHaveAttribute("aria-selected", "true");
-    expect(within(tabs).getByRole("tab", { name: "People" })).toBeVisible();
+    expect(within(tabs).getByRole("tab", { name: "Landlords" })).toBeVisible();
+    expect(within(tabs).getByRole("tab", { name: "Tenants" })).toBeVisible();
     expect(within(tabs).getByRole("tab", { name: "Agency" })).toBeVisible();
     expect(within(tabs).queryByRole("tab", { name: "Templates" })).toBeNull();
-    expect(
-      screen.getByText(/persons acting as landlords or tenants/),
-    ).toBeVisible();
+    expect(screen.getByText(/landlords and tenants/)).toBeVisible();
 
     await act(async () => {
       await i18n.changeLanguage("fr");
     });
 
     expect(screen.getByRole("tab", { name: "Baux et adresses" })).toBeVisible();
-    expect(screen.getByRole("tab", { name: "Personnes" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Bailleurs" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Locataires" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Agence" })).toBeVisible();
     expect(screen.queryByRole("tab", { name: "Modèles" })).toBeNull();
     expect(
@@ -209,43 +228,59 @@ describe("LmnpPage", () => {
     ).toBeVisible();
   });
 
-  it("switches to Personnes and back to Baux et adresses", async () => {
+  it("switches between the landlords and tenants tabs and back to leases", async () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("tab", { name: "Personnes" }));
+    await user.click(screen.getByRole("tab", { name: "Bailleurs" }));
 
-    expect(screen.getByRole("tab", { name: "Personnes" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Bailleurs" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
-    expect(screen.getByRole("heading", { name: "Personnes" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Bailleurs" })).toBeVisible();
     expect(screen.getByText("M. Bailleur")).toBeVisible();
-    expect(screen.getByText("Mme Locataire")).toBeVisible();
     expect(screen.getByText("2 signatures")).toBeVisible();
-    expect(screen.getByText("0 signature")).toBeVisible();
+    expect(screen.queryByText("locataire@exemple.fr")).toBeNull();
     expect(screen.queryByLabelText("Adresse des baux")).toBeNull();
-    expect(screen.queryByText("HKOF")).toBeNull();
+
+    await user.click(screen.getByRole("tab", { name: "Locataires" }));
+
+    expect(screen.getByRole("heading", { name: "Locataires" })).toBeVisible();
+    expect(screen.getByText("Mme Locataire")).toBeVisible();
+    expect(screen.getByText("locataire@exemple.fr")).toBeVisible();
+    expect(screen.queryByText("M. Bailleur")).toBeNull();
 
     await user.click(screen.getByRole("tab", { name: "Baux et adresses" }));
 
     expect(screen.getByLabelText("Adresse des baux")).toHaveValue("4");
-    expect(screen.queryByRole("heading", { name: "Personnes" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Bailleurs" })).toBeNull();
   });
 
-  it("lists natural persons without an employee entry", async () => {
+  it("lists landlords and tenants separately with their own add actions", async () => {
     renderPage();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("tab", { name: "Personnes" }));
-
-    const list = screen.getByRole("list");
-    expect(within(list).getAllByRole("listitem")).toHaveLength(2);
-    expect(screen.queryByText("Camille Martin")).toBeNull();
-    expect(screen.queryByText(/Salarié/)).toBeNull();
+    await user.click(screen.getByRole("tab", { name: "Bailleurs" }));
     expect(
-      screen.getByRole("button", { name: "Ajouter une personne" }),
+      screen
+        .getAllByRole("listitem")
+        .filter((item) => item.hasAttribute("data-cy")),
+    ).toHaveLength(1);
+    expect(
+      screen.getByRole("button", { name: "Ajouter un bailleur" }),
     ).toBeEnabled();
+    expect(
+      screen.queryByRole("button", { name: "Ajouter un locataire" }),
+    ).toBeNull();
+
+    await user.click(screen.getByRole("tab", { name: "Locataires" }));
+    expect(
+      screen.getByRole("button", { name: "Ajouter un locataire" }),
+    ).toBeEnabled();
+    expect(
+      screen.queryByRole("button", { name: "Ajouter un bailleur" }),
+    ).toBeNull();
   });
 
   it("creates a normal lease between two natural persons", async () => {
@@ -336,25 +371,26 @@ describe("LmnpPage", () => {
     );
   });
 
-  it("rejects the same person on both sides in French", async () => {
+  it("offers only landlords as landlord and only tenants as tenant", async () => {
     renderPage();
     const user = userEvent.setup();
 
     await user.click(screen.getByRole("button", { name: "Ajouter un bail" }));
-    await user.selectOptions(screen.getByLabelText("Bailleur"), "1");
-    await user.selectOptions(screen.getByLabelText("Locataire"), "1");
-    await user.type(
-      screen.getByLabelText("Adresse du bien"),
-      "12 rue de la République, 75000 Paris",
-    );
-    await user.click(screen.getByRole("button", { name: "Valider" }));
+    const landlordSelect = screen.getByLabelText("Bailleur");
+    const tenantSelect = screen.getByLabelText("Locataire");
 
     expect(
-      await screen.findByText(
-        "Le bailleur et le locataire doivent être deux personnes distinctes.",
-      ),
+      within(landlordSelect).getByRole("option", { name: "M. Bailleur" }),
     ).toBeVisible();
-    expect(api.leases.create).not.toHaveBeenCalled();
+    expect(
+      within(landlordSelect).queryByRole("option", { name: "Mme Locataire" }),
+    ).toBeNull();
+    expect(
+      within(tenantSelect).getByRole("option", { name: "Mme Locataire" }),
+    ).toBeVisible();
+    expect(
+      within(tenantSelect).queryByRole("option", { name: "M. Bailleur" }),
+    ).toBeNull();
   });
 
   it("edits a lease and sends the update", async () => {
