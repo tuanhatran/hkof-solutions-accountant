@@ -357,6 +357,7 @@ export const fr = {
   },
   onboarding: {
     eyebrow: "Premier accès",
+    skipToDashboard: "Passer au tableau de bord",
     title: "Bienvenue dans HomeOfficeExpenses",
     description:
       "Quelques étapes pour préparer votre espace : votre profil, votre agence, le logement loué et son bail.",
@@ -381,6 +382,9 @@ export const fr = {
         "Vos coordonnées de bailleur et l'agence utilisée pour vos notes de frais. Enregistrez le profil pour ajouter votre signature.",
       identityTitle: "Gérant",
       agencyTitle: "Agence",
+      personalAgency: "Agence personnelle",
+      personalAgencyDescription:
+        "Gestion en nom propre, sans société commerciale.",
       firstName: "Prénom",
       lastName: "Nom",
       phone: "Téléphone",
@@ -515,6 +519,17 @@ export const fr = {
       identifier: "SIREN / SIRET",
       address: "Adresse",
       notSpecified: "Non renseigné",
+      personalManagement: "Gestion personnelle",
+      personalAgency: "Agence personnelle",
+    },
+    onboardingProgress: {
+      title: "Finaliser votre inscription",
+      description:
+        "Complétez la configuration de votre agence et de vos premiers baux pour débloquer toutes les fonctionnalités.",
+      resume: "Reprendre l'inscription",
+      completed: "Terminé",
+      current: "En cours",
+      pending: "À venir",
     },
     kpis: {
       properties: "Biens gérés",
@@ -1150,7 +1165,24 @@ export const fr = {
       tabs: {
         leases: "Baux et adresses",
         persons: "Personnes",
+        agency: "Agence",
       },
+    },
+    agency: {
+      title: "Profil de l'agence",
+      description:
+        "Coordonnées de l'agence ou gestion personnelle en nom propre.",
+      saved: "Profil de l'agence enregistré.",
+      isPersonal: "Agence personnelle",
+      isPersonalHelp: "Gestion en nom propre, sans société commerciale.",
+      name: "Nom de l'agence",
+      managerName: "Gestionnaire",
+      legalForm: "Forme juridique",
+      sirenSiret: "SIREN ou SIRET",
+      sirenSiretHelp: "9 chiffres pour un SIREN, 14 pour un SIRET.",
+      address: "Adresse du siège",
+      submit: "Enregistrer l'agence",
+      saving: "Enregistrement…",
     },
     employees: {
       title: "Salariés",

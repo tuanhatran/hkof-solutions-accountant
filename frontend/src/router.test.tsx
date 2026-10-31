@@ -308,6 +308,46 @@ describe("module guards", () => {
     expect(router.state.location.pathname).toBe("/welcome");
   });
 
+  it("redirects an account that has not finished onboarding away from the dashboard", async () => {
+    mockCurrentUser({
+      email: "nouveau@exemple.fr",
+      role: "USER",
+      companyEnabled: true,
+      lmnpEnabled: true,
+      onboardingCompleted: false,
+    });
+    const router = await renderAndSettle("/dashboard");
+
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe("/welcome"),
+    );
+    expect(
+      await screen.findByRole("heading", {
+        name: "Bienvenue dans HomeOfficeExpenses",
+      }),
+    ).toBeVisible();
+  });
+
+  it("allows navigating to the dashboard when onboarding has been skipped", async () => {
+    sessionStorage.setItem("homeofficeexpenses.onboarding_skipped", "true");
+    mockCurrentUser({
+      email: "nouveau@exemple.fr",
+      role: "USER",
+      companyEnabled: true,
+      lmnpEnabled: true,
+      onboardingCompleted: false,
+    });
+    const router = await renderAndSettle("/dashboard");
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: "Tableau de bord" }),
+      ).toBeVisible(),
+    );
+    expect(router.state.location.pathname).toBe("/dashboard");
+    sessionStorage.removeItem("homeofficeexpenses.onboarding_skipped");
+  });
+
   it("lets a forced password change win over onboarding", async () => {
     mockCurrentUser({
       email: "nouveau@exemple.fr",

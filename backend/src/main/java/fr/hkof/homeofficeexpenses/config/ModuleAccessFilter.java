@@ -34,7 +34,7 @@ final class ModuleAccessFilter extends OncePerRequestFilter {
     /** A landlord may need to link a tenant company even with the company module disabled. */
     private static final String COMPANY_LOOKUP_PATH = "/api/companies/lookup";
     private static final List<String> LMNP_PREFIXES = List.of(
-            "/api/leases", "/api/rent-receipts", "/api/persons");
+            "/api/leases", "/api/rent-receipts", "/api/persons", "/api/agency");
     /**
      * A company-only owner has no LMNP module but must still read the receipts a landlord issued
      * for its company. Only the received read paths bypass the LMNP gate; every other receipt

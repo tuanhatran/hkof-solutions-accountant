@@ -1,7 +1,20 @@
 import { useCallback, useRef, useState } from "react";
 import i18n from "@/i18n";
-import type { CompanyDto, PersonDto } from "@/api/types";
+import type { AgencyDto, PersonDto } from "@/api/types";
 import { parseAmount } from "@/lib/format";
+import {
+  EMPTY_DRAFT,
+  ONBOARDING_STEP_KEYS,
+  type LeaseType,
+  type LeaseValues,
+  type OnboardingDraft,
+  type ProfileValues,
+  type PropertyItemValues,
+  type PropertyValues,
+  type TenantValues,
+} from "./useOnboardingTypes";
+
+export * from "./useOnboardingTypes";
 
 /** French message of the onboarding validation namespace. */
 export function onboardingMessage(key: string): string {
@@ -30,125 +43,6 @@ export function isValidSirenSiret(value: string): boolean {
   const cleaned = value.replace(/[ .]/g, "");
   return cleaned.length === 0 || IDENTIFIER_PATTERN.test(cleaned);
 }
-
-export const ONBOARDING_STEP_KEYS = [
-  "profile",
-  "property",
-  "lease",
-  "summary",
-] as const;
-
-export type OnboardingStepKey = (typeof ONBOARDING_STEP_KEYS)[number];
-export type LeaseType = "individual" | "colocation";
-
-export interface ProfileValues {
-  firstName: string;
-  lastName: string;
-  phone: string;
-  phoneCountryCode?: string;
-  address: string;
-  addressNote: string;
-  agencyName: string;
-  legalForm: string;
-  sirenSiret: string;
-  agencyAddress: string;
-}
-
-export interface PropertyItemValues {
-  id: string;
-  propertyAddress: string;
-  landlordFirstName: string;
-  landlordLastName: string;
-  landlordPhoneCountryCode?: string;
-  landlordPhone: string;
-  landlordEmail: string;
-  landlordAddressNote: string;
-}
-
-export interface PropertyValues {
-  properties: PropertyItemValues[];
-}
-
-export interface TenantValues {
-  firstName: string;
-  lastName: string;
-  rentExclCharges: string;
-  charges: string;
-}
-
-export interface LeaseValues {
-  propertyId: string;
-  leaseType: LeaseType;
-  rentExclCharges: string;
-  charges: string;
-  tenants: TenantValues[];
-}
-
-export interface OnboardingDraft {
-  profile: ProfileValues;
-  properties: PropertyItemValues[];
-  property: PropertyItemValues;
-  lease: LeaseValues;
-  leaseType: LeaseType;
-  tenants: TenantValues[];
-  person: PersonDto | null;
-  company: CompanyDto | null;
-}
-
-export const EMPTY_PROFILE: ProfileValues = {
-  firstName: "",
-  lastName: "",
-  phone: "",
-  phoneCountryCode: "+33",
-  address: "",
-  addressNote: "",
-  agencyName: "",
-  legalForm: "",
-  sirenSiret: "",
-  agencyAddress: "",
-};
-
-export function createEmptyProperty(id = "prop-1"): PropertyItemValues {
-  return {
-    id,
-    propertyAddress: "",
-    landlordFirstName: "",
-    landlordLastName: "",
-    landlordPhoneCountryCode: "+33",
-    landlordPhone: "",
-    landlordEmail: "",
-    landlordAddressNote: "",
-  };
-}
-
-export const EMPTY_PROPERTY_ITEM: PropertyItemValues = createEmptyProperty();
-export const EMPTY_PROPERTY: PropertyValues = {
-  properties: [EMPTY_PROPERTY_ITEM],
-};
-export const EMPTY_TENANT: TenantValues = {
-  firstName: "",
-  lastName: "",
-  rentExclCharges: "",
-  charges: "",
-};
-export const EMPTY_LEASE: LeaseValues = {
-  propertyId: "prop-1",
-  leaseType: "individual",
-  rentExclCharges: "",
-  charges: "",
-  tenants: [{ ...EMPTY_TENANT }],
-};
-
-export const EMPTY_DRAFT: OnboardingDraft = {
-  profile: EMPTY_PROFILE,
-  properties: [EMPTY_PROPERTY_ITEM],
-  property: EMPTY_PROPERTY_ITEM,
-  lease: EMPTY_LEASE,
-  leaseType: "individual",
-  tenants: [{ ...EMPTY_TENANT }],
-  person: null,
-  company: null,
-};
 
 /** "Prénom Nom", the single name column of a person. */
 export function fullName(firstName: string, lastName: string): string {
@@ -186,11 +80,24 @@ export function isValidCharges(value?: string): boolean {
  * Immutable wizard draft plus its current step. Person, company, landlord and tenant ids
  * are cached so a retried finalize never creates duplicate rows.
  */
-export function useOnboardingState() {
-  const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState<OnboardingDraft>(EMPTY_DRAFT);
+export function useOnboardingState(initial?: {
+  step?: number;
+  draft?: OnboardingDraft;
+}) {
+  const [step, setStep] = useState(initial?.step ?? 0);
+  const [draft, setDraft] = useState<OnboardingDraft>(
+    initial?.draft ?? EMPTY_DRAFT,
+  );
   const tenantIds = useRef(new Map<string, number>());
   const landlordIds = useRef(new Map<string, number>());
+
+  const restoreState = useCallback(
+    (newStep: number, newDraft: OnboardingDraft) => {
+      setStep(newStep);
+      setDraft(newDraft);
+    },
+    [],
+  );
 
   const next = useCallback(() => {
     setStep((current) =>
@@ -203,8 +110,8 @@ export function useOnboardingState() {
   }, []);
 
   const updateProfile = useCallback(
-    (profile: ProfileValues, person: PersonDto, company: CompanyDto) => {
-      setDraft((current) => ({ ...current, profile, person, company }));
+    (profile: ProfileValues, person: PersonDto, agency: AgencyDto) => {
+      setDraft((current) => ({ ...current, profile, person, agency }));
     },
     [],
   );
@@ -281,6 +188,7 @@ export function useOnboardingState() {
     draft,
     next,
     back,
+    restoreState,
     updateProfile,
     updateProperty,
     updateProperties,

@@ -337,6 +337,7 @@ export const en = {
   },
   onboarding: {
     eyebrow: "First access",
+    skipToDashboard: "Skip to dashboard",
     title: "Welcome to HomeOfficeExpenses",
     description:
       "A few steps to prepare your workspace: your profile, your agency, the rented dwelling and its lease.",
@@ -361,6 +362,9 @@ export const en = {
         "Your landlord details and the agency used for your expense statements. Save the profile to add your signature.",
       identityTitle: "Manager",
       agencyTitle: "Agency",
+      personalAgency: "Personal agency",
+      personalAgencyDescription:
+        "Direct management under own name, without commercial company.",
       firstName: "First name",
       lastName: "Last name",
       phone: "Phone",
@@ -491,6 +495,17 @@ export const en = {
       identifier: "SIREN / SIRET",
       address: "Address",
       notSpecified: "Not specified",
+      personalManagement: "Personal management",
+      personalAgency: "Personal agency",
+    },
+    onboardingProgress: {
+      title: "Complete your onboarding",
+      description:
+        "Finish setting up your agency and your first leases to unlock all features.",
+      resume: "Resume onboarding",
+      completed: "Completed",
+      current: "In progress",
+      pending: "Pending",
     },
     kpis: {
       properties: "Managed properties",
@@ -1117,7 +1132,24 @@ export const en = {
       tabs: {
         leases: "Leases and addresses",
         persons: "People",
+        agency: "Agency",
       },
+    },
+    agency: {
+      title: "Agency profile",
+      description:
+        "Agency contact information or personal management in own name.",
+      saved: "Agency profile saved.",
+      isPersonal: "Personal agency",
+      isPersonalHelp: "Managed in own name, without a commercial company.",
+      name: "Agency name",
+      managerName: "Manager",
+      legalForm: "Legal form",
+      sirenSiret: "SIREN or SIRET",
+      sirenSiretHelp: "9 digits for a SIREN, 14 for a SIRET.",
+      address: "Headquarters address",
+      submit: "Save agency",
+      saving: "Saving…",
     },
     employees: {
       title: "Employees",

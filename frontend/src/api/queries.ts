@@ -11,6 +11,7 @@ import type { CurrentUserDto, ModuleFlagsRequest, UserRole } from "./endpoints";
 import type { TemplateType } from "./types";
 
 export const queryKeys = {
+  agency: ["agency"] as const,
   companiesAll: ["companies"] as const,
   companies: ["companies"] as const,
   company: (id: number) => ["companies", id] as const,
@@ -111,6 +112,15 @@ export const queryKeys = {
       leaseId ?? "all-leases",
     ] as const,
 };
+
+export function useAgency(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.agency,
+    queryFn: () => api.agency.get(),
+    enabled,
+    staleTime: 30_000,
+  });
+}
 
 export function useCompanies(enabled = true) {
   return useQuery({

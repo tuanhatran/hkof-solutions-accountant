@@ -35,6 +35,7 @@ import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.domain.UserRole;
 import fr.hkof.homeofficeexpenses.repository.AddressRepository;
+import fr.hkof.homeofficeexpenses.repository.AgencyRepository;
 import fr.hkof.homeofficeexpenses.repository.AppUserRepository;
 import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
@@ -47,6 +48,7 @@ import fr.hkof.homeofficeexpenses.repository.TemplateDocumentRepository;
 class DataInitializerTest {
 
     private CompanyRepository companyRepository;
+    private AgencyRepository agencyRepository;
     private EmployeeRepository employeeRepository;
     private PersonRepository personRepository;
     private LeaseRepository leaseRepository;
@@ -63,6 +65,7 @@ class DataInitializerTest {
     @BeforeEach
     void setUp() {
         companyRepository = mock(CompanyRepository.class);
+        agencyRepository = mock(AgencyRepository.class);
         employeeRepository = mock(EmployeeRepository.class);
         personRepository = mock(PersonRepository.class);
         leaseRepository = mock(LeaseRepository.class);
@@ -83,7 +86,7 @@ class DataInitializerTest {
                 .thenReturn(Optional.of(owner));
         Clock clock = Clock.fixed(Instant.parse("2026-10-01T10:00:00Z"), ZoneOffset.UTC);
         seedUserInitializer = new SeedUserInitializer(appUserRepository, passwordEncoder, environment, clock);
-        initializer = new DataInitializer(companyRepository, employeeRepository, personRepository,
+        initializer = new DataInitializer(companyRepository, agencyRepository, employeeRepository, personRepository,
                 leaseRepository, addressRepository, expenseItemRepository, templateRepository, llmConfigRepository,
                 appUserRepository, seedUserInitializer, properties, clock);
     }

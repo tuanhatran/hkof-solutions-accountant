@@ -25,6 +25,7 @@ import { GenerateExpenseStatementPage } from "@/pages/expense-statement/Generate
 import { GenerateRentReceiptPage } from "@/pages/rent-receipt/GenerateRentReceiptPage";
 import { HistoryPage } from "@/pages/history/HistoryPage";
 import { OnboardingPage } from "@/pages/onboarding/OnboardingPage";
+import { isOnboardingSkipped } from "@/pages/onboarding/useOnboardingPersistence";
 import { TemplatesPage } from "@/pages/templates/TemplatesPage";
 
 export function NotFoundPage() {
@@ -147,6 +148,7 @@ function RequireAuth() {
   if (
     user.onboardingCompleted === false &&
     !user.mustChangePassword &&
+    !isOnboardingSkipped() &&
     location.pathname !== "/welcome"
   ) {
     return <Navigate to="/welcome" replace />;

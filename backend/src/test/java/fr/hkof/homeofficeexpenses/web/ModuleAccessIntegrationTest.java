@@ -66,6 +66,8 @@ class ModuleAccessIntegrationTest {
 
         mockMvc.perform(get("/api/persons").session(session))
                 .andExpect(status().isOk());
+        mockMvc.perform(get("/api/agency").session(session))
+                .andExpect(status().isNoContent());
     }
 
     @Test
@@ -73,7 +75,7 @@ class ModuleAccessIntegrationTest {
     void blocksLmnpRoutes() throws Exception {
         MockHttpSession session = sessionFor("lmnp.off@example.test", true, false);
 
-        for (String path : new String[] {"/api/persons", "/api/leases", "/api/rent-receipts"}) {
+        for (String path : new String[] {"/api/persons", "/api/leases", "/api/rent-receipts", "/api/agency"}) {
             mockMvc.perform(get(path).session(session))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("MODULE_LMNP_DISABLED"))

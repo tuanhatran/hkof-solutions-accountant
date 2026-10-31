@@ -10,6 +10,7 @@ import {
   useActiveStatement,
   useAllRentReceipts,
   useAllStatements,
+  useAgency,
   useCompanies,
   useCompanyReceivedRentReceipts,
   useEmployees,
@@ -32,6 +33,7 @@ import {
 
 vi.mock("./endpoints", () => ({
   api: {
+    agency: { get: vi.fn(), save: vi.fn() },
     companies: { list: vi.fn() },
     employees: { list: vi.fn() },
     persons: { list: vi.fn() },
@@ -76,6 +78,25 @@ describe("query hooks", () => {
       ]).toEqual([true, true, true]),
     );
     expect(api.employees.list).toHaveBeenCalledWith(1);
+  });
+
+  it("loads the agency profile", async () => {
+    vi.mocked(api.agency.get).mockResolvedValue({
+      id: 1,
+      name: "Mon Agence",
+      isPersonal: true,
+      managerName: "Dupont",
+      legalForm: null,
+      siren: null,
+      siret: null,
+      address: null,
+    });
+    const agency = renderHook(() => useAgency(), { wrapper });
+    await waitFor(() =>
+      expect(agency.result.current.data).toEqual(
+        expect.objectContaining({ name: "Mon Agence", isPersonal: true }),
+      ),
+    );
   });
 
   it("keeps the employees disabled without a company", async () => {

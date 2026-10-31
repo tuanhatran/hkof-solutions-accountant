@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import fr.hkof.homeofficeexpenses.domain.Address;
+import fr.hkof.homeofficeexpenses.domain.Agency;
 import fr.hkof.homeofficeexpenses.domain.AppUser;
 import fr.hkof.homeofficeexpenses.domain.Company;
 import fr.hkof.homeofficeexpenses.domain.Employee;
@@ -23,6 +24,7 @@ import fr.hkof.homeofficeexpenses.domain.TemplateDocument;
 import fr.hkof.homeofficeexpenses.domain.TemplateFormat;
 import fr.hkof.homeofficeexpenses.domain.TemplateType;
 import fr.hkof.homeofficeexpenses.repository.AddressRepository;
+import fr.hkof.homeofficeexpenses.repository.AgencyRepository;
 import fr.hkof.homeofficeexpenses.repository.AppUserRepository;
 import fr.hkof.homeofficeexpenses.repository.CompanyRepository;
 import fr.hkof.homeofficeexpenses.repository.EmployeeRepository;
@@ -44,6 +46,7 @@ public class DataInitializer implements ApplicationRunner {
     private static final String DEFAULT_CHARGES = "0.00";
 
     private final CompanyRepository companyRepository;
+    private final AgencyRepository agencyRepository;
     private final EmployeeRepository employeeRepository;
     private final PersonRepository personRepository;
     private final LeaseRepository leaseRepository;
@@ -56,12 +59,14 @@ public class DataInitializer implements ApplicationRunner {
     private final AppProperties properties;
     private final Clock clock;
 
-    public DataInitializer(CompanyRepository companyRepository, EmployeeRepository employeeRepository,
+    public DataInitializer(CompanyRepository companyRepository, AgencyRepository agencyRepository,
+            EmployeeRepository employeeRepository,
             PersonRepository personRepository, LeaseRepository leaseRepository, AddressRepository addressRepository,
             ExpenseItemRepository expenseItemRepository, TemplateDocumentRepository templateRepository,
             LlmConfigRepository llmConfigRepository, AppUserRepository appUserRepository,
             SeedUserInitializer seedUsers, AppProperties properties, Clock clock) {
         this.companyRepository = companyRepository;
+        this.agencyRepository = agencyRepository;
         this.employeeRepository = employeeRepository;
         this.personRepository = personRepository;
         this.leaseRepository = leaseRepository;
@@ -91,11 +96,28 @@ public class DataInitializer implements ApplicationRunner {
 
     private void seedData(Long ownerId) {
         Company company = initCompany(ownerId);
+        initAgency(ownerId);
         initEmployees(ownerId, company);
         initRentConfiguration(ownerId, company);
         initItems(ownerId, company);
         initTemplates(ownerId);
         initLlm(ownerId);
+    }
+
+    private void initAgency(Long ownerId) {
+        if (agencyRepository.findByUserId(ownerId).isEmpty()) {
+            Agency agency = new Agency();
+            agency.setUserId(ownerId);
+            agency.setName("Agence Immobilière HKOF");
+            agency.setPersonal(false);
+            agency.setManagerName("Gérant");
+            agency.setLegalForm("EURL");
+            agency.setSiren("000000000");
+            agency.setSiret("00000000000000");
+            agency.setAddress(DEFAULT_HOME_ADDRESS);
+            agency.setCreatedAt(Instant.now(clock));
+            agencyRepository.save(agency);
+        }
     }
 
     private Long seedOwnerId() {

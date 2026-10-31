@@ -14,6 +14,7 @@ import {
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { loginSession, setAuthUser, useAuthState } from "@/api/queries";
+import { LanguageSelector } from "@/components/layout/LanguageSelector";
 import { Button } from "@/components/ui/Button";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
@@ -50,11 +51,14 @@ function AuthFrame({
   return (
     <main className="auth-page">
       <section className="card auth-page-card" aria-labelledby={titleId}>
-        <div className="auth-page-brand">
-          <span className="auth-page-brand-mark" aria-hidden="true">
-            F
-          </span>
-          <span className="auth-page-brand-name">HomeOfficeExpenses</span>
+        <div className="auth-page-top">
+          <div className="auth-page-brand">
+            <span className="auth-page-brand-mark" aria-hidden="true">
+              F
+            </span>
+            <span className="auth-page-brand-name">HomeOfficeExpenses</span>
+          </div>
+          <LanguageSelector />
         </div>
         <p className="eyebrow auth-page-eyebrow">{eyebrow}</p>
         <h1 id={titleId} className="auth-page-title">

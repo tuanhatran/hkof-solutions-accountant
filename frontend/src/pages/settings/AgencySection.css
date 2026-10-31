@@ -1,0 +1,59 @@
+@reference "../../index.css";
+
+@layer components {
+  .agency-section {
+    @apply space-y-6;
+  }
+
+  .agency-section-header {
+    @apply flex items-start justify-between gap-4 border-b border-line pb-4;
+  }
+
+  .agency-section-heading {
+    @apply flex items-start gap-3;
+  }
+
+  .agency-section-icon {
+    @apply grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent;
+  }
+
+  .agency-section-title {
+    @apply text-base font-semibold text-ink;
+  }
+
+  .agency-section-description {
+    @apply mt-1 text-sm text-ink-soft;
+  }
+
+  .agency-form {
+    @apply space-y-5;
+  }
+
+  .agency-personal-toggle {
+    @apply rounded-xl border border-line bg-paper-deep/30 p-4;
+  }
+
+  .agency-checkbox-label {
+    @apply flex cursor-pointer items-center gap-3 text-sm font-medium text-ink;
+  }
+
+  .agency-checkbox {
+    @apply h-4 w-4 rounded border-line text-accent focus:ring-accent/20;
+  }
+
+  .agency-checkbox-help {
+    @apply mt-1.5 pl-7 text-xs text-ink-soft;
+  }
+
+  .agency-grid {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2;
+  }
+
+  .agency-grid-full {
+    @apply sm:col-span-2;
+  }
+
+  .agency-actions {
+    @apply flex items-center justify-end gap-3 pt-3;
+  }
+}

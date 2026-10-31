@@ -2,7 +2,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { z } from "zod";
 import type { PersonDto } from "@/api/types";
 import { SignatureStudio } from "@/components/settings/SignatureStudio";
 import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete";
@@ -11,54 +10,13 @@ import { CountryCodeSelect } from "@/components/ui/CountryCodeSelect";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { cn } from "@/lib/cn";
 import {
-  onboardingMessage,
-  isValidPhone,
-  isValidSirenSiret,
-  type ProfileValues,
-} from "./useOnboardingState";
+  profileSchema,
+  type ProfileFormInput,
+  type ProfileFormValues,
+} from "./profileSchema";
+import type { ProfileValues } from "./useOnboardingState";
 
-export const profileSchema = z.object({
-  firstName: z
-    .string()
-    .trim()
-    .min(1, {
-      error: () => onboardingMessage("firstName"),
-    }),
-  lastName: z
-    .string()
-    .trim()
-    .min(1, {
-      error: () => onboardingMessage("lastName"),
-    }),
-  phoneCountryCode: z.string().optional(),
-  phone: z
-    .string()
-    .trim()
-    .min(1, {
-      error: () => onboardingMessage("phone"),
-    })
-    .refine(isValidPhone, {
-      error: () => onboardingMessage("phone"),
-    }),
-  address: z.string(),
-  addressNote: z.string(),
-  agencyName: z
-    .string()
-    .trim()
-    .min(1, {
-      error: () => onboardingMessage("agencyName"),
-    }),
-  legalForm: z.string(),
-  sirenSiret: z
-    .string()
-    .trim()
-    .refine(isValidSirenSiret, {
-      error: () => onboardingMessage("sirenSiret"),
-    }),
-  agencyAddress: z.string(),
-});
-
-export type ProfileFormValues = z.infer<typeof profileSchema>;
+export { profileSchema, type ProfileFormInput, type ProfileFormValues };
 
 interface ProfileStepProps {
   values: ProfileValues;
@@ -84,12 +42,17 @@ export function OnboardingStepProfile({
     register,
     control,
     handleSubmit,
+    watch,
     formState: { errors },
-  } = useForm<ProfileFormValues>({
+  } = useForm<ProfileFormInput, unknown, ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     mode: "onTouched",
-    defaultValues: values,
+    defaultValues: {
+      ...values,
+      isPersonalAgency: values.isPersonalAgency ?? false,
+    },
   });
+  const isPersonalAgency = watch("isPersonalAgency");
 
   return (
     <section
@@ -106,9 +69,21 @@ export function OnboardingStepProfile({
       <form
         className="onboarding-form"
         noValidate
-        onSubmit={handleSubmit((formValues) =>
+        onSubmit={handleSubmit((formValues: ProfileFormValues) =>
           onSave(
-            { ...formValues, phoneCountryCode: countryCode },
+            {
+              ...formValues,
+              phoneCountryCode: countryCode,
+              legalForm: formValues.isPersonalAgency
+                ? ""
+                : formValues.legalForm,
+              sirenSiret: formValues.isPersonalAgency
+                ? ""
+                : formValues.sirenSiret,
+              agencyAddress: formValues.isPersonalAgency
+                ? ""
+                : formValues.agencyAddress,
+            },
             person !== null,
           ),
         )}
@@ -207,6 +182,23 @@ export function OnboardingStepProfile({
         <h3 className="onboarding-subtitle">
           {t("onboarding.profile.agencyTitle")}
         </h3>
+        <div className="onboarding-personal-agency">
+          <label className="onboarding-checkbox">
+            <input
+              type="checkbox"
+              data-cy="input-onboarding-personal-agency"
+              aria-describedby="onboarding-personal-agency-help"
+              {...register("isPersonalAgency")}
+            />
+            <span>{t("onboarding.profile.personalAgency")}</span>
+          </label>
+          <p
+            id="onboarding-personal-agency-help"
+            className="onboarding-checkbox-help"
+          >
+            {t("onboarding.profile.personalAgencyDescription")}
+          </p>
+        </div>
         <div className="onboarding-grid">
           <FieldGroup
             id="onboarding-agency-name"
@@ -221,44 +213,48 @@ export function OnboardingStepProfile({
               {...register("agencyName")}
             />
           </FieldGroup>
-          <FieldGroup
-            id="onboarding-legal-form"
-            label={t("onboarding.profile.legalForm")}
-            error={errors.legalForm?.message}
-          >
-            <input
-              id="onboarding-legal-form"
-              className="field"
-              data-cy="input-onboarding-legal-form"
-              {...register("legalForm")}
-            />
-          </FieldGroup>
-          <FieldGroup
-            id="onboarding-siren-siret"
-            label={t("onboarding.profile.sirenSiret")}
-            error={errors.sirenSiret?.message}
-            help={t("onboarding.profile.sirenSiretHelp")}
-          >
-            <input
-              id="onboarding-siren-siret"
-              className={cn("field", errors.sirenSiret && "field-error")}
-              inputMode="numeric"
-              data-cy="input-onboarding-siren-siret"
-              {...register("sirenSiret")}
-            />
-          </FieldGroup>
-          <FieldGroup
-            id="onboarding-agency-address"
-            label={t("onboarding.profile.agencyAddress")}
-            error={errors.agencyAddress?.message}
-          >
-            <input
-              id="onboarding-agency-address"
-              className="field"
-              data-cy="input-onboarding-agency-address"
-              {...register("agencyAddress")}
-            />
-          </FieldGroup>
+          {!isPersonalAgency ? (
+            <>
+              <FieldGroup
+                id="onboarding-legal-form"
+                label={t("onboarding.profile.legalForm")}
+                error={errors.legalForm?.message}
+              >
+                <input
+                  id="onboarding-legal-form"
+                  className="field"
+                  data-cy="input-onboarding-legal-form"
+                  {...register("legalForm")}
+                />
+              </FieldGroup>
+              <FieldGroup
+                id="onboarding-siren-siret"
+                label={t("onboarding.profile.sirenSiret")}
+                error={errors.sirenSiret?.message}
+                help={t("onboarding.profile.sirenSiretHelp")}
+              >
+                <input
+                  id="onboarding-siren-siret"
+                  className={cn("field", errors.sirenSiret && "field-error")}
+                  inputMode="numeric"
+                  data-cy="input-onboarding-siren-siret"
+                  {...register("sirenSiret")}
+                />
+              </FieldGroup>
+              <FieldGroup
+                id="onboarding-agency-address"
+                label={t("onboarding.profile.agencyAddress")}
+                error={errors.agencyAddress?.message}
+              >
+                <input
+                  id="onboarding-agency-address"
+                  className="field"
+                  data-cy="input-onboarding-agency-address"
+                  {...register("agencyAddress")}
+                />
+              </FieldGroup>
+            </>
+          ) : null}
         </div>
 
         {person?.id !== undefined ? (
