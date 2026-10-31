@@ -2,13 +2,14 @@ import "./EmployeeSection.css";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
 import type { EmployeeDto, EmployeeRequest } from "@/api/types";
 import { PersonSignatureSection } from "@/components/settings/PersonSignatureSection";
+import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { FormModal } from "@/components/ui/FormModal";
 import { cn } from "@/lib/cn";
@@ -34,6 +35,7 @@ export function EmployeeForm({
   const [savedId, setSavedId] = useState<number | null>(employee?.id ?? null);
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<EmployeeFormValues>({
@@ -180,12 +182,19 @@ export function EmployeeForm({
           help={t("settings.employees.form.addressHelp")}
           className="sm:col-span-2"
         >
-          <input
-            id="salarie-adresse"
-            className="field"
-            placeholder="1 avenue du Parc, 75011 Paris"
-            {...register("address")}
-            data-cy="input-employee-address"
+          <Controller
+            control={control}
+            name="address"
+            render={({ field }) => (
+              <AddressAutocomplete
+                id="salarie-adresse"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                placeholder="1 avenue du Parc, 75011 Paris"
+                data-cy="input-employee-address"
+              />
+            )}
           />
         </FieldGroup>
       </div>

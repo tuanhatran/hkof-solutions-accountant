@@ -18,6 +18,19 @@ const mockAgency: AgencyDto = {
   address: "12 rue de la Paix, 75002 Paris",
 };
 
+const ADDRESS_RESPONSE = {
+  features: [
+    {
+      properties: {
+        id: "addr-test-1",
+        label: "2 rue du Test 75001 Paris",
+        postcode: "75001",
+        city: "Paris",
+      },
+    },
+  ],
+};
+
 let currentAgency: AgencyDto | null = mockAgency;
 
 vi.mock("@/api/endpoints", () => ({
@@ -42,6 +55,10 @@ function renderAgencySection() {
 
 describe("AgencySection", () => {
   beforeEach(() => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ features: [] }),
+    } as Response);
     currentAgency = { ...mockAgency };
     vi.mocked(api.agency.get).mockResolvedValue(currentAgency);
     vi.mocked(api.agency.save).mockReset();
@@ -159,6 +176,49 @@ describe("AgencySection", () => {
         siret: "12345678900012",
         address: "12 rue de la Paix, 75002 Paris",
       }),
+    );
+  });
+
+  it("autocompletes the agency address and saves the selected suggestion", async () => {
+    const user = userEvent.setup();
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ADDRESS_RESPONSE,
+    } as Response);
+    vi.mocked(api.agency.save).mockResolvedValue({
+      ...mockAgency,
+      address: "2 rue du Test 75001 Paris",
+    });
+
+    renderAgencySection();
+
+    expect(
+      await screen.findByRole("heading", { name: "Profil de l'agence" }),
+    ).toBeVisible();
+
+    const address = screen.getByRole("combobox", { name: "Adresse du siège" });
+    await user.clear(address);
+    await user.type(address, "2 rue du Test");
+
+    await waitFor(() =>
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        "https://api-adresse.data.gouv.fr/search/?q=2%20rue%20du%20Test&limit=5",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      ),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: "2 rue du Test 75001 Paris" }),
+    );
+    expect(address).toHaveValue("2 rue du Test 75001 Paris");
+
+    await user.click(
+      screen.getByRole("button", { name: "Enregistrer l'agence" }),
+    );
+
+    await waitFor(() =>
+      expect(api.agency.save).toHaveBeenCalledWith(
+        expect.objectContaining({ address: "2 rue du Test 75001 Paris" }),
+      ),
     );
   });
 });

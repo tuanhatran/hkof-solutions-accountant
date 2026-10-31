@@ -29,6 +29,19 @@ const OTHER: TenantDto = {
   email: null,
 };
 
+const ADDRESS_RESPONSE = {
+  features: [
+    {
+      properties: {
+        id: "addr-test-1",
+        label: "2 rue du Test 75001 Paris",
+        postcode: "75001",
+        city: "Paris",
+      },
+    },
+  ],
+};
+
 let tenantsState: QueryLike<TenantDto[]>;
 
 /** Tenant ids in DOM order, read on the row items. */
@@ -87,6 +100,10 @@ function toastMessages(): string[] {
 }
 
 beforeEach(() => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    ok: true,
+    json: async () => ({ features: [] }),
+  } as Response);
   tenantsState = readyQuery([TENANT, OTHER]);
   vi.mocked(api.tenants.create).mockReset();
   vi.mocked(api.tenants.update).mockReset();
@@ -311,5 +328,46 @@ describe("TenantsSection", () => {
     ).toBeVisible();
 
     await i18n.changeLanguage("fr");
+  });
+
+  it("autocompletes the tenant address and saves the selected suggestion", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ADDRESS_RESPONSE,
+    } as Response);
+    vi.mocked(api.tenants.create).mockResolvedValue({
+      id: 9,
+      name: "M. Nouveau",
+      address: "2 rue du Test 75001 Paris",
+      email: null,
+    });
+    renderSection();
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole("button", { name: "Ajouter un locataire" }),
+    );
+    await user.type(screen.getByLabelText("Nom du locataire"), "M. Nouveau");
+    const address = screen.getByRole("combobox", { name: "Adresse" });
+    await user.type(address, "2 rue du Test");
+
+    await waitFor(() =>
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        "https://api-adresse.data.gouv.fr/search/?q=2%20rue%20du%20Test&limit=5",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      ),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: "2 rue du Test 75001 Paris" }),
+    );
+    expect(address).toHaveValue("2 rue du Test 75001 Paris");
+
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    await waitFor(() =>
+      expect(api.tenants.create).toHaveBeenCalledWith(
+        expect.objectContaining({ address: "2 rue du Test 75001 Paris" }),
+      ),
+    );
   });
 });

@@ -2,12 +2,13 @@ import "./PersonForm.css";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { queryKeys } from "@/api/queries";
 import type { PersonDto, PersonRequest } from "@/api/types";
+import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { FormModal } from "@/components/ui/FormModal";
 import { cn } from "@/lib/cn";
@@ -32,6 +33,7 @@ export function PersonForm({
   const [requestError, setRequestError] = useState<string | null>(null);
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<PersonFormValues>({
@@ -116,12 +118,19 @@ export function PersonForm({
           error={errors.address?.message}
           help={t("settings.people.form.addressHelp")}
         >
-          <input
-            id="personne-adresse"
-            className="field"
-            placeholder="1 avenue du Parc, 75011 Paris"
-            {...register("address")}
-            data-cy="input-person-address"
+          <Controller
+            control={control}
+            name="address"
+            render={({ field }) => (
+              <AddressAutocomplete
+                id="personne-adresse"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                placeholder="1 avenue du Parc, 75011 Paris"
+                data-cy="input-person-address"
+              />
+            )}
           />
         </FieldGroup>
         <FieldGroup

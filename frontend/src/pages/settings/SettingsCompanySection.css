@@ -8,8 +8,4 @@
   .settings-company-section-code {
     @apply font-mono;
   }
-
-  .settings-company-section-textarea {
-    @apply resize-y;
-  }
 }

@@ -249,11 +249,19 @@ export function OnboardingCompanyStepLease({
             error={errors.landlordAddress?.message}
             className="sm:col-span-2"
           >
-            <input
-              id="company-onboarding-landlord-address"
-              className="field"
-              data-cy="input-company-onboarding-landlord-address"
-              {...register("landlordAddress")}
+            <Controller
+              control={control}
+              name="landlordAddress"
+              render={({ field }) => (
+                <AddressAutocomplete
+                  id="company-onboarding-landlord-address"
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  data-cy="input-company-onboarding-landlord-address"
+                  className={errors.landlordAddress ? "field-error" : undefined}
+                />
+              )}
             />
           </FieldGroup>
         </div>

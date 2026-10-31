@@ -72,6 +72,7 @@ export function AddressAutocomplete({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const blurredRef = useRef(false);
 
   const fetchSuggestions = useCallback(async (query: string) => {
     const trimmed = query.trim();
@@ -92,6 +93,11 @@ export function AddressAutocomplete({
         throw new Error(`HTTP error ${res.status}`);
       }
       const data = (await res.json()) as AddressApiResponse;
+      // A response landing after the user left the field must never reopen the
+      // list over another control.
+      if (blurredRef.current) {
+        return;
+      }
       const list: AddressSuggestion[] = (data.features ?? []).map((f, idx) => ({
         id: f.properties.id || `${f.properties.label}-${idx}`,
         label: f.properties.label,
@@ -178,6 +184,8 @@ export function AddressAutocomplete({
   };
 
   const handleBlur = () => {
+    blurredRef.current = true;
+    abortControllerRef.current?.abort();
     // Delay closing slightly so clicking an option isn't cancelled
     setTimeout(() => {
       setIsOpen(false);
@@ -206,6 +214,7 @@ export function AddressAutocomplete({
         onChange={(e) => handleInputChange(e.target.value)}
         onKeyDown={handleKeyDown}
         onFocus={() => {
+          blurredRef.current = false;
           if (suggestions.length > 0) setIsOpen(true);
         }}
         onBlur={handleBlur}

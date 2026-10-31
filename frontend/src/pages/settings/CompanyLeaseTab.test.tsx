@@ -37,6 +37,19 @@ vi.mock("@/api/endpoints", () => ({
   },
 }));
 
+const ADDRESS_RESPONSE = {
+  features: [
+    {
+      properties: {
+        id: "addr-test-1",
+        label: "2 rue du Test 75001 Paris",
+        postcode: "75001",
+        city: "Paris",
+      },
+    },
+  ],
+};
+
 const COMPANY: CompanyDto = {
   id: 1,
   name: "HKOF",
@@ -128,6 +141,10 @@ function renderTab(current: CompanyDto = COMPANY) {
 }
 
 beforeEach(() => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    ok: true,
+    json: async () => ({ features: [] }),
+  } as Response);
   vi.mocked(api.companies.list).mockReset();
   vi.mocked(api.companies.update).mockReset();
   vi.mocked(api.persons.list).mockReset();
@@ -750,6 +767,32 @@ describe("CompanyLeaseTab", () => {
     expect(queryByCy("filter-count-company-leases")).toBeNull();
     expect(queryByCy("sort-company-leases-compact")).toBeNull();
     expect(queryByCy("btn-company-general-expenses")).toBeNull();
+  });
+
+  it("autocompletes the lease address from the government API", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ADDRESS_RESPONSE,
+    } as Response);
+    renderTab();
+    const user = userEvent.setup();
+    await waitFor(() => expect(queryByCy("company-lease-5")).not.toBeNull());
+
+    await user.click(queryByCy("btn-add-company-lease") as HTMLElement);
+    const address = queryByCy("input-lease-address") as HTMLElement;
+    expect(address).toHaveAttribute("role", "combobox");
+    await user.type(address, "2 rue du Test");
+
+    await waitFor(() =>
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        "https://api-adresse.data.gouv.fr/search/?q=2%20rue%20du%20Test&limit=5",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      ),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: "2 rue du Test 75001 Paris" }),
+    );
+    expect(address).toHaveValue("2 rue du Test 75001 Paris");
   });
 });
 

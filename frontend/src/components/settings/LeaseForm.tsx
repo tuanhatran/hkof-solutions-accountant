@@ -2,7 +2,7 @@ import "./LeaseForm.css";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { errorMessage } from "@/api/client";
 import { api, type LandlordDto, type TenantDto } from "@/api/endpoints";
@@ -13,6 +13,7 @@ import type {
   LeaseDto,
   LeaseRequest,
 } from "@/api/types";
+import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete";
 import { FieldGroup } from "@/components/ui/FieldGroup";
 import { FormModal } from "@/components/ui/FormModal";
 import { cn } from "@/lib/cn";
@@ -67,6 +68,7 @@ export function LeaseForm({
   );
   const {
     register,
+    control,
     handleSubmit,
     watch,
     setValue,
@@ -186,12 +188,20 @@ export function LeaseForm({
           error={errors.propertyAddress?.message}
           className="sm:col-span-2"
         >
-          <input
-            id="bail-adresse"
-            className={cn("field", errors.propertyAddress && "field-error")}
-            placeholder={t("settings.lease.form.addressPlaceholder")}
-            {...register("propertyAddress")}
-            data-cy="input-lease-address"
+          <Controller
+            control={control}
+            name="propertyAddress"
+            render={({ field }) => (
+              <AddressAutocomplete
+                id="bail-adresse"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                placeholder={t("settings.lease.form.addressPlaceholder")}
+                data-cy="input-lease-address"
+                className={errors.propertyAddress ? "field-error" : undefined}
+              />
+            )}
           />
         </FieldGroup>
         <FieldGroup
