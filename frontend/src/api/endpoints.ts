@@ -31,6 +31,8 @@ import type {
   StatementCalculationRequest,
   StatementDto,
   StatementGenerationRequest,
+  AgencyDto,
+  AgencyRequest,
   CompanyDto,
   CompanyLookupDto,
   CompanyRequest,
@@ -116,6 +118,15 @@ export const api = {
       request<AdminUserDto>(
         `/api/admin/users/${id}/role`,
         json({ method: "PATCH", body: JSON.stringify(requestBody) }),
+      ),
+  },
+
+  agency: {
+    get: () => request<AgencyDto | null>("/api/agency"),
+    save: (requestBody: AgencyRequest) =>
+      request<AgencyDto>(
+        "/api/agency",
+        json({ method: "PUT", body: JSON.stringify(requestBody) }),
       ),
   },
 

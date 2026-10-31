@@ -6,7 +6,7 @@ info:
     Les routes /api/companies/**, /api/expense-statements/** et /api/expense-items/**
     répondent 403 MODULE_COMPANY_DISABLED quand le module entreprise du compte est
     désactivé, sauf GET /api/companies/lookup qui reste disponible pour rattacher une
-    société locataire à un bail ; les routes /api/leases/**, /api/rent-receipts/** et /api/persons/**
+    société locataire à un bail ; les routes /api/leases/**, /api/rent-receipts/**, /api/persons/** et /api/agency
     répondent 403 MODULE_LMNP_DISABLED quand le module LMNP est désactivé. Les routes
     /api/admin/** sont réservées aux administrateurs (403 ACCESS_DENIED).
   version: 1.0.0
@@ -2039,6 +2039,49 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/AddressDto"
+  /api/agency:
+    get:
+      tags:
+        - agency-controller
+      operationId: getAgency
+      description: Profil d'agence ou de gestion personnelle du compte.
+      responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/AgencyDto"
+        "204":
+          description: Aucun profil d'agence enregistré
+    put:
+      tags:
+        - agency-controller
+      operationId: saveAgency
+      description: Enregistre ou met à jour le profil d'agence ou de gestion personnelle.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgencyRequest"
+        required: true
+      responses:
+        "403":
+          $ref: "#/components/responses/LmnpModuleDisabled"
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/AgencyDto"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/leases:
     get:
       tags:
@@ -2181,6 +2224,70 @@ components:
           schema:
             $ref: "#/components/schemas/ProblemDetail"
   schemas:
+    AgencyDto:
+      type: object
+      required:
+        - id
+        - name
+        - isPersonal
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        isPersonal:
+          type: boolean
+        managerName:
+          type:
+            - string
+            - "null"
+        legalForm:
+          type:
+            - string
+            - "null"
+        siren:
+          type:
+            - string
+            - "null"
+        siret:
+          type:
+            - string
+            - "null"
+        address:
+          type:
+            - string
+            - "null"
+    AgencyRequest:
+      type: object
+      required:
+        - name
+        - isPersonal
+      properties:
+        name:
+          type: string
+        isPersonal:
+          type: boolean
+        managerName:
+          type:
+            - string
+            - "null"
+        legalForm:
+          type:
+            - string
+            - "null"
+        siren:
+          type:
+            - string
+            - "null"
+        siret:
+          type:
+            - string
+            - "null"
+        address:
+          type:
+            - string
+            - "null"
     RegisterRequest:
       type: object
       required:

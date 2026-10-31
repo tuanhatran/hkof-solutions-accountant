@@ -39,6 +39,31 @@ async function callJson<T>(operation: () => Promise<T>): Promise<T> {
   return operation();
 }
 
+describe("agency endpoints", () => {
+  it("manages the agency profile", async () => {
+    await callJson(() => api.agency.get());
+    expect(lastCall()[0]).toBe("/api/agency");
+
+    const payload = {
+      name: "Mon Agence",
+      isPersonal: true,
+      managerName: "Dupont",
+      legalForm: null,
+      siren: null,
+      siret: null,
+      address: null,
+    };
+    await callJson(() => api.agency.save(payload));
+    const [path, init] = lastCall();
+    expect(path).toBe("/api/agency");
+    expect(init).toMatchObject({
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  });
+});
+
 describe("company and directory endpoints", () => {
   it("manages companies", async () => {
     await callJson(() => api.companies.list());
