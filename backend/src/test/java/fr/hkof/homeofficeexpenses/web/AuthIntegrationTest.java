@@ -89,6 +89,38 @@ class AuthIntegrationTest {
     }
 
     @Test
+    @DisplayName("The onboarding completion is idempotent and exposed by me and login")
+    void completesOnboardingOnce() throws Exception {
+        register("ines@example.test", "motdepasse");
+        confirm(lastConfirmationTokenFor("ines@example.test"));
+        MvcResult login = login("ines@example.test", "motdepasse");
+        MockHttpSession session = sessionOf(login);
+        Cookie csrf = csrfCookieOf(login, session);
+
+        mockMvc.perform(get("/api/auth/me").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.onboardingCompleted").value(false));
+
+        mockMvc.perform(post("/api/auth/onboarding-complete").session(session)
+                        .cookie(csrf).header(CSRF_HEADER, csrf.getValue()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("ines@example.test"))
+                .andExpect(jsonPath("$.onboardingCompleted").value(true));
+        mockMvc.perform(post("/api/auth/onboarding-complete").session(session)
+                        .cookie(csrf).header(CSRF_HEADER, csrf.getValue()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.onboardingCompleted").value(true));
+
+        mockMvc.perform(get("/api/auth/me").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.onboardingCompleted").value(true));
+        mockMvc.perform(post("/api/auth/login").contentType(JSON)
+                        .content("{\"email\":\"ines@example.test\",\"password\":\"motdepasse\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.onboardingCompleted").value(true));
+    }
+
+    @Test
     @DisplayName("Registration stores only a token hash, sends the link and confirmation enables login")
     void registersConfirmsAndLogsIn() throws Exception {
         register("alice@example.test", "motdepasse");
@@ -187,7 +219,8 @@ class AuthIntegrationTest {
         mockMvc.perform(get("/api/auth/me").session(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(SEED_EMAIL))
-                .andExpect(jsonPath("$.mustChangePassword").value(true));
+                .andExpect(jsonPath("$.mustChangePassword").value(true))
+                .andExpect(jsonPath("$.onboardingCompleted").value(true));
 
         mockMvc.perform(get("/api/companies").session(session))
                 .andExpect(status().isForbidden())

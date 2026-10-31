@@ -106,6 +106,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/onboarding-complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Marque l'onboarding du compte connecté comme terminé. Idempotent : un compte déjà complété renvoie le même état sans nouvelle écriture. */
+        post: operations["completeOnboarding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/me": {
         parameters: {
             query?: never;
@@ -915,7 +932,8 @@ export interface paths {
         delete: operations["deleteSignature"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** @description Renomme une signature active du compte connecté. Une signature supprimée ou appartenant à un autre compte est introuvable. */
+        patch: operations["renameSignature"];
         trace?: never;
     };
     "/api/signatures/{id}/image": {
@@ -1061,6 +1079,8 @@ export interface components {
             companyEnabled?: boolean;
             /** @description Vrai quand le module LMNP est activé pour ce compte. */
             lmnpEnabled?: boolean;
+            /** @description Vrai quand l'onboarding du compte est terminé ; faux tant que l'assistant de premier accès n'a pas été validé. */
+            onboardingCompleted?: boolean;
         };
         /** @enum {string} */
         UserRole: "ADMIN" | "USER";
@@ -1096,6 +1116,10 @@ export interface components {
             mimeType?: string;
             /** Format: date-time */
             createdAt?: string;
+        };
+        RenameSignatureRequest: {
+            /** @description Nouveau nom de la signature, 255 caractères maximum. */
+            name: string;
         };
         CompanyRequest: {
             /** @description Raison sociale de la société. */
@@ -1233,6 +1257,8 @@ export interface components {
              * @description Personne physique locataire, obligatoire hors bail société.
              */
             tenantId?: number | null;
+            /** @description Locataires personnes physiques du bail (colocation). Le locataire désigné par tenantId, quand il est fourni, reste le locataire principal et doit figurer dans cette liste. Absent, le bail reste mono-locataire avec tenantId. */
+            tenantIds?: number[];
             /** @description Libellé de l'adresse du bien. Le backend réutilise l'adresse existante pour un libellé identique, sans tenir compte de la casse ni des espaces. */
             propertyAddress?: string;
             rentExclCharges?: string;
@@ -1269,6 +1295,8 @@ export interface components {
             landlordId?: number;
             /** Format: int64 */
             tenantId?: number | null;
+            /** @description Locataires personnes physiques liés au bail, locataire principal en tête ; vide pour un bail société. */
+            readonly tenantIds?: number[];
             landlordName?: string;
             tenantName?: string | null;
             propertyAddress?: string;
@@ -1986,6 +2014,35 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    completeOnboarding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CurrentUserDto"];
                 };
             };
             /** @description Non authentifié */
@@ -3760,6 +3817,50 @@ export interface operations {
                         status?: number;
                         detail?: string;
                     };
+                };
+            };
+        };
+    };
+    renameSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameSignatureRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SignatureDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };

@@ -22,6 +22,7 @@ import fr.hkof.homeofficeexpenses.service.CalculationService;
 import fr.hkof.homeofficeexpenses.service.CompanyService;
 import fr.hkof.homeofficeexpenses.service.EmployeeService;
 import fr.hkof.homeofficeexpenses.service.LeaseService;
+import fr.hkof.homeofficeexpenses.service.LeaseTenantBinder;
 import fr.hkof.homeofficeexpenses.service.NumberToWords;
 import fr.hkof.homeofficeexpenses.service.SignatureService;
 
@@ -54,11 +55,17 @@ public class TemplateDataService {
         data.put("bailleur", Map.of(
                 "nom", landlord == null ? "" : text(landlord.getName()),
                 "adresse", landlord == null ? "" : text(landlord.getAddress())));
+        List<Person> tenants = receiptTenants(lease, tenant, tenantCompany);
         data.put("locataire", Map.of(
-                "nom", tenant != null ? text(tenant.getName())
-                        : tenantCompany != null ? text(tenantCompany.getName()) : "",
-                "adresse", tenant != null ? text(tenant.getAddress())
-                        : tenantCompany != null ? text(tenantCompany.getAddress()) : ""));
+                "nom", tenants.isEmpty()
+                        ? tenantCompany == null ? "" : text(tenantCompany.getName())
+                        : joinedTenantNames(tenants),
+                "adresse", tenants.isEmpty()
+                        ? tenantCompany == null ? "" : text(tenantCompany.getAddress())
+                        : text(tenants.get(0).getAddress())));
+        data.put("locataires", tenants.stream()
+                .map(person -> Map.of("nom", text(person.getName()), "adresse", text(person.getAddress())))
+                .toList());
         data.put("logement", Map.of(
                 "adresse", lease == null || lease.getAddress() == null ? "" : text(lease.getAddress().getLabel())));
         data.put("mois_libelle", Amounts.formatMonth(YearMonth.parse(rentReceipt.getMonth())));
@@ -248,5 +255,31 @@ public class TemplateDataService {
 
     private String text(String value) {
         return value == null ? "" : value;
+    }
+
+    /**
+     * Tenants of the receipt: the linked rows of the lease win, then the explicit tenant
+     * (which mirrors {@code lease.tenant_id} for legacy leases), then the tenant company.
+     */
+    private List<Person> receiptTenants(Lease lease, Person tenant, Company tenantCompany) {
+        if (lease != null && !lease.getTenants().isEmpty()) {
+            return LeaseTenantBinder.personsOf(lease);
+        }
+        if (tenant != null) {
+            return List.of(tenant);
+        }
+        if (tenantCompany != null) {
+            return List.of();
+        }
+        return lease == null || lease.getTenant() == null ? List.of() : List.of(lease.getTenant());
+    }
+
+    /** French enumeration without trailing separator: "A", "A et B", "A, B et C". */
+    private String joinedTenantNames(List<Person> tenants) {
+        List<String> names = tenants.stream().map(person -> text(person.getName())).toList();
+        if (names.size() == 1) {
+            return names.get(0);
+        }
+        return String.join(", ", names.subList(0, names.size() - 1)) + " et " + names.get(names.size() - 1);
     }
 }

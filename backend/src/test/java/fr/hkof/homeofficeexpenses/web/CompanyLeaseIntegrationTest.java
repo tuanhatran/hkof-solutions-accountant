@@ -1,5 +1,6 @@
 package fr.hkof.homeofficeexpenses.web;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -9,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Base64;
+import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,6 +34,65 @@ class CompanyLeaseIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Test
+    @DisplayName("Two colocation leases share one address, link their co-tenants and reject invalid lists")
+    void multiTenantLeasesShareAddress() throws Exception {
+        long landlordId = id("/api/persons", """
+                {"name":"Bailleur colocation test"}
+                """);
+        long aliceId = id("/api/persons", """
+                {"name":"Alice DUPONT"}
+                """);
+        long bobId = id("/api/persons", """
+                {"name":"Bob MARTIN"}
+                """);
+
+        long firstLease = id("/api/leases", """
+                {"companyLease":false,"landlordId":%d,"tenantId":%d,"tenantIds":[%d,%d],
+                 "propertyAddress":"6 rue de la Colocation, 75003 Paris","rentExclCharges":"900.00"}
+                """.formatted(landlordId, aliceId, aliceId, bobId));
+        long secondLease = id("/api/leases", """
+                {"companyLease":false,"landlordId":%d,"tenantId":%d,"tenantIds":[%d,%d],
+                 "propertyAddress":"6 rue de la Colocation, 75003 Paris","rentExclCharges":"900.00"}
+                """.formatted(landlordId, bobId, bobId, aliceId));
+
+        String leases = mockMvc.perform(get("/api/leases"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<Number> firstFirst = JsonPath.read(leases, "$[?(@.id == " + firstLease + ")].tenantIds[0]");
+        List<Number> firstSecond = JsonPath.read(leases, "$[?(@.id == " + firstLease + ")].tenantIds[1]");
+        assertThat(firstFirst.get(0).longValue()).isEqualTo(aliceId);
+        assertThat(firstSecond.get(0).longValue()).isEqualTo(bobId);
+        List<Number> secondFirst = JsonPath.read(leases, "$[?(@.id == " + secondLease + ")].tenantIds[0]");
+        assertThat(secondFirst.get(0).longValue()).isEqualTo(bobId);
+        List<Number> firstAddress = JsonPath.read(leases, "$[?(@.id == " + firstLease + ")].addressId");
+        List<Number> secondAddress = JsonPath.read(leases, "$[?(@.id == " + secondLease + ")].addressId");
+        assertThat(firstAddress.get(0).longValue()).isEqualTo(secondAddress.get(0).longValue());
+
+        mockMvc.perform(post("/api/leases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"companyLease":false,"landlordId":%d,"tenantIds":[%d,%d],
+                                 "propertyAddress":"7 rue de la Colocation","rentExclCharges":"700.00"}
+                                """.formatted(landlordId, aliceId, aliceId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Un locataire ne peut être sélectionné qu'une seule fois."));
+        mockMvc.perform(post("/api/leases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"companyLease":false,"landlordId":%d,"tenantIds":[],
+                                 "propertyAddress":"7 rue de la Colocation","rentExclCharges":"700.00"}
+                                """.formatted(landlordId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Sélectionnez un locataire."));
+
+        mockMvc.perform(delete("/api/leases/{id}", firstLease)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/leases/{id}", secondLease)).andExpect(status().isNoContent());
+        for (long personId : new long[]{aliceId, bobId, landlordId}) {
+            mockMvc.perform(delete("/api/persons/{id}", personId)).andExpect(status().isNoContent());
+        }
+    }
 
     @Test
     @DisplayName("An enterprise lease uses a company tenant, one link per company and a guarded deletion")

@@ -32,6 +32,7 @@ import fr.hkof.homeofficeexpenses.repository.ExpenseItemRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseLineRepository;
 import fr.hkof.homeofficeexpenses.repository.ExpenseStatementRepository;
 import fr.hkof.homeofficeexpenses.repository.LeaseRepository;
+import fr.hkof.homeofficeexpenses.repository.LeaseTenantRepository;
 import fr.hkof.homeofficeexpenses.repository.LlmConfigRepository;
 import fr.hkof.homeofficeexpenses.repository.PersonRepository;
 import fr.hkof.homeofficeexpenses.repository.ReceiptRepository;
@@ -75,6 +76,7 @@ public class E2eResetService {
     private final CompanyRepository companies;
     private final EmployeeRepository employees;
     private final LeaseRepository leases;
+    private final LeaseTenantRepository leaseTenants;
     private final AddressRepository addresses;
     private final PersonRepository persons;
     private final SignatureRepository signatures;
@@ -89,9 +91,9 @@ public class E2eResetService {
             RentReceiptAdditionalChargeRepository additionalCharges, ReceiptRepository receipts,
             TemplateDocumentRepository templates, LlmConfigRepository llmConfigs, ExpenseItemRepository items,
             CompanyRepository companies, EmployeeRepository employees, LeaseRepository leases,
-            AddressRepository addresses, PersonRepository persons, SignatureRepository signatures,
-            StorageService storage, DataInitializer initializer, AuthService authService,
-            AppUserRepository appUsers) {
+            LeaseTenantRepository leaseTenants, AddressRepository addresses, PersonRepository persons,
+            SignatureRepository signatures, StorageService storage, DataInitializer initializer,
+            AuthService authService, AppUserRepository appUsers) {
         this.analyses = analyses;
         this.drafts = drafts;
         this.lines = lines;
@@ -105,6 +107,7 @@ public class E2eResetService {
         this.companies = companies;
         this.employees = employees;
         this.leases = leases;
+        this.leaseTenants = leaseTenants;
         this.addresses = addresses;
         this.persons = persons;
         this.signatures = signatures;
@@ -127,6 +130,7 @@ public class E2eResetService {
         templates.deleteAllInBatch();
         llmConfigs.deleteAllInBatch();
         items.deleteAllInBatch();
+        leaseTenants.deleteAllInBatch();
         leases.deleteAllInBatch();
         addresses.deleteAllInBatch();
         employees.deleteAllInBatch();

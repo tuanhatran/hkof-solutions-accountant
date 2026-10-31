@@ -21,6 +21,7 @@ import fr.hkof.homeofficeexpenses.domain.ExpenseItem;
 import fr.hkof.homeofficeexpenses.domain.ExpenseLine;
 import fr.hkof.homeofficeexpenses.domain.ExpenseStatement;
 import fr.hkof.homeofficeexpenses.domain.Lease;
+import fr.hkof.homeofficeexpenses.domain.LeaseTenant;
 import fr.hkof.homeofficeexpenses.domain.Person;
 import fr.hkof.homeofficeexpenses.domain.RentReceipt;
 import fr.hkof.homeofficeexpenses.domain.RentReceiptAdditionalCharge;
@@ -109,6 +110,22 @@ class TemplateDataServiceTest {
         return lease;
     }
 
+    private Person tenant(Long id, String name, String address) {
+        Person tenant = new Person();
+        tenant.setId(id);
+        tenant.setName(name);
+        tenant.setAddress(address);
+        return tenant;
+    }
+
+    private LeaseTenant link(Lease lease, Person person, boolean primary) {
+        LeaseTenant link = new LeaseTenant();
+        link.setLease(lease);
+        link.setPerson(person);
+        link.setPrimary(primary);
+        return link;
+    }
+
     private RentReceipt rentReceipt() {
         RentReceipt receipt = new RentReceipt();
         receipt.setMonth("2026-10");
@@ -194,6 +211,52 @@ class TemplateDataServiceTest {
 
         assertThat(data.get("locataire")).isEqualTo(
                 Map.of("nom", "Société Locataire", "adresse", "5 avenue de la Société"));
+    }
+
+    @Test
+    @DisplayName("A colocation receipt joins the two co-tenant names and exposes the locataires list")
+    void rentReceiptColocation() {
+        Lease lease = lease();
+        Person alice = tenant(2L, "Alice DUPONT", "2 rue du Locataire");
+        Person bob = tenant(3L, "Bob MARTIN", "3 rue du Locataire");
+        lease.getTenants().add(link(lease, alice, true));
+        lease.getTenants().add(link(lease, bob, false));
+
+        Map<String, Object> data = service.dataRentReceipt(company(), landlord(), alice, null, lease, rentReceipt(),
+                null);
+
+        assertThat(data.get("locataire")).isEqualTo(
+                Map.of("nom", "Alice DUPONT et Bob MARTIN", "adresse", "2 rue du Locataire"));
+        assertThat(data.get("locataires")).isEqualTo(List.of(
+                Map.of("nom", "Alice DUPONT", "adresse", "2 rue du Locataire"),
+                Map.of("nom", "Bob MARTIN", "adresse", "3 rue du Locataire")));
+    }
+
+    @Test
+    @DisplayName("Three co-tenants are joined with commas and a final French et")
+    void rentReceiptColocationThreeTenants() {
+        Lease lease = lease();
+        Person alice = tenant(2L, "Alice DUPONT", "2 rue du Locataire");
+        lease.getTenants().add(link(lease, alice, true));
+        lease.getTenants().add(link(lease, tenant(3L, "Bob MARTIN", "3 rue du Locataire"), false));
+        lease.getTenants().add(link(lease, tenant(4L, "Chloé PETIT", "4 rue du Locataire"), false));
+
+        Map<String, Object> data = service.dataRentReceipt(company(), landlord(), alice, null, lease, rentReceipt(),
+                null);
+
+        assertThat(((Map<?, ?>) data.get("locataire")).get("nom"))
+                .isEqualTo("Alice DUPONT, Bob MARTIN et Chloé PETIT");
+    }
+
+    @Test
+    @DisplayName("A single-tenant receipt keeps the legacy locataire value and lists one tenant")
+    void rentReceiptSingleTenantUnchanged() {
+        Map<String, Object> data = service.dataRentReceipt(company(), landlord(), tenant(), null, lease(),
+                rentReceipt(), null);
+
+        assertThat(data.get("locataire")).isEqualTo(Map.of("nom", "Locataire", "adresse", "2 rue du Locataire"));
+        assertThat(data.get("locataires")).isEqualTo(List.of(
+                Map.of("nom", "Locataire", "adresse", "2 rue du Locataire")));
     }
 
     @Test

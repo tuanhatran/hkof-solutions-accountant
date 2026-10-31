@@ -3,6 +3,7 @@ package fr.hkof.homeofficeexpenses.web;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -75,6 +76,45 @@ class SignatureControllerIntegrationTest {
         mockMvc.perform(get("/api/signatures").param("personId", String.valueOf(personId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.id == " + id + ")]").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Renames an active signature, rejects invalid names and hides deleted signatures")
+    void renamesSignature() throws Exception {
+        long personId = landlordId();
+        String created = mockMvc.perform(multipart("/api/signatures")
+                        .file(new MockMultipartFile("file", "signature.png", "image/png", PNG))
+                        .param("personId", String.valueOf(personId))
+                        .param("name", "Signature à renommer"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long id = ((Number) JsonPath.read(created, "$.id")).longValue();
+
+        mockMvc.perform(patch("/api/signatures/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"  Signature studio  \"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.name").value("Signature studio"));
+
+        mockMvc.perform(patch("/api/signatures/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"  \"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Le nom de la signature est obligatoire."));
+
+        mockMvc.perform(patch("/api/signatures/{id}", 999999)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Autre signature\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.detail").value("Signature introuvable."));
+
+        mockMvc.perform(delete("/api/signatures/{id}", id))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(patch("/api/signatures/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Après suppression\"}"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

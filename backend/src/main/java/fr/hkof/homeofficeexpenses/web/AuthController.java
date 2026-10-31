@@ -113,6 +113,23 @@ public class AuthController {
         return ResponseEntity.ok(currentUser(updated));
     }
 
+    @PostMapping("/onboarding-complete")
+    public ResponseEntity<?> completeOnboarding(Authentication authentication, HttpServletRequest servletRequest,
+            HttpServletResponse servletResponse) {
+        AuthenticatedUser principal = principalOf(authentication);
+        if (principal == null) {
+            return problem(HttpStatus.UNAUTHORIZED, "Non authentifié",
+                    "Vous devez vous connecter pour accéder à cette ressource.", "UNAUTHENTICATED");
+        }
+        AuthenticatedUser updated = service.completeOnboarding(principal.id());
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(new UsernamePasswordAuthenticationToken(updated, updated.getPassword(),
+                updated.getAuthorities()));
+        SecurityContextHolder.setContext(context);
+        securityContextRepository.saveContext(context, servletRequest, servletResponse);
+        return ResponseEntity.ok(currentUser(updated));
+    }
+
     @GetMapping("/me")
     public ResponseEntity<?> me(Authentication authentication) {
         AuthenticatedUser principal = principalOf(authentication);
@@ -132,7 +149,7 @@ public class AuthController {
 
     private static CurrentUserDto currentUser(AuthenticatedUser user) {
         return new CurrentUserDto(user.email(), user.mustChangePassword(), user.role(),
-                user.companyEnabled(), user.lmnpEnabled());
+                user.companyEnabled(), user.lmnpEnabled(), user.onboardingCompleted());
     }
 
     private static ResponseEntity<ProblemDetail> problem(HttpStatus status, String title, String detail,

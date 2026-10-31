@@ -15,4 +15,7 @@ public final class SignatureDtos {
             String mimeType,
             Instant createdAt) {
     }
+
+    public record RenameSignatureRequest(String name) {
+    }
 }

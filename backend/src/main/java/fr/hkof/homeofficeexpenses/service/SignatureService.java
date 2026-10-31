@@ -59,14 +59,7 @@ public class SignatureService {
     @Transactional
     public SignatureDto create(Long personId, String name, MultipartFile file) {
         Person person = requirePerson(personId);
-        if (name == null || name.isBlank()) {
-            throw new BusinessException("SIGNATURE_NAME_REQUIRED", "Le nom de la signature est obligatoire.");
-        }
-        String trimmedName = name.trim();
-        if (trimmedName.length() > MAX_NAME_LENGTH) {
-            throw new BusinessException("SIGNATURE_NAME_TOO_LONG",
-                    "Le nom de la signature est trop long (255 caractères maximum).");
-        }
+        String trimmedName = validName(name);
         if (file == null || file.isEmpty()) {
             throw new BusinessException("SIGNATURE_FILE_REQUIRED", "Le fichier de signature est obligatoire.");
         }
@@ -87,6 +80,15 @@ public class SignatureService {
         signature.setDeleted(false);
         signature.setCreatedAt(Instant.now(clock));
         return toDto(repository.save(signature));
+    }
+
+    @Transactional
+    public SignatureDto rename(Long id, String name) {
+        Signature signature = entity(id);
+        signature.setName(validName(name));
+        signature.setUpdatedAt(Instant.now(clock));
+        repository.save(signature);
+        return toDto(signature);
     }
 
     @Transactional
@@ -186,6 +188,19 @@ public class SignatureService {
         }
         return persons.findByIdAndUserIdAndDeletedFalse(personId, ownership.currentUserId())
                 .orElseThrow(() -> new NotFoundException("PERSON_NOT_FOUND", "Personne introuvable."));
+    }
+
+    /** Required, bounded and trimmed signature name shared by create and rename. */
+    private String validName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new BusinessException("SIGNATURE_NAME_REQUIRED", "Le nom de la signature est obligatoire.");
+        }
+        String trimmedName = name.trim();
+        if (trimmedName.length() > MAX_NAME_LENGTH) {
+            throw new BusinessException("SIGNATURE_NAME_TOO_LONG",
+                    "Le nom de la signature est trop long (255 caractères maximum).");
+        }
+        return trimmedName;
     }
 
     private String personName(Person person) {

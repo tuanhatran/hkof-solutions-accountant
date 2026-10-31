@@ -142,6 +142,18 @@ public class AuthService {
         return AuthenticatedUser.from(user);
     }
 
+    /** Marks the onboarding as completed; a second call is a no-op returning the same state. */
+    @Transactional
+    public AuthenticatedUser completeOnboarding(Long userId) {
+        AppUser user = users.findById(userId).orElseThrow(InvalidCredentialsException::new);
+        if (!user.isOnboardingCompleted()) {
+            user.setOnboardingCompleted(true);
+            user.setUpdatedAt(Instant.now(clock));
+            users.save(user);
+        }
+        return AuthenticatedUser.from(user);
+    }
+
     /** Restores the documented seed credentials, used by the e2e reset without deleting accounts. */
     @Transactional
     public void restoreSeedUser(String email, String rawPassword, boolean mustChangePassword) {
@@ -205,11 +217,13 @@ public class AuthService {
 
     /** The authenticated account exposed to the security context. */
     public record AuthenticatedUser(Long id, String email, String password, boolean mustChangePassword,
-            UserRole role, boolean companyEnabled, boolean lmnpEnabled) implements UserDetails {
+            UserRole role, boolean companyEnabled, boolean lmnpEnabled, boolean onboardingCompleted)
+            implements UserDetails {
 
         public static AuthenticatedUser from(AppUser user) {
             return new AuthenticatedUser(user.getId(), user.getEmail(), user.getPasswordHash(),
-                    user.isMustChangePassword(), user.getRole(), user.isCompanyEnabled(), user.isLmnpEnabled());
+                    user.isMustChangePassword(), user.getRole(), user.isCompanyEnabled(), user.isLmnpEnabled(),
+                    user.isOnboardingCompleted());
         }
 
         @Override

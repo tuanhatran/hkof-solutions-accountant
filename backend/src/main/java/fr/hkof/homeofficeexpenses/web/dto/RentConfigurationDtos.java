@@ -1,5 +1,7 @@
 package fr.hkof.homeofficeexpenses.web.dto;
 
+import java.util.List;
+
 public final class RentConfigurationDtos {
 
     private RentConfigurationDtos() {
@@ -29,13 +31,21 @@ public final class RentConfigurationDtos {
             String charges,
             String totalArea,
             String businessArea,
-            String companySiren) {
+            String companySiren,
+            List<Long> tenantIds) {
 
         public LeaseRequest(Boolean companyLease, Long landlordId, Long companyId, Long tenantId,
                 String propertyAddress, String rentExclCharges, String charges, String totalArea,
                 String businessArea) {
             this(companyLease, landlordId, companyId, tenantId, propertyAddress, rentExclCharges, charges,
                     totalArea, businessArea, null);
+        }
+
+        public LeaseRequest(Boolean companyLease, Long landlordId, Long companyId, Long tenantId,
+                String propertyAddress, String rentExclCharges, String charges, String totalArea,
+                String businessArea, String companySiren) {
+            this(companyLease, landlordId, companyId, tenantId, propertyAddress, rentExclCharges, charges,
+                    totalArea, businessArea, companySiren, null);
         }
     }
 
@@ -52,6 +62,7 @@ public final class RentConfigurationDtos {
             Boolean companyLease,
             Long landlordId,
             Long tenantId,
+            List<Long> tenantIds,
             String landlordName,
             String tenantName,
             String propertyAddress,
