@@ -70,7 +70,8 @@ export const fr = {
       ACCESS_DENIED: "Vous n'avez pas accès à cette action.",
       MODULE_COMPANY_DISABLED:
         "Le module société est désactivé pour ce compte.",
-      MODULE_LMNP_DISABLED: "Le module LMNP est désactivé pour ce compte.",
+      MODULE_LMNP_DISABLED:
+        "Le module Agence immobilière est désactivé pour ce compte.",
       ADDRESS_REQUIRED: "L'adresse du bien est obligatoire.",
       AMOUNT_REQUIRED: "Le montant est obligatoire.",
       AMOUNT_INVALID: "Le montant est invalide.",
@@ -170,7 +171,7 @@ export const fr = {
       RENT_RECEIPT_PERIOD_INVALID:
         "La fin de période ne peut pas précéder le début.",
       SIGNATURE_MISSING:
-        "Aucune signature configurée. Ajoutez une signature au bailleur dans la page LMNP.",
+        "Aucune signature configurée. Ajoutez une signature au bailleur dans la page Agence immobilière.",
       SIGNATURE_NAME_REQUIRED: "Le nom de la signature est obligatoire.",
       SIGNATURE_NAME_TOO_LONG:
         "Le nom de la signature est trop long (255 caractères maximum).",
@@ -260,7 +261,7 @@ export const fr = {
         "La réponse du modèle ne contient pas d'objet JSON. La saisie manuelle reste disponible.",
       STATEMENT_PDF_NOT_FOUND: "Le PDF demandé est introuvable.",
       STATEMENT_SIGNATURE_MISSING:
-        "Aucune signature configurée pour le gérant. Ajoutez une signature au salarié gérant dans la page LMNP.",
+        "Aucune signature configurée pour le gérant. Ajoutez une signature au salarié gérant dans la page Agence immobilière.",
       STATEMENT_TEMPLATE_INVALID:
         "Le modèle sélectionné n'est pas un modèle de note de frais.",
     },
@@ -279,7 +280,7 @@ export const fr = {
       history: "Historique",
       templates: "Modèles",
       company: "Société",
-      lmnp: "LMNP",
+      lmnp: "Agence immobilière",
       aiAdmin: "Analyse IA",
       adminUsers: "Administration utilisateurs",
     },
@@ -334,6 +335,13 @@ export const fr = {
       currentPassword: "Mot de passe actuel",
       newPassword: "Nouveau mot de passe",
       confirmPassword: "Confirmer le mot de passe",
+      modules: "Modules souhaités",
+      agencyModule: "Agence immobilière",
+      agencyModuleDescription:
+        "Gestion locative, quittances de loyer et signatures.",
+      companyModule: "Société",
+      companyModuleDescription:
+        "Notes de frais d'occupation et indemnités kilométriques.",
     },
     validation: {
       emailRequired: "L'adresse e-mail est obligatoire.",
@@ -343,6 +351,7 @@ export const fr = {
       currentPasswordRequired: "Le mot de passe actuel est obligatoire.",
       confirmRequired: "Confirmez le mot de passe.",
       confirmMismatch: "Les mots de passe ne correspondent pas.",
+      atLeastOneModuleRequired: "Au moins un module doit être sélectionné.",
     },
   },
   onboarding: {
@@ -538,7 +547,7 @@ export const fr = {
       missingLeaseBefore:
         "Aucun bail actif pour ce bailleur et ce locataire. Créez le bail dans la page",
       missingLeaseAfter: ".",
-      lmnpLink: "LMNP",
+      lmnpLink: "Agence immobilière",
       companyLeaseSelected: "Bail société sélectionné",
       leaseSelected: "Bail sélectionné",
       signature: "Signature",
@@ -550,7 +559,7 @@ export const fr = {
         "Les signatures n’ont pas pu être chargées : {{message}}",
       missingLandlordSignatureBefore:
         "Aucune signature pour ce bailleur. Ajoutez-en une dans sa fiche, page",
-      lmnpPersonsLink: "LMNP · Personnes",
+      lmnpPersonsLink: "Agence immobilière · Personnes",
       missingLandlordSignatureAfter: ".",
     },
     preview: {
@@ -1046,10 +1055,10 @@ export const fr = {
     },
     lmnp: {
       eyebrow: "Réglages",
-      title: "LMNP",
+      title: "Agence immobilière",
       description:
         "Baux et adresses du logement, et personnes physiques bailleurs ou locataires avec leurs signatures.",
-      tabsAria: "Sections LMNP",
+      tabsAria: "Sections Agence immobilière",
       tabs: {
         leases: "Baux et adresses",
         persons: "Personnes",
@@ -1308,7 +1317,7 @@ export const fr = {
       eyebrow: "Administration",
       title: "Utilisateurs",
       description:
-        "Activez les modules Société et LMNP de chaque compte et ajustez son rôle.",
+        "Activez les modules Société et Agence immobilière de chaque compte et ajustez son rôle.",
       loading: "Chargement des comptes…",
       empty: "Aucun compte local.",
       tableCaption: "Comptes locaux, rôles et modules activés",
@@ -1316,7 +1325,7 @@ export const fr = {
       role: "Rôle",
       modules: "Modules",
       companyModule: "Module société",
-      lmnpModule: "Module LMNP",
+      lmnpModule: "Module Agence immobilière",
       roles: {
         admin: "Administrateur",
         user: "Utilisateur",
@@ -1518,7 +1527,7 @@ export const fr = {
         "Sélectionnez la société concernée pour saisir les frais de ce mois.",
       noLeaseTitle: "Aucun bail pour cette société",
       noLeaseDescription:
-        "Ajoutez un bail société dans la page LMNP pour générer une note de frais.",
+        "Ajoutez un bail société dans la page Agence immobilière pour générer une note de frais.",
       selectLeaseTitle: "Choisir un bail",
       selectLeaseDescription:
         "Plusieurs baux sont liés à cette société. Sélectionnez le bail concerné pour saisir les frais de ce mois.",

@@ -180,6 +180,74 @@ describe("AuthPage register", () => {
       await screen.findByText("E-mail de confirmation renvoyé."),
     ).toBeVisible();
   });
+
+  it("renders module selection checkboxes with both checked by default", () => {
+    renderPage("register", "/inscription");
+
+    const agency = screen.getByLabelText(/Agence immobilière/);
+    const company = screen.getByLabelText(/Société/);
+
+    expect(agency).toBeChecked();
+    expect(company).toBeChecked();
+  });
+
+  it("shows French inline validation error when both modules are unchecked", async () => {
+    const user = userEvent.setup();
+    renderPage("register", "/inscription");
+
+    await user.type(
+      screen.getByLabelText("Adresse e-mail"),
+      "alice@example.test",
+    );
+    await user.type(screen.getByLabelText("Mot de passe"), "motdepasse");
+    await user.type(
+      screen.getByLabelText("Confirmer le mot de passe"),
+      "motdepasse",
+    );
+    await user.click(screen.getByLabelText(/Agence immobilière/));
+    await user.click(screen.getByLabelText(/Société/));
+    await user.click(screen.getByRole("button", { name: "Créer le compte" }));
+
+    expect(
+      screen.getByText("Au moins un module doit être sélectionné."),
+    ).toBeVisible();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("submits the registration with requested modules", async () => {
+    fetchMock.mockResolvedValue(emptyResponse());
+    const user = userEvent.setup();
+    renderPage("register", "/inscription");
+
+    await user.type(
+      screen.getByLabelText("Adresse e-mail"),
+      "alice@example.test",
+    );
+    await user.type(screen.getByLabelText("Mot de passe"), "motdepasse");
+    await user.type(
+      screen.getByLabelText("Confirmer le mot de passe"),
+      "motdepasse",
+    );
+    await user.click(screen.getByLabelText(/Société/));
+    await user.click(screen.getByRole("button", { name: "Créer le compte" }));
+
+    expect(
+      await screen.findByText(
+        /Un e-mail de confirmation vient de vous être envoyé/,
+      ),
+    ).toBeVisible();
+    const [path, init] = fetchMock.mock.calls.at(-1) ?? [];
+    expect(path).toBe("/api/auth/register");
+    expect(init).toMatchObject({
+      method: "POST",
+      body: JSON.stringify({
+        email: "alice@example.test",
+        password: "motdepasse",
+        companyEnabled: false,
+        lmnpEnabled: true,
+      }),
+    });
+  });
 });
 
 describe("AuthPage confirmation", () => {

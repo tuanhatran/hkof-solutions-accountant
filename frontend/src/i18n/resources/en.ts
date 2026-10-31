@@ -64,7 +64,8 @@ export const en = {
       ACCESS_DENIED: "You do not have access to this action.",
       MODULE_COMPANY_DISABLED:
         "The company module is disabled for this account.",
-      MODULE_LMNP_DISABLED: "The LMNP module is disabled for this account.",
+      MODULE_LMNP_DISABLED:
+        "The Real estate agency module is disabled for this account.",
       ADDRESS_REQUIRED: "The property address is required.",
       AMOUNT_REQUIRED: "The amount is required.",
       AMOUNT_INVALID: "The amount is invalid.",
@@ -155,7 +156,7 @@ export const en = {
         "The selected template is not a rent receipt template.",
       RENT_RECEIPT_PERIOD_INVALID: "The period end cannot precede the start.",
       SIGNATURE_MISSING:
-        "No signature configured. Add a signature to the landlord on the LMNP page.",
+        "No signature configured. Add a signature to the landlord on the Real estate agency page.",
       SIGNATURE_NAME_REQUIRED: "The signature name is required.",
       SIGNATURE_NAME_TOO_LONG:
         "The signature name is too long (255 characters maximum).",
@@ -242,7 +243,7 @@ export const en = {
         "The model response does not contain a JSON object. You can still enter the amount manually.",
       STATEMENT_PDF_NOT_FOUND: "The requested PDF could not be found.",
       STATEMENT_SIGNATURE_MISSING:
-        "No signature is configured for the manager. Add a signature to the manager employee on the LMNP page.",
+        "No signature is configured for the manager. Add a signature to the manager employee on the Real estate agency page.",
       STATEMENT_TEMPLATE_INVALID:
         "The selected template is not an expense statement template.",
     },
@@ -261,7 +262,7 @@ export const en = {
       history: "History",
       templates: "Templates",
       company: "Company",
-      lmnp: "LMNP",
+      lmnp: "Real estate agency",
       aiAdmin: "AI analysis",
       adminUsers: "User administration",
     },
@@ -314,6 +315,13 @@ export const en = {
       currentPassword: "Current password",
       newPassword: "New password",
       confirmPassword: "Confirm the password",
+      modules: "Desired modules",
+      agencyModule: "Real estate agency",
+      agencyModuleDescription:
+        "Rental management, rent receipts and signatures.",
+      companyModule: "Company",
+      companyModuleDescription:
+        "Home-office expense statements and mileage allowances.",
     },
     validation: {
       emailRequired: "The e-mail address is required.",
@@ -323,6 +331,7 @@ export const en = {
       currentPasswordRequired: "The current password is required.",
       confirmRequired: "Confirm the password.",
       confirmMismatch: "The passwords do not match.",
+      atLeastOneModuleRequired: "At least one module must be selected.",
     },
   },
   onboarding: {
@@ -515,7 +524,7 @@ export const en = {
       missingLeaseBefore:
         "No active lease for this landlord and tenant. Create the lease on the",
       missingLeaseAfter: " page.",
-      lmnpLink: "LMNP",
+      lmnpLink: "Real estate agency",
       companyLeaseSelected: "Company lease selected",
       leaseSelected: "Lease selected",
       signature: "Signature",
@@ -526,7 +535,7 @@ export const en = {
       signaturesError: "The signatures could not be loaded: {{message}}",
       missingLandlordSignatureBefore:
         "No signature for this landlord. Add one on their profile,",
-      lmnpPersonsLink: "LMNP · People",
+      lmnpPersonsLink: "Real estate agency · People",
       missingLandlordSignatureAfter: " page.",
     },
     preview: {
@@ -1015,10 +1024,10 @@ export const en = {
     },
     lmnp: {
       eyebrow: "Settings",
-      title: "LMNP",
+      title: "Real estate agency",
       description:
         "Lease addresses for the property, and persons acting as landlords or tenants with their signatures.",
-      tabsAria: "LMNP sections",
+      tabsAria: "Real estate agency sections",
       tabs: {
         leases: "Leases and addresses",
         persons: "People",
@@ -1274,7 +1283,7 @@ export const en = {
       eyebrow: "Administration",
       title: "Users",
       description:
-        "Enable the company and LMNP modules for each account and adjust its role.",
+        "Enable the company and Real estate agency modules for each account and adjust its role.",
       loading: "Loading accounts…",
       empty: "No local account.",
       tableCaption: "Local accounts, roles and enabled modules",
@@ -1282,7 +1291,7 @@ export const en = {
       role: "Role",
       modules: "Modules",
       companyModule: "Company module",
-      lmnpModule: "LMNP module",
+      lmnpModule: "Real estate agency module",
       roles: {
         admin: "Administrator",
         user: "User",
@@ -1482,7 +1491,7 @@ export const en = {
         "Select the relevant company to enter this month's expenses.",
       noLeaseTitle: "No lease for this company",
       noLeaseDescription:
-        "Add a company lease on the LMNP page to generate an expense statement.",
+        "Add a company lease on the Real estate agency page to generate an expense statement.",
       selectLeaseTitle: "Select a lease",
       selectLeaseDescription:
         "Several leases are linked to this company. Select the relevant lease to enter this month's expenses.",

@@ -23,6 +23,7 @@ import {
   registerSchema,
   type ChangePasswordFormValues,
   type LoginFormValues,
+  type RegisterFormInput,
   type RegisterFormValues,
 } from "@/lib/validation";
 
@@ -223,10 +224,16 @@ function RegisterPanel() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<RegisterFormValues>({
+  } = useForm<RegisterFormInput, unknown, RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     mode: "onSubmit",
-    defaultValues: { email: "", password: "", confirmPassword: "" },
+    defaultValues: {
+      email: "",
+      password: "",
+      confirmPassword: "",
+      companyEnabled: true,
+      lmnpEnabled: true,
+    },
   });
 
   async function submit(values: RegisterFormValues) {
@@ -234,7 +241,12 @@ function RegisterPanel() {
     setSubmitError(null);
     const email = values.email.trim().toLowerCase();
     try {
-      await api.auth.register({ email, password: values.password });
+      await api.auth.register({
+        email,
+        password: values.password,
+        companyEnabled: values.companyEnabled,
+        lmnpEnabled: values.lmnpEnabled,
+      });
       setRegisteredEmail(email);
     } catch (error) {
       setSubmitError(errorMessage(error));
@@ -359,6 +371,48 @@ function RegisterPanel() {
             data-cy="auth-password-confirm"
           />
         </FieldGroup>
+        <div className="auth-page-modules-group">
+          <span className="auth-page-modules-legend">
+            {t("auth.fields.modules")}
+          </span>
+          <div className="auth-page-modules">
+            <label className="auth-page-module-card">
+              <input
+                type="checkbox"
+                {...register("lmnpEnabled")}
+                data-cy="auth-module-agency"
+              />
+              <div className="auth-page-module-content">
+                <span className="auth-page-module-title">
+                  {t("auth.fields.agencyModule")}
+                </span>
+                <span className="auth-page-module-description">
+                  {t("auth.fields.agencyModuleDescription")}
+                </span>
+              </div>
+            </label>
+            <label className="auth-page-module-card">
+              <input
+                type="checkbox"
+                {...register("companyEnabled")}
+                data-cy="auth-module-company"
+              />
+              <div className="auth-page-module-content">
+                <span className="auth-page-module-title">
+                  {t("auth.fields.companyModule")}
+                </span>
+                <span className="auth-page-module-description">
+                  {t("auth.fields.companyModuleDescription")}
+                </span>
+              </div>
+            </label>
+          </div>
+          {errors.lmnpEnabled?.message ? (
+            <p className="auth-page-module-error" role="alert">
+              {errors.lmnpEnabled.message}
+            </p>
+          ) : null}
+        </div>
         <ErrorStatus message={submitError} />
         <SubmitButton
           label={t("auth.register.submit")}

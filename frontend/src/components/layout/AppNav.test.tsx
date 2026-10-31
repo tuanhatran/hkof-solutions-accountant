@@ -24,7 +24,7 @@ describe("SideNavigation", () => {
       within(navigation).getByRole("link", { name: /Société/ }),
     ).toHaveAttribute("href", "/configuration/entreprise");
     expect(
-      within(navigation).getByRole("link", { name: /LMNP/ }),
+      within(navigation).getByRole("link", { name: /Agence immobilière/ }),
     ).toHaveAttribute("href", "/configuration/lmnp");
     const templatesLink = within(navigation).getByRole("link", {
       name: /Modèles/,
@@ -41,7 +41,7 @@ describe("SideNavigation", () => {
       "Historique",
       "Modèles",
       "Société",
-      "LMNP",
+      "Agence immobilière",
       "Analyse IA",
     ]);
 
@@ -153,7 +153,9 @@ describe("module-aware navigation", () => {
     expect(
       screen.queryByRole("link", { name: /Quittance/ }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /^LMNP/ })).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: /^Agence immobilière/ }),
+    ).toBeNull();
   });
 
   it("shows only the LMNP module links for an LMNP-only account", () => {
@@ -168,7 +170,7 @@ describe("module-aware navigation", () => {
       "Quittance",
       "Historique",
       "Modèles",
-      "LMNP",
+      "Agence immobilière",
       "Analyse IA",
     ]);
     expect(
@@ -322,7 +324,7 @@ describe("MobileNavigation", () => {
       "Historique",
       "Modèles",
       "Société",
-      "LMNP",
+      "Agence immobilière",
       "Analyse IA",
     ]);
     const active = within(mobileNavigation).getByRole("link", {
@@ -352,7 +354,7 @@ describe("MobileNavigation", () => {
       "History",
       "Templates",
       "Company",
-      "LMNP",
+      "Real estate agency",
       "AI analysis",
     ]);
   });

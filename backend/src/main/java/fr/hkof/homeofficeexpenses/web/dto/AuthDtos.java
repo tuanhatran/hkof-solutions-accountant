@@ -18,7 +18,9 @@ public final class AuthDtos {
     public record RegisterRequest(
             @NotBlank(message = EMAIL_REQUIRED) @Email(message = EMAIL_INVALID) @Size(max = 320) String email,
             @NotBlank(message = PASSWORD_REQUIRED) @Size(max = 100,
-                    message = PASSWORD_SIZE) String password) {
+                    message = PASSWORD_SIZE) String password,
+            Boolean companyEnabled,
+            Boolean lmnpEnabled) {
     }
 
     public record ConfirmEmailRequest(

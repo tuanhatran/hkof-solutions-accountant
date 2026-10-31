@@ -85,7 +85,7 @@ describe("AppShell", () => {
       within(navigation).getByRole("link", { name: /Société/ }),
     ).toHaveAttribute("href", "/configuration/entreprise");
     expect(
-      within(navigation).getByRole("link", { name: /LMNP/ }),
+      within(navigation).getByRole("link", { name: /Agence immobilière/ }),
     ).toHaveAttribute("href", "/configuration/lmnp");
 
     const historyLink = within(navigation).getByRole("link", {
@@ -147,7 +147,7 @@ describe("AppShell", () => {
       "Historique",
       "Modèles",
       "Société",
-      "LMNP",
+      "Agence immobilière",
       "Analyse IA",
     ]);
     const active = within(mobileNavigation).getByRole("link", {
@@ -334,7 +334,7 @@ describe("AppShell", () => {
       "History",
       "Templates",
       "Company",
-      "LMNP",
+      "Real estate agency",
       "AI analysis",
     ]);
 

@@ -167,6 +167,29 @@ class AuthIntegrationTest {
     }
 
     @Test
+    @DisplayName("Registration persists requested module flags")
+    void registersWithRequestedModules() throws Exception {
+        mockMvc.perform(post("/api/auth/register").contentType(JSON)
+                        .content("{\"email\":\"custom@example.test\",\"password\":\"motdepasse\",\"companyEnabled\":false,\"lmnpEnabled\":true}"))
+                .andExpect(status().isNoContent());
+
+        AppUser user = users.findByEmailIgnoreCase("custom@example.test").orElseThrow();
+        assertThat(user.isCompanyEnabled()).isFalse();
+        assertThat(user.isLmnpEnabled()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Registration rejecting both modules disabled")
+    void rejectsRegistrationWithBothModulesDisabled() throws Exception {
+        mockMvc.perform(post("/api/auth/register").contentType(JSON)
+                        .content("{\"email\":\"none@example.test\",\"password\":\"motdepasse\",\"companyEnabled\":false,\"lmnpEnabled\":false}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("AT_LEAST_ONE_MODULE_REQUIRED"))
+                .andExpect(jsonPath("$.detail").value("Au moins un module doit être sélectionné."));
+    }
+
+    @Test
     @DisplayName("An unconfirmed account and a wrong password are rejected with distinct French errors")
     void rejectsUnconfirmedAndWrongPassword() throws Exception {
         register("carol@example.test", "motdepasse");
