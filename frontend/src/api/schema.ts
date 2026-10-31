@@ -992,10 +992,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Liste les bailleurs non supprimés du compte, triés par nom. Un bailleur peut porter des signatures et être partie à des baux. */
+        /** @description Liste les bailleurs non supprimés du compte, triés par nom. Un bailleur peut porter des signatures et être partie à des baux. Route partagée : accessible dès que le module LMNP ou le module entreprise est activé. */
         get: operations["listLandlords"];
         put?: never;
-        /** @description Crée un bailleur pour le compte courant. */
+        /** @description Crée un bailleur pour le compte courant. Route partagée : accessible dès que le module LMNP ou le module entreprise est activé, notamment pour le bail société créé pendant l'onboarding entreprise. */
         post: operations["createLandlord"];
         delete?: never;
         options?: never;
@@ -1011,9 +1011,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        /** @description Met à jour un bailleur. Route partagée : accessible dès que le module LMNP ou le module entreprise est activé. */
         put: operations["updateLandlord"];
         post?: never;
-        /** @description Supprime logiquement un bailleur. Refusé en français s'il porte des signatures ou s'il est utilisé par un bail actif. */
+        /** @description Supprime logiquement un bailleur. Refusé en français s'il porte des signatures ou s'il est utilisé par un bail actif. Route partagée : accessible dès que le module LMNP ou le module entreprise est activé. */
         delete: operations["deleteLandlord"];
         options?: never;
         head?: never;
@@ -1097,9 +1098,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Liste les baux du compte. Route partagée : accessible dès que le module LMNP ou le module entreprise est activé. */
         get: operations["listLeases"];
         put?: never;
-        /** @description Crée un bail. Le lien à une société est porté par la société, jamais par ce point d'entrée. */
+        /** @description Crée un bail. Le lien à une société est porté par la société, jamais par ce point d'entrée. Route partagée : accessible dès que le module LMNP ou le module entreprise est activé, notamment pour le bail société de l'onboarding entreprise. */
         post: operations["createLease"];
         delete?: never;
         options?: never;
@@ -1115,9 +1117,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description Met à jour un bail et conserve le lien société éventuel. */
+        /** @description Met à jour un bail et conserve le lien société éventuel. Route partagée : accessible dès que le module LMNP ou le module entreprise est activé. */
         put: operations["updateLease"];
         post?: never;
+        /** @description Supprime logiquement un bail. Route partagée : accessible dès que le module LMNP ou le module entreprise est activé. */
         delete: operations["deleteLease"];
         options?: never;
         head?: never;
@@ -1958,7 +1961,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["ProblemDetail"];
             };
         };
-        /** @description Module LMNP désactivé pour ce compte (403 MODULE_LMNP_DISABLED) */
+        /** @description Module LMNP désactivé pour ce compte (403 MODULE_LMNP_DISABLED) ; sur /api/leases et /api/landlords, route partagée, renvoyé seulement quand ni le module LMNP ni le module entreprise n'est activé. */
         LmnpModuleDisabled: {
             headers: {
                 [name: string]: unknown;

@@ -37,6 +37,18 @@
     @apply mb-5 flex flex-wrap gap-2;
   }
 
+  .onboarding-tracks {
+    @apply mb-5 flex flex-wrap gap-2;
+  }
+
+  .onboarding-track {
+    @apply rounded-md border border-line px-3 py-2 text-sm text-ink-soft;
+  }
+
+  .onboarding-track-active {
+    @apply border-accent/30 bg-accent-soft font-semibold text-accent;
+  }
+
   .onboarding-step {
     @apply flex items-center gap-2 rounded-md border border-line bg-paper-deep/50 px-3 py-2 text-xs text-ink-soft;
   }

@@ -187,6 +187,36 @@ describe("OnboardingPage", () => {
     expect(screen.getByLabelText("Étape 1 sur 4 : Profil")).toBeVisible();
   });
 
+  it("shows a track selector when both modules are enabled and opens the company wizard", async () => {
+    const user = userEvent.setup();
+    renderWizard();
+
+    const tracks = screen.getByRole("group", {
+      name: "Parcours d'inscription",
+    });
+    expect(
+      within(tracks).getByRole("button", { name: "Espace LMNP" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      within(tracks).getByRole("button", { name: "Espace société" }),
+    ).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(
+      within(tracks).getByRole("button", { name: "Espace société" }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Identité de la société" }),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Étape 1 sur 5 : Identité")).toHaveAttribute(
+      "aria-current",
+      "step",
+    );
+    expect(
+      screen.queryByRole("heading", { name: "Profil de l'agence" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows the account e-mail and the four French steps", () => {
     renderWizard();
 

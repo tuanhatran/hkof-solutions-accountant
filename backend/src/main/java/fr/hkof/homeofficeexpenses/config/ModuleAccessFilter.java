@@ -34,8 +34,13 @@ final class ModuleAccessFilter extends OncePerRequestFilter {
     /** A landlord may need to link a tenant company even with the company module disabled. */
     private static final String COMPANY_LOOKUP_PATH = "/api/companies/lookup";
     private static final List<String> LMNP_PREFIXES = List.of(
-            "/api/leases", "/api/rent-receipts", "/api/persons", "/api/landlords", "/api/tenants",
-            "/api/agency");
+            "/api/rent-receipts", "/api/persons", "/api/tenants", "/api/agency");
+    /**
+     * A landlord and a lease belong to either module: an LMNP owner uses them for its own
+     * receipts, while a company owner needs them to declare its company lease. The route stays
+     * open as soon as one of the two modules is enabled.
+     */
+    private static final List<String> SHARED_PREFIXES = List.of("/api/leases", "/api/landlords");
     /**
      * A company-only owner has no LMNP module but must still read the receipts a landlord issued
      * for its company. Only the received read paths bypass the LMNP gate; every other receipt
@@ -59,7 +64,8 @@ final class ModuleAccessFilter extends OncePerRequestFilter {
             String path = request.getRequestURI();
             boolean companyRoute = matches(COMPANY_PREFIXES, path) && !COMPANY_LOOKUP_PATH.equals(path);
             boolean lmnpRoute = matches(LMNP_PREFIXES, path) && !isReceivedRentReceiptPath(path);
-            if (companyRoute || lmnpRoute) {
+            boolean sharedRoute = matches(SHARED_PREFIXES, path);
+            if (companyRoute || lmnpRoute || sharedRoute) {
                 AppUser user = users.findById(principal.id()).orElse(null);
                 if (companyRoute && user != null && !user.isCompanyEnabled()) {
                     writeProblem(response, "Module entreprise désactivé",
@@ -67,6 +73,11 @@ final class ModuleAccessFilter extends OncePerRequestFilter {
                     return;
                 }
                 if (lmnpRoute && user != null && !user.isLmnpEnabled()) {
+                    writeProblem(response, "Module LMNP désactivé",
+                            "Le module LMNP est désactivé pour ce compte.", MODULE_LMNP_DISABLED);
+                    return;
+                }
+                if (sharedRoute && user != null && !user.isLmnpEnabled() && !user.isCompanyEnabled()) {
                     writeProblem(response, "Module LMNP désactivé",
                             "Le module LMNP est désactivé pour ce compte.", MODULE_LMNP_DISABLED);
                     return;

@@ -1,0 +1,43 @@
+@reference "../../index.css";
+
+@layer components {
+  .company-onboarding-lookup {
+    @apply flex items-end gap-2;
+  }
+
+  .company-onboarding-preview {
+    @apply rounded-md border border-line bg-paper-deep/40 px-4 py-3;
+  }
+
+  .company-onboarding-preview-label {
+    @apply text-xs font-medium text-ink-soft;
+  }
+
+  .company-onboarding-preview-value {
+    @apply mt-1 text-lg font-semibold text-ink;
+  }
+
+  .company-onboarding-preview-hint {
+    @apply mt-1 text-xs text-ink-soft;
+  }
+
+  .company-onboarding-options {
+    @apply mt-5 space-y-3;
+  }
+
+  .company-onboarding-option {
+    @apply rounded-md border border-line p-4;
+  }
+
+  .company-onboarding-option-fields {
+    @apply mt-3 grid gap-3 sm:grid-cols-2;
+  }
+
+  .company-onboarding-prorata {
+    @apply max-w-32;
+  }
+
+  .company-onboarding-add {
+    @apply mt-3;
+  }
+}
