@@ -33,7 +33,7 @@ describe("Expense statement — entry and preview", () => {
   it("keeps expenses added via the receipt after switching back", () => {
     disableLlm();
     createRentReceipt();
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/expense-statement");
     cy.chooseMonth(MONTHS);
 
     cy.get('[data-cy="select-expense-type"]').should("not.be.disabled");
@@ -45,8 +45,8 @@ describe("Expense statement — entry and preview", () => {
     });
     waitForAmount('[data-cy="retained-total"]', "992,85");
 
-    cy.visit("/generer/quittance");
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/rent-receipt");
+    cy.visit("/generate/expense-statement");
 
     cy.get('[data-cy="expense-line-loyer"]').should("exist");
     cy.get('[data-cy="expense-line-gaz"]').should("exist");
@@ -55,7 +55,7 @@ describe("Expense statement — entry and preview", () => {
 
   it("blocks rent without a receipt then locks it to the active receipt", () => {
     disableLlm();
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/expense-statement");
     cy.chooseMonth(MONTHS);
 
     cy.get('[data-cy="select-expense-type"]')
@@ -88,7 +88,7 @@ describe("Expense statement — entry and preview", () => {
   it("accepts pro-rata 35,71 % and 35.71, rejects 120 and abc", () => {
     disableLlm();
     createRentReceipt();
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/expense-statement");
     cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-expense-type"]').should("not.be.disabled");
 
@@ -128,7 +128,7 @@ describe("Expense statement — entry and preview", () => {
 
   it("rejects a .exe file without creating an expense", () => {
     disableLlm();
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/expense-statement");
     cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-expense-type"]')
       .should("not.be.disabled")
@@ -152,7 +152,7 @@ describe("Expense statement — entry and preview", () => {
 
   it("rejects a fake .docx whose content does not match", () => {
     disableLlm();
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/expense-statement");
     cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-expense-type"]')
       .should("not.be.disabled")
@@ -176,7 +176,7 @@ describe("Expense statement — entry and preview", () => {
 
   it("rejects a file over 10 MB", () => {
     disableLlm();
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/expense-statement");
     cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-expense-type"]')
       .should("not.be.disabled")
@@ -201,7 +201,7 @@ describe("Expense statement — entry and preview", () => {
 
   it("pre-fills fields with AI and allows correcting the amount", () => {
     createRentReceipt();
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/expense-statement");
     cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-expense-type"]').should("not.be.disabled");
     addRent();
@@ -243,7 +243,7 @@ describe("Expense statement — entry and preview", () => {
 
   it("pre-fills the amount when the model answers the euro sign", () => {
     createRentReceipt();
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/expense-statement");
     cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-expense-type"]').should("not.be.disabled");
     addRent();
@@ -261,7 +261,7 @@ describe("Expense statement — entry and preview", () => {
 
   it("overwrites a typed amount with the AI proposal and requires confirmation", () => {
     createRentReceipt();
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/expense-statement");
     cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-expense-type"]').should("not.be.disabled");
     addRent();
@@ -291,7 +291,7 @@ describe("Expense statement — entry and preview", () => {
 
   it("stays usable when analysis fails", () => {
     createRentReceipt();
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/expense-statement");
     cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-expense-type"]').should("not.be.disabled");
     addRent();
@@ -313,7 +313,7 @@ describe("Expense statement — entry and preview", () => {
 
   it("cancels a running analysis and allows manual entry", () => {
     createRentReceipt();
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/expense-statement");
     cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-expense-type"]').should("not.be.disabled");
 
@@ -342,7 +342,7 @@ describe("Expense statement — entry and preview", () => {
     createRentReceipt();
     cy.intercept("POST", "/api/expense-statements/preview").as("preview");
 
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/expense-statement");
     cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-expense-type"]').should("not.be.disabled");
 

@@ -242,7 +242,7 @@ function linkCompanyLease(companyId: number, leaseId: number): void {
 
 /** Creates the second company and its lease through the UI; it is selected for configuration. */
 function createAnnexeCompany(): void {
-  cy.visit("/configuration");
+  cy.visit("/settings");
   waitForText('[data-cy="company-information"]', SEEDED_COMPANY);
 
   cy.get('[data-cy="btn-new-company"]').click();
@@ -571,7 +571,7 @@ describe("Multi-company and employees", () => {
 
       // Creating a company no longer activates it globally: the note page asks
       // for an explicit company in its header.
-      cy.visit("/generer/note-frais");
+      cy.visit("/generate/expense-statement");
       cy.get('[data-cy="select-company-expense-statement"]', {
         timeout: 20_000,
       })
@@ -645,7 +645,7 @@ describe("Multi-company and employees", () => {
 
       // Back on the note page the choice is explicit again: outside History's
       // navigation state, no company is restored by default.
-      cy.visit("/generer/note-frais");
+      cy.visit("/generate/expense-statement");
       cy.get('[data-cy="select-company-expense-statement"]', {
         timeout: 20_000,
       })

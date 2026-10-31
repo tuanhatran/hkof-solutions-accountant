@@ -30,7 +30,7 @@ class AuthServiceTest {
     private final AppUserRepository users = mock(AppUserRepository.class);
     private final PasswordEncoder encoder = mock(PasswordEncoder.class);
     private final AuthService service = new AuthService(users, encoder, mock(EmailService.class),
-            new AppProperties.Auth("http://localhost/confirmer-email", Duration.ofHours(24)),
+            new AppProperties.Auth("http://localhost/confirm-email", Duration.ofHours(24)),
             Clock.systemUTC());
 
     @Test

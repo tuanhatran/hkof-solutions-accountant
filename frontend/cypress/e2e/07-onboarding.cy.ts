@@ -79,7 +79,7 @@ function findConfirmationMessage(
 
 function confirmationToken(message: MailpitMessage): string {
   const source = message.Text ?? message.HTML ?? "";
-  const match = /confirmer-email\?token=([A-Za-z0-9_-]+)/.exec(source);
+  const match = /confirm-email\?token=([A-Za-z0-9_-]+)/.exec(source);
   if (!match) {
     throw new Error("Confirmation token missing from the e-mail");
   }
@@ -143,7 +143,7 @@ describe("onboarding and colocation", () => {
   it("registers a fresh account, completes the wizard and lists both co-tenants on the receipt", () => {
     const email = `e2e-onboarding-${Date.now()}@example.test`;
     cy.resetState();
-    cy.visit("/inscription");
+    cy.visit("/register");
     fillRegistration(email, PASSWORD);
 
     cy.contains(
@@ -151,14 +151,14 @@ describe("onboarding and colocation", () => {
     ).should("be.visible");
 
     findConfirmationMessage(email).then((message) => {
-      cy.visit(`/confirmer-email?token=${confirmationToken(message)}`);
+      cy.visit(`/confirm-email?token=${confirmationToken(message)}`);
       cy.contains("Adresse confirmée").should("be.visible");
     });
 
     // A fresh account lands on the wizard, never on the generator.
-    cy.visit("/connexion");
+    cy.visit("/login");
     signIn(email, PASSWORD);
-    cy.location("pathname").should("eq", "/bienvenue");
+    cy.location("pathname").should("eq", "/welcome");
     cy.contains(`Connecté en tant que ${email}`).should("be.visible");
 
     // Step 1: manager name, phone country code, address note, agency and a 14-digit SIRET.
@@ -247,11 +247,8 @@ describe("onboarding and colocation", () => {
     cy.contains("Bob MARTIN").should("be.visible");
     cy.get('[data-cy="onboarding-finalize"]').click();
 
-    // Finalize lands on /tableau-de-bord: assert Agency Dashboard metrics.
-    cy.location("pathname", { timeout: 30_000 }).should(
-      "eq",
-      "/tableau-de-bord",
-    );
+    // Finalize lands on /dashboard: assert Agency Dashboard metrics.
+    cy.location("pathname", { timeout: 30_000 }).should("eq", "/dashboard");
     cy.get('[data-cy="dashboard-page"]').should("be.visible");
     cy.get('[data-cy="dashboard-agency-name"]').should(
       "contain.text",
@@ -275,7 +272,7 @@ describe("onboarding and colocation", () => {
 
     // Navigate to rent receipt generator via quick action
     cy.get('[data-cy="action-generate-receipt"]').click();
-    cy.location("pathname").should("eq", "/generer/quittance");
+    cy.location("pathname").should("eq", "/generate/rent-receipt");
 
     cy.get('[data-cy="lease-detail"]', { timeout: 20_000 })
       .should("be.visible")

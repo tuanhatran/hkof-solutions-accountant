@@ -657,7 +657,7 @@ describe("useRentReceiptPage preview and generation", () => {
     const { result } = renderController();
     act(() => result.current.goToStatement());
     expect(useStatementDraft.getState().month).toBe(MONTH);
-    expect(navigateMock).toHaveBeenCalledWith("/generer/note-frais");
+    expect(navigateMock).toHaveBeenCalledWith("/generate/expense-statement");
   });
 
   it("downloads a receipt with fallback or provided file names", async () => {

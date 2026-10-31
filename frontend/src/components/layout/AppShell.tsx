@@ -58,7 +58,7 @@ export function AppShell() {
 
   async function logout() {
     await logoutSession();
-    navigate("/connexion", { replace: true });
+    navigate("/login", { replace: true });
   }
 
   async function saveAndLeave() {

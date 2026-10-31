@@ -71,7 +71,7 @@ app:
   security:
     enabled: ${APP_SECURITY_ENABLED:true}
   auth:
-    confirmation-url: ${APP_AUTH_CONFIRMATION_URL:http://localhost:5173/confirmer-email}
+    confirmation-url: ${APP_AUTH_CONFIRMATION_URL:http://localhost:5173/confirm-email}
     confirmation-ttl: 24h
   llm:
     default-url: ${OLLAMA_BASE_URL:http://localhost:11434}

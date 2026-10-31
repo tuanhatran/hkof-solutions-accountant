@@ -67,7 +67,7 @@ describe("AI admin and templates", () => {
       .should("contain.text", "IA injoignable");
     cy.get('[data-cy="llm-status"]').should("contain.text", "Injoignable");
 
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/expense-statement");
     cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-expense-type"]').should("not.be.disabled");
     addRent();
@@ -82,7 +82,7 @@ describe("AI admin and templates", () => {
   it("stays usable in manual mode when AI is disabled", () => {
     disableLlm();
     createRentReceipt();
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/expense-statement");
     cy.chooseMonth(MONTHS);
 
     cy.get('[data-cy="llm-status-badge"]', { timeout: 20_000 })
@@ -154,7 +154,7 @@ describe("AI admin and templates", () => {
       .should("not.be.disabled");
 
     cy.intercept("POST", "/api/rent-receipts/preview").as("preview");
-    cy.visit("/generer/quittance");
+    cy.visit("/generate/rent-receipt");
     normalLease().then((lease) => {
       cy.get('[data-cy="select-landlord"]').select(String(lease.landlordId));
       cy.get('[data-cy="select-tenant"]').select(`person:${lease.tenantId}`);

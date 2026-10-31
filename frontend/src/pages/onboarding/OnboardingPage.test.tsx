@@ -51,10 +51,10 @@ function renderWizard() {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={["/bienvenue"]}>
+      <MemoryRouter initialEntries={["/welcome"]}>
         <Routes>
-          <Route path="/bienvenue" element={<OnboardingPage />} />
-          <Route path="/tableau-de-bord" element={<p>Tableau de bord</p>} />
+          <Route path="/welcome" element={<OnboardingPage />} />
+          <Route path="/dashboard" element={<p>Tableau de bord</p>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,

@@ -148,7 +148,7 @@ export function RentReceiptAmountFields({ c }: { c: RentReceiptController }) {
         <button
           type="button"
           className="link"
-          onClick={() => c.navigate("/configuration")}
+          onClick={() => c.navigate("/settings")}
         >
           {t("rentReceipt.fields.configurationLink")}
         </button>

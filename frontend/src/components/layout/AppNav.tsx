@@ -42,21 +42,21 @@ export const SECTIONS: NavigationSection[] = [
     titleKey: "navigation.sections.documents",
     links: [
       {
-        to: "/tableau-de-bord",
+        to: "/dashboard",
         labelKey: "navigation.links.dashboard",
         icon: LayoutDashboard,
         dataCy: "tab-dashboard",
         module: "lmnp",
       },
       {
-        to: "/generer/quittance",
+        to: "/generate/rent-receipt",
         labelKey: "navigation.links.rentReceipt",
         icon: FileText,
         dataCy: "tab-rent-receipt",
         module: "lmnp",
       },
       {
-        to: "/generer/note-frais",
+        to: "/generate/expense-statement",
         labelKey: "navigation.links.expenseStatement",
         icon: ReceiptText,
         dataCy: "tab-expense-statement",
@@ -68,7 +68,7 @@ export const SECTIONS: NavigationSection[] = [
     titleKey: "navigation.sections.tracking",
     links: [
       {
-        to: "/historique",
+        to: "/history",
         labelKey: "navigation.links.history",
         icon: History,
         dataCy: "tab-history",
@@ -85,21 +85,21 @@ export const SECTIONS: NavigationSection[] = [
         dataCy: "tab-templates",
       },
       {
-        to: "/configuration/entreprise",
+        to: "/settings/company",
         labelKey: "navigation.links.company",
         icon: Building2,
         dataCy: "tab-configuration",
         module: "company",
       },
       {
-        to: "/configuration/lmnp",
+        to: "/settings/agency",
         labelKey: "navigation.links.lmnp",
         icon: Home,
         dataCy: "tab-lmnp",
         module: "lmnp",
       },
       {
-        to: "/admin/utilisateurs",
+        to: "/admin/users",
         labelKey: "navigation.links.adminUsers",
         icon: Users,
         dataCy: "tab-admin-users",

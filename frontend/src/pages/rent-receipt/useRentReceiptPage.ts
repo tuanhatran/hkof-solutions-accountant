@@ -431,7 +431,7 @@ export function useRentReceiptPage() {
   function goToStatement() {
     const month = result?.month ?? draft.month;
     useStatementDraft.getState().changeMonth(month);
-    navigate("/generer/note-frais");
+    navigate("/generate/expense-statement");
   }
 
   function selectPair(nextLandlordId: string, nextTenantKey: string) {

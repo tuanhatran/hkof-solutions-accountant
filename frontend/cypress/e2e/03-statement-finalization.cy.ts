@@ -33,7 +33,7 @@ describe("Expense statement — finalization", () => {
   it("generates a statement with the six types, attachments and history, then version 2", () => {
     disableLlm();
     createRentReceipt();
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/expense-statement");
     cy.chooseMonth(MONTHS);
     cy.get('[data-cy="select-expense-type"]').should("not.be.disabled");
 
@@ -96,7 +96,7 @@ describe("Expense statement — finalization", () => {
 
     cy.get('[data-cy="tab-history"]').click();
 
-    cy.visit("/generer/note-frais");
+    cy.visit("/generate/expense-statement");
     cy.contains("note version 1 déjà active", { timeout: 20_000 }).should(
       "be.visible",
     );

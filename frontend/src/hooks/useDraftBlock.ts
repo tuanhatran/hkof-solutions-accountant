@@ -9,17 +9,17 @@ export function useDraftBlock() {
   const draftExists = rentReceiptDirty || statementDirty;
 
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {
-    const fromGeneration = currentLocation.pathname.startsWith("/generer");
-    const toGeneration = nextLocation.pathname.startsWith("/generer");
+    const fromGeneration = currentLocation.pathname.startsWith("/generate");
+    const toGeneration = nextLocation.pathname.startsWith("/generate");
     if (!fromGeneration || toGeneration) {
       return false;
     }
-    // Each generation page only owns its own draft: leaving /generer/note-frais
+    // Each generation page only owns its own draft: leaving /generate/expense-statement
     // must never save an unrelated dirty rent receipt draft (and vice versa).
-    if (currentLocation.pathname.startsWith("/generer/quittance")) {
+    if (currentLocation.pathname.startsWith("/generate/rent-receipt")) {
       return rentReceiptDirty;
     }
-    if (currentLocation.pathname.startsWith("/generer/note-frais")) {
+    if (currentLocation.pathname.startsWith("/generate/expense-statement")) {
       return statementDirty;
     }
     return false;

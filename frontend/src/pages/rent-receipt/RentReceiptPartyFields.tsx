@@ -128,7 +128,7 @@ export function RentReceiptPartyFields({ c }: { c: RentReceiptController }) {
           data-cy="alert-missing-lease"
         >
           {t("rentReceipt.fields.missingLeaseBefore")}{" "}
-          <Link to="/configuration/lmnp" className="link">
+          <Link to="/settings/agency" className="link">
             {t("rentReceipt.fields.lmnpLink")}
           </Link>
           {t("rentReceipt.fields.missingLeaseAfter")}

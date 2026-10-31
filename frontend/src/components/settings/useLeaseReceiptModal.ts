@@ -29,7 +29,7 @@ export function useLeaseReceiptModal(leaseRow: LeaseDto) {
   const queryClient = useQueryClient();
   const templates = useTemplates("RENT_RECEIPT");
   const signatures = useSignatures(leaseRow.landlordId ?? null);
-  // Same rule as /generer/quittance: the lease company only, never a fallback.
+  // Same rule as /generate/rent-receipt: the lease company only, never a fallback.
   const companyId = leaseRow.companyId ?? null;
   const companyName = leaseRow.companyName ?? null;
   const template =

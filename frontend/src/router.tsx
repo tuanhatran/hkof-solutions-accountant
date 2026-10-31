@@ -133,23 +133,23 @@ function RequireAuth() {
   if (!user) {
     return (
       <Navigate
-        to="/connexion"
+        to="/login"
         replace
         state={{ from: `${location.pathname}${location.search}` }}
       />
     );
   }
-  if (user.mustChangePassword && location.pathname !== "/mot-de-passe") {
-    return <Navigate to="/mot-de-passe" replace />;
+  if (user.mustChangePassword && location.pathname !== "/password") {
+    return <Navigate to="/password" replace />;
   }
   // An explicit false only: a session without the flag keeps the old routing.
   // A forced password change always wins and never sends the account to onboarding.
   if (
     user.onboardingCompleted === false &&
     !user.mustChangePassword &&
-    location.pathname !== "/bienvenue"
+    location.pathname !== "/welcome"
   ) {
-    return <Navigate to="/bienvenue" replace />;
+    return <Navigate to="/welcome" replace />;
   }
   return <Outlet />;
 }
@@ -191,7 +191,7 @@ function AdminRoute({ children }: { children: ReactNode }) {
 const appRoutes: RouteObject[] = [
   { index: true, element: <HomeRedirect /> },
   {
-    path: "tableau-de-bord",
+    path: "dashboard",
     element: (
       <ModuleRoute module="lmnp">
         <DashboardPage />
@@ -199,11 +199,11 @@ const appRoutes: RouteObject[] = [
     ),
   },
   {
-    path: "generer",
+    path: "generate",
     element: <HomeRedirect />,
   },
   {
-    path: "generer/quittance",
+    path: "generate/rent-receipt",
     element: (
       <ModuleRoute module="lmnp">
         <GenerateRentReceiptPage />
@@ -211,24 +211,24 @@ const appRoutes: RouteObject[] = [
     ),
   },
   {
-    path: "generer/note-frais",
+    path: "generate/expense-statement",
     element: (
       <ModuleRoute module="company">
         <GenerateExpenseStatementPage />
       </ModuleRoute>
     ),
   },
-  { path: "historique", element: <HistoryPage /> },
+  { path: "history", element: <HistoryPage /> },
   {
-    path: "configuration",
+    path: "settings",
     element: (
       <ModuleRoute module="company">
-        <Navigate to="/configuration/entreprise" replace />
+        <Navigate to="/settings/company" replace />
       </ModuleRoute>
     ),
   },
   {
-    path: "configuration/entreprise",
+    path: "settings/company",
     element: (
       <ModuleRoute module="company">
         <SettingsPage />
@@ -236,7 +236,7 @@ const appRoutes: RouteObject[] = [
     ),
   },
   {
-    path: "configuration/lmnp",
+    path: "settings/agency",
     element: (
       <ModuleRoute module="lmnp">
         <LmnpPage />
@@ -244,9 +244,9 @@ const appRoutes: RouteObject[] = [
     ),
   },
   { path: "templates", element: <TemplatesPage /> },
-  { path: "aucun-module", element: <NoModulePage /> },
+  { path: "no-module", element: <NoModulePage /> },
   {
-    path: "admin/utilisateurs",
+    path: "admin/users",
     element: (
       <AdminRoute>
         <AdminUsersPage />
@@ -262,14 +262,14 @@ export const routes: RouteObject[] = [
     element: <SessionBootstrap />,
     errorElement: <AppError />,
     children: [
-      { path: "connexion", element: <AuthPage mode="login" /> },
-      { path: "inscription", element: <AuthPage mode="register" /> },
-      { path: "confirmer-email", element: <AuthPage mode="confirm" /> },
+      { path: "login", element: <AuthPage mode="login" /> },
+      { path: "register", element: <AuthPage mode="register" /> },
+      { path: "confirm-email", element: <AuthPage mode="confirm" /> },
       {
         element: <RequireAuth />,
         children: [
-          { path: "mot-de-passe", element: <AuthPage mode="password" /> },
-          { path: "bienvenue", element: <OnboardingPage /> },
+          { path: "password", element: <AuthPage mode="password" /> },
+          { path: "welcome", element: <OnboardingPage /> },
           { path: "/", element: <AppShell />, children: appRoutes },
         ],
       },

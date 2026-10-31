@@ -13,9 +13,9 @@ function Probe() {
 function renderAt(path: string) {
   const router = createMemoryRouter(
     [
-      { path: "/generer/quittance", element: <Probe /> },
-      { path: "/generer/note-frais", element: <Probe /> },
-      { path: "/historique", element: <p>Historique</p> },
+      { path: "/generate/rent-receipt", element: <Probe /> },
+      { path: "/generate/expense-statement", element: <Probe /> },
+      { path: "/history", element: <p>Historique</p> },
     ],
     { initialEntries: [path] },
   );
@@ -38,7 +38,7 @@ afterEach(() => {
 
 describe("useDraftBlock", () => {
   it("does not register a beforeunload warning without a draft", () => {
-    renderAt("/generer/quittance");
+    renderAt("/generate/rent-receipt");
 
     const event = new Event("beforeunload", { cancelable: true });
     window.dispatchEvent(event);
@@ -50,7 +50,7 @@ describe("useDraftBlock", () => {
   it("warns before unload when a rent receipt draft is dirty", () => {
     useRentReceiptDraft.setState({ dirty: true });
 
-    renderAt("/generer/quittance");
+    renderAt("/generate/rent-receipt");
 
     const event = new Event("beforeunload", { cancelable: true });
     window.dispatchEvent(event);
@@ -65,7 +65,7 @@ describe("useDraftBlock", () => {
       dirtyByMonth: { [draftScopeKey(null, "2026-01")]: true },
     });
 
-    renderAt("/generer/note-frais");
+    renderAt("/generate/expense-statement");
 
     const event = new Event("beforeunload", { cancelable: true });
     window.dispatchEvent(event);
@@ -80,9 +80,9 @@ describe("useDraftBlock", () => {
       dirtyByMonth: { [draftScopeKey(null, "2026-01")]: true },
     });
 
-    const router = renderAt("/generer/note-frais");
+    const router = renderAt("/generate/expense-statement");
     await act(async () => {
-      await router.navigate("/historique");
+      await router.navigate("/history");
     });
 
     expect(screen.queryByText("Historique")).toBeNull();
@@ -92,9 +92,9 @@ describe("useDraftBlock", () => {
   it("blocks leaving the quittance page with a dirty rent receipt draft", async () => {
     useRentReceiptDraft.setState({ dirty: true });
 
-    const router = renderAt("/generer/quittance");
+    const router = renderAt("/generate/rent-receipt");
     await act(async () => {
-      await router.navigate("/historique");
+      await router.navigate("/history");
     });
 
     expect(screen.queryByText("Historique")).toBeNull();
@@ -104,13 +104,13 @@ describe("useDraftBlock", () => {
   it("allows leaving the note-frais page with only a dirty rent receipt draft", async () => {
     useRentReceiptDraft.setState({ dirty: true });
 
-    const router = renderAt("/generer/note-frais");
+    const router = renderAt("/generate/expense-statement");
     await act(async () => {
-      await router.navigate("/historique");
+      await router.navigate("/history");
     });
 
     expect(await screen.findByText("Historique")).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe("/historique");
+    expect(router.state.location.pathname).toBe("/history");
   });
 
   it("allows leaving the quittance page with only a dirty statement draft", async () => {
@@ -120,30 +120,30 @@ describe("useDraftBlock", () => {
       dirtyByMonth: { [draftScopeKey(null, "2026-01")]: true },
     });
 
-    const router = renderAt("/generer/quittance");
+    const router = renderAt("/generate/rent-receipt");
     await act(async () => {
-      await router.navigate("/historique");
+      await router.navigate("/history");
     });
 
     expect(await screen.findByText("Historique")).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe("/historique");
+    expect(router.state.location.pathname).toBe("/history");
   });
 
   it("allows navigation between generation pages", async () => {
     useRentReceiptDraft.setState({ dirty: true });
 
-    const router = renderAt("/generer/quittance");
+    const router = renderAt("/generate/rent-receipt");
     await act(async () => {
-      await router.navigate("/generer/note-frais");
+      await router.navigate("/generate/expense-statement");
     });
 
     expect(screen.getByTestId("blocker-state")).toHaveTextContent("unblocked");
   });
 
   it("allows leaving the generation pages without any draft", async () => {
-    const router = renderAt("/generer/quittance");
+    const router = renderAt("/generate/rent-receipt");
     await act(async () => {
-      await router.navigate("/historique");
+      await router.navigate("/history");
     });
 
     expect(screen.getByText("Historique")).toBeInTheDocument();

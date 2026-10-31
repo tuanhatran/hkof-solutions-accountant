@@ -148,7 +148,7 @@ export function HistoryPage() {
       }),
     );
     navigate(
-      "/generer/note-frais",
+      "/generate/expense-statement",
       typeof companyId === "number" ? { state: { companyId } } : undefined,
     );
   }
@@ -180,9 +180,11 @@ export function HistoryPage() {
       ) : groups.length === 0 && !errorText ? (
         access.lmnpEnabled ? (
           <HistoryEmptyState
-            onCreateRentReceipt={() => navigate("/generer/quittance")}
+            onCreateRentReceipt={() => navigate("/generate/rent-receipt")}
             onCreateStatement={
-              hasCompany ? () => navigate("/generer/note-frais") : undefined
+              hasCompany
+                ? () => navigate("/generate/expense-statement")
+                : undefined
             }
           />
         ) : (
@@ -194,7 +196,7 @@ export function HistoryPage() {
               hasCompany ? (
                 <Button
                   variant="primary"
-                  onClick={() => navigate("/generer/note-frais")}
+                  onClick={() => navigate("/generate/expense-statement")}
                 >
                   {t("history.empty.createStatement")}
                 </Button>

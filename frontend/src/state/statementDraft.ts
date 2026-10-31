@@ -320,7 +320,7 @@ const createDraftState: StateCreator<StatementDraftState> = (set, get) => {
 /**
  * Non-persisted draft store starting on a given month and company. Used by
  * scoped editors (for example the company lease statement modal) that must
- * never read or write the global sessionStorage draft of /generer/note-frais.
+ * never read or write the global sessionStorage draft of /generate/expense-statement.
  */
 export function createStatementDraftStore(
   month: string,

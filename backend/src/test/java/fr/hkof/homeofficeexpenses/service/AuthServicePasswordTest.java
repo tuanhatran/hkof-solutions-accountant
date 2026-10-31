@@ -16,7 +16,7 @@ class AuthServicePasswordTest {
     private final AppUserRepository users = mock(AppUserRepository.class);
     private final PasswordEncoder encoder = mock(PasswordEncoder.class);
     private final AuthService service = new AuthService(users, encoder, mock(EmailService.class),
-            new AppProperties.Auth("http://localhost/confirmer-email", java.time.Duration.ofHours(24)), Clock.systemUTC());
+            new AppProperties.Auth("http://localhost/confirm-email", java.time.Duration.ofHours(24)), Clock.systemUTC());
 
     @Test
     @DisplayName("The service rejects a blank password with PASSWORD_REQUIRED")

@@ -29,14 +29,14 @@ vi.mock("@/components/llm/LlmBadge", () => ({
   ),
 }));
 
-function renderShell(path = "/historique") {
+function renderShell(path = "/history") {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route element={<AppShell />}>
           <Route path="*" element={<p>Contenu de la page</p>} />
         </Route>
-        <Route path="/connexion" element={<p>Page de connexion</p>} />
+        <Route path="/login" element={<p>Page de connexion</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -71,27 +71,27 @@ describe("AppShell", () => {
     expect(within(navigation).getByText("Réglages")).toBeVisible();
     expect(
       within(navigation).getByRole("link", { name: /Quittance/ }),
-    ).toHaveAttribute("href", "/generer/quittance");
+    ).toHaveAttribute("href", "/generate/rent-receipt");
     expect(
       within(navigation).getByRole("link", { name: /Quittance/ }),
     ).toHaveAttribute("data-cy", "tab-rent-receipt");
     expect(
       within(navigation).getByRole("link", { name: /Note de frais/ }),
-    ).toHaveAttribute("href", "/generer/note-frais");
+    ).toHaveAttribute("href", "/generate/expense-statement");
     expect(
       within(navigation).getByRole("link", { name: /Note de frais/ }),
     ).toHaveAttribute("data-cy", "tab-expense-statement");
     expect(
       within(navigation).getByRole("link", { name: /Société/ }),
-    ).toHaveAttribute("href", "/configuration/entreprise");
+    ).toHaveAttribute("href", "/settings/company");
     expect(
       within(navigation).getByRole("link", { name: /Agence immobilière/ }),
-    ).toHaveAttribute("href", "/configuration/lmnp");
+    ).toHaveAttribute("href", "/settings/agency");
 
     const historyLink = within(navigation).getByRole("link", {
       name: /Historique/,
     });
-    expect(historyLink).toHaveAttribute("href", "/historique");
+    expect(historyLink).toHaveAttribute("href", "/history");
     expect(historyLink).toHaveAttribute("data-cy", "tab-history");
     expect(historyLink.className).toContain("app-nav-link-active");
     expect(historyLink.querySelector(".app-nav-icon-active")).not.toBeNull();
@@ -163,7 +163,7 @@ describe("AppShell", () => {
       proceed: vi.fn(),
       reset: vi.fn(),
     };
-    renderShell("/generer/quittance");
+    renderShell("/generate/rent-receipt");
 
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveAttribute("data-cy", "dialog-leave");
@@ -186,7 +186,7 @@ describe("AppShell", () => {
       proceed: vi.fn(),
       reset: vi.fn(),
     };
-    renderShell("/generer/quittance");
+    renderShell("/generate/rent-receipt");
 
     await userEvent
       .setup()
@@ -204,7 +204,7 @@ describe("AppShell", () => {
       proceed: vi.fn(),
       reset: vi.fn(),
     };
-    renderShell("/generer/note-frais");
+    renderShell("/generate/expense-statement");
 
     await userEvent
       .setup()
@@ -220,7 +220,7 @@ describe("AppShell", () => {
       proceed: vi.fn(),
       reset: vi.fn(),
     };
-    renderShell("/generer/note-frais");
+    renderShell("/generate/expense-statement");
 
     await userEvent
       .setup()
@@ -307,16 +307,16 @@ describe("AppShell", () => {
     expect(within(navigation).getByText("Settings")).toBeVisible();
     expect(
       within(navigation).getByRole("link", { name: /Rent receipt/ }),
-    ).toHaveAttribute("href", "/generer/quittance");
+    ).toHaveAttribute("href", "/generate/rent-receipt");
     expect(
       within(navigation).getByRole("link", { name: /Expense statement/ }),
-    ).toHaveAttribute("href", "/generer/note-frais");
+    ).toHaveAttribute("href", "/generate/expense-statement");
     expect(
       within(navigation).getByRole("link", { name: /History/ }),
     ).toHaveAttribute("data-cy", "tab-history");
     expect(
       within(navigation).getByRole("link", { name: /Company/ }),
-    ).toHaveAttribute("href", "/configuration/entreprise");
+    ).toHaveAttribute("href", "/settings/company");
     expect(
       within(navigation).getByRole("link", { name: /AI analysis/ }),
     ).toHaveAttribute("href", "/admin");

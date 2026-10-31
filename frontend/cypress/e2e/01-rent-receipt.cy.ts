@@ -23,7 +23,7 @@ interface RentReceiptSummary {
 describe("Rent receipt", () => {
   it("adds an additional charge to the total and the generated PDF", () => {
     normalLease().then((lease) => {
-      cy.visit("/generer/quittance");
+      cy.visit("/generate/rent-receipt");
       cy.get('[data-cy="select-landlord"]').select(String(lease.landlordId));
       cy.get('[data-cy="select-tenant"]').select(`person:${lease.tenantId}`);
       cy.chooseMonth(FEBRUARY);
@@ -82,7 +82,7 @@ describe("Rent receipt", () => {
 
   it("keeps several active receipts for the same pair in one month", () => {
     normalLease().then((lease) => {
-      cy.visit("/generer/quittance");
+      cy.visit("/generate/rent-receipt");
 
       // The reset seeds a company lease and a normal lease: select the normal
       // pair explicitly instead of relying on a single-lease auto-selection.

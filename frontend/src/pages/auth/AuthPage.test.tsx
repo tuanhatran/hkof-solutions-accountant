@@ -32,11 +32,11 @@ function renderPage(mode: AuthMode, entry: string) {
   return render(
     <MemoryRouter initialEntries={[entry]}>
       <Routes>
-        <Route path="/connexion" element={<AuthPage mode="login" />} />
-        <Route path="/inscription" element={<AuthPage mode="register" />} />
-        <Route path="/confirmer-email" element={<AuthPage mode="confirm" />} />
-        <Route path="/mot-de-passe" element={<AuthPage mode="password" />} />
-        <Route path="/generer/quittance" element={<p>Espace protégé</p>} />
+        <Route path="/login" element={<AuthPage mode="login" />} />
+        <Route path="/register" element={<AuthPage mode="register" />} />
+        <Route path="/confirm-email" element={<AuthPage mode="confirm" />} />
+        <Route path="/password" element={<AuthPage mode="password" />} />
+        <Route path="/generate/rent-receipt" element={<p>Espace protégé</p>} />
         <Route path="/accueil" element={<AuthPage mode={mode} />} />
       </Routes>
     </MemoryRouter>,
@@ -64,7 +64,7 @@ describe("AuthPage login", () => {
       }),
     );
     const user = userEvent.setup();
-    renderPage("login", "/connexion");
+    renderPage("login", "/login");
 
     expect(screen.getByRole("heading", { name: "Connexion" })).toBeVisible();
     await user.type(
@@ -88,7 +88,7 @@ describe("AuthPage login", () => {
 
   it("shows French inline validation errors without calling the API", async () => {
     const user = userEvent.setup();
-    renderPage("login", "/connexion");
+    renderPage("login", "/login");
 
     await user.click(screen.getByRole("button", { name: "Se connecter" }));
 
@@ -108,7 +108,7 @@ describe("AuthPage login", () => {
       ),
     );
     const user = userEvent.setup();
-    renderPage("login", "/connexion");
+    renderPage("login", "/login");
 
     await user.type(
       screen.getByLabelText("Adresse e-mail"),
@@ -126,7 +126,7 @@ describe("AuthPage login", () => {
 describe("AuthPage register", () => {
   it("rejects a mismatched confirmation before registering", async () => {
     const user = userEvent.setup();
-    renderPage("register", "/inscription");
+    renderPage("register", "/register");
 
     await user.type(
       screen.getByLabelText("Adresse e-mail"),
@@ -148,7 +148,7 @@ describe("AuthPage register", () => {
   it("registers, shows the confirmation message and can resend it", async () => {
     fetchMock.mockResolvedValue(emptyResponse());
     const user = userEvent.setup();
-    renderPage("register", "/inscription");
+    renderPage("register", "/register");
 
     await user.type(
       screen.getByLabelText("Adresse e-mail"),
@@ -182,7 +182,7 @@ describe("AuthPage register", () => {
   });
 
   it("renders module selection checkboxes with both checked by default", () => {
-    renderPage("register", "/inscription");
+    renderPage("register", "/register");
 
     const agency = screen.getByLabelText(/Agence immobilière/);
     const company = screen.getByLabelText(/Société/);
@@ -193,7 +193,7 @@ describe("AuthPage register", () => {
 
   it("shows French inline validation error when both modules are unchecked", async () => {
     const user = userEvent.setup();
-    renderPage("register", "/inscription");
+    renderPage("register", "/register");
 
     await user.type(
       screen.getByLabelText("Adresse e-mail"),
@@ -217,7 +217,7 @@ describe("AuthPage register", () => {
   it("submits the registration with requested modules", async () => {
     fetchMock.mockResolvedValue(emptyResponse());
     const user = userEvent.setup();
-    renderPage("register", "/inscription");
+    renderPage("register", "/register");
 
     await user.type(
       screen.getByLabelText("Adresse e-mail"),
@@ -253,7 +253,7 @@ describe("AuthPage register", () => {
 describe("AuthPage confirmation", () => {
   it("confirms the e-mail token from the link", async () => {
     fetchMock.mockResolvedValue(emptyResponse());
-    renderPage("confirm", "/confirmer-email?token=jeton-de-test");
+    renderPage("confirm", "/confirm-email?token=jeton-de-test");
 
     expect(
       await screen.findByRole("heading", { name: "Adresse confirmée" }),
@@ -275,7 +275,7 @@ describe("AuthPage confirmation", () => {
         400,
       ),
     );
-    renderPage("confirm", "/confirmer-email?token=invalide");
+    renderPage("confirm", "/confirm-email?token=invalide");
 
     expect(
       await screen.findByText(
@@ -288,10 +288,10 @@ describe("AuthPage confirmation", () => {
     fetchMock.mockResolvedValue(emptyResponse());
     render(
       <StrictMode>
-        <MemoryRouter initialEntries={["/confirmer-email?token=jeton-strict"]}>
+        <MemoryRouter initialEntries={["/confirm-email?token=jeton-strict"]}>
           <Routes>
             <Route
-              path="/confirmer-email"
+              path="/confirm-email"
               element={<AuthPage mode="confirm" />}
             />
           </Routes>
@@ -323,7 +323,7 @@ describe("AuthPage forced password change", () => {
       }),
     );
     const user = userEvent.setup();
-    renderPage("password", "/mot-de-passe");
+    renderPage("password", "/password");
 
     expect(
       screen.getByText(/Votre mot de passe provisoire doit être remplacé/),
