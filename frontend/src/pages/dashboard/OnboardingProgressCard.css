@@ -1,0 +1,67 @@
+@reference "../../index.css";
+
+@layer components {
+  .onboarding-progress-card {
+    @apply mb-6 rounded-2xl border border-accent/20 bg-accent-soft/40 p-5 shadow-soft sm:p-6;
+  }
+
+  .onboarding-progress-header {
+    @apply flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .onboarding-progress-info {
+    @apply flex items-start gap-3.5;
+  }
+
+  .onboarding-progress-icon {
+    @apply grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent text-white shadow-sm;
+  }
+
+  .onboarding-progress-title {
+    @apply text-base font-semibold text-ink;
+  }
+
+  .onboarding-progress-description {
+    @apply mt-1 text-sm text-ink-soft;
+  }
+
+  .onboarding-progress-resume-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-accent-strong focus:outline-none focus:ring-2 focus:ring-accent/20;
+  }
+
+  .onboarding-progress-steps {
+    @apply mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3;
+  }
+
+  .onboarding-progress-step {
+    @apply flex items-center justify-between gap-2 rounded-xl border border-line bg-surface/80 px-3.5 py-2.5 text-xs;
+  }
+
+  .onboarding-progress-step-active {
+    @apply border-accent/40 bg-surface shadow-xs font-medium text-accent;
+  }
+
+  .onboarding-progress-step-name {
+    @apply flex items-center gap-2 truncate;
+  }
+
+  .onboarding-progress-step-index {
+    @apply grid h-4 w-4 shrink-0 place-items-center rounded-full text-[0.65rem] font-bold;
+  }
+
+  .onboarding-progress-badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.65rem] font-medium;
+  }
+
+  .onboarding-progress-badge-done {
+    @apply bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400;
+  }
+
+  .onboarding-progress-badge-current {
+    @apply bg-accent-soft text-accent;
+  }
+
+  .onboarding-progress-badge-pending {
+    @apply bg-paper-deep text-ink-soft;
+  }
+}

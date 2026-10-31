@@ -83,6 +83,10 @@ vi.mock("@/api/endpoints", () => ({
       remove: vi.fn(),
       imageUrl: (id: number) => `/api/signatures/${id}/image`,
     },
+    agency: {
+      get: vi.fn(),
+      save: vi.fn(),
+    },
   },
 }));
 
@@ -123,6 +127,8 @@ beforeEach(() => {
   vi.mocked(api.leases.create).mockReset();
   vi.mocked(api.leases.update).mockReset();
   vi.mocked(api.leases.delete).mockReset();
+  vi.mocked(api.agency.get).mockResolvedValue(null);
+  vi.mocked(api.agency.save).mockReset();
   useToasts.setState({ toasts: [] });
 });
 
@@ -143,6 +149,10 @@ describe("LmnpPage", () => {
     expect(
       within(tabs).getByRole("tab", { name: "Personnes" }),
     ).toHaveAttribute("aria-selected", "false");
+    expect(within(tabs).getByRole("tab", { name: "Agence" })).toHaveAttribute(
+      "aria-selected",
+      "false",
+    );
     expect(
       screen.getByRole("heading", { name: "Baux et adresses" }),
     ).toBeVisible();
@@ -165,6 +175,7 @@ describe("LmnpPage", () => {
       within(tabs).getByRole("tab", { name: "Leases and addresses" }),
     ).toHaveAttribute("aria-selected", "true");
     expect(within(tabs).getByRole("tab", { name: "People" })).toBeVisible();
+    expect(within(tabs).getByRole("tab", { name: "Agency" })).toBeVisible();
     expect(within(tabs).queryByRole("tab", { name: "Templates" })).toBeNull();
     expect(
       screen.getByText(/persons acting as landlords or tenants/),
@@ -176,9 +187,25 @@ describe("LmnpPage", () => {
 
     expect(screen.getByRole("tab", { name: "Baux et adresses" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Personnes" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Agence" })).toBeVisible();
     expect(screen.queryByRole("tab", { name: "Modèles" })).toBeNull();
     expect(
       screen.getByRole("heading", { name: "Baux et adresses" }),
+    ).toBeVisible();
+  });
+
+  it("switches to Agence tab and renders agency profile form", async () => {
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("tab", { name: "Agence" }));
+
+    expect(screen.getByRole("tab", { name: "Agence" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(
+      screen.getByRole("heading", { name: "Profil de l'agence" }),
     ).toBeVisible();
   });
 

@@ -694,4 +694,105 @@ describe("OnboardingPage", () => {
     await user.click(screen.getByRole("button", { name: "Retour" }));
     expect(screen.getByRole("heading", { name: "Baux" })).toBeVisible();
   });
+
+  it("navigates to dashboard and sets skip flag when clicking skip onboarding", async () => {
+    const user = userEvent.setup();
+    renderWizard();
+
+    const skipBtn = screen.getByRole("button", {
+      name: "Passer au tableau de bord",
+    });
+    expect(skipBtn).toBeVisible();
+    await user.click(skipBtn);
+
+    expect(await screen.findByText("Tableau de bord")).toBeVisible();
+    expect(
+      sessionStorage.getItem("homeofficeexpenses.onboarding_skipped"),
+    ).toBe("true");
+    sessionStorage.removeItem("homeofficeexpenses.onboarding_skipped");
+  });
+
+  it("restores draft state and step from localStorage upon mounting", () => {
+    const userEmail = "bailleur@exemple.fr";
+    const savedDraft = {
+      step: 1,
+      draft: {
+        profile: {
+          firstName: "Jean",
+          lastName: "Valjean",
+          phone: "+33612345678",
+          phoneCountryCode: "+33",
+          address: "1 rue de la Paix",
+          addressNote: "",
+          isPersonalAgency: true,
+          agencyName: "Agence JV",
+          legalForm: "",
+          sirenSiret: "",
+          agencyAddress: "",
+        },
+        properties: [
+          {
+            id: "prop-1",
+            propertyAddress: "5 avenue Montaigne, 75008 Paris",
+            landlordFirstName: "Jean",
+            landlordLastName: "Valjean",
+            landlordPhoneCountryCode: "+33",
+            landlordPhone: "+33612345678",
+            landlordEmail: "jean@example.com",
+            landlordAddressNote: "",
+          },
+        ],
+        property: {
+          id: "prop-1",
+          propertyAddress: "5 avenue Montaigne, 75008 Paris",
+          landlordFirstName: "Jean",
+          landlordLastName: "Valjean",
+          landlordPhoneCountryCode: "+33",
+          landlordPhone: "+33612345678",
+          landlordEmail: "jean@example.com",
+          landlordAddressNote: "",
+        },
+        lease: {
+          propertyId: "prop-1",
+          leaseType: "individual" as const,
+          rentExclCharges: "1000.00",
+          charges: "100.00",
+          tenants: [
+            {
+              firstName: "Cosette",
+              lastName: "Fauchelevent",
+              rentExclCharges: "1000.00",
+              charges: "100.00",
+            },
+          ],
+        },
+        leaseType: "individual" as const,
+        tenants: [
+          {
+            firstName: "Cosette",
+            lastName: "Fauchelevent",
+            rentExclCharges: "1000.00",
+            charges: "100.00",
+          },
+        ],
+        person: { id: 10, name: "Jean Valjean" },
+        agency: { id: 20, name: "Agence JV", isPersonal: true },
+      },
+    };
+
+    localStorage.setItem(
+      `homeofficeexpenses.onboarding.${userEmail}`,
+      JSON.stringify(savedDraft),
+    );
+
+    renderWizard();
+
+    // Directly renders Step 1 (Biens) since step was 1
+    expect(screen.getByRole("heading", { name: "Biens" })).toBeVisible();
+    expect(screen.getByLabelText("Adresse du bien")).toHaveValue(
+      "5 avenue Montaigne, 75008 Paris",
+    );
+
+    localStorage.removeItem(`homeofficeexpenses.onboarding.${userEmail}`);
+  });
 });

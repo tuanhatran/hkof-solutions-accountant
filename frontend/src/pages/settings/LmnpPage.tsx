@@ -6,8 +6,9 @@ import { LeaseSection } from "@/components/settings/LeaseSection";
 import { PersonnesSection } from "@/components/settings/PersonnesSection";
 import { useRentReceiptSettings } from "@/components/settings/useRentReceiptSettings";
 import { cn } from "@/lib/cn";
+import { AgencySection } from "./AgencySection";
 
-type Tab = "baux" | "personnes";
+type Tab = "baux" | "personnes" | "agence";
 
 function LeasesTab() {
   const c = useRentReceiptSettings();
@@ -28,6 +29,11 @@ export function LmnpPage() {
       value: "personnes",
       label: t("settings.lmnp.tabs.persons"),
       dataCy: "tab-persons",
+    },
+    {
+      value: "agence",
+      label: t("settings.lmnp.tabs.agency"),
+      dataCy: "tab-agency",
     },
   ] as const;
 
@@ -65,6 +71,7 @@ export function LmnpPage() {
       <div className="lmnp-page-sections">
         {tab === "baux" ? <LeasesTab /> : null}
         {tab === "personnes" ? <PersonnesSection /> : null}
+        {tab === "agence" ? <AgencySection /> : null}
       </div>
     </>
   );

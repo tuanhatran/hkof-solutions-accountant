@@ -3,21 +3,28 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DashboardPage } from "./DashboardPage";
-import type { AddressDto, CompanyDto, LeaseDto, PersonDto } from "@/api/types";
+import type { AddressDto, AgencyDto, LeaseDto, PersonDto } from "@/api/types";
 
 const mockUseCompanies = vi.fn();
+const mockUseAgency = vi.fn();
 const mockUsePersons = vi.fn();
 const mockUseAddresses = vi.fn();
 const mockUseLeases = vi.fn();
+const mockUseAuthState = vi.fn();
 
 vi.mock("@/api/queries", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/queries")>();
   return {
     ...actual,
-    useCompanies: () => mockUseCompanies(),
+    useCompanies: () => {
+      mockUseCompanies();
+      throw new Error("useCompanies should not be called in DashboardPage");
+    },
+    useAgency: () => mockUseAgency(),
     usePersons: () => mockUsePersons(),
     useAddresses: () => mockUseAddresses(),
     useLeases: () => mockUseLeases(),
+    useAuthState: () => mockUseAuthState(),
   };
 });
 
@@ -38,9 +45,10 @@ function renderDashboard() {
   );
 }
 
-const AGENCY: CompanyDto = {
+const AGENCY: AgencyDto = {
   id: 1,
   name: "Immobilier Parisien",
+  isPersonal: false,
   managerName: "Jean Dupont",
   siren: "123456789",
   siret: "12345678900012",
@@ -88,15 +96,21 @@ const LEASES: LeaseDto[] = [
 
 describe("DashboardPage", () => {
   beforeEach(() => {
-    mockUseCompanies.mockReturnValue(readyQuery([AGENCY]));
+    mockUseCompanies.mockReset();
+    mockUseAgency.mockReturnValue(readyQuery(AGENCY));
     mockUsePersons.mockReturnValue(readyQuery(PERSONS));
     mockUseAddresses.mockReturnValue(readyQuery(ADDRESSES));
     mockUseLeases.mockReturnValue(readyQuery(LEASES));
+    mockUseAuthState.mockReturnValue({
+      user: { email: "test@example.com", onboardingCompleted: true },
+      loading: false,
+    });
   });
 
-  it("renders page header and agency profile card", () => {
+  it("renders page header and agency profile card using useAgency without useCompanies", () => {
     renderDashboard();
 
+    expect(mockUseCompanies).not.toHaveBeenCalled();
     expect(screen.getByText("Gestion locative")).toBeVisible();
     expect(
       screen.getByRole("heading", { name: "Tableau de bord" }),
@@ -109,6 +123,52 @@ describe("DashboardPage", () => {
     expect(
       within(profileCard).getByText("12 rue de la Paix, 75002 Paris"),
     ).toBeVisible();
+  });
+
+  it("renders personal agency profile cleanly with personal management label and '—' for SIREN", () => {
+    const PERSONAL_AGENCY: AgencyDto = {
+      id: 2,
+      name: "Mon Patrimoine",
+      isPersonal: true,
+      managerName: "Alice Dupont",
+      siren: null,
+      siret: null,
+      address: null,
+    };
+    mockUseAgency.mockReturnValue(readyQuery(PERSONAL_AGENCY));
+
+    renderDashboard();
+
+    const profileCard = screen.getByTestId("agency-profile-card");
+    expect(within(profileCard).getByText("Mon Patrimoine")).toBeVisible();
+    expect(within(profileCard).getByText("Alice Dupont")).toBeVisible();
+    expect(within(profileCard).getByText("—")).toBeVisible();
+    expect(within(profileCard).getByText("Gestion personnelle")).toBeVisible();
+  });
+
+  it("renders OnboardingProgressCard when user.onboardingCompleted === false with resume CTA", () => {
+    mockUseAuthState.mockReturnValue({
+      user: { email: "test@example.com", onboardingCompleted: false },
+      loading: false,
+    });
+
+    renderDashboard();
+
+    const resumeBtn = screen.getByTestId("btn-resume-onboarding");
+    expect(resumeBtn).toBeVisible();
+    expect(resumeBtn).toHaveAttribute("href", "/welcome");
+    expect(resumeBtn).toHaveTextContent("Reprendre l'inscription");
+  });
+
+  it("does not render OnboardingProgressCard when user.onboardingCompleted === true", () => {
+    mockUseAuthState.mockReturnValue({
+      user: { email: "test@example.com", onboardingCompleted: true },
+      loading: false,
+    });
+
+    renderDashboard();
+
+    expect(screen.queryByTestId("btn-resume-onboarding")).toBeNull();
   });
 
   it("displays the four KPI cards with correct calculated values", () => {
@@ -175,7 +235,7 @@ describe("DashboardPage", () => {
   });
 
   it("handles empty data gracefully", () => {
-    mockUseCompanies.mockReturnValue(readyQuery([]));
+    mockUseAgency.mockReturnValue(readyQuery(null));
     mockUsePersons.mockReturnValue(readyQuery([]));
     mockUseAddresses.mockReturnValue(readyQuery([]));
     mockUseLeases.mockReturnValue(readyQuery([]));

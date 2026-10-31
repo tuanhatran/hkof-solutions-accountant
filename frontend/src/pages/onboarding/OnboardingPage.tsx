@@ -1,62 +1,44 @@
 import "./OnboardingPage.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { errorMessage } from "@/api/client";
 import { api } from "@/api/endpoints";
 import { completeOnboardingSession, useAuthState } from "@/api/queries";
-import type { AgencyRequest, PersonRequest } from "@/api/types";
 import { LanguageSelector } from "@/components/layout/LanguageSelector";
+import { Button } from "@/components/ui/Button";
+import { agencyRequest, personRequest } from "./onboardingRequests";
 import { OnboardingStepLease } from "./OnboardingStepLease";
 import { OnboardingStepNav } from "./OnboardingStepNav";
 import { OnboardingStepProfile } from "./OnboardingStepProfile";
 import { OnboardingStepProperty } from "./OnboardingStepProperty";
 import { OnboardingStepSummary } from "./OnboardingStepSummary";
 import {
+  setOnboardingSkipped,
+  useOnboardingPersistence,
+} from "./useOnboardingPersistence";
+import {
   amountOf,
   fullName,
-  sirenOf,
-  siretOf,
   useOnboardingState,
   type LeaseValues,
   type ProfileValues,
   type PropertyValues,
 } from "./useOnboardingState";
 
-function personRequest(values: ProfileValues): PersonRequest {
-  return {
-    name: fullName(values.firstName, values.lastName),
-    address: values.address.trim() || null,
-    phone: values.phone.trim() || null,
-    addressNote: values.addressNote.trim() || null,
-    issuePlace: null,
-  };
-}
-
-function agencyRequest(values: ProfileValues): AgencyRequest {
-  return {
-    name: values.agencyName.trim(),
-    isPersonal: values.isPersonalAgency,
-    managerName: fullName(values.firstName, values.lastName),
-    legalForm: values.isPersonalAgency ? null : values.legalForm.trim() || null,
-    siren: values.isPersonalAgency ? null : sirenOf(values.sirenSiret) || null,
-    siret: values.isPersonalAgency ? null : siretOf(values.sirenSiret),
-    address: values.isPersonalAgency
-      ? null
-      : values.agencyAddress.trim() || null,
-  };
-}
-
 /** `/welcome`: 3 form steps plus a summary, then the onboarding completion. */
 export function OnboardingPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuthState();
+  const { load, save, clear } = useOnboardingPersistence(user?.email);
+  const [initialSaved] = useState(() => load());
   const {
     step,
     draft,
     next,
     back,
+    restoreState,
     updateProfile,
     updateProperty,
     updateLease,
@@ -64,9 +46,25 @@ export function OnboardingPage() {
     cacheTenantId,
     cachedLandlordId,
     cacheLandlordId,
-  } = useOnboardingState();
+  } = useOnboardingState(initialSaved ?? undefined);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!initialSaved && user?.email) {
+      const persisted = load();
+      if (persisted) restoreState(persisted.step, persisted.draft);
+    }
+  }, [initialSaved, user?.email, load, restoreState]);
+
+  useEffect(() => {
+    if (user?.email) save(step, draft);
+  }, [step, draft, save, user?.email]);
+
+  function handleSkip() {
+    setOnboardingSkipped(true);
+    navigate("/dashboard");
+  }
 
   async function saveProfile(values: ProfileValues, advance: boolean) {
     setPending(true);
@@ -205,6 +203,8 @@ export function OnboardingPage() {
       }
 
       await completeOnboardingSession();
+      clear();
+      setOnboardingSkipped(false);
       navigate("/dashboard", { replace: true });
     } catch (caught) {
       setError(errorMessage(caught));
@@ -219,7 +219,18 @@ export function OnboardingPage() {
         <header className="onboarding-header">
           <div className="onboarding-header-top">
             <p className="eyebrow">{t("onboarding.eyebrow")}</p>
-            <LanguageSelector />
+            <div className="onboarding-header-actions">
+              <LanguageSelector />
+              <Button
+                type="button"
+                variant="ghost"
+                small
+                data-cy="btn-skip-onboarding"
+                onClick={handleSkip}
+              >
+                {t("onboarding.skipToDashboard")}
+              </Button>
+            </div>
           </div>
           <h1 className="onboarding-title">{t("onboarding.title")}</h1>
           <p className="onboarding-description">

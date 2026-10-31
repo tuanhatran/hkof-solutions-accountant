@@ -13,13 +13,15 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import {
   useAddresses,
-  useCompanies,
+  useAgency,
+  useAuthState,
   useLeases,
   usePersons,
 } from "@/api/queries";
 import type { LeaseDto } from "@/api/types";
 import { formatEUR } from "@/lib/format";
 import { DashboardPortfolio } from "./DashboardPortfolio";
+import { OnboardingProgressCard } from "./OnboardingProgressCard";
 
 function uniqueTenantCount(leases: LeaseDto[]): number {
   const tenants = new Set<string>();
@@ -51,12 +53,14 @@ function calculateTotalMonthlyRent(leases: LeaseDto[]): number {
 
 export function DashboardPage() {
   const { t } = useTranslation();
-  const companies = useCompanies();
+  const { user } = useAuthState();
+  const agencyQuery = useAgency();
   const persons = usePersons();
   const addresses = useAddresses();
   const leases = useLeases();
 
-  const agency = companies.data?.[0];
+  const agency = agencyQuery.data;
+  const isPersonal = Boolean(agency?.isPersonal);
   const addressList = addresses.data ?? [];
   const leaseList = leases.data ?? [];
   const personList = persons.data ?? [];
@@ -65,11 +69,19 @@ export function DashboardPage() {
     agency?.managerName ||
     personList[0]?.name ||
     t("dashboard.agencyProfile.notSpecified");
-  const sirenSiret =
-    agency?.siret || agency?.siren || t("dashboard.agencyProfile.notSpecified");
-  const agencyAddress =
-    agency?.address || t("dashboard.agencyProfile.notSpecified");
-  const agencyName = agency?.name || t("dashboard.agencyProfile.notSpecified");
+  const sirenSiret = isPersonal
+    ? "—"
+    : agency?.siret ||
+      agency?.siren ||
+      t("dashboard.agencyProfile.notSpecified");
+  const agencyAddress = isPersonal
+    ? agency?.address || t("dashboard.agencyProfile.personalManagement")
+    : agency?.address || t("dashboard.agencyProfile.notSpecified");
+  const agencyName =
+    agency?.name ||
+    (isPersonal
+      ? t("dashboard.agencyProfile.personalManagement")
+      : t("dashboard.agencyProfile.notSpecified"));
 
   const totalMonthlyRent = calculateTotalMonthlyRent(leaseList);
   const tenantsCount = uniqueTenantCount(leaseList);
@@ -97,6 +109,8 @@ export function DashboardPage() {
         <h1 className="dashboard-title">{t("dashboard.title")}</h1>
         <p className="dashboard-description">{t("dashboard.description")}</p>
       </header>
+
+      {user?.onboardingCompleted === false ? <OnboardingProgressCard /> : null}
 
       <section
         className="dashboard-card"
