@@ -116,7 +116,11 @@ export function DashboardPage() {
             <span className="dashboard-profile-label">
               {t("dashboard.agencyProfile.name")}
             </span>
-            <span className="dashboard-profile-value" title={agencyName}>
+            <span
+              className="dashboard-profile-value"
+              title={agencyName}
+              data-cy="dashboard-agency-name"
+            >
               {agencyName}
             </span>
           </div>
@@ -153,7 +157,12 @@ export function DashboardPage() {
       >
         <div className="dashboard-kpi-card" data-testid="kpi-properties">
           <div className="dashboard-kpi-info">
-            <span className="dashboard-kpi-value">{addressList.length}</span>
+            <span
+              className="dashboard-kpi-value"
+              data-cy="dashboard-kpi-properties"
+            >
+              {addressList.length}
+            </span>
             <span className="dashboard-kpi-label">
               {t("dashboard.kpis.properties")}
             </span>
@@ -165,7 +174,12 @@ export function DashboardPage() {
 
         <div className="dashboard-kpi-card" data-testid="kpi-leases">
           <div className="dashboard-kpi-info">
-            <span className="dashboard-kpi-value">{leaseList.length}</span>
+            <span
+              className="dashboard-kpi-value"
+              data-cy="dashboard-kpi-leases"
+            >
+              {leaseList.length}
+            </span>
             <span className="dashboard-kpi-label">
               {t("dashboard.kpis.leases")}
             </span>
@@ -177,7 +191,12 @@ export function DashboardPage() {
 
         <div className="dashboard-kpi-card" data-testid="kpi-tenants">
           <div className="dashboard-kpi-info">
-            <span className="dashboard-kpi-value">{tenantsCount}</span>
+            <span
+              className="dashboard-kpi-value"
+              data-cy="dashboard-kpi-tenants"
+            >
+              {tenantsCount}
+            </span>
             <span className="dashboard-kpi-label">
               {t("dashboard.kpis.tenants")}
             </span>
@@ -189,7 +208,7 @@ export function DashboardPage() {
 
         <div className="dashboard-kpi-card" data-testid="kpi-rent">
           <div className="dashboard-kpi-info">
-            <span className="dashboard-kpi-value">
+            <span className="dashboard-kpi-value" data-cy="dashboard-kpi-rent">
               {formatEUR(totalMonthlyRent)}
             </span>
             <span className="dashboard-kpi-label">

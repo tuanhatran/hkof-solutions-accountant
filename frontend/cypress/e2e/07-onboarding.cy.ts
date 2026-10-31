@@ -1,6 +1,10 @@
 /// <reference types="cypress" />
 
-import { downloadAndReadPdf, waitForValue } from "../support/helpers";
+import {
+  addSignatureToPerson,
+  downloadAndReadPdf,
+  waitForValue,
+} from "../support/helpers";
 
 interface MailpitAddress {
   Address: string;
@@ -25,8 +29,15 @@ const RECEIPT_MONTH = "2026-03";
 const RENT_INPUT = "1 200,00";
 const RENT_API = "1200.00";
 const CHARGES_INPUT = "100,00";
-const PROPERTY_ADDRESS = "10 rue de la Colocation, 75011 Paris";
-const LANDLORD = { firstName: "Camille", lastName: "BAILLEUR" };
+const PROPERTY_SEARCH = "10 rue de la Paix";
+const AGENCY_NAME = "Agence E2E";
+const MANAGER = { firstName: "Jean", lastName: "GERANT" };
+const LANDLORD = {
+  firstName: "Camille",
+  lastName: "BAILLEUR",
+  phone: "0612345678",
+  email: "bailleur@example.test",
+};
 const FIRST_TENANT = { firstName: "Alice", lastName: "DUPONT" };
 const SECOND_TENANT = { firstName: "Bob", lastName: "MARTIN" };
 
@@ -79,6 +90,7 @@ function fillRegistration(email: string, password: string) {
   cy.get('[data-cy="auth-email"]').clear().type(email);
   cy.get('[data-cy="auth-password"]').clear().type(password);
   cy.get('[data-cy="auth-password-confirm"]').clear().type(password);
+  cy.get('[data-cy="auth-module-agency"]').check();
   cy.get('[data-cy="auth-submit"]').click();
 }
 
@@ -149,15 +161,19 @@ describe("onboarding and colocation", () => {
     cy.location("pathname").should("eq", "/bienvenue");
     cy.contains(`Connecté en tant que ${email}`).should("be.visible");
 
-    // Step 1: identity, phone, address note, agency and a 14-digit SIRET.
-    cy.get('[data-cy="input-onboarding-first-name"]').type(LANDLORD.firstName);
-    cy.get('[data-cy="input-onboarding-last-name"]').type(LANDLORD.lastName);
+    // Step 1: manager name, phone country code, address note, agency and a 14-digit SIRET.
+    cy.get('[data-cy="input-onboarding-first-name"]').type(MANAGER.firstName);
+    cy.get('[data-cy="input-onboarding-last-name"]').type(MANAGER.lastName);
+    cy.get('[data-cy="select-onboarding-phone-country"]').select("+33");
     cy.get('[data-cy="input-onboarding-phone"]').type("0612345678");
     cy.get('[data-cy="input-onboarding-person-address"]').type(
-      "1 rue du Bailleur, 75001 Paris",
+      "1 rue de la Paix",
     );
+    cy.get('[id="onboarding-person-address-listbox-opt-0"]', {
+      timeout: 10_000,
+    }).click();
     cy.get('[data-cy="input-onboarding-address-note"]').type("Bâtiment B");
-    cy.get('[data-cy="input-onboarding-agency-name"]').type("Agence E2E");
+    cy.get('[data-cy="input-onboarding-agency-name"]').type(AGENCY_NAME);
     cy.get('[data-cy="input-onboarding-legal-form"]').type("EURL");
     cy.get('[data-cy="input-onboarding-siren-siret"]').type("12345678901234");
     cy.get('[data-cy="input-onboarding-agency-address"]').type(
@@ -166,8 +182,8 @@ describe("onboarding and colocation", () => {
     cy.get('[data-cy="btn-save-onboarding-profile"]').click();
     cy.get('[data-cy="onboarding-signature"]').should("be.visible");
 
-    // The pad is portalled inside the profile form: validating it also submits
-    // the profile, so the wizard advances to step 2 on the confirmed signature.
+    // The pad is portalled inside the profile form: confirming the signature
+    // also submits the profile form, advancing the wizard to step 2.
     cy.intercept("POST", "/api/signatures").as("createSignature");
     cy.get('[data-cy="btn-draw-signature"]').click();
     cy.get('[data-cy="signature-pad-canvas"]').should("be.visible");
@@ -178,19 +194,37 @@ describe("onboarding and colocation", () => {
       .its("response.body")
       .should("have.property", "name", "Signature dessinée");
 
-    // Step 2: the dwelling and the pre-filled landlord (the account itself).
-    cy.get('[data-cy="input-onboarding-property-address"]').type(
-      PROPERTY_ADDRESS,
+    // Step 2: managed property address and distinct landlord details.
+    cy.get('[data-cy="input-onboarding-property-address-0"]').type(
+      PROPERTY_SEARCH,
     );
-    cy.get('[data-cy="input-onboarding-rent"]').clear().type(RENT_INPUT);
-    cy.get('[data-cy="input-onboarding-charges"]').clear().type(CHARGES_INPUT);
-    cy.get('[data-cy="onboarding-landlord"]')
-      .should("contain.text", "Camille BAILLEUR")
-      .and("contain.text", email);
+    cy.get('[id="onboarding-property-address-listbox-opt-0"]', {
+      timeout: 10_000,
+    }).click();
+    cy.get('[data-cy="input-onboarding-landlord-first-name-0"]').type(
+      LANDLORD.firstName,
+    );
+    cy.get('[data-cy="input-onboarding-landlord-last-name-0"]').type(
+      LANDLORD.lastName,
+    );
+    cy.get('[data-cy="select-onboarding-landlord-phone-country-0"]').select(
+      "+33",
+    );
+    cy.get('[data-cy="input-onboarding-landlord-phone-0"]').type(
+      LANDLORD.phone,
+    );
+    cy.get('[data-cy="input-onboarding-landlord-email-0"]').type(
+      LANDLORD.email,
+    );
     cy.get('[data-cy="btn-next-onboarding-property"]').click();
 
-    // Step 3: solidary colocation with two co-tenants.
+    // Step 3: attach solidary colocation lease to the property.
+    cy.get('[data-cy="select-onboarding-lease-property"]').should("be.visible");
     cy.get('[data-cy="onboarding-lease-colocation"]').check();
+    cy.get('[data-cy="input-onboarding-total-rent"]').clear().type(RENT_INPUT);
+    cy.get('[data-cy="input-onboarding-total-charges"]')
+      .clear()
+      .type(CHARGES_INPUT);
     cy.get('[data-cy="input-onboarding-tenant-first-0"]').type(
       FIRST_TENANT.firstName,
     );
@@ -207,25 +241,45 @@ describe("onboarding and colocation", () => {
 
     // Summary: the colocation and both co-tenants before finalization.
     cy.contains("Bail de colocation solidaire").should("be.visible");
-    cy.contains("Locataire 1 · Alice DUPONT").should("be.visible");
-    cy.contains("Locataire 2 · Bob MARTIN").should("be.visible");
+    cy.contains("Locataire 1").should("be.visible");
+    cy.contains("Alice DUPONT").should("be.visible");
+    cy.contains("Locataire 2").should("be.visible");
+    cy.contains("Bob MARTIN").should("be.visible");
     cy.get('[data-cy="onboarding-finalize"]').click();
 
+    // Finalize lands on /tableau-de-bord: assert Agency Dashboard metrics.
     cy.location("pathname", { timeout: 30_000 }).should(
       "eq",
-      "/generer/quittance",
+      "/tableau-de-bord",
     );
-    cy.request<{ tenantIds?: number[] }[]>("/api/leases").then(({ body }) => {
+    cy.get('[data-cy="dashboard-page"]').should("be.visible");
+    cy.get('[data-cy="dashboard-agency-name"]').should(
+      "contain.text",
+      AGENCY_NAME,
+    );
+    cy.get('[data-cy="dashboard-kpi-properties"]').should("contain.text", "1");
+    cy.get('[data-cy="dashboard-kpi-leases"]').should("contain.text", "1");
+
+    cy.request<{ id: number; landlordId?: number; tenantIds?: number[] }[]>(
+      "/api/leases",
+    ).then(({ body }) => {
       expect(body, "leases of the fresh account").to.have.length(1);
       expect(
         body[0].tenantIds,
         "co-tenants linked to the lease",
       ).to.have.length(2);
+      if (body[0].landlordId) {
+        addSignatureToPerson(body[0].landlordId, "Signature Bailleur");
+      }
     });
+
+    // Navigate to rent receipt generator via quick action
+    cy.get('[data-cy="action-generate-receipt"]').click();
+    cy.location("pathname").should("eq", "/generer/quittance");
 
     cy.get('[data-cy="lease-detail"]', { timeout: 20_000 })
       .should("be.visible")
-      .and("contain.text", PROPERTY_ADDRESS);
+      .and("contain.text", "10 Rue de la Paix");
     cy.chooseMonth(RECEIPT_MONTH);
     waitForValue("#quittance-loyer", RENT_API);
 
